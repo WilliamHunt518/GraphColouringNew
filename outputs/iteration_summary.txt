@@ -1,0 +1,70 @@
+Iteration 1:
+  Assignments: {'1': 'green', '2': 'blue', '3': 'red', '4': 'green', '5': 'red', '6': 'blue'}
+  Global penalty: 0.8894650817614398
+  Messages:
+    Alice -> Bob: {'1': 'green', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+
+Iteration 2:
+  Assignments: {'1': 'red', '2': 'blue', '3': 'red', '4': 'blue', '5': 'red', '6': 'blue'}
+  Global penalty: -0.0009449909161837605
+  Messages:
+    Alice -> Bob: {'1': 'red', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+
+Iteration 3:
+  Assignments: {'1': 'green', '2': 'blue', '3': 'red', '4': 'green', '5': 'red', '6': 'blue'}
+  Global penalty: 0.8894650817614398
+  Messages:
+    Alice -> Bob: {'1': 'green', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+
+Iteration 4:
+  Assignments: {'1': 'red', '2': 'blue', '3': 'red', '4': 'blue', '5': 'red', '6': 'blue'}
+  Global penalty: -0.0009449909161837605
+  Messages:
+    Alice -> Bob: {'1': 'red', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+
+Iteration 5:
+  Assignments: {'1': 'green', '2': 'blue', '3': 'red', '4': 'green', '5': 'red', '6': 'blue'}
+  Global penalty: 0.8894650817614398
+  Messages:
+    Alice -> Bob: {'1': 'green', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+
+Iteration 6:
+  Assignments: {'1': 'red', '2': 'blue', '3': 'red', '4': 'blue', '5': 'red', '6': 'blue'}
+  Global penalty: -0.0009449909161837605
+  Messages:
+    Alice -> Bob: {'1': 'red', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+
+Iteration 7:
+  Assignments: {'1': 'green', '2': 'blue', '3': 'red', '4': 'green', '5': 'red', '6': 'blue'}
+  Global penalty: 0.8894650817614398
+  Messages:
+    Alice -> Bob: {'1': 'green', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+
+Iteration 8:
+  Assignments: {'1': 'red', '2': 'blue', '3': 'red', '4': 'blue', '5': 'red', '6': 'blue'}
+  Global penalty: -0.0009449909161837605
+  Messages:
+    Alice -> Bob: {'1': 'red', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+
+Iteration 9:
+  Assignments: {'1': 'green', '2': 'blue', '3': 'red', '4': 'green', '5': 'red', '6': 'blue'}
+  Global penalty: 0.8894650817614398
+  Messages:
+    Alice -> Bob: {'1': 'green', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+
+Iteration 10:
+  Assignments: {'1': 'red', '2': 'blue', '3': 'red', '4': 'blue', '5': 'red', '6': 'blue'}
+  Global penalty: -0.0009449909161837605
+  Messages:
+    Alice -> Bob: {'1': 'red', '2': 'blue', '3': 'red'}
+    Bob -> Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+

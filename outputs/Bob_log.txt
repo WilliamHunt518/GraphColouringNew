@@ -1,0 +1,61 @@
+Initial multi-node assignments: {'4': 'green', '5': 'red', '6': 'red'}
+Updated assignments from {'4': 'green', '5': 'red', '6': 'red'} to {'4': 'green', '5': 'red', '6': 'blue'} (penalty -0.09170432699943763)
+Sent message to Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'green', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> green
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'green', '5': 'red', '6': 'blue'} to {'4': 'blue', '5': 'red', '6': 'blue'} (penalty -0.06614639235996872)
+Sent message to Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'red', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> red
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'blue', '5': 'red', '6': 'blue'} to {'4': 'green', '5': 'red', '6': 'blue'} (penalty -0.04533351679477545)
+Sent message to Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'green', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> green
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'green', '5': 'red', '6': 'blue'} to {'4': 'blue', '5': 'red', '6': 'blue'} (penalty -0.06614639235996872)
+Sent message to Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'red', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> red
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'blue', '5': 'red', '6': 'blue'} to {'4': 'green', '5': 'red', '6': 'blue'} (penalty -0.04533351679477545)
+Sent message to Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'green', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> green
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'green', '5': 'red', '6': 'blue'} to {'4': 'blue', '5': 'red', '6': 'blue'} (penalty -0.06614639235996872)
+Sent message to Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'red', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> red
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'blue', '5': 'red', '6': 'blue'} to {'4': 'green', '5': 'red', '6': 'blue'} (penalty -0.04533351679477545)
+Sent message to Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'green', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> green
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'green', '5': 'red', '6': 'blue'} to {'4': 'blue', '5': 'red', '6': 'blue'} (penalty -0.06614639235996872)
+Sent message to Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'red', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> red
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'blue', '5': 'red', '6': 'blue'} to {'4': 'green', '5': 'red', '6': 'blue'} (penalty -0.04533351679477545)
+Sent message to Alice: {'4': 'green', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'green', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> green
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
+Updated assignments from {'4': 'green', '5': 'red', '6': 'blue'} to {'4': 'blue', '5': 'red', '6': 'blue'} (penalty -0.06614639235996872)
+Sent message to Alice: {'4': 'blue', '5': 'red', '6': 'blue'}
+Received message from Alice: {'1': 'red', '2': 'blue', '3': 'red'}
+Updated neighbour assignment: 1 -> red
+Updated neighbour assignment: 2 -> blue
+Updated neighbour assignment: 3 -> red
