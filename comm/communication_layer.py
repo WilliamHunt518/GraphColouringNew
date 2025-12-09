@@ -152,7 +152,7 @@ class LLMCommLayer(BaseCommLayer):
             return None
         # debug message before making an API request
         try:
-            print(f"[LLMCommLayer] Attempting OpenAI API call with prompt: {prompt[:120]}...")
+            print(f"[LLMCommLayer] Attempting OpenAI API call with prompt: {prompt[:60]}...")
         except Exception:
             pass
         try:
@@ -186,11 +186,16 @@ class LLMCommLayer(BaseCommLayer):
         dictionary is summarised into a natural-language description.
         Otherwise, a simple key:value string is returned as before.
         """
-        # dictionary of scores: attempt to summarise with LLM, or manual summariser if enabled
+        # dictionary messages: format values generically (numeric or not) and summarise via LLM or manual summariser
         if isinstance(content, dict):
-            # first, build a basic string representation for machine parsing
-            items = [f"{key}:{value:.3f}" for key, value in content.items()]
-            base_msg = f"Scores from {sender} to {recipient} -> " + ", ".join(items)
+            # build a basic string representation that handles non-numeric values
+            items = []
+            for key, value in content.items():
+                if isinstance(value, (int, float)):
+                    items.append(f"{key}:{value:.3f}")
+                else:
+                    items.append(f"{key}:{value}")
+            base_msg = f"Mapping from {sender} to {recipient} -> " + ", ".join(items)
             # manual mode: call summariser if provided
             if self.manual:
                 summary = None
@@ -205,8 +210,8 @@ class LLMCommLayer(BaseCommLayer):
                 return base_msg
             # automatic LLM mode: if openai available, produce a summarisation
             prompt = (
-                f"Given this mapping of options to scores: {content}. "
-                "Rephrase it as a single sentence describing the sender's preferences and include the key:value pairs."
+                f"Given this mapping: {content}. "
+                "Rephrase it as a single sentence describing the sender's current assignment or preferences and include the key:value pairs."
             )
             summary = self._call_openai(prompt)
             if summary:

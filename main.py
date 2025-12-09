@@ -286,32 +286,27 @@ def main() -> None:
     # ------------------------------------------------------------------
     # CONFIGURATION
     # Define the nodes and modes.  Each node is an individual agent.
-    CONFIG = dict(
-        node_names=["a", "b"],
-        agent_modes=["1A", "1B"],
-        owners={"a": "Alice", "b": "Bob"},
-        adjacency={
-            "a": ["b"],
-            "b": ["a"],
-        },
-        max_iterations=10,
-        interactive=False,
-        output_dir="./outputs",
-        manual_mode=False,
-        multi_node_mode=False,
-    )
     # CONFIG = dict(
-    #     node_names=["1", "2", "3", "4", "5", "6"],
-    #     agent_modes=["1Z", "1A"],
-    #     owners={"1": "Alice", "2": "Alice", "3": "Alice", "4": "Bob", "5": "Bob", "6": "Bob", },
-    #     adjacency={"1": ["2", "4"], "2": ["1", "3"], "3": ["2", "6"], "4": ["5", "1"], "5": ["4", "6"],
-    #                "6": ["5", "3"], },
-    #     max_iterations=10,
+    #     node_names=["a", "b"],
+    #     agent_modes=["1A", "1A"],
+    #     owners={"a": "Alice", "b": "Bob"},
+    #     adjacency={
+    #         "a": ["b"],
+    #         "b": ["a"],
+    #     },
+    #     max_iterations=5,
     #     interactive=False,
     #     output_dir="./outputs",
     #     manual_mode=False,
-    #     multi_node_mode=True,
+    #     multi_node_mode=False,
     # )
+
+    # Define a more complex graph with 6 nodes and 2 owners,
+    CONFIG = dict(node_names=["1", "2", "3", "4", "5", "6"], agent_modes=["1C", "1A"],
+                  owners={"1": "Alice", "2": "Alice", "3": "Alice", "4": "Bob", "5": "Bob", "6": "Bob", },
+                  adjacency={"1": ["2", "4"], "2": ["1", "3"], "3": ["2", "6"], "4": ["5", "1"], "5": ["4", "6"],
+                             "6": ["5", "3"], }, max_iterations=10, interactive=False, output_dir="./outputs",
+                  manual_mode=False, multi_node_mode=True, )
 
     # ensure lengths match: in multi-node mode, agent_modes refers to owners
     if not CONFIG.get("multi_node_mode", False):
