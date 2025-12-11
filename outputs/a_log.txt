@@ -1,0 +1,10 @@
+Initial value chosen: green
+Utilities: {'red': 0.06887506826249754, 'green': 0.0362081924652346, 'blue': 0.02553884588898042}, selected red
+Changing value from green to red
+Sent message to b: a suggests green is best for b. Scores: red:-0.033, green:0.000, blue:0.000 [mapping: Mapping from a to b -> red:-0.033, green:0.000, blue:0.000]
+Received message from b: b suggests red is best for a. Scores: red:0.000, green:-0.039, blue:0.000 [mapping: Mapping from b to a -> red:0.000, green:-0.039, blue:0.000]
+Parsed structured message from b: {'red': 0.0, 'green': -0.039, 'blue': 0.0}
+Utilities: {'red': 0.06887506826249754, 'green': -0.002791807534765399, 'blue': 0.02553884588898042}, selected red
+Sent message to b: a suggests green is best for b. Scores: red:-0.033, green:0.000, blue:0.000 [mapping: Mapping from a to b -> red:-0.033, green:0.000, blue:0.000]
+Received message from b: b suggests red is best for a. Scores: red:0.000, green:-0.039, blue:0.000 [mapping: Mapping from b to a -> red:0.000, green:-0.039, blue:0.000]
+Parsed structured message from b: {'red': 0.0, 'green': -0.039, 'blue': 0.0}

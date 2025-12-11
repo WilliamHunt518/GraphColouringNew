@@ -170,10 +170,8 @@ class MaxSumAgent(BaseAgent):
         for neighbour in self.r_messages:
             q_msg = self.compute_q_message(neighbour)
             self.q_messages[neighbour] = q_msg
-            # send the raw structured message; BaseAgent.send will
-            # automatically route it through the communication layer.
-            # We intentionally avoid calling format_content here to
-            # prevent double translation/paraphrasing of messages,
-            # which would otherwise cause repeated LLM calls.  See
-            # communication_layer.format_content for details.
+            # wrap message via comm layer
+            # send the raw Q-message; BaseAgent.send will apply the
+            # communication layer formatting.  This avoids double
+            # formatting when using LLMCommLayer.
             self.send(neighbour, q_msg)

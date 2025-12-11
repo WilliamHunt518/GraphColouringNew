@@ -186,14 +186,17 @@ class LLMCommLayer(BaseCommLayer):
         dictionary is summarised into a natural-language description.
         Otherwise, a simple key:value string is returned as before.
         """
-        # dictionary messages: format values generically (numeric or not) and summarise via LLM or manual summariser
+        # dictionary content: build a base string and summarise if possible
         if isinstance(content, dict):
-            # build a basic string representation that handles non-numeric values
-            items = []
+            # Build a basic string representation for machine parsing.  Use str()
+            # on values to handle both numeric and non-numeric entries (e.g., assignments).
+            items: List[str] = []
             for key, value in content.items():
-                if isinstance(value, (int, float)):
-                    items.append(f"{key}:{value:.3f}")
-                else:
+                try:
+                    # format floats with three decimals
+                    items.append(f"{key}:{float(value):.3f}")
+                except (ValueError, TypeError):
+                    # fallback to plain string for non-numeric values
                     items.append(f"{key}:{value}")
             base_msg = f"Mapping from {sender} to {recipient} -> " + ", ".join(items)
             # manual mode: call summariser if provided
@@ -210,8 +213,9 @@ class LLMCommLayer(BaseCommLayer):
                 return base_msg
             # automatic LLM mode: if openai available, produce a summarisation
             prompt = (
-                f"Given this mapping: {content}. "
-                "Rephrase it as a single sentence describing the sender's current assignment or preferences and include the key:value pairs."
+                f"Given this mapping of options to scores or assignments: {content}. "
+                "Rephrase it as a concise description of what {sender} is conveying to {recipient}. "
+                "Include the key:value pairs explicitly."
             )
             summary = self._call_openai(prompt)
             if summary:
@@ -251,18 +255,17 @@ class LLMCommLayer(BaseCommLayer):
         to extract a JSON object from the message.  If both fail, the
         raw string is returned.
         """
-        # if the message is not a string (e.g. a dict sent via PassThroughCommLayer),
-        # simply return it unchanged.  This prevents regex operations on dicts.
+        # If the message is already structured (e.g. a dict), return it unchanged.
         if not isinstance(message, str):
             return message
         # separate potential mapping appended in square brackets
         # e.g., "... [mapping: Scores from a1 to a2 -> red:0.500,...]"
         import json
-        body: str = message
+        body = message
         # if '[mapping:' pattern present, extract mapping string
         if "[mapping:" in message:
             try:
-                _main_text, mapping_part = message.split("[mapping:", 1)
+                main_text, mapping_part = message.split("[mapping:", 1)
                 # remove trailing ']' and strip
                 mapping_str = mapping_part.rsplit("]", 1)[0].strip()
                 body = mapping_str
@@ -270,7 +273,7 @@ class LLMCommLayer(BaseCommLayer):
                 body = message
         # remove prefix if present
         if "->" in body:
-            _prefix, body = body.split("->", 1)
+            _, body = body.split("->", 1)
         # find key:value pairs heuristically
         pairs = re.findall(r"([^,:\s]+):([\-]?[\d\.]+)", body)
         if pairs:

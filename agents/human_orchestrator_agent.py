@@ -37,6 +37,8 @@ class HumanOrchestratorAgent(BaseAgent):
         self.auto_response = auto_response
         # ensure initial assignment
         self.assignment = self.tool.assignment
+        # flag to show help only once
+        self._help_shown = False
 
     def receive(self, message: Message) -> None:
         super().receive(message)
@@ -53,6 +55,16 @@ class HumanOrchestratorAgent(BaseAgent):
             return ""
 
     def menu(self) -> None:
+        # show detailed instructions on first invocation
+        if not self._help_shown:
+            print(f"\n[{self.name}] You are controlling node '{self.name}'.")
+            print("This is the human orchestrator mode. You have access to algorithmic tools and can decide how to use them.")
+            print("Options:\n  1. Run algorithm step: perform one Max–Sum update (like a regular agent).\n"
+                  "  2. Inspect utilities: view current utility scores for each colour.\n"
+                  "  3. Choose colour manually: override the algorithm and pick a colour yourself.\n"
+                  "  4. Send message: write a message to your neighbours.\n"
+                  "  5. End turn: finish this iteration.")
+            self._help_shown = True
         print(f"\n[{self.name}] Current colour: {self.assignment}")
         print("Choose an action:")
         print("  1. Run algorithm step")

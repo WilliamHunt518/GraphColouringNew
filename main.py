@@ -90,6 +90,7 @@ def run_custom_simulation(
         # multi-node agents: one agent per owner.  Each owner has an associated
         # agent mode taken from agent_modes (length must equal number of owners).
         from agents.multi_node_agent import MultiNodeAgent
+        from agents.multi_node_human_agent import MultiNodeHumanAgent, MultiNodeHumanOrchestrator
         from comm.communication_layer import LLMCommLayer, PassThroughCommLayer
         # group nodes by owner
         owners_to_nodes: Dict[str, List[str]] = {}
@@ -103,20 +104,50 @@ def run_custom_simulation(
                 "In multi_node_mode, the number of agent_modes must equal the number of owners"
             )
         for owner, mode in zip(unique_owners, agent_modes):
-            # choose communication layer based on mode
             mode = mode.upper()
+            # select communication layer: 1Z uses pass-through; others use LLM layer
             if mode == "1Z":
                 comm_layer = PassThroughCommLayer()
             else:
-                # default to LLM layer for algorithmic and human modes
                 comm_layer = LLMCommLayer(manual=manual_mode, summariser=summariser)
-            agent = MultiNodeAgent(
-                name=owner,
-                problem=problem,
-                comm_layer=comm_layer,
-                local_nodes=owners_to_nodes[owner],
-                owners=owners,
-            )
+            # choose agent class based on mode prefix (algorithmic vs human)
+            if mode.startswith("2"):  # human modes in multi-node
+                if mode == "2A":
+                    agent = MultiNodeHumanAgent(
+                        name=owner,
+                        problem=problem,
+                        comm_layer=comm_layer,
+                        local_nodes=owners_to_nodes[owner],
+                        owners=owners,
+                        auto_response=None if interactive else (lambda prompt: ""),
+                    )
+                elif mode == "2B":
+                    agent = MultiNodeHumanOrchestrator(
+                        name=owner,
+                        problem=problem,
+                        comm_layer=comm_layer,
+                        local_nodes=owners_to_nodes[owner],
+                        owners=owners,
+                        auto_response=None if interactive else (lambda prompt: ""),
+                    )
+                else:
+                    # 2C or unknown human modes fall back to algorithmic agent
+                    agent = MultiNodeAgent(
+                        name=owner,
+                        problem=problem,
+                        comm_layer=comm_layer,
+                        local_nodes=owners_to_nodes[owner],
+                        owners=owners,
+                    )
+            else:
+                # algorithmic and LLM modes share MultiNodeAgent
+                agent = MultiNodeAgent(
+                    name=owner,
+                    problem=problem,
+                    comm_layer=comm_layer,
+                    local_nodes=owners_to_nodes[owner],
+                    owners=owners,
+                )
             agents.append(agent)
     # containers for logs and messages
     iteration_assignments: List[Dict[str, str]] = []
@@ -288,25 +319,45 @@ def main() -> None:
     # Define the nodes and modes.  Each node is an individual agent.
     # CONFIG = dict(
     #     node_names=["a", "b"],
-    #     agent_modes=["1A", "1A"],
+    #     agent_modes=["1A", "2A"],
     #     owners={"a": "Alice", "b": "Bob"},
     #     adjacency={
     #         "a": ["b"],
     #         "b": ["a"],
     #     },
-    #     max_iterations=5,
-    #     interactive=False,
+    #     max_iterations=10,
+    #     interactive=True,
     #     output_dir="./outputs",
     #     manual_mode=False,
     #     multi_node_mode=False,
     # )
 
-    # Define a more complex graph with 6 nodes and 2 owners,
-    CONFIG = dict(node_names=["1", "2", "3", "4", "5", "6"], agent_modes=["1C", "1A"],
-                  owners={"1": "Alice", "2": "Alice", "3": "Alice", "4": "Bob", "5": "Bob", "6": "Bob", },
-                  adjacency={"1": ["2", "4"], "2": ["1", "3"], "3": ["2", "6"], "4": ["5", "1"], "5": ["4", "6"],
-                             "6": ["5", "3"], }, max_iterations=10, interactive=False, output_dir="./outputs",
-                  manual_mode=False, multi_node_mode=True, )
+    #multi-node configuration example
+    CONFIG = dict(
+        node_names=["1", "2", "3", "4", "5", "6"],
+        agent_modes=["1A", "2A"],  # one mode per owner
+        owners={
+            "1": "Alice",
+            "2": "Alice",
+            "3": "Alice",
+            "4": "Bob",
+            "5": "Bob",
+            "6": "Bob",
+        },
+        adjacency={
+            "1": ["2", "3"],
+            "2": ["1", "4"],
+            "3": ["1", "5"],
+            "4": ["2", "6"],
+            "5": ["3", "6"],
+            "6": ["4", "5"],
+        },
+        max_iterations=10,
+        interactive=True,
+        output_dir="./outputs",
+        manual_mode=False,
+        multi_node_mode=True,
+    )
 
     # ensure lengths match: in multi-node mode, agent_modes refers to owners
     if not CONFIG.get("multi_node_mode", False):

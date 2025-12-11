@@ -1,0 +1,37 @@
+Initial value chosen: green
+Utilities: {'red': 0.0, 'green': 0.0, 'blue': 0.0}, selected red
+Changing value from green to red
+Sent message to 4: Scores from 5 to 4 -> red:0.000, green:0.000, blue:0.000
+Sent message to 6: Scores from 5 to 6 -> red:0.000, green:0.000, blue:0.000
+Received message from 4: Scores from 4 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 4: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Received message from 6: Scores from 6 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 6: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Utilities: {'red': 0.0, 'green': 0.0, 'blue': 0.0}, selected red
+Sent message to 4: Scores from 5 to 4 -> red:0.000, green:0.000, blue:0.000
+Sent message to 6: Scores from 5 to 6 -> red:0.000, green:0.000, blue:0.000
+Received message from 4: Scores from 4 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 4: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Received message from 6: Scores from 6 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 6: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Utilities: {'red': 0.0, 'green': 0.0, 'blue': 0.0}, selected red
+Sent message to 4: Scores from 5 to 4 -> red:0.000, green:0.000, blue:0.000
+Sent message to 6: Scores from 5 to 6 -> red:0.000, green:0.000, blue:0.000
+Received message from 4: Scores from 4 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 4: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Received message from 6: Scores from 6 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 6: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Utilities: {'red': 0.0, 'green': 0.0, 'blue': 0.0}, selected red
+Sent message to 4: Scores from 5 to 4 -> red:0.000, green:0.000, blue:0.000
+Sent message to 6: Scores from 5 to 6 -> red:0.000, green:0.000, blue:0.000
+Received message from 4: Scores from 4 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 4: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Received message from 6: Scores from 6 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 6: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Utilities: {'red': 0.0, 'green': 0.0, 'blue': 0.0}, selected red
+Sent message to 4: Scores from 5 to 4 -> red:0.000, green:0.000, blue:0.000
+Sent message to 6: Scores from 5 to 6 -> red:0.000, green:0.000, blue:0.000
+Received message from 4: Scores from 4 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 4: {'red': 0.0, 'green': 0.0, 'blue': 0.0}
+Received message from 6: Scores from 6 to 5 -> red:0.000, green:0.000, blue:0.000
+Parsed structured message from 6: {'red': 0.0, 'green': 0.0, 'blue': 0.0}

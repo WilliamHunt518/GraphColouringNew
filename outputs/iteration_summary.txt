@@ -1,0 +1,16 @@
+Converged after 2 iterations.
+
+Iteration 1:
+  Assignments: {'a': 'red', 'b': 'green'}
+  Global penalty: -0.07253015964188564
+  Messages:
+    a -> b: a suggests green is best for b. Scores: red:-0.033, green:0.000, blue:0.000 [mapping: Mapping from a to b -> red:-0.033, green:0.000, blue:0.000]
+    b -> a: b suggests red is best for a. Scores: red:0.000, green:-0.039, blue:0.000 [mapping: Mapping from b to a -> red:0.000, green:-0.039, blue:0.000]
+
+Iteration 2:
+  Assignments: {'a': 'red', 'b': 'green'}
+  Global penalty: -0.07253015964188564
+  Messages:
+    a -> b: a suggests green is best for b. Scores: red:-0.033, green:0.000, blue:0.000 [mapping: Mapping from a to b -> red:-0.033, green:0.000, blue:0.000]
+    b -> a: b suggests red is best for a. Scores: red:0.000, green:-0.039, blue:0.000 [mapping: Mapping from b to a -> red:0.000, green:-0.039, blue:0.000]
+

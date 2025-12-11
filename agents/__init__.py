@@ -35,6 +35,7 @@ from .human_cl_agent import HumanCLAgent
 from .human_orchestrator_agent import HumanOrchestratorAgent
 from .human_hybrid_agent import HumanHybridAgent
 from .multi_node_agent import MultiNodeAgent
+from .multi_node_human_agent import MultiNodeHumanAgent, MultiNodeHumanOrchestrator
 
 __all__ = [
     "BaseAgent",
@@ -46,4 +47,6 @@ __all__ = [
     "HumanOrchestratorAgent",
     "HumanHybridAgent",
     "MultiNodeAgent",
+    "MultiNodeHumanAgent",
+    "MultiNodeHumanOrchestrator",
 ]

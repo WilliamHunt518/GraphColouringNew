@@ -65,11 +65,43 @@ and outgoing messages to a human operator.  The human reads the
 messages and manually responds (or can allow the agent to use
 heuristics when run in non‑interactive mode).
 
+In **multi‑node mode**, all variables belonging to a single owner are
+grouped and controlled via a specialised `MultiNodeHumanAgent`.  On
+each iteration the agent presents a concise summary of its current
+assignments and any known neighbour assignments, then prompts the
+user to provide a mapping from node identifiers to colours (e.g.,
+`"1=red,2=green"`).  Pressing Enter keeps the existing assignments.
+After updating assignments, the user may enter an optional free‑form
+message to send to neighbouring owners.  In non‑interactive tests
+this prompt is bypassed using an `auto_response` callback so that
+assignments remain unchanged and no messages are sent.
+
 ### `2B` – Human Orchestrator
 
 The underlying algorithm is available as a set of tools.  A human
 operator decides which tool to run next, inspects intermediate
 utilities, and then directs the agent on which colour to choose.
+
+In **multi‑node mode**, the `MultiNodeHumanOrchestrator` groups all
+local variables under one owner and provides a menu of actions:
+
+* **Run internal algorithm step**: perform one local Max–Sum update on all
+  controlled nodes, using the most recent neighbour assignments.
+* **Propose best assignment**: exhaustively evaluate all possible
+  colour combinations for the local nodes and display the one with
+  the lowest global penalty.
+* **Accept proposed assignment**: replace the current assignments
+  with the most recently proposed assignment.
+* **Enter manual assignments**: manually set colours for one or
+  more local nodes, overriding the algorithm.
+* **Send message**: write a free‑form message to neighbouring
+  owners (useful for explaining your choices).
+* **End turn**: finish the current iteration without further action.
+
+This interactive menu helps human operators understand the effect of
+their choices and the algorithm’s suggestions.  In non‑interactive
+testing, responses default to ending the turn immediately, leaving
+assignments unchanged.
 
 ### `2C` – Human Hybrid
 

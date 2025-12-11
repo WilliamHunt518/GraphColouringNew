@@ -35,6 +35,8 @@ class HumanCLAgent(BaseAgent):
         self.auto_response = auto_response
         # ensure some initial assignment for logging
         self.choose_initial_value()
+        # flag to show help only once
+        self._help_shown = False
 
     def receive(self, message: Message) -> None:
         """Display incoming messages to the human."""
@@ -53,6 +55,15 @@ class HumanCLAgent(BaseAgent):
 
     def step(self) -> None:
         """Interactively ask the human to choose a colour and message."""
+        # show detailed instructions on first invocation
+        if not self._help_shown:
+            print(f"\n[{self.name}] You are now controlling node '{self.name}'.")
+            print("Your task is to assign a colour to your node such that neighbouring nodes do not clash.")
+            print("On each turn you will see your current colour and available colours.")
+            print("You can change your colour by typing it, or press Enter to keep the current one.")
+            print("After choosing a colour, you can type a message to send to your neighbours (optional).")
+            print("Messages are useful to coordinate with other agents or humans.")
+            self._help_shown = True
         # display current assignment
         print(f"\n[{self.name}] Current colour: {self.assignment}")
         print(f"Available colours: {', '.join(self.domain)}")
