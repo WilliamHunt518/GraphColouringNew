@@ -200,13 +200,17 @@ class MultiNodeHumanAgent(BaseAgent):
                     if owner and owner != self.name:
                         recipients.add(owner)
         for recipient in recipients:
-            # wrap the human message through the communication layer for natural language
+            # format the human message via the communication layer for display and send it as free‑form content
+            # to allow LLM agents to consider human suggestions.  We include this message separately from the
+            # structured assignments so that receiving agents can distinguish between the two.
             formatted_msg = self.comm_layer.format_content(self.name, recipient, msg)
-            # send the assignments as the structured payload; the human message is purely informational and
-            # does not affect the algorithmic state of the recipient.  We log the human message but do not
-            # include it in the payload to avoid interfering with structured parsing.
             self.log(f"Human message to {recipient}: {formatted_msg}")
-            self.send(recipient, dict(self.assignments))
+            # send the free‑form message first
+            self.send(recipient, formatted_msg)
+            # then send the assignments as a natural‑language mapping string so that neighbours know our colours.
+            assignment_msg = self.comm_layer.format_content(self.name, recipient, dict(self.assignments))
+            self.log(f"Sent assignment to {recipient}: {assignment_msg}")
+            self.send(recipient, assignment_msg)
 
 
 class MultiNodeHumanOrchestrator(MultiNodeHumanAgent):
@@ -351,8 +355,12 @@ class MultiNodeHumanOrchestrator(MultiNodeHumanAgent):
                     # format the human message via the communication layer for display
                     formatted = self.comm_layer.format_content(self.name, recipient, msg)
                     self.log(f"Human message to {recipient}: {formatted}")
-                    # send the assignments only as the content
-                    self.send(recipient, dict(self.assignments))
+                    # send the free‑form message first
+                    self.send(recipient, formatted)
+                    # then send the assignments as a natural‑language mapping string
+                    assignment_msg = self.comm_layer.format_content(self.name, recipient, dict(self.assignments))
+                    self.log(f"Sent assignment to {recipient}: {assignment_msg}")
+                    self.send(recipient, assignment_msg)
                 print(f"[{self.name}] Sent message to neighbours.")
             elif choice == "6" or choice == "":
                 # end turn

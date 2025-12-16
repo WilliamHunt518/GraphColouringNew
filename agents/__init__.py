@@ -36,6 +36,7 @@ from .human_orchestrator_agent import HumanOrchestratorAgent
 from .human_hybrid_agent import HumanHybridAgent
 from .multi_node_agent import MultiNodeAgent
 from .multi_node_human_agent import MultiNodeHumanAgent, MultiNodeHumanOrchestrator
+from .multi_node_llm_first_agent import MultiNodeLLMFirstAgent
 
 __all__ = [
     "BaseAgent",
@@ -49,4 +50,5 @@ __all__ = [
     "MultiNodeAgent",
     "MultiNodeHumanAgent",
     "MultiNodeHumanOrchestrator",
+    "MultiNodeLLMFirstAgent",
 ]

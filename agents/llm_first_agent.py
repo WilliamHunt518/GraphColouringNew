@@ -1,26 +1,40 @@
 """LLM-first orchestrated agent (1B mode).
 
-This agent illustrates the LLM-first architecture【685583168306604†L305-L334】.  Rather than
-executing the Max–Sum algorithm in a fixed loop, an LLM (simulated
-here) acts as an orchestrator that invokes algorithmic primitives as
-tools.  The orchestrator may choose to communicate directly in natural
-language instead of forwarding detailed algorithmic messages.
+This agent illustrates the LLM‑first architecture【685583168306604†L305-L334】.  In the full
+framework an LLM is responsible for deciding when to invoke
+algorithmic primitives (e.g., running a Max–Sum iteration) and for
+selecting the agent's colour.  The model operates on a prompt that
+encodes the agent's current assignment, local utility scores and
+recommended actions from the underlying algorithm.  Based on this
+context it can instruct the agent to run another algorithm step,
+override the algorithm's suggestion, or simply communicate its current
+intent to neighbours.
 
-In this simplified implementation we use a :class:`~dcop_framework.agents.max_sum_agent.MaxSumAgent`
-internally as a callable tool.  On each step the orchestrator:
+This implementation uses an internal :class:`~dcop_framework.agents.max_sum_agent.MaxSumAgent`
+as a tool but defers control to an LLM.  At each step the agent:
 
-1. Calls the internal Max–Sum tool to update its belief state and
-   compute new preferences and assignments.
-2. Copies the tool's assignment as its own.
-3. Sends a high‑level natural‑language message to each neighbour
-   summarising its chosen value and, optionally, utility scores.  This
-   demonstrates how an LLM could bypass the structured messaging API
-   when it deems it unnecessary【685583168306604†L318-L334】.
+1. Computes local utilities and the algorithm's recommended colour
+   without performing a full algorithmic update.
+2. Constructs a prompt describing its state and asks the LLM for
+   instructions.  If an LLM is available, its response may instruct
+   the agent to run the algorithm tool (``run algorithm``) and/or
+   choose a particular colour from the domain.  When no LLM is
+   available the agent defaults to the algorithm's recommendation.
+3. If the LLM instructs to run the algorithm, ``tool.step()`` is
+   executed to update internal beliefs and outgoing messages.
+4. If the LLM names a colour, that colour is adopted as both the
+   agent's assignment and the internal tool's assignment, overriding
+   the algorithm if necessary.  Otherwise the assignment from the tool
+   is used.
+5. The agent communicates its chosen colour and optionally utility
+   information to neighbours via the communication layer.  A natural
+   language summary is produced so that other agents (human or LLM)
+   can interpret its decision.【685583168306604†L318-L334】
 
-Note that this mode sacrifices some procedural stability in favour of
-flexibility.  Other agents may ignore the free‑form messages if they
-cannot parse them as structured data, but they can still respond
-through the shared natural‑language channel.
+Enabling history mode in the communication layer causes successive
+prompts and responses to be appended to a shared conversation, so the
+LLM can condition its decisions on previous context.  When disabled,
+each call to the LLM is stateless.
 """
 
 from __future__ import annotations
@@ -56,22 +70,88 @@ class LLMFirstAgent(BaseAgent):
         self.tool.receive(message)
 
     def step(self) -> None:
-        """Invoke the internal tool and then communicate via the LLM."""
-        # run one iteration of the underlying algorithmic tool
-        self.tool.step()
-        # copy assignment
-        self.assignment = self.tool.assignment
-        self.log(f"Internal tool selected {self.assignment}")
-        # decide what to communicate.  The orchestrator may choose to
-        # summarise its choice instead of relaying detailed scores.
-        # We construct a message that contains the selected value and
-        # local utilities for transparency.
+        """Perform one iteration under LLM control.
+
+        The agent queries the language model for instructions on whether to
+        run an algorithmic update and which colour to choose.  The prompt
+        summarises the current assignment, local utility scores and the
+        algorithm's recommended value.  On receiving a response the agent
+        interprets keywords to decide its actions.  When no LLM is
+        available the agent falls back to the algorithm's recommendation.
+        """
+        # ensure an initial value if none selected yet
+        if self.assignment is None:
+            self.tool.choose_initial_value()
+            self.assignment = self.tool.assignment
+        # compute local utilities without advancing the algorithm
         utilities = self.tool.compute_local_utility()
+        # algorithm's recommended value (do not update assignment yet)
+        try:
+            algorithm_suggestion = self.tool.select_best_value()
+        except Exception:
+            # if selection fails (e.g., empty domain), fall back to current assignment
+            algorithm_suggestion = self.assignment
+        # build a natural-language prompt for the LLM
+        domain_str = ", ".join(str(x) for x in self.domain)
+        util_str = ", ".join(f"{k}:{v:.3f}" for k, v in utilities.items())
+        prompt = (
+            f"You are controlling agent {self.name} in a graph colouring task. "
+            f"Your current assignment is {self.assignment}. "
+            f"The local utility scores for each colour are: {util_str}. "
+            f"The algorithm recommends choosing {algorithm_suggestion}. "
+            f"Decide whether to run the algorithm step (reply with 'run algorithm' if needed) "
+            f"and which colour to choose from the domain {{ {domain_str} }}. "
+            f"Provide a brief response including any colour you select."
+        )
+        # query the LLM via the communication layer's internal API if available
+        decision: Optional[str] = None
+        # only attempt a call if the communication layer exposes _call_openai
+        if hasattr(self.comm_layer, "_call_openai"):
+            try:
+                decision = self.comm_layer._call_openai(prompt, max_tokens=80)
+            except Exception:
+                decision = None
+        # interpret the decision
+        run_algorithm = False
+        chosen_colour: Optional[Any] = None
+        if decision:
+            # simple heuristics: check for "run" and colour names
+            low = decision.lower()
+            if "run" in low and "algorithm" in low:
+                run_algorithm = True
+            # search for any domain value in the response
+            for colour in self.domain:
+                if str(colour).lower() in low:
+                    chosen_colour = colour
+                    break
+            self.log(f"LLM decision: {decision}")
+        else:
+            self.log("No LLM decision available; falling back to algorithm suggestion")
+        # decide whether to run the algorithmic tool
+        if run_algorithm:
+            self.tool.step()
+            self.assignment = self.tool.assignment
+        # if LLM specified a colour, override assignment for both agent and tool
+        if chosen_colour is not None:
+            self.assignment = chosen_colour
+            self.tool.assignment = chosen_colour  # keep tool in sync
+        else:
+            # if no override and we have not run the algorithm, adopt algorithm suggestion
+            if not run_algorithm:
+                self.assignment = algorithm_suggestion
+                self.tool.assignment = algorithm_suggestion
+        # compute fresh utilities after potential algorithm update for reporting
+        utilities_after = self.tool.compute_local_utility()
+        util_after_str = ", ".join(f"{k}:{v:.3f}" for k, v in utilities_after.items())
+        # craft summary message
         summary = (
-            f"I plan to choose {self.assignment}. "
-            f"Utilities: " + ", ".join(f"{k}:{v:.3f}" for k, v in utilities.items())
+            f"I choose {self.assignment}. "
+            f"Utilities: {util_after_str}."
         )
         # send to all neighbours
         for neighbour in self.problem.get_neighbors(self.name):
-            content = self.comm_layer.format_content(self.name, neighbour, summary)
+            try:
+                content = self.comm_layer.format_content(self.name, neighbour, summary)
+            except Exception:
+                content = summary
             self.send(neighbour, content)

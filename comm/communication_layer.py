@@ -21,7 +21,7 @@ PassThroughCommLayer
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional, List
 
 
 class BaseCommLayer:
@@ -97,7 +97,7 @@ class LLMCommLayer(BaseCommLayer):
     falls back to simple formatting and parsing heuristics.
     """
 
-    def __init__(self, *, manual: bool = False, summariser: Optional[callable] = None) -> None:
+    def __init__(self, *, manual: bool = False, summariser: Optional[callable] = None, use_history: bool = False) -> None:
         # manual mode flag: if True, bypass LLM calls and use provided summariser or built‑in fallback
         self.manual = manual
         # optional summariser callback used in manual mode
@@ -123,6 +123,17 @@ class LLMCommLayer(BaseCommLayer):
         except ImportError:
             self.openai = None
 
+        # conversation history flag
+        # When ``use_history`` is True the communication layer will retain all prompts and
+        # responses passed to the LLM.  On subsequent calls the accumulated conversation
+        # will be included in the prompt sent to the model.  This allows an LLM to
+        # maintain context across a sequence of interactions.  If disabled (default)
+        # each call is stateless and only the current prompt is sent.
+        self.use_history: bool = use_history
+        # list of prior messages used when ``use_history`` is enabled.  Each element
+        # conforms to the OpenAI chat API format, e.g. {"role": "user", "content": "..."}.
+        self.conversation: List[Dict[str, str]] = []
+
         # Debug information to indicate whether LLM summarisation is enabled
         try:
             # Avoid printing during module import in test environments
@@ -146,7 +157,11 @@ class LLMCommLayer(BaseCommLayer):
         """Helper to call the OpenAI API if available.
 
         Returns the model's response as a string, or ``None`` if the
-        API call could not be performed.
+        API call could not be performed.  When ``use_history`` is
+        enabled, previous prompts and responses are included in the
+        ``messages`` argument so that the model receives conversational
+        context.  On success the prompt and response are appended to
+        ``self.conversation`` for future calls.
         """
         if self.api_key is None or self.openai is None:
             return None
@@ -156,21 +171,32 @@ class LLMCommLayer(BaseCommLayer):
         except Exception:
             pass
         try:
-            # set API key and call the OpenAI ChatCompletion API
+            # set API key
             self.openai.api_key = self.api_key
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant for transforming structured messages in a multi-agent coordination problem into concise natural language.",
-                },
-                {"role": "user", "content": prompt},
-            ]
+            # build chat history
+            system_message = {
+                "role": "system",
+                "content": "You are a helpful assistant for transforming structured messages in a multi-agent coordination problem into concise natural language.",
+            }
+            # start with system message
+            messages = [system_message]
+            if self.use_history and self.conversation:
+                # extend with prior conversation
+                messages.extend(self.conversation)
+            # append current prompt
+            messages.append({"role": "user", "content": prompt})
+            # call the OpenAI ChatCompletion API
             response = self.openai.ChatCompletion.create(
                 model="gpt-3.5-turbo", messages=messages, max_tokens=max_tokens, n=1
             )
             # Extract the assistant's reply
-            text = response.choices[0].message["content"]
-            return text.strip()
+            text = response.choices[0].message["content"].strip()
+            # update conversation history if enabled
+            if self.use_history:
+                # record the user prompt and assistant reply
+                self.conversation.append({"role": "user", "content": prompt})
+                self.conversation.append({"role": "assistant", "content": text})
+            return text
         except Exception as exc:
             # Print debug information when an API call fails
             try:
@@ -208,9 +234,10 @@ class LLMCommLayer(BaseCommLayer):
                     except Exception:
                         summary = None
                 if summary:
+                    # include mapping for machine parsing
                     return summary + f" [mapping: {base_msg}]"
-                # no summariser or summary: just return base string
-                return base_msg
+                # no summariser or summary: return base string and include mapping tag for parsing
+                return base_msg + f" [mapping: {base_msg}]"
             # automatic LLM mode: if openai available, produce a summarisation
             prompt = (
                 f"Given this mapping of options to scores or assignments: {content}. "
@@ -229,7 +256,8 @@ class LLMCommLayer(BaseCommLayer):
                 print("[LLMCommLayer] Fallback to heuristic formatting for dictionary message")
             except Exception:
                 pass
-            return base_msg
+            # always include mapping tag for parsing
+            return base_msg + f" [mapping: {base_msg}]"
         # non-dictionary: call LLM to paraphrase if possible
         msg_str = str(content)
         if self.openai is not None and self.api_key:
@@ -260,54 +288,41 @@ class LLMCommLayer(BaseCommLayer):
             return message
         # separate potential mapping appended in square brackets
         # e.g., "... [mapping: Scores from a1 to a2 -> red:0.500,...]"
-        import json
         body = message
-        # if '[mapping:' pattern present, extract mapping string
-        if "[mapping:" in message:
+        mapping_found = False
+        if isinstance(message, str) and "[mapping:" in message:
             try:
-                main_text, mapping_part = message.split("[mapping:", 1)
+                _, mapping_part = message.split("[mapping:", 1)
                 # remove trailing ']' and strip
                 mapping_str = mapping_part.rsplit("]", 1)[0].strip()
                 body = mapping_str
+                mapping_found = True
             except Exception:
                 body = message
-        # remove prefix if present
-        if "->" in body:
-            _, body = body.split("->", 1)
-        # find key:value pairs heuristically
-        pairs = re.findall(r"([^,:\s]+):([\-]?[\d\.]+)", body)
-        if pairs:
-            scores: Dict[str, float] = {}
-            for key, value in pairs:
-                try:
-                    scores[key.strip()] = float(value)
-                except ValueError:
-                    break
-            if scores:
-                return scores
-        # if heuristics failed and LLM available, try to extract JSON
-        if self.api_key and self.openai:
-            prompt = (
-                "Extract a JSON dictionary mapping strings to numbers from the following message. "
-                "If no such mapping exists, respond with null. Message: " + message
-            )
-            result = self._call_openai(prompt, max_tokens=120)
-            if result:
-                try:
-                    print("[LLMCommLayer] Used LLM to parse message to JSON")
-                except Exception:
-                    pass
-                try:
-                    obj = json.loads(result)
-                    if isinstance(obj, dict):
-                        # convert all values to float if possible
-                        return {k: float(v) for k, v in obj.items()}
-                except Exception:
-                    pass
+        # Only attempt to heuristically parse key:value pairs when a mapping was found.
+        if mapping_found:
+            # remove prefix if present
+            if "->" in body:
+                _, body = body.split("->", 1)
             try:
-                print("[LLMCommLayer] Fallback to heuristic parsing")
+                parts = [p.strip() for p in body.split(',') if p.strip()]
+                parsed: Dict[str, Any] = {}
+                for part in parts:
+                    if ':' not in part:
+                        continue
+                    k, v = part.split(':', 1)
+                    k = k.strip().strip("'\"")  # remove surrounding quotes from keys
+                    v = v.strip().strip("'\"")  # remove surrounding quotes from values
+                    # attempt to convert numeric values to float; keep non‑numeric as string
+                    try:
+                        parsed[k] = float(v)
+                    except ValueError:
+                        parsed[k] = v
+                if parsed:
+                    return parsed
             except Exception:
                 pass
+        # If no mapping was found or heuristic parsing failed, return the raw message.
         return message
 
 

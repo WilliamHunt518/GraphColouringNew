@@ -6,3 +6,13 @@ __pycache__/
 tmp_multi/
 
 api_key.txt
+
+log_1B_2A
+
+outputs/
+
+outputs_1A_1B/
+
+outputs_1A_2A/
+
+outputs_1A_1C/

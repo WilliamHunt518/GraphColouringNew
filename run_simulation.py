@@ -32,7 +32,7 @@ user to choose colours and messages during execution.  Use the
 from __future__ import annotations
 
 import argparse
-from typing import Dict, List, Type
+from typing import Dict, List, Type, Optional
 
 from problems import GraphColoring
 from problems.graph_coloring import create_path_graph
@@ -76,7 +76,17 @@ def build_agent(
     summariser : callable, optional
         Function invoked in manual mode to summarise dictionary messages.
     """
+    # normalise mode string and detect history suffix
+    # A suffix 'H' indicates that conversation history should be enabled for the
+    # communication layer.  For example, mode '1BH' will instantiate the
+    # corresponding base mode '1B' with history enabled.  Modes are case
+    # insensitive.
+    raw_mode = mode
     mode = mode.upper()
+    use_history = False
+    if len(mode) >= 3 and mode.endswith("H"):
+        use_history = True
+        mode = mode[:-1]
     # choose communication layer based on mode
     # 1Z assumes a shared syntax and uses pass-through (no LLM translation)
     if mode == "1Z":
@@ -84,10 +94,11 @@ def build_agent(
         return AlgorithmFirstAgent(name, problem, comm_layer)
     # algorithmic and LLM modes use the LLM communication layer by default
     if mode in {"1A", "1B", "1C"}:
-        comm_layer = LLMCommLayer(manual=manual, summariser=summariser)
+        comm_layer = LLMCommLayer(manual=manual, summariser=summariser, use_history=use_history)
     else:
         # human modes also use the LLM layer for prompts
-        comm_layer = LLMCommLayer()
+        comm_layer = LLMCommLayer(use_history=use_history)
+    # instantiate agent according to mode
     if mode == "1A":
         return AlgorithmFirstAgent(name, problem, comm_layer)
     if mode == "1B":
@@ -107,7 +118,7 @@ def build_agent(
         return HumanHybridAgent(name, problem, comm_layer) if interactive else HumanHybridAgent(
             name, problem, comm_layer, auto_response=lambda prompt: ""
         )
-    raise ValueError(f"Unknown mode {mode}")
+    raise ValueError(f"Unknown mode {raw_mode}")
 
 
 def run_simulation(nodes: List[str], modes: List[str], iters: int, interactive: bool) -> None:
