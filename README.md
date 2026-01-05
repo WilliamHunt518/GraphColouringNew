@@ -180,3 +180,43 @@ was used.
 
 For more examples and details on the implementation, see `main.py`
 and `run_simulation.py`.
+
+## Clustered Multi‑Graph Mode
+
+The revised graph colouring experiments envision a scenario where
+participants (human or autonomous agents) control **clusters** of
+nodes rather than individual nodes.  Clusters are weakly connected to
+one another via a small number of bridging edges, much like loosely
+connected communities in a social network.  Each cluster agent can
+solve its local subproblem using the algorithm of its choice (for
+example a greedy heuristic or exhaustive search) and communicates its
+impact on neighbouring clusters via one of several **message types**:
+
+* **`cost_list`** – For each neighbouring node owned by another cluster,
+  send a mapping from each colour to the cost incurred if the neighbour
+  chooses that colour.  This generalises the structured utility
+  messages used by Max–Sum and allows recipients to fold costs directly
+  into their own optimisation.
+* **`constraints`** – Send, for each neighbouring node, the set of
+  colours that would incur no clash on the connecting edge.  The
+  recipient may treat these constraints as hard or soft during its
+  search.
+* **`free_text`** – Send a natural‑language summary of the current
+  assignments and advise neighbouring clusters which colours to avoid.
+  When a communication layer with LLM support is available, these
+  messages can be paraphrased into more readable prose for human
+  participants.
+
+Cluster agents are implemented in `agents/cluster_agent.py` and
+support different local optimisation algorithms.  The default
+`greedy` algorithm colours nodes sequentially to minimise local
+conflicts given any known neighbour assignments.  The `maxsum`
+algorithm falls back to an exhaustive search over all colour
+combinations (similar to the single‑agent `MultiNodeAgent`).  New
+algorithms can be added by extending the `compute_assignments` method.
+
+To run a clustered simulation, use the `run_clustered_simulation`
+function defined in `cluster_simulation.py`.  Provide mappings
+specifying which nodes belong to which cluster, the algorithm and
+message type per cluster, and a standard adjacency map.  See the
+docstring of that function for a complete example configuration.

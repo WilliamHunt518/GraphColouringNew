@@ -32,12 +32,15 @@ the operator’s response.
 from __future__ import annotations
 
 import itertools
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 from .base_agent import BaseAgent, Message
 from .multi_node_agent import MultiNodeAgent
 from .max_sum_agent import MaxSumAgent
 from comm.communication_layer import BaseCommLayer, PassThroughCommLayer
+
+if TYPE_CHECKING:
+    from ui.human_turn_ui import HumanTurnUI
 
 
 class MultiNodeHumanAgent(BaseAgent):
@@ -85,12 +88,14 @@ class MultiNodeHumanAgent(BaseAgent):
         owners: Dict[str, str],
         initial_assignments: Optional[Dict[str, Any]] = None,
         auto_response: Optional[Callable[[str], str]] = None,
+        ui: Optional["HumanTurnUI"] = None,
     ) -> None:
         super().__init__(name=name, problem=problem, comm_layer=comm_layer, initial_value=None)
         # store node ownership info
         self.nodes: List[str] = list(local_nodes)
         self.owners: Dict[str, str] = dict(owners)
         self.auto_response = auto_response
+        self.ui = ui
         # current assignments for local nodes
         self.assignments: Dict[str, Any] = {}
         # assignments received from neighbouring owners
@@ -124,7 +129,12 @@ class MultiNodeHumanAgent(BaseAgent):
         ignored for the purpose of neighbour assignments.
         """
         super().receive(message)
-        print(f"[{self.name}] Received from {message.sender}: {message.content}")
+        # Store messages for UI display (and optionally print for CLI runs).
+        if not hasattr(self, "inbox"):
+            self.inbox = []  # type: ignore[attr-defined]
+        self.inbox.append((message.sender, message.content))  # type: ignore[attr-defined]
+        if self.ui is None:
+            print(f"[{self.name}] Received from {message.sender}: {message.content}")
         content = message.content
         # attempt to parse structured content via comm layer
         structured = self.comm_layer.parse_content(message.sender, self.name, content)
@@ -151,46 +161,83 @@ class MultiNodeHumanAgent(BaseAgent):
         prompts the user to update assignments, and optionally sends
         a message to neighbours.
         """
-        # display current assignments
-        print(f"\n[{self.name}] You control nodes {self.nodes}.")
-        print(f"Current assignments: {self.assignments}")
-        if self.neighbour_assignments:
-            print(f"Known neighbour assignments: {self.neighbour_assignments}")
+        # If a GUI is provided, use it and avoid any CLI prompts.
+        if self.ui is not None:
+            # Build a 
+            iteration = getattr(self.problem, "iteration", 0)
+            # Compute a visible subgraph: own nodes + boundary neighbours
+            visible_nodes = set(self.nodes)
+            for node in self.nodes:
+                for nbr in self.problem.get_neighbors(node):
+                    visible_nodes.add(nbr)
+
+            visible_edges = set()
+            for u in visible_nodes:
+                for v in self.problem.get_neighbors(u):
+                    if v in visible_nodes and u != v:
+                        visible_edges.add(tuple(sorted((u, v))))
+
+            owners_map = dict(self.owners)
+            assignments_view = dict(self.neighbour_assignments)
+            assignments_view.update(self.assignments)
+
+            inbox = getattr(self, "inbox", [])
+            res = self.ui.get_turn(
+                nodes=list(self.nodes),
+                domain=list(self.domain),
+                current_assignments=dict(self.assignments),
+                neighbour_assignments=dict(self.neighbour_assignments),
+                iteration=iteration,
+                visible_graph=(sorted(visible_nodes), sorted(visible_edges)),
+                owners=owners_map,
+                messages=list(inbox),
+                all_visible_assignments=assignments_view,
+            )
+            # clear inbox once shown
+            self.inbox = []  # type: ignore[attr-defined]
+
+            self.assignments = dict(res.assignments)
+            msg = res.message.strip() or f"My assignments: {self.assignments}"
         else:
-            print("No neighbour assignments known yet.")
-        print(f"Available colours: {', '.join(self.domain)}")
-        print("Enter new assignments for your nodes as comma‑separated pairs (e.g. '1=red,2=green').")
-        print("Press Enter to keep current assignments.")
-        inp = self.prompt(f"[{self.name}] New assignments: ").strip()
-        if inp:
-            # parse node=value pairs
-            updates: Dict[str, Any] = {}
-            for part in inp.split(','):
-                part = part.strip()
-                if not part:
-                    continue
-                if '=' not in part:
-                    print(f"Ignored malformed entry '{part}'. Expected 'node=value'.")
-                    continue
-                node, val = part.split('=', 1)
-                node = node.strip()
-                val = val.strip()
-                if node not in self.nodes:
-                    print(f"Ignored assignment for unknown node '{node}'.")
-                    continue
-                if val not in self.domain:
-                    print(f"Ignored invalid colour '{val}' for node '{node}'. Valid colours: {self.domain}.")
-                    continue
-                updates[node] = val
-            # apply updates
-            if updates:
-                for node, val in updates.items():
-                    self.assignments[node] = val
-                self.log(f"Human updated assignments: {updates}")
-        # prompt for message
-        msg = self.prompt(f"[{self.name}] Enter a message to neighbours (optional): ").strip()
-        if not msg:
-            msg = f"My assignments: {self.assignments}"
+            # ---- CLI path ----
+            print(f"\n[{self.name}] You control nodes {self.nodes}.")
+            print(f"Current assignments: {self.assignments}")
+            if self.neighbour_assignments:
+                print(f"Known neighbour assignments: {self.neighbour_assignments}")
+            else:
+                print("No neighbour assignments known yet.")
+            print(f"Available colours: {', '.join(self.domain)}")
+            print("Enter new assignments for your nodes as comma‑separated pairs (e.g. 'h1=red,h2=green').")
+            print("Press Enter to keep current assignments.")
+            inp = self.prompt(f"[{self.name}] New assignments: ").strip()
+            if inp:
+                updates: Dict[str, Any] = {}
+                for part in inp.split(','):
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if '=' not in part:
+                        print(f"Ignored malformed entry '{part}'. Expected 'node=value'.")
+                        continue
+                    node, val = part.split('=', 1)
+                    node = node.strip()
+                    val = val.strip()
+                    if node not in self.nodes:
+                        print(f"Ignored assignment for unknown node '{node}'.")
+                        continue
+                    if val not in self.domain:
+                        print(f"Ignored invalid colour '{val}' for node '{node}'. Valid colours: {self.domain}.")
+                        continue
+                    updates[node] = val
+                if updates:
+                    for node, val in updates.items():
+                        self.assignments[node] = val
+                    self.log(f"Human updated assignments: {updates}")
+                msg = self.prompt(f"[{self.name}] Enter a message to neighbours (optional): ").strip()
+                if not msg:
+                    msg = f"My assignments: {self.assignments}"
+            else:
+                msg = f"My assignments: {self.assignments}"
         # determine neighbouring owners and send message
         recipients: set[str] = set()
         for node in self.nodes:
