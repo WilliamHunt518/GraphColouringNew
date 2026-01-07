@@ -21,6 +21,7 @@ PassThroughCommLayer
 from __future__ import annotations
 
 import re
+import ast
 from typing import Any, Dict, Tuple, Optional, List
 
 
@@ -213,6 +214,58 @@ class LLMCommLayer(BaseCommLayer):
         Otherwise, a simple key:value string is returned as before.
         """
         # dictionary content: build a base string and summarise if possible
+        # Special-case typed envelopes used in the clustered graph-colouring study:
+        #   {"type": "cost_list"|"constraints"|"free_text"|"assignments", "data": ...}
+        # These should produce a participant-facing message that is NOT a meta-translation
+        # (e.g. avoid "The sender is conveying..."). We attach the structured payload in
+        # a hidden [mapping: ...] suffix so other agents can parse it.
+        if isinstance(content, dict) and set(content.keys()) >= {"type", "data"}:
+            msg_type = str(content.get("type", "")).lower()
+            data = content.get("data")
+            # Optional report payload for UI display (e.g., neighbour-reported boundary colours)
+            # This is *not* used by the algorithm unless a receiver chooses to parse it.
+            report = content.get("report")
+
+            # Human-facing text templates
+            if msg_type == "constraints" and isinstance(data, dict):
+                parts = []
+                for var, allowed in data.items():
+                    if isinstance(allowed, (list, tuple, set)):
+                        allowed_str = ", ".join([str(a) for a in allowed])
+                        parts.append(f"{var} ∈ {{{allowed_str}}}")
+                    else:
+                        parts.append(f"{var}: {allowed}")
+                text = "Proposed constraints for your boundary nodes: " + "; ".join(parts) + "."
+            elif msg_type == "cost_list" and isinstance(data, dict):
+                # data: {var: {colour: cost}}
+                parts = []
+                for var, cost_map in data.items():
+                    if isinstance(cost_map, dict):
+                        inner = ", ".join([f"{k}={v}" for k, v in cost_map.items()])
+                        parts.append(f"{var}: {inner}")
+                    else:
+                        parts.append(f"{var}: {cost_map}")
+                text = "Cost hints for your boundary nodes (lower is better): " + "; ".join(parts) + "."
+            elif msg_type == "assignments" and isinstance(data, dict):
+                # used mainly by the RB baseline; still keep it direct
+                parts = ", ".join([f"{k}={v}" for k, v in data.items()])
+                text = f"My current boundary assignments: {parts}."
+            elif msg_type == "free_text":
+                text = str(data) if data is not None else ""
+            else:
+                text = f"{sender} message ({msg_type}): {data}"
+
+            payload = repr(content)
+            # Always include mapping for machine parsing.
+            # If a report payload is present, include it in a separate tag so the
+            # participant UI can update the colours of neighbour nodes *only when
+            # the neighbour has explicitly reported them*.
+            suffix = ""
+            if isinstance(report, dict) and report:
+                suffix += f" [report: {repr(report)}]"
+            suffix += f" [mapping: {payload}]"
+            return text + suffix
+
         if isinstance(content, dict):
             # Build a basic string representation for machine parsing.  Use str()
             # on values to handle both numeric and non-numeric entries (e.g., assignments).
@@ -241,7 +294,8 @@ class LLMCommLayer(BaseCommLayer):
             # automatic LLM mode: if openai available, produce a summarisation
             prompt = (
                 f"Given this mapping of options to scores or assignments: {content}. "
-                "Rephrase it as a concise description of what {sender} is conveying to {recipient}. "
+                f"Rephrase it as a concise message from {sender} to {recipient}. "
+                "Avoid meta-language (e.g., do not say 'the sender is conveying'). "
                 "Include the key:value pairs explicitly."
             )
             summary = self._call_openai(prompt)
@@ -301,6 +355,14 @@ class LLMCommLayer(BaseCommLayer):
                 body = message
         # Only attempt to heuristically parse key:value pairs when a mapping was found.
         if mapping_found:
+            # First try to recover a typed payload (we use repr(content)).
+            try:
+                if body.startswith("{") and ("'type'" in body or '"type"' in body):
+                    recovered = ast.literal_eval(body)
+                    if isinstance(recovered, dict) and "type" in recovered and "data" in recovered:
+                        return recovered
+            except Exception:
+                pass
             # remove prefix if present
             if "->" in body:
                 _, body = body.split("->", 1)

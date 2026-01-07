@@ -89,6 +89,7 @@ class MultiNodeHumanAgent(BaseAgent):
         initial_assignments: Optional[Dict[str, Any]] = None,
         auto_response: Optional[Callable[[str], str]] = None,
         ui: Optional["HumanTurnUI"] = None,
+        send_assignments: bool = False,
     ) -> None:
         super().__init__(name=name, problem=problem, comm_layer=comm_layer, initial_value=None)
         # store node ownership info
@@ -96,6 +97,11 @@ class MultiNodeHumanAgent(BaseAgent):
         self.owners: Dict[str, str] = dict(owners)
         self.auto_response = auto_response
         self.ui = ui
+        # If True, the human's current assignments are sent as a structured message.
+        # For the main study we keep this False to preserve partial observability:
+        # agents should not directly observe the human's internal state unless the
+        # human chooses to describe it in text.
+        self.send_assignments = bool(send_assignments)
         # current assignments for local nodes
         self.assignments: Dict[str, Any] = {}
         # assignments received from neighbouring owners
@@ -165,7 +171,16 @@ class MultiNodeHumanAgent(BaseAgent):
         if self.ui is not None:
             # Build a 
             iteration = getattr(self.problem, "iteration", 0)
-            # Compute a visible subgraph: own nodes + boundary neighbours
+            # Determine neighbouring owners (recipients) and compute a visible subgraph:
+            # own nodes + boundary neighbours.
+            recipients: set[str] = set()
+            for node in self.nodes:
+                for nbr in self.problem.get_neighbors(node):
+                    if nbr not in self.nodes:
+                        owner = self.owners.get(nbr)
+                        if owner and owner != self.name:
+                            recipients.add(owner)
+
             visible_nodes = set(self.nodes)
             for node in self.nodes:
                 for nbr in self.problem.get_neighbors(node):
@@ -177,27 +192,54 @@ class MultiNodeHumanAgent(BaseAgent):
                     if v in visible_nodes and u != v:
                         visible_edges.add(tuple(sorted((u, v))))
 
-            owners_map = dict(self.owners)
-            assignments_view = dict(self.neighbour_assignments)
-            assignments_view.update(self.assignments)
+            # Debug helper: visible graph for any owner (cluster + 1-hop boundary).
+            # This is used by the experimenter debug window.
+            def get_visible_graph_for(owner: str):
+                local = [n for n, o in self.owners.items() if o == owner]
+                vis = set(local)
+                for n in list(local):
+                    for nbr in self.problem.get_neighbors(n):
+                        vis.add(nbr)
+                e = set()
+                for u2 in vis:
+                    for v2 in self.problem.get_neighbors(u2):
+                        if v2 in vis and u2 != v2:
+                            e.add(tuple(sorted((u2, v2))))
+                return (sorted(vis), sorted(e))
 
             inbox = getattr(self, "inbox", [])
+
+            # Determine neighbour cluster satisfaction (for UI indicator)
+            agent_sat = None
+            try:
+                # Choose the first non-human cluster as the "agent" counterpart
+                for a in getattr(self.problem, "debug_agents", []) or []:
+                    if getattr(a, "name", None) != self.name:
+                        agent_sat = bool(getattr(a, "satisfied", False))
+                        break
+            except Exception:
+                agent_sat = None
             res = self.ui.get_turn(
                 nodes=list(self.nodes),
                 domain=list(self.domain),
                 current_assignments=dict(self.assignments),
-                neighbour_assignments=dict(self.neighbour_assignments),
                 iteration=iteration,
+                neighbour_owners=sorted(recipients),
                 visible_graph=(sorted(visible_nodes), sorted(visible_edges)),
-                owners=owners_map,
-                messages=list(inbox),
-                all_visible_assignments=assignments_view,
+                owners=dict(self.owners),
+                incoming_messages=list(inbox),
+                agent_satisfied=agent_sat,
+                debug_agents=getattr(self.problem, "debug_agents", None),
+                get_visible_graph_fn=get_visible_graph_for,
             )
             # clear inbox once shown
             self.inbox = []  # type: ignore[attr-defined]
 
             self.assignments = dict(res.assignments)
-            msg = res.message.strip() or f"My assignments: {self.assignments}"
+            messages_by_neigh = getattr(res, "messages_by_neighbour", {})
+            # record participant satisfaction (soft convergence)
+            self.satisfied = bool(getattr(res, "human_satisfied", False))
+            self.log(f"Human satisfaction: {self.satisfied}")
         else:
             # ---- CLI path ----
             print(f"\n[{self.name}] You control nodes {self.nodes}.")
@@ -238,7 +280,7 @@ class MultiNodeHumanAgent(BaseAgent):
                     msg = f"My assignments: {self.assignments}"
             else:
                 msg = f"My assignments: {self.assignments}"
-        # determine neighbouring owners and send message
+        # Determine neighbouring owners and send per-neighbour messages.
         recipients: set[str] = set()
         for node in self.nodes:
             for nbr in self.problem.get_neighbors(node):
@@ -246,18 +288,30 @@ class MultiNodeHumanAgent(BaseAgent):
                     owner = self.owners.get(nbr)
                     if owner and owner != self.name:
                         recipients.add(owner)
-        for recipient in recipients:
-            # format the human message via the communication layer for display and send it as free‑form content
-            # to allow LLM agents to consider human suggestions.  We include this message separately from the
-            # structured assignments so that receiving agents can distinguish between the two.
-            formatted_msg = self.comm_layer.format_content(self.name, recipient, msg)
-            self.log(f"Human message to {recipient}: {formatted_msg}")
-            # send the free‑form message first
-            self.send(recipient, formatted_msg)
-            # then send the assignments as a natural‑language mapping string so that neighbours know our colours.
-            assignment_msg = self.comm_layer.format_content(self.name, recipient, dict(self.assignments))
-            self.log(f"Sent assignment to {recipient}: {assignment_msg}")
-            self.send(recipient, assignment_msg)
+
+        for recipient in sorted(recipients):
+            # When running with the GUI, we support a different outgoing message per neighbour.
+            # In CLI mode, `msg` is a single string broadcast to all recipients.
+            out_text = ""
+            if self.ui is not None:
+                out_text = (messages_by_neigh.get(recipient) or "").strip()
+            else:
+                out_text = msg.strip()
+
+            # Send free-form message only if provided.
+            if out_text:
+                formatted_msg = self.comm_layer.format_content(self.name, recipient, out_text)
+                self.log(f"Human message to {recipient}: {formatted_msg}")
+                self.send(recipient, formatted_msg)
+
+            # Optionally send assignments as a structured message.
+            # NOTE: For the main study protocol we keep this OFF so that the
+            # agent cannot see the human's internal state unless the human
+            # communicates it explicitly via text.
+            if self.send_assignments:
+                assignment_msg = self.comm_layer.format_content(self.name, recipient, dict(self.assignments))
+                self.log(f"Sent assignment to {recipient}: {assignment_msg}")
+                self.send(recipient, assignment_msg)
 
 
 class MultiNodeHumanOrchestrator(MultiNodeHumanAgent):

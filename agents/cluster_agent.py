@@ -52,6 +52,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Set
 
 import itertools
+import re
 
 from .multi_node_agent import MultiNodeAgent
 from .base_agent import Message
@@ -114,6 +115,17 @@ class ClusterAgent(MultiNodeAgent):
         self.algorithm = algorithm.lower()
         self.message_type = message_type.lower()
 
+        # --- debug state for experimenter UI ---
+        self.debug_incoming_raw: List[Any] = []
+        self.debug_incoming_parsed: List[Any] = []
+        self.debug_last_outgoing: Dict[str, Any] = {}
+        self.debug_last_decision: Dict[str, Any] = {}
+
+        # Soft convergence flag used by the study stopping criterion.
+        # True means the agent believes its current assignment is locally optimal
+        # given what it *believes* about neighbour assignments (from messages).
+        self.satisfied: bool = False
+
     # ------------------------------------------------------------------
     # Assignment computation
     #
@@ -145,9 +157,16 @@ class ClusterAgent(MultiNodeAgent):
         elif self.algorithm == "greedy":
             # simple greedy algorithm: colour nodes sequentially
             new_assignment: Dict[str, Any] = {}
+            # Debug: store the computed penalty for each colour option per node
+            # so the experimenter can inspect the agent's decision process.
+            try:
+                self.debug_last_local_scores = {}  # type: ignore[attr-defined]
+            except Exception:
+                pass
             for node in self.nodes:
                 best_val = None
                 best_score = float("inf")
+                local_scores: Dict[Any, float] = {}
                 for val in self.domain:
                     # compute penalty for assigning val to node
                     penalty = 0.0
@@ -171,17 +190,54 @@ class ClusterAgent(MultiNodeAgent):
                                 penalty += self.problem.conflict_penalty
                     # subtract preference (higher preference should lower penalty)
                     penalty -= self.problem.preferences[node][val]
+                    local_scores[val] = penalty
                     if penalty < best_score:
                         best_score = penalty
                         best_val = val
                 # assign best value found
                 new_assignment[node] = best_val
+                try:
+                    self.debug_last_local_scores[node] = dict(local_scores)  # type: ignore[attr-defined]
+                except Exception:
+                    pass
             return new_assignment
         else:
             # default to random assignment if algorithm unknown
             import random
 
             return {node: random.choice(self.domain) for node in self.nodes}
+
+    # ------------------------------------------------------------------
+    # Soft convergence / satisfaction
+
+    def _best_local_assignment(self) -> tuple[float, Dict[str, Any]]:
+        """Return the best local assignment given current neighbour beliefs.
+
+        We evaluate *only* on edges where both endpoints are assigned.
+        Unknown neighbour assignments are ignored (they contribute 0).
+
+        Because cluster sizes are small (e.g., 5 nodes), an exhaustive
+        search over the local domain is cheap (3^5 = 243 combinations).
+        """
+        import itertools
+
+        base = dict(getattr(self, "neighbour_assignments", {}) or {})
+        best_pen = float("inf")
+        best_assign = dict(self.assignments)
+        for combo in itertools.product(self.domain, repeat=len(self.nodes)):
+            cand = {n: v for n, v in zip(self.nodes, combo)}
+            pen = self.problem.evaluate_assignment({**base, **cand})
+            if pen < best_pen:
+                best_pen = pen
+                best_assign = cand
+        return best_pen, best_assign
+
+    def _compute_satisfied(self) -> bool:
+        """Whether the agent is satisfied with its current assignment."""
+        base = dict(getattr(self, "neighbour_assignments", {}) or {})
+        current_pen = self.problem.evaluate_assignment({**base, **dict(self.assignments)})
+        best_pen, _ = self._best_local_assignment()
+        return current_pen <= best_pen + 1e-9
 
     def step(self) -> None:
         """Perform one iteration of the cluster agent’s process.
@@ -190,6 +246,19 @@ class ClusterAgent(MultiNodeAgent):
         the configured algorithm and then sends a message to each
         neighbouring cluster summarising its impact on the neighbours.
         """
+        # --- bookkeeping / debug ---
+        try:
+            self.debug_step_count = getattr(self, "debug_step_count", 0) + 1  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+        iteration = getattr(self.problem, "iteration", None)
+        if iteration is not None:
+            try:
+                self.log(f"Step called (iteration={iteration})")
+            except Exception:
+                pass
+
         # compute new assignments
         new_assignment = self.compute_assignments()
         if new_assignment != self.assignments:
@@ -197,6 +266,42 @@ class ClusterAgent(MultiNodeAgent):
         else:
             self.log(f"Assignments unchanged: {self.assignments}")
         self.assignments = new_assignment
+
+        # update satisfaction flag (soft convergence)
+        try:
+            self.satisfied = bool(self._compute_satisfied())
+            self.log(f"Satisfied: {self.satisfied}")
+        except Exception:
+            self.satisfied = False
+
+        # debug snapshot of the decision
+        try:
+            self.debug_last_decision = {
+                "iteration": iteration,
+                "step_count": getattr(self, "debug_step_count", None),
+                "algorithm": self.algorithm,
+                "message_type": self.message_type,
+                "assignments": dict(self.assignments),
+                "known_neighbour_assignments": dict(self.neighbour_assignments),
+                "local_scores": getattr(self, "debug_last_local_scores", None),
+            }
+        except Exception:
+            pass
+
+        # Append to a reasoning history for the experimenter debug view.
+        # This keeps a compact per-step trace of (what was known) -> (what was computed) -> (what was chosen).
+        try:
+            hist = getattr(self, "debug_reasoning_history", None)
+            if hist is None:
+                self.debug_reasoning_history = []  # type: ignore[attr-defined]
+            self.debug_reasoning_history.append({  # type: ignore[attr-defined]
+                "iteration": iteration,
+                "known_neighbour_assignments": dict(self.neighbour_assignments),
+                "local_scores": getattr(self, "debug_last_local_scores", None),
+                "chosen_assignments": dict(self.assignments),
+            })
+        except Exception:
+            pass
 
         # determine recipient clusters (owners of neighbouring nodes)
         recipients: Set[str] = set()
@@ -254,9 +359,32 @@ class ClusterAgent(MultiNodeAgent):
             body = " ".join(messages) if messages else "No clashes detected."
             content = {"type": "free_text", "data": body}
 
-        # send message to each neighbouring cluster
+        # send message to each neighbouring cluster.
+        # Include a "report" field containing this cluster's current assignments
+        # for *boundary nodes* adjacent to the recipient. This allows the participant
+        # UI to show neighbour colours only when explicitly reported by that neighbour.
         for recipient in recipients:
-            self.send(recipient, content)
+            boundary_report: Dict[str, Any] = {}
+            try:
+                for node in self.nodes:
+                    for nbr in self.problem.get_neighbors(node):
+                        if self.owners.get(nbr) == recipient:
+                            boundary_report[node] = self.assignments.get(node)
+                            break
+            except Exception:
+                boundary_report = {}
+
+            out_content = content
+            if isinstance(content, dict):
+                out_content = dict(content)
+                if boundary_report:
+                    out_content["report"] = boundary_report
+
+            try:
+                self.debug_last_outgoing[recipient] = out_content
+            except Exception:
+                pass
+            self.send(recipient, out_content)
 
     def receive(self, message: Message) -> None:
         """Handle incoming messages and update neighbour assignments.
@@ -272,8 +400,22 @@ class ClusterAgent(MultiNodeAgent):
         """
         super().receive(message)
         content = message.content
+        try:
+            self.debug_incoming_raw.append(content)
+        except Exception:
+            pass
         # attempt to parse structured content via the communication layer
         structured = self.comm_layer.parse_content(message.sender, self.name, content)
+        try:
+            self.debug_incoming_parsed.append(structured)
+        except Exception:
+            pass
+        # Record how the communication layer interpreted the message.
+        # This is useful for debugging and for auditing partial observability.
+        try:
+            self.log(f"Parsed message from {message.sender}: {structured}")
+        except Exception:
+            pass
         # if the message explicitly contains assignments, update neighbour_assignments
         # structured data may include a mapping under the key 'assignments'
         if isinstance(structured, dict):
@@ -299,3 +441,33 @@ class ClusterAgent(MultiNodeAgent):
                             if isinstance(val, str):
                                 self.neighbour_assignments[node] = val
                                 self.log(f"Updated neighbour assignment: {node} -> {val}")
+
+        # If we didn't receive a typed/structured mapping, attempt to extract
+        # neighbour assignments from free-form human text. This is a key part
+        # of the study: agents may *only* learn the human's state if it is
+        # communicated via language.
+        if isinstance(structured, str):
+            text = structured
+            # Common phrasings:
+            #  - "h1 is green, h4 is red"
+            #  - "red for h1 and green for h4"
+            #  - "h1=green h4=red"
+            pattern1 = re.compile(r"\b([A-Za-z]\w*)\s*(?:=|is)\s*(red|green|blue|orange)\b", re.IGNORECASE)
+            pattern2 = re.compile(r"\b(red|green|blue|orange)\s*(?:for)\s*([A-Za-z]\w*)\b", re.IGNORECASE)
+            extracted: Dict[str, str] = {}
+            for m in pattern1.finditer(text):
+                node, colour = m.group(1), m.group(2)
+                extracted[node] = colour.lower()
+            for m in pattern2.finditer(text):
+                colour, node = m.group(1), m.group(2)
+                extracted[node] = colour.lower()
+
+            if extracted:
+                for node, colour in extracted.items():
+                    # Only store assignments for external nodes (i.e., neighbours)
+                    if node not in self.nodes:
+                        self.neighbour_assignments[node] = colour
+                try:
+                    self.log(f"Heuristically extracted assignments from text: {extracted}")
+                except Exception:
+                    pass

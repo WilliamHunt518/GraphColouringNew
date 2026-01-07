@@ -1,0 +1,1 @@
+Iteration 1: penalty=1.000; human_satisfied=False; agent_satisfied=True; streak=0/2

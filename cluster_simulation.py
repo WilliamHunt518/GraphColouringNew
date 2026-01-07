@@ -75,6 +75,14 @@ def run_clustered_simulation(
     ui_title: str = "Human Turn",
     summariser: Optional[Callable] = None,
     output_dir: str = "./cluster_outputs",
+    convergence_k: int = 2,
+    stop_on_soft: bool = True,
+    # Study default: never auto-end purely because the algorithm reached a
+    # globally consistent colouring. Under partial observability, the
+    # participant may not believe convergence. If you enable this flag, the run
+    # will only terminate on hard convergence once the human has also indicated
+    # satisfaction.
+    stop_on_hard: bool = False,
 ) -> None:
     """Run a clustered DCOP simulation with the provided configuration.
 
@@ -127,6 +135,7 @@ def run_clustered_simulation(
         human_owners = ["Human"]
     # create cluster agents
     agents: List[ClusterAgent] = []
+    human_ui = None
     for owner, local_nodes in clusters.items():
         """Instantiate the appropriate agent for each cluster.
 
@@ -149,6 +158,7 @@ def run_clustered_simulation(
             if use_ui:
                 from ui.human_turn_ui import HumanTurnUI
                 ui = HumanTurnUI(title=ui_title)
+                human_ui = ui
             agent = MultiNodeHumanAgent(
                 name=owner,
                 problem=problem,
@@ -184,12 +194,70 @@ def run_clustered_simulation(
                     message_type=message_type,
                 )
         agents.append(agent)
+
+    # ----------------------------
+    # Deterministic initialisation
+    # ----------------------------
+    # For the user study we want a known, shared starting point. Initialise
+    # every node (human and agents) to the first colour in the domain.
+    # This also makes early conflict states easy to interpret.
+    if domain:
+        default_colour = domain[0]
+        for a in agents:
+            if hasattr(a, "assignments"):
+                try:
+                    # type: ignore[attr-defined]
+                    for n in getattr(a, "local_nodes", []):
+                        a.assignments[n] = default_colour
+                except Exception:
+                    pass
+
+    # Expose agents on the problem object for the experimenter debug UI.
+    # This is intentionally not participant-facing.
+    try:
+        problem.debug_agents = agents  # type: ignore[attr-defined]
+    except Exception:
+        pass
     # containers for logs
     iteration_assignments: List[Dict[str, Any]] = []
     iteration_penalties: List[float] = []
     iteration_messages: List[List[tuple]] = []
     # synchronous iterations
+    satisfied_streak = 0
+    stop_reason: Optional[str] = None
+    stop_iteration: Optional[int] = None
+
+    # --------------------
+    # Live logging setup
+    # --------------------
+    # Truncate existing logs at start, then append+flush each iteration. This
+    # ensures partial runs still leave useful diagnostics.
+    agent_log_paths = {a.name: os.path.join(output_dir, f"{a.name}_log.txt") for a in agents}
+    for p in agent_log_paths.values():
+        with open(p, "w", encoding="utf-8") as _f:
+            _f.write("")
+    comm_path = os.path.join(output_dir, "communication_log.txt")
+    with open(comm_path, "w", encoding="utf-8") as _f:
+        _f.write("")
+    summary_path = os.path.join(output_dir, "iteration_summary.txt")
+    with open(summary_path, "w", encoding="utf-8") as _f:
+        _f.write("")
+
+    log_cursors = {a.name: 0 for a in agents}
+
+    def _flush_agent_logs() -> None:
+        for a in agents:
+            logs = a.get_logs()
+            cur = log_cursors.get(a.name, 0)
+            if cur < len(logs):
+                with open(agent_log_paths[a.name], "a", encoding="utf-8") as f:
+                    f.write("\n".join(logs[cur:]) + "\n")
+                    f.flush()
+                log_cursors[a.name] = len(logs)
     for step in range(1, max_iterations + 1):
+        # Expose iteration counter to UI / human agents.
+        # (GraphColoringProblem doesn't track this itself.)
+        setattr(problem, "iteration", step)
         # perform step for each cluster
         for agent in agents:
             agent.step()
@@ -216,32 +284,71 @@ def run_clustered_simulation(
         penalty = problem.evaluate_assignment(assignments)
         iteration_assignments.append(assignments.copy())
         iteration_penalties.append(penalty)
-    # write logs and summary
-    # per-cluster logs
-    for agent in agents:
-        log_path = os.path.join(output_dir, f"{agent.name}_log.txt")
-        with open(log_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(agent.get_logs()))
-    # communication log
-    comm_path = os.path.join(output_dir, "communication_log.txt")
-    with open(comm_path, "w", encoding="utf-8") as f:
-        for i, msgs in enumerate(iteration_messages, start=1):
-            for sender, recipient, content in msgs:
-                f.write(f"Iteration {i}: {sender} -> {recipient}: {content}\n")
-    # iteration summary
-    summary_path = os.path.join(output_dir, "iteration_summary.txt")
-    with open(summary_path, "w", encoding="utf-8") as f:
-        for i, (assign, pen) in enumerate(zip(iteration_assignments, iteration_penalties), start=1):
-            f.write(f"Iteration {i}:\n")
-            f.write(f"  Assignments: {assign}\n")
-            f.write(f"  Global penalty: {pen}\n")
-            if iteration_messages[i-1]:
-                f.write("  Messages:\n")
-                for sender, recipient, content in iteration_messages[i-1]:
-                    f.write(f"    {sender} -> {recipient}: {content}\n")
+
+        # Live log flush
+        _flush_agent_logs()
+        # Communication log (append this iteration)
+        with open(comm_path, "a", encoding="utf-8") as f:
+            for sender, recipient, content in iter_msgs:
+                f.write(f"Iteration {step}: {sender} -> {recipient}: {content}\n")
+            f.flush()
+
+        # Summary log (append each iteration) — includes satisfaction flags so
+        # you can verify the human checkbox is being respected.
+        human_ok_now = True
+        agent_ok_now = True
+        for a in agents:
+            if human_owners is not None and getattr(a, "name", None) in human_owners:
+                human_ok_now = human_ok_now and bool(getattr(a, "satisfied", False))
             else:
-                f.write("  Messages: None\n")
-            f.write("\n")
+                agent_ok_now = agent_ok_now and bool(getattr(a, "satisfied", False))
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(
+                f"Iteration {step}: penalty={penalty:.3f}; human_satisfied={human_ok_now}; agent_satisfied={agent_ok_now}; streak={satisfied_streak}/{max(1, int(convergence_k))}\n"
+            )
+            f.flush()
+
+        # --------------------
+        # Stopping criteria
+        # --------------------
+        # Hard convergence: the current global colouring has zero clashes.
+        # IMPORTANT: we do not terminate solely on this signal by default.
+        # If enabled, require the human to also confirm satisfaction.
+        if stop_on_hard and penalty <= 1e-9 and human_ok_now:
+            stop_reason = "hard_convergence_human_confirmed"
+            stop_iteration = step
+            break
+
+        # Soft convergence: both human and agent(s) report "satisfied" for K
+        # consecutive turns.
+        if stop_on_soft:
+            human_ok = True
+            agent_ok = True
+            for a in agents:
+                if human_owners is not None and getattr(a, "name", None) in human_owners:
+                    human_ok = human_ok and bool(getattr(a, "satisfied", False))
+                else:
+                    agent_ok = agent_ok and bool(getattr(a, "satisfied", False))
+
+            if human_ok and agent_ok:
+                satisfied_streak += 1
+            else:
+                satisfied_streak = 0
+
+            if satisfied_streak >= max(1, int(convergence_k)):
+                stop_reason = "soft_convergence"
+                stop_iteration = step
+                break
+
+        
+    # Final live-log flush and stop reason
+    _flush_agent_logs()
+    with open(summary_path, "a", encoding="utf-8") as f:
+        if stop_reason is not None:
+            f.write(f"\nStopped early at iteration {stop_iteration} due to {stop_reason}.\n")
+        else:
+            f.write(f"\nReached max_iterations={max_iterations}.\n")
+        f.flush()
     # generate simple visualisation of the graph topology
     try:
         import matplotlib.pyplot as plt
@@ -293,4 +400,43 @@ def run_clustered_simulation(
             plt.close()
     except Exception:
         pass
+    if stop_reason is not None:
+        print(f"[cluster_simulation] Stopped early at iteration {stop_iteration} ({stop_reason}).")
     print(f"Clustered simulation outputs saved in {output_dir}")
+
+    # -----------------------------
+    # Participant-facing results UI
+    # -----------------------------
+    # If we ran with the Tkinter participant UI, show a final window with the
+    # full graph and a short summary so the participant can verify the outcome.
+    try:
+        if use_ui and human_ui is not None and getattr(human_ui, "_root", None) is not None:
+            from ui.results_window import ResultsWindow, RunSummary
+
+            final_assign = iteration_assignments[-1] if iteration_assignments else {}
+            summary = RunSummary(
+                stop_reason=str(stop_reason or f"max_iterations_{max_iterations}"),
+                iterations=len(iteration_penalties),
+                penalties=list(iteration_penalties),
+                total_messages=sum(len(m) for m in iteration_messages),
+            )
+            win = ResultsWindow(
+                getattr(human_ui, "_root"),
+                title="Results",
+                nodes=list(node_names),
+                edges=list(edges),
+                owners=dict(owners),
+                final_assignments=dict(final_assign),
+                summary=summary,
+                domain=list(domain),
+            )
+            # Block until the results window is closed, then close the main UI.
+            getattr(human_ui, "_root").wait_window(win._top)  # type: ignore[attr-defined]
+            try:
+                getattr(human_ui, "_root").destroy()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    

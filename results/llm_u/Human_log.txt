@@ -1,0 +1,8 @@
+Initial multi‑node assignments: {'h1': 'green', 'h2': 'blue', 'h3': 'blue', 'h4': 'blue', 'h5': 'blue'}
+Human satisfaction: False
+Human message to Agent1: h4 is blue and h1 is green
+Sent message to Agent1: h4 is blue and h1 is green
+Human message to Agent2: h5 is red and h2 is blue
+Sent message to Agent2: h5 is red and h2 is blue
+Received message from Agent1: Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=1.0, blue=0.0; h4: red=0.0, green=1.0, blue=0.0. [report: {'a2': 'green', 'a4': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'a2': 'green', 'a4': 'green'}}]
+Received message from Agent2: Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=1.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'green', 'b4': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'green', 'b4': 'green'}}]
