@@ -237,6 +237,18 @@ class HumanTurnUI:
         self._owners = dict(owners or {})
         self._vis_nodes, self._vis_edges = visible_graph if visible_graph is not None else ([], [])
 
+        # Participant-facing observability rule:
+        # - The human can see neighbour nodes that are adjacent to their local nodes.
+        # - The human must NOT see edges *between* neighbour nodes (i.e., neighbour-internal topology).
+        #   This prevents learning extra structure beyond what boundary observations imply.
+        if self._vis_edges:
+            human_set = set(self._human_nodes)
+            self._vis_edges = [
+                (u, v)
+                for (u, v) in self._vis_edges
+                if (u in human_set) or (v in human_set)
+            ]
+
         # Update title + header
         self._root.title(f"{self.title} — Iteration {iteration}")
         if self._header_lbl is not None:

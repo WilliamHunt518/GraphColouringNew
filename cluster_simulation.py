@@ -83,6 +83,7 @@ def run_clustered_simulation(
     # will only terminate on hard convergence once the human has also indicated
     # satisfaction.
     stop_on_hard: bool = False,
+    counterfactual_utils: bool = True,
 ) -> None:
     """Run a clustered DCOP simulation with the provided configuration.
 
@@ -183,7 +184,10 @@ def run_clustered_simulation(
                 )
             else:
                 # default LLM‑mediated cluster agent
-                comm_layer = LLMCommLayer(manual=manual_mode, summariser=summariser)
+                # Retain dialogue history so an LLM (when enabled) can condition on
+                # prior turns. This is especially important for LLM-F, but is
+                # also useful for the other LLM conditions.
+                comm_layer = LLMCommLayer(manual=manual_mode, summariser=summariser, use_history=True)
                 agent = ClusterAgent(
                     name=owner,
                     problem=problem,
@@ -192,6 +196,7 @@ def run_clustered_simulation(
                     owners=owners,
                     algorithm=algorithm,
                     message_type=message_type,
+                    counterfactual_utils=bool(counterfactual_utils),
                 )
         agents.append(agent)
 
@@ -243,6 +248,15 @@ def run_clustered_simulation(
     with open(summary_path, "w", encoding="utf-8") as _f:
         _f.write("")
 
+    # Persist all LLM prompt/response traces (including manual/heuristic runs)
+    # so non-convergence can be diagnosed post-hoc.
+    llm_trace_path = os.path.join(output_dir, "llm_trace.jsonl")
+    try:
+        with open(llm_trace_path, "w", encoding="utf-8") as _f:
+            _f.write("")
+    except Exception:
+        pass
+
     log_cursors = {a.name: 0 for a in agents}
 
     def _flush_agent_logs() -> None:
@@ -287,6 +301,13 @@ def run_clustered_simulation(
 
         # Live log flush
         _flush_agent_logs()
+
+        # Flush any comm-layer LLM traces incrementally.
+        try:
+            if hasattr(comm_layer, "flush_debug_calls"):
+                comm_layer.flush_debug_calls(llm_trace_path)
+        except Exception:
+            pass
         # Communication log (append this iteration)
         with open(comm_path, "a", encoding="utf-8") as f:
             for sender, recipient, content in iter_msgs:

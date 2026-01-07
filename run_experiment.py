@@ -37,6 +37,7 @@ AGENT_ALG = "greedy"  # "greedy" or "maxsum" (exhaustive)
 CONVERGENCE_K = 2
 STOP_ON_SOFT = True
 STOP_ON_HARD = True
+COUNTERFACTUAL_UTILS = True
 
 
 def run_experiment(
@@ -50,6 +51,7 @@ def run_experiment(
     stop_on_soft: bool = True,
     # Study default: do not auto-stop purely on hard convergence.
     stop_on_hard: bool = False,
+    counterfactual_utils: bool = True,
 ) -> None:
     # Ensure outputs are written under the *project root* (i.e., the directory
     # you opened in your IDE / run from). This avoids writing results one level
@@ -104,17 +106,21 @@ def run_experiment(
         "b5": ["b1", "b2", "b4"],
     }
 
-    # Cross-cluster edges (1-2 per neighbouring cluster)
+    # Cross-cluster edges (harder boundary structure)
+    #  - One-to-many: a single human boundary node connects to *two* nodes in Agent1.
+    #  - Many-to-one: two human boundary nodes connect to the *same* node in Agent2.
+    #
     # Human <-> Agent1
-    adjacency["h1"].append("a2")
-    adjacency["h4"].append("a4")
-    adjacency["a2"].append("h1")
-    adjacency["a4"].append("h4")
+    #   h1 -- a2
+    #   h4 -- a4 and h4 -- a5   (double connection)
+    adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+    adjacency["h4"].append("a4"); adjacency["a4"].append("h4")
+    adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+
     # Human <-> Agent2
-    adjacency["h2"].append("b2")
-    adjacency["h5"].append("b4")
-    adjacency["b2"].append("h2")
-    adjacency["b4"].append("h5")
+    #   h2 -- b2 and h5 -- b2  (many-to-one)
+    adjacency["h2"].append("b2"); adjacency["b2"].append("h2")
+    adjacency["h5"].append("b2"); adjacency["b2"].append("h5")
 
     owners = (
         {n: "Human" for n in human_nodes}
@@ -158,6 +164,7 @@ def run_experiment(
         convergence_k=int(convergence_k),
         stop_on_soft=bool(stop_on_soft),
         stop_on_hard=bool(stop_on_hard),
+        counterfactual_utils=bool(counterfactual_utils),
     )
 
     print(f"[run_experiment] Finished. Check outputs in: {results_dir}")
@@ -184,6 +191,11 @@ def main() -> None:
     p.add_argument("--stop-soft", action="store_true", default=STOP_ON_SOFT)
     p.add_argument("--stop-hard", action="store_true", default=STOP_ON_HARD)
 
+    util = p.add_mutually_exclusive_group()
+    util.add_argument("--counterfactual-utils", dest="counterfactual_utils", action="store_true", help="LLM-U/LLM-C: derive utilities/constraints via best-response counterfactuals")
+    util.add_argument("--naive-utils", dest="counterfactual_utils", action="store_false", help="LLM-U/LLM-C: derive utilities/constraints from current assignment only")
+    p.set_defaults(counterfactual_utils=COUNTERFACTUAL_UTILS)
+
     args = p.parse_args()
 
     run_experiment(
@@ -195,6 +207,7 @@ def main() -> None:
         convergence_k=int(args.k),
         stop_on_soft=bool(args.stop_soft),
         stop_on_hard=bool(args.stop_hard),
+        counterfactual_utils=bool(args.counterfactual_utils),
     )
 
 

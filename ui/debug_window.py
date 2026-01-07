@@ -77,17 +77,39 @@ class DebugWindow:
         self._outgoing = tk.Text(panes, font=FONT_B, wrap="word")
         self._outgoing.pack(side="left", fill="both", expand=True, padx=(6, 0))
 
+        # Tabs: Reasoning + LLM trace. This avoids the lower panels being hidden on
+        # smaller screens and makes it obvious where to find the LLM prompts.
+        tabs = ttk.Notebook(right)
+        tabs.pack(fill="both", expand=False, pady=(10, 0))
+
+        reasoning_tab = ttk.Frame(tabs)
+        llm_tab = ttk.Frame(tabs)
+        tabs.add(reasoning_tab, text="Reasoning")
+        tabs.add(llm_tab, text="LLM trace")
+
         # Reasoning history viewer
         self._reason_index: Dict[str, int] = {}
-        reason_bar = ttk.Frame(right)
-        reason_bar.pack(fill="x", pady=(10, 2))
+        reason_bar = ttk.Frame(reasoning_tab)
+        reason_bar.pack(fill="x", pady=(6, 2))
         ttk.Label(reason_bar, text="Reasoning", font=("Arial", 13, "bold")).pack(side="left")
         self._reason_page = ttk.Label(reason_bar, text="0/0", font=("Arial", 12))
         self._reason_page.pack(side="left", padx=(10, 0))
         ttk.Button(reason_bar, text="◀", width=3, command=lambda: self._nav_reason(-1)).pack(side="left", padx=(10, 2))
         ttk.Button(reason_bar, text="▶", width=3, command=lambda: self._nav_reason(1)).pack(side="left")
-        self._reasoning = tk.Text(right, height=10, font=FONT_B, wrap="word")
-        self._reasoning.pack(fill="x")
+        self._reasoning = tk.Text(reasoning_tab, height=18, font=FONT_B, wrap="word")
+        self._reasoning.pack(fill="both", expand=True)
+
+        # LLM call trace viewer (prompt/response/parsed)
+        self._llm_index: Dict[str, int] = {}
+        llm_bar = ttk.Frame(llm_tab)
+        llm_bar.pack(fill="x", pady=(6, 2))
+        ttk.Label(llm_bar, text="LLM call trace", font=("Arial", 13, "bold")).pack(side="left")
+        self._llm_page = ttk.Label(llm_bar, text="0/0", font=("Arial", 12))
+        self._llm_page.pack(side="left", padx=(10, 0))
+        ttk.Button(llm_bar, text="◀", width=3, command=lambda: self._nav_llm(-1)).pack(side="left", padx=(10, 2))
+        ttk.Button(llm_bar, text="▶", width=3, command=lambda: self._nav_llm(1)).pack(side="left")
+        self._llm = tk.Text(llm_tab, height=20, font=FONT_B, wrap="word")
+        self._llm.pack(fill="both", expand=True)
 
         ttk.Label(right, text="Left: incoming (raw + parsed). Right: outgoing (structured).", font=("Arial", 12)).pack(anchor="w", pady=(8, 0))
 
@@ -117,6 +139,24 @@ class DebugWindow:
         idx = self._reason_index.get(name, len(hist) - 1)
         idx = max(0, min(len(hist) - 1, idx + delta))
         self._reason_index[name] = idx
+        self.refresh()
+
+    def _nav_llm(self, delta: int) -> None:
+        a = self._get_agent()
+        if a is None:
+            return
+        name = a.name
+        calls = []
+        try:
+            cl = getattr(a, "comm_layer", None)
+            calls = list(getattr(cl, "debug_calls", [])) if cl is not None else []
+        except Exception:
+            calls = []
+        if not calls:
+            return
+        idx = self._llm_index.get(name, len(calls) - 1)
+        idx = max(0, min(len(calls) - 1, idx + delta))
+        self._llm_index[name] = idx
         self.refresh()
 
     def refresh(self) -> None:
@@ -174,6 +214,41 @@ class DebugWindow:
         else:
             self._reason_page.config(text="0/0")
             self._reasoning.insert("end", "(no reasoning snapshots yet)\n")
+
+        # ----- llm call trace -----
+        self._llm.delete("1.0", "end")
+        calls = []
+        try:
+            cl = getattr(a, "comm_layer", None)
+            calls = list(getattr(cl, "debug_calls", [])) if cl is not None else []
+        except Exception:
+            calls = []
+        if calls:
+            idx = self._llm_index.get(a.name)
+            if idx is None:
+                idx = len(calls) - 1
+            idx = max(0, min(len(calls) - 1, idx))
+            self._llm_index[a.name] = idx
+            self._llm_page.config(text=f"{idx+1}/{len(calls)}")
+            c = calls[idx]
+            self._llm.insert("end", f"Kind: {c.get('kind')}\n\n")
+            self._llm.insert("end", "PROMPT\n")
+            self._llm.insert("end", f"{c.get('prompt')}\n\n")
+            self._llm.insert("end", "RESPONSE\n")
+            self._llm.insert("end", f"{c.get('response')}\n\n")
+            self._llm.insert("end", "PARSED / GLEANED\n")
+            self._llm.insert("end", f"{c.get('parsed')}\n\n")
+            msgs = c.get('messages')
+            if msgs:
+                self._llm.insert("end", "FULL MESSAGES (as sent / would be sent)\n")
+                try:
+                    for m in msgs:
+                        self._llm.insert("end", f"- {m.get('role')}: {m.get('content')}\n")
+                except Exception:
+                    self._llm.insert("end", f"{msgs}\n")
+        else:
+            self._llm_page.config(text="0/0")
+            self._llm.insert("end", "(no LLM calls recorded for this agent yet)\n")
 
         # ----- graph -----
         self._draw_agent_graph(a)

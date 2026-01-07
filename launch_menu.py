@@ -47,6 +47,7 @@ def main() -> None:
     stop_soft_var = tk.BooleanVar(value=True)
     # Study default: do not auto-end purely because penalty=0.
     stop_hard_var = tk.BooleanVar(value=False)
+    cf_utils_var = tk.BooleanVar(value=True)
 
     # --- widgets ---
     ttk.Label(frm, text="Condition").grid(row=0, column=0, sticky="w", pady=(0, 6))
@@ -74,32 +75,38 @@ def main() -> None:
         row=3, column=0, columnspan=2, sticky="w", pady=(0, 10)
     )
 
+    ttk.Checkbutton(
+        frm,
+        text="LLM-U/LLM-C: Counterfactual utilities (best-response)",
+        variable=cf_utils_var,
+    ).grid(row=4, column=0, columnspan=2, sticky="w", pady=(0, 6))
+
     sep = ttk.Separator(frm)
-    sep.grid(row=4, column=0, columnspan=2, sticky="ew", pady=10)
+    sep.grid(row=5, column=0, columnspan=2, sticky="ew", pady=10)
 
-    ttk.Label(frm, text="Max iterations").grid(row=5, column=0, sticky="w", pady=(0, 6))
+    ttk.Label(frm, text="Max iterations").grid(row=6, column=0, sticky="w", pady=(0, 6))
     ttk.Spinbox(frm, from_=1, to=200, textvariable=max_iter_var, width=8).grid(
-        row=5, column=1, sticky="w", pady=(0, 6)
-    )
-
-    ttk.Label(frm, text="Soft convergence K (streak)").grid(row=6, column=0, sticky="w", pady=(0, 6))
-    ttk.Spinbox(frm, from_=1, to=10, textvariable=k_var, width=8).grid(
         row=6, column=1, sticky="w", pady=(0, 6)
     )
 
+    ttk.Label(frm, text="Soft convergence K (streak)").grid(row=7, column=0, sticky="w", pady=(0, 6))
+    ttk.Spinbox(frm, from_=1, to=10, textvariable=k_var, width=8).grid(
+        row=7, column=1, sticky="w", pady=(0, 6)
+    )
+
     ttk.Checkbutton(frm, text="Stop on soft convergence", variable=stop_soft_var).grid(
-        row=7, column=0, columnspan=2, sticky="w", pady=(4, 6)
+        row=8, column=0, columnspan=2, sticky="w", pady=(4, 6)
     )
     ttk.Checkbutton(
         frm,
         text="Stop on hard convergence (penalty=0) — requires human satisfied",
         variable=stop_hard_var,
     ).grid(
-        row=8, column=0, columnspan=2, sticky="w", pady=(0, 10)
+        row=9, column=0, columnspan=2, sticky="w", pady=(0, 10)
     )
 
     status = tk.StringVar(value="")
-    ttk.Label(frm, textvariable=status).grid(row=9, column=0, columnspan=2, sticky="w")
+    ttk.Label(frm, textvariable=status).grid(row=10, column=0, columnspan=2, sticky="w")
 
     def on_start() -> None:
         try:
@@ -123,6 +130,7 @@ def main() -> None:
                 "--k",
                 str(int(k_var.get())),
             ]
+            args.append("--counterfactual-utils" if bool(cf_utils_var.get()) else "--naive-utils")
             if bool(stop_soft_var.get()):
                 args.append("--stop-soft")
             if bool(stop_hard_var.get()):
@@ -133,8 +141,8 @@ def main() -> None:
         except Exception as e:
             status.set(f"Error: {e}")
 
-    ttk.Button(frm, text="Start", command=on_start).grid(row=10, column=0, sticky="w", pady=12)
-    ttk.Button(frm, text="Quit", command=root.destroy).grid(row=10, column=1, sticky="w", pady=12)
+    ttk.Button(frm, text="Start", command=on_start).grid(row=11, column=0, sticky="w", pady=12)
+    ttk.Button(frm, text="Quit", command=root.destroy).grid(row=11, column=1, sticky="w", pady=12)
 
     frm.columnconfigure(1, weight=1)
     root.mainloop()

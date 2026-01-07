@@ -1,8 +1,97 @@
-Initial multi-node assignments: {'b1': 'blue', 'b2': 'green', 'b3': 'green', 'b4': 'green', 'b5': 'green'}
+Initial multi-node assignments: {'b1': 'blue', 'b2': 'red', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
 Step called (iteration=1)
-Updated assignments from {'b1': 'blue', 'b2': 'green', 'b3': 'green', 'b4': 'green', 'b5': 'green'} to {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Updated assignments from {'b1': 'blue', 'b2': 'red', 'b3': 'red', 'b4': 'green', 'b5': 'red'} to {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
 Satisfied: True
-Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=1.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'green', 'b4': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'green', 'b4': 'green'}}]
-Received message from Human: h5 is red and h2 is blue
-Parsed message from Human: h5 is red and h2 is blue
-Heuristically extracted assignments from text: {'h5': 'red', 'h2': 'blue'}
+Sent message to Human: I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=0.0, blue=0.0; h5: red=0.0, green=0.0, blue=0.0. [report: {'b2': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.", 'report': {'b2': 'green'}}]
+Received message from Human: b2 has to be blue please
+Parsed message from Human: b2 has to be blue please
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue'}
+Step called (iteration=2)
+Updated assignments from {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'} to {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=0.0, blue=0.0; h5: red=0.0, green=0.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.", 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please
+Parsed message from Human: b2 has to be blue please
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue'}
+Step called (iteration=3)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=0.0, blue=0.0; h5: red=0.0, green=0.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.", 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please
+Parsed message from Human: b2 has to be blue please
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue'}
+Step called (iteration=4)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=0.0, blue=0.0; h5: red=0.0, green=0.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly.", 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}
+Step called (iteration=5)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}
+Step called (iteration=6)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}
+Step called (iteration=7)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}
+Step called (iteration=8)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}
+Step called (iteration=9)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}
+Step called (iteration=10)
+Assignments unchanged: {'b1': 'red', 'b2': 'blue', 'b3': 'red', 'b4': 'green', 'b5': 'red'}
+Satisfied: False
+Sent message to Human: Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}}]
+Received message from Human: b2 has to be blue please. h5 us red and h2 is green
+Parsed message from Human: b2 has to be blue please. h5 us red and h2 is green
+Forced local assignment requested: b2 -> blue
+Extracted assignments from text: {'b2': 'blue', 'h5': 'red', 'h2': 'green'}

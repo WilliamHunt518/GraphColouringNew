@@ -22,7 +22,10 @@ from __future__ import annotations
 
 import re
 import ast
+import os
 from typing import Any, Dict, Tuple, Optional, List
+
+import json
 
 
 class BaseCommLayer:
@@ -135,9 +138,17 @@ class LLMCommLayer(BaseCommLayer):
         # conforms to the OpenAI chat API format, e.g. {"role": "user", "content": "..."}.
         self.conversation: List[Dict[str, str]] = []
 
+        # ----------------
+        # Debug trace
+        # ----------------
+        # Record every LLM call attempt (prompt, full message list, response, and any
+        # parsed/gleaned result). This is experimenter-only and is surfaced in the
+        # debug window.
+        self.debug_calls: List[Dict[str, Any]] = []
+        self._debug_flush_cursor: int = 0
+
         # Debug information to indicate whether LLM summarisation is enabled
         try:
-            # Avoid printing during module import in test environments
             if self.openai is None:
                 print(
                     "[LLMCommLayer] OpenAI package not available. Falling back to heuristic communication."
@@ -151,8 +162,30 @@ class LLMCommLayer(BaseCommLayer):
                     "[LLMCommLayer] OpenAI package and API key detected. LLM summarisation enabled."
                 )
         except Exception:
-            # ignore any printing errors in restricted environments
             pass
+
+    def flush_debug_calls(self, path: str) -> None:
+        """Append and clear accumulated debug call traces.
+
+        Writes JSON Lines to ``path`` (one dict per line). This is intended for
+        post-hoc debugging when runs fail to converge.
+        """
+        if self._debug_flush_cursor >= len(self.debug_calls):
+            return
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        except Exception:
+            pass
+        try:
+            with open(path, "a", encoding="utf-8") as f:
+                for entry in self.debug_calls[self._debug_flush_cursor:]:
+                    f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                f.flush()
+        except Exception:
+            # never crash the experiment due to debug logging
+            pass
+        finally:
+            self._debug_flush_cursor = len(self.debug_calls)
 
     def _call_openai(self, prompt: str, max_tokens: int = 60) -> Optional[str]:
         """Helper to call the OpenAI API if available.
@@ -192,6 +225,18 @@ class LLMCommLayer(BaseCommLayer):
             )
             # Extract the assistant's reply
             text = response.choices[0].message["content"].strip()
+
+            # record debug trace
+            try:
+                self.debug_calls.append({
+                    "kind": "openai_call",
+                    "prompt": prompt,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "response": text,
+                })
+            except Exception:
+                pass
             # update conversation history if enabled
             if self.use_history:
                 # record the user prompt and assistant reply
@@ -205,6 +250,86 @@ class LLMCommLayer(BaseCommLayer):
             except Exception:
                 pass
             return None
+
+    def record_debug_call(self, *, kind: str, prompt: str, messages: List[Dict[str, str]] | None, response: Any, parsed: Any = None) -> None:
+        """Record a debug trace entry even when no external API is used."""
+        try:
+            self.debug_calls.append({
+                "kind": kind,
+                "prompt": prompt,
+                "messages": messages,
+                "response": response,
+                "parsed": parsed,
+            })
+        except Exception:
+            pass
+
+    def build_messages(self, prompt: str) -> List[Dict[str, str]]:
+        """Build the full messages list that would be sent to the OpenAI API."""
+        system_message = {
+            "role": "system",
+            "content": "You are a helpful assistant for interpreting and rendering messages in a multi-agent coordination problem.",
+        }
+        messages = [system_message]
+        if self.use_history and self.conversation:
+            messages.extend(self.conversation)
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def parse_assignments_from_text_llm(self, *, sender: str, recipient: str, history: List[str], text: str) -> Dict[str, str]:
+        """Attempt to extract node->colour assignments from free text.
+
+        This is primarily used for LLM-F and other LLM conditions where we want the
+        agent to interpret *dialogue history*, not only the latest message.
+
+        If an LLM API is available, the call includes history (when enabled).
+        Otherwise we fall back to a simple heuristic extraction.
+        """
+        import re
+
+        # Simple heuristic fallback: matches patterns like h1=red, h1 is red
+        def heuristic_extract(t: str) -> Dict[str, str]:
+            out: Dict[str, str] = {}
+            pat = re.compile(r"\b([hab]\d+)\b\s*(?:=|is|:|->)\s*\b(red|green|blue)\b", re.IGNORECASE)
+            for m in pat.finditer(t):
+                out[m.group(1).lower()] = m.group(2).lower()
+            return out
+
+        # Build a prompt that includes a compact history (last few turns)
+        hist = "\n".join([f"- {h}" for h in history[-6:]])
+        prompt = (
+            "You are interpreting dialogue in a clustered graph-colouring task. "
+            "Extract any explicit node-colour assignments the human is stating or confirming. "
+            "Return ONLY a JSON object mapping node ids (e.g., 'h1','h4') to colours ('red','green','blue'). "
+            "If none are stated, return an empty JSON object {}.\n\n"
+            f"Sender: {sender}\nRecipient: {recipient}\n\n"
+            f"Recent dialogue history (most recent last):\n{hist}\n\n"
+            f"Current message:\n{text}\n"
+        )
+
+        messages = self.build_messages(prompt)
+        response_text = None
+        parsed: Dict[str, str] = {}
+
+        # Call the LLM if available; otherwise use heuristic.
+        if (self.openai is not None) and (self.api_key is not None) and (not self.manual):
+            response_text = self._call_openai(prompt, max_tokens=120)
+            if response_text:
+                try:
+                    import json
+                    tmp = json.loads(response_text)
+                    if isinstance(tmp, dict):
+                        parsed = {str(k).lower(): str(v).lower() for k, v in tmp.items()}
+                except Exception:
+                    parsed = {}
+        else:
+            parsed = heuristic_extract(text)
+            response_text = "(manual/no-api) heuristic_extract"
+
+        # Always record a debug trace entry so the experimenter can see the full prompt
+        # even when no external API call is made.
+        self.record_debug_call(kind="parse_assignments", prompt=prompt, messages=messages, response=response_text, parsed=parsed)
+        return parsed
 
     def format_content(self, sender: str, recipient: str, content: Any) -> str:
         """Format structured content for transmission.
@@ -222,6 +347,7 @@ class LLMCommLayer(BaseCommLayer):
         if isinstance(content, dict) and set(content.keys()) >= {"type", "data"}:
             msg_type = str(content.get("type", "")).lower()
             data = content.get("data")
+            advice = content.get("advice")
             # Optional report payload for UI display (e.g., neighbour-reported boundary colours)
             # This is *not* used by the algorithm unless a receiver chooses to parse it.
             report = content.get("report")
@@ -255,6 +381,18 @@ class LLMCommLayer(BaseCommLayer):
             else:
                 text = f"{sender} message ({msg_type}): {data}"
 
+            # Optional advice is shown to the participant above the structured
+            # hint. This is useful when the agent wants to ask the human for
+            # specific help (e.g., propose a change) even in the structured
+            # LLM-U/LLM-C conditions.
+            if isinstance(advice, str) and advice.strip():
+                text = advice.strip() + "\n\n" + text
+
+            # Optional human-facing advice that supplements the structured hints.
+            # Used when the agent wants to explicitly request help from the human.
+            if isinstance(advice, str) and advice.strip():
+                text = advice.strip() + "\n\n" + text
+
             payload = repr(content)
             # Always include mapping for machine parsing.
             # If a report payload is present, include it in a separate tag so the
@@ -264,6 +402,18 @@ class LLMCommLayer(BaseCommLayer):
             if isinstance(report, dict) and report:
                 suffix += f" [report: {repr(report)}]"
             suffix += f" [mapping: {payload}]"
+
+            # Record a debug trace entry for rendering, even if no external LLM is used.
+            try:
+                self.record_debug_call(
+                    kind="render_typed",
+                    prompt=f"render type={msg_type} sender={sender} recipient={recipient}",
+                    messages=None,
+                    response=text,
+                    parsed=content,
+                )
+            except Exception:
+                pass
             return text + suffix
 
         if isinstance(content, dict):
