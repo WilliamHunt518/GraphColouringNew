@@ -1,0 +1,71 @@
+Initial multi-node assignments: {'a1': 'red', 'a2': 'blue', 'a3': 'red', 'a4': 'blue', 'a5': 'red'}
+Step called (iteration=1)
+Updated assignments from {'a1': 'red', 'a2': 'blue', 'a3': 'red', 'a4': 'blue', 'a5': 'red'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=2)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=3)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=4)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=5)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=6)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=7)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=8)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=9)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}
+Step called (iteration=10)
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'free_text', 'data': 'Our node a2 is green; please avoid choosing green for your node h1 to prevent a clash. Our node a4 is green; please avoid choosing green for your node h4 to prevent a clash. Our node a5 is blue; please avoid choosing blue for your node h4 to prevent a clash.', 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}}]
+Received message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Parsed message from Human: h4 can be red or green, up to you. h1 is red and can't easily change
+Extracted assignments from text: {'h4': 'red', 'h1': 'red'}

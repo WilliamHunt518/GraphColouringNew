@@ -54,7 +54,7 @@ from typing import Dict, List, Any, Optional, Callable
 # the packages ``problems``, ``comm`` and ``agents`` resolve to the
 # corresponding subpackages within the ``code`` directory.
 from problems.graph_coloring import GraphColoring
-from comm.communication_layer import LLMCommLayer, PassThroughCommLayer
+from comm.communication_layer import LLMCommLayer, PassThroughCommLayer, LLMRBCommLayer
 from agents.cluster_agent import ClusterAgent
 from agents.rule_based_cluster_agent import RuleBasedClusterAgent
 
@@ -83,6 +83,7 @@ def run_clustered_simulation(
     # will only terminate on hard convergence once the human has also indicated
     # satisfaction.
     stop_on_hard: bool = False,
+    counterfactual_utils: bool = True,
 ) -> None:
     """Run a clustered DCOP simulation with the provided configuration.
 
@@ -133,6 +134,8 @@ def run_clustered_simulation(
 
     if human_owners is None:
         human_owners = ["Human"]
+
+    llm_rb_enabled = any(str(v) == 'llm_rb' for v in (cluster_message_types or {}).values())
     # create cluster agents
     agents: List[ClusterAgent] = []
     human_ui = None
@@ -151,7 +154,7 @@ def run_clustered_simulation(
         # If interactive and this owner is labelled as human, use the interactive agent.
         if interactive and owner in human_owners:
             # use a pass‑through communication layer: no LLM summarisation
-            comm_layer = PassThroughCommLayer()
+            comm_layer = (LLMRBCommLayer(manual=manual_mode, summariser=summariser, use_history=True) if "llm_rb" in [str(v).lower() for v in cluster_message_types.values()] else PassThroughCommLayer())
             # import locally to avoid circular import at module top level
             from agents.multi_node_human_agent import MultiNodeHumanAgent
             ui = None
@@ -170,9 +173,9 @@ def run_clustered_simulation(
             )
         else:
             # non‑interactive: decide between rule‑based baseline and LLM messages
-            if message_type.lower() == "rule_based":
+            if message_type.lower() in ("rule_based","llm_rb"):
                 # instantiate rule‑based baseline with pass‑through communication
-                comm_layer = PassThroughCommLayer()
+                comm_layer = LLMRBCommLayer(manual=manual_mode, summariser=summariser, use_history=True) if message_type.lower()=="llm_rb" else PassThroughCommLayer()
                 agent = RuleBasedClusterAgent(
                     name=owner,
                     problem=problem,
@@ -183,7 +186,10 @@ def run_clustered_simulation(
                 )
             else:
                 # default LLM‑mediated cluster agent
-                comm_layer = LLMCommLayer(manual=manual_mode, summariser=summariser)
+                # Retain dialogue history so an LLM (when enabled) can condition on
+                # prior turns. This is especially important for LLM-F, but is
+                # also useful for the other LLM conditions.
+                comm_layer = LLMCommLayer(manual=manual_mode, summariser=summariser, use_history=True)
                 agent = ClusterAgent(
                     name=owner,
                     problem=problem,
@@ -192,6 +198,7 @@ def run_clustered_simulation(
                     owners=owners,
                     algorithm=algorithm,
                     message_type=message_type,
+                    counterfactual_utils=bool(counterfactual_utils),
                 )
         agents.append(agent)
 
@@ -243,6 +250,15 @@ def run_clustered_simulation(
     with open(summary_path, "w", encoding="utf-8") as _f:
         _f.write("")
 
+    # Persist all LLM prompt/response traces (including manual/heuristic runs)
+    # so non-convergence can be diagnosed post-hoc.
+    llm_trace_path = os.path.join(output_dir, "llm_trace.jsonl")
+    try:
+        with open(llm_trace_path, "w", encoding="utf-8") as _f:
+            _f.write("")
+    except Exception:
+        pass
+
     log_cursors = {a.name: 0 for a in agents}
 
     def _flush_agent_logs() -> None:
@@ -281,12 +297,37 @@ def run_clustered_simulation(
         for agent in agents:
             for node, val in agent.assignments.items():
                 assignments[node] = val
+        # Give *agents* direct access to true boundary neighbour colours (node colours only, no topology).
+        try:
+            human_set = set(human_owners or [])
+            for _a in agents:
+                if getattr(_a, 'name', None) in human_set:
+                    continue
+                if not hasattr(_a, 'neighbour_assignments') or getattr(_a, 'neighbour_assignments') is None:
+                    _a.neighbour_assignments = {}
+                for _local in getattr(_a, 'nodes', []):
+                    for _nbr in adjacency.get(_local, []):
+                        if owners.get(_nbr) != owners.get(_local):
+                            if _nbr in assignments:
+                                _a.neighbour_assignments[str(_nbr)] = assignments[_nbr]
+        except Exception:
+            pass
+
         penalty = problem.evaluate_assignment(assignments)
         iteration_assignments.append(assignments.copy())
         iteration_penalties.append(penalty)
 
         # Live log flush
         _flush_agent_logs()
+
+        # Flush any comm-layer LLM traces incrementally (for *each* agent).
+        try:
+            for _a in agents:
+                _cl = getattr(_a, 'comm_layer', None)
+                if _cl is not None and hasattr(_cl, 'flush_debug_calls'):
+                    _cl.flush_debug_calls(llm_trace_path)
+        except Exception:
+            pass
         # Communication log (append this iteration)
         with open(comm_path, "a", encoding="utf-8") as f:
             for sender, recipient, content in iter_msgs:

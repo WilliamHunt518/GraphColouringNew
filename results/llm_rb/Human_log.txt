@@ -1,0 +1,22 @@
+Initial multi‑node assignments: {'h1': 'green', 'h2': 'red', 'h3': 'blue', 'h4': 'red', 'h5': 'red'}
+Human satisfaction: False
+Human message to Agent1: Can h4 be blue? and h1 green or blue
+Sent message to Agent1: Can h4 be blue? and h1 green or blue
+Human message to Agent2: Can b2 be green please. Makes my colouring work
+Sent message to Agent2: Can b2 be green please. Makes my colouring work
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be blue? and h1 green or blue
+Sent message to Agent1: Can h4 be blue? and h1 green or blue
+Human message to Agent2: Can b2 be green please. Makes my colouring work
+Sent message to Agent2: Can b2 be green please. Makes my colouring work
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'a2': 'blue', 'a4': 'green', 'a5': 'red'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be blue? and h1 green or blue
+Sent message to Agent1: Can h4 be blue? and h1 green or blue
+Human message to Agent2: Can b2 be green please. Makes my colouring work
+Sent message to Agent2: Can b2 be green please. Makes my colouring work
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'a2': 'blue', 'a4': 'green', 'a5': 'red'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]

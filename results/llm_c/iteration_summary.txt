@@ -1,0 +1,5 @@
+Iteration 1: penalty=2.000; human_satisfied=False; agent_satisfied=True; streak=0/2
+Iteration 2: penalty=0.000; human_satisfied=False; agent_satisfied=True; streak=0/2
+Iteration 3: penalty=0.000; human_satisfied=True; agent_satisfied=True; streak=0/2
+
+Stopped early at iteration 3 due to hard_convergence_human_confirmed.

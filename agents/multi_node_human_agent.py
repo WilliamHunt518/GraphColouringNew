@@ -219,6 +219,20 @@ class MultiNodeHumanAgent(BaseAgent):
                         break
             except Exception:
                 agent_sat = None
+                        # RB UI mode is enabled only for the pure RB condition (not LLM_RB).
+                        rb_mode = bool(getattr(self, 'message_type', '').lower() == 'rule_based')
+                        rb_boundary_nodes_by_neigh = {}
+                        if rb_mode:
+                            # For each neighbour owner, list the human boundary nodes connected to that neighbour.
+                            human_set = set(self.nodes)
+                            for neigh in sorted(recipients):
+                                bn = set()
+                                for (u, v) in visible_edges:
+                                    if u in human_set and owners.get(v) == neigh:
+                                        bn.add(u)
+                                    elif v in human_set and owners.get(u) == neigh:
+                                        bn.add(v)
+                                rb_boundary_nodes_by_neigh[neigh] = sorted(bn)
             res = self.ui.get_turn(
                 nodes=list(self.nodes),
                 domain=list(self.domain),
@@ -231,6 +245,8 @@ class MultiNodeHumanAgent(BaseAgent):
                 agent_satisfied=agent_sat,
                 debug_agents=getattr(self.problem, "debug_agents", None),
                 get_visible_graph_fn=get_visible_graph_for,
+                rb_mode=rb_mode,
+                rb_boundary_nodes_by_neigh=rb_boundary_nodes_by_neigh,
             )
             # clear inbox once shown
             self.inbox = []  # type: ignore[attr-defined]

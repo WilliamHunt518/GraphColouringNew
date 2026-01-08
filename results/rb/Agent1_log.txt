@@ -1,0 +1,51 @@
+Initial multi-node assignments: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'}
+Updated assignments from {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Assignments unchanged: {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+RB -> Human: PROPOSE assign(h1=red) | reasons: avoids_boundary_conflict
+Sent message to Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Parsed message from Human: Can h4 be red (or blue), and h1 be blue. These solve my colouring

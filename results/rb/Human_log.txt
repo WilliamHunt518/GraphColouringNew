@@ -1,0 +1,71 @@
+Initial multi‑node assignments: {'h1': 'green', 'h2': 'red', 'h3': 'red', 'h4': 'red', 'h5': 'green'}
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]
+Human satisfaction: False
+Human message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Sent message to Agent1: Can h4 be red (or blue), and h1 be blue. These solve my colouring
+Human message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Sent message to Agent2: Can b2 be blue please. I have to have two different colurs on my end and makes sense for them to be green and red
+Received message from Agent1: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Received message from Agent2: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'b2': 'blue'}]

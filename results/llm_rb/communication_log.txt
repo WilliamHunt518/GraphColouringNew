@@ -1,0 +1,12 @@
+Iteration 1: Human -> Agent1: Can h4 be blue? and h1 green or blue
+Iteration 1: Human -> Agent2: Can b2 be green please. Makes my colouring work
+Iteration 1: Agent1 -> Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'a2': 'green', 'a4': 'green', 'a5': 'blue'}]
+Iteration 1: Agent2 -> Human: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]
+Iteration 2: Human -> Agent1: Can h4 be blue? and h1 green or blue
+Iteration 2: Human -> Agent2: Can b2 be green please. Makes my colouring work
+Iteration 2: Agent1 -> Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'a2': 'blue', 'a4': 'green', 'a5': 'red'}]
+Iteration 2: Agent2 -> Human: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]
+Iteration 3: Human -> Agent1: Can h4 be blue? and h1 green or blue
+Iteration 3: Human -> Agent2: Can b2 be green please. Makes my colouring work
+Iteration 3: Agent1 -> Human: [rb:{"move": "PROPOSE", "node": "h1", "colour": "red", "reasons": ["avoids_boundary_conflict", "improves_local_consistency"]}] [report:{'a2': 'blue', 'a4': 'green', 'a5': 'red'}]
+Iteration 3: Agent2 -> Human: [rb:{"move": "PROPOSE", "node": "h2", "colour": "red", "reasons": ["avoids_boundary_conflict"]}] [report:{'b2': 'green'}]

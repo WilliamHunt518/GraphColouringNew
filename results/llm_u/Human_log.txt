@@ -1,8 +1,87 @@
-Initial multi‑node assignments: {'h1': 'green', 'h2': 'blue', 'h3': 'blue', 'h4': 'blue', 'h5': 'blue'}
+Initial multi‑node assignments: {'h1': 'red', 'h2': 'green', 'h3': 'red', 'h4': 'blue', 'h5': 'green'}
 Human satisfaction: False
-Human message to Agent1: h4 is blue and h1 is green
-Sent message to Agent1: h4 is blue and h1 is green
-Human message to Agent2: h5 is red and h2 is blue
-Sent message to Agent2: h5 is red and h2 is blue
-Received message from Agent1: Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=1.0, blue=0.0; h4: red=0.0, green=1.0, blue=0.0. [report: {'a2': 'green', 'a4': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'a2': 'green', 'a4': 'green'}}]
-Received message from Agent2: Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=1.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'green', 'b4': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'green', 'b4': 'green'}}]
+Received message from Agent1: I don't yet know your current boundary colours. If you tell me your colours for h1, h4, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I don't yet know your current boundary colours. If you tell me your colours for h1, h4, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h1, h4, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).", 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}, {'config': {'h1': 'blue', 'h4': 'green'}, 'penalty': 0.0}, {'config': {'h1': 'blue', 'h4': 'red'}, 'penalty': 0.0}, {'config': {'h1': 'green', 'h4': 'blue'}, 'penalty': 0.0}, {'config': {'h1': 'green', 'h4': 'green'}, 'penalty': 0.0}, {'config': {'h1': 'green', 'h4': 'red'}, 'penalty': 0.0}, {'config': {'h1': 'red', 'h4': 'blue'}, 'penalty': 0.0}, {'config': {'h1': 'red', 'h4': 'green'}, 'penalty': 0.0}, {'config': {'h1': 'red', 'h4': 'red'}, 'penalty': 0.0}]}]
+Received message from Agent2: I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'blue', 'h5': 'green'} (penalty 0.0).
+
+I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'blue', 'h5': 'green'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=0.0, blue=0.0; h5: red=0.0, green=0.0, blue=0.0. [report: {'b2': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h2, h5, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'blue', 'h5': 'green'} (penalty 0.0).", 'report': {'b2': 'green'}, 'boundary_nodes': ['h2', 'h5'], 'joint': [{'config': {'h2': 'blue', 'h5': 'green'}, 'penalty': 0.0}, {'config': {'h2': 'blue', 'h5': 'red'}, 'penalty': 0.0}, {'config': {'h2': 'green', 'h5': 'blue'}, 'penalty': 0.0}, {'config': {'h2': 'green', 'h5': 'red'}, 'penalty': 0.0}, {'config': {'h2': 'red', 'h5': 'blue'}, 'penalty': 0.0}, {'config': {'h2': 'red', 'h5': 'green'}, 'penalty': 0.0}, {'config': {'h2': 'blue', 'h5': 'blue'}, 'penalty': 1.0}, {'config': {'h2': 'green', 'h5': 'green'}, 'penalty': 1.0}, {'config': {'h2': 'red', 'h5': 'red'}, 'penalty': 1.0}]}]
+Human satisfaction: False
+Human message to Agent1: Does this work?
+Sent message to Agent1: Does this work?
+Human message to Agent2: I have a constraint that makes the current config probably the only one. Can you solve around this? (Force b2 blue and go from there?)
+Sent message to Agent2: I have a constraint that makes the current config probably the only one. Can you solve around this? (Force b2 blue and go from there?)
+Received message from Agent1: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'blue', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'blue', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'red', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Agent2: I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'green'} (penalty 1.0).
+
+I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'green'} (penalty 1.0).
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=1.0, blue=0.0; h5: red=0.0, green=1.0, blue=0.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'b2': 'blue'}, 'boundary_nodes': ['h2', 'h5'], 'joint': [{'config': {'h2': 'green', 'h5': 'green'}, 'penalty': 1.0}], 'advice': "I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'green'} (penalty 1.0)."}]
+Human satisfaction: False
+Human message to Agent1: Does this work?
+Sent message to Agent1: Does this work?
+Human message to Agent2: They have to be different. How about this? Basically what colour do you want for b2? I can pick the others
+Sent message to Agent2: They have to be different. How about this? Basically what colour do you want for b2? I can pick the others
+Received message from Agent1: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'red', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'red', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Agent2: I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=1.0; h5: red=0.0, green=1.0, blue=1.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 1.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 1.0}}, 'report': {'b2': 'blue'}, 'boundary_nodes': ['h2', 'h5'], 'joint': [{'config': {'h2': 'green', 'h5': 'red'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0)."}]
+Human satisfaction: False
+Human message to Agent1: Does this work?
+Sent message to Agent1: Does this work?
+Human message to Agent2: This?
+Sent message to Agent2: This?
+Received message from Agent1: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'blue', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'blue', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'red', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Agent2: We currently have a boundary clash: h2=blue clashes with my b2=blue. If possible, please change the human node colour away from that value, or tell me which node you prefer I should adjust. I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'blue', 'h5': 'green'} (penalty 1.0).
+
+We currently have a boundary clash: h2=blue clashes with my b2=blue. If possible, please change the human node colour away from that value, or tell me which node you prefer I should adjust. I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'blue', 'h5': 'green'} (penalty 1.0).
+
+Cost hints for your boundary nodes (lower is better): h2: red=0.0, green=1.0, blue=1.0; h5: red=0.0, green=0.0, blue=2.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 0.0, 'green': 1.0, 'blue': 1.0}, 'h5': {'red': 0.0, 'green': 0.0, 'blue': 2.0}}, 'advice': "We currently have a boundary clash: h2=blue clashes with my b2=blue. If possible, please change the human node colour away from that value, or tell me which node you prefer I should adjust. I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'blue', 'h5': 'green'} (penalty 1.0).", 'report': {'b2': 'blue'}, 'boundary_nodes': ['h2', 'h5'], 'joint': [{'config': {'h2': 'blue', 'h5': 'green'}, 'penalty': 1.0}]}]
+Human satisfaction: False
+Human message to Agent1: Does this work?
+Sent message to Agent1: Does this work?
+Human message to Agent2: This?
+Sent message to Agent2: This?
+Received message from Agent1: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'red', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'red', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Agent2: I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=1.0; h5: red=0.0, green=1.0, blue=1.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 1.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 1.0}}, 'report': {'b2': 'blue'}, 'boundary_nodes': ['h2', 'h5'], 'joint': [{'config': {'h2': 'green', 'h5': 'red'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0)."}]
+Human satisfaction: True
+Human message to Agent1: Does this work?
+Sent message to Agent1: Does this work?
+Human message to Agent2: This?
+Sent message to Agent2: This?
+Received message from Agent1: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'red', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'red', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Agent2: I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h2: red=1.0, green=0.0, blue=1.0; h5: red=0.0, green=1.0, blue=1.0. [report: {'b2': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h2': {'red': 1.0, 'green': 0.0, 'blue': 1.0}, 'h5': {'red': 0.0, 'green': 1.0, 'blue': 1.0}}, 'report': {'b2': 'blue'}, 'boundary_nodes': ['h2', 'h5'], 'joint': [{'config': {'h2': 'green', 'h5': 'red'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h2', 'h5']. Best for me is {'h2': 'green', 'h5': 'red'} (penalty 0.0)."}]

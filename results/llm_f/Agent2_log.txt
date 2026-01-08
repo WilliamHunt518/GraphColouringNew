@@ -1,0 +1,81 @@
+Initial multi-node assignments: {'b1': 'red', 'b2': 'green', 'b3': 'green', 'b4': 'red', 'b5': 'blue'}
+Step called (iteration=1)
+Updated assignments from {'b1': 'red', 'b2': 'green', 'b3': 'green', 'b4': 'red', 'b5': 'blue'} to {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=2)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=3)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=4)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=5)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=6)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=7)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=8)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=9)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}
+Step called (iteration=10)
+Assignments unchanged: {'b1': 'red', 'b2': 'green', 'b3': 'red', 'b4': 'green', 'b5': 'blue'}
+Satisfied: True
+Sent message to Human: Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash. [report: {'b2': 'green'}] [mapping: {'type': 'free_text', 'data': 'Our node b2 is green; please avoid choosing green for your node h2 to prevent a clash. Our node b2 is green; please avoid choosing green for your node h5 to prevent a clash.', 'report': {'b2': 'green'}}]
+Received message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Parsed message from Human: h2 and h5 are connected, and probs have to be the colours they are now. Can b2 be red?
+Forced local assignment requested: b2 -> green
+Extracted assignments from text: {'b2': 'green'}

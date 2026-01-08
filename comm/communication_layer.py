@@ -22,7 +22,10 @@ from __future__ import annotations
 
 import re
 import ast
+import os
 from typing import Any, Dict, Tuple, Optional, List
+
+import json
 
 
 class BaseCommLayer:
@@ -135,9 +138,17 @@ class LLMCommLayer(BaseCommLayer):
         # conforms to the OpenAI chat API format, e.g. {"role": "user", "content": "..."}.
         self.conversation: List[Dict[str, str]] = []
 
+        # ----------------
+        # Debug trace
+        # ----------------
+        # Record every LLM call attempt (prompt, full message list, response, and any
+        # parsed/gleaned result). This is experimenter-only and is surfaced in the
+        # debug window.
+        self.debug_calls: List[Dict[str, Any]] = []
+        self._debug_flush_cursor: int = 0
+
         # Debug information to indicate whether LLM summarisation is enabled
         try:
-            # Avoid printing during module import in test environments
             if self.openai is None:
                 print(
                     "[LLMCommLayer] OpenAI package not available. Falling back to heuristic communication."
@@ -151,8 +162,30 @@ class LLMCommLayer(BaseCommLayer):
                     "[LLMCommLayer] OpenAI package and API key detected. LLM summarisation enabled."
                 )
         except Exception:
-            # ignore any printing errors in restricted environments
             pass
+
+    def flush_debug_calls(self, path: str) -> None:
+        """Append and clear accumulated debug call traces.
+
+        Writes JSON Lines to ``path`` (one dict per line). This is intended for
+        post-hoc debugging when runs fail to converge.
+        """
+        if self._debug_flush_cursor >= len(self.debug_calls):
+            return
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        except Exception:
+            pass
+        try:
+            with open(path, "a", encoding="utf-8") as f:
+                for entry in self.debug_calls[self._debug_flush_cursor:]:
+                    f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                f.flush()
+        except Exception:
+            # never crash the experiment due to debug logging
+            pass
+        finally:
+            self._debug_flush_cursor = len(self.debug_calls)
 
     def _call_openai(self, prompt: str, max_tokens: int = 60) -> Optional[str]:
         """Helper to call the OpenAI API if available.
@@ -192,6 +225,18 @@ class LLMCommLayer(BaseCommLayer):
             )
             # Extract the assistant's reply
             text = response.choices[0].message["content"].strip()
+
+            # record debug trace
+            try:
+                self.debug_calls.append({
+                    "kind": "openai_call",
+                    "prompt": prompt,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "response": text,
+                })
+            except Exception:
+                pass
             # update conversation history if enabled
             if self.use_history:
                 # record the user prompt and assistant reply
@@ -205,6 +250,86 @@ class LLMCommLayer(BaseCommLayer):
             except Exception:
                 pass
             return None
+
+    def record_debug_call(self, *, kind: str, prompt: str, messages: List[Dict[str, str]] | None, response: Any, parsed: Any = None) -> None:
+        """Record a debug trace entry even when no external API is used."""
+        try:
+            self.debug_calls.append({
+                "kind": kind,
+                "prompt": prompt,
+                "messages": messages,
+                "response": response,
+                "parsed": parsed,
+            })
+        except Exception:
+            pass
+
+    def build_messages(self, prompt: str) -> List[Dict[str, str]]:
+        """Build the full messages list that would be sent to the OpenAI API."""
+        system_message = {
+            "role": "system",
+            "content": "You are a helpful assistant for interpreting and rendering messages in a multi-agent coordination problem.",
+        }
+        messages = [system_message]
+        if self.use_history and self.conversation:
+            messages.extend(self.conversation)
+        messages.append({"role": "user", "content": prompt})
+        return messages
+
+    def parse_assignments_from_text_llm(self, *, sender: str, recipient: str, history: List[str], text: str) -> Dict[str, str]:
+        """Attempt to extract node->colour assignments from free text.
+
+        This is primarily used for LLM-F and other LLM conditions where we want the
+        agent to interpret *dialogue history*, not only the latest message.
+
+        If an LLM API is available, the call includes history (when enabled).
+        Otherwise we fall back to a simple heuristic extraction.
+        """
+        import re
+
+        # Simple heuristic fallback: matches patterns like h1=red, h1 is red
+        def heuristic_extract(t: str) -> Dict[str, str]:
+            out: Dict[str, str] = {}
+            pat = re.compile(r"\b([hab]\d+)\b\s*(?:=|is|:|->)\s*\b(red|green|blue)\b", re.IGNORECASE)
+            for m in pat.finditer(t):
+                out[m.group(1).lower()] = m.group(2).lower()
+            return out
+
+        # Build a prompt that includes a compact history (last few turns)
+        hist = "\n".join([f"- {h}" for h in history[-6:]])
+        prompt = (
+            "You are interpreting dialogue in a clustered graph-colouring task. "
+            "Extract any explicit node-colour assignments the human is stating or confirming. "
+            "Return ONLY a JSON object mapping node ids (e.g., 'h1','h4') to colours ('red','green','blue'). "
+            "If none are stated, return an empty JSON object {}.\n\n"
+            f"Sender: {sender}\nRecipient: {recipient}\n\n"
+            f"Recent dialogue history (most recent last):\n{hist}\n\n"
+            f"Current message:\n{text}\n"
+        )
+
+        messages = self.build_messages(prompt)
+        response_text = None
+        parsed: Dict[str, str] = {}
+
+        # Call the LLM if available; otherwise use heuristic.
+        if (self.openai is not None) and (self.api_key is not None) and (not self.manual):
+            response_text = self._call_openai(prompt, max_tokens=120)
+            if response_text:
+                try:
+                    import json
+                    tmp = json.loads(response_text)
+                    if isinstance(tmp, dict):
+                        parsed = {str(k).lower(): str(v).lower() for k, v in tmp.items()}
+                except Exception:
+                    parsed = {}
+        else:
+            parsed = heuristic_extract(text)
+            response_text = "(manual/no-api) heuristic_extract"
+
+        # Always record a debug trace entry so the experimenter can see the full prompt
+        # even when no external API call is made.
+        self.record_debug_call(kind="parse_assignments", prompt=prompt, messages=messages, response=response_text, parsed=parsed)
+        return parsed
 
     def format_content(self, sender: str, recipient: str, content: Any) -> str:
         """Format structured content for transmission.
@@ -222,6 +347,7 @@ class LLMCommLayer(BaseCommLayer):
         if isinstance(content, dict) and set(content.keys()) >= {"type", "data"}:
             msg_type = str(content.get("type", "")).lower()
             data = content.get("data")
+            advice = content.get("advice")
             # Optional report payload for UI display (e.g., neighbour-reported boundary colours)
             # This is *not* used by the algorithm unless a receiver chooses to parse it.
             report = content.get("report")
@@ -255,6 +381,18 @@ class LLMCommLayer(BaseCommLayer):
             else:
                 text = f"{sender} message ({msg_type}): {data}"
 
+            # Optional advice is shown to the participant above the structured
+            # hint. This is useful when the agent wants to ask the human for
+            # specific help (e.g., propose a change) even in the structured
+            # LLM-U/LLM-C conditions.
+            if isinstance(advice, str) and advice.strip():
+                text = advice.strip() + "\n\n" + text
+
+            # Optional human-facing advice that supplements the structured hints.
+            # Used when the agent wants to explicitly request help from the human.
+            if isinstance(advice, str) and advice.strip():
+                text = advice.strip() + "\n\n" + text
+
             payload = repr(content)
             # Always include mapping for machine parsing.
             # If a report payload is present, include it in a separate tag so the
@@ -264,6 +402,18 @@ class LLMCommLayer(BaseCommLayer):
             if isinstance(report, dict) and report:
                 suffix += f" [report: {repr(report)}]"
             suffix += f" [mapping: {payload}]"
+
+            # Record a debug trace entry for rendering, even if no external LLM is used.
+            try:
+                self.record_debug_call(
+                    kind="render_typed",
+                    prompt=f"render type={msg_type} sender={sender} recipient={recipient}",
+                    messages=None,
+                    response=text,
+                    parsed=content,
+                )
+            except Exception:
+                pass
             return text + suffix
 
         if isinstance(content, dict):
@@ -419,3 +569,181 @@ class PassThroughCommLayer(BaseCommLayer):
         externally.
         """
         return message
+
+# ---------------------------------------------------------------------------
+# LLM_RB: Natural-language wrapper around the RB argumentation protocol
+# ---------------------------------------------------------------------------
+
+from comm.rb_protocol import parse_rb as _parse_rb_tag, format_rb as _format_rb_tag, pretty_rb as _pretty_rb
+
+class LLMRBCommLayer(LLMCommLayer):
+    """LLM-backed (or heuristic) translation between free text and RB moves.
+
+    This layer enables a condition where agents use the deterministic RB
+    argumentation engine, but humans can type natural language. The layer:
+
+      * Outgoing RB moves (tagged with [rb:{...}]) are rendered into natural text,
+        while preserving the [rb:...] tag for reliable parsing on the receiver.
+      * Outgoing free text from the human is parsed into a single RB move
+        (PROPOSE/ARGUE/ATTACK/CONCEDE/REQUEST/QUERY) and then encoded as [rb:...].
+        If parsing fails, the text is passed through unchanged.
+
+    No optimisation is performed here; it is a translation layer.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _rb_to_nl(self, rb_move: dict) -> str:
+        # Accept RBMove objects from rb_protocol.parse_rb
+        if hasattr(rb_move, 'to_dict'):
+            rb_move = rb_move.to_dict()  # type: ignore[assignment]
+        # Simple templates; keep concise for participant comprehension.
+        move = (rb_move.get("move") or "").upper()
+        node = rb_move.get("node")
+        colour = rb_move.get("colour")
+        reasons = rb_move.get("reasons") or []
+        if move in ("PROPOSE", "ARGUE"):
+            base = f"I suggest {node} = {colour}."
+        elif move == "ATTACK":
+            base = f"I don't think {node} should be {colour}."
+        elif move == "CONCEDE":
+            base = f"OK — I will accept {node} = {colour}."
+        elif move == "REQUEST":
+            base = f"Can you commit to {node} = {colour}?"
+        elif move == "QUERY":
+            base = f"Why {node} = {colour}?"
+        else:
+            base = _pretty_rb(rb_move) or str(rb_move)
+        if reasons:
+            base += " Reasons: " + ", ".join(reasons) + "."
+        return base
+
+    def _nl_to_rb_heuristic(self, text: str, domain) -> dict | None:
+        t = (text or "").strip()
+        if not t:
+            return None
+        # Detect node + colour mentions
+        node_pat = r"\b([hab]\d+)\b"
+        col_pat = r"\b(red|green|blue)\b"
+        nodes = re.findall(node_pat, t.lower())
+        cols = re.findall(col_pat, t.lower())
+        if not nodes or not cols:
+            return None
+        node = nodes[0]
+        colour = cols[0]
+        move = "PROPOSE"
+        if any(w in t.lower() for w in ["accept", "ok", "concede", "fine", "agree"]):
+            move = "CONCEDE"
+        elif any(w in t.lower() for w in ["why", "because", "reason"]):
+            move = "QUERY"
+        elif any(w in t.lower() for w in ["must", "have to", "need to"]):
+            move = "ARGUE"
+        elif any(w in t.lower() for w in ["not", "can't", "cannot", "avoid"]):
+            move = "ATTACK"
+        elif any(w in t.lower() for w in ["please", "can you", "could you", "commit"]):
+            move = "REQUEST"
+        reasons = []
+        for r in ["avoids_boundary_conflict", "improves_local_consistency", "reduces_global_penalty", "gives_flexibility"]:
+            if r.replace("_", " ") in t.lower():
+                reasons.append(r)
+        return {"move": move, "node": node, "colour": colour, "reasons": reasons}
+
+    def parse_rb_from_text(self, text: str, domain) -> dict | None:
+        # If API LLM is available, try it; otherwise fall back to heuristic.
+        try:
+            return self.parse_rb_from_text_llm(text=text, domain=domain)
+        except Exception:
+            return self._nl_to_rb_heuristic(text, domain)
+
+    def parse_rb_from_text_llm(self, text: str, domain) -> dict | None:
+        """Parse a single RB move from free text using an LLM (if available).
+
+        Returns a dict with keys: move,node,colour,reasons.
+        """
+        # If LLM isn't configured, raise so caller uses fallback.
+        if not getattr(self, "_llm_enabled", False):
+            raise RuntimeError("LLM not enabled")
+        schema = {
+            "move": "PROPOSE|ARGUE|ATTACK|CONCEDE|REQUEST|QUERY",
+            "node": "h1..h5|a1..a5|b1..b5",
+            "colour": list(domain),
+            "reasons": ["avoids_boundary_conflict","improves_local_consistency","reduces_global_penalty","gives_flexibility"],
+        }
+        prompt = (
+            "Convert the user's message into ONE dialogue move for the RB protocol. "
+            "Return ONLY valid JSON with keys move,node,colour,reasons. "
+            "If the user mentions multiple nodes, pick the most central request.\n\n"
+            f"RB schema: {json.dumps(schema)}\n\n"
+            f"User message: {text}"
+        )
+        raw = self._call_llm(prompt)
+        parsed = None
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            # Attempt to extract JSON object from text
+            m = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+            if m:
+                parsed = json.loads(m.group(0))
+        if not isinstance(parsed, dict):
+            return None
+        move = str(parsed.get("move") or "").upper()
+        node = parsed.get("node")
+        colour = parsed.get("colour")
+        reasons = parsed.get("reasons") or []
+        if move not in {"PROPOSE","ARGUE","ATTACK","CONCEDE","REQUEST","QUERY"}:
+            return None
+        if not node or not colour:
+            return None
+        # Trace
+        try:
+            self.debug_calls.append({
+                "kind": "parse_rb",
+                "prompt": prompt,
+                "response": raw,
+                "parsed": {"move": move, "node": node, "colour": colour, "reasons": reasons},
+                "ts": datetime.datetime.utcnow().isoformat() + "Z",
+            })
+        except Exception:
+            pass
+        return {"move": move, "node": str(node), "colour": colour, "reasons": list(reasons)}
+
+    def format_content(self, sender: str, recipient: str, content: Any) -> str:
+        # If already RB-tagged, render to NL but keep the tag.
+        if isinstance(content, str):
+            rb = _parse_rb_tag(content)
+            if rb is not None:
+                nl = self._rb_to_nl(rb)
+                # preserve original tag (and any report/mapping)
+                # Strip any leading text before tag; keep tag + any trailing payloads.
+                m = re.search(r"\[rb:.*\]", content)
+                tag = m.group(0) if m else _format_rb_tag(rb)
+                # preserve report payload if present
+                rep = None
+                m2 = re.search(r"\[report:.*\]", content)
+                rep = m2.group(0) if m2 else ""
+                return (nl + " " + tag + (" " + rep if rep else "")).strip()
+            # For free text (human), try to translate into RB move and tag it.
+            rb2 = self.parse_rb_from_text(content, domain=getattr(self, "domain", ["red","green","blue"]))
+            if rb2 is not None:
+                nl = self._rb_to_nl(rb2)
+                tag = _format_rb_tag(rb2)
+                return (nl + " " + tag).strip()
+            return content
+
+        # If a dict RB move is passed, format it.
+        if isinstance(content, dict) and "move" in content and "node" in content:
+            nl = self._rb_to_nl(content)
+            tag = _format_rb_tag(content)
+            return (nl + " " + tag).strip()
+
+        return super().format_content(sender, recipient, content)
+
+    def parse_content(self, sender: str, recipient: str, message: str) -> Any:
+        # Prefer explicit RB tag if present
+        if isinstance(message, str):
+            rb = _parse_rb_tag(message)
+            if rb is not None:
+                return {"type": "rb", "data": rb}
+        return super().parse_content(sender, recipient, message)

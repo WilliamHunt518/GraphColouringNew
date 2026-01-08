@@ -1,8 +1,67 @@
-Initial multi-node assignments: {'a1': 'red', 'a2': 'red', 'a3': 'blue', 'a4': 'red', 'a5': 'blue'}
+Initial multi-node assignments: {'a1': 'blue', 'a2': 'red', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
 Step called (iteration=1)
-Updated assignments from {'a1': 'red', 'a2': 'red', 'a3': 'blue', 'a4': 'red', 'a5': 'blue'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
+Updated assignments from {'a1': 'blue', 'a2': 'red', 'a3': 'red', 'a4': 'green', 'a5': 'blue'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'}
 Satisfied: True
-Sent message to Human: Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=1.0, blue=0.0; h4: red=0.0, green=1.0, blue=0.0. [report: {'a2': 'green', 'a4': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 1.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 1.0, 'blue': 0.0}}, 'report': {'a2': 'green', 'a4': 'green'}}]
-Received message from Human: h4 is blue and h1 is green
-Parsed message from Human: h4 is blue and h1 is green
-Heuristically extracted assignments from text: {'h4': 'blue', 'h1': 'green'}
+Sent message to Human: I don't yet know your current boundary colours. If you tell me your colours for h1, h4, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I don't yet know your current boundary colours. If you tell me your colours for h1, h4, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'green', 'a4': 'green', 'a5': 'blue'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'advice': "I don't yet know your current boundary colours. If you tell me your colours for h1, h4, I can avoid clashes more directly. I evaluated 9 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).", 'report': {'a2': 'green', 'a4': 'green', 'a5': 'blue'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}, {'config': {'h1': 'blue', 'h4': 'green'}, 'penalty': 0.0}, {'config': {'h1': 'blue', 'h4': 'red'}, 'penalty': 0.0}, {'config': {'h1': 'green', 'h4': 'blue'}, 'penalty': 0.0}, {'config': {'h1': 'green', 'h4': 'green'}, 'penalty': 0.0}, {'config': {'h1': 'green', 'h4': 'red'}, 'penalty': 0.0}, {'config': {'h1': 'red', 'h4': 'blue'}, 'penalty': 0.0}, {'config': {'h1': 'red', 'h4': 'green'}, 'penalty': 0.0}, {'config': {'h1': 'red', 'h4': 'red'}, 'penalty': 0.0}]}]
+Step called (iteration=2)
+Updated assignments from {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'blue'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'}
+Exhaustive repair improved local penalty: 1.000 -> 0.000
+Satisfied: True
+Sent message to Human: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'blue', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'blue', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'red', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Human: Does this work?
+Parsed message from Human: Does this work?
+Extracted assignments from text: {'h1': 'red', 'h4': 'blue'}
+Step called (iteration=3)
+Updated assignments from {'a1': 'red', 'a2': 'blue', 'a3': 'green', 'a4': 'red', 'a5': 'green'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'}
+Exhaustive repair improved local penalty: 1.000 -> 0.000
+Satisfied: True
+Sent message to Human: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'red', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'red', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Human: Does this work?
+Parsed message from Human: Does this work?
+Extracted assignments from text: {'h1': 'blue', 'h4': 'blue'}
+Step called (iteration=4)
+Updated assignments from {'a1': 'blue', 'a2': 'red', 'a3': 'green', 'a4': 'red', 'a5': 'green'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'}
+Exhaustive repair improved local penalty: 1.000 -> 0.000
+Satisfied: True
+Sent message to Human: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'blue', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'blue', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'red', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'red', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Human: Does this work?
+Parsed message from Human: Does this work?
+Extracted assignments from text: {'h1': 'red', 'h4': 'blue'}
+Step called (iteration=5)
+Updated assignments from {'a1': 'red', 'a2': 'blue', 'a3': 'green', 'a4': 'red', 'a5': 'green'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'}
+Exhaustive repair improved local penalty: 1.000 -> 0.000
+Satisfied: True
+Sent message to Human: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'red', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'red', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Human: Does this work?
+Parsed message from Human: Does this work?
+Step called (iteration=6)
+Updated assignments from {'a1': 'blue', 'a2': 'red', 'a3': 'green', 'a4': 'red', 'a5': 'green'} to {'a1': 'red', 'a2': 'green', 'a3': 'red', 'a4': 'green', 'a5': 'red'}
+Exhaustive repair improved local penalty: 1.000 -> 0.000
+Satisfied: True
+Sent message to Human: I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0).
+
+Cost hints for your boundary nodes (lower is better): h1: red=0.0, green=0.0, blue=0.0; h4: red=0.0, green=0.0, blue=0.0. [report: {'a2': 'red', 'a4': 'red', 'a5': 'green'}] [mapping: {'type': 'cost_list', 'data': {'h1': {'red': 0.0, 'green': 0.0, 'blue': 0.0}, 'h4': {'red': 0.0, 'green': 0.0, 'blue': 0.0}}, 'report': {'a2': 'red', 'a4': 'red', 'a5': 'green'}, 'boundary_nodes': ['h1', 'h4'], 'joint': [{'config': {'h1': 'blue', 'h4': 'blue'}, 'penalty': 0.0}], 'advice': "I evaluated 1 boundary option(s) over ['h1', 'h4']. Best for me is {'h1': 'blue', 'h4': 'blue'} (penalty 0.0)."}]
+Received message from Human: Does this work?
+Parsed message from Human: Does this work?

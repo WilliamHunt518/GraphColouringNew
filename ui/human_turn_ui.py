@@ -49,6 +49,12 @@ class HumanTurnUI:
         self._outgoing_box = {}
         self._last_outgoing: Dict[str, str] = {}
 
+        # RB (rule-based argumentation) UI mode state
+        self._rb_mode: bool = False
+        self._rb_boundary_nodes_by_neigh: Dict[str, List[str]] = {}
+        # Per-neighbour widget state for RB composer
+        self._rb_widgets: Dict[str, Dict[str, Any]] = {}
+
         # Current turn state
         self._human_nodes: List[str] = []
         self._domain: List[Any] = []
@@ -79,6 +85,8 @@ class HumanTurnUI:
         agent_satisfied: bool | None = None,
         debug_agents: List[Any] | None = None,
         get_visible_graph_fn: Any | None = None,
+        rb_mode: bool = False,
+        rb_boundary_nodes_by_neigh: Dict[str, List[str]] | None = None,
     ) -> HumanTurnResult:
         """Show (or update) a persistent window, block until Submit, and return choices."""
 
@@ -154,11 +162,18 @@ class HumanTurnUI:
             def on_submit() -> None:
                 # Collect outgoing text per neighbour
                 messages_out: Dict[str, str] = {}
-                for neigh, box in self._outgoing_box.items():
-                    messages_out[neigh] = box.get("1.0", "end").strip()
-                    # remember last message for prefill next time
-                    if messages_out[neigh].strip():
-                        self._last_outgoing[neigh] = messages_out[neigh].strip()
+                neighbour_keys = sorted(set(list(self._incoming_box.keys()) + list(self._outgoing_box.keys()) + list(self._rb_widgets.keys())))
+                for neigh in neighbour_keys:
+                    out_text = ""
+                    if self._rb_mode and neigh in self._rb_widgets:
+                        out_text = self._build_rb_outgoing(neigh)
+                    else:
+                        box = self._outgoing_box.get(neigh)
+                        if box is not None:
+                            out_text = box.get("1.0", "end").strip()
+                    messages_out[neigh] = out_text
+                    if out_text.strip():
+                        self._last_outgoing[neigh] = out_text.strip()
 
                 self._result = HumanTurnResult(
                     assignments=dict(self._assignments),
@@ -236,6 +251,20 @@ class HumanTurnUI:
         self._assignments = dict(current_assignments)
         self._owners = dict(owners or {})
         self._vis_nodes, self._vis_edges = visible_graph if visible_graph is not None else ([], [])
+        self._rb_mode = bool(rb_mode)
+        self._rb_boundary_nodes_by_neigh = dict(rb_boundary_nodes_by_neigh or {})
+
+        # Participant-facing observability rule:
+        # - The human can see neighbour nodes that are adjacent to their local nodes.
+        # - The human must NOT see edges *between* neighbour nodes (i.e., neighbour-internal topology).
+        #   This prevents learning extra structure beyond what boundary observations imply.
+        if self._vis_edges:
+            human_set = set(self._human_nodes)
+            self._vis_edges = [
+                (u, v)
+                for (u, v) in self._vis_edges
+                if (u in human_set) or (v in human_set)
+            ]
 
         # Update title + header
         self._root.title(f"{self.title} — Iteration {iteration}")
@@ -396,6 +425,21 @@ class HumanTurnUI:
             Humans should not see that internal payload.
             """
             text = str(content)
+
+            # Render RB protocol messages in a human-friendly form.
+            if "[rb:" in text:
+                try:
+                    from comm.rb_protocol import parse_rb, pretty_rb
+
+                    rb = parse_rb(text)
+                    if rb is not None:
+                        # Replace the rb payload with a readable line.
+                        # Keep any other non-internal text (rare).
+                        prefix = text.split("[rb:", 1)[0].strip()
+                        suffix = text.split("]", 1)[1] if "]" in text.split("[rb:", 1)[1] else ""
+                        text = (prefix + " " if prefix else "") + pretty_rb(rb) + (" " + suffix.strip() if suffix.strip() else "")
+                except Exception:
+                    pass
             # Extract neighbour-reported assignments, if present.
             if "[report:" in text:
                 head, tail = text.split("[report:", 1)
@@ -434,6 +478,7 @@ class HumanTurnUI:
                 child.destroy()
             self._incoming_box.clear()
             self._outgoing_box.clear()
+            self._rb_widgets.clear()
 
         for neigh in neighbour_owners:
             # update history
@@ -482,15 +527,84 @@ class HumanTurnUI:
                 self._incoming_box[neigh] = inbox
 
                 ttk.Label(panel, text="Your message to this neighbour", font=font_body).pack(anchor="w", padx=8)
-                out = tk.Text(panel, height=4, wrap="word", font=font_small)
-                out.pack(fill="x", expand=False, padx=8, pady=(2, 10))
-                self._outgoing_box[neigh] = out
+                if self._rb_mode:
+                    # Structured RB composer: move/node/colour + reasons.
+                    self._outgoing_box[neigh] = None
+                    comp = ttk.Frame(panel)
+                    comp.pack(fill="x", expand=False, padx=8, pady=(2, 10))
 
-                # prefill placeholder = last message
-                self._set_outgoing_placeholder(neigh)
+                    from comm.rb_protocol import ALLOWED_MOVES
+
+                    move_var = tk.StringVar(value="(none)")
+                    node_var = tk.StringVar(value="")
+                    colour_var = tk.StringVar(value="")
+
+                    row1 = ttk.Frame(comp)
+                    row1.pack(fill="x", expand=False)
+                    ttk.Label(row1, text="Move", font=font_small).pack(side="left")
+                    move_dd = ttk.Combobox(row1, textvariable=move_var, values=["(none)"] + list(ALLOWED_MOVES), width=10, state="readonly")
+                    move_dd.pack(side="left", padx=(6, 14))
+
+                    ttk.Label(row1, text="Node", font=font_small).pack(side="left")
+                    node_choices = list(self._rb_boundary_nodes_by_neigh.get(neigh, []))
+                    node_dd = ttk.Combobox(row1, textvariable=node_var, values=node_choices, width=6, state="readonly")
+                    node_dd.pack(side="left", padx=(6, 14))
+
+                    ttk.Label(row1, text="Colour", font=font_small).pack(side="left")
+                    colour_dd = ttk.Combobox(row1, textvariable=colour_var, values=list(self._domain), width=7, state="readonly")
+                    colour_dd.pack(side="left", padx=(6, 0))
+
+                    # Reasons (simple, fixed list)
+                    reasons_frame = ttk.Frame(comp)
+                    reasons_frame.pack(fill="x", expand=False, pady=(6, 2))
+                    ttk.Label(reasons_frame, text="Reasons", font=font_small).pack(anchor="w")
+                    reason_codes = [
+                        "avoids_boundary_conflict",
+                        "improves_local_consistency",
+                        "helps_you_move",
+                        "reduces_global_penalty",
+                    ]
+                    reason_vars = {}
+                    row2 = ttk.Frame(reasons_frame)
+                    row2.pack(fill="x", expand=False)
+                    for rc in reason_codes:
+                        v = tk.BooleanVar(value=False)
+                        reason_vars[rc] = v
+                        ttk.Checkbutton(row2, text=rc, variable=v).pack(side="left", padx=(0, 10))
+
+                    preview = ttk.Label(comp, text="", font=font_small)
+                    preview.pack(anchor="w", pady=(4, 0))
+
+                    self._rb_widgets[neigh] = {
+                        "move_var": move_var,
+                        "node_var": node_var,
+                        "colour_var": colour_var,
+                        "reason_vars": reason_vars,
+                        "preview": preview,
+                    }
+
+                    def _refresh_preview(*_args):
+                        try:
+                            preview.configure(text=self._build_rb_outgoing(neigh, for_preview=True))
+                        except Exception:
+                            pass
+
+                    move_var.trace_add("write", _refresh_preview)
+                    node_var.trace_add("write", _refresh_preview)
+                    colour_var.trace_add("write", _refresh_preview)
+                    for rv in reason_vars.values():
+                        rv.trace_add("write", _refresh_preview)
+                else:
+                    out = tk.Text(panel, height=4, wrap="word", font=font_small)
+                    out.pack(fill="x", expand=False, padx=8, pady=(2, 10))
+                    self._outgoing_box[neigh] = out
+
+                    # prefill placeholder = last message
+                    self._set_outgoing_placeholder(neigh)
             else:
                 # existing: update placeholder if empty
-                self._set_outgoing_placeholder(neigh)
+                if not self._rb_mode:
+                    self._set_outgoing_placeholder(neigh)
 
             # refresh inbox display
             self._refresh_inbox(neigh)
@@ -554,3 +668,33 @@ class HumanTurnUI:
 
         # Bind once per box
         box.bind("<FocusIn>", _clear_placeholder)
+
+    def _build_rb_outgoing(self, neigh: str, for_preview: bool = False) -> str:
+        """Build an RB protocol message string for a neighbour.
+
+        Returns an empty string if the user selected "(none)".
+        When ``for_preview`` is True, returns a human-friendly rendering.
+        """
+        from comm.rb_protocol import RBMove, format_rb, pretty_rb
+
+        w = self._rb_widgets.get(neigh)
+        if not w:
+            return ""
+        move = str(w["move_var"].get()).strip()
+        if move in {"", "(none)"}:
+            return ""
+        node = str(w["node_var"].get()).strip()
+        colour = str(w["colour_var"].get()).strip() or None
+        # Some moves don't require a colour; keep it optional.
+        if move in {"REQUEST", "QUERY", "ATTACK"}:
+            colour = colour  # optional
+        # Collect reasons
+        reason_vars = w.get("reason_vars", {})
+        reasons = [rc for rc, v in reason_vars.items() if bool(getattr(v, "get", lambda: False)())]
+
+        if not node:
+            # Can't build a well-formed message without a node.
+            return "" if not for_preview else f"{move}: (select node)"
+
+        rb = RBMove(move=move, node=node, colour=colour, reasons=reasons)
+        return pretty_rb(rb) if for_preview else format_rb(rb)

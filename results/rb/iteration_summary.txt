@@ -1,0 +1,12 @@
+Iteration 1: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 2: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 3: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 4: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 5: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 6: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 7: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 8: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 9: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+Iteration 10: penalty=1.000; human_satisfied=False; agent_satisfied=False; streak=0/2
+
+Reached max_iterations=10.
