@@ -407,10 +407,17 @@ class LLMCommLayer(BaseCommLayer):
                         else:
                             parts.append("I can’t see all your boundary colours yet.")
 
-                    # Current score (agent-local).
+                    # Current score (agent-local) with massive penalty for conflicts.
                     try:
                         a_score = int(current.get("agent_score", 0))
-                        parts.append(f"My score: {a_score}.")
+                        penalty = float(current.get("penalty", 0.0))
+                        if penalty > 1e-9:
+                            # Apply massive penalty (-1000 per conflict) for invalid colorings
+                            effective_score = a_score - 1000
+                            parts.append(f"My score: {effective_score} (base {a_score} - 1000 penalty for conflicts).")
+                        else:
+                            # No conflicts - report actual score
+                            parts.append(f"My score: {a_score}.")
                     except Exception:
                         pass
 
@@ -435,16 +442,21 @@ class LLMCommLayer(BaseCommLayer):
 
                     shown = feasible[:3]
                     if shown:
-                        parts.append("Alternatives I can support:")
+                        parts.append("Alternatives I can support (conflict-free):")
                         for o in shown:
                             h = o.get("human")
                             if isinstance(h, dict) and h:
                                 cond = ", ".join([f"{k}={v}" for k, v in h.items()])
                             else:
                                 cond = "that change"
-                            parts.append(f"- If you set {cond} → I can score {int(o.get('agent_score', 0))}.")
+                            # Emphasize these are conflict-free by showing penalty=0
+                            parts.append(f"- If you set {cond} → I can score {int(o.get('agent_score', 0))} (penalty: 0).")
                     else:
-                        parts.append("I don’t see a higher-score alternative I can guarantee from my side right now.")
+                        # If no feasible alternatives, mention there are conflicts
+                        if penalty > 1e-9:
+                            parts.append("I don't see any conflict-free alternatives. We need to resolve the boundary clashes first!")
+                        else:
+                            parts.append("I don't see a higher-score alternative I can guarantee from my side right now.")
 
                     text = "\n".join(parts)
                 else:

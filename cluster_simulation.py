@@ -94,6 +94,8 @@ def run_clustered_simulation(
     # satisfaction.
     stop_on_hard: bool = False,
     counterfactual_utils: bool = True,
+    fixed_constraints: bool = True,
+    num_fixed_nodes: int = 1,
 ) -> None:
     """Run a clustered DCOP simulation with the provided configuration.
 
@@ -140,7 +142,99 @@ def run_clustered_simulation(
             if (nbr, node) not in edges:
                 edges.append((node, nbr))
     # instantiate global problem
-    problem = GraphColoring(node_names, edges, domain)
+    # CRITICAL: conflict_penalty must be >> max preference to ensure conflicts are always avoided
+    # Preferences range from 1-3, so conflict_penalty=10.0 ensures conflicts dominate decision-making
+    problem = GraphColoring(node_names, edges, domain, conflict_penalty=10.0)
+
+    # ----------------------------
+    # Fixed node constraints setup
+    # ----------------------------
+    # If fixed_constraints is enabled, select num_fixed_nodes internal nodes per cluster
+    # and assign them fixed colors to force negotiation between clusters.
+    cluster_fixed_nodes: Dict[str, Dict[str, Any]] = {}
+    if fixed_constraints and num_fixed_nodes > 0 and domain:
+        import random
+        random.seed(42)  # Deterministic for reproducibility
+
+        # For each cluster, find internal nodes and pick N to fix
+        for owner, local_nodes in clusters.items():
+            internal_nodes = [
+                n for n in local_nodes
+                if problem.is_internal_node(n, local_nodes)
+            ]
+
+            if internal_nodes:
+                # Pick up to num_fixed_nodes random internal nodes
+                num_to_fix = min(num_fixed_nodes, len(internal_nodes))
+                fixed_nodes = random.sample(internal_nodes, num_to_fix)
+
+                # Assign each fixed node a color (cycling through domain)
+                fixed_dict = {}
+                for i, fixed_node in enumerate(fixed_nodes):
+                    # Cycle through domain colors (prefer non-first colors to create conflicts)
+                    color_idx = (i + 1) % len(domain) if len(domain) > 1 else 0
+                    fixed_color = domain[color_idx]
+                    fixed_dict[fixed_node] = fixed_color
+                    print(f"[Fixed Constraint] {owner}: node {fixed_node} fixed to {fixed_color}")
+
+                cluster_fixed_nodes[owner] = fixed_dict
+            else:
+                # No fully internal nodes; use first N nodes as quasi-fixed
+                if local_nodes:
+                    num_to_fix = min(num_fixed_nodes, len(local_nodes))
+                    fixed_nodes = local_nodes[:num_to_fix]
+
+                    fixed_dict = {}
+                    for i, fixed_node in enumerate(fixed_nodes):
+                        color_idx = (i + 1) % len(domain) if len(domain) > 1 else 0
+                        fixed_color = domain[color_idx]
+                        fixed_dict[fixed_node] = fixed_color
+                        print(f"[Fixed Constraint] {owner}: node {fixed_node} (boundary) fixed to {fixed_color}")
+
+                    cluster_fixed_nodes[owner] = fixed_dict
+                else:
+                    cluster_fixed_nodes[owner] = {}
+
+        # Validate that a solution exists with the fixed constraints
+        # Use a simple greedy coloring to check feasibility
+        print("[Validation] Checking if a solution exists with fixed constraints...")
+        all_fixed_assignments = {}
+        for owner_fixed in cluster_fixed_nodes.values():
+            all_fixed_assignments.update(owner_fixed)
+
+        # Try to find a valid coloring using greedy approach
+        test_assignment = dict(all_fixed_assignments)
+        free_nodes = [n for n in node_names if n not in all_fixed_assignments]
+
+        # Greedy coloring: assign each free node the first valid color
+        for node in free_nodes:
+            neighbors = problem.get_neighbors(node)
+            neighbor_colors = {test_assignment.get(nbr) for nbr in neighbors if nbr in test_assignment}
+            neighbor_colors.discard(None)
+
+            # Find first color that doesn't conflict
+            valid_color = None
+            for color in domain:
+                if color not in neighbor_colors:
+                    valid_color = color
+                    break
+
+            if valid_color is None:
+                print(f"[Validation] WARNING: Could not find valid color for node {node}!")
+                print(f"[Validation] Neighbors: {neighbors}, their colors: {neighbor_colors}")
+                print("[Validation] The fixed constraints may make the problem unsolvable.")
+                print("[Validation] Continuing anyway - negotiation may still resolve conflicts.")
+            else:
+                test_assignment[node] = valid_color
+
+        # Check if the test assignment is valid
+        if problem.is_valid(test_assignment):
+            print("[Validation] SUCCESS: Found a valid solution with fixed constraints")
+            print(f"[Validation] Test solution penalty: {problem.evaluate_assignment(test_assignment)}")
+        else:
+            print("[Validation] WARNING: Greedy validation found conflicts")
+            print(f"[Validation] Test solution penalty: {problem.evaluate_assignment(test_assignment)}")
+            print("[Validation] This may require negotiation to resolve.")
 
     if human_owners is None:
         human_owners = ["Human"]
@@ -180,6 +274,7 @@ def run_clustered_simulation(
                 owners=owners,
                 initial_assignments=None,
                 ui=ui,
+                fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
             )
         else:
             # non‑interactive: decide between rule‑based baseline and LLM messages
@@ -193,6 +288,7 @@ def run_clustered_simulation(
                     local_nodes=list(local_nodes),
                     owners=owners,
                     algorithm=algorithm,
+                    fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
                 )
             else:
                 # default LLM‑mediated cluster agent
@@ -209,6 +305,7 @@ def run_clustered_simulation(
                     algorithm=algorithm,
                     message_type=message_type,
                     counterfactual_utils=bool(counterfactual_utils),
+                    fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
                 )
         agents.append(agent)
 
@@ -228,6 +325,16 @@ def run_clustered_simulation(
                         a.assignments[n] = default_colour
                 except Exception:
                     pass
+
+        # Apply fixed node constraints after initial assignment
+        if fixed_constraints:
+            for a in agents:
+                if hasattr(a, "assignments") and hasattr(a, "fixed_local_nodes"):
+                    try:
+                        for node, fixed_color in a.fixed_local_nodes.items():
+                            a.assignments[node] = fixed_color
+                    except Exception:
+                        pass
 
     # Expose agents on the problem object for the experimenter debug UI.
     # This is intentionally not participant-facing.
@@ -349,13 +456,14 @@ def run_clustered_simulation(
             name_to_agent = {getattr(a, 'name', str(idx)): a for idx, a in enumerate(agents)}
 
             def on_send(neigh: str, text: str) -> str:
-                nonlocal human_actions
+                nonlocal human_actions, ui_iteration_counter
                 # Special token used by the UI to let an agent initiate the dialogue.
                 # This should not count as a human action.
                 is_init = (text == "__INIT__")
                 if not is_init:
                     human_actions += 1
                     iter_counts[str(getattr(human_agent, "name", "Human"))] += 1
+                    ui_iteration_counter += 1
                 # update human agent assignments from UI state
                 try:
                     if hasattr(ui, "_assignments"):
@@ -407,16 +515,59 @@ def run_clustered_simulation(
                             all_assign.update(getattr(ag, "assignments"))
                     if hasattr(ui, "_assignments"):
                         all_assign.update(getattr(ui, "_assignments"))
-                    pen = problem.compute_penalty(all_assign)
+                    pen = problem.evaluate_assignment(all_assign)
                     score = problem.compute_score(all_assign) if hasattr(problem, "compute_score") else 0
                     elapsed = (datetime.datetime.now() - start_ts).total_seconds()
-                    with open(iter_summary_path, "a", encoding="utf-8") as f:
+                    with open(summary_path, "a", encoding="utf-8") as f:
                         f.write(f"{_now_iso()}\telapsed={elapsed:.3f}\tpenalty={pen:.3f}\ttotal_score={score}\tcounts={json.dumps(iter_counts)}\n")
                         f.flush()
+
+                    # --- Create checkpoint if valid coloring (penalty = 0) ---
+                    if pen <= 1e-9:
+                        checkpoint = create_checkpoint(ui_iteration_counter, all_assign, pen, score)
+                        checkpoints.append(checkpoint)
+                        print(f"[Checkpoint] Saved #{checkpoint['id']} at UI iteration {ui_iteration_counter} (penalty={pen:.6f})")
+                        # Update problem.checkpoints reference so UI can detect it
+                        setattr(problem, 'checkpoints', checkpoints)
+                except Exception as e:
+                    import traceback
+                    print(f"[Checkpoint] Error in on_send: {e}")
+                    traceback.print_exc()
+
+                return "\n".join(reply_texts).strip()
+
+            def on_colour_change(new_assignments: Dict[str, Any]) -> None:
+                """Handle human color changes via canvas clicks - check for valid colorings."""
+                nonlocal ui_iteration_counter
+                # Update human agent assignments
+                try:
+                    human_agent.assignments = dict(new_assignments)
                 except Exception:
                     pass
 
-                return "\n".join(reply_texts).strip()
+                # Check for valid coloring after color change
+                try:
+                    # Gather all assignments from all agents
+                    all_assign = {}
+                    for ag in agents:
+                        if hasattr(ag, "assignments") and isinstance(getattr(ag, "assignments"), dict):
+                            all_assign.update(getattr(ag, "assignments"))
+                    # Override with current human assignments
+                    all_assign.update(new_assignments)
+
+                    # Evaluate penalty
+                    pen = problem.evaluate_assignment(all_assign)
+                    score = problem.compute_score(all_assign) if hasattr(problem, "compute_score") else 0
+
+                    # Create checkpoint if valid coloring
+                    if pen <= 1e-9:
+                        ui_iteration_counter += 1
+                        checkpoint = create_checkpoint(ui_iteration_counter, all_assign, pen, score)
+                        checkpoints.append(checkpoint)
+                        print(f"[Checkpoint] Saved #{checkpoint['id']} after color change (penalty={pen:.6f})")
+                        setattr(problem, 'checkpoints', checkpoints)
+                except Exception as e:
+                    print(f"[Checkpoint] Error in on_colour_change: {e}")
 
             def on_end(final_assignments: dict) -> None:
                 # persist final assignments from UI into human agent
@@ -427,7 +578,9 @@ def run_clustered_simulation(
 
             ui = HumanTurnUI(title=ui_title)
             # mark rb mode flags if needed
-            ui._rb_mode = bool(cluster_message_types.get(human_agent.name, "").lower() == "rule_based" or cluster_message_types.get(human_agent.name, "").lower() == "rb")
+            human_msg_type = cluster_message_types.get(human_agent.name, "").lower()
+            ui._rb_mode = bool(human_msg_type in ("rule_based", "rb", "llm_rb"))
+            structured_rb_ui = bool(human_msg_type in ("rule_based", "rb", "llm_rb"))
             # boundary nodes per neighbour (for RB dropdown)
             rb_boundary = {}
             for neigh in [a.name for a in agents if a is not human_agent]:
@@ -510,6 +663,29 @@ def run_clustered_simulation(
                                 vis_edges_set.add((a, b))
                 return vis_nodes, sorted(vis_edges_set)
 
+            # ----------------------------
+            # Initialize checkpoint system for UI mode
+            # ----------------------------
+            checkpoints: List[Dict[str, Any]] = []
+            checkpoint_id_counter = 0
+            ui_iteration_counter = 0
+
+            def create_checkpoint(iteration: int, assignments: Dict[str, Any], penalty: float, score: float) -> Dict[str, Any]:
+                """Create a checkpoint snapshot when a valid coloring is reached."""
+                nonlocal checkpoint_id_counter
+                checkpoint_id_counter += 1
+                return {
+                    "id": checkpoint_id_counter,
+                    "iteration": iteration,
+                    "assignments": dict(assignments),
+                    "penalty": penalty,
+                    "score": score,
+                    "timestamp": datetime.datetime.now().isoformat(),
+                }
+
+            # Expose checkpoints to problem object so UI can access them
+            setattr(problem, 'checkpoints', checkpoints)
+
             ui.run_async_chat(
                 nodes=human_nodes,
                 domain=domain,
@@ -518,10 +694,14 @@ def run_clustered_simulation(
                 neighbour_owners=[a.name for a in agents if a is not human_agent],
                 visible_graph=(vis_nodes, vis_edges),
                 on_send=on_send,
+                on_colour_change=on_colour_change,
                 get_agent_satisfied_fn=lambda n: bool(getattr(name_to_agent.get(n), "satisfied", False)),
                 debug_get_text_fn=_debug_text,
                 debug_agents=agents,
                 debug_get_visible_graph_fn=lambda owner_name: _get_debug_visible_graph(owner_name, adjacency, owners),
+                fixed_nodes=getattr(human_agent, "fixed_local_nodes", {}),
+                problem=problem,
+                structured_rb_mode=structured_rb_ui,
             )
             # After UI exits, fall through to compute final output, skipping synchronous loop
             stop_reason = getattr(ui, "end_reason", "") or "human_end"
@@ -535,6 +715,26 @@ def run_clustered_simulation(
             max_iterations = 0
         else:
             pass
+
+    # ----------------------------
+    # Checkpoint system for undo/restore
+    # ----------------------------
+    checkpoints: List[Dict[str, Any]] = []
+    checkpoint_id_counter = 0
+
+    def create_checkpoint(iteration: int, assignments: Dict[str, Any], penalty: float, score: float) -> Dict[str, Any]:
+        """Create a checkpoint snapshot when a valid coloring is reached."""
+        nonlocal checkpoint_id_counter
+        checkpoint_id_counter += 1
+        return {
+            "id": checkpoint_id_counter,
+            "iteration": iteration,
+            "assignments": dict(assignments),
+            "penalty": penalty,
+            "score": score,
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
+
     for step in range(1, max_iterations + 1):
         # Expose iteration counter to UI / human agents.
         # (GraphColoringProblem doesn't track this itself.)
@@ -581,6 +781,17 @@ def run_clustered_simulation(
         penalty = problem.evaluate_assignment(assignments)
         iteration_assignments.append(assignments.copy())
         iteration_penalties.append(penalty)
+
+        # Checkpoint capture: save valid colorings (penalty=0)
+        if penalty <= 1e-9:  # Valid coloring (no conflicts)
+            # Compute score from preferences (optional, for now use 0)
+            score = 0.0  # Could compute from preferences if needed
+            checkpoint = create_checkpoint(step, assignments, penalty, score)
+            checkpoints.append(checkpoint)
+            print(f"[Checkpoint] Saved #{checkpoint['id']} at iteration {step} (penalty={penalty:.6f})")
+
+            # Expose checkpoints to UI via problem object
+            setattr(problem, 'checkpoints', checkpoints)
 
         # Live log flush
         _flush_agent_logs()

@@ -60,6 +60,7 @@ class HumanTurnUI:
         self._send_btn: Dict[str, ttk.Button] = {}
         self._human_sat: Dict[str, tk.BooleanVar] = {}
         self._agent_sat: Dict[str, tk.StringVar] = {}
+        self._placeholder_active: Dict[str, bool] = {}  # Track if placeholder is shown
 
         # callbacks set by run_async_chat
         # Different versions of cluster_simulation.py have used different on_send signatures:
@@ -121,9 +122,14 @@ class HumanTurnUI:
         debug_get_text_fn: Optional[Callable[[], str]] = None,
         debug_get_visible_graph_fn: Optional[Callable[[str], str]] = None,
         points: Optional[Dict[str, int]] = None,
+        fixed_nodes: Optional[Dict[str, Any]] = None,
+        problem: Optional[Any] = None,
+        structured_rb_mode: bool = False,
         **_ignored_kwargs: Any,
     ) -> None:
         """Start the UI mainloop and block until Finish or consensus."""
+        self.problem = problem
+        self._rb_structured_mode = structured_rb_mode
         # Prefer visible_graph nodes when available: owned + neighbour boundary nodes.
         if visible_graph is not None and len(visible_graph) >= 1:
             try:
@@ -142,6 +148,7 @@ class HumanTurnUI:
         self._get_agent_satisfied_fn = get_agent_satisfied_fn
         self._debug_get_text_fn = debug_get_text_fn
         self._debug_get_visible_graph_fn = debug_get_visible_graph_fn
+        self._fixed_nodes = dict(fixed_nodes) if fixed_nodes else {}
 
         if points:
             self._points = dict(points)
@@ -186,6 +193,14 @@ class HumanTurnUI:
 
         self._hud_var = tk.StringVar(master=root, value=self._hud_text())
         ttk.Label(top, textvariable=self._hud_var).pack(side="left")
+
+        # Checkpoint button bar
+        checkpoint_frame = ttk.Frame(top)
+        checkpoint_frame.pack(side="left", padx=20)
+        ttk.Label(checkpoint_frame, text="Checkpoints:").pack(side="left")
+        self._checkpoint_frame = checkpoint_frame
+        self._checkpoint_buttons: List[ttk.Button] = []
+        self._checkpoints: List[Dict] = []
 
         btns = ttk.Frame(top)
         btns.pack(side="right")
@@ -235,25 +250,114 @@ class HumanTurnUI:
 
             ttk.Label(sat_row, textvariable=self._agent_sat[neigh]).pack(side="right")
 
-            obox = tk.Text(pane, height=3, wrap="word")
-            obox.pack(fill="x", padx=6, pady=(2, 4))
-            self._outgoing_box[neigh] = obox
-            self._set_outgoing_placeholder(neigh)
+            # Add RB message builder if in RB/LLM_RB mode - NO TEXT BOX, ONLY DROPDOWNS
+            rb_mode = getattr(self, '_rb_structured_mode', False)
+            if rb_mode:
+                # Structured RB interface - dropdowns only, no text box
+                rb_frame = ttk.LabelFrame(pane, text="Send RB Message")
+                rb_frame.pack(fill="x", padx=6, pady=(2, 4))
 
-            def _send_on_enter(ev, n=neigh):
-                self._send_message(n)
-                return "break"
+                # Move type dropdown
+                move_row = ttk.Frame(rb_frame)
+                move_row.pack(fill="x", padx=4, pady=2)
+                ttk.Label(move_row, text="Move:").pack(side="left", padx=(0, 4))
+                move_var = tk.StringVar(value="PROPOSE")
+                move_combo = ttk.Combobox(move_row, textvariable=move_var,
+                                         values=["PROPOSE", "ATTACK", "CONCEDE"],
+                                         state="readonly", width=15)
+                move_combo.pack(side="left", fill="x", expand=True)
 
-            def _newline_on_shift_enter(ev, box=obox):
-                box.insert("insert", "\n")
-                return "break"
+                # Node dropdown
+                node_row = ttk.Frame(rb_frame)
+                node_row.pack(fill="x", padx=4, pady=2)
+                ttk.Label(node_row, text="Node:").pack(side="left", padx=(0, 4))
+                node_var = tk.StringVar()
+                my_nodes = [n for n in self._nodes if self._owners.get(n) == "Human"]
+                node_combo = ttk.Combobox(node_row, textvariable=node_var,
+                                         values=my_nodes, state="readonly", width=15)
+                node_combo.pack(side="left", fill="x", expand=True)
+                if my_nodes:
+                    node_var.set(my_nodes[0])
 
-            obox.bind("<Return>", _send_on_enter)
-            obox.bind("<Shift-Return>", _newline_on_shift_enter)
+                # Color dropdown
+                color_row = ttk.Frame(rb_frame)
+                color_row.pack(fill="x", padx=4, pady=2)
+                ttk.Label(color_row, text="Color:").pack(side="left", padx=(0, 4))
+                color_var = tk.StringVar()
+                color_combo = ttk.Combobox(color_row, textvariable=color_var,
+                                          values=self._domain, state="readonly", width=15)
+                color_combo.pack(side="left", fill="x", expand=True)
+                if self._domain:
+                    color_var.set(self._domain[0])
 
-            send = ttk.Button(pane, text="Send", command=lambda n=neigh: self._send_message(n))
-            send.pack(anchor="e", padx=6, pady=(0, 6))
-            self._send_btn[neigh] = send
+                # Send button - directly sends structured RB message (NO TEXT BOX)
+                def send_rb_message(n=neigh, mv=move_var, nv=node_var, cv=color_var):
+                    """Send structured RB message directly from dropdowns."""
+                    move = mv.get()
+                    node = nv.get()
+                    color = cv.get()
+
+                    if not node or not color:
+                        print(f"[RB UI] Cannot send: node='{node}' color='{color}'")
+                        return
+
+                    # Build structured RB protocol message
+                    rb_msg = f'[rb:{{"move": "{move}", "node": "{node}", "colour": "{color}", "reasons": []}}]'
+
+                    # Append to transcript for display
+                    try:
+                        self._transcripts.setdefault(n, []).append(f"[You → {n}] {move} {node}={color}")
+                        self._update_transcript_display(n)
+                    except Exception:
+                        pass
+
+                    # Send message directly (no text box involved)
+                    if self._on_send:
+                        self._status_var[n].set("sending...")
+                        root.update_idletasks()
+
+                        def _threaded_send():
+                            try:
+                                sig = inspect.signature(self._on_send)
+                                params = sig.parameters
+                                if len(params) >= 3:
+                                    self._on_send(n, rb_msg, dict(self._assignments))
+                                else:
+                                    self._on_send(n, rb_msg)
+                            except Exception as e:
+                                print(f"[RB UI] Send error: {e}")
+                            finally:
+                                if self._root:
+                                    self._root.after(0, lambda: self._status_var[n].set("idle"))
+
+                        threading.Thread(target=_threaded_send, daemon=True).start()
+
+                btn_frame = ttk.Frame(rb_frame)
+                btn_frame.pack(fill="x", padx=4, pady=6)
+                send = ttk.Button(btn_frame, text="Send RB Message", command=lambda: send_rb_message())
+                send.pack(anchor="center")
+                self._send_btn[neigh] = send
+            else:
+                # Normal text-based interface for non-RB modes
+                obox = tk.Text(pane, height=3, wrap="word")
+                obox.pack(fill="x", padx=6, pady=(2, 4))
+                self._outgoing_box[neigh] = obox
+                self._set_outgoing_placeholder(neigh)
+
+                def _send_on_enter(ev, n=neigh):
+                    self._send_message(n)
+                    return "break"
+
+                def _newline_on_shift_enter(ev, box=obox):
+                    box.insert("insert", "\n")
+                    return "break"
+
+                obox.bind("<Return>", _send_on_enter)
+                obox.bind("<Shift-Return>", _newline_on_shift_enter)
+
+                send = ttk.Button(pane, text="Send", command=lambda n=neigh: self._send_message(n))
+                send.pack(anchor="e", padx=6, pady=(0, 6))
+                self._send_btn[neigh] = send
 
         root.update_idletasks()
         self._compute_layout()
@@ -359,6 +463,15 @@ class HumanTurnUI:
             self._node_items[n] = item
             canvas.create_text(x, y, text=f"{n}", font=("TkDefaultFont", 10 if is_owned else 9))
 
+            # Visual indicators for fixed (immutable) nodes
+            if hasattr(self, '_fixed_nodes') and n in self._fixed_nodes:
+                # Orange dashed ring around fixed nodes
+                canvas.create_oval(x - r - 4, y - r - 4, x + r + 4, y + r + 4,
+                                 outline="#FF8C00", width=3, dash=(3, 2), fill="")
+                # Lock icon
+                canvas.create_text(x + r - 8, y - r + 8, text="🔒",
+                                 font=("TkDefaultFont", 10))
+
     def _on_canvas_click(self, ev: tk.Event) -> None:
         x, y = ev.x, ev.y
         best = None
@@ -371,6 +484,10 @@ class HumanTurnUI:
         if best is None:
             return
         if self._owners.get(best) != "Human":
+            return
+
+        # Prevent clicking fixed nodes (immutable constraints)
+        if hasattr(self, '_fixed_nodes') and best in self._fixed_nodes:
             return
 
         r = 24
@@ -402,20 +519,50 @@ class HumanTurnUI:
     # -------------------- Chat behaviour --------------------
 
     def _set_outgoing_placeholder(self, neigh: str) -> None:
+        """Set placeholder text in message box. Handles focus events to clear/restore placeholder."""
         box = self._outgoing_box.get(neigh)
         if box is None:
             return
+
         placeholder = "Type a message…"
-        if box.get("1.0", "end-1c").strip() == "":
+        current_text = box.get("1.0", "end-1c").strip()
+
+        # Only set placeholder if box is truly empty (not just whitespace)
+        if current_text == "" or current_text == placeholder:
+            box.delete("1.0", "end")
             box.insert("1.0", placeholder)
             box.configure(fg="#777777")
+            self._placeholder_active[neigh] = True
+        else:
+            # User has actual content - don't touch it
+            self._placeholder_active[neigh] = False
+            return
 
         def on_focus_in(_ev=None):
-            if box.get("1.0", "end-1c").strip() == placeholder:
-                box.delete("1.0", "end")
-                box.configure(fg="#000000")
+            """Clear placeholder when user clicks in the box."""
+            if self._placeholder_active.get(neigh, False):
+                current = box.get("1.0", "end-1c").strip()
+                if current == placeholder:
+                    box.delete("1.0", "end")
+                    box.configure(fg="#000000")
+                    self._placeholder_active[neigh] = False
 
+        def on_focus_out(_ev=None):
+            """Restore placeholder if box is empty when user clicks away."""
+            current = box.get("1.0", "end-1c").strip()
+            if current == "" or current == placeholder:
+                box.delete("1.0", "end")
+                box.insert("1.0", placeholder)
+                box.configure(fg="#777777")
+                self._placeholder_active[neigh] = True
+
+        # Unbind previous handlers to prevent multiple bindings
+        box.unbind("<FocusIn>")
+        box.unbind("<FocusOut>")
+
+        # Bind new handlers
         box.bind("<FocusIn>", on_focus_in)
+        box.bind("<FocusOut>", on_focus_out)
 
     def _append_to_transcript(self, neigh: str, line: str) -> None:
         self._transcripts.setdefault(neigh, []).append(line)
@@ -625,8 +772,10 @@ class HumanTurnUI:
 
         txt_summary = tk.Text(nb, wrap="word")
         txt_state = tk.Text(nb, wrap="none")
+        global_graph_canvas = tk.Canvas(nb, bg="white", highlightthickness=1, highlightbackground="#ccc")
         nb.add(txt_summary, text="Summary")
         nb.add(txt_state, text="State")
+        nb.add(global_graph_canvas, text="Global Graph")
 
         def render(name: str) -> None:
             obj = name_to_obj.get(name)
@@ -702,6 +851,104 @@ class HumanTurnUI:
             txt_state.insert("end", state_txt + "\n")
             txt_state.configure(state="disabled")
 
+            # Render global graph view
+            global_graph_lines = []
+            global_graph_lines.append("=" * 60)
+            global_graph_lines.append("GLOBAL GRAPH VIEW - All Clusters")
+            global_graph_lines.append("=" * 60)
+            global_graph_lines.append("")
+
+            # Collect all nodes from all agents
+            all_agents_nodes = set()
+            all_agents_edges = set()
+            all_assignments = {}
+            all_fixed_nodes = set()
+
+            for agent_name, agent_obj in name_to_obj.items():
+                if agent_obj is None:
+                    continue
+                try:
+                    agent_nodes = list(getattr(agent_obj, "nodes", []))
+                    all_agents_nodes.update(agent_nodes)
+
+                    # Get assignments
+                    assignments = dict(getattr(agent_obj, "assignments", {}))
+                    all_assignments.update(assignments)
+
+                    # Get fixed nodes
+                    fixed_local = dict(getattr(agent_obj, "fixed_local_nodes", {}))
+                    all_fixed_nodes.update(fixed_local.keys())
+
+                    # Try to get edges from problem
+                    problem = getattr(agent_obj, "problem", None)
+                    if problem:
+                        for node in agent_nodes:
+                            neighbors = getattr(problem, "get_neighbors", lambda x: [])(node)
+                            for nbr in neighbors:
+                                edge = tuple(sorted([node, nbr]))
+                                all_agents_edges.add(edge)
+                except Exception:
+                    pass
+
+            # Group nodes by owner/cluster
+            nodes_by_owner = {}
+            for agent_name, agent_obj in name_to_obj.items():
+                if agent_obj is None:
+                    continue
+                try:
+                    nodes = list(getattr(agent_obj, "nodes", []))
+                    if nodes:
+                        nodes_by_owner[agent_name] = nodes
+                except Exception:
+                    pass
+
+            # Display cluster information
+            global_graph_lines.append(f"Total Clusters: {len(nodes_by_owner)}")
+            global_graph_lines.append(f"Total Nodes: {len(all_agents_nodes)}")
+            global_graph_lines.append(f"Total Edges: {len(all_agents_edges)}")
+            global_graph_lines.append(f"Fixed Nodes: {len(all_fixed_nodes)}")
+            global_graph_lines.append("")
+
+            # Display each cluster
+            for cluster_name in sorted(nodes_by_owner.keys()):
+                cluster_nodes = nodes_by_owner[cluster_name]
+                global_graph_lines.append(f"--- {cluster_name} ---")
+                for node in sorted(cluster_nodes):
+                    color = all_assignments.get(node, "unassigned")
+                    fixed_marker = " [FIXED]" if node in all_fixed_nodes else ""
+                    global_graph_lines.append(f"  {node}: {color}{fixed_marker}")
+                global_graph_lines.append("")
+
+            # Display all edges
+            if all_agents_edges:
+                global_graph_lines.append("--- All Edges ---")
+                for u, v in sorted(all_agents_edges):
+                    # Determine if cross-cluster
+                    u_owner = None
+                    v_owner = None
+                    for owner, nodes in nodes_by_owner.items():
+                        if u in nodes:
+                            u_owner = owner
+                        if v in nodes:
+                            v_owner = owner
+
+                    edge_type = " (cross-cluster)" if u_owner != v_owner else ""
+                    u_color = all_assignments.get(u, "?")
+                    v_color = all_assignments.get(v, "?")
+                    conflict = " [CONFLICT!]" if u_color == v_color and u_color != "?" else ""
+
+                    global_graph_lines.append(f"  {u}({u_color}) -- {v}({v_color}){edge_type}{conflict}")
+
+            # Render visual global graph on canvas
+            self._render_global_graph_visual(
+                global_graph_canvas,
+                debug_agents if debug_agents else [],
+                all_assignments,
+                all_fixed_nodes,
+                nodes_by_owner,
+                all_agents_edges
+            )
+
         def on_select(_ev=None):
             try:
                 sel = lb.curselection()
@@ -719,6 +966,215 @@ class HumanTurnUI:
             lb.selection_set(0)
             render(names[0])
 
+    # -------------------- Checkpoint restore system --------------------
+
+    def update_checkpoints(self, checkpoints: List[Dict]) -> None:
+        """Update checkpoint button list with new checkpoints."""
+        self._checkpoints = list(checkpoints)
+
+        # Clear existing buttons
+        for btn in self._checkpoint_buttons:
+            btn.destroy()
+        self._checkpoint_buttons.clear()
+
+        # Create buttons for each checkpoint
+        for cp in checkpoints:
+            btn_text = f"#{cp['id']}: {cp.get('score', 0):.1f}"
+            btn = ttk.Button(
+                self._checkpoint_frame,
+                text=btn_text,
+                command=lambda cid=cp['id']: self._restore_checkpoint(cid),
+                width=12
+            )
+            btn.pack(side="left", padx=2)
+            self._checkpoint_buttons.append(btn)
+            self._create_checkpoint_tooltip(btn, cp)
+
+    def _restore_checkpoint(self, cp_id: int) -> None:
+        """Restore assignments from a specific checkpoint."""
+        for cp in self._checkpoints:
+            if cp["id"] == cp_id:
+                self._assignments = dict(cp["assignments"])
+                self._redraw()
+                if self._on_colour_change:
+                    self._on_colour_change(dict(self._assignments))
+                print(f"[UI] Restored checkpoint #{cp_id} from iteration {cp['iteration']}")
+                break
+
+    def _create_checkpoint_tooltip(self, button: ttk.Button, checkpoint: Dict) -> None:
+        """Create hover tooltip showing checkpoint details."""
+        def show_tooltip(event):
+            tooltip = tk.Toplevel(self._root)
+            tooltip.wm_overrideredirect(True)
+            tooltip.geometry(f"+{event.x_root+10}+{event.y_root+10}")
+
+            # Build tooltip text
+            lines = [
+                f"Checkpoint #{checkpoint['id']}",
+                f"Iteration: {checkpoint['iteration']}",
+                f"Penalty: {checkpoint.get('penalty', 0):.6f}",
+                f"Score: {checkpoint.get('score', 0):.2f}",
+                "",
+                "Assignments:"
+            ]
+            for node, color in sorted(checkpoint['assignments'].items()):
+                lines.append(f"  {node}: {color}")
+
+            label = tk.Label(
+                tooltip,
+                text="\n".join(lines),
+                bg="lightyellow",
+                fg="black",
+                relief="solid",
+                borderwidth=1,
+                font=("TkDefaultFont", 9),
+                justify="left",
+                padx=8,
+                pady=6
+            )
+            label.pack()
+            button._tooltip = tooltip
+
+        def hide_tooltip(event):
+            if hasattr(button, '_tooltip'):
+                try:
+                    button._tooltip.destroy()
+                    delattr(button, '_tooltip')
+                except:
+                    pass
+
+        button.bind("<Enter>", show_tooltip)
+        button.bind("<Leave>", hide_tooltip)
+
+    def _render_global_graph_visual(
+        self,
+        canvas: tk.Canvas,
+        agents: List[Any],
+        all_assignments: Dict[str, Any],
+        all_fixed: set,
+        nodes_by_owner: Dict[str, List[str]],
+        all_edges: set
+    ) -> None:
+        """Render complete global graph on canvas with all clusters visible."""
+        canvas.delete("all")
+
+        # Get canvas dimensions
+        canvas.update_idletasks()
+        w = max(canvas.winfo_width(), 600)
+        h = max(canvas.winfo_height(), 500)
+        cx, cy = w / 2.0, h / 2.0
+
+        # Layout: multi-ring circular (one ring per cluster)
+        node_positions = {}
+        cluster_names = sorted(nodes_by_owner.keys())
+        num_clusters = len(cluster_names)
+
+        if num_clusters == 0:
+            canvas.create_text(cx, cy, text="No agents available", font=("Arial", 14))
+            return
+
+        for cluster_idx, cluster_name in enumerate(cluster_names):
+            cluster_nodes = sorted(nodes_by_owner[cluster_name])
+            num_nodes = len(cluster_nodes)
+
+            if num_nodes == 0:
+                continue
+
+            # Determine radius based on cluster index
+            if cluster_name == "Human":
+                radius = min(w, h) * 0.20  # Innermost ring
+            else:
+                # Outer rings for agents
+                ring_offset = 0.30 + ((cluster_idx - 1) * 0.15) if cluster_name != "Human" else 0.30
+                radius = min(w, h) * ring_offset
+
+            # Position nodes around circle
+            for i, node in enumerate(cluster_nodes):
+                angle = (2.0 * math.pi * i) / float(num_nodes) if num_nodes > 0 else 0
+                x = cx + radius * math.cos(angle)
+                y = cy + radius * math.sin(angle)
+                node_positions[node] = (int(x), int(y))
+
+        # Draw edges first (so they're behind nodes)
+        for edge in all_edges:
+            if isinstance(edge, tuple) and len(edge) >= 2:
+                u, v = edge[0], edge[1]
+            else:
+                continue
+
+            if u not in node_positions or v not in node_positions:
+                continue
+
+            x1, y1 = node_positions[u]
+            x2, y2 = node_positions[v]
+
+            # Check for conflict (same color on adjacent nodes)
+            u_color = all_assignments.get(u)
+            v_color = all_assignments.get(v)
+
+            if u_color and v_color and str(u_color).lower() == str(v_color).lower():
+                # CONFLICT - thick red line
+                canvas.create_line(x1, y1, x2, y2, fill="#dd0000", width=3, tags="edge")
+            else:
+                # Normal edge
+                canvas.create_line(x1, y1, x2, y2, fill="#999999", width=1, tags="edge")
+
+        # Draw nodes
+        for node, (x, y) in node_positions.items():
+            color = all_assignments.get(node)
+
+            # Color fill
+            fill_color = self._colour_fill(color)
+
+            # Radius
+            radius = 20
+
+            # Draw circle
+            canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius,
+                fill=fill_color,
+                outline="#333",
+                width=2,
+                tags="node"
+            )
+
+            # Fixed node indicator (orange dashed ring + lock)
+            if node in all_fixed:
+                canvas.create_oval(
+                    x - radius - 4, y - radius - 4, x + radius + 4, y + radius + 4,
+                    outline="#FF8C00",
+                    width=3,
+                    dash=(3, 2),
+                    tags="fixed"
+                )
+                canvas.create_text(
+                    x + radius - 8, y - radius + 8,
+                    text="🔒",
+                    font=("TkDefaultFont", 10),
+                    tags="fixed"
+                )
+
+            # Node label
+            canvas.create_text(
+                x, y,
+                text=str(node),
+                font=("Arial", 10, "bold"),
+                tags="label"
+            )
+
+        # Add legend
+        legend_x = 20
+        legend_y = 20
+        for i, cluster_name in enumerate(cluster_names):
+            y_offset = legend_y + (i * 25)
+            canvas.create_text(
+                legend_x, y_offset,
+                text=f"● {cluster_name}",
+                anchor="w",
+                font=("Arial", 11, "bold"),
+                tags="legend"
+            )
+
     # -------------------- Periodic refresh --------------------
 
     def _periodic_refresh(self) -> None:
@@ -735,6 +1191,27 @@ class HumanTurnUI:
 
         if self._hud_var:
             self._hud_var.set(self._hud_text())
+
+        # Update checkpoints if available from problem object
+        try:
+            if hasattr(self, 'problem') and self.problem is not None:
+                if hasattr(self.problem, 'checkpoints'):
+                    checkpoints = getattr(self.problem, 'checkpoints', [])
+                    # Update if checkpoint list has changed (length or content)
+                    if checkpoints:
+                        # Check if we need to update (length changed or list is different)
+                        if len(checkpoints) != len(self._checkpoints):
+                            print(f"[UI] Updating checkpoints: {len(checkpoints)} available")
+                            self.update_checkpoints(checkpoints)
+                        # Also check if IDs have changed (in case checkpoints were reset)
+                        elif checkpoints:
+                            current_ids = [cp.get('id') for cp in self._checkpoints]
+                            new_ids = [cp.get('id') for cp in checkpoints]
+                            if current_ids != new_ids:
+                                print(f"[UI] Checkpoint IDs changed, updating")
+                                self.update_checkpoints(checkpoints)
+        except Exception as e:
+            print(f"[UI] Error updating checkpoints: {e}")
 
         self._check_consensus()
 

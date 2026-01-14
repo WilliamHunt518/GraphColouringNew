@@ -103,6 +103,7 @@ class ClusterAgent(MultiNodeAgent):
         message_type: str = "cost_list",
         counterfactual_utils: bool = True,
         initial_assignments: Optional[Dict[str, Any]] = None,
+        fixed_local_nodes: Optional[Dict[str, Any]] = None,
     ) -> None:
         # Call parent initialiser to set up assignments and neighbour tracking.
         super().__init__(
@@ -131,6 +132,10 @@ class ClusterAgent(MultiNodeAgent):
         # True means the agent believes its current assignment is locally optimal
         # given what it *believes* about neighbour assignments (from messages).
         self.satisfied: bool = False
+
+        # Fixed nodes (immutable constraints set at initialization to force negotiation).
+        # These take highest priority and cannot be changed by any algorithm or human input.
+        self.fixed_local_nodes: Dict[str, Any] = dict(fixed_local_nodes) if fixed_local_nodes else {}
 
         # When the human explicitly requests a colour for one of this agent's
         # own nodes (e.g. "pick blue for b2"), we treat it as a *soft forced*
@@ -163,10 +168,15 @@ class ClusterAgent(MultiNodeAgent):
             best_assignment: Dict[str, Any] = dict(self.assignments)
             best_penalty: float = self.evaluate_candidate(best_assignment)
             # iterate over cartesian product of colours for local nodes
+            # Priority: fixed (immutable) > forced (human-requested) > free (optimizable)
+            fixed = dict(getattr(self, "fixed_local_nodes", {}) or {})
             forced = dict(getattr(self, "forced_local_assignments", {}) or {})
-            free_nodes = [n for n in self.nodes if n not in forced]
+            # Merge fixed and forced (fixed takes precedence)
+            constrained = dict(forced)
+            constrained.update(fixed)
+            free_nodes = [n for n in self.nodes if n not in constrained]
             for combo in itertools.product(self.domain, repeat=len(free_nodes)):
-                candidate = dict(forced)
+                candidate = dict(constrained)
                 candidate.update({node: val for node, val in zip(free_nodes, combo)})
                 penalty = self.evaluate_candidate(candidate)
                 if penalty < best_penalty:
@@ -182,12 +192,17 @@ class ClusterAgent(MultiNodeAgent):
                 self.debug_last_local_scores = {}  # type: ignore[attr-defined]
             except Exception:
                 pass
+            # Priority: fixed (immutable) > forced (human-requested) > free (optimizable)
+            fixed = dict(getattr(self, "fixed_local_nodes", {}) or {})
             forced = dict(getattr(self, "forced_local_assignments", {}) or {})
+            # Merge fixed and forced (fixed takes precedence)
+            constrained = dict(forced)
+            constrained.update(fixed)
             for node in self.nodes:
-                if node in forced:
-                    new_assignment[node] = forced[node]
+                if node in constrained:
+                    new_assignment[node] = constrained[node]
                     try:
-                        self.debug_last_local_scores[node] = {forced[node]: 0.0}  # type: ignore[attr-defined]
+                        self.debug_last_local_scores[node] = {constrained[node]: 0.0}  # type: ignore[attr-defined]
                     except Exception:
                         pass
                     continue
@@ -251,8 +266,17 @@ class ClusterAgent(MultiNodeAgent):
         base = dict(base or {})
         best_pen = float("inf")
         best_assign = dict(self.assignments)
-        for combo in itertools.product(self.domain, repeat=len(self.nodes)):
-            cand = {n: v for n, v in zip(self.nodes, combo)}
+
+        # Respect fixed and forced constraints
+        fixed = dict(getattr(self, "fixed_local_nodes", {}) or {})
+        forced = dict(getattr(self, "forced_local_assignments", {}) or {})
+        constrained = dict(forced)
+        constrained.update(fixed)
+        free_nodes = [n for n in self.nodes if n not in constrained]
+
+        for combo in itertools.product(self.domain, repeat=len(free_nodes)):
+            cand = dict(constrained)
+            cand.update({n: v for n, v in zip(free_nodes, combo)})
             pen = self.problem.evaluate_assignment({**base, **cand})
             if pen < best_pen:
                 best_pen = pen
@@ -265,14 +289,220 @@ class ClusterAgent(MultiNodeAgent):
         return self._best_local_assignment_for(base)
 
     def _compute_satisfied(self) -> bool:
-        """Whether the agent is satisfied with its current assignment."""
+        """Whether the agent is satisfied with its current assignment.
+
+        Agent is satisfied ONLY if:
+        1. There are NO conflicts (penalty = 0), AND
+        2. Current assignment is as good as the best possible local assignment
+
+        If there are boundary conflicts (penalty > 0), agent should NEVER be satisfied,
+        even if it can't do better locally - the human needs to change boundary colors.
+        """
         base = dict(getattr(self, "neighbour_assignments", {}) or {})
         current_pen = self.problem.evaluate_assignment({**base, **dict(self.assignments)})
+
+        # CRITICAL: Never satisfied if there are conflicts (penalty > 0)
+        # Even if we can't do better given current boundary, we're not satisfied
+        # because the boundary needs to change to achieve a valid coloring
+        if current_pen > 1e-9:
+            return False
+
+        # No conflicts - check if we're at local optimum
         best_pen, _ = self._best_local_assignment()
         return current_pen <= best_pen + 1e-9
 
+    def _respond_to_human_conversationally(self, assignments_changed: bool = False, old_assignments: Optional[Dict[str, Any]] = None) -> None:
+        """Generate conversational response with conflict-aware suggestions.
+
+        This method is called when the human has sent a message that needs a response.
+        It uses the LLM to generate a natural conversational reply that:
+        - Directly addresses the human's message/question
+        - Detects conflicts and suggests SPECIFIC color changes
+        - Mentions specific internal node changes (e.g., "I changed a2 from red to green")
+        - Maintains a collaborative tone
+        """
+        if not hasattr(self.comm_layer, "_call_openai"):
+            # Fallback if no LLM available - just acknowledge
+            self.send("Human", {"type": "free_text", "data": "I received your message."})
+            return
+
+        # Build context about current state
+        base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
+
+        # Get boundary nodes belonging to human
+        human_boundary: List[str] = []
+        for node in self.nodes:
+            for nbr in self.problem.get_neighbors(node):
+                if nbr not in self.nodes and self.owners.get(nbr) == "Human":
+                    if nbr not in human_boundary:
+                        human_boundary.append(nbr)
+
+        # What we know about human's boundary
+        known_human = {n: base_beliefs.get(n) for n in human_boundary if base_beliefs.get(n) is not None}
+
+        # Track specific changes to internal nodes
+        changes_list = []
+        if assignments_changed and old_assignments:
+            for node in self.nodes:
+                old_color = old_assignments.get(node)
+                new_color = self.assignments.get(node)
+                if old_color != new_color:
+                    changes_list.append(f"{node}: {old_color} → {new_color}")
+
+        changes_summary = ""
+        if changes_list:
+            changes_summary = "\n\nCHANGES YOU MADE THIS TURN:\n" + "\n".join([f"- {c}" for c in changes_list])
+
+        # DETECT CONFLICTS - check for same-color adjacent nodes
+        conflicts = []
+        for my_node in self.nodes:
+            my_color = self.assignments.get(my_node)
+            for nbr in self.problem.get_neighbors(my_node):
+                if nbr not in self.nodes:  # External neighbor
+                    nbr_color = base_beliefs.get(nbr)
+                    if nbr_color and my_color and str(nbr_color).lower() == str(my_color).lower():
+                        conflicts.append((my_node, nbr, my_color))
+
+        # Generate conflict-specific suggestions
+        conflict_summary = ""
+        if conflicts:
+            conflict_summary = "\n\nCONFLICTS DETECTED:\n"
+            for my_node, human_node, clashing_color in conflicts[:3]:  # Top 3
+                conflict_summary += f"- {my_node} ({clashing_color}) clashes with {human_node} ({clashing_color})\n"
+
+            # Suggest specific changes - but prioritize suggesting changes to OUR OWN internal nodes first
+            conflict_summary += "\nSUGGESTED CHANGES:\n"
+            # First check if we can change our internal nodes
+            internal_change_possible = False
+            for my_node, human_node, clashing_color in conflicts[:3]:
+                alternatives = [c for c in self.domain if str(c).lower() != str(clashing_color).lower()]
+                if alternatives:
+                    # Suggest changing OUR internal node if possible
+                    conflict_summary += f"- I could change my node {my_node} to {alternatives[0]} (currently {clashing_color})\n"
+                    internal_change_possible = True
+
+            # If no internal changes suggested, suggest human boundary changes
+            if not internal_change_possible:
+                for my_node, human_node, clashing_color in conflicts[:3]:
+                    alternatives = [c for c in self.domain if str(c).lower() != str(clashing_color).lower()]
+                    if alternatives:
+                        conflict_summary += f"- Change {human_node} to {alternatives[0]} to resolve clash with {my_node}\n"
+
+        # Current penalty
+        combined = {**base_beliefs, **dict(self.assignments)}
+        current_penalty = self.problem.evaluate_assignment(combined)
+
+        # Build prompt
+        state_summary = (
+            f"Your current assignments: {dict(self.assignments)}\n"
+            f"Human's boundary nodes: {human_boundary}\n"
+            f"What you know about human's boundary: {known_human}\n"
+            f"Current penalty: {current_penalty:.2f}\n"
+            f"Your assignments changed this turn: {assignments_changed}\n"
+            f"{changes_summary}\n"
+            f"{conflict_summary}"
+        )
+
+        # Build prompt emphasizing whether assignments actually changed
+        if assignments_changed and changes_list:
+            change_status = f"YOUR ASSIGNMENTS **DID** CHANGE THIS TURN. Specifically: {', '.join(changes_list)}"
+        else:
+            change_status = "YOUR ASSIGNMENTS **DID NOT** CHANGE THIS TURN. Your nodes are the same as before."
+
+        # Check if human is asking a question
+        text_lower = self._last_human_text.lower()
+        is_question = "?" in self._last_human_text or any(q in text_lower for q in [
+            "what", "why", "how", "can you", "are you", "do you", "is", "will you", "could you"
+        ])
+
+        prompt = (
+            f"You are agent '{self.name}' collaborating with a human on a graph coloring task.\n\n"
+            f"The human just said: \"{self._last_human_text}\"\n\n"
+            f"**CRITICAL FACT:** {change_status}\n\n"
+            f"Your current state:\n{state_summary}\n"
+        )
+
+        if is_question:
+            prompt += (
+                "The human asked you a QUESTION. Your response MUST:\n"
+                "1. ANSWER THE QUESTION DIRECTLY first - don't dodge or change the subject\n"
+                "2. If they ask about your nodes/colors, tell them your exact current assignments\n"
+                "3. If they ask 'can you do X', answer yes/no FIRST, then explain\n"
+                "4. If they ask 'why', explain the reasoning clearly\n"
+                "5. Be specific and truthful - use actual node names and colors from your state\n\n"
+                "Examples:\n"
+                "Q: 'What color is b2?'\nA: 'b2 is currently red.'\n\n"
+                "Q: 'Can you change b2 to green?'\nA: 'Yes, I changed b2 to green.' OR 'No, I cannot change b2 without creating internal conflicts.'\n\n"
+                "Q: 'Why is there a clash?'\nA: 'There's a clash because my node b2 (red) neighbors your node h2 (red). Same colors on adjacent nodes create conflicts.'\n\n"
+                "Return ONLY the conversational response text."
+            )
+        else:
+            prompt += (
+                "Generate a conversational response (2-3 sentences max) that:\n"
+                "1. DIRECTLY responds to what the human said\n"
+                "2. If you DID change nodes, mention the specific changes\n"
+                "3. If you DID NOT change nodes AND conflicts exist, be brutally honest: 'I CANNOT fix this by changing my nodes - you must change the boundary'\n"
+                "4. NEVER EVER say 'I changed' if your assignments didn't actually change - that is LYING\n"
+                "5. If penalty > 0, this is a BAD/INVALID coloring - never claim you have a good solution\n\n"
+                "Examples if assignments CHANGED:\n"
+                "- 'Yes, I changed a2 from red to green to avoid the clash with h1.'\n\n"
+                "Examples if assignments DID NOT change:\n"
+                "- 'I CANNOT resolve this clash by changing my internal nodes. You need to change h1 from red to blue.'\n"
+                "- 'My nodes cannot change without making things worse. Please change h2 to green to eliminate the conflict.'\n"
+                "- 'I am stuck with this configuration. The boundary colors force this clash. You must change your nodes.'\n\n"
+                "Return ONLY the conversational response text."
+            )
+
+        try:
+            response_text = self.comm_layer._call_openai(prompt, max_tokens=200)
+
+            if response_text and response_text.strip():
+                # CRITICAL: Post-process to remove lies about changes
+                final_response = response_text.strip()
+
+                # If assignments didn't change, strip out any claims of changing
+                if not assignments_changed:
+                    lies = ["i changed", "i've changed", "i have changed", "i resolved", "i've resolved",
+                            "i switched", "i've switched", "i corrected", "i've corrected"]
+                    final_lower = final_response.lower()
+                    for lie in lies:
+                        if lie in final_lower:
+                            # LLM is lying - replace with honest fallback
+                            if conflicts:
+                                example = conflicts[0]
+                                alternatives = [c for c in self.domain if str(c).lower() != str(example[2]).lower()]
+                                final_response = f"I CANNOT resolve the clash at {example[0]} (clashing with {example[1]}). You need to change {example[1]} to {alternatives[0] if alternatives else 'a different color'}."
+                            else:
+                                final_response = f"My nodes did not change. Current penalty: {current_penalty:.2f}"
+                            self.log(f"WARNING: LLM hallucinated changes when assignments_changed=False. Replaced with honest response.")
+                            break
+
+                self.send("Human", {"type": "free_text", "data": final_response})
+                self.log(f"Sent conversational response to Human: {final_response[:80]}...")
+            else:
+                # Fallback if LLM returns nothing
+                if changes_list:
+                    fallback = f"I changed: {', '.join(changes_list)}."
+                elif conflicts and not assignments_changed:
+                    # CRITICAL: If we have conflicts but couldn't change, be honest!
+                    example = conflicts[0]
+                    alternatives = [c for c in self.domain if str(c).lower() != str(example[2]).lower()]
+                    fallback = f"I CANNOT resolve the clash at {example[0]} (clashing with {example[1]}). All my alternatives are worse. You need to change {example[1]} to {alternatives[0] if alternatives else 'a different color'}."
+                elif conflicts:
+                    # We tried to change but still have conflicts
+                    example = conflicts[0]
+                    fallback = f"I still have a clash at {example[0]} with {example[1]}. I need you to change the boundary to resolve this."
+                else:
+                    fallback = f"My nodes are optimized. Current penalty: {current_penalty:.2f}"
+                self.send("Human", {"type": "free_text", "data": fallback})
+
+        except Exception as e:
+            self.log(f"Error generating conversational response: {e}")
+            # Fallback acknowledgment
+            self.send("Human", {"type": "free_text", "data": f"I received your message: {self._last_human_text}"})
+
     def step(self) -> None:
-        """Perform one iteration of the cluster agent’s process.
+        """Perform one iteration of the cluster agent's process.
 
         The cluster computes a new assignment for its local nodes using
         the configured algorithm and then sends a message to each
@@ -291,13 +521,37 @@ class ClusterAgent(MultiNodeAgent):
             except Exception:
                 pass
 
-        # compute new assignments
+        # compute new assignments FIRST
+        # Store old assignments for detailed change tracking
+        old_assignments = dict(self.assignments)
+
+        # DEBUG: Log what we know about boundaries before computing
+        base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
+        if base_beliefs:
+            self.log(f"Known boundary colors before compute_assignments: {base_beliefs}")
+        else:
+            self.log(f"WARNING: No known boundary colors (neighbour_assignments is empty)")
+
         new_assignment = self.compute_assignments()
-        if new_assignment != self.assignments:
+        assignments_changed = new_assignment != self.assignments
+        if assignments_changed:
             self.log(f"Updated assignments from {self.assignments} to {new_assignment}")
         else:
             self.log(f"Assignments unchanged: {self.assignments}")
+            # DEBUG: If we have boundary conflicts but didn't change, log why
+            current_combined = {**base_beliefs, **dict(self.assignments)}
+            current_penalty = self.problem.evaluate_assignment(current_combined)
+            if current_penalty > 1e-9:
+                self.log(f"WARNING: Assignments didn't change despite penalty={current_penalty:.3f}")
+                self.log(f"Current boundary beliefs: {base_beliefs}")
+                self.log(f"Current assignments: {self.assignments}")
+
         self.assignments = new_assignment
+
+        # Clear forced assignments after they've been applied (one-time use)
+        if hasattr(self, 'forced_local_assignments') and self.forced_local_assignments:
+            self.log(f"Clearing forced_local_assignments: {self.forced_local_assignments}")
+            self.forced_local_assignments = {}
 
         # If greedy search got stuck, snap to the best local assignment (cluster sizes are small).
         try:
@@ -306,6 +560,7 @@ class ClusterAgent(MultiNodeAgent):
             best_pen, best_assign = self._best_local_assignment_for(base)
             if current_pen > best_pen + 1e-9:
                 self.assignments = dict(best_assign)
+                assignments_changed = True  # Mark that we changed
                 try:
                     self.log(f"Snapped to best local assignment (pen {current_pen} -> {best_pen}).")
                 except Exception:
@@ -315,11 +570,33 @@ class ClusterAgent(MultiNodeAgent):
 
 
         # update satisfaction flag (soft convergence)
+        # If human is asking us to make changes, reconsider satisfaction even if we were satisfied before
+        if self._last_human_text and self._last_human_text.strip():
+            # Check if human is asking for changes (keywords like "change", "can you", "your end", etc.)
+            text_lower = self._last_human_text.lower()
+            asking_for_changes = any(phrase in text_lower for phrase in [
+                "change", "can you", "your end", "your side", "adjust", "modify",
+                "different", "try", "switch", "untick", "reconsider"
+            ])
+            if asking_for_changes and self.satisfied:
+                self.log(f"Human requested changes - reconsidering satisfaction")
+                # Force recalculation by not using cached value
+
         try:
             self.satisfied = bool(self._compute_satisfied())
             self.log(f"Satisfied: {self.satisfied}")
         except Exception:
             self.satisfied = False
+
+        # --- Handle conversational human messages AFTER computing assignments ---
+        # This way we know if our assignments actually changed before responding.
+        if self._last_human_text and self._last_human_text.strip():
+            try:
+                self._respond_to_human_conversationally(assignments_changed, old_assignments)
+                # Clear after responding so we don't keep replying to the same message
+                self._last_human_text = ""
+            except Exception as e:
+                self.log(f"Failed to generate conversational response: {e}")
 
         # debug snapshot of the decision
         try:
@@ -519,12 +796,30 @@ class ClusterAgent(MultiNodeAgent):
                             human_cfg = {boundary_nodes[i]: colours[i] for i in range(len(boundary_nodes))}
 
                             # Filter to local neighbourhood around current settings when fully known.
+                            # Allow larger Hamming distance when conflicts exist to explore more options.
                             if (current_key is not None) and (not include_team):
                                 dist = 0
                                 for n in boundary_nodes:
                                     if str(human_cfg.get(n)).lower() != str(current_key.get(n)).lower():
                                         dist += 1
-                                if dist > 1:
+
+                                # Check if we have conflicts with current boundary settings
+                                has_conflicts = False
+                                for my_node in self.nodes:
+                                    my_color = self.assignments.get(my_node)
+                                    for nbr in self.problem.get_neighbors(my_node):
+                                        if nbr not in self.nodes:  # External neighbor
+                                            nbr_color = base_beliefs.get(nbr)
+                                            if nbr_color and my_color and str(nbr_color).lower() == str(my_color).lower():
+                                                has_conflicts = True
+                                                break
+                                    if has_conflicts:
+                                        break
+
+                                # Only filter to distance 1 if NO conflicts
+                                # Allow larger changes (distance 2) when conflicts exist
+                                max_distance = 2 if has_conflicts else 1
+                                if dist > max_distance:
                                     continue
 
                             tmp = dict(base_beliefs)
@@ -549,6 +844,33 @@ class ClusterAgent(MultiNodeAgent):
                                 if o.get("human") == current_key:
                                     current = o
                                     break
+
+                            # CRITICAL FIX: Recompute penalty using ACTUAL current assignments, not best possible.
+                            # The penalty in opts[] is for the BEST agent assignments given that boundary config.
+                            # But we need to report the penalty for the agent's ACTUAL current assignments!
+                            if current is not None:
+                                # Build complete assignment: agent's ACTUAL assignments + human's known boundary
+                                actual_combined = dict(base_beliefs)
+                                actual_combined.update(dict(self.assignments))
+                                actual_current_penalty = self.problem.evaluate_assignment(actual_combined)
+
+                                # Replace the optimistic penalty with the ACTUAL penalty
+                                current["penalty"] = float(actual_current_penalty)
+
+                                # Also verify: check for explicit conflicts between agent nodes and boundary
+                                conflict_count = 0
+                                for my_node in self.nodes:
+                                    my_color = self.assignments.get(my_node)
+                                    for nbr in self.problem.get_neighbors(my_node):
+                                        if nbr not in self.nodes:  # External neighbor (boundary)
+                                            nbr_color = base_beliefs.get(nbr)
+                                            if nbr_color and my_color and str(nbr_color).lower() == str(my_color).lower():
+                                                conflict_count += 1
+
+                                # If we detected conflicts, ensure penalty is positive
+                                if conflict_count > 0 and actual_current_penalty < 1e-9:
+                                    self.log(f"WARNING: Detected {conflict_count} boundary conflicts but penalty={actual_current_penalty}. Forcing penalty > 0.")
+                                    current["penalty"] = float(conflict_count)  # At least count the conflicts
 
                         # Rank: feasible first, then higher score.
                         # If the human asked for team/total, rank by combined, otherwise by agent_score.
@@ -656,7 +978,31 @@ class ClusterAgent(MultiNodeAgent):
         try:
             if str(message.sender).lower() == "human":
                 self._last_human_text = str(message.content)
-        except Exception:
+
+                # Parse human requests to change specific node colors
+                # Look for patterns like "change b2 to green", "set b2 to green", "make b2 green"
+                import re
+                text_lower = self._last_human_text.lower()
+
+                # Pattern: "change/set/make/switch NODE to/= COLOR"
+                # Matches: "change b2 to green", "set b2=green", "make b2 blue", "switch b2 to red"
+                patterns = [
+                    r'\b(?:change|set|make|switch)\s+(\w+)\s+(?:to|=)\s+(\w+)',
+                    r'\b(\w+)\s*=\s*(\w+)',  # "b2=green"
+                ]
+
+                for pattern in patterns:
+                    matches = re.findall(pattern, text_lower)
+                    for node, color in matches:
+                        # Check if this is actually one of our nodes
+                        if node in self.nodes and color in [str(c).lower() for c in self.domain]:
+                            # Force this assignment in the next step
+                            if not hasattr(self, 'forced_local_assignments'):
+                                self.forced_local_assignments = {}
+                            self.forced_local_assignments[node] = color
+                            self.log(f"Human requested: {node} -> {color}. Will force this assignment.")
+        except Exception as e:
+            self.log(f"Error parsing human message for forced assignments: {e}")
             pass
         content = message.content
         try:

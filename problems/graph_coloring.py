@@ -77,6 +77,7 @@ class GraphColoring:
         domain: Iterable[Any],
         preferences: Optional[Dict[Any, Dict[Any, float]]] = None,
         conflict_penalty: float = 1.0,
+        fixed_assignments: Optional[Dict[Any, Any]] = None,
     ) -> None:
         self.nodes = list(nodes)
         # normalise edges to store each edge once with sorted endpoints
@@ -100,6 +101,8 @@ class GraphColoring:
                 for node in self.nodes
             }
         self.conflict_penalty = conflict_penalty
+        # Fixed assignments (immutable node-color constraints)
+        self.fixed_assignments: Dict[Any, Any] = dict(fixed_assignments) if fixed_assignments else {}
 
     def get_neighbors(self, node: Any) -> List[Any]:
         """Return a list of neighbour nodes for a given node."""
@@ -159,6 +162,57 @@ class GraphColoring:
             if c_u == c_v:
                 return False
         return True
+
+    def is_internal_node(self, node: Any, cluster_nodes: List[Any]) -> bool:
+        """Check if a node is internal to a cluster (has no external neighbors).
+
+        Parameters
+        ----------
+        node : Any
+            The node to check.
+        cluster_nodes : List[Any]
+            List of nodes in the cluster.
+
+        Returns
+        -------
+        bool
+            True if all neighbors of the node are also in the cluster.
+        """
+        neighbors = self.get_neighbors(node)
+        return all(nbr in cluster_nodes for nbr in neighbors)
+
+    def respects_fixed_constraints(self, assignment: Dict[Any, Any]) -> bool:
+        """Check if an assignment respects all fixed node constraints.
+
+        Parameters
+        ----------
+        assignment : Dict[Any, Any]
+            The proposed node-to-color assignment.
+
+        Returns
+        -------
+        bool
+            True if all fixed nodes have their required colors in the assignment.
+        """
+        for fixed_node, fixed_color in self.fixed_assignments.items():
+            if fixed_node in assignment and assignment[fixed_node] != fixed_color:
+                return False
+        return True
+
+    def is_valid_with_constraints(self, assignment: Dict[Any, Any]) -> bool:
+        """Check if assignment is valid (no clashes) and respects fixed constraints.
+
+        Parameters
+        ----------
+        assignment : Dict[Any, Any]
+            The proposed node-to-color assignment.
+
+        Returns
+        -------
+        bool
+            True if the assignment has no color clashes and respects fixed constraints.
+        """
+        return self.is_valid(assignment) and self.respects_fixed_constraints(assignment)
 
 
 def create_path_graph(bridge_density: int = 2) -> GraphColoring:

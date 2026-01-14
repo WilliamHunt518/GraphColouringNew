@@ -90,6 +90,7 @@ class MultiNodeHumanAgent(BaseAgent):
         auto_response: Optional[Callable[[str], str]] = None,
         ui: Optional["HumanTurnUI"] = None,
         send_assignments: bool = False,
+        fixed_local_nodes: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(name=name, problem=problem, comm_layer=comm_layer, initial_value=None)
         # store node ownership info
@@ -97,6 +98,8 @@ class MultiNodeHumanAgent(BaseAgent):
         self.owners: Dict[str, str] = dict(owners)
         self.auto_response = auto_response
         self.ui = ui
+        # Fixed nodes (immutable constraints set at initialization to force negotiation)
+        self.fixed_local_nodes: Dict[str, Any] = dict(fixed_local_nodes) if fixed_local_nodes else {}
         # If True, the human's current assignments are sent as a structured message.
         # For the main study we keep this False to preserve partial observability:
         # agents should not directly observe the human's internal state unless the

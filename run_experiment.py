@@ -38,6 +38,7 @@ CONVERGENCE_K = 2
 STOP_ON_SOFT = True
 STOP_ON_HARD = True
 COUNTERFACTUAL_UTILS = True
+FIXED_CONSTRAINTS = True  # True => 1 fixed node per cluster to force negotiation
 
 
 def run_experiment(
@@ -52,6 +53,8 @@ def run_experiment(
     # Study default: do not auto-stop purely on hard convergence.
     stop_on_hard: bool = False,
     counterfactual_utils: bool = True,
+    fixed_constraints: bool = True,
+    num_fixed_nodes: int = 1,
 ) -> None:
     # Ensure outputs are written under the *project root* (i.e., the directory
     # you opened in your IDE / run from). This avoids writing results one level
@@ -141,6 +144,8 @@ def run_experiment(
         cluster_message_types = {"Human": "free_text", "Agent1": "constraints", "Agent2": "constraints"}
     elif method == "LLM_F":
         cluster_message_types = {"Human": "free_text", "Agent1": "free_text", "Agent2": "free_text"}
+    elif method == "LLM_RB":
+        cluster_message_types = {"Human": "llm_rb", "Agent1": "llm_rb", "Agent2": "llm_rb"}
     else:
         raise ValueError(f"Unknown METHOD: {method}")
 
@@ -165,6 +170,8 @@ def run_experiment(
         stop_on_soft=bool(stop_on_soft),
         stop_on_hard=bool(stop_on_hard),
         counterfactual_utils=bool(counterfactual_utils),
+        fixed_constraints=bool(fixed_constraints),
+        num_fixed_nodes=int(num_fixed_nodes),
     )
 
     print(f"[run_experiment] Finished. Check outputs in: {results_dir}")
@@ -174,7 +181,7 @@ def main() -> None:
     import argparse
 
     p = argparse.ArgumentParser(description="Run the clustered graph-colouring study.")
-    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_U", "LLM_C", "LLM_F"])
+    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_U", "LLM_C", "LLM_F", "LLM_RB"])
     ui = p.add_mutually_exclusive_group()
     ui.add_argument("--use-ui", dest="use_ui", action="store_true")
     ui.add_argument("--no-ui", dest="use_ui", action="store_false")
@@ -196,6 +203,9 @@ def main() -> None:
     util.add_argument("--naive-utils", dest="counterfactual_utils", action="store_false", help="LLM-U/LLM-C: derive utilities/constraints from current assignment only")
     p.set_defaults(counterfactual_utils=COUNTERFACTUAL_UTILS)
 
+    p.add_argument("--fixed-constraints", action="store_true", default=FIXED_CONSTRAINTS, help="Fix 1 internal node per cluster to force negotiation")
+    p.add_argument("--num-fixed-nodes", type=int, default=1, choices=[0, 1, 2, 3], help="Number of fixed nodes per cluster (0-3)")
+
     args = p.parse_args()
 
     run_experiment(
@@ -208,6 +218,8 @@ def main() -> None:
         stop_on_soft=bool(args.stop_soft),
         stop_on_hard=bool(args.stop_hard),
         counterfactual_utils=bool(args.counterfactual_utils),
+        fixed_constraints=bool(args.fixed_constraints),
+        num_fixed_nodes=int(args.num_fixed_nodes),
     )
 
 
