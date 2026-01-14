@@ -1,222 +1,105 @@
-# DCOP Agentic Framework
+# GraphColouringNew — Human–Agent Coordination Prototype
 
-This repository contains a flexible implementation of a distributed
-constraint optimisation framework (DCOP) that allows heterogeneous
-agents to coordinate using either raw algorithmic messages or natural
-language.  The design is inspired by research on Max–Sum and
-human–agent teaming【525359495691552†L395-L402】 and supports multiple
-communication and decision‑making modes.
+This repository implements a **research-grade** prototype for studying **human–agent coordination via language**
+in a **clustered graph-colouring** task with **partial observability**.
 
-## Agent Modes
+The system is **not a toy**: determinism, logging, and correctness of observability boundaries are treated as first-class
+engineering constraints.
 
-Each agent is assigned a **mode** that determines how it makes
-decisions and how it communicates.  Modes are specified as short
-strings (e.g. `"1A"`, `"1Z"`) in the configuration.  They fall into
-two broad categories: **algorithmic modes** (prefixed by `1`) and
-**human‑inclusive modes** (prefixed by `2`).
+---
 
-### `1A` – Algorithm‑First with LLM Translation
+## What you can run (normal workflow)
 
-* **Decision maker:** The agent runs the Max–Sum algorithm internally
-  to compute utilities and choose the best colour.  This mirrors
-  the standard DCOP approach.
-* **Communication:** Every structured message is passed through the
-  `LLMCommLayer`.  When an API key and the `openai` library are
-  available, the layer calls the LLM to produce a natural‑language
-  summary of the message.  Otherwise it falls back to a simple
-  key–value string.  This mode is useful when agents do not share
-  the same internal representation and must exchange human‑readable
-  messages.
+**Run the launcher** (this is the standard entry-point):
 
-### `1Z` – Algorithm‑Only (Shared Syntax)
-
-* **Decision maker:** The same as `1A`: Max–Sum computes utilities
-  and selects the best colour.
-* **Communication:** Uses the `PassThroughCommLayer`, so messages
-  are sent as raw dictionaries (or simple strings) without LLM
-  translation.  This mode assumes that all agents share the same
-  internal data structures and thus do not need natural‑language
-  messaging.  It serves as a clean baseline for benchmarking
-  performance when no LLM or human translation is required.
-
-### `1B` – LLM‑First
-
-* **Decision maker:** The agent consults the LLM to choose its next
-  assignment.  The underlying algorithm still computes utilities,
-  but these are packaged into a prompt and sent to the LLM, which
-  recommends the colour to use.  This mode tests the ability of a
-  language model to drive the search based on structured input.
-* **Communication:** Structured messages are formatted via the
-  `LLMCommLayer`, just like in `1A`.
-
-### `1C` – Hybrid ("LLM Sandwich")
-
-* **Decision maker:** A mix of algorithmic and LLM guidance.  The
-  agent iteratively runs the algorithm for a few steps, then asks
-  the LLM to refine or justify the current choices.  It strikes a
-  balance between deterministic optimisation and natural‑language
-  reasoning.
-* **Communication:** Uses `LLMCommLayer` for translating messages.
-
-### `2A` – Human Communication Layer
-
-The agent follows the algorithm internally but exposes the incoming
-and outgoing messages to a human operator.  The human reads the
-messages and manually responds (or can allow the agent to use
-heuristics when run in non‑interactive mode).
-
-In **multi‑node mode**, all variables belonging to a single owner are
-grouped and controlled via a specialised `MultiNodeHumanAgent`.  On
-each iteration the agent presents a concise summary of its current
-assignments and any known neighbour assignments, then prompts the
-user to provide a mapping from node identifiers to colours (e.g.,
-`"1=red,2=green"`).  Pressing Enter keeps the existing assignments.
-After updating assignments, the user may enter an optional free‑form
-message to send to neighbouring owners.  In non‑interactive tests
-this prompt is bypassed using an `auto_response` callback so that
-assignments remain unchanged and no messages are sent.
-
-### `2B` – Human Orchestrator
-
-The underlying algorithm is available as a set of tools.  A human
-operator decides which tool to run next, inspects intermediate
-utilities, and then directs the agent on which colour to choose.
-
-In **multi‑node mode**, the `MultiNodeHumanOrchestrator` groups all
-local variables under one owner and provides a menu of actions:
-
-* **Run internal algorithm step**: perform one local Max–Sum update on all
-  controlled nodes, using the most recent neighbour assignments.
-* **Propose best assignment**: exhaustively evaluate all possible
-  colour combinations for the local nodes and display the one with
-  the lowest global penalty.
-* **Accept proposed assignment**: replace the current assignments
-  with the most recently proposed assignment.
-* **Enter manual assignments**: manually set colours for one or
-  more local nodes, overriding the algorithm.
-* **Send message**: write a free‑form message to neighbouring
-  owners (useful for explaining your choices).
-* **End turn**: finish the current iteration without further action.
-
-This interactive menu helps human operators understand the effect of
-their choices and the algorithm’s suggestions.  In non‑interactive
-testing, responses default to ending the turn immediately, leaving
-assignments unchanged.
-
-### `2C` – Human Hybrid
-
-Combines automated and human control: the human sets high‑level
-objectives or constraints, while the agent executes the algorithm
-locally.  Useful when the human wants to intervene occasionally
-without micromanaging every step.
-
-## Additional Flags
-
-### `manual_mode`
-
-When set to `True`, the communication layer bypasses any API calls
-and instead uses a user‑provided `summariser` function to convert
-structured messages into text.  This is useful for offline testing
-when no API key is available or when a researcher wants to act as
-the LLM.
-
-### `multi_node_mode`
-
-By default, each node in the graph is controlled by its own agent.
-Setting `multi_node_mode` to `True` groups nodes by their owner:
-
-* Each owner (e.g. "Alice" or "Bob") controls all nodes listed
-  under that owner in the `owners` mapping.
-* A `MultiNodeAgent` will jointly optimise the colours for all of
-  its nodes, evaluate candidate assignments using the problem’s
-  `evaluate_assignment` method, and send its joint assignment to
-  neighbouring owners.  Messages are still translated via the
-  communication layer.
-* `agent_modes` must then specify one mode per owner rather than
-  per node.  For example, if `owners={"1":"Alice","2":"Alice","3":"Alice","4":"Bob",...}`
-  then `agent_modes=["1A","1Z"]` assigns mode `1A` to Alice and
-  mode `1Z` to Bob.
-
-## Running the Simulation
-
-The main entry point for custom experiments is the
-`run_custom_simulation` function in `main.py`.  You configure the
-simulation via a `CONFIG` dictionary.  Here is an example
-configuration that sets up two owners ("Alice" controls nodes 1–3
-and uses `1A`, "Bob" controls nodes 4–6 and uses `1Z`), defines the
-adjacency (edges) and runs 50 iterations:
-
-```
-CONFIG = dict(
-    node_names=["1", "2", "3", "4", "5", "6"],
-    agent_modes=["1A", "1Z"],
-    owners={
-        "1": "Alice", "2": "Alice", "3": "Alice",
-        "4": "Bob",   "5": "Bob",   "6": "Bob",
-    },
-    adjacency={
-        "1": ["2", "4"],
-        "2": ["1", "3"],
-        "3": ["2", "6"],
-        "4": ["5", "1"],
-        "5": ["4", "6"],
-        "6": ["5", "3"],
-    },
-    max_iterations=50,
-    interactive=False,
-    output_dir="./outputs",
-    manual_mode=False,
-    multi_node_mode=True,
-)
+```bash
+python launch_menu.py
 ```
 
-After running `python main.py`, the script will generate detailed
-logs for each agent, a communication log, a summary of assignments
-and penalties per iteration, and a sequence of PNG images showing
-how the assignments evolve.  If an API key is available and modes
-like `1A` or `1B` are used, messages will be summarised via the
-OpenAI API; otherwise the logs will note that heuristic formatting
-was used.
+Defaults are designed to work. Select a communication mode from the dropdown, then run.
 
-For more examples and details on the implementation, see `main.py`
-and `run_simulation.py`.
+Modes (within-subject conditions):
 
-## Clustered Multi‑Graph Mode
+- `RB` — rule-based argumentation (no LLM)
+- `LLM_U` — utility-oriented language
+- `LLM_C` — constraint-oriented language
+- `LLM_F` — free-form negotiation
+- (optional) `LLM_RB` — NL → RB grammar → NL (if enabled in the codebase)
 
-The revised graph colouring experiments envision a scenario where
-participants (human or autonomous agents) control **clusters** of
-nodes rather than individual nodes.  Clusters are weakly connected to
-one another via a small number of bridging edges, much like loosely
-connected communities in a social network.  Each cluster agent can
-solve its local subproblem using the algorithm of its choice (for
-example a greedy heuristic or exhaustive search) and communicates its
-impact on neighbouring clusters via one of several **message types**:
+> LLMs are used as a **communication / interpretation layer only**. They do **not** solve the optimisation problem.
 
-* **`cost_list`** – For each neighbouring node owned by another cluster,
-  send a mapping from each colour to the cost incurred if the neighbour
-  chooses that colour.  This generalises the structured utility
-  messages used by Max–Sum and allows recipients to fold costs directly
-  into their own optimisation.
-* **`constraints`** – Send, for each neighbouring node, the set of
-  colours that would incur no clash on the connecting edge.  The
-  recipient may treat these constraints as hard or soft during its
-  search.
-* **`free_text`** – Send a natural‑language summary of the current
-  assignments and advise neighbouring clusters which colours to avoid.
-  When a communication layer with LLM support is available, these
-  messages can be paraphrased into more readable prose for human
-  participants.
+---
 
-Cluster agents are implemented in `agents/cluster_agent.py` and
-support different local optimisation algorithms.  The default
-`greedy` algorithm colours nodes sequentially to minimise local
-conflicts given any known neighbour assignments.  The `maxsum`
-algorithm falls back to an exhaustive search over all colour
-combinations (similar to the single‑agent `MultiNodeAgent`).  New
-algorithms can be added by extending the `compute_assignments` method.
+## Core research assumptions (do not break)
 
-To run a clustered simulation, use the `run_clustered_simulation`
-function defined in `cluster_simulation.py`.  Provide mappings
-specifying which nodes belong to which cluster, the algorithm and
-message type per cluster, and a standard adjacency map.  See the
-docstring of that function for a complete example configuration.
+### Partial observability (critical)
+
+- Each participant (human or agent) **fully** sees its **own cluster** (nodes + internal edges).
+- Each participant sees **only boundary neighbours** from other clusters.
+- A participant may only know neighbour colours via:
+  - explicit reports embedded in messages, and/or
+  - boundary-node colours implied by the visible inter-cluster edges in the UI.
+
+### Termination semantics
+
+The system does **not** auto-terminate on penalty==0.
+
+For the **async chat UI**, the run ends when **consensus** is reached:
+
+- For each neighbour chat window:
+  - the **human** ticks “I’m satisfied”, and
+  - the **agent** reports itself satisfied (internally `agent.satisfied == True`)
+
+When consensus is reached, the UI closes and `ui.end_reason == "consensus"`.
+
+---
+
+## Logging (important)
+
+Outputs are written under `results/<mode>_<timestamp>/` and include:
+
+- `Agent1_log.txt`, `Agent2_log.txt`, `Human_log.txt`
+- `communication_log.txt`
+- `iteration_summary.txt`
+- `results/llm_trace.jsonl` (prompt/response/parse/render events where enabled)
+
+The logs are appended incrementally so crashes still yield partial traces.
+
+---
+
+## Code structure (high-level)
+
+- `launch_menu.py` — UI launcher used during development and experiments
+- `run_experiment.py` — experiment entry for one run (mode selection, config)
+- `cluster_simulation.py` — clustered simulation loop + UI wiring
+- `agents/cluster_agent.py` — per-cluster solver + message generation
+- `comm/communication_layer.py` — renders structured messages into human-facing text
+- `ui/human_turn_ui.py` — Tkinter GUI (graph view + 2 async chat panes + debug window)
+
+Documentation lives in `docs/`.
+
+---
+
+## Development notes
+
+### Avoid indentation drift bugs
+
+Python indentation errors have been a recurring integration hazard.
+If you add helpers, prefer:
+- moving helpers into a separate module file, or
+- keeping helper functions *inside* the class with consistent indentation.
+
+### Local optimality vs satisfaction
+
+Clusters are small, so the agent may “snap” to the best local assignment when greedy search stalls.
+This is intentional and improves stability in experiments.
+
+---
+
+## Quick troubleshooting
+
+- **UI closes instantly**: check `cluster_simulation.py` UI branch and ensure the UI loop blocks.
+- **No agent replies**: check `ui/human_turn_ui.py` background thread + `on_send` callback signature.
+- **Consensus never ends**: ensure agents update `agent.satisfied` and UI polling is running.
+
+See `docs/TROUBLESHOOTING.md` for more.

@@ -137,10 +137,21 @@ class ClusterAgent(MultiNodeAgent):
         # assignment that the local solver should respect.
         self.forced_local_assignments: Dict[str, str] = {}
 
-        # Best-effort memory of the most recent human message. This lets the agent
-        # decide when the human actually asked about *team/combined* utility.
-        # Default behaviour is local: reason about feasibility and this agent's score.
-        self._last_human_text: str = ""
+
+        # --- Dialogue/coordination tracking (LLM modes use this for non-redundant, reactive messages) ---
+        # Track whether we've received new information since our last send to each neighbour.
+        self._last_received_iter: int = 0
+        self._last_sent_iter: Dict[str, int] = {}
+        self._last_sent_sig: Dict[str, str] = {}
+        self._last_received_sig_by_sender: Dict[str, str] = {}  # suppress repeats when human repeats identical text
+
+        # Track local optimisation progress so we can detect being stuck and ask for help.
+        self._best_local_penalty: float = float("inf")
+        self._no_improve_steps: int = 0
+        self._stuck_threshold: int = 2  # iterations without improvement before we escalate
+
+        # Optional: treat some neighbour colours as "fixed" when the human says they cannot change.
+        self.neighbour_fixed: Dict[str, bool] = {}
 
     # ------------------------------------------------------------------
     # Assignment computation
@@ -243,20 +254,30 @@ class ClusterAgent(MultiNodeAgent):
         We evaluate *only* on edges where both endpoints are assigned.
         Unknown neighbour assignments are ignored (they contribute 0).
 
-        Because cluster sizes are small (e.g., 5 nodes), an exhaustive
-        search over the local domain is cheap (3^5 = 243 combinations).
+        Notes:
+        - Respects any `forced_local_assignments` (agent-owned nodes that have
+          been requested/fixed via messages). These nodes are *not* varied during
+          search.
+        - Because cluster sizes are small (e.g., 5 nodes), an exhaustive search
+          over the local domain is cheap (3^5 = 243 combinations).
         """
         import itertools
 
         base = dict(base or {})
+        forced = dict(getattr(self, "forced_local_assignments", {}) or {})
+
+        free_nodes = [n for n in self.nodes if n not in forced]
         best_pen = float("inf")
-        best_assign = dict(self.assignments)
-        for combo in itertools.product(self.domain, repeat=len(self.nodes)):
-            cand = {n: v for n, v in zip(self.nodes, combo)}
+        best_assign: Dict[str, Any] = dict(self.assignments)
+
+        for combo in itertools.product(self.domain, repeat=len(free_nodes)):
+            cand = dict(forced)
+            cand.update({n: v for n, v in zip(free_nodes, combo)})
             pen = self.problem.evaluate_assignment({**base, **cand})
             if pen < best_pen:
                 best_pen = pen
                 best_assign = cand
+
         return best_pen, best_assign
 
     def _best_local_assignment(self) -> tuple[float, Dict[str, Any]]:
@@ -264,12 +285,157 @@ class ClusterAgent(MultiNodeAgent):
         base = dict(getattr(self, "neighbour_assignments", {}) or {})
         return self._best_local_assignment_for(base)
 
+    # ------------------------------------------------------------------
+    # Boundary configuration enumeration (joint reasoning over boundary)
+    # ------------------------------------------------------------------
+    def _allowed_colours_for_node(self, node: str) -> list:
+        """Allowed colours for an external node given current offers/beliefs."""
+        try:
+            # Hard belief (must)
+            na = getattr(self, "neighbour_assignments", {}) or {}
+            if node in na and na[node] is not None:
+                return [na[node]]
+        except Exception:
+            pass
+        dom = list(getattr(self, "domain", []))
+        allowed = None
+        try:
+            am = getattr(self, "neighbour_allowed_colours", {}) or {}
+            if node in am and am[node]:
+                allowed = list(am[node])
+        except Exception:
+            allowed = None
+        if allowed is None:
+            allowed = dom
+        try:
+            fm = getattr(self, "neighbour_forbidden_colours", {}) or {}
+            forb = set(fm.get(node, []) or [])
+            allowed = [c for c in allowed if c not in forb]
+        except Exception:
+            pass
+        return allowed if allowed else dom
+
+    def _boundary_nodes_for_owner(self, owner: str) -> list:
+        nodes = set()
+        for u in self.nodes:
+            for v in self.problem.get_neighbors(u):
+                if v not in self.nodes and str(self.owners.get(v)) == str(owner):
+                    nodes.add(str(v))
+        return sorted(nodes)
+
+    def _enumerate_boundary_outcomes(self, boundary_nodes: list) -> list:
+        """Enumerate best-response penalty for each boundary configuration."""
+        import itertools
+        base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
+        if not boundary_nodes:
+            best_pen, _ = self._best_local_assignment_for(base_beliefs)
+            return [{"config": {}, "penalty": float(best_pen)}]
+        allowed_lists = [self._allowed_colours_for_node(n) for n in boundary_nodes]
+        outcomes = []
+        for combo in itertools.product(*allowed_lists):
+            cfg = {n: c for n, c in zip(boundary_nodes, combo)}
+            tmp = dict(base_beliefs)
+            tmp.update(cfg)
+            best_pen, _ = self._best_local_assignment_for(tmp)
+            outcomes.append({"config": cfg, "penalty": float(best_pen)})
+        outcomes.sort(key=lambda o: (o["penalty"], str(o["config"])))
+        return outcomes
+
     def _compute_satisfied(self) -> bool:
         """Whether the agent is satisfied with its current assignment."""
         base = dict(getattr(self, "neighbour_assignments", {}) or {})
         current_pen = self.problem.evaluate_assignment({**base, **dict(self.assignments)})
         best_pen, _ = self._best_local_assignment()
         return current_pen <= best_pen + 1e-9
+
+
+    def _local_penalty(self, assignments: Dict[str, str], neighbour_beliefs: Dict[str, str]) -> float:
+        """Compute penalty for this cluster's subproblem given (partial) neighbour beliefs.
+
+        Includes:
+        - internal edges between nodes we own
+        - boundary edges to known neighbour nodes (only if belief is known)
+        """
+        penalty = 0.0
+        # Internal edges: count conflicts on edges fully inside the cluster
+        for u in self.nodes:
+            cu = assignments.get(u)
+            if cu is None:
+                continue
+            for v in self.problem.get_neighbors(u):
+                if v in self.nodes:
+                    cv = assignments.get(v)
+                    if cv is None:
+                        continue
+                    if cu == cv:
+                        penalty += 1.0
+        penalty *= 0.5  # internal edges were double-counted
+
+        # Boundary edges: only where we have a belief about neighbour colour
+        for u in self.nodes:
+            cu = assignments.get(u)
+            if cu is None:
+                continue
+            for v in self.problem.get_neighbors(u):
+                if v not in self.nodes:
+                    cv = neighbour_beliefs.get(v)
+                    if cv is not None and cu == cv:
+                        penalty += 1.0
+        return float(penalty)
+
+    def _repair_with_random_restarts(self, neighbour_beliefs: Dict[str, str], tries: int = 30) -> Dict[str, str]:
+        """Try multiple greedy restarts (and small perturbations) to escape local minima.
+
+        This does *not* use an LLM; it is purely algorithmic and improves the chance
+        that an agent can solve its *internal* cluster even when boundary colours are fixed.
+        """
+        import random
+        best = dict(self.assignments)
+        best_pen = self._local_penalty(best, neighbour_beliefs)
+
+        # Respect forced assignments during restarts.
+        forced = dict(getattr(self, "forced_local_assignments", {}) or {})
+
+        nodes = list(self.nodes)
+        for t in range(int(tries)):
+            # Randomize node ordering and optionally randomize a seed assignment.
+            random.shuffle(nodes)
+            trial = dict(forced)
+
+            # Sometimes start with a random colour for one free node to perturb.
+            free_nodes = [n for n in nodes if n not in forced]
+            if free_nodes and (t % 3 == 2):
+                n0 = random.choice(free_nodes)
+                trial[n0] = random.choice(list(self.domain))
+
+            # Greedy fill
+            for n in nodes:
+                if n in trial:
+                    continue
+                # pick colour with minimum incremental penalty (internal + known boundary)
+                best_c = None
+                best_inc = None
+                for c in self.domain:
+                    inc = 0
+                    for nb in self.problem.get_neighbors(n):
+                        if nb in self.nodes:
+                            if trial.get(nb) == c:
+                                inc += 1
+                        else:
+                            if neighbour_beliefs.get(nb) == c:
+                                inc += 1
+                    if best_inc is None or inc < best_inc:
+                        best_inc = inc
+                        best_c = c
+                trial[n] = best_c if best_c is not None else random.choice(list(self.domain))
+
+            pen = self._local_penalty(trial, neighbour_beliefs)
+            if pen < best_pen - 1e-9:
+                best_pen = pen
+                best = dict(trial)
+                if best_pen <= 0.0:
+                    break
+        return best
 
     def step(self) -> None:
         """Perform one iteration of the cluster agent’s process.
@@ -299,17 +465,53 @@ class ClusterAgent(MultiNodeAgent):
             self.log(f"Assignments unchanged: {self.assignments}")
         self.assignments = new_assignment
 
-        # If greedy search got stuck, snap to the best local assignment (cluster sizes are small).
+        # --- Local optimisation progress tracking / repair ---
+        neighbour_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
         try:
-            base = dict(getattr(self, "neighbour_assignments", {}) or {})
-            current_pen = self.problem.evaluate_assignment({**base, **dict(self.assignments)})
-            best_pen, best_assign = self._best_local_assignment_for(base)
-            if current_pen > best_pen + 1e-9:
+            local_pen = self._local_penalty(self.assignments, neighbour_beliefs)
+        except Exception:
+            local_pen = float("inf")
+
+        # Track improvement; if stuck with local conflicts, attempt random-restart repair.
+        if local_pen + 1e-9 < getattr(self, "_best_local_penalty", float("inf")):
+            self._best_local_penalty = float(local_pen)
+            self._no_improve_steps = 0
+        else:
+            self._no_improve_steps = int(getattr(self, "_no_improve_steps", 0)) + 1
+
+        if local_pen > 0.0 and self.algorithm == "greedy" and self._no_improve_steps >= self._stuck_threshold:
+            try:
+                repaired = self._repair_with_random_restarts(neighbour_beliefs, tries=30)
+                rep_pen = self._local_penalty(repaired, neighbour_beliefs)
+                if rep_pen + 1e-9 < local_pen:
+                    self.log(f"Repair improved local penalty: {local_pen:.3f} -> {rep_pen:.3f}")
+                    self.assignments = repaired
+                    local_pen = rep_pen
+                    self._best_local_penalty = min(self._best_local_penalty, float(local_pen))
+                    self._no_improve_steps = 0
+            except Exception:
+                pass
+
+        
+
+        # Deterministic repair: if a better (or perfect) assignment exists under the
+        # current neighbour beliefs (and respecting any forced local assignments),
+        # jump directly to it. This keeps the utility evaluation consistent with
+        # the agent's actual ability to realise the recommended boundary config.
+        try:
+            best_pen, best_assign = self._best_local_assignment_for(neighbour_beliefs)
+            if best_pen + 1e-9 < float(local_pen):
+                self.log(f"Exhaustive repair improved local penalty: {local_pen:.3f} -> {best_pen:.3f}")
                 self.assignments = dict(best_assign)
-                try:
-                    self.log(f"Snapped to best local assignment (pen {current_pen} -> {best_pen}).")
-                except Exception:
-                    pass
+                local_pen = float(best_pen)
+                self._best_local_penalty = min(getattr(self, "_best_local_penalty", float("inf")), float(local_pen))
+                self._no_improve_steps = 0
+        except Exception:
+            pass
+# expose for debugging
+        try:
+            self.debug_last_decision_local_penalty = float(local_pen)
+            self.debug_last_decision_no_improve = int(self._no_improve_steps)
         except Exception:
             pass
 
@@ -361,43 +563,128 @@ class ClusterAgent(MultiNodeAgent):
 
         # build message content depending on message_type
         if self.message_type == "cost_list":
-            # Utility-oriented (LLM-U) messages.
+            # Utility-oriented messages.
             #
-            # We treat this as a *coordination* channel, not a solver.
-            # The agent enumerates a small set of plausible human boundary assignments
-            # (counterfactuals) and reports the best-response outcomes:
-            #   - feasibility (penalty)
-            #   - agent points
-            #   - human points on boundary nodes involved in the counterfactual
-            #   - combined points (agent + human-boundary)
+            # Two supported policies (toggleable for debugging / study variants):
             #
-            # The communication layer (LLM) then rewrites this into concise natural
-            # dialogue for the human.
-            import itertools
-
-            colour_points = {"blue": 1, "green": 2, "red": 3}
-
-            def score_for(mapping: Dict[Any, Any], nodes: List[Any]) -> int:
-                s = 0
-                for n in nodes:
-                    c = str(mapping.get(n, "")).lower()
-                    s += int(colour_points.get(c, 0))
-                return s
-
+            #  - counterfactual_utils=True (default):
+            #    For each external boundary node `nbr` and each colour choice, we
+            #    estimate the *best achievable* local penalty in our cluster if the
+            #    neighbour chose that colour (best-response counterfactual).
+            #
+            #  - counterfactual_utils=False:
+            #    Naive utility hints measured against our *current* local assignment
+            #    (how many boundary clashes would occur if `nbr` were colour c).
+            data: Dict[str, Dict[Any, float]] = {}
             base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
 
-            # Determine external neighbour nodes adjacent to our cluster.
-            ext_neighs_all: Set[str] = set()
+            # collect unique external neighbours adjacent to any local node
+            ext_neighs: Set[str] = set()
             for node in self.nodes:
                 for nbr in self.problem.get_neighbors(node):
                     if nbr not in self.nodes:
-                        ext_neighs_all.add(str(nbr))
+                        ext_neighs.add(str(nbr))
 
-            # We'll build per-recipient content later (because boundary nodes differ per recipient).
-            content = {"type": "cost_list", "data": {}}
-            content["_ext_neighs_all"] = sorted(ext_neighs_all)
-            content["_base_beliefs"] = dict(base_beliefs)
-            content["_note"] = "options"
+            for nbr in sorted(ext_neighs):
+                per_colour_pen: Dict[Any, float] = {}
+                for colour in self.domain:
+                    if self.counterfactual_utils:
+                        tmp = dict(base_beliefs)
+                        tmp[nbr] = colour
+                        best_pen, _ = self._best_local_assignment_for(tmp)
+                        per_colour_pen[colour] = float(best_pen)
+                    else:
+                        # Naive: count boundary conflicts with our current local assignment.
+                        conflicts = 0.0
+                        for u in self.nodes:
+                            try:
+                                if nbr in self.problem.get_neighbors(u) and self.assignments.get(u) == colour:
+                                    conflicts += 1.0
+                            except Exception:
+                                continue
+                        per_colour_pen[colour] = conflicts
+                # normalise
+                m = min(per_colour_pen.values()) if per_colour_pen else 0.0
+                cost_map = {c: (p - m) for c, p in per_colour_pen.items()}
+                data[nbr] = cost_map
+
+            # If we have not been told the human's current colours, the structured
+            # table alone can be unhelpful (it may look like "do whatever"). In that
+            # case we attach a short advice string prompting the human to share their
+            # current boundary colours or avoid known clashes.
+            advice = None
+            try:
+                known = {n: base_beliefs.get(n) for n in data.keys() if base_beliefs.get(n) is not None}
+                if not known:
+                    advice = (
+                        "I don't yet know your current boundary colours. "
+                        "If you tell me your colours for "
+                        f"{', '.join(sorted(data.keys()))}, I can avoid clashes more directly."
+                    )
+                else:
+                    # Identify any immediate clashes with our current boundary assignments.
+                    clashes = []
+                    for human_node, h_col in known.items():
+                        for local_node in self.nodes:
+                            if human_node in self.problem.get_neighbors(local_node):
+                                if self.assignments.get(local_node) == h_col:
+                                    clashes.append((human_node, h_col, local_node))
+                    if clashes:
+                        items = "; ".join([f"{hn}={hc} clashes with my {ln}={hc}" for hn, hc, ln in clashes])
+                        advice = (
+                            "We currently have a boundary clash: "
+                            + items
+                            + ". If possible, please change the human node colour away from that value, or tell me which node you prefer I should adjust."
+                        )
+            except Exception:
+                advice = None
+
+            content: Dict[str, Any] = {"type": "cost_list", "data": data}
+            if isinstance(advice, str) and advice.strip():
+                content["advice"] = advice.strip()
+
+            # If we are locally stuck or have remaining conflicts, add a more transactional request.
+            try:
+                local_pen = float(getattr(self, "debug_last_decision_local_penalty", 0.0) or 0.0)
+                no_improve = int(getattr(self, "debug_last_decision_no_improve", 0) or 0)
+            except Exception:
+                local_pen, no_improve = 0.0, 0
+
+            if local_pen > 0.0:
+                try:
+                    # Suggest the single best (lowest cost) change on a human boundary node, unless the human said it's fixed.
+                    best_suggestion = None  # (node, colour, cost)
+                    all_zero = True
+                    for hn, cmap in (data or {}).items():
+                        if getattr(self, "neighbour_fixed", {}).get(hn, False):
+                            continue
+                        if isinstance(cmap, dict):
+                            # compute min and check if all zero
+                            for c, v in cmap.items():
+                                if float(v) != 0.0:
+                                    all_zero = False
+                            # choose min
+                            mc = min(cmap.items(), key=lambda kv: float(kv[1]))
+                            if best_suggestion is None or float(mc[1]) < float(best_suggestion[2]):
+                                best_suggestion = (hn, mc[0], float(mc[1]))
+
+                    if all_zero:
+                        # Costs provide no leverage: likely internal conflicts remain.
+                        content["advice"] = (
+                            "I still have conflicts on my side. Your boundary options look equally good for me, "
+                            "so I'm trying local repairs/restarts. If you have flexibility, tell me which of your "
+                            "boundary nodes you can change and I'll compute a more specific request."
+                        )
+                    elif best_suggestion is not None and no_improve >= self._stuck_threshold:
+                        hn, col, costv = best_suggestion
+                        content["advice"] = (
+                            f"I'm currently stuck with conflicts on my side. The most helpful change for me is: "
+                            f"set {hn} to {col} (estimated cost {costv:.1f}). "
+                            "If that isn't possible, tell me which colours you *can* use and I will adapt."
+                        )
+                except Exception:
+                    pass
+
         elif self.message_type == "constraints":
             # Constraint-oriented messages.
             # If counterfactual_utils=True, allowed colours are those that achieve
@@ -435,186 +722,47 @@ class ClusterAgent(MultiNodeAgent):
                 data[nbr] = allowed
             content = {"type": "constraints", "data": data}
         else:  # free_text
-            # build a simple natural-language summary for neighbours
-            messages: List[str] = []
-            for node in self.nodes:
-                for nbr in self.problem.get_neighbors(node):
-                    if nbr in self.nodes:
+            # Natural-language negotiation. Keep it reactive but LLM-free in this mode.
+            # Summarise current boundary clashes (under known neighbour colours) and, if needed, ask for a specific change.
+            clash_pairs: List[tuple[str, str, Any]] = []  # (my_node, their_node, colour)
+            try:
+                for my_node in self.nodes:
+                    my_c = self.assignments.get(my_node)
+                    if my_c is None:
                         continue
-                    assign = self.assignments[node]
-                    messages.append(
-                        f"Our node {node} is {assign}; please avoid choosing {assign} for your node {nbr} to prevent a clash."
-                    )
-            body = " ".join(messages) if messages else "No clashes detected."
-            content = {"type": "free_text", "data": body}
+                    for their_node in self.problem.get_neighbors(my_node):
+                        if their_node in self.nodes:
+                            continue
+                        their_c = self.neighbour_assignments.get(their_node)
+                        if their_c is not None and their_c == my_c:
+                            clash_pairs.append((my_node, str(their_node), my_c))
+            except Exception:
+                clash_pairs = []
 
+            templates_ok = [
+                "All good on my side right now.",
+                "No boundary issues from me at the moment.",
+                "I think we are consistent on the boundary on my end.",
+            ]
+            templates_clash = [
+                "We currently conflict on the boundary: my {my_node} and your {their_node} are both {colour}. Could you change {their_node} if possible?",
+                "Heads up: I clash with you on {their_node} ({colour}). If you can move {their_node} away from {colour}, I can keep {my_node} as-is.",
+                "I see a boundary clash: your {their_node} matches my {my_node} ({colour}). If you can switch {their_node}, that resolves it for me.",
+            ]
+
+            idx = int(iteration or 0) if iteration is not None else 0
+            if clash_pairs:
+                my_node, their_node, colour = clash_pairs[0]
+                tmpl = templates_clash[idx % len(templates_clash)]
+                body = tmpl.format(my_node=my_node, their_node=their_node, colour=colour)
+            else:
+                body = templates_ok[idx % len(templates_ok)]
+            content = {"type": "free_text", "data": body}
         # send message to each neighbouring cluster.
         # Include a "report" field containing this cluster's current assignments
         # for *boundary nodes* adjacent to the recipient. This allows the participant
         # UI to show neighbour colours only when explicitly reported by that neighbour.
         for recipient in recipients:
-            # Build per-recipient utility options for LLM-U.
-            if self.message_type == "cost_list" and isinstance(content, dict):
-                try:
-                    import itertools
-
-                    colour_points = {"blue": 1, "green": 2, "red": 3}
-
-                    def score_for(mapping: Dict[Any, Any], nodes: List[Any]) -> int:
-                        s = 0
-                        for n in nodes:
-                            c = str(mapping.get(n, "")).lower()
-                            s += int(colour_points.get(c, 0))
-                        return s
-
-                    base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
-
-                    # Decide whether to discuss/optimise *team/combined* outcomes.
-                    # Default is local-only unless the human explicitly asks.
-                    include_team = False
-                    try:
-                        t = (self._last_human_text or "").lower()
-                        for kw in ("total", "team", "combined", "overall", "global"):
-                            if kw in t:
-                                include_team = True
-                                break
-                    except Exception:
-                        include_team = False
-
-                    # Only consider the boundary nodes that belong to this recipient.
-                    boundary_nodes: List[str] = []
-                    seen = set()
-                    for u in self.nodes:
-                        for nbr in self.problem.get_neighbors(u):
-                            nbr = str(nbr)
-                            if nbr in self.nodes:
-                                continue
-                            if self.owners.get(nbr) != recipient:
-                                continue
-                            if nbr not in seen:
-                                seen.add(nbr)
-                                boundary_nodes.append(nbr)
-                    boundary_nodes = sorted(boundary_nodes)
-
-                    # If no boundary coupling, fall back to a neutral message.
-                    if not boundary_nodes:
-                        content = {"type": "cost_list", "data": {"boundary_nodes": [], "options": []}}
-                    else:
-                        known = {n: base_beliefs.get(n) for n in boundary_nodes if base_beliefs.get(n) is not None}
-
-                        # Enumerate counterfactual boundary assignments.
-                        # Default behaviour is to consider *small changes around the human's current settings*
-                        # (Hamming distance <= 1 on the boundary nodes), unless the human asks for total/team.
-                        max_enum = 3 ** len(boundary_nodes)
-                        # guardrail just in case a problem instance has too many boundary nodes
-                        if max_enum > 3 ** 8:
-                            boundary_nodes = boundary_nodes[:8]
-
-                        opts: List[Dict[str, Any]] = []
-
-                        current_key = None
-                        if len(known) == len(boundary_nodes):
-                            current_key = {k: str(v).lower() for k, v in known.items()}
-                        for colours in itertools.product(self.domain, repeat=len(boundary_nodes)):
-                            human_cfg = {boundary_nodes[i]: colours[i] for i in range(len(boundary_nodes))}
-
-                            # Filter to local neighbourhood around current settings when fully known.
-                            if (current_key is not None) and (not include_team):
-                                dist = 0
-                                for n in boundary_nodes:
-                                    if str(human_cfg.get(n)).lower() != str(current_key.get(n)).lower():
-                                        dist += 1
-                                if dist > 1:
-                                    continue
-
-                            tmp = dict(base_beliefs)
-                            tmp.update(human_cfg)
-                            best_pen, best_asg = self._best_local_assignment_for(tmp)
-                            a_score = score_for(best_asg, list(self.nodes))
-                            h_score = score_for(human_cfg, boundary_nodes)
-                            opts.append(
-                                {
-                                    "human": {k: str(v).lower() for k, v in human_cfg.items()},
-                                    "penalty": float(best_pen),
-                                    "agent_score": int(a_score),
-                                    "human_score": int(h_score),
-                                    "combined": int(a_score) + int(h_score),
-                                }
-                            )
-
-                        # Determine the "current" configuration if all boundary nodes are known.
-                        current = None
-                        if current_key is not None:
-                            for o in opts:
-                                if o.get("human") == current_key:
-                                    current = o
-                                    break
-
-                        # Rank: feasible first, then higher score.
-                        # If the human asked for team/total, rank by combined, otherwise by agent_score.
-                        if include_team:
-                            opts_sorted = sorted(
-                                opts,
-                                key=lambda o: (
-                                    1 if o.get("penalty", 0.0) > 0.0 else 0,
-                                    -(o.get("combined", 0)),
-                                    -(o.get("agent_score", 0)),
-                                ),
-                            )
-                        else:
-                            opts_sorted = sorted(
-                                opts,
-                                key=lambda o: (
-                                    1 if o.get("penalty", 0.0) > 0.0 else 0,
-                                    -(o.get("agent_score", 0)),
-                                    -(o.get("human_score", 0)),
-                                ),
-                            )
-                        top = opts_sorted[:4]
-
-                        # Update our satisfaction state (for the UI label) using the current config when known,
-                        # otherwise by our best feasible option.
-                        sat_pen = None
-                        sat_score = None
-                        if current is not None:
-                            sat_pen = float(current.get("penalty", 0.0))
-                            sat_score = int(current.get("agent_score", 0))
-                        elif top:
-                            sat_pen = float(top[0].get("penalty", 0.0))
-                            sat_score = int(top[0].get("agent_score", 0))
-                        if sat_pen is not None:
-                            self.satisfied = bool(sat_pen <= 0.0)
-                            try:
-                                self.debug_reasoning_history.append(
-                                    f"LLM-U status vs {recipient}: penalty={sat_pen} score={sat_score} known={known}"
-                                )
-                            except Exception:
-                                pass
-
-                        advice = None
-                        if len(known) < len(boundary_nodes):
-                            miss = [n for n in boundary_nodes if n not in known]
-                            advice = (
-                                "I can't see all your boundary colours yet. "
-                                f"Please tell me {', '.join(miss)} (or set them in the UI) and I'll adapt."
-                            )
-
-                        content = {
-                            "type": "cost_list",
-                            "data": {
-                                "boundary_nodes": boundary_nodes,
-                                "known": {k: str(v).lower() for k, v in known.items()},
-                                "current": current,
-                                "options": top,
-                                "points": dict(colour_points),
-                            },
-                        }
-                        if advice:
-                            content["advice"] = advice
-                except Exception:
-                    # If anything goes wrong, fall back to the precomputed content
-                    pass
-
             boundary_report: Dict[str, Any] = {}
             try:
                 for node in self.nodes:
@@ -631,10 +779,53 @@ class ClusterAgent(MultiNodeAgent):
                 if boundary_report:
                     out_content["report"] = boundary_report
 
+            # Joint boundary reasoning (enumerate full boundary configurations) for LLM_U / LLM_C.
+            try:
+                if isinstance(out_content, dict) and out_content.get('type') in ('cost_list','constraints'):
+                    bnodes = self._boundary_nodes_for_owner(recipient)
+                    outcomes = self._enumerate_boundary_outcomes(bnodes)
+                    out_content['boundary_nodes'] = bnodes
+                    # Keep payload small: include top configs only.
+                    out_content['joint'] = outcomes[:min(9, len(outcomes))]
+                    if outcomes:
+                        best = outcomes[0]
+                        if out_content.get('type') == 'cost_list':
+                            adv = out_content.get('advice') or ''
+                            out_content['advice'] = (adv + (' ' if adv else '') +
+                                f"I evaluated {len(outcomes)} boundary option(s) over {bnodes}. Best for me is {best['config']} (penalty {best['penalty']}).").strip()
+                        else:
+                            feas = [o for o in outcomes if abs(o.get('penalty', 1e9)) < 1e-9]
+                            out_content['feasible_configs'] = feas[:min(9,len(feas))]
+                            if not feas:
+                                adv = out_content.get('advice') or ''
+                                out_content['advice'] = (adv + (' ' if adv else '') +
+                                    f"With current constraints over {bnodes}, I can't reach a zero-conflict solution. Best I can do is {best['config']} (penalty {best['penalty']}).").strip()
+            except Exception:
+                pass
+
             try:
                 self.debug_last_outgoing[recipient] = out_content
             except Exception:
                 pass
+            
+            # Avoid resending identical messages when nothing new was received.
+            try:
+                sig = repr(out_content)
+                last_sig = self._last_sent_sig.get(recipient)
+                last_recv = int(getattr(self, "_last_received_iter", 0) or 0)
+                last_sent_iter = int(self._last_sent_iter.get(recipient, 0) or 0)
+                # If message is identical and we haven't received anything new since last time, compress it.
+                if last_sig is not None and sig == last_sig and last_recv <= last_sent_iter:
+                    if isinstance(out_content, dict):
+                        out_content = dict(out_content)
+                        out_content["advice"] = (out_content.get("advice") or "No update since last message.").strip()
+                    else:
+                        out_content = "No update since last message."
+                self._last_sent_sig[recipient] = sig
+                self._last_sent_iter[recipient] = last_recv
+            except Exception:
+                pass
+
             self.send(recipient, out_content)
 
     def receive(self, message: Message) -> None:
@@ -650,15 +841,20 @@ class ClusterAgent(MultiNodeAgent):
         optimisation.
         """
         super().receive(message)
-
-        # Remember the last human utterance (best-effort). The comm layer may wrap
-        # messages with [mapping: ...] tags; keep the raw text for keyword checks.
-        try:
-            if str(message.sender).lower() == "human":
-                self._last_human_text = str(message.content)
-        except Exception:
-            pass
         content = message.content
+        # Suppress "new info" when the sender repeats the exact same message text.
+        try:
+            sig = repr(content)
+            prev = self._last_received_sig_by_sender.get(message.sender)
+            changed = (sig != prev)
+            self._last_received_sig_by_sender[message.sender] = sig
+        except Exception:
+            changed = True
+        if changed:
+            try:
+                self._last_received_iter = self._last_received_iter + 1
+            except Exception:
+                self._last_received_iter = 1
         try:
             self.debug_incoming_raw.append(content)
         except Exception:
@@ -708,6 +904,12 @@ class ClusterAgent(MultiNodeAgent):
         if isinstance(structured, str):
             text = structured
 
+            # Heuristic: if the human says a node "can't/cannot change", treat that neighbour assignment as fixed.
+            lowered = text.lower()
+            for n in list(getattr(self, "neighbour_assignments", {}).keys()):
+                if n and n in lowered and ("can't change" in lowered or "cannot change" in lowered or "can't swap" in lowered):
+                    self.neighbour_fixed[n] = True
+
             # Prefer an LLM-backed parser when available (and when the comm layer
             # is configured with history). This enables LLM-F to interpret *the
             # dialogue history*, not only the current message.
@@ -715,6 +917,13 @@ class ClusterAgent(MultiNodeAgent):
             try:
                 if hasattr(self.comm_layer, "parse_assignments_from_text_llm"):
                     hist = [str(x) for x in list(getattr(self, "debug_incoming_raw", []))]
+                    try:
+                        # Include our own most recent outgoing content to this sender (so the parser has full dialogue).
+                        last_out = getattr(self, "debug_last_outgoing", {}).get(message.sender)
+                        if last_out is not None:
+                            hist.append(str(last_out))
+                    except Exception:
+                        pass
                     extracted = self.comm_layer.parse_assignments_from_text_llm(
                         sender=message.sender,
                         recipient=self.name,

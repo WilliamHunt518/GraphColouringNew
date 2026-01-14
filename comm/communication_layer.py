@@ -26,6 +26,7 @@ import os
 from typing import Any, Dict, Tuple, Optional, List
 
 import json
+import threading
 
 
 class BaseCommLayer:
@@ -190,66 +191,89 @@ class LLMCommLayer(BaseCommLayer):
     def _call_openai(self, prompt: str, max_tokens: int = 60) -> Optional[str]:
         """Helper to call the OpenAI API if available.
 
-        Returns the model's response as a string, or ``None`` if the
-        API call could not be performed.  When ``use_history`` is
-        enabled, previous prompts and responses are included in the
-        ``messages`` argument so that the model receives conversational
-        context.  On success the prompt and response are appended to
-        ``self.conversation`` for future calls.
+        This must never block the UI indefinitely. We run the request in a worker
+        thread and enforce a hard timeout. On timeout/failure we return None so
+        callers fall back to heuristic messaging.
         """
         if self.api_key is None or self.openai is None:
             return None
-        # debug message before making an API request
         try:
             print(f"[LLMCommLayer] Attempting OpenAI API call with prompt: {prompt[:60]}...")
         except Exception:
             pass
-        try:
-            # set API key
-            self.openai.api_key = self.api_key
-            # build chat history
-            system_message = {
-                "role": "system",
-                "content": "You are a helpful assistant for transforming structured messages in a multi-agent coordination problem into concise natural language.",
-            }
-            # start with system message
-            messages = [system_message]
-            if self.use_history and self.conversation:
-                # extend with prior conversation
-                messages.extend(self.conversation)
-            # append current prompt
-            messages.append({"role": "user", "content": prompt})
-            # call the OpenAI ChatCompletion API
-            response = self.openai.ChatCompletion.create(
-                model="gpt-3.5-turbo", messages=messages, max_tokens=max_tokens, n=1
-            )
-            # Extract the assistant's reply
-            text = response.choices[0].message["content"].strip()
 
-            # record debug trace
+        system_message = {
+            "role": "system",
+            "content": "You are a helpful assistant for translating a multi-agent coordination problem into concise natural language.",
+        }
+        messages: List[Dict[str, str]] = [system_message]
+        if self.use_history and self.conversation:
+            messages.extend(self.conversation)
+        messages.append({"role": "user", "content": prompt})
+
+        result: Dict[str, Any] = {"text": None, "err": None}
+
+        def _worker() -> None:
             try:
-                self.debug_calls.append({
-                    "kind": "openai_call",
-                    "prompt": prompt,
-                    "messages": messages,
-                    "max_tokens": max_tokens,
-                    "response": text,
-                })
-            except Exception:
-                pass
-            # update conversation history if enabled
-            if self.use_history:
-                # record the user prompt and assistant reply
-                self.conversation.append({"role": "user", "content": prompt})
-                self.conversation.append({"role": "assistant", "content": text})
-            return text
-        except Exception as exc:
-            # Print debug information when an API call fails
+                self.openai.api_key = self.api_key
+                try:
+                    resp = self.openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        n=1,
+                        request_timeout=25,
+                    )
+                except TypeError:
+                    resp = self.openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        n=1,
+                    )
+                txt = resp.choices[0].message["content"].strip()
+                result["text"] = txt
+            except Exception as e:
+                result["err"] = e
+
+        th = threading.Thread(target=_worker, daemon=True)
+        th.start()
+        th.join(timeout=30.0)
+
+        if th.is_alive():
             try:
-                print(f"[LLMCommLayer] OpenAI API call failed: {exc}")
+                print("[LLMCommLayer] OpenAI call timed out (30s). Falling back to heuristic communication.")
             except Exception:
                 pass
             return None
+
+        if result.get("err") is not None:
+            try:
+                print(f"[LLMCommLayer] OpenAI API call failed: {result['err']}")
+            except Exception:
+                pass
+            return None
+
+        text = result.get("text")
+        if not isinstance(text, str) or not text.strip():
+            return None
+
+        try:
+            self.debug_calls.append({
+                "kind": "openai_call",
+                "prompt": prompt,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "response": text,
+            })
+        except Exception:
+            pass
+
+        if self.use_history:
+            self.conversation.append({"role": "user", "content": prompt})
+            self.conversation.append({"role": "assistant", "content": text})
+
+        return text
 
     def record_debug_call(self, *, kind: str, prompt: str, messages: List[Dict[str, str]] | None, response: Any, parsed: Any = None) -> None:
         """Record a debug trace entry even when no external API is used."""
@@ -363,15 +387,76 @@ class LLMCommLayer(BaseCommLayer):
                         parts.append(f"{var}: {allowed}")
                 text = "Proposed constraints for your boundary nodes: " + "; ".join(parts) + "."
             elif msg_type == "cost_list" and isinstance(data, dict):
-                # data: {var: {colour: cost}}
-                parts = []
-                for var, cost_map in data.items():
-                    if isinstance(cost_map, dict):
-                        inner = ", ".join([f"{k}={v}" for k, v in cost_map.items()])
-                        parts.append(f"{var}: {inner}")
+                # Two shapes are supported:
+                #  1) legacy: {var: {colour: cost}}
+                #  2) options: {boundary_nodes: [...], known: {...}, current: {...}, options: [...], points: {...}}
+                if "options" in data and isinstance(data.get("options"), list):
+                    known = data.get("known") or {}
+                    boundary_nodes = data.get("boundary_nodes") or []
+                    current = data.get("current") or {}
+                    options = data.get("options") or []
+
+                    # Human-readable, concise summary for LLM-U style messages.
+                    # We intentionally do NOT mention penalty if the option is feasible.
+                    parts = []
+                    if isinstance(known, dict) and known:
+                        parts.append("I currently think your boundary colours are " + ", ".join([f"{k}={v}" for k, v in known.items()]) + ".")
                     else:
-                        parts.append(f"{var}: {cost_map}")
-                text = "Cost hints for your boundary nodes (lower is better): " + "; ".join(parts) + "."
+                        if boundary_nodes:
+                            parts.append("I can’t see all your boundary colours yet. Please confirm: " + ", ".join(boundary_nodes) + ".")
+                        else:
+                            parts.append("I can’t see all your boundary colours yet.")
+
+                    # Current score (agent-local).
+                    try:
+                        a_score = int(current.get("agent_score", 0))
+                        parts.append(f"My score: {a_score}.")
+                    except Exception:
+                        pass
+
+                    # Suggest a few feasible alternatives (top 3 by my score), excluding current setting.
+                    cur_h = current.get("human") if isinstance(current, dict) else None
+                    feasible = []
+                    for o in options:
+                        try:
+                            pen = float(o.get("penalty", 0.0))
+                            if pen > 0.0:
+                                continue
+                            feasible.append(o)
+                        except Exception:
+                            continue
+                    def _score(o):
+                        try: return int(o.get("agent_score", 0))
+                        except Exception: return 0
+                    feasible.sort(key=_score, reverse=True)
+                    # Remove current if present
+                    if isinstance(cur_h, dict):
+                        feasible = [o for o in feasible if not (isinstance(o.get("human"), dict) and o.get("human") == cur_h)]
+
+                    shown = feasible[:3]
+                    if shown:
+                        parts.append("Alternatives I can support:")
+                        for o in shown:
+                            h = o.get("human")
+                            if isinstance(h, dict) and h:
+                                cond = ", ".join([f"{k}={v}" for k, v in h.items()])
+                            else:
+                                cond = "that change"
+                            parts.append(f"- If you set {cond} → I can score {int(o.get('agent_score', 0))}.")
+                    else:
+                        parts.append("I don’t see a higher-score alternative I can guarantee from my side right now.")
+
+                    text = "\n".join(parts)
+                else:
+                    # legacy cost table
+                    parts = []
+                    for var, cost_map in data.items():
+                        if isinstance(cost_map, dict):
+                            inner = ", ".join([f"{k}={v}" for k, v in cost_map.items()])
+                            parts.append(f"{var}: {inner}")
+                        else:
+                            parts.append(f"{var}: {cost_map}")
+                    text = "Cost hints for your boundary nodes (lower is better): " + "; ".join(parts) + "."
             elif msg_type == "assignments" and isinstance(data, dict):
                 # used mainly by the RB baseline; still keep it direct
                 parts = ", ".join([f"{k}={v}" for k, v in data.items()])
@@ -388,10 +473,38 @@ class LLMCommLayer(BaseCommLayer):
             if isinstance(advice, str) and advice.strip():
                 text = advice.strip() + "\n\n" + text
 
-            # Optional human-facing advice that supplements the structured hints.
-            # Used when the agent wants to explicitly request help from the human.
-            if isinstance(advice, str) and advice.strip():
-                text = advice.strip() + "\n\n" + text
+            # If an external LLM is available, ask it to rewrite the participant-facing
+            # message into concise, natural dialogue (not meta-explaining the table). We
+            # do NOT ...
+            try:
+                if recipient.lower() == "human" and self.api_key is not None and self.openai is not None:
+                    style_ex = (
+                        "Example style (do not copy verbatim):\n"
+                        "Human: I currently have h1 and h5 both as green\n"
+                        "Agent: Ok. Given those settings I can make a good colouring with score 12. "
+                        "If you were to change h1 to blue, I could get 14 ...\n"
+                    )
+                    prompt = (
+                        "You are an agent collaborating with a human on a clustered graph-colouring task. "
+                        "Write a short, natural message the agent would send now. "
+                        "Be concise (1-3 sentences), cooperative, and concrete about suggested human boundary changes. "
+                        "Do NOT mention 'cost list', 'mapping', JSON, or internal representations. "
+                        "If the structured content includes a 'known' dict for boundary colours, treat those colours as known and do NOT ask to confirm them. "
+                        "Only ask for colours of boundary nodes that are missing from 'known'. "
+                        "Do not mention penalty numbers. Only mention feasibility if there is a clash (then say 'there's still a clash on my side'). "
+                        "Focus on your own score unless the human explicitly asked for team/total/combined. "
+                        "When giving alternatives, use a compact list format like: 'Alternatives: h1=red (score 11); h1=blue,h4=green (score 12)'.\n\n"
+                        f"Agent: {sender} | Recipient: {recipient}\n"
+                        f"Structured content (for you to interpret): {content}\n\n"
+                        f"Current draft (may be clunky): {text}\n\n"
+                        + style_ex
+                        + "\nReturn ONLY the agent message."
+                    )
+                    rewritten = self._call_openai(prompt, max_tokens=140)
+                    if isinstance(rewritten, str) and rewritten.strip():
+                        text = rewritten.strip()
+            except Exception:
+                pass
 
             payload = repr(content)
             # Always include mapping for machine parsing.
