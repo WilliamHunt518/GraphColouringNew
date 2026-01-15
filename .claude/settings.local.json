@@ -4,7 +4,9 @@
       "Bash(ls:*)",
       "Bash(python -c:*)",
       "Bash(python test_agent_modes.py:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(python tests/comprehensive_agent_test.py:*)",
+      "Bash(python simple_test_runner.py:*)"
     ]
   }
 }

@@ -378,14 +378,85 @@ class LLMCommLayer(BaseCommLayer):
 
             # Human-facing text templates
             if msg_type == "constraints" and isinstance(data, dict):
-                parts = []
-                for var, allowed in data.items():
-                    if isinstance(allowed, (list, tuple, set)):
-                        allowed_str = ", ".join([str(a) for a in allowed])
-                        parts.append(f"{var} ∈ {{{allowed_str}}}")
+                # NEW STATUS-BASED FORMAT: Check if current boundary works, then report accordingly
+                status = data.get("status", "UNKNOWN")
+
+                if status == "SUCCESS":
+                    # Human's current boundary works! Show success + agent's coloring
+                    current_boundary = data.get("current_boundary", {})
+                    my_coloring = data.get("my_coloring", {})
+
+                    boundary_str = ", ".join([f"{k}={v}" for k, v in sorted(current_boundary.items())])
+                    coloring_str = ", ".join([f"{k}={v}" for k, v in sorted(my_coloring.items())])
+
+                    text = (
+                        f"✓ SUCCESS! Your boundary ({boundary_str}) works perfectly!\n"
+                        f"I colored my nodes: {coloring_str}\n"
+                        f"Zero conflicts. We have a valid solution!"
+                    )
+
+                elif status == "NEED_ALTERNATIVES":
+                    # Current doesn't work or is incomplete - show alternatives
+                    current_boundary = data.get("current_boundary", {})
+                    current_penalty = data.get("current_penalty", 0.0)
+                    valid_configs = data.get("valid_configs", [])
+                    message = data.get("message", "")
+
+                    parts = []
+
+                    # Show the problem
+                    if current_boundary:
+                        boundary_str = ", ".join([f"{k}={v}" for k, v in sorted(current_boundary.items())])
+                        parts.append(f"✗ Your current boundary ({boundary_str}) doesn't work for me.")
+                        parts.append(f"   Penalty: {current_penalty:.2f} (need 0.0 for valid coloring)")
                     else:
-                        parts.append(f"{var}: {allowed}")
-                text = "Proposed constraints for your boundary nodes: " + "; ".join(parts) + "."
+                        parts.append("I need you to set boundary node colors first.")
+
+                    # Show the solution(s)
+                    if valid_configs:
+                        parts.append(f"\n✓ I CAN color my nodes if you use ANY of these {len(valid_configs)} boundary settings:")
+                        for idx, config in enumerate(valid_configs[:5], 1):  # Show max 5
+                            config_str = ", ".join([f"{k}={v}" for k, v in sorted(config.items())])
+                            parts.append(f"   {idx}. {config_str}")
+                        if len(valid_configs) > 5:
+                            parts.append(f"   ... and {len(valid_configs) - 5} more options")
+                    else:
+                        parts.append("\n✗ ERROR: I found NO valid boundary configurations!")
+                        parts.append("   Check if your constraints are too restrictive.")
+
+                    text = "\n".join(parts)
+
+                # OLD ENUMERATED FORMAT (fallback for compatibility)
+                elif "valid_configs" in data and "per_node" in data:
+                    valid_configs = data.get("valid_configs", [])
+                    per_node = data.get("per_node", {})
+
+                    parts = []
+                    if valid_configs:
+                        parts.append("Here are the complete configurations that would work for me:")
+                        for idx, config in enumerate(valid_configs, 1):
+                            config_str = ", ".join([f"{k}={v}" for k, v in sorted(config.items())])
+                            parts.append(f"{idx}. {config_str}")
+                    else:
+                        parts.append("Allowed colors per node:")
+                        for var, allowed in sorted(per_node.items()):
+                            if isinstance(allowed, (list, tuple, set)):
+                                allowed_str = ", ".join([str(a) for a in allowed])
+                                parts.append(f"{var} ∈ {{{allowed_str}}}")
+
+                    text = "\n".join(parts)
+
+                # LEGACY FORMAT (oldest fallback)
+                else:
+                    parts = []
+                    for var, allowed in data.items():
+                        if var not in ["status", "current_boundary", "my_coloring", "message", "current_penalty", "valid_configs", "per_node"]:
+                            if isinstance(allowed, (list, tuple, set)):
+                                allowed_str = ", ".join([str(a) for a in allowed])
+                                parts.append(f"{var} ∈ {{{allowed_str}}}")
+                            else:
+                                parts.append(f"{var}: {allowed}")
+                    text = "Proposed constraints for your boundary nodes: " + "; ".join(parts) + "."
             elif msg_type == "cost_list" and isinstance(data, dict):
                 # Two shapes are supported:
                 #  1) legacy: {var: {colour: cost}}
@@ -421,7 +492,8 @@ class LLMCommLayer(BaseCommLayer):
                     except Exception:
                         pass
 
-                    # Suggest a few feasible alternatives (top 3 by my score), excluding current setting.
+                    # Show clear conditional proposals for all feasible configurations (top 5 by my score).
+                    # INCLUDE the current setting so human sees all options clearly.
                     cur_h = current.get("human") if isinstance(current, dict) else None
                     feasible = []
                     for o in options:
@@ -436,27 +508,30 @@ class LLMCommLayer(BaseCommLayer):
                         try: return int(o.get("agent_score", 0))
                         except Exception: return 0
                     feasible.sort(key=_score, reverse=True)
-                    # Remove current if present
-                    if isinstance(cur_h, dict):
-                        feasible = [o for o in feasible if not (isinstance(o.get("human"), dict) and o.get("human") == cur_h)]
 
-                    shown = feasible[:3]
+                    # Show top 5 feasible options (including current if present)
+                    shown = feasible[:5]
                     if shown:
-                        parts.append("Alternatives I can support (conflict-free):")
-                        for o in shown:
+                        parts.append("Here are the conflict-free configurations I can support:")
+                        for idx, o in enumerate(shown, 1):
                             h = o.get("human")
                             if isinstance(h, dict) and h:
-                                cond = ", ".join([f"{k}={v}" for k, v in h.items()])
+                                cond = ", ".join([f"{k}={v}" for k, v in sorted(h.items())])
                             else:
-                                cond = "that change"
-                            # Emphasize these are conflict-free by showing penalty=0
-                            parts.append(f"- If you set {cond} → I can score {int(o.get('agent_score', 0))} (penalty: 0).")
+                                cond = "that setting"
+                            score = int(o.get('agent_score', 0))
+
+                            # Mark if this is the current configuration
+                            is_current = isinstance(cur_h, dict) and isinstance(h, dict) and cur_h == h
+                            current_marker = " ← YOUR CURRENT SETTING" if is_current else ""
+
+                            parts.append(f"{idx}. If you set {cond}, I can score {score}.{current_marker}")
                     else:
                         # If no feasible alternatives, mention there are conflicts
                         if penalty > 1e-9:
-                            parts.append("I don't see any conflict-free alternatives. We need to resolve the boundary clashes first!")
+                            parts.append("I don't see any conflict-free configurations. We need to resolve the boundary clashes first!")
                         else:
-                            parts.append("I don't see a higher-score alternative I can guarantee from my side right now.")
+                            parts.append("I don't see any conflict-free configurations I can guarantee from my side right now.")
 
                     text = "\n".join(parts)
                 else:
@@ -497,20 +572,28 @@ class LLMCommLayer(BaseCommLayer):
                         "If you were to change h1 to blue, I could get 14 ...\n"
                     )
                     prompt = (
-                        "You are an agent collaborating with a human on a clustered graph-colouring task. "
-                        "Write a short, natural message the agent would send now. "
-                        "Be concise (1-3 sentences), cooperative, and concrete about suggested human boundary changes. "
-                        "Do NOT mention 'cost list', 'mapping', JSON, or internal representations. "
-                        "If the structured content includes a 'known' dict for boundary colours, treat those colours as known and do NOT ask to confirm them. "
-                        "Only ask for colours of boundary nodes that are missing from 'known'. "
-                        "Do not mention penalty numbers. Only mention feasibility if there is a clash (then say 'there's still a clash on my side'). "
-                        "Focus on your own score unless the human explicitly asked for team/total/combined. "
-                        "When giving alternatives, use a compact list format like: 'Alternatives: h1=red (score 11); h1=blue,h4=green (score 12)'.\n\n"
+                        "You are an agent collaborating with a human on a graph-colouring coordination task.\n\n"
+                        "CRITICAL RULES:\n"
+                        "1. Be PRECISE and CONCRETE - state exact node names and colors\n"
+                        "2. Use NUMBERS - always include scores for options\n"
+                        "3. Stay ON-TOPIC - talk about ONE thing only (either proposals OR questions, not both)\n"
+                        "4. Be CONCISE - maximum 2-3 sentences\n"
+                        "5. NEVER use vague language like 'all is fine', 'looks good', 'maybe'\n"
+                        "6. NEVER mention internal terms like 'cost list', 'mapping', 'JSON', 'penalty'\n\n"
+                        "GOOD MESSAGE EXAMPLES:\n"
+                        "- 'Here are your best options: 1. h1=red, h4=blue → I score 12. 2. h1=green, h4=red → I score 10.'\n"
+                        "- 'I currently see h2=green, h5=blue. With these settings I can score 14.'\n"
+                        "- 'There's a conflict with your current h1=red. If you change h1 to blue I can resolve it and score 11.'\n\n"
+                        "BAD MESSAGE EXAMPLES (DO NOT USE):\n"
+                        "- 'I think everything looks good' (too vague)\n"
+                        "- 'Maybe you could try some alternatives' (no specifics)\n"
+                        "- 'Let me know what you think about the penalty situation' (mentions internal terms)\n\n"
+                        "TASK: Rewrite the draft message below to be clear, specific, and helpful.\n"
+                        "Focus on actionable information. If showing options, list them clearly with scores.\n\n"
                         f"Agent: {sender} | Recipient: {recipient}\n"
-                        f"Structured content (for you to interpret): {content}\n\n"
-                        f"Current draft (may be clunky): {text}\n\n"
-                        + style_ex
-                        + "\nReturn ONLY the agent message."
+                        f"Structured content: {content}\n"
+                        f"Draft to improve: {text}\n\n"
+                        "Return ONLY the improved message (no explanation):"
                     )
                     rewritten = self._call_openai(prompt, max_tokens=140)
                     if isinstance(rewritten, str) and rewritten.strip():

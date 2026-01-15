@@ -585,7 +585,20 @@ class HumanTurnUI:
             self._status_var[neigh].set(status)
         btn = self._send_btn.get(neigh)
         if btn is not None:
+            # ONLY disable during "waiting" - never based on satisfaction
             btn["state"] = "disabled" if status.startswith("waiting") else "normal"
+
+        # DEFENSIVE: Ensure outgoing box is never disabled based on satisfaction
+        obox = self._outgoing_box.get(neigh)
+        if obox is not None and hasattr(obox, 'cget'):
+            try:
+                current_state = obox.cget('state')
+                if current_state == 'disabled':
+                    # Log warning but don't crash
+                    print(f"WARNING: Outgoing box for {neigh} was disabled! Re-enabling.")
+                    obox.configure(state='normal')
+            except Exception:
+                pass  # Fail silently if cget/configure not available
 
     def _flush_incoming(self, neigh: str) -> None:
         q = self._incoming_queue.get(neigh, [])
@@ -1188,6 +1201,14 @@ class HumanTurnUI:
                     self._agent_sat[neigh].set("Agent ✓" if sat else "")
                 except Exception:
                     pass
+
+        # CRITICAL: Do NOT disable chat boxes when agents mark satisfied
+        # The human must be able to continue messaging even after marking satisfied
+        # This is essential for:
+        # 1. Changing their mind about satisfaction
+        # 2. Asking questions after reaching consensus
+        # 3. Negotiating further improvements
+        # Only the send button should be disabled during "waiting for reply" status
 
         if self._hud_var:
             self._hud_var.set(self._hud_text())

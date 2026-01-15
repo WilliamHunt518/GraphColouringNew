@@ -231,6 +231,26 @@ def run_clustered_simulation(
         if problem.is_valid(test_assignment):
             print("[Validation] SUCCESS: Found a valid solution with fixed constraints")
             print(f"[Validation] Test solution penalty: {problem.evaluate_assignment(test_assignment)}")
+
+            # Print the solution as a hint for the human player
+            print("\n" + "=" * 70)
+            print("HINT: Here is one valid coloring solution for this problem:")
+            print("=" * 70)
+
+            # Group by cluster for readability
+            if clusters:
+                for owner, local_nodes in sorted(clusters.items()):
+                    node_colors = {node: test_assignment.get(node, "?") for node in sorted(local_nodes)}
+                    color_strs = [f"{node}={color}" for node, color in node_colors.items()]
+                    print(f"  {owner}: {', '.join(color_strs)}")
+            else:
+                # No clusters - just print all nodes
+                for node, color in sorted(test_assignment.items()):
+                    print(f"  {node}={color}")
+
+            print("=" * 70)
+            print("(This is just one possible solution - there may be others!)")
+            print("=" * 70 + "\n")
         else:
             print("[Validation] WARNING: Greedy validation found conflicts")
             print(f"[Validation] Test solution penalty: {problem.evaluate_assignment(test_assignment)}")
