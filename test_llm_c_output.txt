@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\tests\test_llm_c_interactive.py", line 157, in test_interactive_llm_c
+    log_conversation("Agent2", str(msg.content))
+  File "E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\tests\test_llm_c_interactive.py", line 52, in log_conversation
+    print(line)
+  File "C:\Users\Work\AppData\Local\Programs\Python\Python39\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 114: character maps to <undefined>
+
+============================================================
+LLM_C Interactive Test
+============================================================
+
+[SYSTEM] Created problem with 15 nodes
+[LLMCommLayer] OpenAI package and API key detected. LLM summarisation enabled.
+[SYSTEM] Using real LLM comm layer
+[SYSTEM] Initial assignments set
+[SYSTEM] Initial penalty: 4.00
+[SYSTEM] 
+=== Starting interaction with Agent2 ===
+
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are an agent collaborating with a human on a graph-colou...
+[SYSTEM] ERROR: 'charmap' codec can't encode character '\u2192' in position 114: character maps to <undefined>
+
+Test failed

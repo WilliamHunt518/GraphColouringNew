@@ -163,6 +163,16 @@ class ClusterAgent(MultiNodeAgent):
         # Track if human sent a message this turn (to force a response even if content is same)
         self._received_human_message_this_turn = False
 
+        # Counterfactual caching system (Phase 5)
+        # Stores computed counterfactual options for reuse in conversational responses
+        self._cached_counterfactuals: Optional[Dict[str, Any]] = None
+        self._cache_timestamp: Optional[float] = None
+        self._cache_boundary_state: Optional[Dict[str, Any]] = None
+
+        # Message classification tracking (Phase 2)
+        self._last_message_classification: Optional[Any] = None
+        self._last_message_result: Optional[Dict[str, Any]] = None  # Stores handler results (counterfactuals, searches)
+
     # ------------------------------------------------------------------
     # Message deduplication helpers
     # ------------------------------------------------------------------
@@ -260,6 +270,61 @@ class ClusterAgent(MultiNodeAgent):
         # Keep only last N messages
         if len(self._recent_messages) > self._max_message_history:
             self._recent_messages = self._recent_messages[-self._max_message_history:]
+
+    # ------------------------------------------------------------------
+    # Counterfactual caching helpers (Phase 5)
+    # ------------------------------------------------------------------
+
+    def _cache_counterfactuals(self, counterfactuals: Dict[str, Any]) -> None:
+        """Cache computed counterfactual options for reuse in conversational responses.
+
+        Parameters
+        ----------
+        counterfactuals : dict
+            Computed counterfactual options (e.g., from cost_list or constraints generation)
+        """
+        import time
+        self._cached_counterfactuals = counterfactuals
+        self._cache_timestamp = time.time()
+        # Store boundary state for cache invalidation
+        self._cache_boundary_state = dict(self._get_boundary_assignments())
+
+    def _get_cached_counterfactuals(self) -> Optional[Dict[str, Any]]:
+        """Retrieve cached counterfactuals if valid.
+
+        Returns
+        -------
+        dict or None
+            Cached counterfactuals if cache is valid, None otherwise
+        """
+        if self._cached_counterfactuals is None:
+            return None
+
+        # Check if boundary state has changed (invalidates cache)
+        current_boundary = self._get_boundary_assignments()
+        if self._cache_boundary_state != current_boundary:
+            self._invalidate_cache()
+            return None
+
+        return self._cached_counterfactuals
+
+    def _invalidate_cache(self) -> None:
+        """Invalidate the counterfactual cache."""
+        self._cached_counterfactuals = None
+        self._cache_timestamp = None
+        self._cache_boundary_state = None
+
+    def _get_boundary_assignments(self) -> Dict[str, Any]:
+        """Get current boundary node assignments (neighbour nodes this agent sees).
+
+        Returns
+        -------
+        dict
+            Dictionary of boundary node assignments
+        """
+        # Boundary nodes are the neighbour nodes (nodes owned by other clusters)
+        boundary_nodes = [n for n in self.neighbour_assignments.keys()]
+        return {n: self.neighbour_assignments.get(n) for n in boundary_nodes}
 
     # ------------------------------------------------------------------
     # Color normalization helper
@@ -432,6 +497,79 @@ class ClusterAgent(MultiNodeAgent):
         base = dict(getattr(self, "neighbour_assignments", {}) or {})
         return self._best_local_assignment_for(base)
 
+    def _compute_valid_boundary_configs_with_constraints(self, max_configs=10):
+        """
+        Compute valid boundary configurations respecting human-stated constraints.
+
+        Returns list of dicts representing valid boundary configurations.
+        Example: [{"h2": "red", "h5": "blue"}, {"h2": "blue", "h5": "green"}, ...]
+
+        Each configuration is tested to ensure the agent can achieve penalty=0.
+        Uses exhaustive enumeration to find ALL valid combinations (not just per-node minimal).
+        """
+        import itertools
+
+        # Get boundary nodes (neighbors we don't control)
+        boundary_nodes = sorted([n for n in getattr(self, "neighbour_assignments", {}).keys()])
+        if not boundary_nodes:
+            return []
+
+        # For each boundary node, collect allowed colors (respecting human constraints only)
+        allowed_per_node = {}
+        for node in boundary_nodes:
+            allowed = []
+            for color in self.domain:
+                # Check human-stated constraints
+                node_lower = str(node).lower()
+                color_lower = str(color).lower()
+                constraints = self._human_stated_constraints.get(node_lower, {})
+
+                # Skip forbidden colors
+                if color_lower in constraints.get("forbidden", []):
+                    self.log(f"Skipping {node}={color} (forbidden by human constraint)")
+                    continue
+
+                # If required color is specified, only allow that
+                required = constraints.get("required")
+                if required and color_lower != str(required).lower():
+                    continue
+
+                allowed.append(color)
+
+            allowed_per_node[node] = allowed
+            if not allowed:
+                self.log(f"WARNING: No allowed colors for boundary node {node} after constraints!")
+
+        # If any node has no allowed colors, return empty (no valid configs)
+        if any(len(allowed_per_node[n]) == 0 for n in boundary_nodes):
+            return []
+
+        # Enumerate ALL combinations and test each for penalty=0
+        valid_configs = []
+        base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
+        try:
+            color_lists = [allowed_per_node[n] for n in boundary_nodes]
+            for combo in itertools.product(*color_lists):
+                config = {boundary_nodes[i]: combo[i] for i in range(len(boundary_nodes))}
+
+                # Test if this combination achieves penalty=0
+                tmp_beliefs = dict(base_beliefs)
+                tmp_beliefs.update(config)
+                try:
+                    best_pen, _ = self._best_local_assignment_for(tmp_beliefs)
+                    if best_pen < 1e-6:  # Valid configuration
+                        valid_configs.append(config)
+                        if len(valid_configs) >= max_configs:
+                            break
+                except Exception:
+                    # Ignore errors when testing individual configs
+                    continue
+        except Exception as e:
+            self.log(f"Error enumerating configs: {e}")
+
+        self.log(f"Computed {len(valid_configs)} valid boundary configurations")
+        return valid_configs
+
     def _compute_satisfied(self) -> bool:
         """Whether the agent is satisfied with its current assignment.
 
@@ -477,6 +615,437 @@ class ClusterAgent(MultiNodeAgent):
         is_satisfied = current_pen <= best_pen + 1e-9
         self.log(f"Satisfaction check: penalty=0, at_optimum={is_satisfied}")
         return is_satisfied
+
+    # ------------------------------------------------------------------
+    # Message handlers (Phases 3, 4, 7)
+    # ------------------------------------------------------------------
+
+    def _handle_query(self, classification_result: Any) -> Dict[str, Any]:
+        """Handle QUERY messages by computing counterfactuals and answering questions.
+
+        Parameters
+        ----------
+        classification_result : ClassificationResult
+            Classified message with extracted nodes/colors
+
+        Returns
+        -------
+        dict
+            Response data with counterfactual information
+        """
+        nodes = classification_result.extracted_nodes
+        colors = classification_result.extracted_colors
+        text_lower = classification_result.raw_text.lower()
+
+        # Query type 1: "What could I set X to?" / "What should X be?"
+        # MUST come before general options check (more specific pattern)
+        # Detect queries asking for valid values of a specific boundary node
+        asking_about_node_value = any(phrase in text_lower for phrase in [
+            "what could i set", "what should i set", "what can i set",
+            "what could i change", "what should i change", "what can i change",
+            "what about", "could i set", "should i set", "can i set",
+            "tell me what i can set"
+        ])
+
+        if asking_about_node_value and nodes:
+            # Extract the node being asked about
+            query_node = None
+            for node in nodes:
+                if node in self.neighbour_assignments:
+                    query_node = node
+                    break
+
+            if query_node:
+                # Keep other boundary nodes fixed, search for valid values of query_node
+                fixed_boundary = {k: v for k, v in self.neighbour_assignments.items() if k != query_node}
+                valid_colors = []
+
+                self.log(f"Query handler: Searching valid values for {query_node} (keeping {fixed_boundary} fixed)")
+
+                for color in self.domain:
+                    test_boundary = dict(fixed_boundary)
+                    test_boundary[query_node] = color
+
+                    best_pen, best_asg = self._best_local_assignment_for(test_boundary)
+                    if best_pen < 1e-6:  # Valid configuration
+                        valid_colors.append(color)
+                        self.log(f"  {query_node}={color} works (penalty=0)")
+                    else:
+                        self.log(f"  {query_node}={color} fails (penalty={best_pen:.2f})")
+
+                return {
+                    "query_type": "node_value_search",
+                    "query_node": query_node,
+                    "fixed_boundary": fixed_boundary,
+                    "valid_colors": valid_colors,
+                    "message": f"Given {', '.join([f'{k}={v}' for k, v in fixed_boundary.items()])}, you could set {query_node} to: {', '.join(valid_colors) if valid_colors else 'NO valid options'}"
+                }
+
+        # Query type 2: "What are my options?" / "What settings could I choose?"
+        # General query for all boundary configuration options
+        asking_for_options = any(phrase in text_lower for phrase in [
+            "option", "settings", "configuration",
+            "other configuration", "alternatives", "what else",
+            "what would work"
+        ])
+
+        if asking_for_options:
+            result = self._enumerate_boundary_options()
+            self.log(f"Query handler: Enumerating boundary options (found {len(result.get('options', []))} configs)")
+            return result
+
+        # Query type 3: "Can you solve with X?"
+        if ("can you" in text_lower or "can i" in text_lower) and nodes and colors:
+            # Extract the hypothetical boundary configuration
+            hypothetical = dict(self.neighbour_assignments)
+            for node, color in zip(nodes, colors):
+                if node in hypothetical:  # Only update boundary nodes
+                    hypothetical[node] = self._normalize_color(color)
+
+            # Compute counterfactual
+            best_pen, best_asg = self._best_local_assignment_for(hypothetical)
+
+            return {
+                "query_type": "feasibility",
+                "can_solve": best_pen < 1e-9,
+                "penalty": float(best_pen),
+                "agent_assignment": best_asg,
+                "agent_score": self._score_for(best_asg, list(self.nodes))
+            }
+
+        # Query type 3: "What color is X?"
+        if nodes and ("what" in text_lower or "which" in text_lower):
+            node = nodes[0]
+            if node in self.assignments:
+                color = self.assignments[node]
+                return {
+                    "query_type": "state",
+                    "node": node,
+                    "color": color
+                }
+            elif node in self.neighbour_assignments:
+                color = self.neighbour_assignments.get(node)
+                return {
+                    "query_type": "state",
+                    "node": node,
+                    "color": color,
+                    "note": "boundary_node"
+                }
+
+        # Default: return current state
+        return {
+            "query_type": "general",
+            "assignments": dict(self.assignments),
+            "boundary": dict(self.neighbour_assignments)
+        }
+
+    def _handle_preference(self, classification_result: Any) -> Dict[str, Any]:
+        """Handle PREFERENCE messages by exploring counterfactuals WITHOUT binding as constraint.
+
+        Parameters
+        ----------
+        classification_result : ClassificationResult
+            Classified message with extracted nodes/colors
+
+        Returns
+        -------
+        dict
+            Response data with counterfactual exploration and pattern analysis
+        """
+        nodes = classification_result.extracted_nodes
+        colors = classification_result.extracted_colors
+
+        if not nodes or not colors:
+            # No specific preference extracted, enumerate general options
+            return self._enumerate_boundary_options()
+
+        # Extract preferred configuration from message
+        preferred_config = dict(self.neighbour_assignments)
+        for node, color in zip(nodes, colors):
+            if node in preferred_config:  # Only update boundary nodes
+                preferred_config[node] = self._normalize_color(color)
+
+        # Compute counterfactual for preferred configuration
+        pref_pen, pref_asg = self._best_local_assignment_for(preferred_config)
+        pref_score = self._score_for(pref_asg, list(self.nodes))
+
+        # Compute alternatives
+        alternatives = self._enumerate_boundary_options()
+
+        # Analyze patterns across alternatives
+        pattern_analysis = self._analyze_option_patterns(alternatives.get("options", []))
+
+        return {
+            "preference_type": "counterfactual",
+            "preferred": {
+                "config": preferred_config,
+                "penalty": float(pref_pen),
+                "agent_score": int(pref_score),
+                "feasible": pref_pen < 1e-9
+            },
+            "num_alternatives": len(alternatives.get("options", [])),
+            "pattern": pattern_analysis,
+            "alternatives": alternatives.get("options", [])[:5]  # Top 5 for reference
+        }
+
+    def _handle_information(self, classification_result: Any) -> Dict[str, Any]:
+        """Handle INFORMATION messages by updating constraints.
+
+        Parameters
+        ----------
+        classification_result : ClassificationResult
+            Classified message with extracted constraint information
+
+        Returns
+        -------
+        dict
+            Acknowledgment with impact summary
+        """
+        text_lower = classification_result.raw_text.lower()
+        nodes = classification_result.extracted_nodes
+        colors = classification_result.extracted_colors
+
+        if not nodes or not colors:
+            return {"info_type": "general", "acknowledged": True}
+
+        # Extract constraint type (negative or positive)
+        node = nodes[0]
+        color = self._normalize_color(colors[0]) if colors else None
+
+        # Negative constraint: "h1 can never be green"
+        if any(phrase in text_lower for phrase in ["can't be", "cannot be", "never", "avoid"]):
+            if node not in self._human_stated_constraints:
+                self._human_stated_constraints[node] = {"forbidden": [], "required": None}
+
+            if color and color not in self._human_stated_constraints[node]["forbidden"]:
+                self._human_stated_constraints[node]["forbidden"].append(color)
+
+            # Invalidate cache since constraints changed
+            self._invalidate_cache()
+
+            return {
+                "info_type": "negative_constraint",
+                "node": node,
+                "forbidden_color": color,
+                "acknowledged": True,
+                "impact": "Constraint updated, recomputing solutions"
+            }
+
+        # Positive constraint: "h1 must be red"
+        elif any(phrase in text_lower for phrase in ["must be", "has to be", "needs to be"]):
+            if node not in self._human_stated_constraints:
+                self._human_stated_constraints[node] = {"forbidden": [], "required": None}
+
+            self._human_stated_constraints[node]["required"] = color
+
+            # Invalidate cache since constraints changed
+            self._invalidate_cache()
+
+            return {
+                "info_type": "positive_constraint",
+                "node": node,
+                "required_color": color,
+                "acknowledged": True,
+                "impact": "Constraint updated, recomputing solutions"
+            }
+
+        # General information (e.g., "b2 is currently red")
+        else:
+            return {
+                "info_type": "state_report",
+                "node": node,
+                "color": color,
+                "acknowledged": True
+            }
+
+    def _handle_command(self, classification_result: Any) -> Dict[str, Any]:
+        """Handle COMMAND messages by applying forced assignments.
+
+        Parameters
+        ----------
+        classification_result : ClassificationResult
+            Classified message with extracted command
+
+        Returns
+        -------
+        dict
+            Acknowledgment with execution status
+        """
+        nodes = classification_result.extracted_nodes
+        colors = classification_result.extracted_colors
+
+        if not nodes or not colors:
+            return {"command_type": "invalid", "success": False, "error": "No node or color specified"}
+
+        node = nodes[0]
+        color = self._normalize_color(colors[0])
+
+        # Check if node is in fixed_local_nodes (immutable)
+        if node in self.fixed_local_nodes:
+            return {
+                "command_type": "forced_assignment",
+                "success": False,
+                "error": f"Node {node} is fixed and cannot be changed"
+            }
+
+        # Apply forced assignment (will be respected by next compute_assignments call)
+        self.forced_local_assignments[node] = color
+
+        # Invalidate cache since forced assignments changed
+        self._invalidate_cache()
+
+        return {
+            "command_type": "forced_assignment",
+            "node": node,
+            "color": color,
+            "success": True,
+            "note": "Will be applied in next step"
+        }
+
+    def _enumerate_boundary_options(self) -> Dict[str, Any]:
+        """Enumerate valid boundary configurations (used by query and preference handlers).
+
+        Returns
+        -------
+        dict
+            Dictionary with options list and metadata
+        """
+        import itertools
+
+        base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
+        boundary_nodes = sorted([n for n in base_beliefs.keys()])
+
+        if not boundary_nodes:
+            return {"options": [], "boundary_nodes": []}
+
+        options = []
+        for colors in itertools.product(self.domain, repeat=len(boundary_nodes)):
+            config = {boundary_nodes[i]: colors[i] for i in range(len(boundary_nodes))}
+
+            # Skip if violates human-stated constraints
+            if not self._config_respects_constraints(config):
+                continue
+
+            # Compute counterfactual
+            tmp = dict(base_beliefs)
+            tmp.update(config)
+            best_pen, best_asg = self._best_local_assignment_for(tmp)
+
+            agent_score = self._score_for(best_asg, list(self.nodes))
+
+            options.append({
+                "boundary_config": config,
+                "penalty": float(best_pen),
+                "agent_score": int(agent_score),
+                "feasible": best_pen < 1e-9
+            })
+
+        # Sort: feasible first, then by agent score
+        options.sort(key=lambda o: (not o["feasible"], -o["agent_score"]))
+
+        return {
+            "options": options,
+            "boundary_nodes": boundary_nodes,
+            "total_options": len(options),
+            "feasible_count": sum(1 for o in options if o["feasible"])
+        }
+
+    def _analyze_option_patterns(self, options: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze patterns across feasible options to identify common constraints.
+
+        Parameters
+        ----------
+        options : list
+            List of option dictionaries with boundary configs
+
+        Returns
+        -------
+        dict
+            Pattern analysis with common constraints
+        """
+        if not options:
+            return {"type": "none", "description": "No options available"}
+
+        # Filter to feasible options only
+        feasible = [o for o in options if o.get("feasible", False)]
+
+        if not feasible:
+            return {"type": "none", "description": "No feasible options"}
+
+        if len(feasible) == 1:
+            return {"type": "unique", "description": "Only one feasible option"}
+
+        # Find common node assignments across all feasible options
+        common_assignments = {}
+        boundary_nodes = feasible[0].get("boundary_config", {}).keys()
+
+        for node in boundary_nodes:
+            colors_for_node = [opt["boundary_config"][node] for opt in feasible]
+            unique_colors = set(colors_for_node)
+
+            if len(unique_colors) == 1:
+                # This node has the same color in all feasible options
+                common_assignments[node] = list(unique_colors)[0]
+
+        if common_assignments:
+            # Describe common constraints
+            constraint_strs = [f"{node}={color}" for node, color in common_assignments.items()]
+            return {
+                "type": "common_constraints",
+                "description": f"All solutions require: {', '.join(constraint_strs)}",
+                "constraints": common_assignments
+            }
+
+        return {
+            "type": "flexible",
+            "description": f"{len(feasible)} options available with no fixed requirements"
+        }
+
+    def _config_respects_constraints(self, config: Dict[str, Any]) -> bool:
+        """Check if a boundary configuration respects human-stated constraints.
+
+        Parameters
+        ----------
+        config : dict
+            Boundary configuration to check
+
+        Returns
+        -------
+        bool
+            True if configuration respects all constraints
+        """
+        for node, color in config.items():
+            if node in self._human_stated_constraints:
+                constraints = self._human_stated_constraints[node]
+
+                # Check forbidden colors
+                forbidden = constraints.get("forbidden", [])
+                if color in forbidden:
+                    return False
+
+                # Check required color
+                required = constraints.get("required")
+                if required is not None and color != required:
+                    return False
+
+        return True
+
+    def _score_for(self, assignments: Dict[str, Any], nodes: List[str]) -> int:
+        """Compute score for given assignments (number of nodes colored).
+
+        Parameters
+        ----------
+        assignments : dict
+            Node assignments
+        nodes : list
+            List of nodes to score
+
+        Returns
+        -------
+        int
+            Score (number of assigned nodes)
+        """
+        return sum(1 for n in nodes if n in assignments and assignments[n] is not None)
 
     def _respond_to_human_conversationally(self, assignments_changed: bool = False, old_assignments: Optional[Dict[str, Any]] = None) -> None:
         """Generate conversational response with conflict-aware suggestions.
@@ -604,9 +1173,233 @@ class ClusterAgent(MultiNodeAgent):
             claimed_color = self.assignments.get(node)
             self.log(f"Verification: {node} = {claimed_color}")
 
+        # Phase 6: DECISION TREE - What should the agent do/suggest?
+        # Follow user's logic: 1) Good as is? 2) Can I fix alone? 3) Suggest boundary changes
+        decision_analysis = "\n**DECISION TREE:**\n"
+
+        # Step 1: Are we good as is?
+        if current_penalty < 1e-6:
+            decision_analysis += "✓ STEP 1: We are GOOD AS IS. Penalty=0, no conflicts.\n"
+            decision_analysis += "  → ACTION: Acknowledge success. No changes needed.\n"
+        else:
+            decision_analysis += f"✗ STEP 1: Not good (penalty={current_penalty:.2f}). Need to fix.\n"
+
+            # Step 2: Can I fix it alone by changing my internal nodes?
+            # Try to find if there's a valid assignment for my nodes with current boundary
+            best_pen, best_assign = self._best_local_assignment_for(base_beliefs)
+
+            if best_pen < 1e-6:
+                # I CAN fix it alone!
+                decision_analysis += f"✓ STEP 2: I CAN fix this alone! Found internal assignment with penalty=0.\n"
+                decision_analysis += f"  → Best internal assignment: {best_assign}\n"
+
+                # Check if we already applied this
+                if dict(self.assignments) == best_assign:
+                    decision_analysis += "  → Already using this assignment. Should have penalty=0 but doesn't - BUG?\n"
+                else:
+                    decision_analysis += "  → ACTION: I should change my internal nodes to this assignment.\n"
+                    decision_analysis += "  → DO NOT ask human to change boundary - I can solve this myself!\n"
+            else:
+                # I CANNOT fix it alone
+                decision_analysis += f"✗ STEP 2: I CANNOT fix this alone (best I can do: penalty={best_pen:.2f}).\n"
+                decision_analysis += "  → The current boundary doesn't work for me.\n"
+
+                # Step 3: What boundary changes would work?
+                # Compute valid boundary configs (respecting constraints)
+                constrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
+
+                if constrained_configs:
+                    decision_analysis += f"✓ STEP 3: Found {len(constrained_configs)} boundary config(s) that WOULD work:\n"
+                    for i, config in enumerate(constrained_configs[:5]):
+                        config_str = ", ".join([f"{k}={v}" for k, v in config.items()])
+                        decision_analysis += f"    {i+1}. {config_str}\n"
+                    decision_analysis += "  → ACTION: Suggest these boundary changes to the human.\n"
+                else:
+                    decision_analysis += "✗ STEP 3: Found NO valid boundary configs (with constraints).\n"
+                    decision_analysis += "  → ACTION: Tell human the problem may be unsolvable with their constraints.\n"
+
+        decision_analysis += "\n"
+
+        # Phase 7: Retrieve cached counterfactuals OR compute boundary options on-demand
+        counterfactuals_section = ""
+
+        # Check if human is asking for boundary configuration options
+        text_lower = self._last_human_text.lower()
+        asking_for_options = any(phrase in text_lower for phrase in [
+            "option", "settings", "configuration", "what could i",
+            "what can i", "what should i", "what would work",
+            "other configuration", "alternatives", "what else",
+            "what settings", "which settings"
+        ])
+
+        # Check if human is asking "what could I set X to?"
+        asking_about_node_value = any(phrase in text_lower for phrase in [
+            "what could i set", "what should i set", "what can i set",
+            "what could i change", "what should i change", "what can i change",
+            "what about", "could i set", "should i set", "can i set",
+            "tell me what i can set"
+        ])
+
+        try:
+            # If asking about specific node value, compute valid values for that node
+            if asking_about_node_value and hasattr(self, '_last_message_result'):
+                result = self._last_message_result
+                if isinstance(result, dict) and result.get("query_type") == "node_value_search":
+                    query_node = result.get("query_node")
+                    valid_colors = result.get("valid_colors", [])
+                    fixed_boundary = result.get("fixed_boundary", {})
+
+                    if query_node and valid_colors:
+                        counterfactuals_section = f"\n**VALID VALUES FOR {query_node.upper()}:**\n"
+                        counterfactuals_section += f"Given that {', '.join([f'{k}={v}' for k, v in fixed_boundary.items()])}, "
+                        counterfactuals_section += f"you could set {query_node} to:\n"
+                        for i, color in enumerate(valid_colors):
+                            counterfactuals_section += f"{i+1}. {query_node}={color} ✓ (this works for me!)\n"
+                        counterfactuals_section += "\nWhen responding:\n"
+                        counterfactuals_section += f"- Tell the human which values of {query_node} work for you\n"
+                        counterfactuals_section += f"- Be specific: list the valid colors ({', '.join(valid_colors)})\n"
+                        counterfactuals_section += "- Do NOT suggest changing nodes the human said they can't change\n"
+                    elif query_node and not valid_colors:
+                        counterfactuals_section = f"\n**NO VALID VALUES FOR {query_node.upper()}:**\n"
+                        counterfactuals_section += f"Given {', '.join([f'{k}={v}' for k, v in fixed_boundary.items()])}, "
+                        counterfactuals_section += f"there are NO valid values for {query_node} that would work for me.\n"
+                        counterfactuals_section += "The human needs to change other boundary nodes to make progress.\n"
+
+            # If asking for options, compute them now (don't rely on cache)
+            elif asking_for_options:
+                self.log(f"Human asking for options - computing boundary configurations")
+                valid_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
+
+                if valid_configs:
+                    counterfactuals_section = "\n**BOUNDARY OPTIONS FOR HUMAN (what YOU can choose):**\n"
+                    for i, config in enumerate(valid_configs[:5]):
+                        config_str = ", ".join([f"{k}={v}" for k, v in config.items()])
+                        counterfactuals_section += f"{i+1}. You could set: {config_str}\n"
+
+                    counterfactuals_section += "\nWhen responding:\n"
+                    counterfactuals_section += "- List these SPECIFIC boundary configurations for the human\n"
+                    counterfactuals_section += "- These are the settings the HUMAN can choose (boundary nodes they control)\n"
+                    counterfactuals_section += "- Don't list your own internal node assignments (b1, b2, etc.) - the human can't control those!\n"
+                    counterfactuals_section += "- Be specific and enumerate the options clearly\n"
+                else:
+                    counterfactuals_section = "\n**NO VALID BOUNDARY OPTIONS FOUND**\n"
+                    counterfactuals_section += "I cannot find any boundary configuration that would allow me to achieve zero conflicts.\n"
+                    counterfactuals_section += "This may be due to constraints that make the problem unsolvable.\n"
+
+            # CRITICAL: If there's a conflict (penalty > 0), ALWAYS compute what would work
+            # Don't just rely on cache - the agent needs to know what's actually possible
+            elif current_penalty > 1e-6 and not counterfactuals_section:
+                self.log(f"Conflict detected (penalty={current_penalty:.2f}) - computing valid boundary configs")
+
+                # Compute valid configs WITH constraints applied
+                constrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
+
+                # Also compute valid configs WITHOUT constraints to see what WOULD work
+                # Temporarily clear constraints for this calculation
+                saved_constraints = dict(self._human_stated_constraints)
+                self._human_stated_constraints.clear()
+                unconstrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
+                self._human_stated_constraints = saved_constraints
+
+                counterfactuals_section = "\n**BOUNDARY CONFIGURATION ANALYSIS:**\n"
+
+                # Check if human's CURRENT boundary is one of the valid ones
+                current_boundary = dict(getattr(self, "neighbour_assignments", {}) or {})
+                current_is_valid = False
+                if constrained_configs:
+                    for config in constrained_configs:
+                        if all(current_boundary.get(k) == v for k, v in config.items()):
+                            current_is_valid = True
+                            break
+
+                if current_is_valid:
+                    current_str = ", ".join([f"{k}={v}" for k, v in current_boundary.items()])
+                    counterfactuals_section += f"✓✓ CURRENT boundary ({current_str}) IS VALID! This should work.\n"
+                    counterfactuals_section += "  (If penalty > 0, there may be an internal issue - the boundary itself is correct)\n"
+
+                if constrained_configs:
+                    counterfactuals_section += f"✓ WITH your stated constraints, {len(constrained_configs)} config(s) would work:\n"
+                    for i, config in enumerate(constrained_configs[:5]):
+                        config_str = ", ".join([f"{k}={v}" for k, v in config.items()])
+                        # Mark if this is the current config
+                        is_current = all(current_boundary.get(k) == v for k, v in config.items())
+                        marker = " ← CURRENT" if is_current else ""
+                        counterfactuals_section += f"  {i+1}. {config_str}{marker}\n"
+                else:
+                    counterfactuals_section += "✗ WITH your stated constraints: NO valid configs found.\n"
+
+                    if unconstrained_configs and len(unconstrained_configs) > len(constrained_configs):
+                        counterfactuals_section += f"\n✓ WITHOUT those constraints, {len(unconstrained_configs)} config(s) WOULD work:\n"
+                        for i, config in enumerate(unconstrained_configs[:5]):
+                            config_str = ", ".join([f"{k}={v}" for k, v in config.items()])
+                            # Highlight which nodes differ from constraints
+                            constrained_nodes = list(self._human_stated_constraints.keys())
+                            highlight = ""
+                            for node, color in config.items():
+                                if node.lower() in constrained_nodes:
+                                    highlight = f" (requires {node} to change)"
+                            counterfactuals_section += f"  {i+1}. {config_str}{highlight}\n"
+                        counterfactuals_section += "\nThese show what WOULD work if constraints were relaxed.\n"
+
+                counterfactuals_section += "\nWhen responding:\n"
+                counterfactuals_section += "- Tell the human WHICH of their boundary settings would work (if any)\n"
+                counterfactuals_section += "- If their current config is close to a working one, point that out\n"
+                counterfactuals_section += "- Don't ask for changes the human said are impossible\n"
+                counterfactuals_section += "- Be specific about what they need to change\n"
+
+            # Otherwise, try to use cached counterfactuals if available
+            elif not counterfactuals_section:
+                cached_cf = self._get_cached_counterfactuals()
+                if cached_cf:
+                    # Format counterfactuals for LLM
+                    if isinstance(cached_cf, dict):
+                        options = cached_cf.get("options", [])
+                        if options:
+                            counterfactuals_section = "\n**AVAILABLE OPTIONS (counterfactuals I computed):**\n"
+                            # Show top 5 options
+                            for i, opt in enumerate(options[:5]):
+                                if isinstance(opt, dict):
+                                    config = opt.get("boundary_config") or opt.get("human", {})
+                                    penalty = opt.get("penalty", 0)
+                                    score = opt.get("agent_score", 0)
+                                    feasible = opt.get("feasible", penalty < 1e-9)
+                                    status = "✓ FEASIBLE" if feasible else "✗ HAS CONFLICTS"
+
+                                    config_str = ", ".join([f"{k}={v}" for k, v in config.items()])
+                                    counterfactuals_section += f"{i+1}. If you set {config_str}: {status}, my score={score}, penalty={penalty:.1f}\n"
+
+                            counterfactuals_section += "\nWhen responding:\n"
+                            counterfactuals_section += "- If human asked a query, reference these options to answer\n"
+                            counterfactuals_section += "- If explaining why something won't work, suggest feasible alternatives from this list\n"
+                            counterfactuals_section += "- Be concise: don't list all options unless specifically asked\n"
+        except Exception as e:
+            self.log(f"Failed to retrieve cached counterfactuals: {e}")
+
+        # Handle empty messages (config updates) specially
+        human_message_text = self._last_human_text if self._last_human_text and self._last_human_text.strip() else ""
+        if human_message_text:
+            human_context = f'The human just said: "{human_message_text}"'
+        else:
+            human_context = "The human just sent their current boundary configuration (no message text)"
+
+        # Build constraints section to show at TOP of prompt
+        constraints_section = ""
+        if self._human_stated_constraints:
+            constraints_section = "**🚫 IMMUTABLE CONSTRAINTS (you CANNOT suggest changing these):**\n"
+            for node, constraint_dict in self._human_stated_constraints.items():
+                required = constraint_dict.get("required")
+                forbidden = constraint_dict.get("forbidden", [])
+                if required:
+                    constraints_section += f"- {node} MUST be {required} (human stated this is fixed)\n"
+                if forbidden:
+                    forbidden_str = ", ".join(forbidden)
+                    constraints_section += f"- {node} CANNOT be {forbidden_str} (human ruled these out)\n"
+            constraints_section += "\n**CRITICAL:** Never suggest changing these constrained nodes in your response!\n\n"
+
         prompt = (
             f"You are agent '{self.name}' collaborating with a human on a graph coloring task.\n\n"
-            f"The human just said: \"{self._last_human_text}\"\n\n"
+            f"{constraints_section}"
+            f"{human_context}\n\n"
             f"**CRITICAL FACT:** {change_status}\n\n"
             f"**VERIFICATION:** Before you respond, understand that:\n"
             f"- Current penalty = {current_penalty:.2f} (0 = no conflicts, >0 = conflicts exist)\n"
@@ -615,9 +1408,27 @@ class ClusterAgent(MultiNodeAgent):
             f"- If penalty > 0, you MUST acknowledge conflicts exist in your response\n"
             f"- {assignment_verification}\n\n"
             f"Your current state:\n{state_summary}\n"
+            f"{decision_analysis}"
+            f"{counterfactuals_section}"
         )
 
-        if is_question:
+        if not human_message_text:
+            # Empty message = config update
+            prompt += (
+                "The human sent their current boundary configuration. Your response MUST:\n"
+                "1. Acknowledge their config update\n"
+                "2. Report your current node assignments\n"
+                "3. State whether the current config works (penalty=0) or not\n"
+                "4. If conflicts exist (penalty>0), suggest what boundary changes would help\n"
+                "   ⚠️ NEVER suggest changing constrained nodes listed above!\n"
+                "   ⚠️ Only suggest changing nodes that are NOT in the constraints list\n\n"
+                "Examples:\n"
+                "- If penalty=0: 'Received your config. My nodes: a1=green, a2=blue, a3=blue. No conflicts!'\n"
+                "- If penalty>0 with unconstrained nodes: 'Received your config. Current penalty is 20.00. There's a clash between my a2 (red) and your h1 (red). Try changing h1 to blue.'\n"
+                "- If penalty>0 with ALL nodes constrained: 'Received your config. Current penalty is 20.00. With your constraints (h1=red fixed), I cannot find a valid solution. This may not be solvable with those constraints.'\n\n"
+                "Return ONLY the conversational response text (2-3 sentences max)."
+            )
+        elif is_question:
             prompt += (
                 "The human asked you a QUESTION. Your response MUST:\n"
                 "1. ANSWER THE QUESTION DIRECTLY first - don't dodge or change the subject\n"
@@ -633,18 +1444,29 @@ class ClusterAgent(MultiNodeAgent):
             )
         else:
             prompt += (
-                "Generate a conversational response (2-3 sentences max) that:\n"
-                "1. DIRECTLY responds to what the human said\n"
-                "2. If you DID change nodes, mention the specific changes\n"
-                "3. If you DID NOT change nodes AND conflicts exist, be brutally honest: 'I CANNOT fix this by changing my nodes - you must change the boundary'\n"
-                "4. NEVER EVER say 'I changed' if your assignments didn't actually change - that is LYING\n"
-                "5. If penalty > 0, this is a BAD/INVALID coloring - never claim you have a good solution\n\n"
-                "Examples if assignments CHANGED:\n"
-                "- 'Yes, I changed a2 from red to green to avoid the clash with h1.'\n\n"
-                "Examples if assignments DID NOT change:\n"
-                "- 'I CANNOT resolve this clash by changing my internal nodes. You need to change h1 from red to blue.'\n"
-                "- 'My nodes cannot change without making things worse. Please change h2 to green to eliminate the conflict.'\n"
-                "- 'I am stuck with this configuration. The boundary colors force this clash. You must change your nodes.'\n\n"
+                "Generate a conversational response (2-3 sentences max) following the DECISION TREE above:\n\n"
+                "**IF STEP 1 says we're GOOD (penalty=0):**\n"
+                "- Acknowledge success: 'My nodes are optimized. No conflicts!'\n"
+                "- Report your assignments\n"
+                "- DO NOT suggest any changes\n\n"
+                "**IF STEP 2 says you CAN fix it alone:**\n"
+                "- Say 'I can resolve this by changing my internal nodes' OR 'I changed X to Y'\n"
+                "- DO NOT ask human to change boundary - YOU can solve it yourself!\n"
+                "- Only mention internal node changes, not boundary\n\n"
+                "**IF STEP 3 applies (you CANNOT fix alone):**\n"
+                "- Be honest: 'I cannot fix this by changing my internal nodes'\n"
+                "- Suggest the boundary configs from STEP 3 that WOULD work\n"
+                "- ⚠️ CRITICAL: Only suggest configs that appear in STEP 3! Don't make up others.\n"
+                "- ⚠️ Never suggest changing constrained nodes (see constraints at top)\n\n"
+                "**General rules:**\n"
+                "- NEVER say 'I changed' if assignments didn't actually change (see CRITICAL FACT)\n"
+                "- If penalty > 0, acknowledge conflicts exist\n"
+                "- Be specific and truthful\n\n"
+                "Examples:\n"
+                "- STEP 1 good: 'Everything looks good! My nodes: a1=green, a2=blue. No conflicts.'\n"
+                "- STEP 2 can fix: 'I changed a2 to blue to resolve the clash. Should work now.'\n"
+                "- STEP 3 need boundary: 'I cannot fix this alone. Try setting h1=blue, h4=red - that would work for me.'\n"
+                "- STEP 3 constrained: 'With h1=red fixed, no solution exists. Try changing h4 to blue instead.'\n\n"
                 "Return ONLY the conversational response text."
             )
 
@@ -654,6 +1476,49 @@ class ClusterAgent(MultiNodeAgent):
             if response_text and response_text.strip():
                 # CRITICAL: Post-process to remove lies about changes
                 final_response = response_text.strip()
+
+                # CRITICAL: If penalty > 0 but LLM claims no conflicts, re-prompt with explicit conflict details
+                self.log(f"Checking response accuracy: penalty={current_penalty:.2f}, response='{final_response[:80]}...'")
+                if current_penalty > 1e-9:
+                    self.log(f"Penalty > 0, checking if response acknowledges conflicts")
+                    no_conflict_lies = ["no conflicts", "no clash", "zero conflicts", "conflict-free",
+                                       "good coloring", "valid solution", "valid coloring", "all is well",
+                                       "everything works", "no issues", "problem-free", "successful"]
+                    final_lower = final_response.lower()
+                    for lie in no_conflict_lies:
+                        if lie in final_lower:
+                            # LLM is not acknowledging conflicts - re-prompt with explicit details
+                            self.log(f"!!! LLM response inaccurate: claimed '{lie}' but penalty={current_penalty:.2f} > 0. Re-prompting with explicit conflict details.")
+
+                            # Build detailed conflict information
+                            conflict_details = f"\n**CRITICAL - YOU HAVE CONFLICTS:**\n"
+                            conflict_details += f"- Current penalty: {current_penalty:.2f} (GREATER THAN ZERO)\n"
+                            if conflicts:
+                                conflict_details += f"- Detected {len(conflicts)} boundary conflict(s):\n"
+                                for i, (my_node, their_node, color) in enumerate(conflicts[:3]):
+                                    conflict_details += f"  {i+1}. My node {my_node}={color} CLASHES with human's node {their_node}={color}\n"
+                            conflict_details += "- You MUST acknowledge these conflicts in your response\n"
+                            conflict_details += "- NEVER claim you have a 'valid solution' or 'no conflicts' when penalty > 0\n\n"
+
+                            # Re-prompt with explicit conflict awareness
+                            corrective_prompt = (
+                                f"You are agent '{self.name}'. The human asked: \"{self._last_human_text}\"\n\n"
+                                f"{conflict_details}"
+                                f"Your state:\n{state_summary}\n"
+                                f"{counterfactuals_section}\n"
+                                f"Generate an HONEST response that:\n"
+                                f"1. ACKNOWLEDGES the conflicts exist (penalty={current_penalty:.2f})\n"
+                                f"2. Answers the human's question directly\n"
+                                f"3. If appropriate, suggests what boundary changes would resolve conflicts\n"
+                                f"4. NEVER claims to have a valid/good solution when conflicts exist\n\n"
+                                f"Return ONLY the conversational response text."
+                            )
+
+                            final_response = self.comm_layer._call_openai(corrective_prompt, max_tokens=200).strip()
+                            self.log(f"Re-prompted LLM with conflict details. New response: '{final_response}'")
+                            break
+                else:
+                    self.log(f"Penalty <= 0, no lie detection needed")
 
                 # If assignments didn't change, strip out any claims of changing
                 if not assignments_changed:
@@ -671,6 +1536,24 @@ class ClusterAgent(MultiNodeAgent):
                                 final_response = f"My nodes did not change. Current penalty: {current_penalty:.2f}"
                             self.log(f"WARNING: LLM hallucinated changes when assignments_changed=False. Replaced with honest response.")
                             break
+
+                # CRITICAL: Check if LLM suggested changing a constrained node (ignoring constraints!)
+                violated_constraints = []
+                for node, constraint_dict in self._human_stated_constraints.items():
+                    required = constraint_dict.get("required")
+                    if required and f"change {node}" in final_response.lower():
+                        violated_constraints.append(f"{node}={required}")
+
+                if violated_constraints:
+                    self.log(f"!!! LLM suggested changing constrained nodes: {violated_constraints}. Overriding response.")
+                    constraint_str = ", ".join(violated_constraints)
+                    final_response = f"With your constraints ({constraint_str} fixed), I cannot find a valid solution. The problem may not be solvable with these constraints."
+                    if current_penalty > 1e-6:
+                        # Try to suggest changing unconstrained nodes if any exist
+                        unconstrained_boundary = [n for n in getattr(self, "neighbour_assignments", {}).keys()
+                                                 if n.lower() not in self._human_stated_constraints]
+                        if unconstrained_boundary:
+                            final_response += f" Try adjusting {unconstrained_boundary[0]} instead."
 
                 self.send("Human", {"type": "free_text", "data": final_response})
                 self.log(f"Sent conversational response to Human: {final_response[:80]}...")
@@ -716,9 +1599,9 @@ class ClusterAgent(MultiNodeAgent):
             except Exception:
                 pass
 
-        # Reset human message flag at start of each step
-        # (will be set to True in receive() if human sends a message this turn)
-        self._received_human_message_this_turn = False
+        # DON'T reset human message flag here - it needs to stay True until AFTER we send messages
+        # Otherwise duplicate detection will kick in before we respond
+        # Flag will be reset at the END of step() after messages are sent
 
         # compute new assignments FIRST
         # Store old assignments for detailed change tracking
@@ -873,7 +1756,8 @@ class ClusterAgent(MultiNodeAgent):
 
         # --- Handle conversational human messages AFTER computing assignments ---
         # This way we know if our assignments actually changed before responding.
-        if self._last_human_text and self._last_human_text.strip():
+        # CRITICAL: Also respond to empty messages (config updates) - don't check if text is non-empty
+        if hasattr(self, '_last_human_text') and self._last_human_text is not None:
             try:
                 # FIX 1: Use assignments_actually_changed which reflects FINAL state after snap
                 self._respond_to_human_conversationally(assignments_actually_changed, old_assignments)
@@ -1002,10 +1886,16 @@ class ClusterAgent(MultiNodeAgent):
             else:
                 self.log(f"LLM_C: Current boundary incomplete or doesn't work. Penalty={current_penalty:.6f}. Computing alternatives...")
 
-                # Compute which boundary colors work for each node
-                data: Dict[str, List[Any]] = {}
+                # CRITICAL FIX: Enumerate ALL boundary combinations (not just per-node minimal)
+                # The old per-node filtering was too aggressive and missed valid combinations
+                # that only work when multiple nodes change together.
+
+                # Build list of allowed colors per node (respecting human constraints)
+                import itertools
+                data: Dict[str, List[Any]] = {}  # Keep for backwards compatibility
+                allowed_colors_per_node = []
                 for nbr in boundary_nodes_sorted:
-                    per_colour_pen: Dict[Any, float] = {}
+                    allowed = []
                     for colour in self.domain:
                         # Check human-stated constraints
                         nbr_lower = str(nbr).lower()
@@ -1014,37 +1904,17 @@ class ClusterAgent(MultiNodeAgent):
                         constraints = self._human_stated_constraints.get(nbr_lower)
                         if constraints:
                             if colour_lower in constraints.get("forbidden", []):
-                                per_colour_pen[colour] = float('inf')
-                                continue
+                                continue  # Skip forbidden colors
                             required = constraints.get("required")
                             if required and colour_lower != required:
-                                per_colour_pen[colour] = float('inf')
-                                continue
+                                continue  # Skip non-required colors
 
-                        # Compute penalty for this boundary color
-                        if self.counterfactual_utils:
-                            tmp = dict(base_beliefs)
-                            tmp[nbr] = colour
-                            best_pen, _ = self._best_local_assignment_for(tmp)
-                            per_colour_pen[colour] = float(best_pen)
-                        else:
-                            conflicts = 0.0
-                            for u in self.nodes:
-                                try:
-                                    if nbr in self.problem.get_neighbors(u) and self.assignments.get(u) == colour:
-                                        conflicts += 1.0
-                                except Exception:
-                                    continue
-                            per_colour_pen[colour] = conflicts
+                        allowed.append(colour)
 
-                    best = min(per_colour_pen.values()) if per_colour_pen else 0.0
-                    allowed = [c for c, p in per_colour_pen.items() if p <= best + eps]
-                    data[nbr] = allowed
+                    data[nbr] = allowed  # Store for per_node field
+                    allowed_colors_per_node.append(allowed)
 
-                # Enumerate complete valid configurations
-                import itertools
-                allowed_colors_per_node = [data[node] for node in boundary_nodes_sorted]
-
+                # Enumerate ALL combinations and test each
                 valid_configs = []
                 if all(allowed_colors_per_node):
                     for color_combo in itertools.product(*allowed_colors_per_node):
@@ -1088,6 +1958,24 @@ class ClusterAgent(MultiNodeAgent):
                     }
                 }
                 self.log(f"LLM_C: Found {len(valid_configs)} valid alternative boundary configs")
+
+                # Phase 5: Cache constraints for reuse in conversational responses
+                try:
+                    if isinstance(content, dict) and "data" in content:
+                        # Convert constraints to options format for caching
+                        cache_data = {"options": []}
+                        if valid_configs:
+                            for config in valid_configs[:10]:
+                                cache_data["options"].append({
+                                    "boundary_config": config,
+                                    "penalty": 0.0,
+                                    "feasible": True
+                                })
+                        self._cache_counterfactuals(cache_data)
+                        self.log(f"Cached {len(valid_configs)} constraint options for conversational responses")
+                except Exception as e:
+                    self.log(f"Failed to cache constraints: {e}")
+
         else:  # free_text
             # build a simple natural-language summary for neighbours
             messages: List[str] = []
@@ -1353,6 +2241,15 @@ class ClusterAgent(MultiNodeAgent):
                         }
                         if advice:
                             content["advice"] = advice
+
+                        # Phase 5: Cache counterfactuals for reuse in conversational responses
+                        try:
+                            if isinstance(content, dict) and "data" in content:
+                                self._cache_counterfactuals(content["data"])
+                                self.log(f"Cached {len(top)} counterfactual options for conversational responses")
+                        except Exception as e:
+                            self.log(f"Failed to cache counterfactuals: {e}")
+
                 except Exception:
                     # If anything goes wrong, fall back to the precomputed content
                     pass
@@ -1395,6 +2292,10 @@ class ClusterAgent(MultiNodeAgent):
             self.send(recipient, out_content)
             self._record_message(recipient, out_content)
 
+        # NOW reset the human message flag after all messages have been sent
+        # This ensures duplicate detection doesn't block responses to config updates
+        self._received_human_message_this_turn = False
+
     def receive(self, message: Message) -> None:
         """Handle incoming messages and update neighbour assignments.
 
@@ -1416,6 +2317,61 @@ class ClusterAgent(MultiNodeAgent):
                 self._last_human_text = str(message.content)
                 # Flag that human sent a message this turn (forces response even if duplicate)
                 self._received_human_message_this_turn = True
+
+                # Classify the human message (Phase 2: Action Routing)
+                try:
+                    from agents.message_classifier import MessageClassifier
+                    if not hasattr(self, '_message_classifier'):
+                        # Create classifier with LLM call function from comm layer
+                        llm_func = None
+                        if hasattr(self.comm_layer, '_call_openai'):
+                            llm_func = self.comm_layer._call_openai
+                        self._message_classifier = MessageClassifier(llm_call_function=llm_func)
+
+                    # Classify message with recent dialogue history
+                    dialogue_history = [str(x) for x in list(getattr(self, "debug_incoming_raw", []))[-6:]]
+                    classification = self._message_classifier.classify_message(
+                        self._last_human_text,
+                        dialogue_history=dialogue_history
+                    )
+
+                    # Store classification for use in step()
+                    self._last_message_classification = classification
+
+                    self.log(f"Message classified as: {classification.primary} (confidence: {classification.confidence:.2f})")
+
+                    # Log classification for research analysis
+                    from agents.message_classifier import log_classification
+                    import os
+                    # Try to get log file path from environment or use default
+                    log_file = None
+                    if hasattr(self, 'comm_layer') and hasattr(self.comm_layer, 'llm_trace_file'):
+                        log_file = self.comm_layer.llm_trace_file
+                    log_classification(classification, log_file=log_file)
+
+                    # CRITICAL: Call message handlers to compute counterfactuals/search results
+                    # Store results so they can be used in conversational response
+                    try:
+                        if classification.primary == "QUERY":
+                            result = self._handle_query(classification)
+                            self._last_message_result = result
+                            self.log(f"Query handler result: {result.get('query_type', 'unknown')}")
+                        elif classification.primary == "PREFERENCE":
+                            result = self._handle_preference(classification)
+                            self._last_message_result = result
+                        elif classification.primary == "INFORMATION":
+                            result = self._handle_information(classification)
+                            self._last_message_result = result
+                        else:
+                            self._last_message_result = None
+                    except Exception as handler_error:
+                        self.log(f"Message handler failed: {handler_error}")
+                        self._last_message_result = None
+
+                except Exception as e:
+                    self.log(f"Message classification failed: {e}")
+                    self._last_message_classification = None
+                    self._last_message_result = None
 
                 # Parse human requests to change specific node colors
                 # Look for patterns like "change b2 to green", "set b2 to green", "make b2 green"
@@ -1499,33 +2455,49 @@ class ClusterAgent(MultiNodeAgent):
         if isinstance(structured, str):
             text = structured
 
-            # Prefer an LLM-backed parser when available (and when the comm layer
-            # is configured with history). This enables LLM-F to interpret *the
-            # dialogue history*, not only the current message.
-            extracted: Dict[str, str] = {}
-            try:
-                if hasattr(self.comm_layer, "parse_assignments_from_text_llm"):
-                    hist = [str(x) for x in list(getattr(self, "debug_incoming_raw", []))]
-                    extracted = self.comm_layer.parse_assignments_from_text_llm(
-                        sender=message.sender,
-                        recipient=self.name,
-                        history=hist,
-                        text=text,
-                    )
-            except Exception:
-                extracted = {}
+            # CRITICAL FIX: Don't extract from complaints/references to agent's suggestions
+            # When human says "You haven't proposed X" or "You keep suggesting X",
+            # they're complaining about the agent, not stating their own assignments.
+            complaint_patterns = [
+                "you haven't", "you keep", "you said", "you proposed",
+                "you suggested", "you mentioned", "you only", "you're saying",
+                "you've said", "you've proposed", "you've suggested",
+                "as you said", "like you said"
+            ]
+            is_complaint = any(phrase in text.lower() for phrase in complaint_patterns)
 
-            # Fallback: heuristic extraction.
-            if not extracted:
-                import re  # Import here for use in this block
-                pattern1 = re.compile(r"\b([A-Za-z]\w*)\s*(?:=|is|:)\s*(red|green|blue)\b", re.IGNORECASE)
-                pattern2 = re.compile(r"\b(red|green|blue)\s*(?:for)\s*([A-Za-z]\w*)\b", re.IGNORECASE)
-                for m in pattern1.finditer(text):
-                    node, colour = m.group(1), m.group(2)
-                    extracted[node.lower()] = colour.lower()
-                for m in pattern2.finditer(text):
-                    colour, node = m.group(1), m.group(2)
-                    extracted[node.lower()] = colour.lower()
+            if is_complaint:
+                self.log(f"Skipping extraction from complaint/reference: {text[:80]}...")
+
+            # Extract assignments from the CURRENT message only
+            # CRITICAL: Don't use history for extraction - it causes old assignments to persist
+            # History is for interpretation/classification, not for extracting what changed NOW
+            extracted: Dict[str, str] = {}
+            if not is_complaint and text.strip():  # Only extract from non-empty messages
+                try:
+                    if hasattr(self.comm_layer, "parse_assignments_from_text_llm"):
+                        # Pass ONLY the current message for extraction, not the full history
+                        # Otherwise empty config messages will extract from old messages
+                        extracted = self.comm_layer.parse_assignments_from_text_llm(
+                            sender=message.sender,
+                            recipient=self.name,
+                            history=[],  # Empty history - extract from current message only
+                            text=text,
+                        )
+                except Exception:
+                    extracted = {}
+
+                # Fallback: heuristic extraction from current message
+                if not extracted:
+                    import re  # Import here for use in this block
+                    pattern1 = re.compile(r"\b([A-Za-z]\w*)\s*(?:=|is|:)\s*(red|green|blue)\b", re.IGNORECASE)
+                    pattern2 = re.compile(r"\b(red|green|blue)\s*(?:for)\s*([A-Za-z]\w*)\b", re.IGNORECASE)
+                    for m in pattern1.finditer(text):
+                        node, colour = m.group(1), m.group(2)
+                        extracted[node.lower()] = colour.lower()
+                    for m in pattern2.finditer(text):
+                        colour, node = m.group(1), m.group(2)
+                        extracted[node.lower()] = colour.lower()
 
             if extracted:
                 for node, colour in extracted.items():
@@ -1546,7 +2518,15 @@ class ClusterAgent(MultiNodeAgent):
                             except Exception:
                                 pass
                     else:
-                        self.neighbour_assignments[node] = normalized_colour
+                        # CRITICAL FIX: Don't update neighbour_assignments from PREFERENCE messages
+                        # Preferences are aspirational ("I'd like X"), not statements of current state ("X is Y")
+                        # Only update beliefs for INFORMATION, COMMAND, or unclassified messages
+                        classification = getattr(self, "_last_message_classification", None)
+                        if classification and classification.primary == "PREFERENCE":
+                            self.log(f"Skipping neighbour assignment update from PREFERENCE message: {node} -> {normalized_colour}")
+                            self.log(f"  (Human said they'd LIKE {node}={normalized_colour}, but hasn't actually changed it yet)")
+                        else:
+                            self.neighbour_assignments[node] = normalized_colour
                 try:
                     self.log(f"Extracted assignments from text: {extracted} (normalized)")
                 except Exception:
@@ -1593,9 +2573,37 @@ class ClusterAgent(MultiNodeAgent):
                                 self._human_stated_constraints[node_lower]["forbidden"].append(color_lower)
                                 self.log(f"Human constraint: {node} CANNOT be {color_normalized}")
 
+                # Parse "can't change X" or "X is fixed" - means X must stay at current value
+                immutable_patterns = [
+                    r"(?:can'?t|cannot)\s+change\s+(\w+)",  # "can't change h1"
+                    r"(\w+)\s+(?:can'?t|cannot)\s+change",  # "h1 can't change"
+                    r"(\w+)\s+(?:is|stays?|remains?)\s+fixed",  # "h1 is fixed"
+                    r"(\w+)\s+(?:has to|must)\s+(?:stay|remain)",  # "h1 has to stay"
+                ]
+
+                for pattern_str in immutable_patterns:
+                    pattern = re.compile(pattern_str, re.IGNORECASE)
+                    for match in pattern.finditer(structured):
+                        node = match.group(1)
+                        node_lower = node.lower()
+
+                        # This node can't change - record its CURRENT value as required
+                        if node_lower not in [n.lower() for n in self.nodes]:
+                            current_value = getattr(self, "neighbour_assignments", {}).get(node_lower)
+                            if current_value:
+                                if node_lower not in self._human_stated_constraints:
+                                    self._human_stated_constraints[node_lower] = {
+                                        "forbidden": [], "required": None
+                                    }
+
+                                self._human_stated_constraints[node_lower]["required"] = str(current_value).lower()
+                                self.log(f"Human constraint: {node} is IMMUTABLE (must stay {current_value})")
+
                 # Also parse positive requirements ("X must be Y", "X has to be Y")
                 requirement_patterns = [
                     r"\b(\w+)\s+(?:must|has to|needs to)\s+be\s+(red|green|blue)\b",
+                    # "I have to make X red", "I must make X red"
+                    r"\b(?:must|have to|need to)\s+(?:make|set|keep)\s+(\w+)\s+(red|green|blue)\b",
                 ]
 
                 for pattern_str in requirement_patterns:

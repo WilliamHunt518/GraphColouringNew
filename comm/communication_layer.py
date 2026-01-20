@@ -208,7 +208,18 @@ class LLMCommLayer(BaseCommLayer):
         }
         messages: List[Dict[str, str]] = [system_message]
         if self.use_history and self.conversation:
-            messages.extend(self.conversation)
+            # CRITICAL FIX: Trim conversation history to prevent token overflow
+            # Keep only last 20 messages (10 exchanges) to stay under 16385 token limit
+            max_history_messages = 20
+            if len(self.conversation) > max_history_messages:
+                trimmed_conversation = self.conversation[-max_history_messages:]
+                try:
+                    print(f"[LLMCommLayer] Trimmed conversation history from {len(self.conversation)} to {len(trimmed_conversation)} messages")
+                except Exception:
+                    pass
+                messages.extend(trimmed_conversation)
+            else:
+                messages.extend(self.conversation)
         messages.append({"role": "user", "content": prompt})
 
         result: Dict[str, Any] = {"text": None, "err": None}

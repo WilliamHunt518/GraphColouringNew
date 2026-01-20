@@ -355,8 +355,18 @@ class HumanTurnUI:
                 obox.bind("<Return>", _send_on_enter)
                 obox.bind("<Shift-Return>", _newline_on_shift_enter)
 
-                send = ttk.Button(pane, text="Send", command=lambda n=neigh: self._send_message(n))
-                send.pack(anchor="e", padx=6, pady=(0, 6))
+                # Button frame to hold Send and Send Config buttons
+                btn_frame = ttk.Frame(pane)
+                btn_frame.pack(anchor="e", padx=6, pady=(0, 6))
+
+                # Send Config button - broadcasts actual current assignments (no message)
+                send_config = ttk.Button(btn_frame, text="Send Config",
+                                        command=lambda n=neigh: self._send_config(n))
+                send_config.pack(side="left", padx=(0, 4))
+
+                # Send message button
+                send = ttk.Button(btn_frame, text="Send", command=lambda n=neigh: self._send_message(n))
+                send.pack(side="left")
                 self._send_btn[neigh] = send
 
         root.update_idletasks()
@@ -620,7 +630,8 @@ class HumanTurnUI:
         if msg == "Type a message…":
             msg = ""
         box.delete("1.0", "end")
-        self._set_outgoing_placeholder(neigh)
+        # Don't immediately set placeholder - let focus handlers manage it
+        # Otherwise the gray placeholder text appears even if user still has focus
 
         shown = msg if msg.strip() else "(status update)"
         self._append_to_transcript(neigh, f"[You] {shown}")
@@ -630,6 +641,47 @@ class HumanTurnUI:
             reply = None
             try:
                 if self._on_send:
+                    reply = self._invoke_on_send(neigh, msg)
+            except Exception as e:
+                reply = f"[System] Error sending: {e}"
+            if reply:
+                self.add_incoming(neigh, reply)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _send_config(self, neigh: str) -> None:
+        """Send current assignments to agent, optionally with a chat message.
+
+        This broadcasts the human's actual current node colors. If there's a message
+        typed in the text box, it sends both the config and the message together.
+        This avoids confusion between hypothetical discussion and actual state.
+        """
+        # Get any typed message from the text box
+        box = self._outgoing_box.get(neigh)
+        msg = ""
+        if box:
+            msg = box.get("1.0", "end-1c").strip()
+            if msg == "Type a message…":
+                msg = ""
+            box.delete("1.0", "end")
+
+        # Show in transcript what was sent
+        boundary_nodes = [n for n in self._assignments.keys() if self._owners.get(n) == "Human"]
+        config_str = ", ".join([f"{n}={self._assignments[n]}" for n in sorted(boundary_nodes)])
+
+        if msg:
+            shown = f"[Config: {config_str}] {msg}"
+        else:
+            shown = f"[Config: {config_str}]"
+
+        self._append_to_transcript(neigh, f"[You] {shown}")
+        self._set_status(neigh, "waiting for reply…")
+
+        def worker():
+            reply = None
+            try:
+                if self._on_send:
+                    # Send message with current assignments
                     reply = self._invoke_on_send(neigh, msg)
             except Exception as e:
                 reply = f"[System] Error sending: {e}"

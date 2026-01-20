@@ -283,7 +283,39 @@ class DebugWindow:
         G = nx.Graph()
         G.add_nodes_from(nodes)
         G.add_edges_from(edges)
-        pos = nx.spring_layout(G, seed=7)
+
+        # Cluster-aware layout: group nodes by owner, position clusters separately
+        clusters = {}
+        for n in nodes:
+            owner = self._owners.get(n, "Unknown")
+            if owner not in clusters:
+                clusters[owner] = []
+            clusters[owner].append(n)
+
+        # Position clusters in a row: Agent1 | Human | Agent2
+        cluster_positions = {}
+        cluster_order = sorted(clusters.keys())  # Alphabetical order
+        num_clusters = len(cluster_order)
+
+        for idx, owner in enumerate(cluster_order):
+            # X position for this cluster center (spread across -1 to 1)
+            if num_clusters == 1:
+                cx = 0.0
+            else:
+                cx = -1.0 + (idx / (num_clusters - 1)) * 2.0
+            cluster_positions[owner] = cx
+
+        # Position nodes within each cluster
+        pos = {}
+        for owner, cluster_nodes in clusters.items():
+            cx = cluster_positions[owner]
+            # Create subgraph for this cluster
+            subgraph = G.subgraph(cluster_nodes)
+            # Use circular layout within cluster
+            sub_pos = nx.circular_layout(subgraph, scale=0.3)
+            # Offset to cluster center position
+            for node, (sx, sy) in sub_pos.items():
+                pos[node] = (cx + sx, sy)
 
         c = self._canvas
         c.delete("all")
