@@ -1407,6 +1407,15 @@ class ClusterAgent(MultiNodeAgent):
             f"- If penalty > 0 OR conflicts exist, you CANNOT claim to have a good/valid solution\n"
             f"- If penalty > 0, you MUST acknowledge conflicts exist in your response\n"
             f"- {assignment_verification}\n\n"
+            f"**CRITICAL - How to Propose Changes:**\n"
+            f"- You can ONLY change your own nodes (nodes {', '.join(sorted(self.nodes))})\n"
+            f"- You CANNOT directly change the human's nodes\n"
+            f"- Frame proposals as CONDITIONAL agreements:\n"
+            f"  ✓ GOOD: 'If you set h1=blue and h4=red, I can set my nodes to a1=green, a2=blue, a3=blue, a4=red, a5=green. This gives penalty=0.'\n"
+            f"  ✗ BAD: 'Change h1 to blue' (sounds like a command, ignores human's autonomy)\n"
+            f"- ALWAYS state your complete resultant coloring when proposing boundary changes\n"
+            f"- ALWAYS verify penalty=0 in your proposal before claiming a solution works\n"
+            f"- If human states a node is FIXED (e.g., 'h1 has to be red'), NEVER suggest changing it\n\n"
             f"Your current state:\n{state_summary}\n"
             f"{decision_analysis}"
             f"{counterfactuals_section}"
@@ -1454,19 +1463,21 @@ class ClusterAgent(MultiNodeAgent):
                 "- DO NOT ask human to change boundary - YOU can solve it yourself!\n"
                 "- Only mention internal node changes, not boundary\n\n"
                 "**IF STEP 3 applies (you CANNOT fix alone):**\n"
-                "- Be honest: 'I cannot fix this by changing my internal nodes'\n"
-                "- Suggest the boundary configs from STEP 3 that WOULD work\n"
+                "- Frame as conditional proposal: 'If you set [boundary config], I can set my nodes to [complete coloring]. This would give penalty=0.'\n"
+                "- Be SPECIFIC: List your exact resultant coloring for ALL your nodes, not just boundary suggestions\n"
+                "- VERIFY: Confirm the proposed solution actually achieves penalty=0 (check STEP 3 data)\n"
                 "- ⚠️ CRITICAL: Only suggest configs that appear in STEP 3! Don't make up others.\n"
-                "- ⚠️ Never suggest changing constrained nodes (see constraints at top)\n\n"
+                "- ⚠️ Never suggest changing constrained nodes (see constraints at top)\n"
+                "- Example: 'If you set h1=blue, I can set a1=green, a2=blue, a3=red, a4=green, a5=blue. This gives penalty=0.'\n\n"
                 "**General rules:**\n"
                 "- NEVER say 'I changed' if assignments didn't actually change (see CRITICAL FACT)\n"
                 "- If penalty > 0, acknowledge conflicts exist\n"
                 "- Be specific and truthful\n\n"
                 "Examples:\n"
-                "- STEP 1 good: 'Everything looks good! My nodes: a1=green, a2=blue. No conflicts.'\n"
-                "- STEP 2 can fix: 'I changed a2 to blue to resolve the clash. Should work now.'\n"
-                "- STEP 3 need boundary: 'I cannot fix this alone. Try setting h1=blue, h4=red - that would work for me.'\n"
-                "- STEP 3 constrained: 'With h1=red fixed, no solution exists. Try changing h4 to blue instead.'\n\n"
+                "- STEP 1 good: 'Everything looks good! My nodes: a1=green, a2=blue, a3=red. No conflicts.'\n"
+                "- STEP 2 can fix: 'I changed a2 to blue to resolve the clash. My nodes: a1=green, a2=blue, a3=red. Should work now.'\n"
+                "- STEP 3 need boundary: 'If you set h1=blue and h4=red, I can set my nodes to a1=green, a2=blue, a3=red, a4=green, a5=blue. This would give penalty=0.'\n"
+                "- STEP 3 constrained: 'With h1=red fixed, I found one solution: if you set h4=blue, I can color my nodes a1=green, a2=blue, a3=red, a4=red, a5=green. This gives penalty=0.'\n\n"
                 "Return ONLY the conversational response text."
             )
 
@@ -1517,6 +1528,19 @@ class ClusterAgent(MultiNodeAgent):
                             final_response = self.comm_layer._call_openai(corrective_prompt, max_tokens=200).strip()
                             self.log(f"Re-prompted LLM with conflict details. New response: '{final_response}'")
                             break
+
+                # Verify response uses conditional proposal structure when suggesting boundary changes
+                if current_penalty > 1e-9:  # Has conflicts, might suggest boundary changes
+                    response_lower = final_response.lower()
+                    has_conditional = ("if you" in response_lower and "i can" in response_lower) or ("if you set" in response_lower)
+                    has_resultant_coloring = any(f"{node}=" in response_lower for node in self.nodes)
+
+                    if has_conditional and has_resultant_coloring:
+                        self.log("✓ Response uses conditional proposal structure with resultant coloring")
+                    elif "try" in response_lower or "change" in response_lower or "set" in response_lower:
+                        # Suggests boundary changes but doesn't use conditional structure
+                        self.log("⚠ Response suggests boundary changes but may not use ideal conditional proposal structure")
+
                 else:
                     self.log(f"Penalty <= 0, no lie detection needed")
 
@@ -1734,9 +1758,14 @@ class ClusterAgent(MultiNodeAgent):
         self._previous_neighbour_assignments = dict(current_neighs)
 
         try:
-            # Don't recompute if we just reset due to boundary change
-            # (keep satisfied=False that we set above)
-            if not (neighbor_changed and not self.satisfied):
+            # Don't recompute if neighbor just changed (already reset to False above)
+            # Let next iteration handle recomputation with stable boundary
+            if neighbor_changed:
+                # Neighbor changed, satisfaction already reset to False on line 1731
+                # Don't recompute yet - let next iteration handle it
+                pass
+            else:
+                # Neighbor unchanged, safe to recompute satisfaction
                 self.satisfied = bool(self._compute_satisfied())
 
             self.log(f"Satisfied: {self.satisfied}")
@@ -1976,18 +2005,14 @@ class ClusterAgent(MultiNodeAgent):
                 except Exception as e:
                     self.log(f"Failed to cache constraints: {e}")
 
+        elif self.message_type == "api":
+            # LLM_API mode: Hierarchical constraints + utilities
+            # Prioritizes constraint information but includes utility scores
+            content = self._generate_api_message()
+
         else:  # free_text
-            # build a simple natural-language summary for neighbours
-            messages: List[str] = []
-            for node in self.nodes:
-                for nbr in self.problem.get_neighbors(node):
-                    if nbr in self.nodes:
-                        continue
-                    assign = self.assignments[node]
-                    messages.append(
-                        f"Our node {node} is {assign}; please avoid choosing {assign} for your node {nbr} to prevent a clash."
-                    )
-            body = " ".join(messages) if messages else "No clashes detected."
+            # Generate strategic free-form message using LLM
+            body = self._generate_free_text_strategic()
             content = {"type": "free_text", "data": body}
 
         # send message to each neighbouring cluster.
@@ -2202,8 +2227,9 @@ class ClusterAgent(MultiNodeAgent):
                         if len(opts) < 3:
                             self.log(f"  WARNING: Very few options! Full opts list: {opts}")
 
-                        # Update our satisfaction state (for the UI label) using the current config when known,
-                        # otherwise by our best feasible option.
+                        # NOTE: Satisfaction state is managed in step() method via _compute_satisfied()
+                        # Don't set it here to maintain consistency across all message types
+                        # Log diagnostic info for debugging
                         sat_pen = None
                         sat_score = None
                         if current is not None:
@@ -2213,7 +2239,6 @@ class ClusterAgent(MultiNodeAgent):
                             sat_pen = float(top[0].get("penalty", 0.0))
                             sat_score = int(top[0].get("agent_score", 0))
                         if sat_pen is not None:
-                            self.satisfied = bool(sat_pen <= 0.0)
                             try:
                                 self.debug_reasoning_history.append(
                                     f"LLM-U status vs {recipient}: penalty={sat_pen} score={sat_score} known={known}"
@@ -2264,11 +2289,18 @@ class ClusterAgent(MultiNodeAgent):
             except Exception:
                 boundary_report = {}
 
+            # Debug logging for boundary reports
+            if boundary_report:
+                self.log(f"Constructed boundary report for {recipient}: {boundary_report}")
+            else:
+                self.log(f"No boundary nodes to report to {recipient}")
+
             out_content = content
             if isinstance(content, dict):
                 out_content = dict(content)
                 if boundary_report:
                     out_content["report"] = boundary_report
+                    self.log(f"Sending boundary report to {recipient}: {boundary_report}")
 
             try:
                 self.debug_last_outgoing[recipient] = out_content
@@ -2295,6 +2327,250 @@ class ClusterAgent(MultiNodeAgent):
         # NOW reset the human message flag after all messages have been sent
         # This ensures duplicate detection doesn't block responses to config updates
         self._received_human_message_this_turn = False
+
+    def _generate_api_message(self) -> Dict[str, Any]:
+        """Generate hierarchical API message combining constraints and utilities.
+
+        Implements LLM_API mode from the paper: constraints take priority,
+        utilities provide secondary guidance for tie-breaking among feasible options.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Message dict with structure:
+            {
+                "type": "api",
+                "data": {
+                    "status": "SUCCESS" | "NEED_ALTERNATIVES",
+                    "current_boundary": {...},
+                    "current_penalty": float,
+                    "constraints": {
+                        "valid_configs": [...],
+                        "count": int
+                    },
+                    "utilities": {
+                        "config_scores": [...],
+                        "best_by_agent": {...},
+                        "best_by_human": {...},
+                        "best_by_combined": {...}
+                    }
+                }
+            }
+        """
+        # Get current boundary state
+        current_boundary = self._get_boundary_assignments()
+        current_combined = {**self.neighbour_assignments, **self.assignments}
+        current_penalty = self.problem.evaluate_assignment(current_combined)
+
+        # PHASE 1: Check if current boundary works (like LLM_C)
+        status = "SUCCESS" if current_penalty < 1e-6 else "NEED_ALTERNATIVES"
+
+        # PHASE 2: Compute valid boundary configurations (constraints)
+        valid_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=20)
+
+        self.log(f"[LLM_API] Found {len(valid_configs)} valid boundary configurations (penalty=0)")
+
+        # PHASE 3: Calculate utilities for each valid config
+        color_points = {"blue": 1, "green": 2, "red": 3}
+        config_scores = []
+
+        for config in valid_configs:
+            # Test this boundary config
+            test_beliefs = dict(self.neighbour_assignments)
+            test_beliefs.update(config)
+
+            try:
+                # Find best local assignment for this boundary
+                best_pen, best_local_assign = self._best_local_assignment_for(test_beliefs)
+
+                if best_pen < 1e-6:  # Only include truly feasible configs
+                    # Calculate scores
+                    agent_score = sum(color_points.get(str(best_local_assign.get(n, "")).lower(), 0)
+                                    for n in self.nodes)
+
+                    # Human nodes (boundary nodes)
+                    human_nodes = list(config.keys())
+                    human_score = sum(color_points.get(str(config.get(n, "")).lower(), 0)
+                                    for n in human_nodes)
+
+                    combined_score = agent_score + human_score
+
+                    config_scores.append({
+                        "boundary_config": config,
+                        "agent_score": agent_score,
+                        "human_score": human_score,
+                        "combined_score": combined_score,
+                        "penalty": best_pen,
+                        "agent_coloring": best_local_assign
+                    })
+            except Exception as e:
+                self.log(f"[LLM_API] Error computing utilities for config {config}: {e}")
+                continue
+
+        # Sort by combined score (descending)
+        config_scores.sort(key=lambda x: x["combined_score"], reverse=True)
+
+        # Find best configs by different criteria
+        best_by_agent = config_scores[0] if config_scores else None
+        best_by_human = max(config_scores, key=lambda x: x["human_score"]) if config_scores else None
+        best_by_combined = config_scores[0] if config_scores else None  # Already sorted by combined
+
+        # Build utilities dict
+        utilities = {
+            "config_scores": config_scores[:10],  # Show top 10
+            "best_by_agent": best_by_agent["boundary_config"] if best_by_agent else None,
+            "best_by_human": best_by_human["boundary_config"] if best_by_human else None,
+            "best_by_combined": best_by_combined["boundary_config"] if best_by_combined else None
+        }
+
+        data = {
+            "status": status,
+            "current_boundary": current_boundary,
+            "current_penalty": current_penalty,
+            "constraints": {
+                "valid_configs": valid_configs[:10],  # Show top 10 for constraints
+                "count": len(valid_configs)
+            },
+            "utilities": utilities,
+            "message": self._format_api_message_hint(status, len(valid_configs), config_scores)
+        }
+
+        self.log(f"[LLM_API] Generated message: status={status}, valid_configs={len(valid_configs)}, scored_configs={len(config_scores)}")
+
+        return {"type": "api", "data": data}
+
+    def _format_api_message_hint(self, status: str, num_valid: int, config_scores: List[Dict]) -> str:
+        """Format a brief hint message for API data.
+
+        Parameters
+        ----------
+        status : str
+            SUCCESS or NEED_ALTERNATIVES
+        num_valid : int
+            Number of valid configurations
+        config_scores : List[Dict]
+            Scored configurations
+
+        Returns
+        -------
+        str
+            Brief hint message
+        """
+        if status == "SUCCESS":
+            return "Your current boundary works! See utilities for optimization."
+        elif num_valid > 0:
+            if config_scores:
+                best = config_scores[0]
+                return f"Found {num_valid} valid options. Best combined score: {best['combined_score']}"
+            else:
+                return f"Found {num_valid} valid options."
+        else:
+            return "No valid boundary configurations found. Check constraints."
+
+    def _generate_free_text_strategic(self) -> str:
+        """Generate strategic free-form message using LLM.
+
+        This method creates contextually appropriate natural language messages
+        that consider current penalty, satisfaction status, and strategic goals.
+
+        Returns
+        -------
+        str
+            Strategic message for the neighbour.
+        """
+        # Build context for LLM
+        penalty = self.problem.evaluate_assignment({**self.neighbour_assignments, **self.assignments})
+
+        context = {
+            "my_cluster": self.name,
+            "my_nodes": list(self.nodes),
+            "my_assignments": dict(self.assignments),
+            "known_neighbor_assignments": dict(self.neighbour_assignments),
+            "current_penalty": penalty,
+            "boundary_nodes": list(self.neighbour_assignments.keys()),
+            "satisfied": self.satisfied
+        }
+
+        # Try LLM generation if available
+        if hasattr(self.comm_layer, "_call_openai") and not getattr(self.comm_layer, "manual", False):
+            try:
+                prompt = f"""You are Agent {context['my_cluster']} in a graph coloring negotiation.
+
+Your situation:
+- Your nodes: {context['my_nodes']}
+- Your colors: {context['my_assignments']}
+- Known neighbor colors: {context['known_neighbor_assignments']}
+- Current conflicts (penalty): {context['current_penalty']:.2f}
+- Satisfied with solution: {context['satisfied']}
+
+Task: Write a brief, strategic message to your neighbor about your coloring.
+- If satisfied (penalty=0): Explain your coloring and confirm it works
+- If conflicts exist: Suggest specific changes that would help resolve conflicts
+- Be collaborative and specific (mention node names and colors)
+- Maximum 2-3 sentences
+
+Message:"""
+
+                response = self.comm_layer._call_openai(prompt, max_tokens=100)
+                if response and response.strip():
+                    self.log("[LLM_F] Generated strategic message via LLM")
+                    return response.strip()
+            except Exception as e:
+                self.log(f"[LLM_F] LLM generation failed: {e}, falling back to template")
+
+        # Fallback to template
+        return self._generate_free_text_template(context)
+
+    def _generate_free_text_template(self, context: Dict[str, Any]) -> str:
+        """Template-based free text generation (no LLM).
+
+        Parameters
+        ----------
+        context : Dict[str, Any]
+            Context dictionary with keys: my_nodes, my_assignments,
+            known_neighbor_assignments, current_penalty, satisfied
+
+        Returns
+        -------
+        str
+            Template-based message.
+        """
+        penalty = context.get("current_penalty", 0.0)
+        satisfied = context.get("satisfied", False)
+        my_assignments = context.get("my_assignments", {})
+        neighbor_assignments = context.get("known_neighbor_assignments", {})
+
+        if satisfied or penalty < 1e-9:
+            # No conflicts - confirm solution
+            assignment_str = ", ".join([f"{k}={v}" for k, v in my_assignments.items()])
+            return f"I've colored my nodes: {assignment_str}. This works with your current assignments (no conflicts)."
+        else:
+            # Conflicts detected - suggest changes
+            messages: List[str] = []
+            for node in context.get("my_nodes", []):
+                assign = my_assignments.get(node)
+                if not assign:
+                    continue
+
+                # Check for conflicts with neighbors
+                neighbors = self.problem.get_neighbors(node)
+                for nbr in neighbors:
+                    if nbr not in context.get("my_nodes", []):
+                        nbr_color = neighbor_assignments.get(nbr)
+                        if nbr_color and str(nbr_color).lower() == str(assign).lower():
+                            # Found conflict
+                            messages.append(
+                                f"My node {node} is {assign}, which conflicts with your {nbr}. "
+                                f"Could you change {nbr} to avoid {assign}?"
+                            )
+                            break
+
+            if messages:
+                return " ".join(messages[:2])  # Limit to 2 conflicts
+            else:
+                # Generic message
+                assignment_str = ", ".join([f"{k}={v}" for k, v in sorted(my_assignments.items())])
+                return f"My nodes are: {assignment_str}. Current penalty: {penalty:.2f}. Let's coordinate to resolve conflicts."
 
     def receive(self, message: Message) -> None:
         """Handle incoming messages and update neighbour assignments.

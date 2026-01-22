@@ -10,10 +10,10 @@ boundary edges with each agent.
 
 Toggle the METHOD below to run one of the four conditions:
 
-    RB     : rule-based deliberation baseline
-    LLM_U  : utility-oriented messages
-    LLM_C  : constraint-oriented messages
-    LLM_F  : free-form messages
+    RB      : rule-based deliberation baseline
+    LLM_API : constraint-oriented messages with LLM API
+    LLM_F   : free-form messages
+    LLM_RB  : natural language to rule-based grammar
 
 By default, the human is *you* (interactive prompts). You can also enable
 the Tkinter GUI by setting USE_UI=True.
@@ -29,7 +29,7 @@ from pathlib import Path
 # CONFIGURE HERE
 # -----------------
 
-METHOD = "RB"   # one of: "RB", "LLM_U", "LLM_C", "LLM_F"
+METHOD = "RB"   # one of: "RB", "LLM_API", "LLM_F", "LLM_RB"
 USE_UI = True  # True => Tkinter UI for the human turn
 MANUAL_MODE = False  # True => do NOT call an external LLM API
 MAX_ITERS = 10
@@ -132,15 +132,17 @@ def run_experiment(
     )
 
     # Algorithms per cluster (you can vary this later)
-    cluster_algorithms = {"Human": "greedy", "Agent1": agent_algorithm, "Agent2": agent_algorithm}
+    # LLM_API mode uses exhaustive search for better solution quality
+    if method == "LLM_API":
+        cluster_algorithms = {"Human": "greedy", "Agent1": "maxsum", "Agent2": "maxsum"}
+    else:
+        cluster_algorithms = {"Human": "greedy", "Agent1": agent_algorithm, "Agent2": agent_algorithm}
 
-    # Message type per cluster. Human's message type doesn't matter (human is interactive);
-    # Agent's message type determines the condition.
+    # Message type per cluster. For RB mode, human also uses rule_based to enable structured UI.
+    # For LLM modes, human uses free_text while agents use the specified message type.
     if method == "RB":
-        cluster_message_types = {"Human": "free_text", "Agent1": "rule_based", "Agent2": "rule_based"}
-    elif method == "LLM_U":
-        cluster_message_types = {"Human": "free_text", "Agent1": "cost_list", "Agent2": "cost_list"}
-    elif method == "LLM_C":
+        cluster_message_types = {"Human": "rule_based", "Agent1": "rule_based", "Agent2": "rule_based"}
+    elif method == "LLM_API":
         cluster_message_types = {"Human": "free_text", "Agent1": "constraints", "Agent2": "constraints"}
     elif method == "LLM_F":
         cluster_message_types = {"Human": "free_text", "Agent1": "free_text", "Agent2": "free_text"}
@@ -181,7 +183,7 @@ def main() -> None:
     import argparse
 
     p = argparse.ArgumentParser(description="Run the clustered graph-colouring study.")
-    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_U", "LLM_C", "LLM_F", "LLM_RB"])
+    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_API", "LLM_F", "LLM_RB"])
     ui = p.add_mutually_exclusive_group()
     ui.add_argument("--use-ui", dest="use_ui", action="store_true")
     ui.add_argument("--no-ui", dest="use_ui", action="store_false")
