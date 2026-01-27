@@ -69,6 +69,69 @@ from agents.cluster_agent import ClusterAgent
 from agents.rule_based_cluster_agent import RuleBasedClusterAgent
 
 
+def _get_active_conditionals(agents: List[Any]) -> tuple:
+    """Extract active conditional offers and configurations from all agents.
+
+    Parameters
+    ----------
+    agents : list
+        List of agent instances to extract conditionals from.
+
+    Returns
+    -------
+    tuple
+        (conditionals, configurations) - Two separate lists of offer dictionaries.
+        Each has offer_id, sender, conditions, assignments, and status fields.
+    """
+    conditionals = []
+    configurations = []
+    for agent in agents:
+        # Only extract from RuleBasedClusterAgent instances that have rb_active_offers
+        if not hasattr(agent, 'rb_active_offers'):
+            continue
+
+        for offer_id, offer in agent.rb_active_offers.items():
+            # Determine status based on accepted offers
+            accepted_offers = getattr(agent, 'rb_accepted_offers', set())
+            status = "accepted" if offer_id in accepted_offers else "pending"
+
+            # Extract conditions
+            conditions_list = []
+            if hasattr(offer, 'conditions') and offer.conditions:
+                for cond in offer.conditions:
+                    conditions_list.append({
+                        "node": cond.node,
+                        "colour": cond.colour,
+                        "owner": cond.owner
+                    })
+
+            # Extract assignments
+            assignments_list = []
+            if hasattr(offer, 'assignments') and offer.assignments:
+                for assign in offer.assignments:
+                    assignments_list.append({
+                        "node": assign.node,
+                        "colour": assign.colour
+                    })
+
+            offer_dict = {
+                "offer_id": offer_id,
+                "sender": agent.name,
+                "conditions": conditions_list,
+                "assignments": assignments_list,
+                "status": status
+            }
+
+            # Check if this is a configuration announcement
+            reasons = getattr(offer, 'reasons', [])
+            if "initial_configuration" in reasons:
+                configurations.append(offer_dict)
+            else:
+                conditionals.append(offer_dict)
+
+    return conditionals, configurations
+
+
 def run_clustered_simulation(
     node_names: List[str],
     clusters: Dict[str, List[str]],
@@ -396,6 +459,178 @@ def run_clustered_simulation(
     except Exception:
         pass
 
+    # --------------------
+    # Ground Truth Analysis Log
+    # --------------------
+    # Generate comprehensive ground truth log showing:
+    # 1. Full graph topology
+    # 2. Fixed nodes for each agent
+    # 3. Boundary nodes between agents
+    # 4. ALL possible boundary configurations and whether agents can achieve penalty=0
+    ground_truth_path = os.path.join(output_dir, "ground_truth_analysis.txt")
+    try:
+        with open(ground_truth_path, "w", encoding="utf-8") as gtf:
+            gtf.write("=" * 80 + "\n")
+            gtf.write("GROUND TRUTH ANALYSIS\n")
+            gtf.write("=" * 80 + "\n\n")
+            gtf.write("This file contains the ACTUAL graph structure and ALL valid solutions.\n")
+            gtf.write("Compare this to agent logs to diagnose if agents are computing correctly.\n\n")
+
+            # Section 1: Graph Structure
+            gtf.write("=" * 80 + "\n")
+            gtf.write("1. GRAPH STRUCTURE\n")
+            gtf.write("=" * 80 + "\n\n")
+            gtf.write(f"All Nodes: {sorted(node_names)}\n")
+            gtf.write(f"Domain (colors): {domain}\n")
+            gtf.write(f"Total Edges: {len(edges)}\n\n")
+
+            gtf.write("Edges:\n")
+            for u, v in sorted(edges):
+                gtf.write(f"  {u} <-> {v}\n")
+            gtf.write("\n")
+
+            gtf.write("Node Ownership:\n")
+            for node in sorted(node_names):
+                owner = owners.get(node, "UNKNOWN")
+                gtf.write(f"  {node}: {owner}\n")
+            gtf.write("\n")
+
+            # Section 2: Clusters and Fixed Nodes
+            gtf.write("=" * 80 + "\n")
+            gtf.write("2. CLUSTERS AND FIXED NODES\n")
+            gtf.write("=" * 80 + "\n\n")
+
+            for owner, local_nodes in sorted(clusters.items()):
+                gtf.write(f"{owner}:\n")
+                gtf.write(f"  Nodes: {sorted(local_nodes)}\n")
+
+                fixed_dict = cluster_fixed_nodes.get(owner, {})
+                if fixed_dict:
+                    gtf.write(f"  Fixed Nodes: {dict(sorted(fixed_dict.items()))}\n")
+                else:
+                    gtf.write(f"  Fixed Nodes: None\n")
+                gtf.write("\n")
+
+            # Section 3: Boundary Analysis for each agent
+            gtf.write("=" * 80 + "\n")
+            gtf.write("3. BOUNDARY NODE ANALYSIS\n")
+            gtf.write("=" * 80 + "\n\n")
+
+            for agent in agents:
+                if agent.name in (human_owners or []) or agent.name.lower() == "human":
+                    continue  # Skip human for now
+
+                gtf.write(f"Agent: {agent.name}\n")
+                gtf.write(f"  Local Nodes: {sorted(agent.nodes)}\n")
+
+                # Find boundary nodes (neighbors from other clusters)
+                boundary_nodes = set()
+                for my_node in agent.nodes:
+                    for nbr in problem.get_neighbors(my_node):
+                        if nbr not in agent.nodes:
+                            boundary_nodes.add(nbr)
+
+                gtf.write(f"  Boundary Nodes (neighbors from other clusters): {sorted(boundary_nodes)}\n")
+                gtf.write(f"  Fixed Nodes: {dict(sorted(agent.fixed_local_nodes.items()))}\n")
+                gtf.write("\n")
+
+            # Section 4: Exhaustive Solution Analysis
+            gtf.write("=" * 80 + "\n")
+            gtf.write("4. EXHAUSTIVE SOLUTION ANALYSIS\n")
+            gtf.write("=" * 80 + "\n\n")
+            gtf.write("Testing ALL possible boundary configurations to find which ones allow penalty=0.\n\n")
+
+            for agent in agents:
+                if agent.name in (human_owners or []) or agent.name.lower() == "human":
+                    continue  # Skip human
+
+                gtf.write(f"\n{agent.name} - Exhaustive Boundary Analysis:\n")
+                gtf.write("-" * 60 + "\n")
+
+                # Find boundary nodes
+                boundary_nodes = []
+                for my_node in agent.nodes:
+                    for nbr in problem.get_neighbors(my_node):
+                        if nbr not in agent.nodes and nbr not in boundary_nodes:
+                            boundary_nodes.append(nbr)
+                boundary_nodes = sorted(boundary_nodes)
+
+                if not boundary_nodes:
+                    gtf.write("  No boundary nodes - agent is isolated.\n")
+                    continue
+
+                gtf.write(f"  Boundary Nodes: {boundary_nodes}\n")
+                gtf.write(f"  Testing {len(domain) ** len(boundary_nodes)} combinations...\n\n")
+
+                # Generate all combinations
+                import itertools
+                valid_configs = []
+                invalid_configs = []
+
+                for combo in itertools.product(domain, repeat=len(boundary_nodes)):
+                    boundary_config = {boundary_nodes[i]: combo[i] for i in range(len(boundary_nodes))}
+
+                    # Test if agent can achieve penalty=0 with this boundary
+                    # Use agent's _best_local_assignment_for method
+                    try:
+                        best_pen, best_assign = agent._best_local_assignment_for(boundary_config)
+
+                        if best_pen < 1e-6:
+                            valid_configs.append((boundary_config, best_assign, best_pen))
+                        else:
+                            invalid_configs.append((boundary_config, best_assign, best_pen))
+                    except Exception as e:
+                        invalid_configs.append((boundary_config, {}, float('inf')))
+
+                # Report results
+                gtf.write(f"  Valid Configurations (penalty=0): {len(valid_configs)}\n")
+                gtf.write(f"  Invalid Configurations (penalty>0): {len(invalid_configs)}\n\n")
+
+                if valid_configs:
+                    gtf.write("  VALID CONFIGURATIONS:\n")
+                    for i, (config, assign, pen) in enumerate(valid_configs[:20], 1):  # Show first 20
+                        config_str = ", ".join([f"{k}={v}" for k, v in sorted(config.items())])
+                        assign_str = ", ".join([f"{k}={v}" for k, v in sorted(assign.items())])
+                        gtf.write(f"    {i}. Boundary: {{{config_str}}} -> Agent assigns: {{{assign_str}}} (penalty={pen:.3f})\n")
+                    if len(valid_configs) > 20:
+                        gtf.write(f"    ... and {len(valid_configs) - 20} more valid configurations\n")
+                    gtf.write("\n")
+
+                if invalid_configs:
+                    gtf.write("  INVALID CONFIGURATIONS (penalty > 0):\n")
+                    for i, (config, assign, pen) in enumerate(invalid_configs[:10], 1):  # Show first 10
+                        config_str = ", ".join([f"{k}={v}" for k, v in sorted(config.items())])
+                        if assign:
+                            assign_str = ", ".join([f"{k}={v}" for k, v in sorted(assign.items())])
+                            gtf.write(f"    {i}. Boundary: {{{config_str}}} -> Best agent can do: {{{assign_str}}} (penalty={pen:.3f})\n")
+                        else:
+                            gtf.write(f"    {i}. Boundary: {{{config_str}}} -> ERROR computing assignment\n")
+                    if len(invalid_configs) > 10:
+                        gtf.write(f"    ... and {len(invalid_configs) - 10} more invalid configurations\n")
+                    gtf.write("\n")
+
+                # Summary of which boundary values work
+                gtf.write("  BOUNDARY NODE VALUE ANALYSIS:\n")
+                for bn in boundary_nodes:
+                    valid_values = set()
+                    for config, _, _ in valid_configs:
+                        valid_values.add(config[bn])
+                    if valid_values:
+                        gtf.write(f"    {bn}: Can be {sorted(valid_values)} in valid configs\n")
+                    else:
+                        gtf.write(f"    {bn}: Never appears in valid configs (over-constrained?)\n")
+                gtf.write("\n")
+
+            gtf.write("=" * 80 + "\n")
+            gtf.write("END OF GROUND TRUTH ANALYSIS\n")
+            gtf.write("=" * 80 + "\n")
+
+        print(f"[Ground Truth] Analysis saved to: {ground_truth_path}")
+    except Exception as e:
+        print(f"[Ground Truth] Failed to generate analysis: {e}")
+        import traceback
+        traceback.print_exc()
+
     log_cursors = {a.name: 0 for a in agents}
 
     def _flush_agent_logs() -> None:
@@ -477,10 +712,13 @@ def run_clustered_simulation(
 
             def on_send(neigh: str, text: str) -> str:
                 nonlocal human_actions, ui_iteration_counter
-                # Special token used by the UI to let an agent initiate the dialogue.
-                # This should not count as a human action.
-                is_init = (text == "__INIT__")
-                if not is_init:
+                # Special tokens used by the UI:
+                # __INIT__: Let agent initiate dialogue (doesn't count as human action)
+                # __PASS__: Human passes turn, let agent speak (doesn't count as human action)
+                # __ANNOUNCE_CONFIG__: Phase transition from configure to bargain
+                # __IMPOSSIBLE__: Human signals configuration is impossible
+                is_special = (text in ["__INIT__", "__PASS__", "__ANNOUNCE_CONFIG__", "__IMPOSSIBLE__"])
+                if not is_special:
                     human_actions += 1
                     iter_counts[str(getattr(human_agent, "name", "Human"))] += 1
                     ui_iteration_counter += 1
@@ -499,7 +737,9 @@ def run_clustered_simulation(
                 # refresh neighbour visibility (colours)
                 _sync_neighbour_views()
 
-                if not is_init:
+                # Deliver message to agent (even for special tokens like __ANNOUNCE_CONFIG__)
+                # Special tokens still need to be received by agents to trigger phase transitions
+                if not is_special or text in ["__ANNOUNCE_CONFIG__", "__IMPOSSIBLE__"]:
                     msg = human_agent.send(neigh, text)
                     recipient.receive(msg)
                     with open(comm_path, "a", encoding="utf-8") as f:
@@ -508,11 +748,23 @@ def run_clustered_simulation(
 
                 # step recipient once and capture its reply to human
                 # Step recipient once and capture its reply to human.
-                # For init, we step without delivering a human message.
+                # For __INIT__ and __PASS__, we step without delivering a message.
+                # For __ANNOUNCE_CONFIG__ and __IMPOSSIBLE__, message was delivered above and agent will respond.
                 recipient.step()
                 iter_counts[recipient.name] += 1
                 # sync after step
                 _sync_neighbour_views()
+
+                # Extract and update conditionals and configurations in UI (for RB mode)
+                if hasattr(ui, 'update_conditionals'):
+                    try:
+                        conditionals, configurations = _get_active_conditionals(agents)
+                        ui.update_conditionals(conditionals)
+                        # Also update configurations if method exists
+                        if hasattr(ui, 'update_configurations'):
+                            ui.update_configurations(configurations)
+                    except Exception as e:
+                        pass  # Silent failure - not critical
 
                 reply_texts = []
                 # pull any messages sent to human
@@ -599,8 +851,11 @@ def run_clustered_simulation(
             ui = HumanTurnUI(title=ui_title)
             # mark rb mode flags if needed
             human_msg_type = cluster_message_types.get(human_agent.name, "").lower()
-            ui._rb_mode = bool(human_msg_type in ("rule_based", "rb", "llm_rb"))
-            structured_rb_ui = bool(human_msg_type in ("rule_based", "rb", "llm_rb"))
+            ui._rb_mode = bool(human_msg_type in ("rule_based", "rb"))
+            # Only structured dropdowns for pure RB mode, not LLM_RB
+            structured_rb_ui = bool(human_msg_type in ("rule_based", "rb"))
+            # LLM_RB gets live translation UI instead
+            ui._llm_rb_mode = bool(human_msg_type == "llm_rb")
             # boundary nodes per neighbour (for RB dropdown)
             rb_boundary = {}
             for neigh in [a.name for a in agents if a is not human_agent]:
@@ -722,6 +977,7 @@ def run_clustered_simulation(
                 fixed_nodes=getattr(human_agent, "fixed_local_nodes", {}),
                 problem=problem,
                 structured_rb_mode=structured_rb_ui,
+                comm_layer=getattr(human_agent, "comm_layer", None),
             )
             # After UI exits, fall through to compute final output, skipping synchronous loop
             stop_reason = getattr(ui, "end_reason", "") or "human_end"

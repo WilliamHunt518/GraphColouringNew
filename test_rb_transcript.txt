@@ -1,0 +1,14 @@
+RB Dialogue Test Transcript
+============================================================
+
+[Agent1] [rb:{"move": "Propose", "node": "a1", "colour": "red", "reasons": ["local_optimal", "penalty=0.000"]}] Propose assign(a1=red) | reasons: local_optimal, penalty=0.000
+[Human] [rb:{"move": "Propose", "node": "h1", "colour": "green", "reasons": []}] Propose h1=green
+[Agent1] [rb:{"move": "Propose", "node": "a2", "colour": "blue", "reasons": ["local_optimal", "penalty=0.000"]}] Propose assign(a2=blue) | reasons: local_optimal, penalty=0.000
+[Human] [rb:{"move": "Commit", "node": "h1", "colour": "green", "reasons": []}] Commit h1=green
+[Agent1] [rb:{"move": "Commit", "node": "a1", "colour": "red", "reasons": ["satisfied_with_proposal"]}] Commit assign(a1=red) | reasons: satisfied_with_proposal
+[Agent1] [rb:{"move": "Commit", "node": "a2", "colour": "blue", "reasons": ["satisfied_with_proposal"]}] Commit assign(a2=blue) | reasons: satisfied_with_proposal
+[Human] [rb:{"move": "Commit", "node": "a1", "colour": "red", "reasons": []}] Commit a1=red
+[Human] [rb:{"move": "Commit", "node": "a2", "colour": "blue", "reasons": []}] Commit a2=blue
+
+============================================================
+[OK] Convergence reached

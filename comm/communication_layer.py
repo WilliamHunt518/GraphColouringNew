@@ -468,6 +468,47 @@ class LLMCommLayer(BaseCommLayer):
                             else:
                                 parts.append(f"{var}: {allowed}")
                     text = "Proposed constraints for your boundary nodes: " + "; ".join(parts) + "."
+
+            elif msg_type == "api" and isinstance(data, dict):
+                # LLM_API mode: Hierarchical constraints + utilities
+                # Format emphasizes constraints first, then utilities
+                status = data.get("status", "UNKNOWN")
+                constraints = data.get("constraints", {})
+                utilities = data.get("utilities", {})
+                current_penalty = data.get("current_penalty", 0.0)
+                current_boundary = data.get("current_boundary", {})
+
+                parts = []
+
+                # PART 1: CONSTRAINTS (primary information)
+                valid_configs = constraints.get("valid_configs", [])
+                num_valid = constraints.get("count", len(valid_configs))
+
+                if status == "SUCCESS":
+                    # Current works - keep it simple
+                    parts.append("Your boundary works. No conflicts.")
+                    text = "\n".join(parts)
+                else:
+                    # Show alternatives
+                    if current_boundary:
+                        boundary_str = ", ".join([f"{k}={v}" for k, v in sorted(current_boundary.items())])
+                        parts.append(f"Your boundary ({boundary_str}) has conflicts (penalty={current_penalty:.1f}).")
+                    else:
+                        parts.append("I need boundary node colors.")
+
+                    # Show valid configs (top 3 only)
+                    if num_valid > 0:
+                        parts.append(f"Try instead:")
+                        for idx, config in enumerate(valid_configs[:3], 1):
+                            config_str = ", ".join([f"{k}={v}" for k, v in sorted(config.items())])
+                            parts.append(f"  {idx}. {config_str}")
+                        if num_valid > 3:
+                            parts.append(f"  (and {num_valid - 3} more options)")
+                    else:
+                        parts.append("No valid boundary configurations found.")
+
+                    text = "\n".join(parts)
+
             elif msg_type == "cost_list" and isinstance(data, dict):
                 # Two shapes are supported:
                 #  1) legacy: {var: {colour: cost}}

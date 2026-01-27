@@ -1,0 +1,284 @@
+2026-01-26 12:33:17,929 - INFO - === Conditional Builder Debug Session Started ===
+2026-01-26 12:33:17,930 - INFO - Log file: conditional_builder_debug_20260126_123317.log
+2026-01-26 12:33:17,935 - INFO - === Conditional Builder Debug Session Started ===
+2026-01-26 12:33:17,935 - INFO - === Conditional Builder Debug Session Started ===
+2026-01-26 12:33:17,935 - INFO - Log file: conditional_builder_debug_20260126_123317.log
+2026-01-26 12:33:17,935 - INFO - Log file: conditional_builder_debug_20260126_123317.log
+2026-01-26 12:33:18,092 - INFO - --- Creating conditional builder for neighbor: Agent1 ---
+2026-01-26 12:33:18,092 - INFO - --- Creating conditional builder for neighbor: Agent1 ---
+2026-01-26 12:33:18,093 - INFO -   Frame object id: 1240859780528
+2026-01-26 12:33:18,093 - INFO -   Frame object id: 1240859780528
+2026-01-26 12:33:18,093 - INFO -   Parent rb_frame id: 1240859780096
+2026-01-26 12:33:18,093 - INFO -   Parent rb_frame id: 1240859780096
+2026-01-26 12:33:18,093 - INFO -   Stored in dictionary with key: 'Agent1'
+2026-01-26 12:33:18,093 - INFO -   Stored in dictionary with key: 'Agent1'
+2026-01-26 12:33:18,093 - INFO -   Dictionary keys after storage: ['Agent1']
+2026-01-26 12:33:18,093 - INFO -   Dictionary keys after storage: ['Agent1']
+2026-01-26 12:33:18,093 - INFO -   Total neighbors processed so far: 2
+2026-01-26 12:33:18,093 - INFO -   Total neighbors processed so far: 2
+2026-01-26 12:33:18,093 - INFO -   Initialized empty row lists for Agent1
+2026-01-26 12:33:18,093 - INFO -   Initialized empty row lists for Agent1
+2026-01-26 12:33:18,095 - INFO - --- Created accept_offer_frame for neighbor: Agent1 ---
+2026-01-26 12:33:18,095 - INFO - --- Created accept_offer_frame for neighbor: Agent1 ---
+2026-01-26 12:33:18,095 - INFO -   Frame object id: 1240859780960
+2026-01-26 12:33:18,095 - INFO -   Frame object id: 1240859780960
+2026-01-26 12:33:18,095 - INFO -   Stored with key: 'Agent1'
+2026-01-26 12:33:18,095 - INFO -   Stored with key: 'Agent1'
+2026-01-26 12:33:18,095 - INFO - --- Setting up move_var.trace for neighbor: Agent1 ---
+2026-01-26 12:33:18,095 - INFO - --- Setting up move_var.trace for neighbor: Agent1 ---
+2026-01-26 12:33:18,095 - INFO -   move_var id: 1240859780240
+2026-01-26 12:33:18,095 - INFO -   move_var id: 1240859780240
+2026-01-26 12:33:18,095 - INFO -   Callback function: on_move_change
+2026-01-26 12:33:18,095 - INFO -   Callback function: on_move_change
+2026-01-26 12:33:18,095 - INFO -   Callback will use captured neighbor: Agent1
+2026-01-26 12:33:18,095 - INFO -   Callback will use captured neighbor: Agent1
+2026-01-26 12:33:18,095 - INFO -   Trace registered successfully
+2026-01-26 12:33:18,095 - INFO -   Trace registered successfully
+2026-01-26 12:33:18,095 - INFO -   Calling on_move_change() for initial setup...
+2026-01-26 12:33:18,095 - INFO -   Calling on_move_change() for initial setup...
+2026-01-26 12:33:18,095 - INFO - 
+2026-01-26 12:33:18,095 - INFO - 
+2026-01-26 12:33:18,095 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:18,095 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:18,095 - INFO -   Captured neighbor variable n: 'Agent1' (type: str)
+2026-01-26 12:33:18,095 - INFO -   Captured neighbor variable n: 'Agent1' (type: str)
+2026-01-26 12:33:18,095 - INFO -   Selected move: 'Propose'
+2026-01-26 12:33:18,095 - INFO -   Selected move: 'Propose'
+2026-01-26 12:33:18,095 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,095 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,095 - INFO -   Keys in _conditional_builder_frames: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _conditional_builder_frames: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _accept_offer_frames: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _accept_offer_frames: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _condition_rows: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _condition_rows: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _assignment_rows: ['Agent1']
+2026-01-26 12:33:18,095 - INFO -   Keys in _assignment_rows: ['Agent1']
+2026-01-26 12:33:18,096 - INFO -   Lookup result for 'Agent1':
+2026-01-26 12:33:18,096 - INFO -   Lookup result for 'Agent1':
+2026-01-26 12:33:18,096 - INFO -     cond_builder: FOUND (id=1240859780528)
+2026-01-26 12:33:18,096 - INFO -     cond_builder: FOUND (id=1240859780528)
+2026-01-26 12:33:18,096 - INFO -     accept_frame: FOUND (id=1240859780960)
+2026-01-26 12:33:18,096 - INFO -     accept_frame: FOUND (id=1240859780960)
+2026-01-26 12:33:18,096 - INFO -   Action: Set help text for Propose
+2026-01-26 12:33:18,096 - INFO -   Action: Set help text for Propose
+2026-01-26 12:33:18,101 - INFO - --- Creating conditional builder for neighbor: Agent2 ---
+2026-01-26 12:33:18,101 - INFO - --- Creating conditional builder for neighbor: Agent2 ---
+2026-01-26 12:33:18,101 - INFO -   Frame object id: 1240859780432
+2026-01-26 12:33:18,101 - INFO -   Frame object id: 1240859780432
+2026-01-26 12:33:18,101 - INFO -   Parent rb_frame id: 1240859821872
+2026-01-26 12:33:18,101 - INFO -   Parent rb_frame id: 1240859821872
+2026-01-26 12:33:18,101 - INFO -   Stored in dictionary with key: 'Agent2'
+2026-01-26 12:33:18,101 - INFO -   Stored in dictionary with key: 'Agent2'
+2026-01-26 12:33:18,101 - INFO -   Dictionary keys after storage: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,101 - INFO -   Dictionary keys after storage: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,101 - INFO -   Total neighbors processed so far: 2
+2026-01-26 12:33:18,101 - INFO -   Total neighbors processed so far: 2
+2026-01-26 12:33:18,102 - INFO -   Initialized empty row lists for Agent2
+2026-01-26 12:33:18,102 - INFO -   Initialized empty row lists for Agent2
+2026-01-26 12:33:18,104 - INFO - --- Created accept_offer_frame for neighbor: Agent2 ---
+2026-01-26 12:33:18,104 - INFO - --- Created accept_offer_frame for neighbor: Agent2 ---
+2026-01-26 12:33:18,104 - INFO -   Frame object id: 1240859822688
+2026-01-26 12:33:18,104 - INFO -   Frame object id: 1240859822688
+2026-01-26 12:33:18,104 - INFO -   Stored with key: 'Agent2'
+2026-01-26 12:33:18,104 - INFO -   Stored with key: 'Agent2'
+2026-01-26 12:33:18,104 - INFO - --- Setting up move_var.trace for neighbor: Agent2 ---
+2026-01-26 12:33:18,104 - INFO - --- Setting up move_var.trace for neighbor: Agent2 ---
+2026-01-26 12:33:18,105 - INFO -   move_var id: 1240859822016
+2026-01-26 12:33:18,105 - INFO -   move_var id: 1240859822016
+2026-01-26 12:33:18,105 - INFO -   Callback function: on_move_change
+2026-01-26 12:33:18,105 - INFO -   Callback function: on_move_change
+2026-01-26 12:33:18,105 - INFO -   Callback will use captured neighbor: Agent2
+2026-01-26 12:33:18,105 - INFO -   Callback will use captured neighbor: Agent2
+2026-01-26 12:33:18,105 - INFO -   Trace registered successfully
+2026-01-26 12:33:18,105 - INFO -   Trace registered successfully
+2026-01-26 12:33:18,105 - INFO -   Calling on_move_change() for initial setup...
+2026-01-26 12:33:18,105 - INFO -   Calling on_move_change() for initial setup...
+2026-01-26 12:33:18,105 - INFO - 
+2026-01-26 12:33:18,105 - INFO - 
+2026-01-26 12:33:18,105 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:18,105 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:18,105 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:18,105 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:18,106 - INFO -   Selected move: 'Propose'
+2026-01-26 12:33:18,106 - INFO -   Selected move: 'Propose'
+2026-01-26 12:33:18,106 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:18,106 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:18,106 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:18,106 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:18,106 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:18,106 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:18,106 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:18,106 - INFO -   Action: Set help text for Propose
+2026-01-26 12:33:18,106 - INFO -   Action: Set help text for Propose
+2026-01-26 12:33:32,622 - INFO - 
+2026-01-26 12:33:32,622 - INFO - 
+2026-01-26 12:33:32,622 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:32,622 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:32,622 - INFO -   Captured neighbor variable n: 'Agent1' (type: str)
+2026-01-26 12:33:32,622 - INFO -   Captured neighbor variable n: 'Agent1' (type: str)
+2026-01-26 12:33:32,622 - INFO -   Selected move: 'Propose'
+2026-01-26 12:33:32,622 - INFO -   Selected move: 'Propose'
+2026-01-26 12:33:32,622 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,622 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:32,623 - INFO -   Lookup result for 'Agent1':
+2026-01-26 12:33:32,623 - INFO -   Lookup result for 'Agent1':
+2026-01-26 12:33:32,623 - INFO -     cond_builder: FOUND (id=1240859780528)
+2026-01-26 12:33:32,623 - INFO -     cond_builder: FOUND (id=1240859780528)
+2026-01-26 12:33:32,623 - INFO -     accept_frame: FOUND (id=1240859780960)
+2026-01-26 12:33:32,623 - INFO -     accept_frame: FOUND (id=1240859780960)
+2026-01-26 12:33:32,623 - INFO -   Action: Set help text for Propose
+2026-01-26 12:33:32,623 - INFO -   Action: Set help text for Propose
+2026-01-26 12:33:34,346 - INFO - 
+2026-01-26 12:33:34,346 - INFO - 
+2026-01-26 12:33:34,346 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,346 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,346 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,346 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,346 - INFO -   Selected move: 'ConditionalOffer'
+2026-01-26 12:33:34,346 - INFO -   Selected move: 'ConditionalOffer'
+2026-01-26 12:33:34,346 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,346 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,346 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,346 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,346 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,346 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,346 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,346 - INFO -   Action: ConditionalOffer selected
+2026-01-26 12:33:34,346 - INFO -   Action: ConditionalOffer selected
+2026-01-26 12:33:34,346 - INFO -     Attempting to pack cond_builder...
+2026-01-26 12:33:34,346 - INFO -     Attempting to pack cond_builder...
+2026-01-26 12:33:34,347 - INFO -     SUCCESS: cond_builder.pack() called for Agent2
+2026-01-26 12:33:34,347 - INFO -     SUCCESS: cond_builder.pack() called for Agent2
+2026-01-26 12:33:34,347 - INFO -     Frame is now visible: 0
+2026-01-26 12:33:34,347 - INFO -     Frame is now visible: 0
+2026-01-26 12:33:34,347 - INFO -     Hidden accept_frame
+2026-01-26 12:33:34,347 - INFO -     Hidden accept_frame
+2026-01-26 12:33:34,347 - INFO -     Checking if rows need initialization...
+2026-01-26 12:33:34,347 - INFO -     Checking if rows need initialization...
+2026-01-26 12:33:34,347 - INFO -     Adding initial condition row for Agent2
+2026-01-26 12:33:34,347 - INFO -     Adding initial condition row for Agent2
+2026-01-26 12:33:34,354 - INFO -     Adding initial assignment row for Agent2
+2026-01-26 12:33:34,354 - INFO -     Adding initial assignment row for Agent2
+2026-01-26 12:33:34,363 - INFO - 
+2026-01-26 12:33:34,363 - INFO - 
+2026-01-26 12:33:34,363 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,363 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,363 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,363 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,363 - INFO -   Selected move: 'CounterProposal'
+2026-01-26 12:33:34,363 - INFO -   Selected move: 'CounterProposal'
+2026-01-26 12:33:34,363 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,363 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,363 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,363 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,363 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,363 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,363 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,395 - INFO - 
+2026-01-26 12:33:34,395 - INFO - 
+2026-01-26 12:33:34,396 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,396 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,396 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,396 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,396 - INFO -   Selected move: 'Accept'
+2026-01-26 12:33:34,396 - INFO -   Selected move: 'Accept'
+2026-01-26 12:33:34,396 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,396 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,396 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,396 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,396 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,396 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,396 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,409 - INFO - 
+2026-01-26 12:33:34,409 - INFO - 
+2026-01-26 12:33:34,410 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,410 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:34,410 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,410 - INFO -   Captured neighbor variable n: 'Agent2' (type: str)
+2026-01-26 12:33:34,410 - INFO -   Selected move: 'Commit'
+2026-01-26 12:33:34,410 - INFO -   Selected move: 'Commit'
+2026-01-26 12:33:34,410 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:34,410 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,410 - INFO -   Lookup result for 'Agent2':
+2026-01-26 12:33:34,410 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,410 - INFO -     cond_builder: FOUND (id=1240859780432)
+2026-01-26 12:33:34,410 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:34,410 - INFO -     accept_frame: FOUND (id=1240859822688)
+2026-01-26 12:33:36,977 - INFO - 
+2026-01-26 12:33:36,977 - INFO - 
+2026-01-26 12:33:36,977 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:36,977 - INFO - === on_move_change CALLED ===
+2026-01-26 12:33:36,977 - INFO -   Captured neighbor variable n: 'Agent1' (type: str)
+2026-01-26 12:33:36,977 - INFO -   Captured neighbor variable n: 'Agent1' (type: str)
+2026-01-26 12:33:36,977 - INFO -   Selected move: 'Commit'
+2026-01-26 12:33:36,977 - INFO -   Selected move: 'Commit'
+2026-01-26 12:33:36,977 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,977 - INFO -   All neighbors in _neighs: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _conditional_builder_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _accept_offer_frames: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _condition_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Keys in _assignment_rows: ['Agent1', 'Agent2']
+2026-01-26 12:33:36,978 - INFO -   Lookup result for 'Agent1':
+2026-01-26 12:33:36,978 - INFO -   Lookup result for 'Agent1':
+2026-01-26 12:33:36,978 - INFO -     cond_builder: FOUND (id=1240859780528)
+2026-01-26 12:33:36,978 - INFO -     cond_builder: FOUND (id=1240859780528)
+2026-01-26 12:33:36,978 - INFO -     accept_frame: FOUND (id=1240859780960)
+2026-01-26 12:33:36,978 - INFO -     accept_frame: FOUND (id=1240859780960)

@@ -371,9 +371,13 @@ class ClusterAgent(MultiNodeAgent):
         Returns a dictionary mapping local nodes to colours.  The
         choice of algorithm is controlled by ``self.algorithm``.
         """
+        # Log which algorithm is being used for debugging
+        self.log(f"compute_assignments: Using algorithm={self.algorithm}")
+
         if self.algorithm == "maxsum":
             # fall back to exhaustive search implemented in MultiNodeAgent
             # compute best assignment by evaluating all combinations
+            self.log(f"Running EXHAUSTIVE search over all color combinations")
             best_assignment: Dict[str, Any] = dict(self.assignments)
             best_penalty: float = self.evaluate_candidate(best_assignment)
             # iterate over cartesian product of colours for local nodes
@@ -391,6 +395,7 @@ class ClusterAgent(MultiNodeAgent):
                 if penalty < best_penalty:
                     best_assignment = candidate
                     best_penalty = penalty
+            self.log(f"Exhaustive search complete: best_penalty={best_penalty:.3f}, best_assignment={best_assignment}")
             return best_assignment
         elif self.algorithm == "greedy":
             # simple greedy algorithm: colour nodes sequentially
@@ -497,9 +502,14 @@ class ClusterAgent(MultiNodeAgent):
         base = dict(getattr(self, "neighbour_assignments", {}) or {})
         return self._best_local_assignment_for(base)
 
-    def _compute_valid_boundary_configs_with_constraints(self, max_configs=10):
+    def _compute_valid_boundary_configs_with_constraints(self, max_configs=10, use_current_beliefs_as_constraints=False):
         """
         Compute valid boundary configurations respecting human-stated constraints.
+
+        Args:
+            max_configs: Maximum number of valid configs to return
+            use_current_beliefs_as_constraints: If True, treat current boundary beliefs as hard constraints
+                                                 (useful for hypothetical "can you plan around X?" queries)
 
         Returns list of dicts representing valid boundary configurations.
         Example: [{"h2": "red", "h5": "blue"}, {"h2": "blue", "h5": "green"}, ...]
@@ -514,29 +524,42 @@ class ClusterAgent(MultiNodeAgent):
         if not boundary_nodes:
             return []
 
+        # For hypothetical queries, use current beliefs as temporary constraints
+        effective_constraints = dict(self._human_stated_constraints)
+        if use_current_beliefs_as_constraints:
+            current_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
+            for node, color in current_beliefs.items():
+                node_lower = str(node).lower()
+                if node_lower not in effective_constraints:
+                    effective_constraints[node_lower] = {"forbidden": [], "required": str(color).lower()}
+                    self.log(f"Treating current belief {node}={color} as temporary constraint for this query")
+
         # For each boundary node, collect allowed colors (respecting human constraints only)
         allowed_per_node = {}
+        self.log(f"Computing valid boundary configs with constraints: {effective_constraints}")
         for node in boundary_nodes:
             allowed = []
             for color in self.domain:
-                # Check human-stated constraints
+                # Check effective constraints (includes temporary ones if using current beliefs)
                 node_lower = str(node).lower()
                 color_lower = str(color).lower()
-                constraints = self._human_stated_constraints.get(node_lower, {})
+                constraints = effective_constraints.get(node_lower, {})
 
                 # Skip forbidden colors
                 if color_lower in constraints.get("forbidden", []):
-                    self.log(f"Skipping {node}={color} (forbidden by human constraint)")
+                    self.log(f"Skipping {node}={color} (forbidden by constraint)")
                     continue
 
                 # If required color is specified, only allow that
                 required = constraints.get("required")
                 if required and color_lower != str(required).lower():
+                    self.log(f"Skipping {node}={color} (required={required})")
                     continue
 
                 allowed.append(color)
 
             allowed_per_node[node] = allowed
+            self.log(f"Boundary node {node}: allowed colors = {allowed}")
             if not allowed:
                 self.log(f"WARNING: No allowed colors for boundary node {node} after constraints!")
 
@@ -546,9 +569,11 @@ class ClusterAgent(MultiNodeAgent):
 
         # Enumerate ALL combinations and test each for penalty=0
         valid_configs = []
+        tested_configs = []  # Store ALL tested configs with their penalties for reporting
         base_beliefs = dict(getattr(self, "neighbour_assignments", {}) or {})
         try:
             color_lists = [allowed_per_node[n] for n in boundary_nodes]
+            self.log(f"Testing {len(list(itertools.product(*color_lists)))} boundary combinations...")
             for combo in itertools.product(*color_lists):
                 config = {boundary_nodes[i]: combo[i] for i in range(len(boundary_nodes))}
 
@@ -556,18 +581,32 @@ class ClusterAgent(MultiNodeAgent):
                 tmp_beliefs = dict(base_beliefs)
                 tmp_beliefs.update(config)
                 try:
-                    best_pen, _ = self._best_local_assignment_for(tmp_beliefs)
+                    best_pen, best_assign = self._best_local_assignment_for(tmp_beliefs)
+                    self.log(f"  Config {config}: best_pen={best_pen:.3f}, best_assign={best_assign}")
+
+                    # Store the test result for later reporting
+                    tested_configs.append({"config": dict(config), "penalty": best_pen, "assignment": dict(best_assign)})
+
                     if best_pen < 1e-6:  # Valid configuration
                         valid_configs.append(config)
+                        self.log(f"    ✓ VALID CONFIG FOUND!")
                         if len(valid_configs) >= max_configs:
                             break
-                except Exception:
+                except Exception as ex:
                     # Ignore errors when testing individual configs
+                    self.log(f"  Config {config}: ERROR {ex}")
                     continue
         except Exception as e:
             self.log(f"Error enumerating configs: {e}")
 
         self.log(f"Computed {len(valid_configs)} valid boundary configurations")
+
+        # Cache the tested configs for later use in conversational responses
+        try:
+            self._last_tested_boundary_configs = tested_configs
+        except Exception:
+            pass
+
         return valid_configs
 
     def _compute_satisfied(self) -> bool:
@@ -1193,8 +1232,21 @@ class ClusterAgent(MultiNodeAgent):
                 decision_analysis += f"✓ STEP 2: I CAN fix this alone! Found internal assignment with penalty=0.\n"
                 decision_analysis += f"  → Best internal assignment: {best_assign}\n"
 
+                # Check if best_assign violates any fixed nodes
+                fixed_violations = []
+                for node, color in self.fixed_local_nodes.items():
+                    if node in best_assign and best_assign[node] != color:
+                        fixed_violations.append((node, color, best_assign[node]))
+
+                if fixed_violations:
+                    decision_analysis += "  → ⚠️ WARNING: Best assignment requires changing FIXED nodes:\n"
+                    for node, fixed_color, wanted_color in fixed_violations:
+                        decision_analysis += f"     • {node} is FIXED to {fixed_color}, but assignment needs {wanted_color}\n"
+                    decision_analysis += "  → ACTION: IMPOSSIBLE to fix alone due to fixed nodes.\n"
+                    decision_analysis += "  → DO NOT suggest changing fixed nodes - they are immutable!\n"
+                    decision_analysis += "  → Instead, tell human the boundary needs to change.\n"
                 # Check if we already applied this
-                if dict(self.assignments) == best_assign:
+                elif dict(self.assignments) == best_assign:
                     decision_analysis += "  → Already using this assignment. Should have penalty=0 but doesn't - BUG?\n"
                 else:
                     decision_analysis += "  → ACTION: I should change my internal nodes to this assignment.\n"
@@ -1206,6 +1258,7 @@ class ClusterAgent(MultiNodeAgent):
 
                 # Step 3: What boundary changes would work?
                 # Compute valid boundary configs (respecting constraints)
+                # But FIRST, capture what we're testing so we can report it if nothing works
                 constrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
 
                 if constrained_configs:
@@ -1216,7 +1269,40 @@ class ClusterAgent(MultiNodeAgent):
                     decision_analysis += "  → ACTION: Suggest these boundary changes to the human.\n"
                 else:
                     decision_analysis += "✗ STEP 3: Found NO valid boundary configs (with constraints).\n"
-                    decision_analysis += "  → ACTION: Tell human the problem may be unsolvable with their constraints.\n"
+
+                    # Show what we tested and why it didn't work
+                    # This is critical for conditional reasoning - user needs to know we tried!
+                    tested_configs = getattr(self, "_last_tested_boundary_configs", [])
+
+                    if tested_configs:
+                        decision_analysis += "  → I tested ALL these combinations (none achieved penalty=0):\n"
+                        for test_result in tested_configs[:10]:  # Show up to 10
+                            config = test_result["config"]
+                            penalty = test_result["penalty"]
+                            config_str = ", ".join([f"{k}={v}" for k, v in sorted(config.items())])
+                            decision_analysis += f"     • {config_str}: penalty={penalty:.2f}\n"
+
+                        if len(tested_configs) > 10:
+                            decision_analysis += f"     ... and {len(tested_configs) - 10} more combinations\n"
+
+                        decision_analysis += "  → ALL tested combinations failed (penalty > 0).\n"
+
+                        # Analyze WHY they failed - check for fixed node conflicts
+                        if self.fixed_local_nodes:
+                            decision_analysis += "  → REASON: Conflicts likely involve your fixed nodes:\n"
+                            for fixed_node, fixed_color in self.fixed_local_nodes.items():
+                                decision_analysis += f"     - {fixed_node}={fixed_color} (FIXED, cannot change)\n"
+
+                    decision_analysis += "  → ACTION: Tell human this constraint is IMPOSSIBLE to solve around.\n"
+                    decision_analysis += "  → Be SPECIFIC: State which configurations you tested (especially the constrained one).\n"
+                    decision_analysis += "  → EXPLAIN WHY: If a fixed node causes conflicts, mention that explicitly.\n"
+                    decision_analysis += "  → SUGGEST: Explain which BOUNDARY NODE (human's node) needs to change for a solution.\n"
+                    decision_analysis += "  → CRITICAL: NEVER suggest changing YOUR internal nodes (a1, a3, a4, a5) - only suggest the human change THEIR nodes (h1, h4, etc).\n"
+                    decision_analysis += "\n**EXAMPLE RESPONSE:**\n"
+                    decision_analysis += "'I tested setting [constrained node]=X with all possible values for [other boundary nodes].\n"
+                    decision_analysis += " All configurations resulted in conflicts (penalty > 0).\n"
+                    decision_analysis += " This is because [constrained node]=X conflicts with my fixed node [Y]=Z.\n"
+                    decision_analysis += " For a solution, [constrained node] would need to be a different color instead (like green or blue).'\n"
 
         decision_analysis += "\n"
 
@@ -1291,15 +1377,32 @@ class ClusterAgent(MultiNodeAgent):
             elif current_penalty > 1e-6 and not counterfactuals_section:
                 self.log(f"Conflict detected (penalty={current_penalty:.2f}) - computing valid boundary configs")
 
+                # Check if user is asking a hypothetical ("can you plan around X?")
+                # Detect this by checking if boundary just changed and message contains question words
+                neighbor_just_changed = bool(getattr(self, "_neighbor_boundary_changed_this_turn", False))
+                is_hypothetical_query = neighbor_just_changed and human_message_text and any(
+                    phrase in human_message_text.lower() for phrase in
+                    ["can you", "can this", "may need", "might need", "thinking of", "plan around", "work with"]
+                )
+
                 # Compute valid configs WITH constraints applied
-                constrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
+                # For hypothetical queries, treat current boundary as a constraint
+                constrained_configs = self._compute_valid_boundary_configs_with_constraints(
+                    max_configs=10,
+                    use_current_beliefs_as_constraints=is_hypothetical_query
+                )
 
                 # Also compute valid configs WITHOUT constraints to see what WOULD work
-                # Temporarily clear constraints for this calculation
-                saved_constraints = dict(self._human_stated_constraints)
-                self._human_stated_constraints.clear()
-                unconstrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
-                self._human_stated_constraints = saved_constraints
+                # ALWAYS compute this when constrained search finds 0 results, so we can show alternatives
+                unconstrained_configs = []
+                if not is_hypothetical_query or not constrained_configs:
+                    # Compute unconstrained configs if:
+                    # 1. Not a hypothetical query (always show alternatives), OR
+                    # 2. Hypothetical query but constrained search found nothing (need to show what WOULD work)
+                    saved_constraints = dict(self._human_stated_constraints)
+                    self._human_stated_constraints.clear()
+                    unconstrained_configs = self._compute_valid_boundary_configs_with_constraints(max_configs=10)
+                    self._human_stated_constraints = saved_constraints
 
                 counterfactuals_section = "\n**BOUNDARY CONFIGURATION ANALYSIS:**\n"
 
@@ -1385,7 +1488,7 @@ class ClusterAgent(MultiNodeAgent):
         # Build constraints section to show at TOP of prompt
         constraints_section = ""
         if self._human_stated_constraints:
-            constraints_section = "**🚫 IMMUTABLE CONSTRAINTS (you CANNOT suggest changing these):**\n"
+            constraints_section = "**[IMMUTABLE CONSTRAINTS] - you CANNOT suggest changing these:**\n"
             for node, constraint_dict in self._human_stated_constraints.items():
                 required = constraint_dict.get("required")
                 forbidden = constraint_dict.get("forbidden", [])
@@ -1396,9 +1499,23 @@ class ClusterAgent(MultiNodeAgent):
                     constraints_section += f"- {node} CANNOT be {forbidden_str} (human ruled these out)\n"
             constraints_section += "\n**CRITICAL:** Never suggest changing these constrained nodes in your response!\n\n"
 
+        # Build fixed nodes section - these are YOUR nodes that you cannot change
+        fixed_nodes_section = ""
+        if self.fixed_local_nodes:
+            fixed_nodes_section = "**[YOUR FIXED NODES] - you CANNOT change these:**\n"
+            for node, color in self.fixed_local_nodes.items():
+                fixed_nodes_section += f"- {node} is FIXED to {color} (immutable constraint)\n"
+            fixed_nodes_section += "\n**CRITICAL RULES for fixed nodes:**\n"
+            fixed_nodes_section += "1. NEVER suggest changing your fixed nodes - they are immutable\n"
+            fixed_nodes_section += "2. If a conflict involves a fixed node, you CANNOT resolve it by changing that node\n"
+            fixed_nodes_section += "3. If human asks you to change a fixed node, explain it's impossible\n"
+            fixed_nodes_section += "4. When reporting test results, explain if a fixed node prevents a solution\n"
+            fixed_nodes_section += "   Example: 'h1=red doesn't work because it conflicts with my fixed node a2=red'\n\n"
+
         prompt = (
             f"You are agent '{self.name}' collaborating with a human on a graph coloring task.\n\n"
             f"{constraints_section}"
+            f"{fixed_nodes_section}"
             f"{human_context}\n\n"
             f"**CRITICAL FACT:** {change_status}\n\n"
             f"**VERIFICATION:** Before you respond, understand that:\n"
@@ -1407,78 +1524,86 @@ class ClusterAgent(MultiNodeAgent):
             f"- If penalty > 0 OR conflicts exist, you CANNOT claim to have a good/valid solution\n"
             f"- If penalty > 0, you MUST acknowledge conflicts exist in your response\n"
             f"- {assignment_verification}\n\n"
+            f"**[CRITICAL] - Fixed Nodes Policy:**\n"
+        )
+
+        if self.fixed_local_nodes:
+            prompt += f"- NEVER suggest changing these FIXED nodes: {', '.join([f'{n}={c}' for n, c in self.fixed_local_nodes.items()])}\n"
+            prompt += f"- If a conflict involves a fixed node, you CANNOT fix it by changing that node\n"
+            prompt += f"- If the decision analysis mentions fixed node violations, acknowledge them in your response\n"
+            prompt += f"- Example: 'I cannot change a2 (fixed to red), so h1 must be a different color'\n\n"
+        else:
+            prompt += f"- You have no fixed nodes, so you can change any of your nodes freely\n\n"
+
+        prompt += (
             f"**CRITICAL - How to Propose Changes:**\n"
             f"- You can ONLY change your own nodes (nodes {', '.join(sorted(self.nodes))})\n"
             f"- You CANNOT directly change the human's nodes\n"
             f"- Frame proposals as CONDITIONAL agreements:\n"
-            f"  ✓ GOOD: 'If you set h1=blue and h4=red, I can set my nodes to a1=green, a2=blue, a3=blue, a4=red, a5=green. This gives penalty=0.'\n"
-            f"  ✗ BAD: 'Change h1 to blue' (sounds like a command, ignores human's autonomy)\n"
+            f"  [GOOD]: 'If you set h1=blue and h4=red, I can set my nodes to a1=green, a2=blue, a3=blue, a4=red, a5=green. This gives penalty=0.'\n"
+            f"  [BAD]: 'Change h1 to blue' (sounds like a command, ignores human's autonomy)\n"
             f"- ALWAYS state your complete resultant coloring when proposing boundary changes\n"
             f"- ALWAYS verify penalty=0 in your proposal before claiming a solution works\n"
             f"- If human states a node is FIXED (e.g., 'h1 has to be red'), NEVER suggest changing it\n\n"
             f"Your current state:\n{state_summary}\n"
-            f"{decision_analysis}"
+            f"{ decision_analysis}"
             f"{counterfactuals_section}"
         )
 
         if not human_message_text:
             # Empty message = config update
             prompt += (
-                "The human sent their current boundary configuration. Your response MUST:\n"
-                "1. Acknowledge their config update\n"
-                "2. Report your current node assignments\n"
-                "3. State whether the current config works (penalty=0) or not\n"
-                "4. If conflicts exist (penalty>0), suggest what boundary changes would help\n"
-                "   ⚠️ NEVER suggest changing constrained nodes listed above!\n"
-                "   ⚠️ Only suggest changing nodes that are NOT in the constraints list\n\n"
-                "Examples:\n"
-                "- If penalty=0: 'Received your config. My nodes: a1=green, a2=blue, a3=blue. No conflicts!'\n"
-                "- If penalty>0 with unconstrained nodes: 'Received your config. Current penalty is 20.00. There's a clash between my a2 (red) and your h1 (red). Try changing h1 to blue.'\n"
-                "- If penalty>0 with ALL nodes constrained: 'Received your config. Current penalty is 20.00. With your constraints (h1=red fixed), I cannot find a valid solution. This may not be solvable with those constraints.'\n\n"
-                "Return ONLY the conversational response text (2-3 sentences max)."
+                "The human sent their boundary configuration. Keep your response minimal and boundary-focused:\n\n"
+                "- If penalty=0: 'Your boundary works. No conflicts.'\n"
+                "- If penalty>0: 'Your boundary has conflicts. Try [specific alternative] instead.'\n\n"
+                "DO NOT mention your internal node assignments.\n"
+                "DO NOT talk about what you changed internally.\n"
+                "Focus ONLY on whether their boundary works or what boundary would work.\n\n"
+                "Return ONLY a brief response (1 sentence)."
             )
         elif is_question:
             prompt += (
-                "The human asked you a QUESTION. Your response MUST:\n"
-                "1. ANSWER THE QUESTION DIRECTLY first - don't dodge or change the subject\n"
-                "2. If they ask about your nodes/colors, tell them your exact current assignments\n"
-                "3. If they ask 'can you do X', answer yes/no FIRST, then explain\n"
-                "4. If they ask 'why', explain the reasoning clearly\n"
-                "5. Be specific and truthful - use actual node names and colors from your state\n\n"
+                "The human asked a QUESTION. Answer directly and briefly:\n\n"
+                "- If they ask 'can you do X': Answer yes/no first, then explain if needed\n"
+                "- If they ask 'why': Explain boundary conflicts, not internal details\n"
+                "- If they ask about your specific nodes: Answer only if directly asked\n\n"
+                "Focus on boundary issues, not internal node details unless specifically asked.\n\n"
                 "Examples:\n"
-                "Q: 'What color is b2?'\nA: 'b2 is currently red.'\n\n"
-                "Q: 'Can you change b2 to green?'\nA: 'Yes, I changed b2 to green.' OR 'No, I cannot change b2 without creating internal conflicts.'\n\n"
-                "Q: 'Why is there a clash?'\nA: 'There's a clash because my node b2 (red) neighbors your node h2 (red). Same colors on adjacent nodes create conflicts.'\n\n"
-                "Return ONLY the conversational response text."
+                "Q: 'Can you work with h1=red?'\nA: 'No. h1=red conflicts with my fixed nodes.'\n\n"
+                "Q: 'Why doesn't it work?'\nA: 'h1=red creates a conflict. Try h1=green or h1=blue instead.'\n\n"
+                "Return ONLY your brief answer."
             )
         else:
             prompt += (
-                "Generate a conversational response (2-3 sentences max) following the DECISION TREE above:\n\n"
+                "Generate a brief response (1-2 sentences max) focusing ONLY on boundary feedback:\n\n"
                 "**IF STEP 1 says we're GOOD (penalty=0):**\n"
-                "- Acknowledge success: 'My nodes are optimized. No conflicts!'\n"
-                "- Report your assignments\n"
+                "- Simple acknowledgment: 'Your boundary configuration works. No conflicts.'\n"
+                "- DO NOT list your internal nodes\n"
                 "- DO NOT suggest any changes\n\n"
                 "**IF STEP 2 says you CAN fix it alone:**\n"
-                "- Say 'I can resolve this by changing my internal nodes' OR 'I changed X to Y'\n"
-                "- DO NOT ask human to change boundary - YOU can solve it yourself!\n"
-                "- Only mention internal node changes, not boundary\n\n"
+                "- Simple acknowledgment: 'I can work with this boundary.'\n"
+                "- DO NOT mention what you changed internally\n"
+                "- DO NOT ask human to change anything\n\n"
                 "**IF STEP 3 applies (you CANNOT fix alone):**\n"
-                "- Frame as conditional proposal: 'If you set [boundary config], I can set my nodes to [complete coloring]. This would give penalty=0.'\n"
-                "- Be SPECIFIC: List your exact resultant coloring for ALL your nodes, not just boundary suggestions\n"
-                "- VERIFY: Confirm the proposed solution actually achieves penalty=0 (check STEP 3 data)\n"
-                "- ⚠️ CRITICAL: Only suggest configs that appear in STEP 3! Don't make up others.\n"
-                "- ⚠️ Never suggest changing constrained nodes (see constraints at top)\n"
-                "- Example: 'If you set h1=blue, I can set a1=green, a2=blue, a3=red, a4=green, a5=blue. This gives penalty=0.'\n\n"
-                "**General rules:**\n"
-                "- NEVER say 'I changed' if assignments didn't actually change (see CRITICAL FACT)\n"
-                "- If penalty > 0, acknowledge conflicts exist\n"
-                "- Be specific and truthful\n\n"
+                "- If STEP 3 shows valid configs: State alternatives clearly\n"
+                "  Example: 'Your current boundary doesn't work (penalty > 0). Try h1=blue, h4=red OR h1=green, h4=red.'\n"
+                "- If STEP 3 shows NO valid configs: Explain what constraint prevents a solution\n"
+                "  Example: 'I tested h1=red with all h4 values. All failed due to conflicts. h1 needs to be green or blue instead.'\n"
+                "- Be SPECIFIC about what was tested\n"
+                "- NEVER mention your internal node assignments\n\n"
+                "**CRITICAL RULES:**\n"
+                "- Focus ONLY on boundary nodes (the human's nodes you connect to)\n"
+                "- NEVER talk about your internal node assignments (a1, a2, a3, a4, a5)\n"
+                "- Keep responses minimal and boundary-focused\n"
+                "- If fixed nodes prevent a solution, mention that briefly\n\n"
                 "Examples:\n"
-                "- STEP 1 good: 'Everything looks good! My nodes: a1=green, a2=blue, a3=red. No conflicts.'\n"
-                "- STEP 2 can fix: 'I changed a2 to blue to resolve the clash. My nodes: a1=green, a2=blue, a3=red. Should work now.'\n"
-                "- STEP 3 need boundary: 'If you set h1=blue and h4=red, I can set my nodes to a1=green, a2=blue, a3=red, a4=green, a5=blue. This would give penalty=0.'\n"
-                "- STEP 3 constrained: 'With h1=red fixed, I found one solution: if you set h4=blue, I can color my nodes a1=green, a2=blue, a3=red, a4=red, a5=green. This gives penalty=0.'\n\n"
-                "Return ONLY the conversational response text."
+                "- GOOD (penalty=0): 'Your boundary works. No conflicts.'\n"
+                "- GOOD (can fix): 'I can work with this boundary.'\n"
+                "- GOOD (need alternatives): 'Current boundary has conflicts. Try h1=green, h4=red instead.'\n"
+                "- GOOD (constrained fails): 'With h1=red, I tested all h4 values - none work due to my fixed nodes. h1 needs to be green or blue.'\n"
+                "- BAD: 'My nodes are a1=green, a2=blue...' [DON'T mention internal nodes]\n"
+                "- BAD: 'I changed a2 to blue...' [DON'T talk about internal changes]\n\n"
+                "Return ONLY the response text."
             )
 
         try:
@@ -1487,6 +1612,125 @@ class ClusterAgent(MultiNodeAgent):
             if response_text and response_text.strip():
                 # CRITICAL: Post-process to remove lies about changes
                 final_response = response_text.strip()
+
+                # CRITICAL: Check if LLM mentions wrong nodes as "fixed"
+                # The LLM sometimes hallucinates that non-fixed nodes are fixed
+                already_correcting = getattr(self, "_correction_in_progress", False)
+                if not already_correcting:
+                    # Check if response mentions "fixed" for non-fixed nodes
+                    all_my_nodes = set(self.nodes)
+                    actually_fixed = set(self.fixed_local_nodes.keys())
+                    non_fixed_nodes = all_my_nodes - actually_fixed
+
+                    for node in non_fixed_nodes:
+                        # Check if response incorrectly calls this node "fixed"
+                        wrong_fixed_patterns = [
+                            f"fixed node {node}",
+                            f"fixed nodes {node}",
+                            f"{node} is fixed",
+                            f"{node} (fixed)",
+                        ]
+                        for pattern in wrong_fixed_patterns:
+                            if pattern.lower() in final_response.lower():
+                                self.log(f"[ERROR] LLM incorrectly called {node} a fixed node (it's NOT fixed!)")
+                                self.log(f"Actually fixed nodes: {list(self.fixed_local_nodes.keys())}")
+
+                                # Correct this hallucination
+                                fixed_list = ", ".join([f"{fn}={fc}" for fn, fc in self.fixed_local_nodes.items()])
+                                corrective_prompt = (
+                                    f"You are agent '{self.name}'. The human asked: \"{self._last_human_text}\"\n\n"
+                                    f"ERROR: Your previous response incorrectly said '{node}' is a fixed node.\n"
+                                    f"TRUTH: {node} is NOT fixed. It can be changed freely.\n\n"
+                                    f"Your ACTUAL fixed nodes: {fixed_list if fixed_list else 'NONE'}\n"
+                                    f"Your changeable nodes: {', '.join(sorted(non_fixed_nodes))}\n\n"
+                                    f"Current state: penalty={current_penalty:.2f}\n"
+                                    f"Generate a corrected response (max 2 sentences) that:\n"
+                                    f"- Does NOT call {node} fixed\n"
+                                    f"- Only mentions your ACTUAL fixed nodes: {fixed_list if fixed_list else 'none'}\n"
+                                    f"- Explains why the human's boundary doesn't work\n\n"
+                                    f"Response:"
+                                )
+
+                                try:
+                                    self._correction_in_progress = True
+                                    corrected = self.comm_layer._call_openai(corrective_prompt, max_tokens=100)
+                                    if corrected and corrected.strip():
+                                        final_response = corrected.strip()
+                                        self.log(f"Corrected response (wrong fixed nodes): {final_response[:80]}...")
+                                    else:
+                                        # Fallback
+                                        if self.fixed_local_nodes:
+                                            fixed_str = ", ".join([f"{fn}={fc}" for fn, fc in self.fixed_local_nodes.items()])
+                                            final_response = f"The current boundary doesn't work due to conflicts with my fixed node(s): {fixed_str}."
+                                        else:
+                                            final_response = "The current boundary results in conflicts that I cannot resolve."
+                                except Exception as e:
+                                    self.log(f"Corrective API call failed: {e}")
+                                    if self.fixed_local_nodes:
+                                        fixed_str = ", ".join([f"{fn}={fc}" for fn, fc in self.fixed_local_nodes.items()])
+                                        final_response = f"The current boundary doesn't work due to conflicts with my fixed node(s): {fixed_str}."
+                                    else:
+                                        final_response = "The current boundary results in conflicts that I cannot resolve."
+                                finally:
+                                    self._correction_in_progress = False
+                                break
+
+                # CRITICAL: Check if LLM suggests changing fixed nodes
+                # Only do correction if we haven't already tried (prevent infinite loops)
+                already_correcting = getattr(self, "_correction_in_progress", False)
+                if self.fixed_local_nodes and not already_correcting:
+                    for fixed_node, fixed_color in self.fixed_local_nodes.items():
+                        # Check if response suggests changing this fixed node
+                        change_patterns = [
+                            f"change {fixed_node}",
+                            f"changed {fixed_node}",
+                            f"changing {fixed_node}",
+                            f"{fixed_node} to ",
+                            f"set {fixed_node}=",
+                        ]
+                        for pattern in change_patterns:
+                            if pattern in final_response.lower():
+                                # Check if it's suggesting a different color (not the fixed one)
+                                pos = final_response.lower().find(pattern)
+                                snippet = final_response.lower()[pos:pos+50]
+                                # If it mentions changing to ANY color other than the fixed color, that's a violation
+                                other_colors = [c for c in self.domain if c.lower() != fixed_color.lower()]
+                                suggests_wrong_color = any(col.lower() in snippet for col in other_colors)
+                                if suggests_wrong_color:
+                                    self.log(f"Detected suggestion to change FIXED node {fixed_node}. Correcting response.")
+
+                                    # Re-prompt with explicit fixed node warning (SIMPLIFIED)
+                                    fixed_list = ", ".join([f"{fn}={fc}" for fn, fc in self.fixed_local_nodes.items()])
+                                    corrective_prompt = (
+                                        f"You are agent '{self.name}'. The human asked: \"{self._last_human_text}\"\n\n"
+                                        f"ERROR: Your previous response suggested changing node {fixed_node}, but {fixed_node} is FIXED to {fixed_color}.\n\n"
+                                        f"Fixed nodes that cannot change: {fixed_list}\n\n"
+                                        f"Current state: penalty={current_penalty:.2f}\n"
+                                        f"Generate a brief response (max 2 sentences) that:\n"
+                                        f"- Does NOT suggest changing {fixed_node}\n"
+                                        f"- Explains that {fixed_node} is fixed to {fixed_color}\n"
+                                        f"- Suggests the human change their boundary nodes instead\n\n"
+                                        f"Response:"
+                                    )
+
+                                    try:
+                                        # Set flag to prevent recursive correction attempts
+                                        self._correction_in_progress = True
+                                        corrected = self.comm_layer._call_openai(corrective_prompt, max_tokens=100)
+                                        if corrected and corrected.strip():
+                                            final_response = corrected.strip()
+                                            self.log(f"Corrected response (fixed node): {final_response[:80]}...")
+                                        else:
+                                            self.log(f"Corrective API call returned empty, using fallback message")
+                                            # Fallback: Simple message explaining fixed node issue
+                                            final_response = f"I cannot change {fixed_node} (it is fixed to {fixed_color}). The current boundary configuration results in conflicts."
+                                    except Exception as e:
+                                        self.log(f"Corrective API call failed: {e}. Using fallback message.")
+                                        # Fallback: Simple message explaining fixed node issue
+                                        final_response = f"I cannot change {fixed_node} (it is fixed to {fixed_color}). The current boundary configuration results in conflicts."
+                                    finally:
+                                        self._correction_in_progress = False
+                                    break
 
                 # CRITICAL: If penalty > 0 but LLM claims no conflicts, re-prompt with explicit conflict details
                 self.log(f"Checking response accuracy: penalty={current_penalty:.2f}, response='{final_response[:80]}...'")
@@ -1615,6 +1859,9 @@ class ClusterAgent(MultiNodeAgent):
             self.debug_step_count = getattr(self, "debug_step_count", 0) + 1  # type: ignore[attr-defined]
         except Exception:
             pass
+
+        # Clear hypothetical query flag at start of each turn
+        self._neighbor_boundary_changed_this_turn = False
 
         iteration = getattr(self.problem, "iteration", None)
         if iteration is not None:
@@ -1748,6 +1995,9 @@ class ClusterAgent(MultiNodeAgent):
                     changes[node] = (old_val, new_val)
 
             self.log(f"NEIGHBOR BOUNDARY CHANGED: {changes}")
+
+            # Set flag for hypothetical query detection
+            self._neighbor_boundary_changed_this_turn = True
 
             # If we were satisfied, reset because boundary changed
             if self.satisfied:

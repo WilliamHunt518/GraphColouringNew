@@ -1,0 +1,60 @@
+================================================================================
+MANUAL AGENT CONVERSATION TEST
+================================================================================
+
+[LLMCommLayer] OpenAI package and API key detected. LLM summarisation enabled.
+Agent1 initial assignments: {'a1': 'red', 'a2': 'red', 'a3': 'red', 'a4': 'red', 'a5': 'red'}
+
+================================================================================
+TURN 1: Human sends initial boundary config
+================================================================================
+Human boundary: {'h1': 'green', 'h4': 'red'}
+Human message: ''
+
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are agent 'Agent1' collaborating with a human on a graph...
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are an agent collaborating with a human on a graph-colou...
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are an agent collaborating with a human on a graph-colou...
+Agent1 assignments after turn 1: {'a2': 'red', 'a1': 'green', 'a3': 'blue', 'a4': 'green', 'a5': 'blue'}
+Agent1 satisfied: False
+
+================================================================================
+TURN 2: Human asks hypothetical about h1=red
+================================================================================
+Human message: 'h1 may need to be red. Can you plan a colouring around this change or not?'
+Human boundary (hypothetical): {'h1': 'red', 'h4': 'red'}
+
+DEBUG: Set neighbour_assignments to: {'h1': 'red', 'h4': 'red'}
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are classifying human messages in a graph coloring coord...
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are interpreting dialogue in a clustered graph-colouring...
+DEBUG: After receive(), neighbour_assignments = {'h1': 'red', 'h4': 'red'}
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are agent 'Agent1' collaborating with a human on a graph...
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are an agent collaborating with a human on a graph-colou...
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are an agent collaborating with a human on a graph-colou...
+DEBUG: After step(), neighbour_assignments = {'h1': 'red', 'h4': 'red'}
+Agent1 assignments after turn 2: {'a2': 'red', 'a1': 'green', 'a3': 'blue', 'a4': 'green', 'a5': 'blue'}
+Agent1 satisfied: False
+
+Tested 9 boundary configurations:
+  1. {'h1': 'red', 'h4': 'red'}: penalty=10.00
+  2. {'h1': 'red', 'h4': 'green'}: penalty=10.00
+  3. {'h1': 'red', 'h4': 'blue'}: penalty=10.00
+  4. {'h1': 'green', 'h4': 'red'}: penalty=0.00
+  5. {'h1': 'green', 'h4': 'green'}: penalty=0.00
+
+================================================================================
+EXPECTED BEHAVIOR CHECK
+================================================================================
+
+[CHECK] Agent tested 3 configs with h1=red
+  - {'h1': 'red', 'h4': 'red'}: penalty=10.00
+  - {'h1': 'red', 'h4': 'green'}: penalty=10.00
+  - {'h1': 'red', 'h4': 'blue'}: penalty=10.00
+[CHECK] All h1=red configs failed (penalty > 0)
+
+Expected agent response:
+  'With h1=red, I tested all h4 values (red, green, blue).
+   All gave penalty > 0. For me to solve this, h1 would need
+   to be green or blue instead of red.'
+
+Conversation log saved to: E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\test_conversation_log.txt
+

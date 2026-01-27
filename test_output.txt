@@ -1,0 +1,44 @@
+Traceback (most recent call last):
+  File "E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\test_agent_conversation.py", line 248, in <module>
+    test_agent_conversation()
+  File "E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\test_agent_conversation.py", line 200, in test_agent_conversation
+    print(f"\u2713 Agent tested {len(h1_red_configs)} configs with h1=red")
+  File "C:\Users\Work\AppData\Local\Programs\Python\Python39\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+================================================================================
+MANUAL AGENT CONVERSATION TEST
+================================================================================
+
+[LLMCommLayer] OpenAI package and API key detected. LLM summarisation enabled.
+Agent1 initial assignments: {'a1': 'red', 'a2': 'red', 'a3': 'red', 'a4': 'red', 'a5': 'red'}
+
+================================================================================
+TURN 1: Human sends initial boundary config
+================================================================================
+Human boundary: {'h1': 'green', 'h4': 'red'}
+Human message: ''
+
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are classifying human messages in a graph coloring coord...
+ERROR generating response: 'ClusterAgent' object has no attribute '_generate_conversational_response'
+Agent1 assignments after turn 1: {'a1': 'red', 'a2': 'red', 'a3': 'red', 'a4': 'red', 'a5': 'red'}
+Agent1 satisfied: False
+
+================================================================================
+TURN 2: Human asks hypothetical about h1=red
+================================================================================
+Human message: 'h1 may need to be red. Can you plan a colouring around this change or not?'
+Human boundary (hypothetical): {'h1': 'red', 'h4': 'red'}
+
+[LLMCommLayer] Attempting OpenAI API call with prompt: You are classifying human messages in a graph coloring coord...
+ERROR generating response: 'ClusterAgent' object has no attribute '_generate_conversational_response'
+Agent1 assignments after turn 2: {'a1': 'red', 'a2': 'red', 'a3': 'red', 'a4': 'red', 'a5': 'red'}
+Agent1 satisfied: False
+
+Tested 0 boundary configurations:
+
+================================================================================
+EXPECTED BEHAVIOR CHECK
+================================================================================
+
+TEST FAILED WITH ERROR: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>

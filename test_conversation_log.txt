@@ -1,0 +1,25 @@
+AGENT CONVERSATION TEST LOG
+================================================================================
+
+TURN 1:
+  Human message: 
+  Human boundary: {'h1': 'green', 'h4': 'red'}
+  Agent assignments: {'a2': 'red', 'a1': 'green', 'a3': 'blue', 'a4': 'green', 'a5': 'blue'}
+  Agent satisfied: False
+
+TURN 2:
+  Human message: h1 may need to be red. Can you plan a colouring around this change or not?
+  Human boundary: {'h1': 'red', 'h4': 'red'}
+  Agent assignments: {'a2': 'red', 'a1': 'green', 'a3': 'blue', 'a4': 'green', 'a5': 'blue'}
+  Agent satisfied: False
+  Tested configs:
+    - {'h1': 'red', 'h4': 'red'}: penalty=10.00
+    - {'h1': 'red', 'h4': 'green'}: penalty=10.00
+    - {'h1': 'red', 'h4': 'blue'}: penalty=10.00
+    - {'h1': 'green', 'h4': 'red'}: penalty=0.00
+    - {'h1': 'green', 'h4': 'green'}: penalty=0.00
+    - {'h1': 'green', 'h4': 'blue'}: penalty=0.00
+    - {'h1': 'blue', 'h4': 'red'}: penalty=0.00
+    - {'h1': 'blue', 'h4': 'green'}: penalty=0.00
+    - {'h1': 'blue', 'h4': 'blue'}: penalty=0.00
+

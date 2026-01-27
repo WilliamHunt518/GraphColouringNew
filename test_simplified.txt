@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\test_agent_conversation.py", line 293, in <module>
+    test_agent_conversation()
+  File "E:\Files\PhD-Main\GC-New\GIT_LOCAL_ROOT\GraphColouringNew\test_agent_conversation.py", line 85, in test_agent_conversation
+    comm_layer = LLMCommLayer(manual=False, summariser=None, use_history=True)
+UnboundLocalError: local variable 'LLMCommLayer' referenced before assignment
+================================================================================
+MANUAL AGENT CONVERSATION TEST
+================================================================================
+
+TEST FAILED WITH ERROR: local variable 'LLMCommLayer' referenced before assignment

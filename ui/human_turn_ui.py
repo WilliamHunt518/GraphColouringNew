@@ -17,10 +17,13 @@ import threading
 import time
 import random
 import math
+import json
 import tkinter as tk
+import logging
+from datetime import datetime
 from tkinter import ttk
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 import inspect
 import re
 import ast
@@ -36,6 +39,18 @@ class HumanTurnUI:
     def __init__(self, title: str = "Human Turn") -> None:
         self._title = title
         self._root: Optional[tk.Tk] = None
+
+        # Setup detailed logging for conditional builder debugging
+        log_file = f"conditional_builder_debug_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        self._debug_logger = logging.getLogger('conditional_builder')
+        self._debug_logger.setLevel(logging.DEBUG)
+        fh = logging.FileHandler(log_file)
+        fh.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        self._debug_logger.addHandler(fh)
+        self._debug_logger.info(f"=== Conditional Builder Debug Session Started ===")
+        self._debug_logger.info(f"Log file: {log_file}")
 
         # termination
         self.end_reason: str = ""  # set to "consensus" when all parties tick satisfied
@@ -61,6 +76,43 @@ class HumanTurnUI:
         self._human_sat: Dict[str, tk.BooleanVar] = {}
         self._agent_sat: Dict[str, tk.StringVar] = {}
         self._placeholder_active: Dict[str, bool] = {}  # Track if placeholder is shown
+
+        # RB mode argument tracking (structured dialogue moves)
+        self._rb_arguments: Dict[str, List[Dict[str, Any]]] = {}  # Store parsed RB moves per neighbour
+        self._rb_pending_justification_refs: Dict[str, List[int]] = {}  # Temporary storage for justification refs
+
+        # Conditionals tracking (new protocol)
+        self._active_conditionals: List[Dict[str, Any]] = []  # List of active conditional offers (from agents)
+        self._human_sent_offers: List[Dict[str, Any]] = []    # Track human's own sent offers
+        self._conditionals_frame: Optional[ttk.Frame] = None
+        self._conditionals_cards_inner: Optional[tk.Frame] = None
+        self._committed_nodes: Set[str] = set()  # Track committed nodes for visualization
+
+        # Per-neighbor conditional builder frames (so each neighbor has independent UI)
+        self._conditional_builder_frames: Dict[str, ttk.Frame] = {}
+        self._condition_rows: Dict[str, List] = {}  # {neighbor: [(frame, var), ...]}
+        self._assignment_rows: Dict[str, List] = {}  # {neighbor: [(frame, node_var, color_var), ...]}
+
+        # Two-phase workflow: configure → bargain
+        self._phase: str = "configure"  # "configure" or "bargain"
+        self._initial_configs: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}}
+        self._agent_configurations: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}} - current announced configs
+
+        # Zoom and pan state for RB argument canvas
+        self._rb_canvas_scale: Dict[str, float] = {}  # Zoom level per neighbour
+        self._rb_canvas_offset: Dict[str, Tuple[int, int]] = {}  # Pan offset per neighbour
+        self._rb_drag_start: Dict[str, Optional[Tuple[int, int]]] = {}  # Drag start position
+
+        # Zoom and pan state for graph canvas
+        self._graph_canvas_scale: float = 1.0
+        self._graph_canvas_offset: Tuple[int, int] = (0, 0)
+        self._graph_drag_start: Optional[Tuple[int, int]] = None
+
+        # LLM_RB live translation
+        self._llm_rb_translation_labels: Dict[str, tk.Label] = {}
+        self._llm_rb_debounce_ids: Dict[str, Optional[str]] = {}
+        self._llm_rb_animation_ids: Dict[str, Optional[str]] = {}
+        self._llm_rb_translation_sequence: Dict[str, int] = {}  # Track translation versions to prevent stale updates
 
         # callbacks set by run_async_chat
         # Different versions of cluster_simulation.py have used different on_send signatures:
@@ -101,9 +153,12 @@ class HumanTurnUI:
 
     def add_incoming(self, neigh: str, text: str) -> None:
         """Thread-safe: queue an incoming message to show in UI."""
+        print(f"[UI] add_incoming called for {neigh}: {text[:200]}")
         self._incoming_queue.setdefault(neigh, []).append(text)
         if self._root is not None:
             self._root.after(0, lambda n=neigh: self._flush_incoming(n))
+        else:
+            print(f"[UI] WARNING: _root is None, cannot flush incoming messages")
 
     def run_async_chat(
         self,
@@ -125,11 +180,13 @@ class HumanTurnUI:
         fixed_nodes: Optional[Dict[str, Any]] = None,
         problem: Optional[Any] = None,
         structured_rb_mode: bool = False,
+        comm_layer: Optional[Any] = None,
         **_ignored_kwargs: Any,
     ) -> None:
         """Start the UI mainloop and block until Finish or consensus."""
         self.problem = problem
         self._rb_structured_mode = structured_rb_mode
+        self._comm_layer = comm_layer
         # Prefer visible_graph nodes when available: owned + neighbour boundary nodes.
         if visible_graph is not None and len(visible_graph) >= 1:
             try:
@@ -205,17 +262,73 @@ class HumanTurnUI:
         btns = ttk.Frame(top)
         btns.pack(side="right")
 
+        # Phase status (for RB structured mode only)
+        if getattr(self, '_rb_structured_mode', False):
+            self._phase_label = ttk.Label(btns, text="Phase: Configure", font=("Arial", 10, "bold"))
+            self._phase_label.pack(side="left", padx=(0, 10))
+
+            self._announce_config_btn = ttk.Button(btns, text="(Re-)Announce Configuration",
+                                                   command=self._announce_configuration)
+            self._announce_config_btn.pack(side="left", padx=(0, 6))
+
+            self._impossible_btn = ttk.Button(btns, text="Impossible to Continue",
+                                              command=self._signal_impossible, state="disabled")
+            self._impossible_btn.pack(side="left", padx=(0, 6))
+
         ttk.Button(btns, text="Debug", command=lambda: self._open_debug(debug_agents, get_visible_graph_fn)).pack(side="right", padx=(6, 0))
         ttk.Button(btns, text="Finish", command=self._finish).pack(side="right")
 
         main = ttk.Frame(root)
         main.pack(fill="both", expand=True)
 
-        left = ttk.Frame(main)
-        left.pack(side="left", fill="both", expand=True, padx=(8, 4), pady=8)
+        # Use PanedWindow for adjustable split between graph, arguments, and conditionals
+        paned = tk.PanedWindow(main, orient=tk.HORIZONTAL, sashrelief=tk.RAISED,
+                               sashwidth=5, bg="#ddd")
+        paned.pack(fill="both", expand=True, padx=8, pady=8)
 
-        right = ttk.Frame(main)
-        right.pack(side="right", fill="y", padx=(4, 8), pady=8)
+        left = ttk.Frame(paned)
+        paned.add(left, width=400, minsize=250)  # Graph panel: default 400px, min 250px
+
+        # Middle panel with scrollbar for chat panes
+        middle_container = ttk.Frame(paned)
+        paned.add(middle_container, width=600, minsize=350)  # Argument panel: default 600px, min 350px
+
+        # Create canvas and scrollbar for middle panel
+        middle_canvas = tk.Canvas(middle_container, highlightthickness=0)
+        middle_scrollbar = ttk.Scrollbar(middle_container, orient="vertical", command=middle_canvas.yview)
+        middle_scrollbar.pack(side="right", fill="y")
+        middle_canvas.pack(side="left", fill="both", expand=True)
+        middle_canvas.configure(yscrollcommand=middle_scrollbar.set)
+
+        # Frame inside canvas to hold chat panes
+        right = ttk.Frame(middle_canvas)
+        middle_canvas_window = middle_canvas.create_window((0, 0), window=right, anchor="nw")
+
+        # Update scroll region when content changes
+        def on_right_configure(event):
+            middle_canvas.configure(scrollregion=middle_canvas.bbox("all"))
+        right.bind("<Configure>", on_right_configure)
+
+        # Bind canvas width to inner frame width
+        def on_canvas_configure(event):
+            middle_canvas.itemconfig(middle_canvas_window, width=event.width)
+        middle_canvas.bind("<Configure>", on_canvas_configure)
+
+        # Bind mousewheel to scrolling
+        def on_mousewheel(event):
+            middle_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        middle_canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        # Add conditionals sidebar (only visible in RB mode)
+        conditionals_frame = ttk.Frame(paned)
+        paned.add(conditionals_frame, width=320, minsize=250)  # Conditionals: default 320px, min 250px
+
+        # Store reference for later use
+        self._conditionals_frame = conditionals_frame
+        self._conditionals_cards_inner = None  # Will be set when building conditionals UI
+
+        # Build conditionals sidebar UI
+        self._build_conditionals_sidebar(conditionals_frame)
 
         canvas = tk.Canvas(left, bg="white", highlightthickness=1, highlightbackground="#ccc")
         canvas.pack(fill="both", expand=True)
@@ -223,13 +336,184 @@ class HumanTurnUI:
         canvas.bind("<Button-1>", self._on_canvas_click)
         canvas.bind("<Configure>", self._on_canvas_resize)
 
-        for neigh in self._neighs:
-            pane = ttk.LabelFrame(right, text=f"{neigh}")
-            pane.pack(fill="both", expand=False, pady=6)
+        # Add zoom with mouse wheel
+        def _on_graph_zoom(event):
+            # Get mouse position
+            x, y = event.x, event.y
 
-            tbox = tk.Text(pane, height=10, wrap="word", state="disabled")
-            tbox.pack(fill="x", padx=6, pady=(6, 4))
-            self._transcript_box[neigh] = tbox
+            # Zoom in or out
+            if event.delta > 0:
+                scale_factor = 1.1
+            else:
+                scale_factor = 0.9
+
+            old_scale = self._graph_canvas_scale
+            new_scale = old_scale * scale_factor
+
+            # Clamp scale between 0.3 and 3.0
+            new_scale = max(0.3, min(3.0, new_scale))
+
+            self._graph_canvas_scale = new_scale
+
+            # Adjust offset to zoom toward mouse position
+            offset_x, offset_y = self._graph_canvas_offset
+            offset_x = x - (x - offset_x) * (new_scale / old_scale)
+            offset_y = y - (y - offset_y) * (new_scale / old_scale)
+            self._graph_canvas_offset = (offset_x, offset_y)
+
+            self._redraw_graph()
+
+        canvas.bind("<MouseWheel>", _on_graph_zoom)
+
+        # Add pan with middle mouse or shift+drag
+        def _on_graph_drag_start(event):
+            self._graph_drag_start = (event.x, event.y)
+
+        def _on_graph_drag_move(event):
+            if self._graph_drag_start:
+                start_x, start_y = self._graph_drag_start
+                dx = event.x - start_x
+                dy = event.y - start_y
+
+                offset_x, offset_y = self._graph_canvas_offset
+                self._graph_canvas_offset = (offset_x + dx, offset_y + dy)
+
+                self._graph_drag_start = (event.x, event.y)
+                self._redraw_graph()
+
+        def _on_graph_drag_end(event):
+            self._graph_drag_start = None
+
+        # Bind middle click for panning
+        canvas.bind("<ButtonPress-2>", _on_graph_drag_start)
+        canvas.bind("<B2-Motion>", _on_graph_drag_move)
+        canvas.bind("<ButtonRelease-2>", _on_graph_drag_end)
+
+        # Bind shift+left click for panning (alternative)
+        def _on_graph_shift_drag_start(event):
+            if event.state & 0x0001:  # Shift key
+                self._graph_drag_start = (event.x, event.y)
+                return "break"  # Prevent normal click behavior
+            return None
+
+        def _on_graph_shift_drag_move(event):
+            if (event.state & 0x0001) and self._graph_drag_start:  # Shift key
+                start_x, start_y = self._graph_drag_start
+                dx = event.x - start_x
+                dy = event.y - start_y
+
+                offset_x, offset_y = self._graph_canvas_offset
+                self._graph_canvas_offset = (offset_x + dx, offset_y + dy)
+
+                self._graph_drag_start = (event.x, event.y)
+                self._redraw_graph()
+                return "break"
+
+        # Note: We need to check shift state in _on_canvas_click to not interfere with node clicking
+        canvas.bind("<B1-Motion>", _on_graph_shift_drag_move)
+
+        for neigh in self._neighs:
+            # Check if we're in structured RB mode to use argument graph instead of text transcript
+            is_structured_rb = getattr(self, '_rb_structured_mode', False)
+
+            pane = ttk.LabelFrame(right, text=f"{neigh}")
+            # In RB mode, allow panes to expand vertically to fill available space
+            pane.pack(fill="both", expand=is_structured_rb, pady=6)
+
+            if is_structured_rb:
+                # Use canvas for visual argument graph - tree layout with zoom/pan
+                arg_frame = ttk.Frame(pane)
+                arg_frame.pack(fill="both", expand=True, padx=6, pady=(6, 4))
+
+                # Remove height constraint - let canvas expand to fill available space
+                arg_canvas = tk.Canvas(arg_frame, bg="white", highlightthickness=1, highlightbackground="#ccc")
+                arg_canvas.pack(fill="both", expand=True)
+
+                # Initialize zoom/pan state for this neighbour
+                self._rb_canvas_scale[neigh] = 1.0
+                self._rb_canvas_offset[neigh] = (0, 0)
+                self._rb_drag_start[neigh] = None
+
+                # Bind zoom with mouse wheel
+                def _on_zoom(event, n=neigh, canvas=arg_canvas):
+                    # Get mouse position
+                    x, y = event.x, event.y
+
+                    # Zoom in or out
+                    if event.delta > 0:
+                        scale_factor = 1.1
+                    else:
+                        scale_factor = 0.9
+
+                    old_scale = self._rb_canvas_scale[n]
+                    new_scale = old_scale * scale_factor
+
+                    # Clamp scale between 0.2 and 5.0
+                    new_scale = max(0.2, min(5.0, new_scale))
+
+                    self._rb_canvas_scale[n] = new_scale
+
+                    # Adjust offset to zoom toward mouse position
+                    offset_x, offset_y = self._rb_canvas_offset[n]
+                    offset_x = x - (x - offset_x) * (new_scale / old_scale)
+                    offset_y = y - (y - offset_y) * (new_scale / old_scale)
+                    self._rb_canvas_offset[n] = (offset_x, offset_y)
+
+                    self._render_argument_graph(n, canvas)
+
+                arg_canvas.bind("<MouseWheel>", _on_zoom)
+
+                # Bind pan with middle mouse or Shift+drag
+                def _on_drag_start(event, n=neigh):
+                    self._rb_drag_start[n] = (event.x, event.y)
+
+                def _on_drag_move(event, n=neigh, canvas=arg_canvas):
+                    if self._rb_drag_start[n]:
+                        start_x, start_y = self._rb_drag_start[n]
+                        dx = event.x - start_x
+                        dy = event.y - start_y
+
+                        offset_x, offset_y = self._rb_canvas_offset[n]
+                        self._rb_canvas_offset[n] = (offset_x + dx, offset_y + dy)
+
+                        self._rb_drag_start[n] = (event.x, event.y)
+                        self._render_argument_graph(n, canvas)
+
+                def _on_drag_end(event, n=neigh):
+                    self._rb_drag_start[n] = None
+
+                # Bind middle click or shift+left click for panning
+                arg_canvas.bind("<ButtonPress-2>", _on_drag_start)  # Middle click
+                arg_canvas.bind("<B2-Motion>", _on_drag_move)
+                arg_canvas.bind("<ButtonRelease-2>", _on_drag_end)
+
+                # Also bind shift+left click for panning
+                def _on_shift_drag_start(event, n=neigh):
+                    if event.state & 0x0001:  # Shift key
+                        self._rb_drag_start[n] = (event.x, event.y)
+
+                def _on_shift_drag_move(event, n=neigh, canvas=arg_canvas):
+                    if (event.state & 0x0001) and self._rb_drag_start[n]:  # Shift key
+                        start_x, start_y = self._rb_drag_start[n]
+                        dx = event.x - start_x
+                        dy = event.y - start_y
+
+                        offset_x, offset_y = self._rb_canvas_offset[n]
+                        self._rb_canvas_offset[n] = (offset_x + dx, offset_y + dy)
+
+                        self._rb_drag_start[n] = (event.x, event.y)
+                        self._render_argument_graph(n, canvas)
+
+                arg_canvas.bind("<ButtonPress-1>", _on_shift_drag_start)
+                arg_canvas.bind("<B1-Motion>", _on_shift_drag_move)
+                arg_canvas.bind("<ButtonRelease-1>", _on_drag_end)
+
+                self._transcript_box[neigh] = arg_canvas  # Store in same dict for compatibility
+            else:
+                # Use text box for other modes
+                tbox = tk.Text(pane, height=10, wrap="word", state="disabled")
+                tbox.pack(fill="x", padx=6, pady=(6, 4))
+                self._transcript_box[neigh] = tbox
 
             row = ttk.Frame(pane)
             row.pack(fill="x", padx=6)
@@ -250,92 +534,385 @@ class HumanTurnUI:
 
             ttk.Label(sat_row, textvariable=self._agent_sat[neigh]).pack(side="right")
 
-            # Add RB message builder if in RB/LLM_RB mode - NO TEXT BOX, ONLY DROPDOWNS
-            rb_mode = getattr(self, '_rb_structured_mode', False)
-            if rb_mode:
-                # Structured RB interface - dropdowns only, no text box
-                rb_frame = ttk.LabelFrame(pane, text="Send RB Message")
+            # Check for LLM_RB live translation mode first
+            llm_rb_mode = getattr(self, '_llm_rb_mode', False)
+
+            if llm_rb_mode:
+                # LLM_RB mode: Text box with live translation preview
+                obox = tk.Text(pane, height=3, wrap="word")
+                obox.pack(fill="x", padx=6, pady=(2, 4))
+                self._outgoing_box[neigh] = obox
+                self._set_outgoing_placeholder(neigh)
+
+                # Live translation preview
+                preview_frame = ttk.LabelFrame(pane, text="Live Translation Preview")
+                preview_frame.pack(fill="x", padx=6, pady=(2, 4))
+
+                preview_label = tk.Label(preview_frame, text="(type to see translation)",
+                                        fg="gray", anchor="w", justify="left",
+                                        padx=8, pady=4, wraplength=400)
+                preview_label.pack(fill="both", expand=True)
+                self._llm_rb_translation_labels[neigh] = preview_label
+                self._llm_rb_debounce_ids[neigh] = None
+
+                # Bind keypress to trigger debounced translation
+                def on_keyrelease(ev, n=neigh):
+                    self._schedule_llm_rb_translation(n)
+
+                obox.bind("<KeyRelease>", on_keyrelease)
+
+                def _send_on_enter(ev, n=neigh):
+                    self._send_message(n)
+                    return "break"
+
+                def _newline_on_shift_enter(ev, box=obox):
+                    box.insert("insert", "\n")
+                    return "break"
+
+                obox.bind("<Return>", _send_on_enter)
+                obox.bind("<Shift-Return>", _newline_on_shift_enter)
+
+                # Button frame
+                btn_frame = ttk.Frame(pane)
+                btn_frame.pack(anchor="e", padx=6, pady=(0, 6))
+
+                send_config = ttk.Button(btn_frame, text="Send Config",
+                                        command=lambda n=neigh: self._send_config(n))
+                send_config.pack(side="left", padx=(0, 4))
+
+                send = ttk.Button(btn_frame, text="Send", command=lambda n=neigh: self._send_message(n))
+                send.pack(side="left")
+                self._send_btn[neigh] = send
+
+            # Add RB message builder if in pure RB mode - SIMPLIFIED FOR CONDITIONAL OFFERS ONLY
+            elif getattr(self, '_rb_structured_mode', False):
+                # Simplified conditional offer interface
+                print(f"[UI Build] Creating conditional builder for neighbor '{neigh}' (type={type(neigh)})")
+                rb_frame = ttk.LabelFrame(pane, text=f"Make Offer to {neigh}")
                 rb_frame.pack(fill="x", padx=6, pady=(2, 4))
 
-                # Move type dropdown
-                move_row = ttk.Frame(rb_frame)
-                move_row.pack(fill="x", padx=4, pady=2)
-                ttk.Label(move_row, text="Move:").pack(side="left", padx=(0, 4))
-                move_var = tk.StringVar(value="PROPOSE")
-                move_combo = ttk.Combobox(move_row, textvariable=move_var,
-                                         values=["PROPOSE", "ATTACK", "CONCEDE"],
-                                         state="readonly", width=15)
-                move_combo.pack(side="left", fill="x", expand=True)
+                # Phase-aware help text
+                if self._phase == "configure":
+                    help_text = "CONFIGURE PHASE: Set up your graph, then click 'Announce Configuration' to begin bargaining"
+                    help_fg = "#d9534f"  # Red
+                else:
+                    help_text = "BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)"
+                    help_fg = "#555"
 
-                # Node dropdown
-                node_row = ttk.Frame(rb_frame)
-                node_row.pack(fill="x", padx=4, pady=2)
-                ttk.Label(node_row, text="Node:").pack(side="left", padx=(0, 4))
-                node_var = tk.StringVar()
-                my_nodes = [n for n in self._nodes if self._owners.get(n) == "Human"]
-                node_combo = ttk.Combobox(node_row, textvariable=node_var,
-                                         values=my_nodes, state="readonly", width=15)
-                node_combo.pack(side="left", fill="x", expand=True)
-                if my_nodes:
-                    node_var.set(my_nodes[0])
+                help_label = tk.Label(rb_frame, text=help_text,
+                                     fg=help_fg, font=("Arial", 8, "italic"),
+                                     wraplength=400, justify="left", anchor="w")
+                help_label.pack(fill="x", padx=4, pady=4)
+                self._rb_help_labels = getattr(self, '_rb_help_labels', {})
+                self._rb_help_labels[neigh] = help_label
 
-                # Color dropdown
-                color_row = ttk.Frame(rb_frame)
-                color_row.pack(fill="x", padx=4, pady=2)
-                ttk.Label(color_row, text="Color:").pack(side="left", padx=(0, 4))
-                color_var = tk.StringVar()
-                color_combo = ttk.Combobox(color_row, textvariable=color_var,
-                                          values=self._domain, state="readonly", width=15)
-                color_combo.pack(side="left", fill="x", expand=True)
-                if self._domain:
-                    color_var.set(self._domain[0])
+                # Conditional builder frame (disabled in configure phase)
+                conditional_builder_frame = ttk.Frame(rb_frame)
+                self._conditional_builder_frames[neigh] = conditional_builder_frame
+                conditional_builder_frame.pack(fill="both", expand=True, padx=4, pady=4)
 
-                # Send button - directly sends structured RB message (NO TEXT BOX)
-                def send_rb_message(n=neigh, mv=move_var, nv=node_var, cv=color_var):
-                    """Send structured RB message directly from dropdowns."""
-                    move = mv.get()
-                    node = nv.get()
-                    color = cv.get()
+                # Disable builder in configure phase
+                if self._phase == "configure":
+                    for child in conditional_builder_frame.winfo_children():
+                        if hasattr(child, 'config'):
+                            child.config(state="disabled")
 
-                    if not node or not color:
-                        print(f"[RB UI] Cannot send: node='{node}' color='{color}'")
+                self._debug_logger.info(f"--- Created ALWAYS-VISIBLE conditional builder for {neigh} ---")
+                self._debug_logger.info(f"  Frame object id: {id(conditional_builder_frame)}")
+                self._debug_logger.info(f"  Packed and always visible")
+
+                # Store condition and assignment rows per neighbor
+                self._condition_rows[neigh] = []
+                self._assignment_rows[neigh] = []
+
+                # Conditions section (IF part)
+                conditions_label = ttk.Label(conditional_builder_frame, text="IF (conditions):", font=("Arial", 9, "bold"))
+                conditions_label.pack(anchor="w", padx=4, pady=(4, 2))
+
+                # Instruction label
+                ttk.Label(conditional_builder_frame, text="Select statements from agent's proposals to use as conditions",
+                         font=("Arial", 7, "italic"), foreground="#666").pack(anchor="w", padx=4)
+
+                conditions_container = ttk.Frame(conditional_builder_frame)
+                conditions_container.pack(fill="x", padx=4, pady=2)
+
+                def add_condition_row(n=neigh, container=conditions_container):
+                    """Add a new condition row for selecting previous statements."""
+                    print(f"[UI] Adding condition row for neighbor '{n}' (type={type(n)})")
+                    print(f"[UI] Current _rb_arguments keys: {list(self._rb_arguments.keys())}")
+                    row_frame = ttk.Frame(container)
+                    row_frame.pack(fill="x", pady=2)
+
+                    # Dropdown to select from previous statements
+                    statement_var = tk.StringVar(value="(select statement)")
+                    statement_combo = ttk.Combobox(row_frame, textvariable=statement_var,
+                                                  state="readonly", width=40)
+
+                    # Populate with previous statements from this neighbor
+                    def update_statement_options():
+                        recent_args = self._rb_arguments.get(n, [])
+                        options = ["(select statement)"]
+
+                        if not recent_args:
+                            print(f"[UI Dropdown] No args found for neighbor '{n}'")
+                            print(f"[UI Dropdown] Available keys: {list(self._rb_arguments.keys())}")
+
+                        for i, arg in enumerate(recent_args):
+                            arg_sender = arg.get('sender')
+                            if arg_sender == n:
+                                move = arg.get('move', '')
+                                if move == 'ConditionalOffer':
+                                    assignments = arg.get('assignments', [])
+                                    for assign in assignments:
+                                        node = assign.get('node', '')
+                                        color = assign.get('colour', '')
+                                        summary = f"#{i}: {node}={color}"
+                                        options.append(summary)
+                                else:
+                                    summary = f"#{i}: {arg['node']}={arg['color']} ({move})"
+                                    options.append(summary)
+                            else:
+                                print(f"[UI Dropdown] Skipping arg {i}: sender '{arg_sender}' != neighbor '{n}'")
+
+                        statement_combo['values'] = options
+                        print(f"[UI Dropdown] Final options count: {len(options)-1}")  # -1 for placeholder
+
+                    update_statement_options()
+                    statement_combo.bind('<Button-1>', lambda e: update_statement_options())
+                    statement_combo.pack(side="left", padx=2)
+
+                    # Remove button
+                    def remove_row():
+                        print(f"[UI] Removing condition row for {n}")
+                        row_frame.destroy()
+                        if (row_frame, statement_var) in self._condition_rows[n]:
+                            self._condition_rows[n].remove((row_frame, statement_var))
+                        print(f"[UI] {n} now has {len(self._condition_rows[n])} condition rows")
+
+                    remove_btn = ttk.Button(row_frame, text="✗", width=3, command=remove_row)
+                    remove_btn.pack(side="left", padx=2)
+
+                    self._condition_rows[n].append((row_frame, statement_var))
+                    return row_frame
+
+                add_condition_btn = ttk.Button(conditional_builder_frame, text="+ Add Condition",
+                                              command=lambda n=neigh, c=conditions_container: add_condition_row(n, c))
+                add_condition_btn.pack(anchor="w", padx=4, pady=2)
+
+                # Assignments section (THEN part)
+                assignments_label = ttk.Label(conditional_builder_frame, text="THEN (my commitments):", font=("Arial", 9, "bold"))
+                assignments_label.pack(anchor="w", padx=4, pady=(8, 2))
+
+                # Instruction label
+                ttk.Label(conditional_builder_frame, text="Specify what you'll commit to if conditions are met",
+                         font=("Arial", 7, "italic"), foreground="#666").pack(anchor="w", padx=4)
+
+                assignments_container = ttk.Frame(conditional_builder_frame)
+                assignments_container.pack(fill="x", padx=4, pady=2)
+
+                def add_assignment_row(n=neigh, container=assignments_container):
+                    """Add a new assignment row for specifying commitments."""
+                    print(f"[UI] Adding assignment row for {n}")
+                    row_frame = ttk.Frame(container)
+                    row_frame.pack(fill="x", pady=2)
+
+                    # Node selector (my owned nodes only)
+                    ttk.Label(row_frame, text="Node:").pack(side="left", padx=2)
+                    node_var = tk.StringVar()
+                    my_nodes = [node for node in self._nodes if self._owners.get(node) == "Human"]
+                    node_combo = ttk.Combobox(row_frame, textvariable=node_var,
+                                             values=my_nodes, state="readonly", width=8)
+                    node_combo.pack(side="left", padx=2)
+                    if my_nodes:
+                        node_var.set(my_nodes[0])
+
+                    # Color selector
+                    ttk.Label(row_frame, text="=").pack(side="left", padx=2)
+                    color_var = tk.StringVar()
+                    color_combo = ttk.Combobox(row_frame, textvariable=color_var,
+                                              values=self._domain, state="readonly", width=8)
+                    color_combo.pack(side="left", padx=2)
+                    if self._domain:
+                        color_var.set(self._domain[0])
+
+                    # Remove button
+                    def remove_row():
+                        print(f"[UI] Removing assignment row for {n}")
+                        row_frame.destroy()
+                        if (row_frame, node_var, color_var) in self._assignment_rows[n]:
+                            self._assignment_rows[n].remove((row_frame, node_var, color_var))
+                        print(f"[UI] {n} now has {len(self._assignment_rows[n])} assignment rows")
+
+                    remove_btn = ttk.Button(row_frame, text="✗", width=3, command=remove_row)
+                    remove_btn.pack(side="left", padx=2)
+
+                    self._assignment_rows[n].append((row_frame, node_var, color_var))
+                    return row_frame
+
+                add_assignment_btn = ttk.Button(conditional_builder_frame, text="+ Add Assignment",
+                                               command=lambda n=neigh, c=assignments_container: add_assignment_row(n, c))
+                add_assignment_btn.pack(anchor="w", padx=4, pady=2)
+
+                # Initialize with one assignment row (conditions can be empty for unconditional offers)
+                add_assignment_row(neigh)
+                self._debug_logger.info(f"  Initialized with 0 condition rows and 1 assignment row")
+
+                # Send button - sends conditional offer
+                def send_rb_message(n=neigh):
+                    """Send conditional offer from builder."""
+                    import time
+
+                    # Get condition and assignment rows for this neighbor
+                    cond_rows = self._condition_rows.get(n, [])
+                    assign_rows = self._assignment_rows.get(n, [])
+
+                    # Extract conditions from condition rows (can be empty for unconditional)
+                    conditions = []
+                    for row_frame, stmt_var in cond_rows:
+                        stmt = stmt_var.get()
+                        if stmt and stmt != "(select statement)":
+                            # Parse statement: "#3: h1=red"
+                            match = re.match(r'#(\d+): (\w+)=(\w+)', stmt)
+                            if match:
+                                idx, node_name, color_name = match.groups()
+                                # Get owner of this node
+                                owner = self._owners.get(node_name, "Unknown")
+                                conditions.append({
+                                    "node": node_name,
+                                    "colour": color_name,
+                                    "owner": owner
+                                })
+
+                    # Extract assignments from assignment rows
+                    assignments = []
+                    for row_frame, node_v, color_v in assign_rows:
+                        node_name = node_v.get()
+                        color_name = color_v.get()
+                        if node_name and color_name:
+                            assignments.append({
+                                "node": node_name,
+                                "colour": color_name
+                            })
+
+                    # Must have at least one assignment
+                    if not assignments:
+                        print(f"[RB UI] Cannot send offer: no assignments specified (THEN part is required)")
                         return
 
-                    # Build structured RB protocol message
-                    rb_msg = f'[rb:{{"move": "{move}", "node": "{node}", "colour": "{color}", "reasons": []}}]'
+                    # Must have at least one condition (IF part required)
+                    if not conditions:
+                        print(f"[RB UI] Cannot send offer: no conditions specified (IF part is required)")
+                        print(f"[RB UI] Use '(Re-)Announce Configuration' button to announce assignments without conditions")
+                        return
+
+                    # Build conditional offer message
+                    offer_id = f"offer_{int(time.time())}_Human"
+                    rb_payload = {
+                        "move": "ConditionalOffer",
+                        "offer_id": offer_id,
+                        "conditions": conditions,
+                        "assignments": assignments,
+                        "reasons": ["human_proposed"]
+                    }
+                    rb_msg = f'[rb:{json.dumps(rb_payload)}]'
+
+                    print(f"[RB UI] Sending conditional offer: {len(conditions)} conditions, {len(assignments)} assignments")
+
+                    # Track human's sent offer
+                    self._human_sent_offers.append({
+                        "offer_id": offer_id,
+                        "sender": "Human",
+                        "recipient": n,
+                        "conditions": conditions,
+                        "assignments": assignments,
+                        "status": "pending"
+                    })
+                    # Update sidebar to show it
+                    if self._root:
+                        self._root.after(0, self._render_conditional_cards)
 
                     # Append to transcript for display
                     try:
-                        self._transcripts.setdefault(n, []).append(f"[You → {n}] {move} {node}={color}")
-                        self._update_transcript_display(n)
-                    except Exception:
-                        pass
+                        if conditions:
+                            cond_str = " AND ".join([f"{c['node']}={c['colour']}" for c in conditions])
+                            assign_str = " AND ".join([f"{a['node']}={a['colour']}" for a in assignments])
+                            display_msg = f"[You → {n}] IF {cond_str} THEN {assign_str}"
+                        else:
+                            assign_str = " AND ".join([f"{a['node']}={a['colour']}" for a in assignments])
+                            display_msg = f"[You → {n}] Offer: {assign_str}"
+                        self._append_to_transcript(n, display_msg)
+                    except Exception as e:
+                        print(f"[RB UI] Transcript update error: {e}")
 
                     # Send message directly (no text box involved)
                     if self._on_send:
-                        self._status_var[n].set("sending...")
+                        self._status_var[n].set("waiting for reply...")
                         root.update_idletasks()
 
                         def _threaded_send():
+                            reply = None
                             try:
+                                print(f"[RB UI] Calling on_send for {n}")
                                 sig = inspect.signature(self._on_send)
                                 params = sig.parameters
                                 if len(params) >= 3:
-                                    self._on_send(n, rb_msg, dict(self._assignments))
+                                    reply = self._on_send(n, rb_msg, dict(self._assignments))
                                 else:
-                                    self._on_send(n, rb_msg)
+                                    reply = self._on_send(n, rb_msg)
+                                print(f"[RB UI] on_send returned: {reply[:100] if reply else 'None'}")
                             except Exception as e:
                                 print(f"[RB UI] Send error: {e}")
+                                import traceback
+                                traceback.print_exc()
                             finally:
                                 if self._root:
-                                    self._root.after(0, lambda: self._status_var[n].set("idle"))
+                                    # Add reply to incoming queue if present
+                                    if reply:
+                                        self._root.after(0, lambda: self.add_incoming(n, reply))
+                                    else:
+                                        self._root.after(0, lambda: self._status_var[n].set("idle"))
 
                         threading.Thread(target=_threaded_send, daemon=True).start()
+                    else:
+                        print(f"[RB UI] ERROR: No on_send callback registered!")
 
                 btn_frame = ttk.Frame(rb_frame)
                 btn_frame.pack(fill="x", padx=4, pady=6)
-                send = ttk.Button(btn_frame, text="Send RB Message", command=lambda: send_rb_message())
-                send.pack(anchor="center")
+
+                # Pass button - lets agent speak without human input
+                def pass_turn(n=neigh):
+                    """Pass turn to agent without sending a message."""
+                    print(f"[RB UI] Human passed turn to {n}")
+                    if self._on_send:
+                        self._status_var[n].set("...thinking...")
+
+                        def _threaded_pass():
+                            reply = None
+                            try:
+                                # Send special __PASS__ token - agent will step without receiving human message
+                                sig = inspect.signature(self._on_send)
+                                params = sig.parameters
+                                if len(params) >= 3:
+                                    reply = self._on_send(n, "__PASS__", dict(self._assignments))
+                                else:
+                                    reply = self._on_send(n, "__PASS__")
+                            except Exception as e:
+                                print(f"[RB UI] Pass error: {e}")
+                            finally:
+                                if self._root:
+                                    if reply:
+                                        self._root.after(0, lambda: self.add_incoming(n, reply))
+                                    else:
+                                        self._root.after(0, lambda: self._status_var[n].set("idle"))
+
+                        threading.Thread(target=_threaded_pass, daemon=True).start()
+
+                pass_btn = ttk.Button(btn_frame, text="Pass (let agent speak)", command=lambda fn=pass_turn: fn())
+                pass_btn.pack(side="left", padx=(0, 5))
+
+                # Send offer button
+                send = ttk.Button(btn_frame, text="Send Offer", command=lambda fn=send_rb_message: fn())
+                send.pack(side="left")
                 self._send_btn[neigh] = send
             else:
                 # Normal text-based interface for non-RB modes
@@ -371,7 +948,403 @@ class HumanTurnUI:
 
         root.update_idletasks()
         self._compute_layout()
-        self._redraw()
+        self._redraw_graph()
+
+    def _build_conditionals_sidebar(self, parent: ttk.Frame) -> None:
+        """Build the conditionals sidebar UI for displaying active conditional offers."""
+
+        # Configuration Status Section (at top)
+        config_section = ttk.LabelFrame(parent, text="Configuration Status")
+        config_section.pack(fill="x", padx=5, pady=(5, 10))
+
+        config_inner = tk.Frame(config_section, bg="white")
+        config_inner.pack(fill="x", padx=5, pady=5)
+        self._config_status_frame = config_inner
+
+        # Conditionals Section (below configurations)
+        title_label = tk.Label(
+            parent,
+            text="Active Conditionals",
+            font=("Arial", 12, "bold"),
+            bg="#f8f8f8"
+        )
+        title_label.pack(pady=5, padx=5, anchor="w")
+
+        # Scrollable container for conditional cards
+        canvas_container = ttk.Frame(parent)
+        canvas_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        canvas = tk.Canvas(canvas_container, bg="white", highlightthickness=1, highlightbackground="#ccc")
+        scrollbar = ttk.Scrollbar(canvas_container, orient="vertical", command=canvas.yview)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Inner frame for cards
+        inner_frame = tk.Frame(canvas, bg="white")
+        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+
+        # Store reference for later updates
+        self._conditionals_cards_inner = inner_frame
+        self._conditionals_canvas = canvas
+
+        # Bind resize to update scroll region
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        inner_frame.bind("<Configure>", on_frame_configure)
+
+        # Bind canvas width to inner frame width
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+
+        canvas.bind("<Configure>", on_canvas_configure)
+
+        # Add info label when no conditionals
+        no_conditionals_label = tk.Label(
+            inner_frame,
+            text="No active conditional offers",
+            fg="gray",
+            font=("Arial", 10, "italic"),
+            bg="white"
+        )
+        no_conditionals_label.pack(pady=20)
+        self._no_conditionals_label = no_conditionals_label
+
+    def _render_configuration_status(self) -> None:
+        """Render configuration announcements compactly in the status section."""
+        if not hasattr(self, '_config_status_frame') or self._config_status_frame is None:
+            return
+
+        # Clear existing
+        for widget in self._config_status_frame.winfo_children():
+            widget.destroy()
+
+        if not self._agent_configurations:
+            tk.Label(
+                self._config_status_frame,
+                text="No configurations announced yet",
+                fg="gray",
+                font=("Arial", 9, "italic"),
+                bg="white"
+            ).pack(pady=5)
+            return
+
+        # Show each agent's configuration compactly
+        for agent, config in self._agent_configurations.items():
+            agent_frame = tk.Frame(self._config_status_frame, bg="#e8f4f8",
+                                   relief=tk.SOLID, borderwidth=1)
+            agent_frame.pack(fill="x", pady=2)
+
+            # Agent name
+            tk.Label(
+                agent_frame,
+                text=f"📢 {agent}:",
+                font=("Arial", 9, "bold"),
+                bg="#e8f4f8"
+            ).pack(side="left", padx=5, pady=3)
+
+            # Compact assignment list
+            config_text = ", ".join([f"{node}={color}" for node, color in config.items()])
+            tk.Label(
+                agent_frame,
+                text=config_text,
+                font=("Arial", 9),
+                bg="#e8f4f8"
+            ).pack(side="left", padx=5, pady=3)
+
+    def _render_conditional_cards(self) -> None:
+        """Render conditional offers as cards in the sidebar."""
+        if self._conditionals_cards_inner is None:
+            return
+
+        # Clear existing cards
+        for widget in self._conditionals_cards_inner.winfo_children():
+            widget.destroy()
+
+        # Combine both incoming and outgoing offers
+        all_offers = []
+
+        # Add human's sent offers (outgoing) - only conditional ones
+        for offer in self._human_sent_offers:
+            conditions = offer.get("conditions", [])
+            # Skip unconditional offers (no IF part) - only show conditional bargaining
+            if not conditions or len(conditions) == 0:
+                print(f"[UI Cards] Skipping human unconditional offer: {offer.get('offer_id')}")
+                continue
+            all_offers.append({
+                **offer,
+                "direction": "outgoing"
+            })
+
+        # Add agent's offers (incoming), but FILTER OUT configurations and unconditionals
+        for offer in self._active_conditionals:
+            sender = offer.get("sender", "")
+            conditions = offer.get("conditions", [])
+
+            # Skip unconditional offers (no IF part) - only show conditional bargaining
+            if not conditions or len(conditions) == 0:
+                print(f"[UI Cards] Skipping agent unconditional offer from {sender}: {offer.get('offer_id')}")
+                continue
+
+            # Check if this offer matches a configuration announcement
+            # If sender has a config and all offer assignments match the config, skip it
+            if sender in self._agent_configurations:
+                offer_assigns = offer.get("assignments", [])
+                config_assigns = self._agent_configurations[sender]
+
+                # Check if ALL assignments in this offer match the configuration
+                is_config = all(
+                    a.get("node") in config_assigns and
+                    config_assigns[a.get("node")] == a.get("colour")
+                    for a in offer_assigns
+                )
+
+                if is_config and len(offer_assigns) == len(config_assigns):
+                    # This is the configuration announcement - skip it
+                    continue
+
+            all_offers.append({
+                **offer,
+                "direction": "incoming"
+            })
+
+        # Show "no conditionals" message if empty
+        if not all_offers:
+            no_label = tk.Label(
+                self._conditionals_cards_inner,
+                text="No active conditional offers",
+                fg="gray",
+                font=("Arial", 10, "italic"),
+                bg="white"
+            )
+            no_label.pack(pady=20)
+            return
+
+        # Render each conditional as a card
+        for idx, cond in enumerate(all_offers):
+            direction = cond.get("direction", "incoming")
+
+            # Determine card color based on direction and status
+            if direction == "outgoing":
+                if cond.get("status") == "accepted":
+                    card_bg = "#90ee90"  # Light green (accepted)
+                else:
+                    card_bg = "#e6f3ff"  # Light blue (your offer, pending)
+            else:
+                if cond.get("status") == "accepted":
+                    card_bg = "#90ee90"  # Light green (accepted)
+                else:
+                    card_bg = "#fffacd"  # Light yellow (their offer, pending)
+
+            # Create card frame
+            card = tk.Frame(
+                self._conditionals_cards_inner,
+                bg=card_bg,
+                relief=tk.RAISED,
+                borderwidth=2
+            )
+            card.pack(fill="x", padx=5, pady=5)
+
+            # Offer ID header with direction indicator
+            if direction == "outgoing":
+                direction_arrow = "→"
+                recipient = cond.get('recipient', 'Agent')
+                header_text = f"Offer #{idx+1} {direction_arrow} {recipient}"
+            else:
+                direction_arrow = "←"
+                sender = cond.get('sender', 'Unknown')
+                header_text = f"Offer #{idx+1} {direction_arrow} {sender}"
+
+            tk.Label(
+                card,
+                text=header_text,
+                font=("Arial", 9, "bold"),
+                bg=card_bg
+            ).pack(anchor="w", padx=5, pady=2)
+
+            # Conditions section (IF)
+            if "conditions" in cond and cond["conditions"]:
+                tk.Label(
+                    card,
+                    text="IF:",
+                    font=("Arial", 8, "bold"),
+                    bg=card_bg
+                ).pack(anchor="w", padx=10, pady=(5, 0))
+
+                for condition in cond["conditions"]:
+                    cond_text = f"  • {condition.get('node', '?')} = {condition.get('colour', '?')}"
+                    tk.Label(
+                        card,
+                        text=cond_text,
+                        font=("Arial", 8),
+                        bg=card_bg
+                    ).pack(anchor="w", padx=15)
+
+            # Assignments section (THEN)
+            if "assignments" in cond and cond["assignments"]:
+                tk.Label(
+                    card,
+                    text="THEN:",
+                    font=("Arial", 8, "bold"),
+                    bg=card_bg
+                ).pack(anchor="w", padx=10, pady=(5, 0))
+
+                for assignment in cond["assignments"]:
+                    assign_text = f"  • {assignment.get('node', '?')} = {assignment.get('colour', '?')}"
+                    tk.Label(
+                        card,
+                        text=assign_text,
+                        font=("Arial", 8),
+                        bg=card_bg
+                    ).pack(anchor="w", padx=15)
+
+            # Action buttons (only for incoming offers)
+            btn_frame = tk.Frame(card, bg=card_bg)
+            btn_frame.pack(fill="x", padx=5, pady=5)
+
+            if direction == "outgoing":
+                # For outgoing offers, just show status
+                if cond.get("status") == "accepted":
+                    tk.Label(
+                        btn_frame,
+                        text="✓ They accepted",
+                        fg="green",
+                        font=("Arial", 9, "bold"),
+                        bg=card_bg
+                    ).pack(side="left")
+                else:
+                    tk.Label(
+                        btn_frame,
+                        text="⏳ Waiting for response...",
+                        fg="#666",
+                        font=("Arial", 9, "italic"),
+                        bg=card_bg
+                    ).pack(side="left")
+            else:
+                # For incoming offers, show Accept/Counter buttons
+                if cond.get("status") == "pending":
+                    ttk.Button(
+                        btn_frame,
+                        text="Accept",
+                        command=lambda oid=cond.get("offer_id"): self._accept_offer(oid)
+                    ).pack(side="left", padx=2)
+
+                    ttk.Button(
+                        btn_frame,
+                        text="Counter",
+                        command=lambda oid=cond.get("offer_id"): self._counter_offer(oid)
+                    ).pack(side="left", padx=2)
+                else:
+                    tk.Label(
+                        btn_frame,
+                        text="✓ Accepted",
+                        fg="green",
+                        font=("Arial", 9, "bold"),
+                        bg=card_bg
+                    ).pack(side="left")
+
+        # Update scroll region
+        if self._conditionals_cards_inner and self._conditionals_canvas:
+            self._conditionals_cards_inner.update_idletasks()
+            self._conditionals_canvas.configure(
+                scrollregion=self._conditionals_canvas.bbox("all")
+            )
+
+    def update_conditionals(self, conditionals: List[Dict[str, Any]]) -> None:
+        """Update sidebar with latest conditionals from agents.
+
+        This method should be called from the simulation to update the UI.
+        """
+        self._active_conditionals = conditionals
+        if self._root is not None:
+            self._root.after(0, self._render_conditional_cards)
+
+    def update_configurations(self, configurations: List[Dict[str, Any]]) -> None:
+        """Update agent configurations from announcements.
+
+        Parameters
+        ----------
+        configurations : list
+            List of configuration announcement dicts with sender, assignments fields.
+        """
+        # Convert list to dict keyed by agent name
+        self._agent_configurations = {}
+        for config in configurations:
+            agent = config.get("sender", "")
+            assignments = config.get("assignments", [])
+
+            if agent not in self._agent_configurations:
+                self._agent_configurations[agent] = {}
+
+            for assign in assignments:
+                node = assign.get("node", "")
+                colour = assign.get("colour", "")
+                if node and colour:
+                    self._agent_configurations[agent][node] = colour
+
+        # Trigger UI refresh
+        if self._root is not None:
+            self._root.after(0, self._render_configuration_status)
+
+    def _accept_offer(self, offer_id: str) -> None:
+        """Handle accepting a conditional offer."""
+        # Find the offer and determine which neighbor sent it
+        sender = None
+        offer = None
+        for cond in self._active_conditionals:
+            if cond.get("offer_id") == offer_id:
+                sender = cond.get("sender")
+                offer = cond
+                break
+
+        if sender and offer:
+            # Apply conditions: change OUR assignments to fulfill our side of the deal
+            conditions = offer.get("conditions", [])
+            for cond in conditions:
+                node = cond.get("node")
+                colour = cond.get("colour")
+                if node and colour and node in self._assignments:
+                    self._assignments[node] = colour
+                    print(f"[Human Accept] Changed assignment: {node}={colour}")
+
+            # Update graph display
+            self._redraw_graph()
+
+            # Mark offer as accepted in UI
+            offer["status"] = "accepted"
+            self._render_conditional_cards()
+
+            # Send Accept message via RB protocol
+            try:
+                from comm.rb_protocol import RBMove, format_rb, pretty_rb
+                accept_move = RBMove(
+                    move="Accept",
+                    refers_to=offer_id,
+                    reasons=["human_accepted"]
+                )
+                msg_text = format_rb(accept_move) + " " + pretty_rb(accept_move)
+
+                # Append to transcript
+                self._append_to_transcript(sender, f"[You → {sender}] Accept offer #{offer_id}")
+
+                # Send via the normal message pipeline
+                if self._on_send:
+                    threading.Thread(
+                        target=lambda: self._invoke_on_send(sender, msg_text),
+                        daemon=True
+                    ).start()
+                    self._set_status(sender, "sending...")
+            except Exception as e:
+                print(f"Error accepting offer: {e}")
+
+    def _counter_offer(self, offer_id: str) -> None:
+        """Handle countering a conditional offer."""
+        # For now, just show a message - full counter-offer UI would be more complex
+        # In a real implementation, this would open a dialog to build a counter-proposal
+        print(f"Counter offer for {offer_id} - UI not yet implemented")
+        # TODO: Open dialog to build counter-proposal
 
     def _on_canvas_resize(self, _ev: tk.Event) -> None:
         if self._root is None:
@@ -386,7 +1359,7 @@ class HumanTurnUI:
     def _reflow_after_resize(self) -> None:
         self._resize_after_id = None
         self._compute_layout()
-        self._redraw()
+        self._redraw_graph()
 
     # -------------------- Graph rendering --------------------
 
@@ -482,12 +1455,109 @@ class HumanTurnUI:
                 canvas.create_text(x + r - 8, y - r + 8, text="🔒",
                                  font=("TkDefaultFont", 10))
 
+    def _redraw_graph(self) -> None:
+        """Redraw graph with zoom and pan transformations applied."""
+        canvas = self._canvas
+        if canvas is None:
+            return
+        canvas.delete("all")
+        self._edge_items.clear()
+        self._node_items.clear()
+
+        # Get current transformations
+        scale = self._graph_canvas_scale
+        offset_x, offset_y = self._graph_canvas_offset
+
+        # Draw edges with transformations
+        for u, v in self._edges:
+            if u not in self._node_pos or v not in self._node_pos:
+                continue
+            x1, y1 = self._node_pos[u]
+            x2, y2 = self._node_pos[v]
+
+            # Apply transformations
+            x1 = x1 * scale + offset_x
+            y1 = y1 * scale + offset_y
+            x2 = x2 * scale + offset_x
+            y2 = y2 * scale + offset_y
+
+            cu = self._assignments.get(u)
+            cv = self._assignments.get(v)
+            if cv is None and v in self._known_neighbour_colours:
+                cv = self._known_neighbour_colours[v]
+            if cu is None and u in self._known_neighbour_colours:
+                cu = self._known_neighbour_colours[u]
+
+            clash = (cu is not None and cv is not None and str(cu) == str(cv))
+            color = "#cc0000" if clash else "#999999"
+            width = max(1, int((3 if clash else 1) * scale))
+            item = canvas.create_line(x1, y1, x2, y2, fill=color, width=width)
+            self._edge_items.append((u, v, item))
+
+        # Draw nodes with transformations
+        for n, (x, y) in self._node_pos.items():
+            # Apply transformations
+            tx = x * scale + offset_x
+            ty = y * scale + offset_y
+
+            is_owned = (self._owners.get(n) == "Human")
+            r = int((24 if is_owned else 18) * scale)
+            col = self._assignments.get(n)
+            if col is None and n in self._known_neighbour_colours:
+                col = self._known_neighbour_colours[n]
+                print(f"[Graph] Using announced color for {n}: {col}")
+
+            fill = self._colour_fill(col)
+            outline = "#222222" if is_owned else "#666666"
+            ow = self._outline_width_for_colour(col) if col is not None else 2
+            ow = max(1, int(ow * scale))
+            item = canvas.create_oval(tx - r, ty - r, tx + r, ty + r, fill=fill, outline=outline, width=ow)
+            self._node_items[n] = item
+
+            font_size = max(6, int((10 if is_owned else 9) * scale))
+            canvas.create_text(tx, ty, text=f"{n}", font=("TkDefaultFont", font_size))
+
+            # Visual indicators for fixed (immutable) nodes
+            if hasattr(self, '_fixed_nodes') and n in self._fixed_nodes:
+                # Orange dashed ring around fixed nodes
+                ring_offset = int(4 * scale)
+                canvas.create_oval(tx - r - ring_offset, ty - r - ring_offset,
+                                 tx + r + ring_offset, ty + r + ring_offset,
+                                 outline="#FF8C00", width=max(1, int(3 * scale)),
+                                 dash=(3, 2), fill="")
+                # Lock icon
+                lock_font_size = max(6, int(10 * scale))
+                canvas.create_text(tx + r - int(8 * scale), ty - r + int(8 * scale),
+                                 text="🔒", font=("TkDefaultFont", lock_font_size))
+            # Visual indicators for committed (soft-locked) nodes
+            elif hasattr(self, '_committed_nodes') and n in self._committed_nodes:
+                # Gold ring around committed nodes (thicker than fixed, solid)
+                ring_offset = int(2 * scale)
+                canvas.create_oval(tx - r - ring_offset, ty - r - ring_offset,
+                                 tx + r + ring_offset, ty + r + ring_offset,
+                                 outline="#FFD700", width=max(1, int(3 * scale)), fill="")
+                # Small lock icon (different from fixed - smaller and in corner)
+                lock_font_size = max(5, int(8 * scale))
+                canvas.create_text(tx + r - int(5 * scale), ty - r + int(5 * scale),
+                                 text="🔒", font=("TkDefaultFont", lock_font_size))
+
     def _on_canvas_click(self, ev: tk.Event) -> None:
+        # Skip if shift is held (panning mode)
+        if ev.state & 0x0001:
+            return
+
         x, y = ev.x, ev.y
+
+        # Transform mouse coordinates to graph space
+        offset_x, offset_y = self._graph_canvas_offset
+        scale = self._graph_canvas_scale
+        graph_x = (x - offset_x) / scale
+        graph_y = (y - offset_y) / scale
+
         best = None
         best_d = 10**9
         for n, (nx, ny) in self._node_pos.items():
-            d = (nx - x) ** 2 + (ny - y) ** 2
+            d = (nx - graph_x) ** 2 + (ny - graph_y) ** 2
             if d < best_d:
                 best_d = d
                 best = n
@@ -510,7 +1580,7 @@ class HumanTurnUI:
                 self._on_colour_change(dict(self._assignments))
             except Exception:
                 pass
-        self._redraw()
+        self._redraw_graph()
         if self._hud_var:
             self._hud_var.set(self._hud_text())
 
@@ -576,19 +1646,559 @@ class HumanTurnUI:
 
     def _append_to_transcript(self, neigh: str, line: str) -> None:
         self._transcripts.setdefault(neigh, []).append(line)
+        print(f"[Transcript] Appending to transcript for neighbor '{neigh}': {line[:100]}")
+
+        # In structured RB mode, also parse and store the argument structure
+        is_structured_rb = getattr(self, '_rb_structured_mode', False)
+        print(f"[Transcript] is_structured_rb: {is_structured_rb}")
+        if is_structured_rb:
+            print(f"[Transcript] Calling _parse_and_store_rb_move for neighbor '{neigh}'")
+            self._parse_and_store_rb_move(neigh, line)
+
         if self._root is not None:
             self._root.after(0, lambda n=neigh: self._refresh_transcript(n))
 
     def _refresh_transcript(self, neigh: str) -> None:
-        tbox = self._transcript_box.get(neigh)
-        if tbox is None:
+        widget = self._transcript_box.get(neigh)
+        if widget is None:
             return
-        tbox.configure(state="normal")
-        tbox.delete("1.0", "end")
-        for ln in self._transcripts.get(neigh, []):
-            tbox.insert("end", ln + "\n")
-        tbox.configure(state="disabled")
-        tbox.see("end")
+
+        # Check if this is structured RB mode (canvas) or text mode
+        is_structured_rb = getattr(self, '_rb_structured_mode', False)
+
+        if is_structured_rb and isinstance(widget, tk.Canvas):
+            # Render argument graph on canvas
+            self._render_argument_graph(neigh, widget)
+        else:
+            # Standard text transcript
+            widget.configure(state="normal")
+            widget.delete("1.0", "end")
+            for ln in self._transcripts.get(neigh, []):
+                widget.insert("end", ln + "\n")
+            widget.configure(state="disabled")
+            widget.see("end")
+
+    def _parse_and_store_rb_move(self, neigh: str, line: str) -> None:
+        """Parse an RB move from transcript line and store it in the argument structure."""
+        import re
+        import json
+
+        print(f"[RB UI] Parsing line: {line[:120]}")
+
+        # Extract sender from line format: "[You → Agent1] Propose h1=red" or "[Agent1] Propose a2=blue"
+        sender = "You"
+        if line.startswith("[You"):
+            sender = "You"
+        elif line.startswith("["):
+            match = re.match(r'\[([^\]]+)\]', line)
+            if match:
+                full_sender = match.group(1)
+                # Strip arrow recipient if present: "Agent1 → Human" → "Agent1"
+                if '→' in full_sender:
+                    sender = full_sender.split('→')[0].strip()
+                else:
+                    sender = full_sender.strip()
+                print(f"[RB UI Parse] Extracted sender: '{sender}' from bracket content: '{full_sender}'")
+        else:
+            print(f"[RB UI Parse] Extracted sender: '{sender}' from line starting with: {line[:50]}")
+
+        # Try to extract from RB protocol tag first: [rb:{"move":"Propose","node":"h1","colour":"red","reasons":[]}]
+        # Updated to handle ConditionalOffer with nested JSON
+        rb_match = re.search(r'\[rb:(\{.+\})\]', line, re.DOTALL)
+        if rb_match:
+            try:
+                rb_data = json.loads(rb_match.group(1))
+                move_type = rb_data.get("move", "")
+
+                # Handle ConditionalOffer specially (has conditions/assignments, not single node/color)
+                if move_type == "ConditionalOffer":
+                    print(f"[RB UI] Processing ConditionalOffer from {sender}")
+                    conditions = rb_data.get("conditions", [])
+                    assignments = rb_data.get("assignments", [])
+                    offer_id = rb_data.get("offer_id", "")
+                    print(f"[RB UI] ConditionalOffer details: conditions={len(conditions)}, assignments={len(assignments)}, offer_id={offer_id}")
+
+                    arg = {
+                        "sender": sender,
+                        "move": "ConditionalOffer",
+                        "node": "conditional",  # Placeholder for layout
+                        "color": "",
+                        "conditions": conditions,
+                        "assignments": assignments,
+                        "offer_id": offer_id,
+                        "reasons": rb_data.get("reasons", []),  # Store reasons for filtering
+                        "index": len(self._rb_arguments.get(neigh, [])),
+                        "justification_refs": []
+                    }
+                    print(f"[RB UI] Parsed ConditionalOffer: sender='{sender}', neigh='{neigh}', {len(conditions)} conditions, {len(assignments)} assignments")
+                    self._rb_arguments.setdefault(neigh, []).append(arg)
+                    print(f"[RB UI] Added arg to _rb_arguments['{neigh}'], now has {len(self._rb_arguments[neigh])} args")
+                    print(f"[RB UI] STORED ARG: {arg}")
+                    print(f"[RB UI] ALL _rb_arguments KEYS: {list(self._rb_arguments.keys())}")
+                    for key, val in self._rb_arguments.items():
+                        print(f"[RB UI]   Key '{key}' has {len(val)} args, senders: {[a.get('sender') for a in val]}")
+
+                    # Update known neighbor colors from assignments
+                    # (So graph shows their announced colors)
+                    for assignment in assignments:
+                        node = assignment.get("node", "")
+                        colour = assignment.get("colour", "")
+                        if node and colour:
+                            # Only update if it's not our node
+                            if self._owners.get(node) != "Human":
+                                self._known_neighbour_colours[node] = colour
+                                print(f"[RB UI] Updated neighbor color: {node}={colour}")
+
+                    # Debug: Show all known colors after update
+                    print(f"[RB UI] All known colors: {self._known_neighbour_colours}")
+
+                    # Redraw graph to show updated colors (immediate call, not scheduled)
+                    self._redraw_graph()
+
+                    # If this looks like initial configuration (all assignments, no conditions, reasons include "initial_configuration")
+                    reasons = rb_data.get("reasons", [])
+                    if not conditions and assignments and "initial_configuration" in reasons:
+                        # Replace the transcript entry with a pretty announcement
+                        config_summary = ", ".join([f"{a['node']}={a['colour']}" for a in assignments])
+                        announcement_text = f"[{sender}] 📢 Configuration Announced: {config_summary}"
+
+                        # Replace the last transcript entry (which was the technical message) with pretty version
+                        if neigh in self._transcripts and self._transcripts[neigh]:
+                            self._transcripts[neigh][-1] = announcement_text
+
+                        print(f"[RB UI] Configuration announced by {sender}: {config_summary}")
+
+                    # Check for auto-convergence
+                    if hasattr(self, '_rb_mode') and self._rb_mode:
+                        self._check_consensus()
+
+                    return
+
+                # Standard moves (Propose, CounterProposal, Commit, etc.)
+                arg = {
+                    "sender": sender,
+                    "move": move_type,
+                    "node": rb_data.get("node", ""),
+                    "color": rb_data.get("colour", ""),
+                    "index": len(self._rb_arguments.get(neigh, [])),
+                    "justification_refs": self._rb_pending_justification_refs.get(neigh, [])
+                }
+                # Clear pending justification refs after use
+                self._rb_pending_justification_refs[neigh] = []
+                print(f"[RB UI] Parsed RB protocol: {arg}")
+                self._rb_arguments.setdefault(neigh, []).append(arg)
+
+                # Check for auto-convergence in RB mode
+                if hasattr(self, '_rb_mode') and self._rb_mode:
+                    self._check_consensus()
+
+                return
+            except Exception as e:
+                print(f"[RB UI] Failed to parse RB protocol: {e}")
+
+        # Fallback: Extract move, node, color from line like "Propose h1=red"
+        # Format: "[sender] Move node=color"
+        parts = line.split("] ", 1)
+        if len(parts) < 2:
+            print(f"[RB UI] Could not split line into sender and content")
+            return
+
+        content = parts[1].strip()
+        # Parse "Propose h1=red" or "Challenge a2=blue" etc
+        move_match = re.match(r'(\w+)\s+(\w+)=(\w+)', content)
+        if not move_match:
+            print(f"[RB UI] Could not parse content: {content[:80]}")
+            return
+
+        move_type = move_match.group(1)
+        node = move_match.group(2)
+        color = move_match.group(3)
+
+        # Store the argument
+        arg = {
+            "sender": sender,
+            "move": move_type,
+            "node": node,
+            "color": color,
+            "index": len(self._rb_arguments.get(neigh, [])),
+            "justification_refs": self._rb_pending_justification_refs.get(neigh, [])
+        }
+
+        # Clear pending justification refs after use
+        self._rb_pending_justification_refs[neigh] = []
+
+        print(f"[RB UI] Parsed fallback format: {arg}")
+        self._rb_arguments.setdefault(neigh, []).append(arg)
+
+        # Check for auto-convergence in RB mode
+        if hasattr(self, '_rb_mode') and self._rb_mode:
+            self._check_consensus()
+
+    def _render_argument_graph(self, neigh: str, canvas: tk.Canvas) -> None:
+        """Render the argument graph as a tree with zoom/pan support."""
+        canvas.delete("all")
+        args = self._rb_arguments.get(neigh, [])
+
+        # Store current neighbor for helper methods
+        self._current_neigh_for_render = neigh
+
+        # Get zoom/pan state
+        scale = self._rb_canvas_scale.get(neigh, 1.0)
+        offset_x, offset_y = self._rb_canvas_offset.get(neigh, (0, 0))
+
+        move_colors = {
+            "Propose": "#d0e8ff",   # Light blue
+            "Challenge": "#ffd0d0",  # Light red
+            "Justify": "#d0ffd0",    # Light green
+            "Commit": "#ffe0b0",     # Light orange
+            "ConditionalOffer": "#e8d0ff",  # Light purple
+            "CounterProposal": "#ffe0d0",   # Light peach
+            "Accept": "#d0ffe0"      # Light mint
+        }
+
+        # Draw legend (not scaled, fixed position) - Multiple rows for new moves
+        legend_y = 5
+        legend_x = 10
+        canvas.create_text(legend_x, legend_y, text="Legend:", font=("Arial", 8, "bold"), anchor="nw", fill="#333", tags="legend")
+
+        # Row 1: Original moves
+        legend_items_row1 = [
+            ("Propose", move_colors["Propose"]),
+            ("Commit", move_colors["Commit"]),
+            ("CounterProp", move_colors["CounterProposal"])
+        ]
+        for i, (label, color) in enumerate(legend_items_row1):
+            x_pos = legend_x + 50 + (i * 90)
+            canvas.create_rectangle(x_pos, legend_y, x_pos + 12, legend_y + 12, fill=color, outline="#666", tags="legend")
+            canvas.create_text(x_pos + 16, legend_y + 6, text=label, font=("Arial", 7), anchor="w", fill="#000", tags="legend")
+
+        # Row 2: New moves
+        legend_y2 = legend_y + 16
+        legend_items_row2 = [
+            ("Conditional", move_colors["ConditionalOffer"]),
+            ("Accept", move_colors["Accept"])
+        ]
+        for i, (label, color) in enumerate(legend_items_row2):
+            x_pos = legend_x + 50 + (i * 90)
+            canvas.create_rectangle(x_pos, legend_y2, x_pos + 12, legend_y2 + 12, fill=color, outline="#666", tags="legend")
+            canvas.create_text(x_pos + 16, legend_y2 + 6, text=label, font=("Arial", 7), anchor="w", fill="#000", tags="legend")
+
+        # Add justification link legend (second row)
+        just_legend_y = legend_y + 18
+        canvas.create_text(legend_x + 50, just_legend_y,
+                         text="⚡ = Justification link (cross-node)",
+                         font=("Arial", 7), anchor="w", fill="#9933cc", tags="legend")
+
+        # Draw zoom indicator
+        canvas.create_text(canvas.winfo_width() - 60, legend_y,
+                         text=f"Zoom: {scale:.1f}x",
+                         font=("Arial", 8), anchor="ne", fill="#555", tags="legend")
+
+        if not args:
+            canvas.create_text(150, 100,
+                             text="No arguments yet\n(scroll wheel to zoom, shift+drag to pan)",
+                             font=("Arial", 10), fill="gray", justify="center", tags="legend")
+            return
+
+        # Group arguments by node (column-based layout)
+        box_width = 180
+        box_height = 60
+        column_spacing = 220  # Space between node columns
+        v_spacing = 30  # Vertical space between arguments
+
+        positions = self._layout_by_node_columns(args, box_width, box_height, column_spacing, v_spacing)
+
+        # Draw column headers for each node
+        node_groups = {}
+        node_order = []
+        for idx, arg in enumerate(args):
+            node = arg.get("node")
+            if not node:
+                continue
+            if node not in node_groups:
+                node_order.append(node)
+                node_groups[node] = []
+            node_groups[node].append(idx)
+
+        base_x = 100
+        for col_idx, node in enumerate(node_order):
+            x = base_x + col_idx * column_spacing
+            header_x = x * scale + offset_x
+            header_y = 50  # Fixed position above arguments
+            canvas.create_text(header_x, header_y,
+                             text=f"Node: {node}",
+                             font=("Arial", 12, "bold"), fill="#333",
+                             tags="header")
+
+        # Draw parent-child edges (only within same node column)
+        for idx, arg in enumerate(args):
+            if arg.get("parent_idx") is not None:
+                parent_idx = arg["parent_idx"]
+                if idx in positions and parent_idx in positions:
+                    # Only draw edge if both are about the same node
+                    if args[idx]["node"] == args[parent_idx]["node"]:
+                        # Get positions
+                        x1, y1 = positions[parent_idx]
+                        x2, y2 = positions[idx]
+
+                        # Apply scale and offset
+                        x1 = x1 * scale + offset_x
+                        y1 = y1 * scale + offset_y + 30  # Offset for legend
+                        x2 = x2 * scale + offset_x
+                        y2 = y2 * scale + offset_y + 30
+
+                        # Edge from bottom of parent to top of child
+                        parent_bottom_y = y1 + (box_height * scale) / 2
+                        child_top_y = y2 - (box_height * scale) / 2
+
+                        # Arrow color based on move type
+                        move = arg["move"]
+                        arrow_color = "#cc0000" if move == "Challenge" else "#00aa00" if move == "Justify" else "#0066cc"
+                        arrow_width = max(1, int(2 * scale))
+
+                        # Draw edge
+                        canvas.create_line(x1, parent_bottom_y, x1, (parent_bottom_y + child_top_y) / 2,
+                                         x2, (parent_bottom_y + child_top_y) / 2, x2, child_top_y,
+                                         smooth=False, arrow="last", fill=arrow_color, width=arrow_width, tags="edge")
+
+        # Draw justification edges (cross-node causal links)
+        for idx, arg in enumerate(args):
+            justification_refs = arg.get("justification_refs", [])
+            if justification_refs and idx in positions:
+                for ref_idx in justification_refs:
+                    if ref_idx < len(args) and ref_idx in positions:
+                        # Get positions
+                        x1, y1 = positions[idx]  # Source (current argument)
+                        x2, y2 = positions[ref_idx]  # Target (justification)
+
+                        # Apply scale and offset
+                        x1 = x1 * scale + offset_x
+                        y1 = y1 * scale + offset_y + 30
+                        x2 = x2 * scale + offset_x
+                        y2 = y2 * scale + offset_y + 30
+
+                        # Draw dashed purple arrow from source to justification
+                        # Use different routing from parent edges to avoid overlap
+                        arrow_width = max(1, int(2 * scale))
+
+                        # Draw curved dashed line
+                        canvas.create_line(x1, y1, (x1 + x2) / 2, (y1 + y2) / 2, x2, y2,
+                                         smooth=True, arrow="last", fill="#9933cc",
+                                         width=arrow_width, dash=(8, 4), tags="justification")
+
+        # Draw argument boxes
+        for idx, arg in enumerate(args):
+            if idx not in positions:
+                continue
+
+            move = arg["move"]
+            node = arg["node"]
+            color = arg["color"]
+            sender = arg["sender"]
+
+            # Get position and apply transformations
+            x, y = positions[idx]
+            x = x * scale + offset_x
+            y = y * scale + offset_y + 30  # Offset for legend
+
+            # Draw box
+            box_color = move_colors.get(move, "#f0f0f0")
+            w = box_width * scale
+            h = box_height * scale
+            x1, y1 = x - w/2, y - h/2
+            x2, y2 = x + w/2, y + h/2
+
+            canvas.create_rectangle(x1, y1, x2, y2,
+                                  fill=box_color, outline="#666", width=max(1, int(2 * scale)), tags="box")
+
+            # Draw text (scale font sizes)
+            font_size_move = max(7, int(10 * scale))
+            font_size_sender = max(6, int(8 * scale))
+            font_size_content = max(8, int(11 * scale))
+
+            # Move type (top left)
+            canvas.create_text(x1 + 8*scale, y1 + 8*scale,
+                             text=f"{move}",
+                             font=("Arial", font_size_move, "bold"),
+                             anchor="nw", fill="#000", tags="text")
+
+            # Sender (top right)
+            canvas.create_text(x2 - 8*scale, y1 + 8*scale,
+                             text=f"({sender})",
+                             font=("Arial", font_size_sender),
+                             anchor="ne", fill="#555", tags="text")
+
+            # Node and color (center) - special handling for ConditionalOffer
+            if move == "ConditionalOffer":
+                conditions = arg.get("conditions", [])
+                assignments = arg.get("assignments", [])
+                # Show summary: "If X conds → Y assigns"
+                text = f"IF: {len(conditions)} conds\n→ THEN: {len(assignments)} assigns"
+                canvas.create_text(x, y,
+                                 text=text,
+                                 font=("Arial", max(7, int(9 * scale))),
+                                 anchor="center", fill="#000", tags="text")
+            else:
+                # Standard moves: show node = color
+                canvas.create_text(x, y + 5*scale,
+                                 text=f"{node} = {color}",
+                                 font=("Arial", font_size_content, "bold"),
+                                 anchor="center", fill="#000", tags="text")
+
+            # Justification refs (bottom, if present)
+            justification_refs = arg.get("justification_refs", [])
+            if justification_refs:
+                font_size_refs = max(6, int(7 * scale))
+                refs_text = "⚡ Refs: " + ", ".join(f"#{r}" for r in justification_refs)
+                canvas.create_text(x, y2 - 8*scale,
+                                 text=refs_text,
+                                 font=("Arial", font_size_refs),
+                                 anchor="s", fill="#9933cc", tags="text")
+
+    def _build_argument_tree(self, args: List[Dict[str, Any]]) -> Dict[int, List[int]]:
+        """Build tree structure from flat argument list.
+
+        Returns
+        -------
+        Dict[int, List[int]]
+            Mapping from parent index to list of child indices.
+        """
+        tree = {}
+        for idx, arg in enumerate(args):
+            move = arg["move"]
+            node = arg["node"]
+
+            # Find parent: most recent Propose/Challenge on same node
+            parent_idx = None
+            if move in ("Challenge", "Justify", "Commit"):
+                for prev_idx in range(idx - 1, -1, -1):
+                    prev_arg = args[prev_idx]
+                    if prev_arg["node"] == node and prev_arg["move"] in ("Propose", "Challenge"):
+                        parent_idx = prev_idx
+                        break
+
+            # Store parent relationship
+            arg["parent_idx"] = parent_idx
+
+            # Build tree mapping
+            if parent_idx is not None:
+                tree.setdefault(parent_idx, []).append(idx)
+
+        return tree
+
+    def _layout_by_node_columns(self, args: List[Dict], box_width: int, box_height: int,
+                                column_spacing: int, v_spacing: int) -> Dict[int, Tuple[int, int]]:
+        """Layout arguments in columns by node.
+
+        Each node gets its own column, and arguments about that node are stacked vertically.
+        This makes it clear which arguments pertain to which node.
+
+        Returns dict mapping argument index to (x, y) position.
+        """
+        if not args:
+            return {}
+
+        # Group arguments by node
+        node_groups = {}  # {node: [arg_indices]}
+        node_order = []  # Track order of first appearance
+
+        for idx, arg in enumerate(args):
+            node = arg.get("node")
+            if not node:
+                continue
+            if node not in node_groups:
+                node_order.append(node)
+                node_groups[node] = []
+            node_groups[node].append(idx)
+
+        # Assign columns to nodes
+        positions = {}
+        base_x = 100  # Start position
+
+        for col_idx, node in enumerate(node_order):
+            arg_indices = node_groups[node]
+            x = base_x + col_idx * column_spacing
+
+            # Stack arguments vertically in this column
+            for local_idx, arg_idx in enumerate(arg_indices):
+                y = 80 + local_idx * (box_height + v_spacing)
+                positions[arg_idx] = (x, y)
+
+        return positions
+
+    def _layout_tree(self, tree: Dict[int, List[int]], box_width: int, box_height: int,
+                    h_spacing: int, v_spacing: int) -> Dict[int, Tuple[int, int]]:
+        """Compute positions for tree layout.
+
+        Uses a simple layered tree layout where each level is placed vertically,
+        and siblings are spread horizontally.
+
+        Returns
+        -------
+        Dict[int, Tuple[int, int]]
+            Mapping from argument index to (x, y) position.
+        """
+        positions = {}
+
+        # Get ALL argument indices (including orphans with no parent/children)
+        args = self._rb_arguments.get(self._current_neigh_for_render, [])
+        all_indices = set(range(len(args)))
+
+        # Find root nodes (nodes with no parent in the tree)
+        roots = []
+        for idx in all_indices:
+            # Check if this index appears as a child in the tree
+            has_parent = any(idx in children for children in tree.values())
+            if not has_parent:
+                roots.append(idx)
+
+        # Layout each subtree
+        x_offset = 100
+        for root_idx in roots:
+            self._layout_subtree(root_idx, tree, positions, x_offset, 50, box_width, box_height, h_spacing, v_spacing)
+            # Get rightmost x position of this subtree
+            if positions:
+                max_x = max(x for x, y in positions.values())
+                x_offset = max_x + box_width + h_spacing * 2
+
+        return positions
+
+    def _layout_subtree(self, node_idx: int, tree: Dict[int, List[int]], positions: Dict[int, Tuple[int, int]],
+                       x: int, y: int, box_width: int, box_height: int, h_spacing: int, v_spacing: int) -> Tuple[int, int]:
+        """Recursively layout a subtree.
+
+        Returns
+        -------
+        Tuple[int, int]
+            The (min_x, max_x) bounds of this subtree.
+        """
+        children = tree.get(node_idx, [])
+
+        if not children:
+            # Leaf node
+            positions[node_idx] = (x, y)
+            return (x, x)
+
+        # Layout children first
+        child_y = y + box_height + v_spacing
+        child_positions = []
+        total_width = 0
+
+        for i, child_idx in enumerate(children):
+            child_x = x + total_width
+            min_x, max_x = self._layout_subtree(child_idx, tree, positions, child_x, child_y,
+                                               box_width, box_height, h_spacing, v_spacing)
+            child_positions.append((min_x + max_x) // 2)  # Center of child subtree
+            total_width = max_x - x + box_width + h_spacing
+
+        # Position this node centered above its children
+        if child_positions:
+            node_x = (child_positions[0] + child_positions[-1]) // 2
+            positions[node_idx] = (node_x, y)
+            return (min(child_positions[0], node_x), max(child_positions[-1], node_x))
+        else:
+            positions[node_idx] = (x, y)
+            return (x, x)
 
     def _set_status(self, neigh: str, status: str) -> None:
         if neigh in self._status_var:
@@ -612,12 +2222,15 @@ class HumanTurnUI:
 
     def _flush_incoming(self, neigh: str) -> None:
         q = self._incoming_queue.get(neigh, [])
+        print(f"[UI] _flush_incoming for {neigh}: {len(q)} messages in queue")
         while q:
             msg = q.pop(0)
+            print(f"[UI] Processing message: {msg[:200]}")
             clean, report = self._extract_and_apply_reports(msg)
+            print(f"[UI] After extract_and_apply_reports: clean={clean[:200]}, report={report}")
             self._append_to_transcript(neigh, f"[{neigh}] {self._humanise(clean)}")
             if report:
-                self._redraw()
+                self._redraw_graph()
         self._set_status(neigh, "idle")
         if self._hud_var:
             self._hud_var.set(self._hud_text())
@@ -773,6 +2386,16 @@ class HumanTurnUI:
             return
         if not self._neighs:
             return
+
+        # RB mode: Auto-converge when all shared nodes are mutually committed
+        if hasattr(self, '_rb_mode') and self._rb_mode:
+            if self._check_rb_full_commitment():
+                print("[RB Convergence] All shared nodes mutually committed - auto-ending")
+                self.end_reason = "consensus"
+                self._finish()
+                return
+
+        # LLM modes: Use satisfaction checkboxes
         for n in self._neighs:
             try:
                 human_ok = bool(self._human_sat[n].get())
@@ -787,6 +2410,50 @@ class HumanTurnUI:
 
         self.end_reason = "consensus"
         self._finish()
+
+    def _check_rb_full_commitment(self) -> bool:
+        """Check if human and all agents are mutually satisfied.
+
+        Returns True if:
+        - Human has ticked "satisfied" checkbox for each neighbor
+        - Each agent reports satisfied == True
+        """
+        print(f"[RB Convergence] Checking commitment for {len(self._neighs)} neighbors")
+
+        if not hasattr(self, '_human_sat'):
+            print(f"[RB Convergence] No _human_sat attribute")
+            return False
+
+        # Check all neighbors
+        for neigh in self._neighs:
+            # Check human satisfaction checkbox
+            try:
+                human_satisfied = bool(self._human_sat[neigh].get())
+                print(f"[RB Convergence] Human satisfied with {neigh}: {human_satisfied}")
+            except Exception as e:
+                human_satisfied = False
+                print(f"[RB Convergence] Error checking human satisfaction for {neigh}: {e}")
+
+            if not human_satisfied:
+                print(f"[RB Convergence] Human not satisfied with {neigh} - not ready")
+                return False
+
+            # Check agent satisfaction
+            if self._get_agent_satisfied_fn:
+                try:
+                    agent_satisfied = bool(self._get_agent_satisfied_fn(neigh))
+                    print(f"[RB Convergence] {neigh} satisfied: {agent_satisfied}")
+                except Exception as e:
+                    agent_satisfied = False
+                    print(f"[RB Convergence] Error checking {neigh} satisfaction: {e}")
+
+                if not agent_satisfied:
+                    print(f"[RB Convergence] {neigh} not satisfied - not ready")
+                    return False
+
+        # All parties mutually satisfied
+        print("[RB Convergence] All parties satisfied - consensus reached!")
+        return True
 
     # -------------------- Debug window --------------------
 
@@ -1060,7 +2727,7 @@ class HumanTurnUI:
         for cp in self._checkpoints:
             if cp["id"] == cp_id:
                 self._assignments = dict(cp["assignments"])
-                self._redraw()
+                self._redraw_graph()
                 if self._on_colour_change:
                     self._on_colour_change(dict(self._assignments))
                 print(f"[UI] Restored checkpoint #{cp_id} from iteration {cp['iteration']}")
@@ -1298,6 +2965,285 @@ class HumanTurnUI:
                 continue
             score += self._points.get(str(c).lower(), 0)
         return f"Score: {score}"
+
+    # -------------------- Two-Phase Workflow --------------------
+
+    def _announce_configuration(self) -> None:
+        """Announce configuration to agents (can be called multiple times to refresh)."""
+        print("[UI] ===== ANNOUNCING CONFIGURATION =====")
+        print(f"[UI] Human assignments: {self._assignments}")
+        print(f"[UI] Current phase: {self._phase}")
+
+        # Store initial human configuration
+        self._initial_configs["Human"] = dict(self._assignments)
+
+        # Send special message to trigger agents to announce their configurations
+        for neigh in self._neighs:
+            if self._on_send:
+                print(f"[UI] Requesting {neigh} to announce configuration...")
+
+                def _threaded_announce(n=neigh):
+                    try:
+                        print(f"[UI] _threaded_announce starting for {n}")
+                        # Send special __ANNOUNCE_CONFIG__ token
+                        # Check signature to handle both 2-arg and 3-arg versions
+                        sig = inspect.signature(self._on_send)
+                        params = sig.parameters
+                        print(f"[UI] on_send signature has {len(params)} parameters")
+                        if len(params) >= 3:
+                            print(f"[UI] Calling on_send with 3 args")
+                            reply = self._on_send(n, "__ANNOUNCE_CONFIG__", dict(self._assignments))
+                        else:
+                            print(f"[UI] Calling on_send with 2 args")
+                            reply = self._on_send(n, "__ANNOUNCE_CONFIG__")
+                        print(f"[UI] on_send returned reply: {reply[:200] if reply else 'None'}")
+                        if reply and self._root:
+                            print(f"[UI] Adding reply to incoming for {n}")
+                            self._root.after(0, lambda: self.add_incoming(n, reply))
+                        else:
+                            print(f"[UI] No reply received from {n}")
+                    except Exception as e:
+                        print(f"[UI] Error announcing config to {n}: {e}")
+                        import traceback
+                        traceback.print_exc()
+
+                import threading
+                threading.Thread(target=_threaded_announce, daemon=True).start()
+
+        # Transition to bargain phase (only on first announcement)
+        if self._phase == "configure":
+            self._phase = "bargain"
+            if hasattr(self, '_phase_label'):
+                self._phase_label.config(text="Phase: Bargain")
+            if hasattr(self, '_impossible_btn'):
+                self._impossible_btn.config(state="normal")
+            # Keep announce button enabled for re-announcements
+
+        # Enable conditional builders and update help text
+        for neigh in self._neighs:
+            if neigh in self._rb_help_labels:
+                self._rb_help_labels[neigh].config(
+                    text="BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)",
+                    fg="#555"
+                )
+            if neigh in self._conditional_builder_frames:
+                frame = self._conditional_builder_frames[neigh]
+                # Enable all widgets in the frame
+                def enable_frame(widget):
+                    if hasattr(widget, 'config'):
+                        try:
+                            widget.config(state="normal")
+                        except:
+                            pass
+                    for child in widget.winfo_children():
+                        enable_frame(child)
+                enable_frame(frame)
+
+        print("[UI] Now in BARGAIN phase - conditional offers enabled")
+
+    def _signal_impossible(self) -> None:
+        """Signal that the current configuration is impossible to work with."""
+        print("[UI] ===== IMPOSSIBLE TO CONTINUE =====")
+        print("[UI] Human signaled that current configuration cannot be resolved")
+
+        # Send special message to agents
+        for neigh in self._neighs:
+            if self._on_send:
+                def _threaded_impossible(n=neigh):
+                    try:
+                        # Send special __IMPOSSIBLE__ token
+                        # Check signature to handle both 2-arg and 3-arg versions
+                        sig = inspect.signature(self._on_send)
+                        params = sig.parameters
+                        if len(params) >= 3:
+                            self._on_send(n, "__IMPOSSIBLE__", dict(self._assignments))
+                        else:
+                            self._on_send(n, "__IMPOSSIBLE__")
+                    except Exception as e:
+                        print(f"[UI] Error sending impossible signal to {n}: {e}")
+                        import traceback
+                        traceback.print_exc()
+
+                import threading
+                threading.Thread(target=_threaded_impossible, daemon=True).start()
+
+        # Optionally go back to configure phase or end session
+        # For now, just log it
+        print("[UI] Consider restarting or adjusting initial configurations")
+
+    # -------------------- LLM_RB Live Translation --------------------
+
+    def _schedule_llm_rb_translation(self, neigh: str) -> None:
+        """Schedule debounced NL→RB translation for LLM_RB mode."""
+        if self._root is None:
+            return
+
+        # Cancel existing debounce timer if any
+        existing_id = self._llm_rb_debounce_ids.get(neigh)
+        if existing_id:
+            try:
+                self._root.after_cancel(existing_id)
+            except Exception:
+                pass
+
+        # Schedule new translation after 1.5 seconds of no typing
+        new_id = self._root.after(1500, lambda: self._perform_llm_rb_translation(neigh))
+        self._llm_rb_debounce_ids[neigh] = new_id
+
+    def _perform_llm_rb_translation(self, neigh: str) -> None:
+        """Perform NL→RB translation and update preview label."""
+        if self._root is None:
+            return
+
+        self._llm_rb_debounce_ids[neigh] = None
+
+        # Get current text from input box
+        box = self._outgoing_box.get(neigh)
+        if not box:
+            return
+
+        text = box.get("1.0", "end-1c").strip()
+        if not text or text == "Type a message…":
+            # Clear preview
+            label = self._llm_rb_translation_labels.get(neigh)
+            if label:
+                label.configure(text="(type to see translation)", fg="gray")
+            return
+
+        # Perform translation using comm layer
+        if not self._comm_layer:
+            label = self._llm_rb_translation_labels.get(neigh)
+            if label:
+                label.configure(text="(no translation layer available)", fg="red")
+            return
+
+        # Increment sequence number for this translation request
+        current_seq = self._llm_rb_translation_sequence.get(neigh, 0) + 1
+        self._llm_rb_translation_sequence[neigh] = current_seq
+
+        # Show loading indicator immediately
+        label = self._llm_rb_translation_labels.get(neigh)
+        if label:
+            label.configure(text="Translating...", fg="blue")
+
+        # Start loading animation
+        self._start_loading_animation(neigh)
+
+        # Run translation in background thread to avoid blocking UI
+        def worker():
+            try:
+                # Call the translation function
+                if hasattr(self._comm_layer, '_nl_to_rbmove'):
+                    rb_move = self._comm_layer._nl_to_rbmove("Human", neigh, text)
+                    if rb_move:
+                        # Format the RBMove for display
+                        move_str = self._format_rbmove_preview(rb_move)
+                        if self._root:
+                            self._root.after(0, lambda: self._update_translation_result(neigh, move_str, "blue", current_seq))
+                    else:
+                        if self._root:
+                            self._root.after(0, lambda: self._update_translation_result(neigh, "(could not parse as RB move)", "orange", current_seq))
+                else:
+                    if self._root:
+                        self._root.after(0, lambda: self._update_translation_result(neigh, "(translation not available)", "red", current_seq))
+            except Exception as e:
+                if self._root:
+                    error_msg = f"(translation error: {str(e)[:50]})"
+                    self._root.after(0, lambda: self._update_translation_result(neigh, error_msg, "red", current_seq))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _format_rbmove_preview(self, rb_move: Any) -> str:
+        """Format RBMove object for preview display."""
+        try:
+            move_type = getattr(rb_move, 'move', '?')
+            node = getattr(rb_move, 'node', '?')
+            colour = getattr(rb_move, 'colour', None)
+
+            if move_type == "PROPOSE":
+                if colour:
+                    return f"→ PROPOSE: {node} = {colour}"
+                return f"→ PROPOSE: {node}"
+            elif move_type == "ATTACK":
+                return f"→ ATTACK: {node}"
+            elif move_type == "CONCEDE":
+                if colour:
+                    return f"→ CONCEDE: {node} = {colour}"
+                return f"→ CONCEDE: {node}"
+            else:
+                return f"→ {move_type}: {node}" + (f" = {colour}" if colour else "")
+        except Exception:
+            return f"→ {str(rb_move)[:50]}"
+
+    def _start_loading_animation(self, neigh: str) -> None:
+        """Start animated loading indicator for translation."""
+        if self._root is None:
+            return
+
+        # Cancel any existing animation
+        existing_id = self._llm_rb_animation_ids.get(neigh)
+        if existing_id:
+            try:
+                self._root.after_cancel(existing_id)
+            except Exception:
+                pass
+
+        # Start new animation
+        dots_count = [0]  # Use list to allow mutation in closure
+
+        def animate():
+            if self._root is None:
+                return
+
+            label = self._llm_rb_translation_labels.get(neigh)
+            if label:
+                current_text = label.cget('text')
+                # Only animate if still showing "Translating..."
+                if current_text.startswith("Translating"):
+                    dots_count[0] = (dots_count[0] % 3) + 1
+                    dots = "." * dots_count[0]
+                    label.configure(text=f"Translating{dots}")
+
+                    # Schedule next frame
+                    animation_id = self._root.after(400, animate)
+                    self._llm_rb_animation_ids[neigh] = animation_id
+
+        animate()
+
+    def _update_translation_result(self, neigh: str, text: str, color: str, seq: int) -> None:
+        """Update translation preview label with result and stop animation.
+
+        Parameters
+        ----------
+        neigh : str
+            Neighbour identifier
+        text : str
+            Translation result text to display
+        color : str
+            Text color
+        seq : int
+            Sequence number of this translation request. Only updates if this matches current sequence.
+        """
+        # Check if this is still the current translation request (not superseded by newer one)
+        current_seq = self._llm_rb_translation_sequence.get(neigh, 0)
+        if seq != current_seq:
+            # This is a stale translation result, ignore it
+            return
+
+        # Stop animation
+        existing_id = self._llm_rb_animation_ids.get(neigh)
+        if existing_id:
+            try:
+                if self._root:
+                    self._root.after_cancel(existing_id)
+            except Exception:
+                pass
+        self._llm_rb_animation_ids[neigh] = None
+
+        # Update label
+        label = self._llm_rb_translation_labels.get(neigh)
+        if label:
+            label.configure(text=text, fg=color)
 
     # -------------------- Finish --------------------
 

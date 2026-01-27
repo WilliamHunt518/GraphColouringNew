@@ -60,14 +60,15 @@ def main() -> None:
     stop_hard_var = tk.BooleanVar(value=saved_config.get("stop_hard", False))
     cf_utils_var = tk.BooleanVar(value=saved_config.get("cf_utils", True))
     fixed_constraints_var = tk.BooleanVar(value=saved_config.get("fixed_constraints", True))
-    num_fixed_nodes_var = tk.IntVar(value=saved_config.get("num_fixed_nodes", 1))
+    # ALWAYS default to 1 fixed node per agent (creates good renegotiation dynamics)
+    num_fixed_nodes_var = tk.IntVar(value=1)
 
     # --- widgets ---
     ttk.Label(frm, text="Condition").grid(row=0, column=0, sticky="w", pady=(0, 6))
     ttk.Combobox(
         frm,
         textvariable=method_var,
-        values=["RB", "LLM_U", "LLM_C", "LLM_F", "LLM_RB"],
+        values=["RB", "LLM_API", "LLM_F", "LLM_RB"],
         state="readonly",
         width=18,
     ).grid(row=0, column=1, sticky="w", pady=(0, 6))
