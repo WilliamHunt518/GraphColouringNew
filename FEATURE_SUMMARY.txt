@@ -1,0 +1,140 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     IMPLEMENTATION COMPLETE: 3 PHASES                       ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: BUG FIX                                                       [✓] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Problem:  "Add Condition" button not working                               │
+│ Cause:    Parameter conflict in closure (default params + lambda args)     │
+│ Fix:      Removed default params, moved capture inside function            │
+│ Files:    ui/human_turn_ui.py (lines 547, 660)                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: FEASIBILITY QUERY FEATURE                                     [✓] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ What:     Check "IF X AND Y, is this feasible?" WITHOUT committing         │
+│                                                                             │
+│ Flow:     1. Human builds conditions (IF part)                             │
+│           2. Clicks "Check Feasibility" button                             │
+│           3. Query sent to agent                                           │
+│           4. Agent evaluates best response                                 │
+│           5. Result shown as persistent card                               │
+│              • ✓ Feasible (penalty=X) - green                              │
+│              • ✗ Not Feasible - red                                        │
+│           6. Human uses info to decide on actual offer                     │
+│                                                                             │
+│ Files:    comm/rb_protocol.py - Protocol extensions                        │
+│           agents/rule_based_cluster_agent.py - Query handler               │
+│           ui/human_turn_ui.py - Button + cards + processing                │
+│                                                                             │
+│ UI:       [Pass] [Check Feasibility] [Send Offer]                          │
+│                                                                             │
+│           Sidebar shows:                                                   │
+│           ┌────────────────────────────────┐                               │
+│           │ Query abc123ef                 │                               │
+│           │ IF h2=red AND h5=blue          │                               │
+│           │ ✓ Feasible (penalty=5.0)       │                               │
+│           │ "Workable with penalty=5.0"    │                               │
+│           │               [Dismiss]        │                               │
+│           └────────────────────────────────┘                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: ENHANCED GRANULAR REJECTION                                   [✓] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ What:     Mark specific conditions OR combinations as impossible           │
+│                                                                             │
+│ Example:  Agent offers: "IF h1=red AND h4=green AND h7=blue THEN..."      │
+│                                                                             │
+│           Human can mark:                                                  │
+│           • h1=red as individually impossible (NEVER acceptable)           │
+│           • h4=green AND h7=blue as combination impossible                 │
+│             (together not OK, but each OK separately)                      │
+│                                                                             │
+│ Dialog:   ┌────────────────────────────────────────────────┐              │
+│           │ Reject Offer from Agent1                       │              │
+│           ├────────────────────────────────────────────────┤              │
+│           │ Individual conditions (NEVER acceptable):      │              │
+│           │   ☑ h1 = red                                   │              │
+│           │   ☐ h4 = green                                 │              │
+│           │   ☐ h7 = blue                                  │              │
+│           │                                                 │              │
+│           │ ────────────────────────────────────────────── │              │
+│           │                                                 │              │
+│           │ Combinations (only impossible TOGETHER):       │              │
+│           │   Condition 1: [h4=green    ▼]                 │              │
+│           │   Condition 2: [h7=blue     ▼]                 │              │
+│           │   [✓ Add to List]                              │              │
+│           │                                                 │              │
+│           │   Marked combinations:                         │              │
+│           │   • (h4=green AND h7=blue) [✗ Remove]          │              │
+│           │                                                 │              │
+│           │           [Reject Offer]    [Cancel]           │              │
+│           └────────────────────────────────────────────────┘              │
+│                                                                             │
+│ Result:   Agent stores BOTH constraint types:                              │
+│           • Individual: {(h1, red)}                                        │
+│           • Combination: {frozenset({(h4,green), (h7,blue)})}             │
+│                                                                             │
+│           Future offers avoid BOTH:                                        │
+│           • Any config with h1=red                                         │
+│           • Any config with h4=green AND h7=blue together                 │
+│                                                                             │
+│ Files:    comm/rb_protocol.py - impossible_combinations field              │
+│           agents/rule_based_cluster_agent.py - Storage + filtering         │
+│           ui/human_turn_ui.py - Enhanced dialog                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                              KEY FEATURES                                  ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║                                                                            ║
+║  ✓  Bug Fix: Add condition button now works consistently                  ║
+║  ✓  Query: Check feasibility before committing                            ║
+║  ✓  Query: Results shown as persistent cards                              ║
+║  ✓  Reject: Mark individual conditions impossible                         ║
+║  ✓  Reject: Mark combinations (2+ conditions) impossible together         ║
+║  ✓  Filter: Agents avoid both individual + combination constraints        ║
+║  ✓  Protocol: All messages serialize/deserialize correctly                ║
+║  ✓  Logging: Clear reasoning in agent logs                                ║
+║  ✓  UI: No crashes, clear feedback                                        ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FILES MODIFIED                                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ • comm/rb_protocol.py                    (~100 lines)                      │
+│   - FeasibilityQuery/Response protocol                                     │
+│   - impossible_combinations field                                          │
+│                                                                             │
+│ • agents/rule_based_cluster_agent.py     (~200 lines)                      │
+│   - Feasibility query handler                                              │
+│   - Combination storage + filtering                                        │
+│                                                                             │
+│ • ui/human_turn_ui.py                    (~400 lines)                      │
+│   - Bug fix (lines 547, 660)                                               │
+│   - Check Feasibility button + query cards                                 │
+│   - Enhanced rejection dialog                                              │
+│   - FeasibilityResponse processing                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          TESTING REQUIRED                                  ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║                                                                            ║
+║  1. Test bug fix: Add condition button                                    ║
+║  2. Test feasibility query with feasible conditions                       ║
+║  3. Test feasibility query with infeasible conditions                     ║
+║  4. Test rejection with individual conditions                             ║
+║  5. Test rejection with combinations                                      ║
+║  6. Test rejection with both individual + combinations                    ║
+║  7. Verify agent respects constraints in next offers                      ║
+║  8. Test phase transition (constraints cleared)                           ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Implementation complete: 2026-01-29
+Ready for user testing

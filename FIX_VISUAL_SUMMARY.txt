@@ -1,0 +1,97 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    Agent2 Deadlock Fix - Visual Summary                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌─ BEFORE THE FIX ─────────────────────────────────────────────────────────────┐
+│                                                                               │
+│  Iteration 1:  Agent2 → "If h2=red AND h5=blue, I'll do b2=green" → Human   │
+│                         (offer_123 sent)                                      │
+│                                                                               │
+│  Iteration 2:  Agent2 waits for response... (no new offers)                  │
+│  Iteration 3:  Agent2 waits for response... (no new offers)                  │
+│  Iteration 4:  Agent2 waits for response... (no new offers)                  │
+│  Iteration 5:  Agent2 waits for response... (no new offers)                  │
+│  Iteration 6:  Agent2 waits for response... (no new offers)                  │
+│    ...                                                                        │
+│  Iteration 99: Agent2 STILL waiting... (DEADLOCK! 🔒)                        │
+│                                                                               │
+│  Console shows:                                                               │
+│  > [RB Move Gen] No move to send. Proposed: ['b2'], Boundary: ['b2']        │
+│  > [Satisfaction] Not satisfied: penalty=20.000                              │
+│  > [RB Move Gen] No move to send. Proposed: ['b2'], Boundary: ['b2']        │
+│  > [Satisfaction] Not satisfied: penalty=20.000                              │
+│  (repeats forever... 😞)                                                      │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ AFTER THE FIX ──────────────────────────────────────────────────────────────┐
+│                                                                               │
+│  Iteration 1:  Agent2 → "If h2=red AND h5=blue, I'll do b2=green" → Human   │
+│                         (offer_123 sent, age=0)                               │
+│                                                                               │
+│  Iteration 2:  Agent2 waits... (offer age=1)                                 │
+│                ⏳ "Waiting for response (offers expire after 5 iterations)"   │
+│                                                                               │
+│  Iteration 3:  Agent2 waits... (offer age=2)                                 │
+│                ⏳ "Waiting for response (offers expire after 5 iterations)"   │
+│                                                                               │
+│  Iteration 4:  Agent2 waits... (offer age=3)                                 │
+│                ⏳ "Waiting for response (offers expire after 5 iterations)"   │
+│                                                                               │
+│  Iteration 5:  Agent2 waits... (offer age=4)                                 │
+│                ⏳ "Waiting for response (offers expire after 5 iterations)"   │
+│                                                                               │
+│  Iteration 6:  ⏰ OFFER EXPIRES!                                              │
+│                ✓ "Offer offer_123 expired - allowing new offers"             │
+│                Agent2 → "If h2=blue AND h5=red, I'll do b2=green" → Human    │
+│                         (offer_456 sent with new conditions)                  │
+│                                                                               │
+│  Result: Agent continues negotiating! ✅                                      │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ DEBUG WINDOW ENHANCEMENT ───────────────────────────────────────────────────┐
+│                                                                               │
+│  Select Agent: [Agent2 ▼]                                                    │
+│                                                                               │
+│  Name: Agent2                                                                 │
+│  Nodes: ['b1', 'b2', 'b3', 'b4', 'b5']                                       │
+│  Assignments: {'b2': 'red', 'b5': 'blue'}                                    │
+│                                                                               │
+│  --- RB Protocol State ---                                                   │
+│  Phase: bargain, Iteration: 4, Satisfied: False                              │
+│                                                                               │
+│  Pending offers WE sent (waiting for response):                              │
+│    • offer_123_Agent2 (age: 3 iter, 2 cond, 1 assign)                       │
+│    ⚠ Agent is waiting for response - may block new offers!                   │
+│                                                                               │
+│  ^ THIS INFO NOW VISIBLE - Makes it crystal clear what's happening!          │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ KEY IMPROVEMENTS ───────────────────────────────────────────────────────────┐
+│                                                                               │
+│  ✓ Automatic Recovery: Agents no longer stuck forever                        │
+│  ✓ Clear Logging: Console shows exactly why agent is waiting                 │
+│  ✓ Debug Visibility: Pending offers visible in debug window with age         │
+│  ✓ Configurable: Expiry threshold (5 iterations) is adjustable               │
+│  ✓ Tested: test_offer_expiry.py confirms the mechanism works                 │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ HOW TO SEE IT IN ACTION ────────────────────────────────────────────────────┐
+│                                                                               │
+│  1. Run: python launch_menu.py                                               │
+│  2. Select RB (rule-based) mode                                               │
+│  3. Start experiment                                                          │
+│  4. When Agent2 sends an offer, focus on Agent1 (don't respond to Agent2)    │
+│  5. Watch the console logs - you'll see:                                     │
+│     - "⏳ Waiting for response (offers expire after 5 iterations)"            │
+│     - After 5 turns: "⏰ Offer expired - allowing new offers"                 │
+│  6. Open Debug window and select Agent2 to see pending offer details         │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,314 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   IMPOSSIBLE CONDITIONS FEATURE                            ║
+║                      Visual Architecture Diagram                           ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         BEFORE THIS FEATURE                              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Agent: "IF h4=green AND h5=red THEN a2=blue"
+Human: [Reject] ─────────────────────────────┐
+                                              │
+Agent stores: {(h4=green, h5=red)}  ←────────┘  Full tuple only
+
+Agent tries: "IF h4=green AND h5=blue..."  ← Still proposes h4=green!
+Human: [Reject again]
+
+Agent tries: "IF h4=green AND h5=yellow..." ← Still trying h4=green!
+Human: [Reject again]
+
+Problem: Agent doesn't know which specific condition is impossible
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          AFTER THIS FEATURE                              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Agent: "IF h4=green AND h5=red THEN a2=blue"
+
+                    ┌────────────────────────────────────┐
+Human: [Reject] ──► │  Dialog Appears:                  │
+                    │                                    │
+                    │  Which conditions are IMPOSSIBLE?  │
+                    │                                    │
+                    │  ☑ h4 = green                     │
+                    │  ☐ h5 = red                       │
+                    │                                    │
+                    │  [Reject Offer]  [Cancel]         │
+                    └────────────────────────────────────┘
+                                 │
+                                 │ User marks h4=green
+                                 ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  Wire Message:                                                          │
+│  [rb:{"move": "Reject",                                                │
+│       "refers_to": "offer_123",                                        │
+│       "impossible_conditions": [{"node": "h4", "colour": "green"}]     │
+│      }]                                                                 │
+└────────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  Agent Processing:                                                      │
+│                                                                         │
+│  1. Extract impossible_conditions                                      │
+│  2. Store: rb_impossible_conditions["Human"] = {('h4', 'green')}       │
+│  3. Also store full tuple: rb_rejected_conditions["Human"] =           │
+│     {(('h4','green'), ('h5','red'))}                                   │
+└────────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  Next Offer Generation:                                                 │
+│                                                                         │
+│  Enumerate configs: [                                                   │
+│    (h4=green, h5=red),     ← FILTERED (impossible + rejected tuple)   │
+│    (h4=green, h5=blue),    ← FILTERED (impossible pair!)              │
+│    (h4=green, h5=yellow),  ← FILTERED (impossible pair!)              │
+│    (h4=red, h5=red),       ← Keep                                      │
+│    (h4=red, h5=blue),      ← Keep ✓ (picked this)                     │
+│    (h4=blue, h5=red),      ← Keep                                      │
+│    ...                                                                  │
+│  ]                                                                      │
+└────────────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+Agent: "IF h4=red AND h5=blue THEN a2=yellow"  ← Different h4 color!
+
+Result: Faster convergence, no wasted rounds with h4=green
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         DATA STRUCTURES                                 ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  RBMove dataclass:                                                      │
+│                                                                         │
+│  @dataclass                                                             │
+│  class RBMove:                                                          │
+│      move: str                        # "Reject"                        │
+│      refers_to: Optional[str]         # "offer_123_Agent1"            │
+│      reasons: Optional[List[str]]     # ["human_rejected"]            │
+│      impossible_conditions: Optional[List[Dict[str, str]]]  ← NEW!    │
+│      # Example: [{"node": "h4", "colour": "green"}]                   │
+└────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  Agent Storage:                                                         │
+│                                                                         │
+│  # Full tuple rejection (existing)                                     │
+│  rb_rejected_conditions: Dict[str, Set[tuple]] = {                     │
+│      "Human": {                                                         │
+│          (('h4', 'green'), ('h5', 'red')),  # Full combination         │
+│          (('h4', 'red'), ('h5', 'green')),                            │
+│      }                                                                  │
+│  }                                                                      │
+│                                                                         │
+│  # Individual impossible pairs (NEW!)                                  │
+│  rb_impossible_conditions: Dict[str, Set[Tuple[str, str]]] = {        │
+│      "Human": {                                                         │
+│          ('h4', 'green'),  # Never use h4=green in ANY combo          │
+│          ('h5', 'blue'),   # Never use h5=blue in ANY combo           │
+│      }                                                                  │
+│  }                                                                      │
+└────────────────────────────────────────────────────────────────────────┘
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         FILTERING LOGIC                                 ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────────┐
+│  Pseudocode:                                                            │
+│                                                                         │
+│  def _generate_conditional_offer(recipient):                           │
+│      # Enumerate all possible configs                                  │
+│      their_configs = enumerate_configs(their_boundary)                 │
+│                                                                         │
+│      # FILTER OUT impossible pairs                                     │
+│      if recipient in rb_impossible_conditions:                         │
+│          impossible_set = rb_impossible_conditions[recipient]          │
+│          filtered_configs = []                                         │
+│          for config in their_configs:                                  │
+│              config_pairs = [(node, color) for node, color in config]  │
+│              has_impossible = any(pair in impossible_set               │
+│                                   for pair in config_pairs)            │
+│              if not has_impossible:                                    │
+│                  filtered_configs.append(config)                       │
+│          their_configs = filtered_configs                              │
+│                                                                         │
+│      # Continue with remaining configs...                              │
+│      for config in their_configs:                                      │
+│          # Also check rejected tuples                                  │
+│          if tuple(config) in rb_rejected_conditions[recipient]:        │
+│              continue                                                   │
+│          # Evaluate and pick best...                                   │
+└────────────────────────────────────────────────────────────────────────┘
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         UI WORKFLOW                                     ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+User sees offer card:
+┌──────────────────────────────────┐
+│ ConditionalOffer from Agent1     │
+│ IF h4=green AND h5=red          │
+│ THEN a2=blue AND a3=yellow      │
+│                                  │
+│ [Accept] [Reject] [Counter]     │
+└──────────────────────────────────┘
+         │
+         │ User clicks Reject
+         ▼
+Dialog opens:
+┌───────────────────────────────────────┐
+│ Reject Offer from Agent1              │
+├───────────────────────────────────────┤
+│ Which conditions are IMPOSSIBLE?      │
+│                                       │
+│ Select conditions you can NEVER       │
+│ satisfy. Agent will avoid future      │
+│ offers containing these.              │
+│                                       │
+│ ┌───────────────────────────────────┐ │
+│ │ Conditions in this offer:         │ │
+│ │                                   │ │
+│ │ ☐ h4 = green                      │ │
+│ │ ☐ h5 = red                        │ │
+│ │                                   │ │
+│ └───────────────────────────────────┘ │
+│                                       │
+│    [Reject Offer]  [Cancel]           │
+└───────────────────────────────────────┘
+         │                    │
+         │ Confirm            │ Cancel
+         ▼                    ▼
+    Send Reject          Do nothing,
+    with marked          offer stays
+    conditions          pending
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                       EXAMPLE SCENARIOS                                 ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+Scenario 1: Fixed Node Constraint
+─────────────────────────────────
+  h1 (red, fixed) ─── h4 (?)
+
+  Agent: "IF h4=red THEN..."
+  Human: Reject, mark h4=red as impossible
+  Reason: h4 adjacent to h1=red, cannot be same color
+  Result: Agent never proposes h4=red again
+
+
+Scenario 2: Multiple Boundary Conflicts
+───────────────────────────────────────
+  h1 (blue, fixed) ─── h4 (?)
+  h2 (blue, fixed) ─── h5 (?)
+
+  Agent: "IF h4=blue AND h5=blue THEN..."
+  Human: Reject, mark both h4=blue AND h5=blue
+  Reason: Both adjacent to fixed blue nodes
+  Result: Agent filters out both in all future offers
+
+
+Scenario 3: Just a Bad Combination
+──────────────────────────────────
+  Agent: "IF h4=green AND h5=red THEN..."
+  Human: Reject, mark nothing
+  Reason: This particular combo doesn't work, but individually OK
+  Result: Agent remembers full tuple only, can retry h4=green with
+          different h5 color
+
+
+Scenario 4: Accumulation
+────────────────────────
+  Round 1: Agent: "IF h4=green..." → Reject, mark h4=green
+  Round 2: Agent: "IF h4=red..."   → Reject, mark h4=red
+  Round 3: Agent: "IF h5=blue..."  → Reject, mark h5=blue
+
+  Impossible set grows: {('h4','green'), ('h4','red'), ('h5','blue')}
+
+  Round 4: Agent proposes only configs without these pairs
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         LOGGING OUTPUT                                  ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+Agent1_log.txt:
+───────────────
+[RB Process] Processing Reject from Human
+[RB Process] Stored IMPOSSIBLE condition from Human: h4=green
+[RB Process] Total impossible conditions from Human: 1
+[RB Process] Stored rejected combination from Human: (('h4', 'green'), ('h5', 'red'))
+
+[ConditionalOffer Gen] Enumerating 64 possible configurations
+[ConditionalOffer Gen] Filtered out 16 configs with impossible conditions
+[ConditionalOffer Gen] Remaining configs: 48
+[ConditionalOffer Gen] Found zero-penalty configuration!
+
+communication_log.txt:
+─────────────────────
+[Agent1 → Human] ConditionalOffer: If h4=green AND h5=red then a2=blue [id:offer_123_Agent1]
+[Human → Agent1] Reject offer offer_123_Agent1 (marking as impossible: h4=green) | reasons: human_rejected, unacceptable_terms
+[Agent1 → Human] ConditionalOffer: If h4=red AND h5=blue then a2=yellow [id:offer_124_Agent1]
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         KEY BENEFITS                                    ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+1. Faster Convergence
+   └─ Agent doesn't waste time re-proposing impossible conditions
+
+2. More Expressive Communication
+   └─ User can specify WHAT is impossible, not just reject wholesale
+
+3. Better Search Efficiency
+   └─ Agent prunes search space more aggressively
+
+4. Maintains Privacy
+   └─ User doesn't need to explain WHY something is impossible
+
+5. Granular Control
+   └─ Can mark 0, 1, or all conditions in a single rejection
+
+6. Backward Compatible
+   └─ Works with existing rejection (mark nothing = old behavior)
+
+7. Accumulative Learning
+   └─ Multiple rejections build up impossible condition set
+
+8. Clear Feedback
+   └─ Logs show exactly what was marked and filtered
+
+
+╔════════════════════════════════════════════════════════════════════════╗
+║                         FILES MODIFIED                                  ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+comm/rb_protocol.py (+37 lines)
+├─ Add impossible_conditions field to RBMove
+├─ Update to_dict() serialization
+├─ Update parse_rb() parsing
+└─ Update pretty_rb() display
+
+agents/rule_based_cluster_agent.py (+343 lines)
+├─ Add rb_impossible_conditions storage
+├─ Process impossible conditions in Reject handler
+├─ Filter configurations in _generate_conditional_offer
+└─ Filter alternatives in rejection learning
+
+ui/human_turn_ui.py (+475 lines)
+├─ Add _reject_offer_with_dialog() method
+├─ Checkbox dialog with scrollable list
+└─ Modify _reject_offer() to call dialog
+
+
+═══════════════════════════════════════════════════════════════════════════
+                           END OF DIAGRAM
+═══════════════════════════════════════════════════════════════════════════
