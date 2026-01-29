@@ -178,6 +178,50 @@ class DebugWindow:
         if dec:
             self._info.insert("end", f"Decision: {dec}\n")
 
+        # ----- RB protocol state (if applicable) -----
+        if hasattr(a, 'rb_active_offers'):
+            rb_phase = getattr(a, 'rb_phase', 'N/A')
+            rb_iteration = getattr(a, 'rb_iteration_counter', 0)
+            satisfied = getattr(a, 'satisfied', False)
+            self._info.insert("end", f"\n--- RB Protocol State ---\n")
+            self._info.insert("end", f"Phase: {rb_phase}, Iteration: {rb_iteration}, Satisfied: {satisfied}\n")
+
+            # Show pending offers (waiting for response)
+            active_offers = getattr(a, 'rb_active_offers', {})
+            accepted_offers = getattr(a, 'rb_accepted_offers', set())
+            rejected_offers = getattr(a, 'rb_rejected_offers', set())
+            offer_iterations = getattr(a, 'rb_offer_iteration', {})
+
+            # Separate our offers from their offers
+            our_pending = []
+            their_pending = []
+            for offer_id, offer in active_offers.items():
+                if offer_id in accepted_offers or offer_id in rejected_offers:
+                    continue
+                if a.name in offer_id:
+                    our_pending.append(offer_id)
+                else:
+                    their_pending.append(offer_id)
+
+            if our_pending:
+                self._info.insert("end", f"\nPending offers WE sent (waiting for response):\n")
+                for offer_id in our_pending:
+                    offer_iter = offer_iterations.get(offer_id, 0)
+                    age = rb_iteration - offer_iter
+                    offer_obj = active_offers.get(offer_id)
+                    num_cond = len(offer_obj.conditions) if hasattr(offer_obj, 'conditions') and offer_obj.conditions else 0
+                    num_assign = len(offer_obj.assignments) if hasattr(offer_obj, 'assignments') and offer_obj.assignments else 0
+                    self._info.insert("end", f"  • {offer_id} (age: {age} iter, {num_cond} cond, {num_assign} assign)\n")
+                if our_pending:
+                    self._info.insert("end", "  ⚠ Agent is waiting for response - may block new offers!\n")
+
+            if their_pending:
+                self._info.insert("end", f"\nPending offers FROM others (need our response):\n")
+                for offer_id in their_pending:
+                    offer_iter = offer_iterations.get(offer_id, 0)
+                    age = rb_iteration - offer_iter
+                    self._info.insert("end", f"  • {offer_id} (age: {age} iter)\n")
+
         # ----- incoming -----
         self._incoming.delete("1.0", "end")
         raw = list(getattr(a, "debug_incoming_raw", []))[-10:]

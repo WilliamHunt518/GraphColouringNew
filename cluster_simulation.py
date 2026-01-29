@@ -91,6 +91,11 @@ def _get_active_conditionals(agents: List[Any]) -> tuple:
             continue
 
         for offer_id, offer in agent.rb_active_offers.items():
+            # Skip offers made BY the human TO this agent (don't show human's own offers back to them)
+            # Offer IDs contain the sender name: "offer_<timestamp>_<sender>"
+            if "_Human" in offer_id:
+                continue
+
             # Determine status based on accepted offers
             accepted_offers = getattr(agent, 'rb_accepted_offers', set())
             status = "accepted" if offer_id in accepted_offers else "pending"
@@ -114,16 +119,19 @@ def _get_active_conditionals(agents: List[Any]) -> tuple:
                         "colour": assign.colour
                     })
 
+            # Get reasons for categorization and UI display
+            reasons = getattr(offer, 'reasons', [])
+
             offer_dict = {
                 "offer_id": offer_id,
                 "sender": agent.name,
                 "conditions": conditions_list,
                 "assignments": assignments_list,
-                "status": status
+                "status": status,
+                "reasons": reasons  # Include reasons so UI can check for boundary_update
             }
 
             # Check if this is a configuration announcement
-            reasons = getattr(offer, 'reasons', [])
             if "initial_configuration" in reasons:
                 configurations.append(offer_dict)
             else:
@@ -265,59 +273,63 @@ def run_clustered_simulation(
         for owner_fixed in cluster_fixed_nodes.values():
             all_fixed_assignments.update(owner_fixed)
 
-        # Try to find a valid coloring using greedy approach
-        test_assignment = dict(all_fixed_assignments)
+        # EXHAUSTIVE SEARCH to validate solvability
+        # Greedy may fail even when solution exists, so we MUST use exhaustive search
+        import itertools
+
+        test_assignment = None
         free_nodes = [n for n in node_names if n not in all_fixed_assignments]
 
-        # Greedy coloring: assign each free node the first valid color
-        for node in free_nodes:
-            neighbors = problem.get_neighbors(node)
-            neighbor_colors = {test_assignment.get(nbr) for nbr in neighbors if nbr in test_assignment}
-            neighbor_colors.discard(None)
+        print(f"[Validation] Searching {len(domain)**len(free_nodes)} possible colorings...")
 
-            # Find first color that doesn't conflict
-            valid_color = None
-            for color in domain:
-                if color not in neighbor_colors:
-                    valid_color = color
-                    break
+        # Try all possible color combinations for free nodes
+        found_valid_solution = False
+        for combo in itertools.product(domain, repeat=len(free_nodes)):
+            candidate = dict(all_fixed_assignments)
+            for node, color in zip(free_nodes, combo):
+                candidate[node] = color
 
-            if valid_color is None:
-                print(f"[Validation] WARNING: Could not find valid color for node {node}!")
-                print(f"[Validation] Neighbors: {neighbors}, their colors: {neighbor_colors}")
-                print("[Validation] The fixed constraints may make the problem unsolvable.")
-                print("[Validation] Continuing anyway - negotiation may still resolve conflicts.")
-            else:
-                test_assignment[node] = valid_color
+            # Check if this is a valid coloring (no conflicts)
+            penalty = problem.evaluate_assignment(candidate)
+            if penalty == 0.0:
+                test_assignment = candidate
+                found_valid_solution = True
+                print("[Validation] SUCCESS: Found a valid solution with penalty=0")
+                break
 
-        # Check if the test assignment is valid
-        if problem.is_valid(test_assignment):
-            print("[Validation] SUCCESS: Found a valid solution with fixed constraints")
-            print(f"[Validation] Test solution penalty: {problem.evaluate_assignment(test_assignment)}")
-
-            # Print the solution as a hint for the human player
+        # CRITICAL CHECK: Halt if no valid solution exists
+        if not found_valid_solution:
             print("\n" + "=" * 70)
-            print("HINT: Here is one valid coloring solution for this problem:")
+            print("ERROR: PROBLEM IS UNSOLVABLE!")
             print("=" * 70)
-
-            # Group by cluster for readability
-            if clusters:
-                for owner, local_nodes in sorted(clusters.items()):
-                    node_colors = {node: test_assignment.get(node, "?") for node in sorted(local_nodes)}
-                    color_strs = [f"{node}={color}" for node, color in node_colors.items()]
-                    print(f"  {owner}: {', '.join(color_strs)}")
-            else:
-                # No clusters - just print all nodes
-                for node, color in sorted(test_assignment.items()):
-                    print(f"  {node}={color}")
-
+            print("No valid graph coloring exists with the given constraints.")
+            print(f"Fixed nodes: {all_fixed_assignments}")
+            print(f"Domain: {domain}")
+            print(f"Free nodes: {free_nodes}")
+            print("\nThe problem setup is invalid. Cannot launch interface.")
             print("=" * 70)
-            print("(This is just one possible solution - there may be others!)")
-            print("=" * 70 + "\n")
+            raise ValueError("Problem has no valid solution with penalty=0. Cannot proceed.")
+
+        # Print the valid solution as a hint
+        print("\n" + "=" * 70)
+        print("HINT: Here is one valid coloring solution for this problem:")
+        print("=" * 70)
+
+        # Group by cluster for readability
+        if clusters:
+            for owner, local_nodes in sorted(clusters.items()):
+                node_colors = {node: test_assignment[node] for node in sorted(local_nodes)}
+                color_strs = [f"{node}={color}" for node, color in node_colors.items()]
+                print(f"  {owner}: {', '.join(color_strs)}")
         else:
-            print("[Validation] WARNING: Greedy validation found conflicts")
-            print(f"[Validation] Test solution penalty: {problem.evaluate_assignment(test_assignment)}")
-            print("[Validation] This may require negotiation to resolve.")
+            # No clusters - just print all nodes
+            for node, color in sorted(test_assignment.items()):
+                print(f"  {node}={color}")
+
+        print("=" * 70)
+        print("(This is just one possible solution - there may be others!)")
+        print(f"Solution penalty: {problem.evaluate_assignment(test_assignment)} (must be 0)")
+        print("=" * 70 + "\n")
 
     if human_owners is None:
         human_owners = ["Human"]

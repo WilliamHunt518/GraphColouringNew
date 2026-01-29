@@ -38,7 +38,7 @@ from typing import Any, Dict, List, Optional
 
 
 # New conditional proposal grammar
-ALLOWED_MOVES = ("Propose", "ConditionalOffer", "CounterProposal", "Accept", "Commit")
+ALLOWED_MOVES = ("Propose", "ConditionalOffer", "CounterProposal", "Accept", "Reject", "Commit", "FeasibilityQuery", "FeasibilityResponse")
 
 # Backward compatibility mapping for old logs
 LEGACY_MOVES = {
@@ -94,6 +94,16 @@ class RBMove:
     offer_id: Optional[str] = None
     refers_to: Optional[str] = None      # Reference to other offer/proposal
 
+    # NEW: For marking specific conditions as impossible
+    impossible_conditions: Optional[List[Dict[str, str]]] = None
+    impossible_combinations: Optional[List[List[Dict[str, str]]]] = None  # List of combinations
+
+    # NEW: For feasibility queries
+    query_id: Optional[str] = None
+    is_feasible: Optional[bool] = None
+    feasibility_penalty: Optional[float] = None
+    feasibility_details: Optional[str] = None
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "move": self.move,
@@ -111,6 +121,20 @@ class RBMove:
             result["offer_id"] = self.offer_id
         if self.refers_to is not None:
             result["refers_to"] = self.refers_to
+        if self.impossible_conditions is not None:
+            result["impossible_conditions"] = self.impossible_conditions
+        if self.impossible_combinations is not None:
+            result["impossible_combinations"] = self.impossible_combinations
+
+        # Add feasibility query fields if present
+        if self.query_id is not None:
+            result["query_id"] = self.query_id
+        if self.is_feasible is not None:
+            result["is_feasible"] = self.is_feasible
+        if self.feasibility_penalty is not None:
+            result["feasibility_penalty"] = self.feasibility_penalty
+        if self.feasibility_details is not None:
+            result["feasibility_details"] = self.feasibility_details
 
         return result
 
@@ -194,6 +218,43 @@ def parse_rb(text: Any) -> Optional[RBMove]:
         if refers_to is not None:
             refers_to = str(refers_to).strip() or None
 
+        # Parse impossible_conditions
+        impossible_conditions = text.get("impossible_conditions", None)
+        if impossible_conditions and isinstance(impossible_conditions, list):
+            # Validate structure
+            impossible_conditions = [
+                {"node": str(ic.get("node", "")), "colour": str(ic.get("colour", ""))}
+                for ic in impossible_conditions
+                if isinstance(ic, dict) and ic.get("node") and ic.get("colour")
+            ]
+            if not impossible_conditions:
+                impossible_conditions = None
+        else:
+            impossible_conditions = None
+
+        # Parse impossible_combinations
+        impossible_combinations = text.get("impossible_combinations", None)
+        if impossible_combinations and isinstance(impossible_combinations, list):
+            validated_combos = []
+            for combo in impossible_combinations:
+                if isinstance(combo, list):
+                    combo_tuples = [
+                        {"node": str(ic.get("node", "")), "colour": str(ic.get("colour", ""))}
+                        for ic in combo
+                        if isinstance(ic, dict) and ic.get("node") and ic.get("colour")
+                    ]
+                    if combo_tuples:
+                        validated_combos.append(combo_tuples)
+            impossible_combinations = validated_combos if validated_combos else None
+        else:
+            impossible_combinations = None
+
+        # Parse feasibility query fields
+        query_id = text.get("query_id", None)
+        is_feasible = text.get("is_feasible", None)
+        feasibility_penalty = text.get("feasibility_penalty", None)
+        feasibility_details = text.get("feasibility_details", None)
+
         return RBMove(
             move=move,
             node=node,
@@ -202,7 +263,13 @@ def parse_rb(text: Any) -> Optional[RBMove]:
             conditions=conditions,
             assignments=assignments,
             offer_id=offer_id,
-            refers_to=refers_to
+            refers_to=refers_to,
+            impossible_conditions=impossible_conditions,
+            impossible_combinations=impossible_combinations,
+            query_id=query_id,
+            is_feasible=is_feasible,
+            feasibility_penalty=feasibility_penalty,
+            feasibility_details=feasibility_details
         )
 
     s = str(text)
@@ -269,6 +336,42 @@ def pretty_rb(move: RBMove) -> str:
             base = f"Accept offer {move.refers_to}"
         else:
             base = f"Accept ({move.node})" if move.node else "Accept"
+    # Handle Reject
+    elif move.move == "Reject":
+        if move.refers_to:
+            base = f"Reject offer {move.refers_to}"
+        else:
+            base = "Reject"
+        # Add impossible conditions if present
+        if hasattr(move, 'impossible_conditions') and move.impossible_conditions:
+            imp_list = ", ".join(
+                f"{ic['node']}={ic['colour']}"
+                for ic in move.impossible_conditions
+            )
+            base += f" (marking as impossible: {imp_list})"
+        # Add impossible combinations if present
+        if hasattr(move, 'impossible_combinations') and move.impossible_combinations:
+            combo_strs = []
+            for combo in move.impossible_combinations:
+                combo_str = " AND ".join(f"{ic['node']}={ic['colour']}" for ic in combo)
+                combo_strs.append(f"({combo_str})")
+            base += f" [combos: {', '.join(combo_strs)}]"
+    # Handle FeasibilityQuery
+    elif move.move == "FeasibilityQuery" and move.conditions:
+        cond_parts = [f"{c.node}={c.colour}" for c in move.conditions]
+        base = f"FeasibilityQuery: IF {' AND '.join(cond_parts)} THEN feasible?"
+        if move.query_id:
+            base += f" [id:{move.query_id[-8:]}]"
+    # Handle FeasibilityResponse
+    elif move.move == "FeasibilityResponse":
+        if move.is_feasible:
+            base = f"✓ Feasible (penalty={move.feasibility_penalty:.1f})"
+        else:
+            base = "✗ Not Feasible"
+        if move.feasibility_details:
+            base += f" - {move.feasibility_details}"
+        if move.refers_to:
+            base += f" [re:{move.refers_to[-8:]}]"
     # Handle simple moves
     elif move.node and move.colour:
         base = f"{move.move}: {move.node}={move.colour}"

@@ -88,20 +88,24 @@ class HumanTurnUI:
         self._conditionals_cards_inner: Optional[tk.Frame] = None
         self._committed_nodes: Set[str] = set()  # Track committed nodes for visualization
 
+        # Feasibility queries tracking
+        self._feasibility_queries: Dict[str, List[Dict[str, Any]]] = {}  # {neighbor: [query_dicts]}
+
         # Per-neighbor conditional builder frames (so each neighbor has independent UI)
         self._conditional_builder_frames: Dict[str, ttk.Frame] = {}
         self._condition_rows: Dict[str, List] = {}  # {neighbor: [(frame, var), ...]}
         self._assignment_rows: Dict[str, List] = {}  # {neighbor: [(frame, node_var, color_var), ...]}
+        self._conditions_containers: Dict[str, ttk.Frame] = {}  # {neighbor: container frame}
+        self._assignments_containers: Dict[str, ttk.Frame] = {}  # {neighbor: container frame}
+        self._add_condition_funcs: Dict[str, Callable] = {}  # {neighbor: add_condition_row function}
+        self._add_assignment_funcs: Dict[str, Callable] = {}  # {neighbor: add_assignment_row function}
 
         # Two-phase workflow: configure → bargain
         self._phase: str = "configure"  # "configure" or "bargain"
         self._initial_configs: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}}
         self._agent_configurations: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}} - current announced configs
 
-        # Zoom and pan state for RB argument canvas
-        self._rb_canvas_scale: Dict[str, float] = {}  # Zoom level per neighbour
-        self._rb_canvas_offset: Dict[str, Tuple[int, int]] = {}  # Pan offset per neighbour
-        self._rb_drag_start: Dict[str, Optional[Tuple[int, int]]] = {}  # Drag start position
+        # Removed: Zoom and pan state for RB argument canvas (no longer used)
 
         # Zoom and pan state for graph canvas
         self._graph_canvas_scale: float = 1.0
@@ -413,107 +417,13 @@ class HumanTurnUI:
         canvas.bind("<B1-Motion>", _on_graph_shift_drag_move)
 
         for neigh in self._neighs:
-            # Check if we're in structured RB mode to use argument graph instead of text transcript
-            is_structured_rb = getattr(self, '_rb_structured_mode', False)
-
             pane = ttk.LabelFrame(right, text=f"{neigh}")
-            # In RB mode, allow panes to expand vertically to fill available space
-            pane.pack(fill="both", expand=is_structured_rb, pady=6)
+            pane.pack(fill="both", expand=False, pady=6)
 
-            if is_structured_rb:
-                # Use canvas for visual argument graph - tree layout with zoom/pan
-                arg_frame = ttk.Frame(pane)
-                arg_frame.pack(fill="both", expand=True, padx=6, pady=(6, 4))
-
-                # Remove height constraint - let canvas expand to fill available space
-                arg_canvas = tk.Canvas(arg_frame, bg="white", highlightthickness=1, highlightbackground="#ccc")
-                arg_canvas.pack(fill="both", expand=True)
-
-                # Initialize zoom/pan state for this neighbour
-                self._rb_canvas_scale[neigh] = 1.0
-                self._rb_canvas_offset[neigh] = (0, 0)
-                self._rb_drag_start[neigh] = None
-
-                # Bind zoom with mouse wheel
-                def _on_zoom(event, n=neigh, canvas=arg_canvas):
-                    # Get mouse position
-                    x, y = event.x, event.y
-
-                    # Zoom in or out
-                    if event.delta > 0:
-                        scale_factor = 1.1
-                    else:
-                        scale_factor = 0.9
-
-                    old_scale = self._rb_canvas_scale[n]
-                    new_scale = old_scale * scale_factor
-
-                    # Clamp scale between 0.2 and 5.0
-                    new_scale = max(0.2, min(5.0, new_scale))
-
-                    self._rb_canvas_scale[n] = new_scale
-
-                    # Adjust offset to zoom toward mouse position
-                    offset_x, offset_y = self._rb_canvas_offset[n]
-                    offset_x = x - (x - offset_x) * (new_scale / old_scale)
-                    offset_y = y - (y - offset_y) * (new_scale / old_scale)
-                    self._rb_canvas_offset[n] = (offset_x, offset_y)
-
-                    self._render_argument_graph(n, canvas)
-
-                arg_canvas.bind("<MouseWheel>", _on_zoom)
-
-                # Bind pan with middle mouse or Shift+drag
-                def _on_drag_start(event, n=neigh):
-                    self._rb_drag_start[n] = (event.x, event.y)
-
-                def _on_drag_move(event, n=neigh, canvas=arg_canvas):
-                    if self._rb_drag_start[n]:
-                        start_x, start_y = self._rb_drag_start[n]
-                        dx = event.x - start_x
-                        dy = event.y - start_y
-
-                        offset_x, offset_y = self._rb_canvas_offset[n]
-                        self._rb_canvas_offset[n] = (offset_x + dx, offset_y + dy)
-
-                        self._rb_drag_start[n] = (event.x, event.y)
-                        self._render_argument_graph(n, canvas)
-
-                def _on_drag_end(event, n=neigh):
-                    self._rb_drag_start[n] = None
-
-                # Bind middle click or shift+left click for panning
-                arg_canvas.bind("<ButtonPress-2>", _on_drag_start)  # Middle click
-                arg_canvas.bind("<B2-Motion>", _on_drag_move)
-                arg_canvas.bind("<ButtonRelease-2>", _on_drag_end)
-
-                # Also bind shift+left click for panning
-                def _on_shift_drag_start(event, n=neigh):
-                    if event.state & 0x0001:  # Shift key
-                        self._rb_drag_start[n] = (event.x, event.y)
-
-                def _on_shift_drag_move(event, n=neigh, canvas=arg_canvas):
-                    if (event.state & 0x0001) and self._rb_drag_start[n]:  # Shift key
-                        start_x, start_y = self._rb_drag_start[n]
-                        dx = event.x - start_x
-                        dy = event.y - start_y
-
-                        offset_x, offset_y = self._rb_canvas_offset[n]
-                        self._rb_canvas_offset[n] = (offset_x + dx, offset_y + dy)
-
-                        self._rb_drag_start[n] = (event.x, event.y)
-                        self._render_argument_graph(n, canvas)
-
-                arg_canvas.bind("<ButtonPress-1>", _on_shift_drag_start)
-                arg_canvas.bind("<B1-Motion>", _on_shift_drag_move)
-                arg_canvas.bind("<ButtonRelease-1>", _on_drag_end)
-
-                self._transcript_box[neigh] = arg_canvas  # Store in same dict for compatibility
-            else:
-                # Use text box for other modes
-                tbox = tk.Text(pane, height=10, wrap="word", state="disabled")
-                tbox.pack(fill="x", padx=6, pady=(6, 4))
-                self._transcript_box[neigh] = tbox
+            # Use text box for transcript (removed argument graph visualization)
+            tbox = tk.Text(pane, height=10, wrap="word", state="disabled")
+            tbox.pack(fill="x", padx=6, pady=(6, 4))
+            self._transcript_box[neigh] = tbox
 
             row = ttk.Frame(pane)
             row.pack(fill="x", padx=6)
@@ -630,22 +540,28 @@ class HumanTurnUI:
                 conditions_label.pack(anchor="w", padx=4, pady=(4, 2))
 
                 # Instruction label
-                ttk.Label(conditional_builder_frame, text="Select statements from agent's proposals to use as conditions",
+                ttk.Label(conditional_builder_frame, text="Select from agent's offers OR check 'Custom' to propose your own conditions on agent's boundary nodes",
                          font=("Arial", 7, "italic"), foreground="#666").pack(anchor="w", padx=4)
 
                 conditions_container = ttk.Frame(conditional_builder_frame)
                 conditions_container.pack(fill="x", padx=4, pady=2)
+                self._conditions_containers[neigh] = conditions_container
 
                 def add_condition_row(n=neigh, container=conditions_container):
-                    """Add a new condition row for selecting previous statements."""
+                    """Add a new condition row for selecting previous statements or entering custom conditions."""
                     print(f"[UI] Adding condition row for neighbor '{n}' (type={type(n)})")
                     print(f"[UI] Current _rb_arguments keys: {list(self._rb_arguments.keys())}")
                     row_frame = ttk.Frame(container)
                     row_frame.pack(fill="x", pady=2)
 
-                    # Dropdown to select from previous statements
+                    # Create a frame to hold both modes
+                    mode_frame = ttk.Frame(row_frame)
+                    mode_frame.pack(side="left", fill="x", expand=True)
+
+                    # Mode 1: Dropdown (default)
+                    dropdown_frame = ttk.Frame(mode_frame)
                     statement_var = tk.StringVar(value="(select statement)")
-                    statement_combo = ttk.Combobox(row_frame, textvariable=statement_var,
+                    statement_combo = ttk.Combobox(dropdown_frame, textvariable=statement_var,
                                                   state="readonly", width=40)
 
                     # Populate with previous statements from this neighbor
@@ -681,22 +597,72 @@ class HumanTurnUI:
                     statement_combo.bind('<Button-1>', lambda e: update_statement_options())
                     statement_combo.pack(side="left", padx=2)
 
+                    # Mode 2: Custom entry
+                    custom_frame = ttk.Frame(mode_frame)
+                    node_var_custom = tk.StringVar()
+
+                    # Get human's boundary nodes (my nodes adjacent to this agent's cluster)
+                    human_boundary_nodes = []
+                    for node in self._nodes:
+                        if self._owners.get(node) == "Human":
+                            # Check if this human node has a neighbor owned by this agent
+                            for nbr in self.problem.get_neighbors(node):
+                                if self._owners.get(nbr) == n:
+                                    if node not in human_boundary_nodes:
+                                        human_boundary_nodes.append(node)
+                                    break
+
+                    ttk.Label(custom_frame, text="Node:").pack(side="left", padx=2)
+                    node_combo_custom = ttk.Combobox(custom_frame, textvariable=node_var_custom,
+                                                    values=human_boundary_nodes, state="readonly", width=10)
+                    node_combo_custom.pack(side="left", padx=2)
+
+                    ttk.Label(custom_frame, text="=").pack(side="left", padx=2)
+                    color_var_custom = tk.StringVar()
+                    color_combo_custom = ttk.Combobox(custom_frame, textvariable=color_var_custom,
+                                                      values=self._domain, state="readonly", width=10)
+                    color_combo_custom.pack(side="left", padx=2)
+
+                    # Toggle button
+                    use_custom_var = tk.BooleanVar(value=False)
+                    def toggle_mode():
+                        if use_custom_var.get():
+                            dropdown_frame.pack_forget()
+                            custom_frame.pack(side="left", fill="x")
+                        else:
+                            custom_frame.pack_forget()
+                            dropdown_frame.pack(side="left", fill="x")
+
+                    toggle_btn = ttk.Checkbutton(row_frame, text="Custom",
+                                                 variable=use_custom_var,
+                                                 command=toggle_mode)
+                    toggle_btn.pack(side="left", padx=4)
+
+                    # Show dropdown by default
+                    dropdown_frame.pack(side="left", fill="x")
+
                     # Remove button
                     def remove_row():
                         print(f"[UI] Removing condition row for {n}")
                         row_frame.destroy()
-                        if (row_frame, statement_var) in self._condition_rows[n]:
-                            self._condition_rows[n].remove((row_frame, statement_var))
+                        # Check both old and new formats
+                        for item in list(self._condition_rows[n]):
+                            if len(item) >= 2 and item[0] == row_frame:
+                                self._condition_rows[n].remove(item)
+                                break
                         print(f"[UI] {n} now has {len(self._condition_rows[n])} condition rows")
 
                     remove_btn = ttk.Button(row_frame, text="✗", width=3, command=remove_row)
                     remove_btn.pack(side="left", padx=2)
 
-                    self._condition_rows[n].append((row_frame, statement_var))
+                    # Store all vars in condition rows for later parsing (new format with 5 elements)
+                    self._condition_rows[n].append((row_frame, statement_var, node_var_custom, color_var_custom, use_custom_var))
                     return row_frame
 
+                self._add_condition_funcs[neigh] = add_condition_row
+
                 add_condition_btn = ttk.Button(conditional_builder_frame, text="+ Add Condition",
-                                              command=lambda n=neigh, c=conditions_container: add_condition_row(n, c))
+                                              command=add_condition_row)
                 add_condition_btn.pack(anchor="w", padx=4, pady=2)
 
                 # Assignments section (THEN part)
@@ -709,6 +675,7 @@ class HumanTurnUI:
 
                 assignments_container = ttk.Frame(conditional_builder_frame)
                 assignments_container.pack(fill="x", padx=4, pady=2)
+                self._assignments_containers[neigh] = assignments_container
 
                 def add_assignment_row(n=neigh, container=assignments_container):
                     """Add a new assignment row for specifying commitments."""
@@ -749,8 +716,10 @@ class HumanTurnUI:
                     self._assignment_rows[n].append((row_frame, node_var, color_var))
                     return row_frame
 
+                self._add_assignment_funcs[neigh] = add_assignment_row
+
                 add_assignment_btn = ttk.Button(conditional_builder_frame, text="+ Add Assignment",
-                                               command=lambda n=neigh, c=assignments_container: add_assignment_row(n, c))
+                                               command=add_assignment_row)
                 add_assignment_btn.pack(anchor="w", padx=4, pady=2)
 
                 # Initialize with one assignment row (conditions can be empty for unconditional offers)
@@ -768,20 +737,52 @@ class HumanTurnUI:
 
                     # Extract conditions from condition rows (can be empty for unconditional)
                     conditions = []
-                    for row_frame, stmt_var in cond_rows:
-                        stmt = stmt_var.get()
-                        if stmt and stmt != "(select statement)":
-                            # Parse statement: "#3: h1=red"
-                            match = re.match(r'#(\d+): (\w+)=(\w+)', stmt)
-                            if match:
-                                idx, node_name, color_name = match.groups()
-                                # Get owner of this node
-                                owner = self._owners.get(node_name, "Unknown")
-                                conditions.append({
-                                    "node": node_name,
-                                    "colour": color_name,
-                                    "owner": owner
-                                })
+                    for row_data in cond_rows:
+                        if len(row_data) == 2:
+                            # Old format: (row_frame, statement_var)
+                            row_frame, stmt_var = row_data
+                            stmt = stmt_var.get()
+                            if stmt and stmt != "(select statement)":
+                                # Parse statement: "#3: h1=red"
+                                match = re.match(r'#(\d+): (\w+)=(\w+)', stmt)
+                                if match:
+                                    idx, node_name, color_name = match.groups()
+                                    # Get owner of this node
+                                    owner = self._owners.get(node_name, "Unknown")
+                                    conditions.append({
+                                        "node": node_name,
+                                        "colour": color_name,
+                                        "owner": owner
+                                    })
+                        elif len(row_data) == 5:
+                            # New format: (row_frame, statement_var, node_var_custom, color_var_custom, use_custom_var)
+                            row_frame, stmt_var, node_custom, color_custom, use_custom = row_data
+                            if use_custom.get():
+                                # Parse custom entry
+                                node_name = node_custom.get()
+                                color_name = color_custom.get()
+                                if node_name and color_name:
+                                    owner = self._owners.get(node_name, "Unknown")
+                                    conditions.append({
+                                        "node": node_name,
+                                        "colour": color_name,
+                                        "owner": owner
+                                    })
+                            else:
+                                # Parse dropdown selection
+                                stmt = stmt_var.get()
+                                if stmt and stmt != "(select statement)":
+                                    # Parse statement: "#3: h1=red"
+                                    match = re.match(r'#(\d+): (\w+)=(\w+)', stmt)
+                                    if match:
+                                        idx, node_name, color_name = match.groups()
+                                        # Get owner of this node
+                                        owner = self._owners.get(node_name, "Unknown")
+                                        conditions.append({
+                                            "node": node_name,
+                                            "colour": color_name,
+                                            "owner": owner
+                                        })
 
                     # Extract assignments from assignment rows
                     assignments = []
@@ -799,11 +800,11 @@ class HumanTurnUI:
                         print(f"[RB UI] Cannot send offer: no assignments specified (THEN part is required)")
                         return
 
-                    # Must have at least one condition (IF part required)
+                    # Warn if no conditions (becomes unconditional announcement)
                     if not conditions:
-                        print(f"[RB UI] Cannot send offer: no conditions specified (IF part is required)")
-                        print(f"[RB UI] Use '(Re-)Announce Configuration' button to announce assignments without conditions")
-                        return
+                        print(f"[RB UI] Warning: No conditions specified - sending as unconditional announcement")
+                        print(f"[RB UI] Agent will treat this as a bare proposal, not a conditional offer")
+                        # Continue anyway - don't return
 
                     # Build conditional offer message
                     offer_id = f"offer_{int(time.time())}_Human"
@@ -876,6 +877,101 @@ class HumanTurnUI:
                     else:
                         print(f"[RB UI] ERROR: No on_send callback registered!")
 
+                # Check Feasibility function
+                def check_feasibility(n=neigh):
+                    """Send feasibility query to agent."""
+                    # Get conditions from conditional builder
+                    cond_rows = self._condition_rows.get(n, [])
+                    conditions = []
+
+                    # Extract conditions (same logic as send_rb_message)
+                    for row_data in cond_rows:
+                        if len(row_data) == 5:  # New format
+                            row_frame, stmt_var, node_custom, color_custom, use_custom = row_data
+                            if use_custom.get():
+                                node_name = node_custom.get()
+                                color_name = color_custom.get()
+                                if node_name and color_name:
+                                    owner = self._owners.get(node_name, "Unknown")
+                                    conditions.append({"node": node_name, "colour": color_name, "owner": owner})
+                            else:
+                                stmt = stmt_var.get()
+                                if stmt and stmt != "(select statement)":
+                                    match = re.match(r'#(\d+): (\w+)=(\w+)', stmt)
+                                    if match:
+                                        idx, node_name, color_name = match.groups()
+                                        owner = self._owners.get(node_name, "Unknown")
+                                        conditions.append({"node": node_name, "colour": color_name, "owner": owner})
+                        elif len(row_data) == 2:  # Old format
+                            row_frame, stmt_var = row_data
+                            stmt = stmt_var.get()
+                            if stmt and stmt != "(select statement)":
+                                match = re.match(r'#(\d+): (\w+)=(\w+)', stmt)
+                                if match:
+                                    idx, node_name, color_name = match.groups()
+                                    owner = self._owners.get(node_name, "Unknown")
+                                    conditions.append({"node": node_name, "colour": color_name, "owner": owner})
+
+                    if not conditions:
+                        # Show warning dialog
+                        import tkinter.messagebox as messagebox
+                        messagebox.showwarning("No Conditions", "Please add at least one condition to check feasibility")
+                        return
+
+                    # Build query message
+                    import time
+                    query_id = f"query_{int(time.time() * 1000)}_Human_{n}"
+                    rb_payload = {
+                        "move": "FeasibilityQuery",
+                        "query_id": query_id,
+                        "conditions": conditions,
+                        "reasons": ["feasibility_check"]
+                    }
+                    rb_msg = f'[rb:{json.dumps(rb_payload)}]'
+
+                    # Display in transcript
+                    cond_str = " AND ".join([f"{c['node']}={c['colour']}" for c in conditions])
+                    display_msg = f"Query: IF {cond_str} THEN feasible?"
+                    self._append_to_transcript(n, f"[You → {n}] {display_msg}")
+
+                    # Store query for tracking
+                    query_dict = {
+                        "query_id": query_id,
+                        "conditions": conditions,
+                        "is_feasible": None,  # Will be updated when response arrives
+                        "feasibility_penalty": None,
+                        "feasibility_details": None
+                    }
+
+                    if n not in self._feasibility_queries:
+                        self._feasibility_queries[n] = []
+                    self._feasibility_queries[n].append(query_dict)
+                    self._render_conditional_cards()
+
+                    # Send query via threading (same pattern as send_rb_message)
+                    if self._on_send:
+                        self._status_var[n].set("checking feasibility...")
+
+                        def _threaded_query():
+                            reply = None
+                            try:
+                                sig = inspect.signature(self._on_send)
+                                params = sig.parameters
+                                if len(params) >= 3:
+                                    reply = self._on_send(n, rb_msg, dict(self._assignments))
+                                else:
+                                    reply = self._on_send(n, rb_msg)
+                            except Exception as e:
+                                print(f"[RB UI] Query error: {e}")
+                            finally:
+                                if self._root:
+                                    if reply:
+                                        self._root.after(0, lambda: self.add_incoming(n, reply))
+                                    else:
+                                        self._root.after(0, lambda: self._status_var[n].set("idle"))
+
+                        threading.Thread(target=_threaded_query, daemon=True).start()
+
                 btn_frame = ttk.Frame(rb_frame)
                 btn_frame.pack(fill="x", padx=4, pady=6)
 
@@ -909,6 +1005,10 @@ class HumanTurnUI:
 
                 pass_btn = ttk.Button(btn_frame, text="Pass (let agent speak)", command=lambda fn=pass_turn: fn())
                 pass_btn.pack(side="left", padx=(0, 5))
+
+                # Check Feasibility button
+                feasibility_btn = ttk.Button(btn_frame, text="Check Feasibility", command=lambda fn=check_feasibility: fn())
+                feasibility_btn.pack(side="left", padx=(0, 5))
 
                 # Send offer button
                 send = ttk.Button(btn_frame, text="Send Offer", command=lambda fn=send_rb_message: fn())
@@ -1059,9 +1159,16 @@ class HumanTurnUI:
         if self._conditionals_cards_inner is None:
             return
 
+        # Safety check: Don't render if UI is closing
+        if self._root is None or not self._root.winfo_exists():
+            return
+
         # Clear existing cards
-        for widget in self._conditionals_cards_inner.winfo_children():
-            widget.destroy()
+        try:
+            for widget in self._conditionals_cards_inner.winfo_children():
+                widget.destroy()
+        except Exception:
+            return  # UI is being destroyed, skip rendering
 
         # Combine both incoming and outgoing offers
         all_offers = []
@@ -1082,9 +1189,14 @@ class HumanTurnUI:
         for offer in self._active_conditionals:
             sender = offer.get("sender", "")
             conditions = offer.get("conditions", [])
+            reasons = offer.get("reasons", [])
 
-            # Skip unconditional offers (no IF part) - only show conditional bargaining
-            if not conditions or len(conditions) == 0:
+            # EXCEPTION: Always show boundary_update offers even if unconditional
+            # These represent important state changes the human needs to see
+            is_boundary_update = any("boundary_update" in str(r) for r in reasons)
+
+            # Skip unconditional offers UNLESS they're boundary updates
+            if (not conditions or len(conditions) == 0) and not is_boundary_update:
                 print(f"[UI Cards] Skipping agent unconditional offer from {sender}: {offer.get('offer_id')}")
                 continue
 
@@ -1148,6 +1260,9 @@ class HumanTurnUI:
             card.pack(fill="x", padx=5, pady=5)
 
             # Offer ID header with direction indicator
+            reasons = cond.get("reasons", [])
+            is_boundary_update = any("boundary_update" in str(r) for r in reasons)
+
             if direction == "outgoing":
                 direction_arrow = "→"
                 recipient = cond.get('recipient', 'Agent')
@@ -1155,7 +1270,11 @@ class HumanTurnUI:
             else:
                 direction_arrow = "←"
                 sender = cond.get('sender', 'Unknown')
-                header_text = f"Offer #{idx+1} {direction_arrow} {sender}"
+                # Label boundary updates differently
+                if is_boundary_update:
+                    header_text = f"Status Update {direction_arrow} {sender}"
+                else:
+                    header_text = f"Offer #{idx+1} {direction_arrow} {sender}"
 
             tk.Label(
                 card,
@@ -1223,12 +1342,27 @@ class HumanTurnUI:
                         bg=card_bg
                     ).pack(side="left")
             else:
-                # For incoming offers, show Accept/Counter buttons
-                if cond.get("status") == "pending":
+                # For incoming offers, show Accept/Reject/Counter buttons
+                # BUT: boundary updates are just informational, don't need buttons
+                if is_boundary_update:
+                    tk.Label(
+                        btn_frame,
+                        text="ℹ Agent's current state",
+                        fg="#666",
+                        font=("Arial", 9, "italic"),
+                        bg=card_bg
+                    ).pack(side="left")
+                elif cond.get("status") == "pending":
                     ttk.Button(
                         btn_frame,
                         text="Accept",
                         command=lambda oid=cond.get("offer_id"): self._accept_offer(oid)
+                    ).pack(side="left", padx=2)
+
+                    ttk.Button(
+                        btn_frame,
+                        text="Reject",
+                        command=lambda oid=cond.get("offer_id"): self._reject_offer(oid)
                     ).pack(side="left", padx=2)
 
                     ttk.Button(
@@ -1244,6 +1378,89 @@ class HumanTurnUI:
                         font=("Arial", 9, "bold"),
                         bg=card_bg
                     ).pack(side="left")
+
+        # Render feasibility queries
+        for neigh in self._neighs:
+            if neigh in self._feasibility_queries and self._feasibility_queries[neigh]:
+                # Add section header
+                tk.Label(
+                    self._conditionals_cards_inner,
+                    text=f"Feasibility Queries - {neigh}:",
+                    font=("Arial", 10, "bold"),
+                    bg="white"
+                ).pack(anchor="w", padx=5, pady=(10, 5))
+
+                for query in self._feasibility_queries[neigh]:
+                    # Create query card
+                    query_card = tk.Frame(
+                        self._conditionals_cards_inner,
+                        bg="#f0f0f0",
+                        relief=tk.RIDGE,
+                        borderwidth=2
+                    )
+                    query_card.pack(fill="x", padx=5, pady=3)
+
+                    # Header
+                    header_text = f"Query {query['query_id'][-8:]}"
+                    tk.Label(
+                        query_card,
+                        text=header_text,
+                        font=("Arial", 9, "bold"),
+                        bg="#f0f0f0"
+                    ).pack(anchor="w", padx=5, pady=2)
+
+                    # Conditions
+                    cond_str = " AND ".join([f"{c['node']}={c['colour']}" for c in query['conditions']])
+                    tk.Label(
+                        query_card,
+                        text=f"IF {cond_str}",
+                        font=("Arial", 9),
+                        bg="#f0f0f0"
+                    ).pack(anchor="w", padx=10)
+
+                    # Result
+                    if query.get('is_feasible') is not None:
+                        if query['is_feasible']:
+                            result_text = "✓ Valid Coloring Possible"
+                            result_color = "green"
+                        else:
+                            result_text = "✗ No Valid Coloring"
+                            result_color = "red"
+
+                        tk.Label(
+                            query_card,
+                            text=result_text,
+                            fg=result_color,
+                            font=("Arial", 9, "bold"),
+                            bg="#f0f0f0"
+                        ).pack(anchor="w", padx=10, pady=2)
+
+                        if query.get('feasibility_details'):
+                            tk.Label(
+                                query_card,
+                                text=query['feasibility_details'],
+                                font=("Arial", 8),
+                                wraplength=200,
+                                bg="#f0f0f0"
+                            ).pack(anchor="w", padx=10, pady=2)
+                    else:
+                        tk.Label(
+                            query_card,
+                            text="⏳ Waiting for response...",
+                            font=("Arial", 9, "italic"),
+                            bg="#f0f0f0"
+                        ).pack(anchor="w", padx=10, pady=2)
+
+                    # Dismiss button
+                    def dismiss_query(n=neigh, qid=query['query_id']):
+                        self._feasibility_queries[n] = [q for q in self._feasibility_queries[n] if q['query_id'] != qid]
+                        self._render_conditional_cards()
+
+                    ttk.Button(
+                        query_card,
+                        text="Dismiss",
+                        command=dismiss_query
+                    ).pack(anchor="e", padx=5, pady=2)
 
         # Update scroll region
         if self._conditionals_cards_inner and self._conditionals_canvas:
@@ -1339,12 +1556,394 @@ class HumanTurnUI:
             except Exception as e:
                 print(f"Error accepting offer: {e}")
 
+    def _reject_offer_with_dialog(self, offer_id: str, sender: str, offer: Dict) -> Optional[Any]:
+        """Enhanced dialog to mark individual conditions or combinations as impossible.
+
+        Returns RBMove for rejection, or None if cancelled.
+        """
+        dialog = tk.Toplevel(self._root)
+        dialog.title(f"Reject Offer from {sender}")
+        dialog.geometry("600x600")
+        dialog.transient(self._root)
+        dialog.grab_set()
+
+        # Center dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+
+        result = {
+            "cancelled": False,
+            "impossible_individuals": [],
+            "impossible_combinations": []
+        }
+
+        # Header
+        tk.Label(dialog, text="Mark conditions as IMPOSSIBLE", font=("Arial", 11, "bold"), pady=10).pack()
+
+        # Main scrollable area
+        canvas = tk.Canvas(dialog, height=420)
+        scrollbar = ttk.Scrollbar(dialog, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scrollbar.pack(side="right", fill="y")
+
+        conditions = offer.get("conditions", [])
+        condition_options = [(c.get("node", "?"), c.get("colour", "?")) for c in conditions]
+
+        # SECTION 1: Individual Conditions
+        tk.Label(scrollable_frame, text="Individual conditions (NEVER acceptable):",
+                 font=("Arial", 9, "bold")).pack(anchor="w", pady=(5, 5))
+
+        tk.Label(scrollable_frame, text="Check if the condition is impossible by itself",
+                 font=("Arial", 8, "italic"), fg="#666").pack(anchor="w", padx=10, pady=(0, 5))
+
+        individual_vars = []
+
+        if conditions:
+            for node, colour in condition_options:
+                var = tk.BooleanVar(value=False)
+                individual_vars.append((var, node, colour))
+                tk.Checkbutton(scrollable_frame, text=f"{node} = {colour}", variable=var,
+                              font=("Arial", 10)).pack(anchor="w", padx=20, pady=2)
+        else:
+            tk.Label(scrollable_frame, text="This offer has no conditions.",
+                    font=("Arial", 9, "italic")).pack(anchor="w", padx=20, pady=5)
+
+        # Separator
+        ttk.Separator(scrollable_frame, orient='horizontal').pack(fill='x', pady=15)
+
+        # SECTION 2: Combinations
+        tk.Label(scrollable_frame, text="Combinations (only impossible TOGETHER):",
+                 font=("Arial", 9, "bold")).pack(anchor="w", pady=(5, 5))
+
+        tk.Label(scrollable_frame, text="Select 2+ conditions that are impossible together (but OK separately)",
+                 font=("Arial", 8, "italic"), fg="#666").pack(anchor="w", padx=10, pady=(0, 5))
+
+        # Combination builder frame
+        combo_builder_frame = ttk.Frame(scrollable_frame)
+        combo_builder_frame.pack(fill="x", padx=20, pady=5)
+
+        # Dropdown selectors for building combinations
+        combo_selections = []  # List of StringVars for dropdowns
+        combo_dropdown_frame = ttk.Frame(combo_builder_frame)
+        combo_dropdown_frame.pack(fill="x", pady=5)
+
+        def add_combo_dropdown():
+            """Add another dropdown to select conditions for combination."""
+            row = ttk.Frame(combo_dropdown_frame)
+            row.pack(fill="x", pady=2)
+
+            tk.Label(row, text=f"Condition {len(combo_selections)+1}:", font=("Arial", 9)).pack(side="left", padx=2)
+
+            var = tk.StringVar(value="(select)")
+            options = ["(select)"] + [f"{n}={c}" for n, c in condition_options]
+            combo = ttk.Combobox(row, textvariable=var, values=options, state="readonly", width=20)
+            combo.pack(side="left", padx=2)
+
+            combo_selections.append(var)
+
+            # Remove button
+            def remove_dropdown():
+                row.destroy()
+                combo_selections.remove(var)
+
+            ttk.Button(row, text="✗", width=3, command=remove_dropdown).pack(side="left", padx=2)
+
+        # Start with 2 dropdowns
+        if len(conditions) >= 2:
+            add_combo_dropdown()
+            add_combo_dropdown()
+
+            ttk.Button(combo_builder_frame, text="+ Add Another Condition", command=add_combo_dropdown).pack(anchor="w", pady=2)
+
+            # List of marked combinations
+            marked_combos_label = tk.Label(scrollable_frame, text="Marked combinations:", font=("Arial", 9, "bold"))
+            marked_combos_label.pack(anchor="w", padx=20, pady=(10, 5))
+
+            marked_combos_frame = ttk.Frame(scrollable_frame)
+            marked_combos_frame.pack(fill="x", padx=20, pady=5)
+
+            marked_combinations = []  # List of frozenset tuples
+
+            def update_marked_combos_display():
+                """Refresh the list of marked combinations."""
+                for widget in marked_combos_frame.winfo_children():
+                    widget.destroy()
+
+                if not marked_combinations:
+                    tk.Label(marked_combos_frame, text="(none yet)", font=("Arial", 8, "italic"), fg="#999").pack(anchor="w")
+                else:
+                    for combo in marked_combinations:
+                        row = ttk.Frame(marked_combos_frame)
+                        row.pack(fill="x", pady=2)
+
+                        combo_str = " AND ".join([f"{n}={c}" for n, c in sorted(combo)])
+                        tk.Label(row, text=f"• ({combo_str})", font=("Arial", 9)).pack(side="left")
+
+                        def remove_combo(c=combo):
+                            marked_combinations.remove(c)
+                            update_marked_combos_display()
+
+                        ttk.Button(row, text="✗ Remove", command=remove_combo).pack(side="left", padx=5)
+
+            def add_combination():
+                """Add selected conditions to marked combinations list."""
+                selected_conds = []
+                for var in combo_selections:
+                    val = var.get()
+                    if val and val != "(select)":
+                        # Parse "h1=red" format
+                        match = re.match(r'(\w+)=(\w+)', val)
+                        if match:
+                            node, colour = match.groups()
+                            selected_conds.append((node, colour))
+
+                if len(selected_conds) < 2:
+                    import tkinter.messagebox as messagebox
+                    messagebox.showwarning("Invalid Combination", "Please select at least 2 conditions for a combination")
+                    return
+
+                combo_set = frozenset(selected_conds)
+                if combo_set not in marked_combinations:
+                    marked_combinations.append(combo_set)
+                    update_marked_combos_display()
+
+                    # Reset dropdowns
+                    for var in combo_selections:
+                        var.set("(select)")
+                else:
+                    import tkinter.messagebox as messagebox
+                    messagebox.showinfo("Duplicate", "This combination is already marked")
+
+            ttk.Button(combo_builder_frame, text="✓ Add to List", command=add_combination).pack(anchor="w", pady=5)
+
+            update_marked_combos_display()
+        else:
+            tk.Label(scrollable_frame, text="(Need 2+ conditions for combinations)",
+                    font=("Arial", 8, "italic"), fg="#999").pack(anchor="w", padx=20, pady=5)
+            marked_combinations = []
+
+        # Buttons
+        btn_frame = tk.Frame(dialog)
+        btn_frame.pack(side="bottom", pady=10)
+
+        def on_reject():
+            """User confirmed rejection."""
+            result["cancelled"] = False
+
+            # Collect individual impossibilities
+            result["impossible_individuals"] = [
+                {"node": node, "colour": colour}
+                for var, node, colour in individual_vars
+                if var.get()
+            ]
+
+            # Collect combination impossibilities
+            result["impossible_combinations"] = [
+                [{"node": node, "colour": colour} for node, colour in combo]
+                for combo in marked_combinations
+            ]
+
+            dialog.destroy()
+
+        def on_cancel():
+            result["cancelled"] = True
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Reject Offer", command=on_reject).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side="left", padx=5)
+
+        dialog.wait_window()
+
+        if result["cancelled"]:
+            return None
+
+        # Build rejection move
+        from comm.rb_protocol import RBMove
+
+        reject_move = RBMove(
+            move="Reject",
+            refers_to=offer_id,
+            reasons=["human_rejected", "unacceptable_terms"]
+        )
+
+        if result["impossible_individuals"]:
+            reject_move.impossible_conditions = result["impossible_individuals"]
+            print(f"[Reject Dialog] Marked {len(result['impossible_individuals'])} individual conditions")
+
+        if result["impossible_combinations"]:
+            reject_move.impossible_combinations = result["impossible_combinations"]
+            print(f"[Reject Dialog] Marked {len(result['impossible_combinations'])} combinations")
+
+        return reject_move
+
+    def _reject_offer(self, offer_id: str) -> None:
+        """Handle rejecting a conditional offer."""
+        # Find the offer
+        offer = None
+        for cond in self._active_conditionals:
+            if cond.get("offer_id") == offer_id:
+                offer = cond
+                break
+
+        if not offer:
+            print(f"[Reject] Could not find offer {offer_id}")
+            return
+
+        sender = offer.get("sender")
+        if not sender:
+            print(f"[Reject] No sender for offer {offer_id}")
+            return
+
+        print(f"[Reject] Rejecting offer {offer_id} from {sender}")
+
+        # NEW: Show dialog to let user mark impossible conditions
+        reject_move = self._reject_offer_with_dialog(offer_id, sender, offer)
+
+        if reject_move is None:
+            print(f"[Reject] User cancelled rejection")
+            return
+
+        # Mark offer as rejected in UI
+        offer["status"] = "rejected"
+        self._render_conditional_cards()
+
+        # Build message
+        try:
+            from comm.rb_protocol import format_rb, pretty_rb
+
+            msg_text = format_rb(reject_move) + " " + pretty_rb(reject_move)
+
+            # Append to transcript
+            impossible_count = len(reject_move.impossible_conditions) if reject_move.impossible_conditions else 0
+            if impossible_count > 0:
+                self._append_to_transcript(
+                    sender,
+                    f"[You → {sender}] Reject offer {offer_id} ({impossible_count} conditions marked impossible)"
+                )
+            else:
+                self._append_to_transcript(sender, f"[You → {sender}] Reject offer {offer_id}")
+
+            # Send rejection message
+            if self._on_send:
+                def _send_reject():
+                    try:
+                        import inspect
+                        sig = inspect.signature(self._on_send)
+                        params = sig.parameters
+                        if len(params) >= 3:
+                            reply = self._on_send(sender, msg_text, dict(self._assignments))
+                        else:
+                            reply = self._on_send(sender, msg_text)
+
+                        if self._root and reply:
+                            self._root.after(0, lambda: self.add_incoming(sender, reply))
+                    except Exception as e:
+                        print(f"Error sending rejection: {e}")
+
+                threading.Thread(target=_send_reject, daemon=True).start()
+                self._set_status(sender, "sending rejection...")
+        except Exception as e:
+            print(f"Error rejecting offer: {e}")
+            import traceback
+            traceback.print_exc()
+
     def _counter_offer(self, offer_id: str) -> None:
-        """Handle countering a conditional offer."""
-        # For now, just show a message - full counter-offer UI would be more complex
-        # In a real implementation, this would open a dialog to build a counter-proposal
-        print(f"Counter offer for {offer_id} - UI not yet implemented")
-        # TODO: Open dialog to build counter-proposal
+        """Handle countering a conditional offer by pre-populating the builder."""
+        # Find the offer in active conditionals
+        offer = None
+        for cond in self._active_conditionals:
+            if cond.get("offer_id") == offer_id:
+                offer = cond
+                break
+
+        if not offer:
+            print(f"[Counter] Could not find offer {offer_id}")
+            return
+
+        sender = offer.get("sender")
+        if not sender:
+            print(f"[Counter] No sender for offer {offer_id}")
+            return
+
+        print(f"[Counter] Preparing counter-offer to {sender} for offer {offer_id}")
+
+        # Clear existing rows for this neighbor
+        self._clear_conditional_builder(sender)
+
+        # Pre-populate with counter-proposal:
+        # - Their assignments become our conditions (what they WILL do if we agree)
+        # - Leave assignments empty for user to fill (what WE will do)
+        assignments = offer.get("assignments", [])
+
+        # Add condition rows for each of their assignments
+        for assign in assignments:
+            node = assign.get("node")
+            colour = assign.get("colour")
+            if node and colour:
+                self._add_condition_row(sender, f"{node}={colour}")
+
+        print(f"[Counter] Pre-populated {len(assignments)} conditions for counter-offer to {sender}")
+        print(f"[Counter] User should now specify what they will do in the THEN section")
+
+    def _clear_conditional_builder(self, neighbor: str) -> None:
+        """Clear all condition and assignment rows for a neighbor."""
+        # Clear condition rows
+        if neighbor in self._condition_rows:
+            for row_frame, _ in list(self._condition_rows[neighbor]):
+                row_frame.destroy()
+            self._condition_rows[neighbor] = []
+
+        # Clear assignment rows
+        if neighbor in self._assignment_rows:
+            for row_frame, _, _ in list(self._assignment_rows[neighbor]):
+                row_frame.destroy()
+            self._assignment_rows[neighbor] = []
+
+    def _add_condition_row(self, neighbor: str, statement: str) -> None:
+        """Add a condition row pre-populated with the given statement."""
+        if neighbor not in self._add_condition_funcs:
+            print(f"[Counter] No add_condition function for {neighbor}")
+            return
+
+        add_func = self._add_condition_funcs[neighbor]
+        row_frame = add_func()
+
+        # Find the statement variable and set it
+        # The row contains (frame, statement_var)
+        if neighbor in self._condition_rows and len(self._condition_rows[neighbor]) > 0:
+            last_row = self._condition_rows[neighbor][-1]
+            _, statement_var = last_row
+
+            # Parse the statement to match the format "#X: node=color"
+            # We need to find a matching statement in the dropdown
+            # For now, let's search through the recent arguments to find a match
+            from comm.rb_protocol import parse_rb
+            recent_args = self._rb_arguments.get(neighbor, [])
+
+            # Find statement that matches "node=color"
+            target_match = statement  # e.g., "h4=blue"
+            for i, arg in enumerate(recent_args):
+                # Check if this argument matches
+                node = arg.get("node")
+                colour = arg.get("colour")
+                if node and colour:
+                    stmt_text = f"{node}={colour}"
+                    if stmt_text == target_match:
+                        statement_var.set(f"#{i}: {stmt_text}")
+                        print(f"[Counter] Set condition to #{i}: {stmt_text}")
+                        return
+
+            # If no match found, just set it directly (may not work with dropdown validation)
+            print(f"[Counter] Could not find matching statement for {statement}, setting placeholder")
+            statement_var.set(f"(select statement)")
 
     def _on_canvas_resize(self, _ev: tk.Event) -> None:
         if self._root is None:
@@ -1663,20 +2262,13 @@ class HumanTurnUI:
         if widget is None:
             return
 
-        # Check if this is structured RB mode (canvas) or text mode
-        is_structured_rb = getattr(self, '_rb_structured_mode', False)
-
-        if is_structured_rb and isinstance(widget, tk.Canvas):
-            # Render argument graph on canvas
-            self._render_argument_graph(neigh, widget)
-        else:
-            # Standard text transcript
-            widget.configure(state="normal")
-            widget.delete("1.0", "end")
-            for ln in self._transcripts.get(neigh, []):
-                widget.insert("end", ln + "\n")
-            widget.configure(state="disabled")
-            widget.see("end")
+        # Standard text transcript (canvas mode removed)
+        widget.configure(state="normal")
+        widget.delete("1.0", "end")
+        for ln in self._transcripts.get(neigh, []):
+            widget.insert("end", ln + "\n")
+        widget.configure(state="disabled")
+        widget.see("end")
 
     def _parse_and_store_rb_move(self, neigh: str, line: str) -> None:
         """Parse an RB move from transcript line and store it in the argument structure."""
@@ -2226,6 +2818,25 @@ class HumanTurnUI:
         while q:
             msg = q.pop(0)
             print(f"[UI] Processing message: {msg[:200]}")
+
+            # Check for FeasibilityResponse in RB mode
+            if self._rb_structured_mode:
+                try:
+                    from comm.rb_protocol import parse_rb
+                    rb_move = parse_rb(msg)
+                    if rb_move and rb_move.move == "FeasibilityResponse":
+                        refers_to = rb_move.refers_to if hasattr(rb_move, 'refers_to') else None
+                        if refers_to and neigh in self._feasibility_queries:
+                            for query in self._feasibility_queries[neigh]:
+                                if query['query_id'] == refers_to:
+                                    query['is_feasible'] = rb_move.is_feasible if hasattr(rb_move, 'is_feasible') else None
+                                    query['feasibility_penalty'] = rb_move.feasibility_penalty if hasattr(rb_move, 'feasibility_penalty') else None
+                                    query['feasibility_details'] = rb_move.feasibility_details if hasattr(rb_move, 'feasibility_details') else None
+                                    self._render_conditional_cards()
+                                    break
+                except Exception as e:
+                    print(f"[UI] Error processing FeasibilityResponse: {e}")
+
             clean, report = self._extract_and_apply_reports(msg)
             print(f"[UI] After extract_and_apply_reports: clean={clean[:200]}, report={report}")
             self._append_to_transcript(neigh, f"[{neigh}] {self._humanise(clean)}")
