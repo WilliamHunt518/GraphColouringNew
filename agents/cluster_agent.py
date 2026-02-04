@@ -76,8 +76,8 @@ class ClusterAgent(MultiNodeAgent):
         messages to neighbouring clusters.
     algorithm : str, optional
         Name of the internal optimisation algorithm to use.  Supported
-        values are ``"greedy"`` and ``"maxsum"``.  Defaults to
-        ``"greedy"``.
+        values are ``"greedy"`` and ``"maxsum"`` (exhaustive search).
+        Defaults to ``"maxsum"`` for correctness on small problems.
     message_type : str, optional
         Message style used when communicating with neighbouring clusters.
         Supported values are ``"cost_list"``, ``"constraints"`` and
@@ -99,7 +99,7 @@ class ClusterAgent(MultiNodeAgent):
         comm_layer: Any,
         local_nodes: List[str],
         owners: Dict[str, str],
-        algorithm: str = "greedy",
+        algorithm: str = "maxsum",  # Changed default from "greedy" to "maxsum" for correctness
         message_type: str = "cost_list",
         counterfactual_utils: bool = True,
         initial_assignments: Optional[Dict[str, Any]] = None,
@@ -2999,7 +2999,12 @@ Message:"""
             # CRITICAL: Don't use history for extraction - it causes old assignments to persist
             # History is for interpretation/classification, not for extracting what changed NOW
             extracted: Dict[str, str] = {}
-            if not is_complaint and text.strip():  # Only extract from non-empty messages
+
+            # CRITICAL FIX: Don't extract assignments from RB protocol JSON messages
+            # RB messages contain "impossible_conditions" fields that should NOT be treated as assignments
+            is_rb_protocol = text.strip().startswith('[rb:{')
+
+            if not is_complaint and not is_rb_protocol and text.strip():  # Only extract from non-empty, non-RB messages
                 try:
                     if hasattr(self.comm_layer, "parse_assignments_from_text_llm"):
                         # Pass ONLY the current message for extraction, not the full history

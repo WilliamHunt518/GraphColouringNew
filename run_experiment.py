@@ -33,7 +33,7 @@ METHOD = "RB"   # one of: "RB", "LLM_API", "LLM_F", "LLM_RB"
 USE_UI = True  # True => Tkinter UI for the human turn
 MANUAL_MODE = False  # True => do NOT call an external LLM API
 MAX_ITERS = 10
-AGENT_ALG = "greedy"  # "greedy" or "maxsum" (exhaustive)
+AGENT_ALG = "maxsum"  # "greedy" or "maxsum" (exhaustive) - default changed to maxsum for correctness
 CONVERGENCE_K = 2
 STOP_ON_SOFT = True
 STOP_ON_HARD = True
@@ -47,7 +47,7 @@ def run_experiment(
     use_ui: bool,
     manual_mode: bool,
     max_iters: int,
-    agent_algorithm: str = "greedy",
+    agent_algorithm: str = "maxsum",  # Changed default from "greedy" to "maxsum" for correctness
     convergence_k: int = 2,
     stop_on_soft: bool = True,
     # Study default: do not auto-stop purely on hard convergence.

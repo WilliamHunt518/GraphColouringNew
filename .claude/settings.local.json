@@ -17,7 +17,18 @@
       "Bash(grep:*)",
       "Bash(while read f)",
       "Bash(do mv \"$f\" docs/session-notes/)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(tail:*)",
+      "Bash(iconv:*)",
+      "Bash(cmd /c \"dir /B /O-D E:\\\\Files\\\\PhD-Main\\\\GC-New\\\\GIT_LOCAL_ROOT\\\\GraphColouringNew\\\\conditional_builder_debug_*.log\")",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(\"venv\\\\Scripts\\\\python.exe\":*)",
+      "Bash(\"venv\\\\Scripts\\\\python.exe\" run_experiment.py --help)",
+      "Bash(\"venv\\\\Scripts\\\\python.exe\" test_greedy_bug.py)",
+      "Bash(\"venv\\\\Scripts\\\\python.exe\" test_default_algorithm.py)",
+      "Bash(\"venv\\\\Scripts\\\\python.exe\" test_offer_generation.py)"
     ]
   }
 }

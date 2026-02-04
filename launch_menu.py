@@ -53,7 +53,7 @@ def main() -> None:
     method_var = tk.StringVar(value=saved_config.get("method", "RB"))
     use_ui_var = tk.BooleanVar(value=saved_config.get("use_ui", True))
     manual_var = tk.BooleanVar(value=saved_config.get("manual", False))
-    alg_var = tk.StringVar(value=saved_config.get("algorithm", "greedy"))
+    alg_var = tk.StringVar(value=saved_config.get("algorithm", "maxsum"))
     max_iter_var = tk.IntVar(value=saved_config.get("max_iters", 10))
     k_var = tk.IntVar(value=saved_config.get("k", 2))
     stop_soft_var = tk.BooleanVar(value=saved_config.get("stop_soft", True))

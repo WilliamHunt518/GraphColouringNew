@@ -1,0 +1,22 @@
+2026-02-03 11:07:50,264 - INFO - === Conditional Builder Debug Session Started ===
+2026-02-03 11:07:50,264 - INFO - Log file: conditional_builder_debug_20260203_110750.log
+2026-02-03 11:07:50,270 - INFO - === Conditional Builder Debug Session Started ===
+2026-02-03 11:07:50,270 - INFO - === Conditional Builder Debug Session Started ===
+2026-02-03 11:07:50,270 - INFO - Log file: conditional_builder_debug_20260203_110750.log
+2026-02-03 11:07:50,270 - INFO - Log file: conditional_builder_debug_20260203_110750.log
+2026-02-03 11:07:50,469 - INFO - --- Created ALWAYS-VISIBLE conditional builder for Agent1 ---
+2026-02-03 11:07:50,469 - INFO - --- Created ALWAYS-VISIBLE conditional builder for Agent1 ---
+2026-02-03 11:07:50,470 - INFO -   Frame object id: 2438643080160
+2026-02-03 11:07:50,470 - INFO -   Frame object id: 2438643080160
+2026-02-03 11:07:50,470 - INFO -   Packed and always visible
+2026-02-03 11:07:50,470 - INFO -   Packed and always visible
+2026-02-03 11:07:50,478 - INFO -   Initialized with 0 condition rows and 1 assignment row
+2026-02-03 11:07:50,478 - INFO -   Initialized with 0 condition rows and 1 assignment row
+2026-02-03 11:07:50,491 - INFO - --- Created ALWAYS-VISIBLE conditional builder for Agent2 ---
+2026-02-03 11:07:50,491 - INFO - --- Created ALWAYS-VISIBLE conditional builder for Agent2 ---
+2026-02-03 11:07:50,491 - INFO -   Frame object id: 2438641267424
+2026-02-03 11:07:50,491 - INFO -   Frame object id: 2438641267424
+2026-02-03 11:07:50,491 - INFO -   Packed and always visible
+2026-02-03 11:07:50,491 - INFO -   Packed and always visible
+2026-02-03 11:07:50,493 - INFO -   Initialized with 0 condition rows and 1 assignment row
+2026-02-03 11:07:50,493 - INFO -   Initialized with 0 condition rows and 1 assignment row

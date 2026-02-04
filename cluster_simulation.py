@@ -349,7 +349,7 @@ def run_clustered_simulation(
         """
         # determine the configured message type and algorithm for this cluster
         message_type = cluster_message_types.get(owner, "cost_list")
-        algorithm = cluster_algorithms.get(owner, "greedy")
+        algorithm = cluster_algorithms.get(owner, "maxsum")
         # If interactive and this owner is labelled as human, use the interactive agent.
         if interactive and owner in human_owners:
             # use a pass‑through communication layer: no LLM summarisation

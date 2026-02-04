@@ -103,6 +103,7 @@ class RBMove:
     is_feasible: Optional[bool] = None
     feasibility_penalty: Optional[float] = None
     feasibility_details: Optional[str] = None
+    required_assignments: Optional[List[Dict[str, str]]] = None  # Boundary assignments needed for feasibility
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -135,6 +136,8 @@ class RBMove:
             result["feasibility_penalty"] = self.feasibility_penalty
         if self.feasibility_details is not None:
             result["feasibility_details"] = self.feasibility_details
+        if self.required_assignments is not None:
+            result["required_assignments"] = self.required_assignments
 
         return result
 
@@ -255,6 +258,21 @@ def parse_rb(text: Any) -> Optional[RBMove]:
         feasibility_penalty = text.get("feasibility_penalty", None)
         feasibility_details = text.get("feasibility_details", None)
 
+        # Parse required_assignments (for feasibility responses)
+        required_assignments = text.get("required_assignments", None)
+        if required_assignments and isinstance(required_assignments, list):
+            # Validate structure - should be list of {node, colour} dicts
+            validated_assignments = []
+            for assign in required_assignments:
+                if isinstance(assign, dict) and assign.get("node") and assign.get("colour"):
+                    validated_assignments.append({
+                        "node": str(assign.get("node", "")).strip(),
+                        "colour": str(assign.get("colour", "")).strip()
+                    })
+            required_assignments = validated_assignments if validated_assignments else None
+        else:
+            required_assignments = None
+
         return RBMove(
             move=move,
             node=node,
@@ -269,7 +287,8 @@ def parse_rb(text: Any) -> Optional[RBMove]:
             query_id=query_id,
             is_feasible=is_feasible,
             feasibility_penalty=feasibility_penalty,
-            feasibility_details=feasibility_details
+            feasibility_details=feasibility_details,
+            required_assignments=required_assignments
         )
 
     s = str(text)

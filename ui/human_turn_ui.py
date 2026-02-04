@@ -87,6 +87,7 @@ class HumanTurnUI:
         self._conditionals_frame: Optional[ttk.Frame] = None
         self._conditionals_cards_inner: Optional[tk.Frame] = None
         self._committed_nodes: Set[str] = set()  # Track committed nodes for visualization
+        self._card_widgets: Dict[str, tk.Frame] = {}  # {offer_id: card_frame} - for incremental updates
 
         # Feasibility queries tracking
         self._feasibility_queries: Dict[str, List[Dict[str, Any]]] = {}  # {neighbor: [query_dicts]}
@@ -100,10 +101,21 @@ class HumanTurnUI:
         self._add_condition_funcs: Dict[str, Callable] = {}  # {neighbor: add_condition_row function}
         self._add_assignment_funcs: Dict[str, Callable] = {}  # {neighbor: add_assignment_row function}
 
-        # Two-phase workflow: configure → bargain
+        # Two-phase workflow: configure -> bargain
         self._phase: str = "configure"  # "configure" or "bargain"
         self._initial_configs: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}}
         self._agent_configurations: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}} - current announced configs
+        self._phase_banner: Optional[tk.Frame] = None
+        self._phase_banner_label: Optional[tk.Label] = None
+
+        # Auto-suggestion system
+        self._auto_suggest_enabled: bool = False
+        self._auto_suggest_timer_id: Optional[str] = None
+        self._auto_suggest_interval_ms: int = 3000  # 3 seconds - agents wait for responses
+        self._auto_suggest_slow_interval: int = 12000  # 12 seconds - slow down after agent offers
+        self._last_agent_offer_time: Dict[str, float] = {}  # Track when agents sent offers
+        self._pending_human_offers: Set[str] = set()  # offer_ids awaiting response
+        self._last_auto_suggest_time: float = 0
 
         # Removed: Zoom and pan state for RB argument canvas (no longer used)
 
@@ -153,16 +165,30 @@ class HumanTurnUI:
             self._root = tk.Tk()
         return self._root
 
+    def _write_ui_debug(self, message: str) -> None:
+        """Write debug message to ui_debug.log file."""
+        try:
+            with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                f.write(f"{message}\n")
+        except Exception as e:
+            # Silently fail if we can't write to the log
+            pass
+
     # -------------------- Public API expected by simulation --------------------
 
     def add_incoming(self, neigh: str, text: str) -> None:
         """Thread-safe: queue an incoming message to show in UI."""
         print(f"[UI] add_incoming called for {neigh}: {text[:200]}")
+        self._write_ui_debug(f"[UI add_incoming] Called for {neigh}")
+        self._write_ui_debug(f"[UI add_incoming] Text: {text[:200]}")
         self._incoming_queue.setdefault(neigh, []).append(text)
+        self._write_ui_debug(f"[UI add_incoming] Added to queue, total messages for {neigh}: {len(self._incoming_queue[neigh])}")
         if self._root is not None:
+            self._write_ui_debug(f"[UI add_incoming] Scheduling _flush_incoming for {neigh}")
             self._root.after(0, lambda n=neigh: self._flush_incoming(n))
         else:
             print(f"[UI] WARNING: _root is None, cannot flush incoming messages")
+            self._write_ui_debug(f"[UI add_incoming] ERROR: _root is None!")
 
     def run_async_chat(
         self,
@@ -220,6 +246,12 @@ class HumanTurnUI:
             _, edges = visible_graph
             self._edges = list(edges)
 
+        # Build adjacency dictionary for determining affected neighbors
+        self._adjacency = {}
+        for u, v in self._edges:
+            self._adjacency.setdefault(u, set()).add(v)
+            self._adjacency.setdefault(v, set()).add(u)
+
         root = self._ensure_root()
 
         # init transcripts and tk vars
@@ -268,9 +300,6 @@ class HumanTurnUI:
 
         # Phase status (for RB structured mode only)
         if getattr(self, '_rb_structured_mode', False):
-            self._phase_label = ttk.Label(btns, text="Phase: Configure", font=("Arial", 10, "bold"))
-            self._phase_label.pack(side="left", padx=(0, 10))
-
             self._announce_config_btn = ttk.Button(btns, text="(Re-)Announce Configuration",
                                                    command=self._announce_configuration)
             self._announce_config_btn.pack(side="left", padx=(0, 6))
@@ -282,20 +311,50 @@ class HumanTurnUI:
         ttk.Button(btns, text="Debug", command=lambda: self._open_debug(debug_agents, get_visible_graph_fn)).pack(side="right", padx=(6, 0))
         ttk.Button(btns, text="Finish", command=self._finish).pack(side="right")
 
+        # Create phase banner frame (only for RB mode)
+        if getattr(self, '_rb_structured_mode', False):
+            phase_banner = tk.Frame(root, height=50, relief=tk.RAISED, borderwidth=2)
+            phase_banner.pack(fill="x", padx=0, pady=(0, 5))
+
+            self._phase_banner_label = tk.Label(
+                phase_banner,
+                text="⚙️ STEP 1: INTENTION SETTING - Configure your graph",
+                font=("Arial", 14, "bold"),
+                fg="white",
+                bg="#d9534f",  # Red for configure phase
+                pady=12
+            )
+            self._phase_banner_label.pack(fill="both", expand=True)
+            self._phase_banner = phase_banner
+
         main = ttk.Frame(root)
         main.pack(fill="both", expand=True)
+
+        # Store main frame and create paned window
+        self._main_frame = main
 
         # Use PanedWindow for adjustable split between graph, arguments, and conditionals
         paned = tk.PanedWindow(main, orient=tk.HORIZONTAL, sashrelief=tk.RAISED,
                                sashwidth=5, bg="#ddd")
+        self._paned_window = paned
+
+        # Always pack the paned window
         paned.pack(fill="both", expand=True, padx=8, pady=8)
 
+        # Create left panel for graph (always present)
         left = ttk.Frame(paned)
-        paned.add(left, width=400, minsize=250)  # Graph panel: default 400px, min 250px
+        paned.add(left, width=500, minsize=250)  # Graph panel: default 500px, min 250px
 
         # Middle panel with scrollbar for chat panes
         middle_container = ttk.Frame(paned)
-        paned.add(middle_container, width=600, minsize=350)  # Argument panel: default 600px, min 350px
+
+        # In RB configure phase, don't add middle panel yet
+        rb_mode = getattr(self, '_rb_structured_mode', False)
+        if not (rb_mode and self._phase == "configure"):
+            paned.add(middle_container, width=500, minsize=300)  # Controls panel: default 500px, min 300px
+
+        # Store for later
+        self._middle_container = middle_container
 
         # Create canvas and scrollbar for middle panel
         middle_canvas = tk.Canvas(middle_container, highlightthickness=0)
@@ -318,14 +377,25 @@ class HumanTurnUI:
             middle_canvas.itemconfig(middle_canvas_window, width=event.width)
         middle_canvas.bind("<Configure>", on_canvas_configure)
 
-        # Bind mousewheel to scrolling
+        # Bind mousewheel to scrolling only when mouse is over the canvas
         def on_mousewheel(event):
             middle_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        middle_canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        def on_enter(event):
+            middle_canvas.bind("<MouseWheel>", on_mousewheel)
+
+        def on_leave(event):
+            middle_canvas.unbind("<MouseWheel>")
+
+        middle_canvas.bind("<Enter>", on_enter)
+        middle_canvas.bind("<Leave>", on_leave)
 
         # Add conditionals sidebar (only visible in RB mode)
         conditionals_frame = ttk.Frame(paned)
-        paned.add(conditionals_frame, width=320, minsize=250)  # Conditionals: default 320px, min 250px
+
+        # In RB configure phase, don't add conditionals panel yet
+        if not (rb_mode and self._phase == "configure"):
+            paned.add(conditionals_frame, width=320, minsize=250)  # Conditionals: default 320px (narrower), min 250px
 
         # Store reference for later use
         self._conditionals_frame = conditionals_frame
@@ -334,13 +404,37 @@ class HumanTurnUI:
         # Build conditionals sidebar UI
         self._build_conditionals_sidebar(conditionals_frame)
 
+        # Create canvas in left panel (always)
         canvas = tk.Canvas(left, bg="white", highlightthickness=1, highlightbackground="#ccc")
         canvas.pack(fill="both", expand=True)
         self._canvas = canvas
+
+        # In RB configure phase, add big button below graph
+        if rb_mode and self._phase == "configure":
+            button_container = ttk.Frame(left)
+            button_container.pack(fill="x", side="bottom", pady=(10, 10))
+
+            instruction = tk.Label(
+                button_container,
+                text="Configure your graph by clicking on nodes, then announce to begin negotiation",
+                font=("Arial", 11),
+                fg="#555"
+            )
+            instruction.pack(pady=(0, 10))
+
+            big_announce_btn = ttk.Button(
+                button_container,
+                text="🚀 Announce Configuration & Begin Negotiation",
+                command=self._announce_configuration,
+            )
+            big_announce_btn.pack(pady=10, ipadx=40, ipady=20)
+
+            # Store for later removal
+            self._step1_button_container = button_container
         canvas.bind("<Button-1>", self._on_canvas_click)
         canvas.bind("<Configure>", self._on_canvas_resize)
 
-        # Add zoom with mouse wheel
+        # Add zoom with Ctrl + mouse wheel
         def _on_graph_zoom(event):
             # Get mouse position
             x, y = event.x, event.y
@@ -367,7 +461,8 @@ class HumanTurnUI:
 
             self._redraw_graph()
 
-        canvas.bind("<MouseWheel>", _on_graph_zoom)
+        # Bind Ctrl+MouseWheel for zoom (not plain mousewheel)
+        canvas.bind("<Control-MouseWheel>", _on_graph_zoom)
 
         # Add pan with middle mouse or shift+drag
         def _on_graph_drag_start(event):
@@ -416,14 +511,56 @@ class HumanTurnUI:
         # Note: We need to check shift state in _on_canvas_click to not interfere with node clicking
         canvas.bind("<B1-Motion>", _on_graph_shift_drag_move)
 
+        # In RB mode during configure phase, show big announce button instead of chat panes
+        rb_mode = getattr(self, '_rb_structured_mode', False)
+        if rb_mode and self._phase == "configure":
+            # Create a prominent announce configuration UI
+            configure_container = ttk.Frame(right)
+            configure_container.pack(fill="both", expand=True, padx=20, pady=20)
+
+            # Large instruction label
+            instruction = tk.Label(
+                configure_container,
+                text="STEP 1: INTENTION SETTING\n\nConfigure your graph coloring by clicking on nodes.\nWhen ready, announce your configuration to begin negotiation.",
+                font=("Arial", 12),
+                fg="#333",
+                justify="center",
+                wraplength=400
+            )
+            instruction.pack(pady=(40, 20))
+
+            # Large announce button
+            big_announce_btn = ttk.Button(
+                configure_container,
+                text="Announce Configuration",
+                command=self._announce_configuration,
+            )
+            big_announce_btn.pack(pady=20, ipadx=30, ipady=15)
+
+            # Store reference for later phase transitions
+            self._configure_container = configure_container
+
+        # Build chat panes for each neighbor (hidden during configure phase in RB mode)
         for neigh in self._neighs:
             pane = ttk.LabelFrame(right, text=f"{neigh}")
-            pane.pack(fill="both", expand=False, pady=6)
 
-            # Use text box for transcript (removed argument graph visualization)
-            tbox = tk.Text(pane, height=10, wrap="word", state="disabled")
-            tbox.pack(fill="x", padx=6, pady=(6, 4))
-            self._transcript_box[neigh] = tbox
+            # Hide panes during configure phase in RB mode
+            if rb_mode and self._phase == "configure":
+                # Don't pack yet - will be shown after phase transition
+                pass
+            else:
+                pane.pack(fill="both", expand=False, pady=6)
+
+            # Store pane reference for later
+            if not hasattr(self, '_neighbor_panes'):
+                self._neighbor_panes = {}
+            self._neighbor_panes[neigh] = pane
+
+            # Skip transcript box in RB mode (not needed - use conditionals sidebar instead)
+            if not rb_mode:
+                tbox = tk.Text(pane, height=10, wrap="word", state="disabled")
+                tbox.pack(fill="x", padx=6, pady=(6, 4))
+                self._transcript_box[neigh] = tbox
 
             row = ttk.Frame(pane)
             row.pack(fill="x", padx=6)
@@ -828,6 +965,9 @@ class HumanTurnUI:
                         "assignments": assignments,
                         "status": "pending"
                     })
+                    self._pending_human_offers.add(offer_id)
+                    print(f"[Offer Tracking] Sent offer {offer_id} to {n} - marked as pending")
+
                     # Update sidebar to show it
                     if self._root:
                         self._root.after(0, self._render_conditional_cards)
@@ -837,10 +977,10 @@ class HumanTurnUI:
                         if conditions:
                             cond_str = " AND ".join([f"{c['node']}={c['colour']}" for c in conditions])
                             assign_str = " AND ".join([f"{a['node']}={a['colour']}" for a in assignments])
-                            display_msg = f"[You → {n}] IF {cond_str} THEN {assign_str}"
+                            display_msg = f"[You -> {n}] IF {cond_str} THEN {assign_str}"
                         else:
                             assign_str = " AND ".join([f"{a['node']}={a['colour']}" for a in assignments])
-                            display_msg = f"[You → {n}] Offer: {assign_str}"
+                            display_msg = f"[You -> {n}] Offer: {assign_str}"
                         self._append_to_transcript(n, display_msg)
                     except Exception as e:
                         print(f"[RB UI] Transcript update error: {e}")
@@ -880,8 +1020,10 @@ class HumanTurnUI:
                 # Check Feasibility function
                 def check_feasibility(n=neigh):
                     """Send feasibility query to agent."""
+                    self._write_ui_debug(f"[UI check_feasibility] Button clicked for {n}")
                     # Get conditions from conditional builder
                     cond_rows = self._condition_rows.get(n, [])
+                    self._write_ui_debug(f"[UI check_feasibility] Found {len(cond_rows)} condition rows")
                     conditions = []
 
                     # Extract conditions (same logic as send_rb_message)
@@ -914,11 +1056,13 @@ class HumanTurnUI:
 
                     if not conditions:
                         # Show warning dialog
+                        self._write_ui_debug(f"[UI check_feasibility] No conditions extracted - showing warning")
                         import tkinter.messagebox as messagebox
                         messagebox.showwarning("No Conditions", "Please add at least one condition to check feasibility")
                         return
 
                     # Build query message
+                    self._write_ui_debug(f"[UI check_feasibility] Extracted {len(conditions)} conditions: {conditions}")
                     import time
                     query_id = f"query_{int(time.time() * 1000)}_Human_{n}"
                     rb_payload = {
@@ -928,11 +1072,13 @@ class HumanTurnUI:
                         "reasons": ["feasibility_check"]
                     }
                     rb_msg = f'[rb:{json.dumps(rb_payload)}]'
+                    self._write_ui_debug(f"[UI check_feasibility] Built query with ID: {query_id}")
+                    self._write_ui_debug(f"[UI check_feasibility] Message: {rb_msg}")
 
                     # Display in transcript
                     cond_str = " AND ".join([f"{c['node']}={c['colour']}" for c in conditions])
                     display_msg = f"Query: IF {cond_str} THEN feasible?"
-                    self._append_to_transcript(n, f"[You → {n}] {display_msg}")
+                    self._append_to_transcript(n, f"[You -> {n}] {display_msg}")
 
                     # Store query for tracking
                     query_dict = {
@@ -946,10 +1092,14 @@ class HumanTurnUI:
                     if n not in self._feasibility_queries:
                         self._feasibility_queries[n] = []
                     self._feasibility_queries[n].append(query_dict)
+                    self._write_ui_debug(f"[UI check_feasibility] Stored query {query_id} in _feasibility_queries[{n}]")
+                    self._write_ui_debug(f"[UI check_feasibility] Total queries for {n}: {len(self._feasibility_queries[n])}")
+                    self._write_ui_debug(f"[UI check_feasibility] Calling _render_conditional_cards()")
                     self._render_conditional_cards()
 
                     # Send query via threading (same pattern as send_rb_message)
                     if self._on_send:
+                        self._write_ui_debug(f"[UI check_feasibility] Sending query to {n} via _on_send")
                         self._status_var[n].set("checking feasibility...")
 
                         def _threaded_query():
@@ -961,59 +1111,51 @@ class HumanTurnUI:
                                     reply = self._on_send(n, rb_msg, dict(self._assignments))
                                 else:
                                     reply = self._on_send(n, rb_msg)
+                                self._write_ui_debug(f"[UI check_feasibility] Got reply from {n}: {reply[:200] if reply else 'None'}")
                             except Exception as e:
                                 print(f"[RB UI] Query error: {e}")
+                                self._write_ui_debug(f"[UI check_feasibility] ERROR: {e}")
                             finally:
                                 if self._root:
                                     if reply:
+                                        self._write_ui_debug(f"[UI check_feasibility] Adding reply to incoming queue for {n}")
                                         self._root.after(0, lambda: self.add_incoming(n, reply))
                                     else:
+                                        self._write_ui_debug(f"[UI check_feasibility] No reply received, setting status to idle")
                                         self._root.after(0, lambda: self._status_var[n].set("idle"))
 
                         threading.Thread(target=_threaded_query, daemon=True).start()
+                    else:
+                        self._write_ui_debug(f"[UI check_feasibility] ERROR: No _on_send callback!")
 
                 btn_frame = ttk.Frame(rb_frame)
-                btn_frame.pack(fill="x", padx=4, pady=6)
+                btn_frame.pack(fill="x", padx=6, pady=(8, 6))
 
-                # Pass button - lets agent speak without human input
-                def pass_turn(n=neigh):
-                    """Pass turn to agent without sending a message."""
-                    print(f"[RB UI] Human passed turn to {n}")
-                    if self._on_send:
-                        self._status_var[n].set("...thinking...")
+                # Configure grid for equal-width columns
+                btn_frame.columnconfigure(0, weight=1)
+                btn_frame.columnconfigure(1, weight=1)
 
-                        def _threaded_pass():
-                            reply = None
-                            try:
-                                # Send special __PASS__ token - agent will step without receiving human message
-                                sig = inspect.signature(self._on_send)
-                                params = sig.parameters
-                                if len(params) >= 3:
-                                    reply = self._on_send(n, "__PASS__", dict(self._assignments))
-                                else:
-                                    reply = self._on_send(n, "__PASS__")
-                            except Exception as e:
-                                print(f"[RB UI] Pass error: {e}")
-                            finally:
-                                if self._root:
-                                    if reply:
-                                        self._root.after(0, lambda: self.add_incoming(n, reply))
-                                    else:
-                                        self._root.after(0, lambda: self._status_var[n].set("idle"))
+                # Check Feasibility button (left column)
+                feasibility_btn = ttk.Button(
+                    btn_frame,
+                    text="🔍 Check Feasibility",
+                    command=lambda fn=check_feasibility: fn()
+                )
+                feasibility_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
 
-                        threading.Thread(target=_threaded_pass, daemon=True).start()
+                # Send Offer button (right column)
+                send_offer_btn = ttk.Button(
+                    btn_frame,
+                    text="📤 Suggest Conditional Offer",
+                    command=lambda fn=send_rb_message: fn()
+                )
+                send_offer_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
 
-                pass_btn = ttk.Button(btn_frame, text="Pass (let agent speak)", command=lambda fn=pass_turn: fn())
-                pass_btn.pack(side="left", padx=(0, 5))
-
-                # Check Feasibility button
-                feasibility_btn = ttk.Button(btn_frame, text="Check Feasibility", command=lambda fn=check_feasibility: fn())
-                feasibility_btn.pack(side="left", padx=(0, 5))
-
-                # Send offer button
-                send = ttk.Button(btn_frame, text="Send Offer", command=lambda fn=send_rb_message: fn())
-                send.pack(side="left")
-                self._send_btn[neigh] = send
+                # Store references
+                self._send_btn[neigh] = send_offer_btn
+                if not hasattr(self, '_feasibility_btn'):
+                    self._feasibility_btn = {}
+                self._feasibility_btn[neigh] = feasibility_btn
             else:
                 # Normal text-based interface for non-RB modes
                 obox = tk.Text(pane, height=3, wrap="word")
@@ -1101,6 +1243,19 @@ class HumanTurnUI:
 
         canvas.bind("<Configure>", on_canvas_configure)
 
+        # Add mousewheel scrolling to conditionals sidebar
+        def on_conditionals_scroll(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+        def on_cond_enter(event):
+            canvas.bind("<MouseWheel>", on_conditionals_scroll)
+
+        def on_cond_leave(event):
+            canvas.unbind("<MouseWheel>")
+
+        canvas.bind("<Enter>", on_cond_enter)
+        canvas.bind("<Leave>", on_cond_leave)
+
         # Add info label when no conditionals
         no_conditionals_label = tk.Label(
             inner_frame,
@@ -1111,6 +1266,57 @@ class HumanTurnUI:
         )
         no_conditionals_label.pack(pady=20)
         self._no_conditionals_label = no_conditionals_label
+
+    def _compute_offers_signature(self, offers: List[Dict[str, Any]], queries: Dict[str, List[Dict]] = None) -> str:
+        """Compute a signature (hash) of the offers list to detect changes.
+
+        This allows us to avoid re-rendering cards when nothing has changed,
+        reducing UI flicker.
+
+        Parameters
+        ----------
+        offers : List[Dict[str, Any]]
+            List of conditional offers
+        queries : Dict[str, List[Dict]], optional
+            Feasibility queries dict (neighbor -> list of queries)
+        """
+        import hashlib
+
+        # Build a stable representation of the offers
+        signature_parts = []
+        for offer in offers:
+            # Include key fields that would affect rendering
+            parts = [
+                str(offer.get("offer_id", "")),
+                str(offer.get("direction", "")),
+                str(offer.get("status", "")),
+                str(offer.get("sender", "")),
+                str(offer.get("recipient", "")),
+                str(sorted([(c.get("node", ""), c.get("colour", ""))
+                           for c in offer.get("conditions", [])])),
+                str(sorted([(a.get("node", ""), a.get("colour", ""))
+                           for a in offer.get("assignments", [])])),
+                str(sorted(offer.get("reasons", []))),
+            ]
+            signature_parts.append("|".join(parts))
+
+        # Include feasibility queries in signature
+        if queries:
+            for neigh, query_list in sorted(queries.items()):
+                for query in query_list:
+                    query_parts = [
+                        str(query.get("query_id", "")),
+                        str(sorted([(c.get("node", ""), c.get("colour", ""))
+                                   for c in query.get("conditions", [])])),
+                        str(query.get("is_feasible", "")),
+                        str(query.get("feasibility_penalty", "")),
+                        str(query.get("feasibility_details", "")),
+                    ]
+                    signature_parts.append("QUERY|" + "|".join(query_parts))
+
+        # Hash the combined representation
+        combined = "::".join(signature_parts)
+        return hashlib.md5(combined.encode()).hexdigest()
 
     def _render_configuration_status(self) -> None:
         """Render configuration announcements compactly in the status section."""
@@ -1156,21 +1362,18 @@ class HumanTurnUI:
 
     def _render_conditional_cards(self) -> None:
         """Render conditional offers as cards in the sidebar."""
+        print(f"[UI _render_conditional_cards] ENTRY - active_conditionals: {len(self._active_conditionals)}")
+
         if self._conditionals_cards_inner is None:
+            print(f"[UI _render_conditional_cards] No cards container - returning")
             return
 
         # Safety check: Don't render if UI is closing
         if self._root is None or not self._root.winfo_exists():
+            print(f"[UI _render_conditional_cards] UI closing - returning")
             return
 
-        # Clear existing cards
-        try:
-            for widget in self._conditionals_cards_inner.winfo_children():
-                widget.destroy()
-        except Exception:
-            return  # UI is being destroyed, skip rendering
-
-        # Combine both incoming and outgoing offers
+        # Combine both incoming and outgoing offers (build the expected state)
         all_offers = []
 
         # Add human's sent offers (outgoing) - only conditional ones
@@ -1190,6 +1393,14 @@ class HumanTurnUI:
             sender = offer.get("sender", "")
             conditions = offer.get("conditions", [])
             reasons = offer.get("reasons", [])
+            offer_id = offer.get("offer_id", "")
+
+            # Write to log
+            try:
+                with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                    f.write(f"[UI Cards] Processing offer {offer_id} from {sender}: {len(conditions)} conds\n")
+            except:
+                pass
 
             # EXCEPTION: Always show boundary_update offers even if unconditional
             # These represent important state changes the human needs to see
@@ -1198,11 +1409,18 @@ class HumanTurnUI:
             # Skip unconditional offers UNLESS they're boundary updates
             if (not conditions or len(conditions) == 0) and not is_boundary_update:
                 print(f"[UI Cards] Skipping agent unconditional offer from {sender}: {offer.get('offer_id')}")
+                try:
+                    with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                        f.write(f"[UI Cards] FILTERED (unconditional): {offer_id}\n")
+                except:
+                    pass
                 continue
 
             # Check if this offer matches a configuration announcement
             # If sender has a config and all offer assignments match the config, skip it
-            if sender in self._agent_configurations:
+            # BUT: Only skip if it's also UNCONDITIONAL (no conditions)
+            # Conditional offers should always be shown, even if assignments match config
+            if sender in self._agent_configurations and (not conditions or len(conditions) == 0):
                 offer_assigns = offer.get("assignments", [])
                 config_assigns = self._agent_configurations[sender]
 
@@ -1215,12 +1433,77 @@ class HumanTurnUI:
 
                 if is_config and len(offer_assigns) == len(config_assigns):
                     # This is the configuration announcement - skip it
+                    try:
+                        with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                            f.write(f"[UI Cards] FILTERED (config match): {offer_id}\n")
+                    except:
+                        pass
                     continue
+
+            try:
+                with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                    f.write(f"[UI Cards] ADDED to render list: {offer_id}\n")
+            except:
+                pass
 
             all_offers.append({
                 **offer,
                 "direction": "incoming"
             })
+
+        # Write to log file
+        try:
+            with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                f.write(f"[UI _render_conditional_cards] After filtering: {len(all_offers)} offers to render\n")
+                for i, offer in enumerate(all_offers[:5]):
+                    f.write(f"  [{i}] {offer.get('offer_id')}: {offer.get('direction')}, {len(offer.get('conditions', []))} conds\n")
+        except:
+            pass
+
+        print(f"[UI _render_conditional_cards] After filtering: {len(all_offers)} offers to render")
+        for i, offer in enumerate(all_offers[:3]):
+            print(f"  [{i}] {offer.get('offer_id')}: {offer.get('direction')}, {len(offer.get('conditions', []))} conds")
+
+        # Check if the offers have actually changed since last render
+        # This prevents unnecessary flickering when nothing has changed
+        # Include feasibility queries in signature so responses trigger re-render
+        offers_signature = self._compute_offers_signature(all_offers, self._feasibility_queries)
+
+        # Write signature info to log
+        try:
+            with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                f.write(f"[UI Cards] Computed signature: {offers_signature[:16]}... for {len(all_offers)} offers\n")
+                if hasattr(self, '_last_offers_signature'):
+                    f.write(f"[UI Cards] Last signature: {self._last_offers_signature[:16]}...\n")
+                    f.write(f"[UI Cards] Signatures match: {self._last_offers_signature == offers_signature}\n")
+        except:
+            pass
+
+        if hasattr(self, '_last_offers_signature') and self._last_offers_signature == offers_signature:
+            # No changes detected, skip re-rendering
+            print(f"[UI _render_conditional_cards] Offers signature unchanged - skipping render")
+            try:
+                with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                    f.write(f"[UI Cards] SKIPPING render - signature unchanged\n")
+            except:
+                pass
+            return
+
+        print(f"[UI _render_conditional_cards] Offers signature changed - rendering {len(all_offers)} cards")
+        try:
+            with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                f.write(f"[UI Cards] RENDERING {len(all_offers)} cards - signature changed\n")
+        except:
+            pass
+        # Store the new signature
+        self._last_offers_signature = offers_signature
+
+        # Clear existing cards (only if we're actually going to rebuild)
+        try:
+            for widget in self._conditionals_cards_inner.winfo_children():
+                widget.destroy()
+        except Exception:
+            return  # UI is being destroyed, skip rendering
 
         # Show "no conditionals" message if empty
         if not all_offers:
@@ -1250,6 +1533,12 @@ class HumanTurnUI:
                 else:
                     card_bg = "#fffacd"  # Light yellow (their offer, pending)
 
+            # Check if this is a status update (unconditional THEN-only)
+            reasons = cond.get("reasons", [])
+            is_boundary_update = any("boundary_update" in str(r) for r in reasons)
+            conditions = cond.get("conditions", [])
+            is_status_update = (is_boundary_update or (not conditions or len(conditions) == 0))
+
             # Create card frame
             card = tk.Frame(
                 self._conditionals_cards_inner,
@@ -1259,22 +1548,39 @@ class HumanTurnUI:
             )
             card.pack(fill="x", padx=5, pady=5)
 
-            # Offer ID header with direction indicator
-            reasons = cond.get("reasons", [])
-            is_boundary_update = any("boundary_update" in str(r) for r in reasons)
+            # For status updates, use compact inline format
+            if is_status_update and direction == "incoming":
+                sender = cond.get('sender', 'Unknown')
+                assignments = cond.get("assignments", [])
 
+                if assignments:
+                    assign_str = ", ".join([f"{a.get('node')}={a.get('colour')}" for a in assignments])
+                    tk.Label(
+                        card,
+                        text=f"📍 {sender}: {assign_str}",
+                        font=("Arial", 9),
+                        bg=card_bg
+                    ).pack(anchor="w", padx=8, pady=4)
+                else:
+                    tk.Label(
+                        card,
+                        text=f"📍 {sender}: (no assignments)",
+                        font=("Arial", 9),
+                        bg=card_bg
+                    ).pack(anchor="w", padx=8, pady=4)
+
+                # Skip the detailed IF/THEN sections for status updates
+                continue
+
+            # Offer ID header with direction indicator (for conditional offers)
             if direction == "outgoing":
-                direction_arrow = "→"
+                direction_arrow = "->"
                 recipient = cond.get('recipient', 'Agent')
                 header_text = f"Offer #{idx+1} {direction_arrow} {recipient}"
             else:
                 direction_arrow = "←"
                 sender = cond.get('sender', 'Unknown')
-                # Label boundary updates differently
-                if is_boundary_update:
-                    header_text = f"Status Update {direction_arrow} {sender}"
-                else:
-                    header_text = f"Offer #{idx+1} {direction_arrow} {sender}"
+                header_text = f"Offer #{idx+1} {direction_arrow} {sender}"
 
             tk.Label(
                 card,
@@ -1443,6 +1749,40 @@ class HumanTurnUI:
                                 wraplength=200,
                                 bg="#f0f0f0"
                             ).pack(anchor="w", padx=10, pady=2)
+
+                        # Add buttons for required assignments if feasible
+                        if query['is_feasible']:
+                            required_assigns = query.get('required_assignments', [])
+
+                            if required_assigns:
+                                # Show individual buttons for each required assignment option
+                                tk.Label(
+                                    query_card,
+                                    text="Required boundary colors:",
+                                    font=("Arial", 8, "bold"),
+                                    bg="#f0f0f0"
+                                ).pack(anchor="w", padx=10, pady=(8, 2))
+
+                                choose_frame = tk.Frame(query_card, bg="#f0f0f0")
+                                choose_frame.pack(pady=(2, 4))
+
+                                # Create a button for choosing this specific configuration
+                                assign_str = ", ".join([f"{a['node']}={a['colour']}" for a in required_assigns])
+                                ttk.Button(
+                                    choose_frame,
+                                    text=f"✓ Set {assign_str}",
+                                    command=lambda q=query, n=neigh: self._apply_feasibility_config(q, n)
+                                ).pack()
+                            else:
+                                # No specific requirements - just a general accept button
+                                choose_frame = tk.Frame(query_card, bg="#f0f0f0")
+                                choose_frame.pack(pady=(8, 4))
+
+                                ttk.Button(
+                                    choose_frame,
+                                    text="✓ Any configuration works",
+                                    command=lambda q=query, n=neigh: self._apply_feasibility_conditions(q, n)
+                                ).pack()
                     else:
                         tk.Label(
                             query_card,
@@ -1474,6 +1814,39 @@ class HumanTurnUI:
 
         This method should be called from the simulation to update the UI.
         """
+        # CRITICAL FIX: Debounce updates to prevent flashing
+        # Only update if conditionals actually changed
+        import hashlib
+        import json
+
+        # Write to log file for debugging
+        try:
+            with open("E:\\Files\\PhD-Main\\GC-New\\GIT_LOCAL_ROOT\\GraphColouringNew\\results\\rb\\ui_debug.log", "a") as f:
+                f.write(f"\n[UI update_conditionals] Called with {len(conditionals)} conditionals\n")
+                for i, cond in enumerate(conditionals[:5]):
+                    f.write(f"  [{i}] {cond.get('offer_id', 'no_id')}: {len(cond.get('conditions', []))} conds, {len(cond.get('assignments', []))} assigns\n")
+        except:
+            pass
+
+        print(f"[UI update_conditionals] Called with {len(conditionals)} conditionals")
+        for i, cond in enumerate(conditionals[:3]):  # Print first 3
+            print(f"  [{i}] {cond.get('offer_id', 'no_id')}: {len(cond.get('conditions', []))} conds")
+
+        # Compute signature of incoming conditionals
+        try:
+            conditionals_str = json.dumps(conditionals, sort_keys=True, default=str)
+            new_signature = hashlib.md5(conditionals_str.encode()).hexdigest()
+        except:
+            new_signature = str(conditionals)
+
+        # Check if conditionals actually changed
+        if hasattr(self, '_last_conditionals_signature') and self._last_conditionals_signature == new_signature:
+            # No change - skip update to prevent unnecessary re-renders
+            print(f"[UI update_conditionals] Signature unchanged - skipping render")
+            return
+
+        print(f"[UI update_conditionals] Signature changed - triggering render")
+        self._last_conditionals_signature = new_signature
         self._active_conditionals = conditionals
         if self._root is not None:
             self._root.after(0, self._render_conditional_cards)
@@ -1486,11 +1859,16 @@ class HumanTurnUI:
         configurations : list
             List of configuration announcement dicts with sender, assignments fields.
         """
+        print(f"[UI update_configurations] Called with {len(configurations)} configurations")
+        print(f"[UI update_configurations] Current phase: {self._phase}")
+        print(f"[UI update_configurations] Neighbors: {self._neighs}")
+
         # Convert list to dict keyed by agent name
         self._agent_configurations = {}
         for config in configurations:
             agent = config.get("sender", "")
             assignments = config.get("assignments", [])
+            print(f"[UI update_configurations] Processing config from {agent} with {len(assignments)} assignments")
 
             if agent not in self._agent_configurations:
                 self._agent_configurations[agent] = {}
@@ -1501,9 +1879,89 @@ class HumanTurnUI:
                 if node and colour:
                     self._agent_configurations[agent][node] = colour
 
+        print(f"[UI update_configurations] Agent configurations keys: {list(self._agent_configurations.keys())}")
+
+        # Check if all agents have announced (auto-transition to Step 2)
+        if self._phase == "configure":
+            all_configured = all(n in self._agent_configurations for n in self._neighs)
+            print(f"[UI update_configurations] all_configured check: {all_configured}")
+            print(f"[UI update_configurations] Checking: {[(n, n in self._agent_configurations) for n in self._neighs]}")
+
+            if all_configured:
+                print("[UI] Auto-transition: All agents configured - transitioning to bargain phase")
+                # Transition to bargain phase
+                self._phase = "bargain"
+
+                # Update phase banner
+                if self._phase_banner_label:
+                    self._phase_banner_label.config(
+                        text="💬 STEP 2: BARGAINING - Negotiate with agents",
+                        bg="#5cb85c"  # Green for bargain
+                    )
+
+                # Enable conditional builders
+                for neigh in self._neighs:
+                    if neigh in self._rb_help_labels:
+                        self._rb_help_labels[neigh].config(
+                            text="BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)",
+                            fg="#555"
+                        )
+                    if neigh in self._conditional_builder_frames:
+                        frame = self._conditional_builder_frames[neigh]
+                        # Enable all widgets in the frame
+                        def enable_frame(widget):
+                            if hasattr(widget, 'config'):
+                                try:
+                                    widget.config(state="normal")
+                                except:
+                                    pass
+                            for child in widget.winfo_children():
+                                enable_frame(child)
+                        enable_frame(frame)
+
+                # Enable impossible button
+                if hasattr(self, '_impossible_btn'):
+                    self._impossible_btn.config(state="normal")
+
+                # Start auto-suggestion timer
+                if not self._auto_suggest_enabled:
+                    print("[AutoSuggest] All agents configured - enabling auto-suggestions")
+                    self._auto_suggest_enabled = True
+                    self._schedule_auto_suggest()
+
         # Trigger UI refresh
         if self._root is not None:
             self._root.after(0, self._render_configuration_status)
+
+    def _get_affected_neighbors(self, changed_nodes: List[str]) -> List[str]:
+        """Determine which neighbors are affected by changes to specific nodes.
+
+        A neighbor is affected if any of the changed nodes is adjacent to
+        a node owned by that neighbor.
+
+        Parameters
+        ----------
+        changed_nodes : list of str
+            List of node names that changed
+
+        Returns
+        -------
+        list of str
+            List of neighbor names that are affected by the changes
+        """
+        affected = set()
+
+        for node in changed_nodes:
+            # Get all nodes adjacent to this changed node
+            if node in self._adjacency:
+                for adjacent_node in self._adjacency[node]:
+                    # Check who owns the adjacent node
+                    owner = self._owners.get(adjacent_node)
+                    if owner and owner != "Human" and owner in self._neighs:
+                        affected.add(owner)
+                        print(f"[Affected Check] {node} is adjacent to {adjacent_node} (owned by {owner})")
+
+        return list(affected)
 
     def _accept_offer(self, offer_id: str) -> None:
         """Handle accepting a conditional offer."""
@@ -1519,19 +1977,52 @@ class HumanTurnUI:
         if sender and offer:
             # Apply conditions: change OUR assignments to fulfill our side of the deal
             conditions = offer.get("conditions", [])
+            assignments = offer.get("assignments", [])
+
+            print(f"\n[Human Accept] ===== ACCEPTING OFFER {offer_id} =====")
+            print(f"[Human Accept] From: {sender}")
+            print(f"[Human Accept] CONDITIONS (what YOU will do):")
+            for cond in conditions:
+                print(f"[Human Accept]   • {cond.get('node')} = {cond.get('colour')}")
+            print(f"[Human Accept] ASSIGNMENTS (what THEY will do):")
+            for assign in assignments:
+                print(f"[Human Accept]   • {assign.get('node')} = {assign.get('colour')}")
+
+            changed_nodes = []
             for cond in conditions:
                 node = cond.get("node")
                 colour = cond.get("colour")
                 if node and colour and node in self._assignments:
+                    old_colour = self._assignments.get(node)
                     self._assignments[node] = colour
-                    print(f"[Human Accept] Changed assignment: {node}={colour}")
+                    changed_nodes.append((node, colour))
+                    print(f"[Human Accept] ✓ Applied to YOUR node: {node}: {old_colour} -> {colour}")
+                elif node and colour:
+                    print(f"[Human Accept] ⚠️  WARNING: Condition on node '{node}' not in your assignments!")
+
+            print(f"[Human Accept] Total nodes changed: {len(changed_nodes)}")
+            print(f"[Human Accept] ===== END ACCEPT =====\n")
 
             # Update graph display
             self._redraw_graph()
 
-            # Mark offer as accepted in UI
-            offer["status"] = "accepted"
+            # Update HUD score display
+            if self._hud_var:
+                self._hud_var.set(self._hud_text())
+
+            # Notify callback for color changes
+            if changed_nodes and self._on_colour_change:
+                self._on_colour_change(dict(self._assignments))
+
+            # CLEAR all offers and messages from this sender
+            # Remove all conditionals from this sender
+            self._active_conditionals = [c for c in self._active_conditionals if c.get("sender") != sender]
             self._render_conditional_cards()
+
+            # Clear the transcript for this neighbor and add acceptance message
+            self._transcripts[sender] = []
+            self._append_to_transcript(sender, f"[You] ✓ Accepted offer #{offer_id} - reconsidering...")
+            self._refresh_transcript(sender)
 
             # Send Accept message via RB protocol
             try:
@@ -1543,18 +2034,303 @@ class HumanTurnUI:
                 )
                 msg_text = format_rb(accept_move) + " " + pretty_rb(accept_move)
 
-                # Append to transcript
-                self._append_to_transcript(sender, f"[You → {sender}] Accept offer #{offer_id}")
-
-                # Send via the normal message pipeline
+                # Send via the normal message pipeline and capture response
                 if self._on_send:
-                    threading.Thread(
-                        target=lambda: self._invoke_on_send(sender, msg_text),
-                        daemon=True
-                    ).start()
+                    def _send_accept():
+                        try:
+                            reply = self._invoke_on_send(sender, msg_text)
+                            if reply and self._root:
+                                # Add the agent's response to the UI
+                                self._root.after(0, lambda r=reply, s=sender: self.add_incoming(s, r))
+                        except Exception as e:
+                            print(f"Error in accept send: {e}")
+                            import traceback
+                            traceback.print_exc()
+
+                    threading.Thread(target=_send_accept, daemon=True).start()
                     self._set_status(sender, "sending...")
             except Exception as e:
                 print(f"Error accepting offer: {e}")
+
+            # CRITICAL FIX #12: Notify agents when human fulfills conditions
+            # When accepting an offer, agents need to know the human's colors changed!
+            # Without this, agents see stale neighbour_assignments and have penalty>0.
+            if changed_nodes or sender:
+                # Determine which neighbors are affected by the changed nodes
+                affected_neighbors = set()
+
+                if changed_nodes:
+                    affected_neighbors = set(self._get_affected_neighbors([node for node, _ in changed_nodes]))
+
+                # ALWAYS include the sender of the offer (they need to know their offer was accepted)
+                if sender and sender in self._neighs:
+                    affected_neighbors.add(sender)
+
+                if affected_neighbors:
+                    print(f"[Human Accept] Notifying {list(affected_neighbors)} of color changes: {[node for node, _ in changed_nodes]}")
+
+                    for n in affected_neighbors:
+                        def _send_announcement(neigh=n):
+                            try:
+                                import inspect
+                                sig = inspect.signature(self._on_send)
+                                if len(sig.parameters) >= 3:
+                                    # New signature with current_assignments
+                                    reply = self._on_send(neigh, "__ANNOUNCE_CONFIG__", dict(self._assignments))
+                                else:
+                                    # Old signature without current_assignments
+                                    reply = self._on_send(neigh, "__ANNOUNCE_CONFIG__")
+
+                                # Add the agent's response to the UI
+                                if reply and self._root:
+                                    self._root.after(0, lambda r=reply, n=neigh: self.add_incoming(n, r))
+                            except Exception as e:
+                                print(f"[Human Accept ERROR] Failed to notify {neigh}: {e}")
+                                import traceback
+                                traceback.print_exc()
+
+                        threading.Thread(target=_send_announcement, daemon=True).start()
+
+    def _apply_feasibility_conditions(self, query: Dict[str, Any], neighbor: str) -> None:
+        """Apply feasibility query conditions to human assignments and announce.
+
+        When feasibility check returns feasible, clicking "Choose This" instantly
+        adopts those conditions as the human's configuration.
+        """
+        print(f"\n[Choose This] ===== APPLYING FEASIBILITY CONDITIONS =====")
+        print(f"[Choose This] Query structure: {query}")
+        conditions = query.get("conditions", [])
+        print(f"[Choose This] Found {len(conditions)} conditions")
+
+        # Apply each condition to human's assignments
+        changes = {}
+        for cond in conditions:
+            node = cond.get("node")
+            colour = cond.get("colour")
+            print(f"[Choose This] Processing condition: {node}={colour}")
+            if node and colour:
+                # Verify this is a human-owned node
+                owner = self._owners.get(node)
+                print(f"[Choose This]   Node owner: {owner}")
+                if owner == "Human":
+                    old_color = self._assignments.get(node)
+                    self._assignments[node] = colour
+                    changes[node] = (old_color, colour)
+                    print(f"[Choose This]   ✓ Changed {node}: {old_color} -> {colour}")
+                else:
+                    print(f"[Choose This]   ✗ Skipping (not Human-owned)")
+            else:
+                print(f"[Choose This]   ✗ Skipping (missing node or colour)")
+
+        if not changes:
+            print("[Choose This] ⚠️  WARNING: No changes to apply!")
+            print("[Choose This] This means either:")
+            print("[Choose This]   - No conditions in the query")
+            print("[Choose This]   - Conditions are for non-Human nodes")
+            print("[Choose This]   - Conditions are missing node/colour data")
+            print(f"[Choose This] ===== END (NO CHANGES) =====\n")
+            return
+
+        print(f"[Choose This] Successfully changed {len(changes)} nodes")
+        print(f"[Choose This] ===== END =====\n")
+
+        # CLEAR all offers and messages from this neighbor
+        # Remove all conditionals from this neighbor
+        self._active_conditionals = [c for c in self._active_conditionals if c.get("sender") != neighbor]
+
+        # CRITICAL FIX #17: Remove query from _feasibility_queries so signature changes
+        query_id = query.get('query_id')
+        if query_id and neighbor in self._feasibility_queries:
+            self._feasibility_queries[neighbor] = [
+                q for q in self._feasibility_queries[neighbor]
+                if q.get('query_id') != query_id
+            ]
+
+        self._render_conditional_cards()
+
+        # Log to transcript
+        change_str = ", ".join([f"{n}: {old}->{new}" for n, (old, new) in changes.items()])
+
+        # Clear the transcript for this neighbor and add acceptance message
+        self._transcripts[neighbor] = []
+        self._append_to_transcript(
+            neighbor,
+            f"[You] ✓ Applied feasibility conditions: {change_str} - reconsidering..."
+        )
+        self._refresh_transcript(neighbor)
+
+        # Redraw graph with new assignments
+        self._redraw_graph()
+
+        # Update HUD score display
+        if self._hud_var:
+            self._hud_var.set(self._hud_text())
+
+        # Notify callback for color changes
+        if self._on_colour_change:
+            self._on_colour_change(dict(self._assignments))
+
+        # Announce to AFFECTED neighbors only
+        # ALWAYS include the neighbor who sent the feasibility response
+        changed_node_list = list(changes.keys())
+        affected_neighbors = set(self._get_affected_neighbors(changed_node_list))
+
+        # Add the neighbor who provided this feasibility check
+        if neighbor and neighbor in self._neighs:
+            affected_neighbors.add(neighbor)
+            print(f"[Choose This] Including feasibility sender '{neighbor}' in affected neighbors")
+
+        if affected_neighbors:
+            print(f"[Choose This] Announcing to affected neighbors: {list(affected_neighbors)}")
+
+            for n in affected_neighbors:
+                def _send_announcement(neigh=n):
+                    try:
+                        import inspect
+                        sig = inspect.signature(self._on_send)
+                        if len(sig.parameters) >= 3:
+                            reply = self._on_send(neigh, "__ANNOUNCE_CONFIG__", dict(self._assignments))
+                        else:
+                            reply = self._on_send(neigh, "__ANNOUNCE_CONFIG__")
+
+                        if reply and self._root:
+                            self._root.after(0, lambda r=reply, n=neigh: self.add_incoming(n, r))
+                    except Exception as e:
+                        print(f"[Choose This] Error announcing to {neigh}: {e}")
+
+                threading.Thread(target=_send_announcement, daemon=True).start()
+
+            print(f"[Choose This] Applied {len(changes)} changes and announced to {len(affected_neighbors)} affected neighbors")
+        else:
+            print(f"[Choose This] Applied {len(changes)} changes (no neighbors affected)")
+
+    def _apply_feasibility_config(self, query: Dict[str, Any], neighbor: str) -> None:
+        """Apply feasibility query conditions AND required assignments to human's nodes.
+
+        When feasibility check returns "Yes, if X=Y", clicking the button
+        adopts both the queried conditions and the required boundary assignments.
+
+        CRITICAL: This ensures BOTH the human's query (conditions) AND the agent's
+        requirements (required_assignments) are applied, creating a clash-free configuration.
+        """
+        print(f"\n[Apply Config] ===== APPLYING FEASIBILITY CONFIG =====")
+        print(f"[Apply Config] Neighbor: {neighbor}")
+        print(f"[Apply Config] Query structure: {query}")
+        print(f"[Apply Config] Current human assignments: {self._assignments}")
+        conditions = query.get("conditions", [])
+        required_assigns = query.get("required_assignments", [])
+        print(f"[Apply Config] Found {len(conditions)} conditions (human's query), {len(required_assigns)} required assignments (agent's requirements)")
+
+        # Apply queried conditions
+        changes = {}
+        for cond in conditions:
+            node = cond.get("node")
+            colour = cond.get("colour")
+            print(f"[Apply Config] Processing condition: {node}={colour}")
+            if node and colour:
+                owner = self._owners.get(node)
+                if owner == "Human":
+                    old_color = self._assignments.get(node)
+                    self._assignments[node] = colour
+                    changes[node] = (old_color, colour)
+                    print(f"[Apply Config]   ✓ Changed {node}: {old_color} -> {colour}")
+                else:
+                    print(f"[Apply Config]   ✗ Skipping (owner={owner})")
+
+        # Apply required assignments
+        for assign in required_assigns:
+            node = assign.get("node")
+            colour = assign.get("colour")
+            print(f"[Apply Config] Processing required: {node}={colour}")
+            if node and colour:
+                owner = self._owners.get(node)
+                if owner == "Human":
+                    old_color = self._assignments.get(node)
+                    self._assignments[node] = colour
+                    changes[node] = (old_color, colour)
+                    print(f"[Apply Config]   ✓ Required: {node}: {old_color} -> {colour}")
+                else:
+                    print(f"[Apply Config]   ✗ Skipping (owner={owner})")
+
+        if not changes:
+            print("[Apply Config] ⚠️  WARNING: No changes to apply!")
+            print(f"[Apply Config] ===== END (NO CHANGES) =====\n")
+            return
+
+        print(f"[Apply Config] Successfully changed {len(changes)} nodes")
+        print(f"[Apply Config] Final human assignments: {self._assignments}")
+        print(f"[Apply Config] Changes applied: {changes}")
+        print(f"[Apply Config] ===== END =====\n")
+
+        # CLEAR all offers and messages from this neighbor
+        # Remove all conditionals from this neighbor
+        self._active_conditionals = [c for c in self._active_conditionals if c.get("sender") != neighbor]
+
+        # CRITICAL FIX #17: Remove query from _feasibility_queries so signature changes
+        query_id = query.get('query_id')
+        if query_id and neighbor in self._feasibility_queries:
+            self._feasibility_queries[neighbor] = [
+                q for q in self._feasibility_queries[neighbor]
+                if q.get('query_id') != query_id
+            ]
+
+        self._render_conditional_cards()
+
+        # Log to transcript
+        change_str = ", ".join([f"{n}: {old}->{new}" for n, (old, new) in changes.items()])
+
+        # Clear the transcript for this neighbor and add acceptance message
+        self._transcripts[neighbor] = []
+        self._append_to_transcript(
+            neighbor,
+            f"[You] ✓ Applied feasibility configuration: {change_str} - reconsidering..."
+        )
+        self._refresh_transcript(neighbor)
+
+        # Redraw graph with new assignments
+        self._redraw_graph()
+
+        # Update HUD score display
+        if self._hud_var:
+            self._hud_var.set(self._hud_text())
+
+        # Notify callback for color changes
+        if self._on_colour_change:
+            self._on_colour_change(dict(self._assignments))
+
+        # Announce to AFFECTED neighbors only
+        # ALWAYS include the neighbor who sent the feasibility response
+        changed_node_list = list(changes.keys())
+        affected_neighbors = set(self._get_affected_neighbors(changed_node_list))
+
+        # Add the neighbor who provided this feasibility check
+        if neighbor and neighbor in self._neighs:
+            affected_neighbors.add(neighbor)
+            print(f"[Apply Config] Including feasibility sender '{neighbor}' in affected neighbors")
+
+        if affected_neighbors:
+            print(f"[Apply Config] Announcing to affected neighbors: {list(affected_neighbors)}")
+
+            for n in affected_neighbors:
+                def _send_announcement(neigh=n):
+                    try:
+                        import inspect
+                        sig = inspect.signature(self._on_send)
+                        if len(sig.parameters) >= 3:
+                            reply = self._on_send(neigh, "__ANNOUNCE_CONFIG__", dict(self._assignments))
+                        else:
+                            reply = self._on_send(neigh, "__ANNOUNCE_CONFIG__")
+
+                        if reply and self._root:
+                            self._root.after(0, lambda r=reply, n=neigh: self.add_incoming(n, r))
+                    except Exception as e:
+                        print(f"[Apply Config] Error announcing to {neigh}: {e}")
+
+                threading.Thread(target=_send_announcement, daemon=True).start()
+
+            print(f"[Apply Config] Applied {len(changes)} changes and announced to {len(affected_neighbors)} affected neighbors")
+        else:
+            print(f"[Apply Config] Applied {len(changes)} changes (no neighbors affected)")
 
     def _reject_offer_with_dialog(self, offer_id: str, sender: str, offer: Dict) -> Optional[Any]:
         """Enhanced dialog to mark individual conditions or combinations as impossible.
@@ -1826,10 +2602,10 @@ class HumanTurnUI:
             if impossible_count > 0:
                 self._append_to_transcript(
                     sender,
-                    f"[You → {sender}] Reject offer {offer_id} ({impossible_count} conditions marked impossible)"
+                    f"[You -> {sender}] Reject offer {offer_id} ({impossible_count} conditions marked impossible)"
                 )
             else:
-                self._append_to_transcript(sender, f"[You → {sender}] Reject offer {offer_id}")
+                self._append_to_transcript(sender, f"[You -> {sender}] Reject offer {offer_id}")
 
             # Send rejection message
             if self._on_send:
@@ -2277,7 +3053,7 @@ class HumanTurnUI:
 
         print(f"[RB UI] Parsing line: {line[:120]}")
 
-        # Extract sender from line format: "[You → Agent1] Propose h1=red" or "[Agent1] Propose a2=blue"
+        # Extract sender from line format: "[You -> Agent1] Propose h1=red" or "[Agent1] Propose a2=blue"
         sender = "You"
         if line.startswith("[You"):
             sender = "You"
@@ -2285,9 +3061,9 @@ class HumanTurnUI:
             match = re.match(r'\[([^\]]+)\]', line)
             if match:
                 full_sender = match.group(1)
-                # Strip arrow recipient if present: "Agent1 → Human" → "Agent1"
-                if '→' in full_sender:
-                    sender = full_sender.split('→')[0].strip()
+                # Strip arrow recipient if present: "Agent1 -> Human" -> "Agent1"
+                if '->' in full_sender:
+                    sender = full_sender.split('->')[0].strip()
                 else:
                     sender = full_sender.strip()
                 print(f"[RB UI Parse] Extracted sender: '{sender}' from bracket content: '{full_sender}'")
@@ -2295,11 +3071,21 @@ class HumanTurnUI:
             print(f"[RB UI Parse] Extracted sender: '{sender}' from line starting with: {line[:50]}")
 
         # Try to extract from RB protocol tag first: [rb:{"move":"Propose","node":"h1","colour":"red","reasons":[]}]
-        # Updated to handle ConditionalOffer with nested JSON
-        rb_match = re.search(r'\[rb:(\{.+\})\]', line, re.DOTALL)
-        if rb_match:
-            try:
-                rb_data = json.loads(rb_match.group(1))
+        # Use parse_rb() which has proper brace-counting logic for nested JSON
+        try:
+            from comm.rb_protocol import parse_rb
+            rb_move = parse_rb(line)
+            if rb_move:
+                rb_data = {
+                    "move": rb_move.move,
+                    "node": rb_move.node,
+                    "colour": rb_move.colour,
+                    "reasons": rb_move.reasons,
+                    "conditions": [{"node": c.node, "colour": c.colour, "owner": c.owner} for c in (rb_move.conditions or [])],
+                    "assignments": [{"node": a.node, "colour": a.colour} for a in (rb_move.assignments or [])],
+                    "offer_id": rb_move.offer_id,
+                    "refers_to": rb_move.refers_to
+                }
                 move_type = rb_data.get("move", "")
 
                 # Handle ConditionalOffer specially (has conditions/assignments, not single node/color)
@@ -2309,6 +3095,12 @@ class HumanTurnUI:
                     assignments = rb_data.get("assignments", [])
                     offer_id = rb_data.get("offer_id", "")
                     print(f"[RB UI] ConditionalOffer details: conditions={len(conditions)}, assignments={len(assignments)}, offer_id={offer_id}")
+
+                    # Track when agent sent an offer (for auto-suggest slow-down)
+                    if offer_id and "offer_" in offer_id:
+                        import time
+                        self._last_agent_offer_time[neigh] = time.time()
+                        print(f"[RB UI] Tracked agent offer time for {neigh}")
 
                     arg = {
                         "sender": sender,
@@ -2385,8 +3177,8 @@ class HumanTurnUI:
                     self._check_consensus()
 
                 return
-            except Exception as e:
-                print(f"[RB UI] Failed to parse RB protocol: {e}")
+        except Exception as e:
+            print(f"[RB UI] Failed to parse RB protocol: {e}")
 
         # Fallback: Extract move, node, color from line like "Propose h1=red"
         # Format: "[sender] Move node=color"
@@ -2624,8 +3416,8 @@ class HumanTurnUI:
             if move == "ConditionalOffer":
                 conditions = arg.get("conditions", [])
                 assignments = arg.get("assignments", [])
-                # Show summary: "If X conds → Y assigns"
-                text = f"IF: {len(conditions)} conds\n→ THEN: {len(assignments)} assigns"
+                # Show summary: "If X conds -> Y assigns"
+                text = f"IF: {len(conditions)} conds\n-> THEN: {len(assignments)} assigns"
                 canvas.create_text(x, y,
                                  text=text,
                                  font=("Arial", max(7, int(9 * scale))),
@@ -2815,25 +3607,65 @@ class HumanTurnUI:
     def _flush_incoming(self, neigh: str) -> None:
         q = self._incoming_queue.get(neigh, [])
         print(f"[UI] _flush_incoming for {neigh}: {len(q)} messages in queue")
+        self._write_ui_debug(f"[UI _flush_incoming] Called for {neigh}: {len(q)} messages")
         while q:
             msg = q.pop(0)
             print(f"[UI] Processing message: {msg[:200]}")
+            self._write_ui_debug(f"[UI _flush_incoming] Processing message: {msg[:200]}")
 
             # Check for FeasibilityResponse in RB mode
             if self._rb_structured_mode:
+                self._write_ui_debug(f"[UI _flush_incoming] In RB mode, checking for FeasibilityResponse")
                 try:
                     from comm.rb_protocol import parse_rb
                     rb_move = parse_rb(msg)
+                    self._write_ui_debug(f"[UI _flush_incoming] Parsed RB move: {rb_move.move if rb_move else 'None'}")
                     if rb_move and rb_move.move == "FeasibilityResponse":
+                        self._write_ui_debug(f"[UI _flush_incoming] ✓ FeasibilityResponse detected!")
                         refers_to = rb_move.refers_to if hasattr(rb_move, 'refers_to') else None
+                        self._write_ui_debug(f"[UI _flush_incoming] refers_to: {refers_to}")
+                        self._write_ui_debug(f"[UI _flush_incoming] neigh in queries: {neigh in self._feasibility_queries}")
+                        if neigh in self._feasibility_queries:
+                            self._write_ui_debug(f"[UI _flush_incoming] Queries for {neigh}: {len(self._feasibility_queries[neigh])}")
                         if refers_to and neigh in self._feasibility_queries:
-                            for query in self._feasibility_queries[neigh]:
+                            for i, query in enumerate(self._feasibility_queries[neigh]):
+                                self._write_ui_debug(f"[UI _flush_incoming] Checking query {i}: {query.get('query_id')}")
                                 if query['query_id'] == refers_to:
+                                    self._write_ui_debug(f"[UI _flush_incoming] ✓ MATCH! Updating query {refers_to}")
                                     query['is_feasible'] = rb_move.is_feasible if hasattr(rb_move, 'is_feasible') else None
                                     query['feasibility_penalty'] = rb_move.feasibility_penalty if hasattr(rb_move, 'feasibility_penalty') else None
                                     query['feasibility_details'] = rb_move.feasibility_details if hasattr(rb_move, 'feasibility_details') else None
+                                    query['required_assignments'] = rb_move.required_assignments if hasattr(rb_move, 'required_assignments') else None
+                                    self._write_ui_debug(f"[UI _flush_incoming] Updated query: is_feasible={query['is_feasible']}, penalty={query['feasibility_penalty']}, details={query['feasibility_details']}, required={query['required_assignments']}")
+                                    self._write_ui_debug(f"[UI _flush_incoming] Calling _render_conditional_cards()")
                                     self._render_conditional_cards()
                                     break
+                        else:
+                            self._write_ui_debug(f"[UI _flush_incoming] No match: refers_to={refers_to}, neigh_in_queries={neigh in self._feasibility_queries}")
+
+                    # Track Accept/Reject responses for human's sent offers
+                    if rb_move:
+                        if rb_move.move == "Accept" and hasattr(rb_move, 'refers_to'):
+                            # Agent accepted an offer
+                            refers_to = rb_move.refers_to
+                            if refers_to:
+                                for offer in self._human_sent_offers:
+                                    if offer.get("offer_id") == refers_to:
+                                        offer["status"] = "accepted"
+                                        self._pending_human_offers.discard(refers_to)
+                                        print(f"[Offer Tracking] Offer {refers_to} accepted - removed from pending")
+                                        break
+
+                        elif rb_move.move == "Reject" and hasattr(rb_move, 'refers_to'):
+                            # Agent rejected an offer
+                            refers_to = rb_move.refers_to
+                            if refers_to:
+                                for offer in self._human_sent_offers:
+                                    if offer.get("offer_id") == refers_to:
+                                        offer["status"] = "rejected"
+                                        self._pending_human_offers.discard(refers_to)
+                                        print(f"[Offer Tracking] Offer {refers_to} rejected - removed from pending")
+                                        break
                 except Exception as e:
                     print(f"[UI] Error processing FeasibilityResponse: {e}")
 
@@ -2946,6 +3778,12 @@ class HumanTurnUI:
         return text, report
 
     def _agent_start(self, neigh: str) -> None:
+        # In RB mode, agents shouldn't auto-announce at startup
+        # The human announces first by clicking "Announce Configuration" button
+        if hasattr(self, '_rb_structured_mode') and self._rb_structured_mode:
+            # Don't start agents automatically in RB mode
+            return
+
         self._append_to_transcript(neigh, "[System] Waiting for agent to start…")
         self._set_status(neigh, "waiting for reply…")
 
@@ -3029,10 +3867,11 @@ class HumanTurnUI:
         - Human has ticked "satisfied" checkbox for each neighbor
         - Each agent reports satisfied == True
         """
-        print(f"[RB Convergence] Checking commitment for {len(self._neighs)} neighbors")
+        # Removed verbose logging - only log when convergence achieved
+        # print(f"[RB Convergence] Checking commitment for {len(self._neighs)} neighbors")
 
         if not hasattr(self, '_human_sat'):
-            print(f"[RB Convergence] No _human_sat attribute")
+            # print(f"[RB Convergence] No _human_sat attribute")
             return False
 
         # Check all neighbors
@@ -3040,26 +3879,26 @@ class HumanTurnUI:
             # Check human satisfaction checkbox
             try:
                 human_satisfied = bool(self._human_sat[neigh].get())
-                print(f"[RB Convergence] Human satisfied with {neigh}: {human_satisfied}")
+                # print(f"[RB Convergence] Human satisfied with {neigh}: {human_satisfied}")
             except Exception as e:
                 human_satisfied = False
                 print(f"[RB Convergence] Error checking human satisfaction for {neigh}: {e}")
 
             if not human_satisfied:
-                print(f"[RB Convergence] Human not satisfied with {neigh} - not ready")
+                # print(f"[RB Convergence] Human not satisfied with {neigh} - not ready")
                 return False
 
             # Check agent satisfaction
             if self._get_agent_satisfied_fn:
                 try:
                     agent_satisfied = bool(self._get_agent_satisfied_fn(neigh))
-                    print(f"[RB Convergence] {neigh} satisfied: {agent_satisfied}")
+                    # print(f"[RB Convergence] {neigh} satisfied: {agent_satisfied}")
                 except Exception as e:
                     agent_satisfied = False
                     print(f"[RB Convergence] Error checking {neigh} satisfaction: {e}")
 
                 if not agent_satisfied:
-                    print(f"[RB Convergence] {neigh} not satisfied - not ready")
+                    # print(f"[RB Convergence] {neigh} not satisfied - not ready")
                     return False
 
         # All parties mutually satisfied
@@ -3624,33 +4463,71 @@ class HumanTurnUI:
         # Transition to bargain phase (only on first announcement)
         if self._phase == "configure":
             self._phase = "bargain"
-            if hasattr(self, '_phase_label'):
-                self._phase_label.config(text="Phase: Bargain")
+
+            # In RB mode, transition from simplified layout to 3-panel layout
+            if getattr(self, '_rb_structured_mode', False):
+                # Hide the Step 1 button container
+                if hasattr(self, '_step1_button_container'):
+                    self._step1_button_container.pack_forget()
+
+                # Add middle and right panels to paned window
+                if hasattr(self, '_paned_window'):
+                    paned = self._paned_window
+
+                    # Add middle panel
+                    if hasattr(self, '_middle_container'):
+                        paned.add(self._middle_container, width=500, minsize=300)
+
+                    # Add conditionals panel
+                    if hasattr(self, '_conditionals_frame'):
+                        paned.add(self._conditionals_frame, width=320, minsize=250)
+
+                # Hide the configure container in middle panel (if it exists)
+                if hasattr(self, '_configure_container'):
+                    self._configure_container.pack_forget()
+
+                # Show neighbor panes
+                if hasattr(self, '_neighbor_panes'):
+                    for neigh, pane in self._neighbor_panes.items():
+                        pane.pack(fill="both", expand=False, pady=6)
+
+            # Update phase banner
+            if self._phase_banner_label:
+                self._phase_banner_label.config(
+                    text="💬 STEP 2: BARGAINING - Negotiate with agents",
+                    bg="#5cb85c"  # Green for bargain
+                )
             if hasattr(self, '_impossible_btn'):
                 self._impossible_btn.config(state="normal")
             # Keep announce button enabled for re-announcements
 
-        # Enable conditional builders and update help text
-        for neigh in self._neighs:
-            if neigh in self._rb_help_labels:
-                self._rb_help_labels[neigh].config(
-                    text="BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)",
-                    fg="#555"
-                )
-            if neigh in self._conditional_builder_frames:
-                frame = self._conditional_builder_frames[neigh]
-                # Enable all widgets in the frame
-                def enable_frame(widget):
-                    if hasattr(widget, 'config'):
-                        try:
-                            widget.config(state="normal")
-                        except:
-                            pass
-                    for child in widget.winfo_children():
-                        enable_frame(child)
-                enable_frame(frame)
+            # Enable conditional builders and update help text
+            for neigh in self._neighs:
+                if neigh in self._rb_help_labels:
+                    self._rb_help_labels[neigh].config(
+                        text="BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)",
+                        fg="#555"
+                    )
+                if neigh in self._conditional_builder_frames:
+                    frame = self._conditional_builder_frames[neigh]
+                    # Enable all widgets in the frame
+                    def enable_frame(widget):
+                        if hasattr(widget, 'config'):
+                            try:
+                                widget.config(state="normal")
+                            except:
+                                pass
+                        for child in widget.winfo_children():
+                            enable_frame(child)
+                    enable_frame(frame)
 
-        print("[UI] Now in BARGAIN phase - conditional offers enabled")
+            # Start auto-suggestion timer
+            if not self._auto_suggest_enabled:
+                print("[AutoSuggest] Human announced - enabling auto-suggestions")
+                self._auto_suggest_enabled = True
+                self._schedule_auto_suggest()
+
+            print("[UI] Now in BARGAIN phase - conditional offers enabled")
 
     def _signal_impossible(self) -> None:
         """Signal that the current configuration is impossible to work with."""
@@ -3685,7 +4562,7 @@ class HumanTurnUI:
     # -------------------- LLM_RB Live Translation --------------------
 
     def _schedule_llm_rb_translation(self, neigh: str) -> None:
-        """Schedule debounced NL→RB translation for LLM_RB mode."""
+        """Schedule debounced NL->RB translation for LLM_RB mode."""
         if self._root is None:
             return
 
@@ -3702,7 +4579,7 @@ class HumanTurnUI:
         self._llm_rb_debounce_ids[neigh] = new_id
 
     def _perform_llm_rb_translation(self, neigh: str) -> None:
-        """Perform NL→RB translation and update preview label."""
+        """Perform NL->RB translation and update preview label."""
         if self._root is None:
             return
 
@@ -3773,18 +4650,18 @@ class HumanTurnUI:
 
             if move_type == "PROPOSE":
                 if colour:
-                    return f"→ PROPOSE: {node} = {colour}"
-                return f"→ PROPOSE: {node}"
+                    return f"-> PROPOSE: {node} = {colour}"
+                return f"-> PROPOSE: {node}"
             elif move_type == "ATTACK":
-                return f"→ ATTACK: {node}"
+                return f"-> ATTACK: {node}"
             elif move_type == "CONCEDE":
                 if colour:
-                    return f"→ CONCEDE: {node} = {colour}"
-                return f"→ CONCEDE: {node}"
+                    return f"-> CONCEDE: {node} = {colour}"
+                return f"-> CONCEDE: {node}"
             else:
-                return f"→ {move_type}: {node}" + (f" = {colour}" if colour else "")
+                return f"-> {move_type}: {node}" + (f" = {colour}" if colour else "")
         except Exception:
-            return f"→ {str(rb_move)[:50]}"
+            return f"-> {str(rb_move)[:50]}"
 
     def _start_loading_animation(self, neigh: str) -> None:
         """Start animated loading indicator for translation."""
@@ -3858,7 +4735,100 @@ class HumanTurnUI:
 
     # -------------------- Finish --------------------
 
+    def _schedule_auto_suggest(self) -> None:
+        """Schedule next auto-suggestion check."""
+        if not self._auto_suggest_enabled or self._root is None:
+            return
+
+        # Use slower interval if agent recently sent an offer (give human time to read)
+        import time
+        current_time = time.time()
+        use_slow_interval = any(
+            current_time - offer_time < 12.0
+            for offer_time in self._last_agent_offer_time.values()
+        )
+
+        interval = self._auto_suggest_slow_interval if use_slow_interval else self._auto_suggest_interval_ms
+
+        self._auto_suggest_timer_id = self._root.after(
+            interval,
+            self._auto_suggest_tick
+        )
+
+    def _auto_suggest_tick(self) -> None:
+        """Timer callback: trigger agent suggestions if not waiting for response."""
+        if not self._auto_suggest_enabled:
+            return
+
+        # Check if human has pending offers/checks awaiting responses
+        has_pending = self._has_pending_responses()
+
+        if not has_pending:
+            # No pending responses - safe to trigger agent suggestions
+            print(f"[AutoSuggest] Triggering agent suggestions (no pending offers)")
+            self._trigger_agent_suggestions()
+        else:
+            print(f"[AutoSuggest] Skipping - pending offers await response")
+
+        # Schedule next tick
+        self._schedule_auto_suggest()
+
+    def _has_pending_responses(self) -> bool:
+        """Check if human has sent offers/queries awaiting agent responses."""
+        # Check feasibility queries without responses
+        for neigh, queries in self._feasibility_queries.items():
+            for query in queries:
+                if query.get('is_feasible') is None:
+                    # Query sent but no response received yet
+                    print(f"[AutoSuggest] Pending feasibility query: {query.get('query_id')}")
+                    return True
+
+        # Check human's sent offers that haven't been accepted/rejected
+        for offer in self._human_sent_offers:
+            status = offer.get("status", "pending")
+            if status == "pending":
+                print(f"[AutoSuggest] Pending human offer: {offer.get('offer_id')}")
+                return True
+
+        return False
+
+    def _trigger_agent_suggestions(self) -> None:
+        """Trigger each agent to make a suggestion by calling their step()."""
+        import time
+        self._last_auto_suggest_time = time.time()
+
+        for neigh in self._neighs:
+            def _agent_step(n=neigh):
+                try:
+                    if self._on_send:
+                        import inspect
+                        sig = inspect.signature(self._on_send)
+                        # Send __PASS__ token to trigger agent step without human message
+                        if len(sig.parameters) >= 3:
+                            reply = self._on_send(n, "__PASS__", dict(self._assignments))
+                        else:
+                            reply = self._on_send(n, "__PASS__")
+
+                        if reply and self._root:
+                            self._root.after(0, lambda: self.add_incoming(n, reply))
+                except Exception as e:
+                    print(f"[AutoSuggest] Error triggering {n}: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            # Trigger in background thread
+            threading.Thread(target=_agent_step, daemon=True).start()
+
     def _finish(self) -> None:
+        # Stop auto-suggestion timer
+        self._auto_suggest_enabled = False
+        if self._auto_suggest_timer_id and self._root:
+            try:
+                self._root.after_cancel(self._auto_suggest_timer_id)
+                print("[AutoSuggest] Timer cancelled")
+            except:
+                pass
+
         self._done.set()
         if self._root is not None:
             try:
