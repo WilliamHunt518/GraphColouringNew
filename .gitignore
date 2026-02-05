@@ -7,6 +7,12 @@ tmp_multi/
 
 api_key.txt
 
+# Log files in root directory (should be in logs/)
+/*.log
+
+# Debug log files in logs directory
+logs/conditional_builder_debug_*.log
+
 log_1B_2A
 
 outputs/

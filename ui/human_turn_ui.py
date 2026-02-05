@@ -107,6 +107,8 @@ class HumanTurnUI:
         self._agent_configurations: Dict[str, Dict[str, str]] = {}  # {agent_name: {node: color}} - current announced configs
         self._phase_banner: Optional[tk.Frame] = None
         self._phase_banner_label: Optional[tk.Label] = None
+        self._llm_rb_help_labels: Dict[str, tk.Label] = {}  # LLM_RB mode help labels by neighbor
+        self._rb_help_labels: Dict[str, tk.Label] = {}  # RB mode help labels by neighbor
 
         # Auto-suggestion system
         self._auto_suggest_enabled: bool = False
@@ -298,12 +300,15 @@ class HumanTurnUI:
         btns = ttk.Frame(top)
         btns.pack(side="right")
 
-        # Phase status (for RB structured mode only)
-        if getattr(self, '_rb_structured_mode', False):
+        # Phase status (for RB structured mode and LLM_RB mode)
+        rb_or_llm_rb = getattr(self, '_rb_structured_mode', False) or getattr(self, '_llm_rb_mode', False)
+        if rb_or_llm_rb:
             self._announce_config_btn = ttk.Button(btns, text="(Re-)Announce Configuration",
                                                    command=self._announce_configuration)
             self._announce_config_btn.pack(side="left", padx=(0, 6))
 
+        # Impossible button only for structured RB mode
+        if getattr(self, '_rb_structured_mode', False):
             self._impossible_btn = ttk.Button(btns, text="Impossible to Continue",
                                               command=self._signal_impossible, state="disabled")
             self._impossible_btn.pack(side="left", padx=(0, 6))
@@ -311,8 +316,8 @@ class HumanTurnUI:
         ttk.Button(btns, text="Debug", command=lambda: self._open_debug(debug_agents, get_visible_graph_fn)).pack(side="right", padx=(6, 0))
         ttk.Button(btns, text="Finish", command=self._finish).pack(side="right")
 
-        # Create phase banner frame (only for RB mode)
-        if getattr(self, '_rb_structured_mode', False):
+        # Create phase banner frame (for RB mode and LLM_RB mode)
+        if rb_or_llm_rb:
             phase_banner = tk.Frame(root, height=50, relief=tk.RAISED, borderwidth=2)
             phase_banner.pack(fill="x", padx=0, pady=(0, 5))
 
@@ -348,9 +353,11 @@ class HumanTurnUI:
         # Middle panel with scrollbar for chat panes
         middle_container = ttk.Frame(paned)
 
-        # In RB configure phase, don't add middle panel yet
+        # In RB/LLM_RB configure phase, don't add middle panel yet
         rb_mode = getattr(self, '_rb_structured_mode', False)
-        if not (rb_mode and self._phase == "configure"):
+        llm_rb_mode = getattr(self, '_llm_rb_mode', False)
+        rb_or_llm_rb = rb_mode or llm_rb_mode
+        if not (rb_or_llm_rb and self._phase == "configure"):
             paned.add(middle_container, width=500, minsize=300)  # Controls panel: default 500px, min 300px
 
         # Store for later
@@ -393,8 +400,8 @@ class HumanTurnUI:
         # Add conditionals sidebar (only visible in RB mode)
         conditionals_frame = ttk.Frame(paned)
 
-        # In RB configure phase, don't add conditionals panel yet
-        if not (rb_mode and self._phase == "configure"):
+        # In RB/LLM_RB configure phase, don't add conditionals panel yet
+        if not (rb_or_llm_rb and self._phase == "configure"):
             paned.add(conditionals_frame, width=320, minsize=250)  # Conditionals: default 320px (narrower), min 250px
 
         # Store reference for later use
@@ -409,8 +416,9 @@ class HumanTurnUI:
         canvas.pack(fill="both", expand=True)
         self._canvas = canvas
 
-        # In RB configure phase, add big button below graph
-        if rb_mode and self._phase == "configure":
+        # In RB/LLM_RB configure phase, add big button below graph
+        rb_or_llm_rb = rb_mode or getattr(self, '_llm_rb_mode', False)
+        if rb_or_llm_rb and self._phase == "configure":
             button_container = ttk.Frame(left)
             button_container.pack(fill="x", side="bottom", pady=(10, 10))
 
@@ -511,9 +519,10 @@ class HumanTurnUI:
         # Note: We need to check shift state in _on_canvas_click to not interfere with node clicking
         canvas.bind("<B1-Motion>", _on_graph_shift_drag_move)
 
-        # In RB mode during configure phase, show big announce button instead of chat panes
+        # In RB/LLM_RB mode during configure phase, show big announce button instead of chat panes
         rb_mode = getattr(self, '_rb_structured_mode', False)
-        if rb_mode and self._phase == "configure":
+        rb_or_llm_rb = rb_mode or getattr(self, '_llm_rb_mode', False)
+        if rb_or_llm_rb and self._phase == "configure":
             # Create a prominent announce configuration UI
             configure_container = ttk.Frame(right)
             configure_container.pack(fill="both", expand=True, padx=20, pady=20)
@@ -540,12 +549,12 @@ class HumanTurnUI:
             # Store reference for later phase transitions
             self._configure_container = configure_container
 
-        # Build chat panes for each neighbor (hidden during configure phase in RB mode)
+        # Build chat panes for each neighbor (hidden during configure phase in RB/LLM_RB modes)
         for neigh in self._neighs:
             pane = ttk.LabelFrame(right, text=f"{neigh}")
 
-            # Hide panes during configure phase in RB mode
-            if rb_mode and self._phase == "configure":
+            # Hide panes during configure phase in RB/LLM_RB modes
+            if rb_or_llm_rb and self._phase == "configure":
                 # Don't pack yet - will be shown after phase transition
                 pass
             else:
@@ -585,6 +594,21 @@ class HumanTurnUI:
             llm_rb_mode = getattr(self, '_llm_rb_mode', False)
 
             if llm_rb_mode:
+                # Phase-aware help text for LLM_RB mode
+                if self._phase == "configure":
+                    help_text = "CONFIGURE PHASE: Set up your graph, then click 'Announce Configuration' to begin bargaining"
+                    help_fg = "#d9534f"  # Red
+                else:
+                    help_text = "BARGAIN PHASE: Type natural language messages (e.g., 'I think h1 should be red')"
+                    help_fg = "#555"
+
+                help_label = tk.Label(pane, text=help_text,
+                                     fg=help_fg, font=("Arial", 8, "italic"),
+                                     wraplength=400, justify="left", anchor="w")
+                help_label.pack(fill="x", padx=6, pady=(4, 4))
+                self._llm_rb_help_labels[neigh] = help_label
+                print(f"[UI] Created LLM_RB help label for {neigh}, phase={self._phase}")
+
                 # LLM_RB mode: Text box with live translation preview
                 obox = tk.Text(pane, height=3, wrap="word")
                 obox.pack(fill="x", padx=6, pady=(2, 4))
@@ -1923,8 +1947,8 @@ class HumanTurnUI:
                 if hasattr(self, '_impossible_btn'):
                     self._impossible_btn.config(state="normal")
 
-                # Start auto-suggestion timer
-                if not self._auto_suggest_enabled:
+                # Start auto-suggestion timer (but not in LLM_RB mode)
+                if not self._auto_suggest_enabled and not getattr(self, '_llm_rb_mode', False):
                     print("[AutoSuggest] All agents configured - enabling auto-suggestions")
                     self._auto_suggest_enabled = True
                     self._schedule_auto_suggest()
@@ -3613,8 +3637,8 @@ class HumanTurnUI:
             print(f"[UI] Processing message: {msg[:200]}")
             self._write_ui_debug(f"[UI _flush_incoming] Processing message: {msg[:200]}")
 
-            # Check for FeasibilityResponse in RB mode
-            if self._rb_structured_mode:
+            # Check for FeasibilityResponse in RB/LLM_RB modes (both use RB protocol)
+            if getattr(self, '_rb_structured_mode', False) or getattr(self, '_llm_rb_mode', False):
                 self._write_ui_debug(f"[UI _flush_incoming] In RB mode, checking for FeasibilityResponse")
                 try:
                     from comm.rb_protocol import parse_rb
@@ -3778,10 +3802,12 @@ class HumanTurnUI:
         return text, report
 
     def _agent_start(self, neigh: str) -> None:
-        # In RB mode, agents shouldn't auto-announce at startup
+        # In RB and LLM_RB modes, agents shouldn't auto-announce at startup
         # The human announces first by clicking "Announce Configuration" button
-        if hasattr(self, '_rb_structured_mode') and self._rb_structured_mode:
-            # Don't start agents automatically in RB mode
+        rb_or_llm_rb = (hasattr(self, '_rb_structured_mode') and self._rb_structured_mode) or \
+                       (hasattr(self, '_llm_rb_mode') and self._llm_rb_mode)
+        if rb_or_llm_rb:
+            # Don't start agents automatically in RB/LLM_RB modes
             return
 
         self._append_to_transcript(neigh, "[System] Waiting for agent to start…")
@@ -4491,6 +4517,30 @@ class HumanTurnUI:
                     for neigh, pane in self._neighbor_panes.items():
                         pane.pack(fill="both", expand=False, pady=6)
 
+            # In LLM_RB mode, add middle panel, conditionals panel, and show chat panes
+            elif getattr(self, '_llm_rb_mode', False):
+                # Hide the Step 1 button container (below graph)
+                if hasattr(self, '_step1_button_container'):
+                    self._step1_button_container.pack_forget()
+
+                # Add middle panel to paned window FIRST
+                if hasattr(self, '_paned_window') and hasattr(self, '_middle_container'):
+                    paned = self._paned_window
+                    paned.add(self._middle_container, width=500, minsize=300)
+
+                # Add conditionals panel (3rd panel for structured view)
+                if hasattr(self, '_conditionals_frame'):
+                    paned.add(self._conditionals_frame, width=320, minsize=250)
+
+                # THEN hide the configure container (now that middle panel is visible)
+                if hasattr(self, '_configure_container'):
+                    self._configure_container.pack_forget()
+
+                # Show neighbor panes (chat panels)
+                if hasattr(self, '_neighbor_panes'):
+                    for neigh, pane in self._neighbor_panes.items():
+                        pane.pack(fill="both", expand=False, pady=6)
+
             # Update phase banner
             if self._phase_banner_label:
                 self._phase_banner_label.config(
@@ -4503,11 +4553,27 @@ class HumanTurnUI:
 
             # Enable conditional builders and update help text
             for neigh in self._neighs:
+                # Update RB mode help labels
                 if neigh in self._rb_help_labels:
                     self._rb_help_labels[neigh].config(
                         text="BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)",
                         fg="#555"
                     )
+                # Update LLM_RB mode help labels
+                print(f"[UI] Checking LLM_RB help labels for {neigh}")
+                print(f"[UI]   hasattr _llm_rb_help_labels: {hasattr(self, '_llm_rb_help_labels')}")
+                if hasattr(self, '_llm_rb_help_labels'):
+                    print(f"[UI]   {neigh} in dict: {neigh in self._llm_rb_help_labels}")
+                    print(f"[UI]   dict keys: {list(self._llm_rb_help_labels.keys())}")
+                if hasattr(self, '_llm_rb_help_labels') and neigh in self._llm_rb_help_labels:
+                    print(f"[UI] Updating help label for {neigh}")
+                    label = self._llm_rb_help_labels[neigh]
+                    label.config(
+                        text="BARGAIN PHASE: Type natural language messages (e.g., 'I think h1 should be red')",
+                        fg="#555"
+                    )
+                    label.update_idletasks()  # Force visual refresh
+                    print(f"[UI] Help label updated for {neigh}")
                 if neigh in self._conditional_builder_frames:
                     frame = self._conditional_builder_frames[neigh]
                     # Enable all widgets in the frame
@@ -4521,11 +4587,13 @@ class HumanTurnUI:
                             enable_frame(child)
                     enable_frame(frame)
 
-            # Start auto-suggestion timer
-            if not self._auto_suggest_enabled:
+            # Start auto-suggestion timer (but not in LLM_RB mode - human drives conversation)
+            if not self._auto_suggest_enabled and not getattr(self, '_llm_rb_mode', False):
                 print("[AutoSuggest] Human announced - enabling auto-suggestions")
                 self._auto_suggest_enabled = True
                 self._schedule_auto_suggest()
+            elif getattr(self, '_llm_rb_mode', False):
+                print("[AutoSuggest] Disabled in LLM_RB mode - human drives conversation")
 
             print("[UI] Now in BARGAIN phase - conditional offers enabled")
 
@@ -4574,8 +4642,8 @@ class HumanTurnUI:
             except Exception:
                 pass
 
-        # Schedule new translation after 1.5 seconds of no typing
-        new_id = self._root.after(1500, lambda: self._perform_llm_rb_translation(neigh))
+        # Schedule new translation after 2.5 seconds of no typing
+        new_id = self._root.after(2500, lambda: self._perform_llm_rb_translation(neigh))
         self._llm_rb_debounce_ids[neigh] = new_id
 
     def _perform_llm_rb_translation(self, neigh: str) -> None:

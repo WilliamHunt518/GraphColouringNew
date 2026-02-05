@@ -28,7 +28,9 @@
       "Bash(\"venv\\\\Scripts\\\\python.exe\" run_experiment.py --help)",
       "Bash(\"venv\\\\Scripts\\\\python.exe\" test_greedy_bug.py)",
       "Bash(\"venv\\\\Scripts\\\\python.exe\" test_default_algorithm.py)",
-      "Bash(\"venv\\\\Scripts\\\\python.exe\" test_offer_generation.py)"
+      "Bash(\"venv\\\\Scripts\\\\python.exe\" test_offer_generation.py)",
+      "Bash(awk:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Filter ''*.pyc'' | Remove-Item -Force; Get-ChildItem -Recurse -Directory -Filter ''__pycache__'' | Remove-Item -Recurse -Force\")"
     ]
   }
 }

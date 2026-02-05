@@ -783,7 +783,15 @@ def run_clustered_simulation(
                 sent = getattr(recipient, "sent_messages", []) or []
                 for m in sent:
                     if m.recipient == human_agent.name:
-                        reply_texts.append(str(m.content))
+                        # Parse and format the message using the human's comm layer if available
+                        if hasattr(human_agent, 'comm_layer') and human_agent.comm_layer:
+                            # First parse the content (m.content is already formatted by agent's comm layer)
+                            parsed = human_agent.comm_layer.parse_content(m.sender, m.recipient, str(m.content))
+                            # Then format it for display with human's comm layer
+                            formatted = human_agent.comm_layer.format_content(m.sender, m.recipient, parsed)
+                            reply_texts.append(formatted)
+                        else:
+                            reply_texts.append(str(m.content))
                         with open(comm_path, "a", encoding="utf-8") as f:
                             f.write(f"{_now_iso()}\t{m.sender}->{m.recipient}\t{str(m.content).replace(chr(9),' ')}\n")
                             f.flush()

@@ -159,6 +159,50 @@ def parse_rb(text: Any) -> Optional[RBMove]:
         return None
     if isinstance(text, RBMove):
         return text
+
+    # Handle string input: extract JSON from [rb:{...}] format
+    if isinstance(text, str):
+        start_idx = text.find('[rb:')
+        if start_idx != -1:
+            # Extract JSON using brace counting to handle nested structures
+            json_start = start_idx + 4  # len('[rb:')
+            depth = 0
+            in_string = False
+            escape_next = False
+            json_end = json_start
+
+            for i in range(json_start, len(text)):
+                char = text[i]
+                if escape_next:
+                    escape_next = False
+                    continue
+                if char == '\\':
+                    escape_next = True
+                    continue
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                if not in_string:
+                    if char == '{':
+                        depth += 1
+                    elif char == '}':
+                        depth -= 1
+                        if depth == 0:
+                            json_end = i + 1
+                            break
+
+            if json_end > json_start:
+                json_str = text[json_start:json_end]
+                try:
+                    text = json.loads(json_str)
+                    # Now text is a dict, continue to dict handling below
+                except json.JSONDecodeError:
+                    return None
+            else:
+                return None
+        else:
+            # No [rb:{...}] found, can't parse
+            return None
+
     if isinstance(text, dict):
         move = str(text.get("move", "")).strip()
 
