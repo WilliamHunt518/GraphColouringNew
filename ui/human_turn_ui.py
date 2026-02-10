@@ -4713,10 +4713,84 @@ class HumanTurnUI:
         """Format RBMove object for preview display."""
         try:
             move_type = getattr(rb_move, 'move', '?')
-            node = getattr(rb_move, 'node', '?')
+            node = getattr(rb_move, 'node', None)
             colour = getattr(rb_move, 'colour', None)
 
-            if move_type == "PROPOSE":
+            # Handle Reject moves specially - show impossible_conditions
+            if move_type == "Reject":
+                parts = [f"-> Reject"]
+
+                # Check for impossible_conditions
+                impossible = getattr(rb_move, 'impossible_conditions', None)
+                if impossible and isinstance(impossible, list) and len(impossible) > 0:
+                    constraints = []
+                    for item in impossible:
+                        if isinstance(item, dict):
+                            n = item.get('node', '?')
+                            c = item.get('colour', '?')
+                            constraints.append(f"{n}≠{c}")
+                    if constraints:
+                        parts.append(" [" + ", ".join(constraints) + "]")
+
+                # Check for impossible_combinations
+                combos = getattr(rb_move, 'impossible_combinations', None)
+                if combos and isinstance(combos, list) and len(combos) > 0:
+                    for combo in combos:
+                        if isinstance(combo, list):
+                            cond_strs = []
+                            for item in combo:
+                                if isinstance(item, dict):
+                                    n = item.get('node', '?')
+                                    c = item.get('colour', '?')
+                                    cond_strs.append(f"{n}={c}")
+                            if cond_strs:
+                                parts.append(" [NOT " + " WHEN ".join(cond_strs) + "]")
+
+                if len(parts) == 1:
+                    parts.append(" (no constraints extracted)")
+
+                return "".join(parts)
+
+            # Handle ConditionalOffer - show conditions and assignments
+            elif move_type == "ConditionalOffer":
+                parts = [f"-> ConditionalOffer"]
+
+                conditions = getattr(rb_move, 'conditions', None)
+                if conditions and isinstance(conditions, list) and len(conditions) > 0:
+                    cond_strs = []
+                    for c in conditions:
+                        if hasattr(c, 'node') and hasattr(c, 'colour'):
+                            cond_strs.append(f"{c.node}={c.colour}")
+                    if cond_strs:
+                        parts.append(" IF [" + ", ".join(cond_strs) + "]")
+
+                assignments = getattr(rb_move, 'assignments', None)
+                if assignments and isinstance(assignments, list) and len(assignments) > 0:
+                    assign_strs = []
+                    for a in assignments:
+                        if hasattr(a, 'node') and hasattr(a, 'colour'):
+                            assign_strs.append(f"{a.node}={a.colour}")
+                    if assign_strs:
+                        parts.append(" THEN [" + ", ".join(assign_strs) + "]")
+
+                return "".join(parts)
+
+            # Handle Accept/Commit
+            elif move_type in ("Accept", "Commit"):
+                if node:
+                    return f"-> {move_type}: {node}" + (f" = {colour}" if colour else "")
+                return f"-> {move_type}"
+
+            # Handle FeasibilityQuery
+            elif move_type == "FeasibilityQuery":
+                if node and colour:
+                    return f"-> Query: {node} = {colour}"
+                elif node:
+                    return f"-> Query: {node}"
+                return f"-> FeasibilityQuery"
+
+            # Handle legacy moves
+            elif move_type == "PROPOSE":
                 if colour:
                     return f"-> PROPOSE: {node} = {colour}"
                 return f"-> PROPOSE: {node}"
@@ -4726,10 +4800,15 @@ class HumanTurnUI:
                 if colour:
                     return f"-> CONCEDE: {node} = {colour}"
                 return f"-> CONCEDE: {node}"
+
+            # Generic fallback
             else:
-                return f"-> {move_type}: {node}" + (f" = {colour}" if colour else "")
-        except Exception:
-            return f"-> {str(rb_move)[:50]}"
+                if node:
+                    return f"-> {move_type}: {node}" + (f" = {colour}" if colour else "")
+                return f"-> {move_type}"
+
+        except Exception as e:
+            return f"-> Parse error: {str(e)[:40]}"
 
     def _start_loading_animation(self, neigh: str) -> None:
         """Start animated loading indicator for translation."""

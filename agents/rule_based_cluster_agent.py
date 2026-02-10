@@ -111,6 +111,10 @@ class RuleBasedClusterAgent(ClusterAgent):
         self.rb_feasibility_neighbors: Optional[Dict[str, Any]] = None  # Neighbor state for cached solution
         self.rb_feasibility_key: Optional[frozenset] = None  # Cache key for matching (human's specific conditions)
 
+        # Track pending FeasibilityQuery moves for matching responses
+        self.rb_pending_queries: Dict[str, Any] = {}  # {recipient: (query_id, RBMove)}
+        self.rb_confirmed_conditions: Dict[str, List[tuple]] = {}  # {recipient: [(node, color), ...]}
+
         # Two-phase workflow: configure -> bargain
         self.rb_phase: str = "configure"  # "configure" or "bargain"
         self.rb_config_locked: bool = False  # Lock assignments during configuration announcement
@@ -163,9 +167,13 @@ class RuleBasedClusterAgent(ClusterAgent):
             return
 
         # Unlock assignments after first bargain step (config announcement sent)
+        # IMPORTANT: Don't generate moves on first step() after config announcement
+        # The config announcement already sent initial messages
         if getattr(self, 'rb_config_locked', False):
             self.rb_config_locked = False
             self.log(f"[RB Phase] Unlocking assignments after configuration announcement")
+            self.log(f"[RB Phase] Skipping move generation - config announcement just sent")
+            return
 
         # Generate and send RB dialogue moves to each recipient
         for recipient in recipients:
@@ -178,6 +186,13 @@ class RuleBasedClusterAgent(ClusterAgent):
                 except ImportError:
                     # Fallback if rb_protocol not available
                     msg_text = str(move)
+
+                # Add [report: {...}] for ConditionalOffer with assignments so UI updates graph
+                if move.move == "ConditionalOffer" and hasattr(move, 'assignments') and move.assignments:
+                    report = {assign.node: assign.colour for assign in move.assignments if assign.node in self.nodes}
+                    if report:
+                        msg_text += f" [report: {repr(report)}]"
+
                 self.send(recipient, msg_text)
 
                 # Log the sent move
@@ -819,9 +834,31 @@ class RuleBasedClusterAgent(ClusterAgent):
             self.log(f"[ConditionalOffer Gen] Already at zero penalty, no offer needed")
             return None
 
+        # PRIORITY 1: Use confirmed conditions if available (human already said these are feasible)
+        if recipient in self.rb_confirmed_conditions:
+            confirmed_conds = dict(self.rb_confirmed_conditions[recipient])
+            self.log(f"[ConditionalOffer Gen] Using confirmed conditions from human: {confirmed_conds}")
+
+            # Check if all their boundary nodes are covered by confirmed conditions
+            all_covered = all(node in confirmed_conds for node in their_boundary)
+            if all_covered:
+                # Use ONLY the confirmed configuration
+                their_configs = [tuple(confirmed_conds[node] for node in their_boundary)]
+                self.log(f"[ConditionalOffer Gen] All boundary nodes covered by confirmed conditions - using single config")
+            else:
+                # Some nodes not confirmed - enumerate but START with confirmed ones
+                self.log(f"[ConditionalOffer Gen] Some boundary nodes not covered - will enumerate but prefer confirmed")
+                # Build base config from confirmed + current for others
+                base_config = []
+                for node in their_boundary:
+                    if node in confirmed_conds:
+                        base_config.append(confirmed_conds[node])
+                    else:
+                        base_config.append(self.neighbour_assignments.get(node, domain[0]))
+                their_configs = [tuple(base_config)]
         # Enumerate possible configurations for their boundary nodes
         # Limit search space: if too many nodes, sample or use current + alternatives
-        if len(their_boundary) > 3:
+        elif len(their_boundary) > 3:
             # Too many to enumerate exhaustively, use heuristic
             self.log(f"[ConditionalOffer Gen] Too many boundary nodes ({len(their_boundary)}), using current state")
             their_configs = [tuple(self.neighbour_assignments.get(n, domain[0]) for n in their_boundary)]
@@ -1319,6 +1356,165 @@ class RuleBasedClusterAgent(ClusterAgent):
         print(f"[{self.name}] message.content type: {type(message.content)}")
         print(f"[{self.name}] Current rb_phase: {self.rb_phase}")
 
+        # CRITICAL: Parse natural language messages into RBMove objects
+        # This is essential for LLM_RB mode where humans type natural language
+        parsed_rb_move = None
+        if isinstance(message.content, str) and not message.content.startswith("__"):
+            # Try to parse through comm_layer if available
+            if hasattr(self, 'comm_layer') and hasattr(self.comm_layer, 'parse_content'):
+                try:
+                    parsed = self.comm_layer.parse_content(message.sender, self.name, message.content)
+                    # Check if parsed result is an RBMove (has 'move' attribute)
+                    if parsed and hasattr(parsed, 'move'):
+                        parsed_rb_move = parsed
+                        self.log(f"[RB Receive] Parsed message into RBMove: {parsed.move}")
+                        if hasattr(parsed, 'impossible_conditions') and parsed.impossible_conditions:
+                            self.log(f"[RB Receive] Extracted impossible_conditions: {parsed.impossible_conditions}")
+
+                        # CRITICAL FIX: Auto-detect which offer is being accepted/rejected
+                        # In LLM_RB mode, humans say "Yes I accept" without specifying offer_id
+                        # We need to infer which offer they're referring to
+                        if parsed_rb_move.move in ("Accept", "Reject"):
+                            if not hasattr(parsed_rb_move, 'refers_to') or not parsed_rb_move.refers_to:
+                                # Find pending offers from US (sent by this agent to the human)
+                                our_pending_offers = [
+                                    (oid, offer) for oid, offer in self.rb_active_offers.items()
+                                    if self.name in oid  # Our offer (has our name)
+                                    and oid not in self.rb_accepted_offers
+                                    and oid not in self.rb_rejected_offers
+                                    and oid.startswith("offer_")  # Actual conditional offer
+                                ]
+
+                                if our_pending_offers:
+                                    # Use the most recent offer (last in list)
+                                    offer_id, offer = our_pending_offers[-1]
+                                    parsed_rb_move.refers_to = offer_id
+                                    self.log(f"[RB Receive] Auto-detected {parsed_rb_move.move} refers to offer {offer_id}")
+
+                                    # For Accept, also apply the conditions immediately
+                                    if parsed_rb_move.move == "Accept" and hasattr(offer, 'conditions') and offer.conditions:
+                                        self.log(f"[RB Receive] Human accepted our offer - applying {len(offer.conditions)} conditions")
+                                        for cond in offer.conditions:
+                                            if hasattr(cond, 'node') and hasattr(cond, 'colour'):
+                                                self.neighbour_assignments[cond.node] = cond.colour
+                                                self.log(f"[RB Receive] Applied condition: {cond.node}={cond.colour}")
+                                else:
+                                    self.log(f"[RB Receive] Warning: {parsed_rb_move.move} but no pending offers found")
+
+                        # Process the parsed RBMove
+                        self.log(f"[RB Receive] Calling _process_rb_move for {parsed_rb_move.move}")
+                        self._process_rb_move(message.sender, parsed_rb_move)
+                        self.log(f"[RB Receive] Finished processing {parsed_rb_move.move}")
+
+                        # For Accept, send confirmation with updated assignments
+                        if parsed_rb_move.move == "Accept" and hasattr(parsed_rb_move, 'refers_to') and parsed_rb_move.refers_to:
+                            if parsed_rb_move.refers_to in self.rb_active_offers:
+                                offer = self.rb_active_offers[parsed_rb_move.refers_to]
+                                # Get our assignments from the accepted offer
+                                if hasattr(offer, 'assignments') and offer.assignments:
+                                    report = {}
+                                    for assign in offer.assignments:
+                                        if hasattr(assign, 'node') and hasattr(assign, 'colour') and assign.node in self.nodes:
+                                            report[assign.node] = assign.colour
+
+                                    if report:
+                                        # Send confirmation with report
+                                        from comm.rb_protocol import RBMove, format_rb, pretty_rb
+                                        confirmation = RBMove(
+                                            move="Commit",
+                                            refers_to=parsed_rb_move.refers_to,
+                                            reasons=["accepted_offer"]
+                                        )
+                                        msg_text = format_rb(confirmation) + " " + pretty_rb(confirmation)
+                                        msg_text += f" [report: {repr(report)}]"
+                                        self.send(message.sender, msg_text)
+                                        self.log(f"[RB Receive] Sent confirmation with report: {report}")
+
+                        # Return early - we've processed the message
+                        return
+                except Exception as e:
+                    self.log(f"[RB Receive] Failed to parse message: {e}")
+                    # Fall through to keyword-based handling
+
+        # INTERCEPT simple acceptance/rejection responses
+        if isinstance(message.content, str):
+            text_lower = message.content.lower().strip()
+            # Check for simple acceptance phrases
+            acceptance_phrases = ['yes', 'ok', 'fine', 'sure', 'that works', 'yep', 'sounds good', 'accept']
+            is_acceptance = any(phrase in text_lower for phrase in acceptance_phrases)
+            # Check it's not a rejection
+            rejection_phrases = ['no', "can't", 'cannot', 'not', 'never', 'impossible', 'reject']
+            is_rejection = any(phrase in text_lower for phrase in rejection_phrases)
+
+            # Handle acceptance of FeasibilityQuery
+            if is_acceptance and not is_rejection and message.sender in self.rb_pending_queries:
+                query_id, query_move = self.rb_pending_queries[message.sender]
+                self.log(f"[RB Receive] Detected acceptance of FeasibilityQuery {query_id}")
+                self.log(f"[RB Receive] Human confirmed conditions are feasible: '{message.content}'")
+
+                # Extract and store the confirmed conditions
+                if hasattr(query_move, 'conditions') and query_move.conditions:
+                    confirmed = [(cond.node, cond.colour) for cond in query_move.conditions]
+                    self.rb_confirmed_conditions[message.sender] = confirmed
+                    self.log(f"[RB Receive] Stored {len(confirmed)} confirmed conditions for {message.sender}: {confirmed}")
+
+                    # Apply these conditions to neighbor assignments immediately
+                    for node, color in confirmed:
+                        self.neighbour_assignments[node] = color
+                        self.log(f"[RB Receive] Applied confirmed condition: {node}={color}")
+
+                    # Clear the pending query
+                    del self.rb_pending_queries[message.sender]
+                    self.log(f"[RB Receive] Cleared pending query {query_id}")
+
+                    # Return early - no need to parse this as a regular message
+                    return
+                else:
+                    self.log(f"[RB Receive] Warning: Query has no conditions to confirm")
+
+            # Handle acceptance/rejection of ConditionalOffer
+            # Find pending offers from US (sent by us to this sender)
+            our_pending_offers = [
+                (oid, offer) for oid, offer in self.rb_active_offers.items()
+                if self.name in oid  # Our offer (has our name)
+                and oid not in self.rb_accepted_offers
+                and oid not in self.rb_rejected_offers
+                and oid.startswith("offer_")  # Actual conditional offer
+            ]
+
+            if our_pending_offers and (is_acceptance or is_rejection):
+                # Take the most recent offer
+                offer_id, offer = our_pending_offers[-1]
+                self.log(f"[RB Receive] Detected {'acceptance' if is_acceptance else 'rejection'} of ConditionalOffer {offer_id}")
+                self.log(f"[RB Receive] Human response: '{message.content}'")
+
+                # Create Accept or Reject move
+                try:
+                    from comm.rb_protocol import RBMove
+                    if is_acceptance:
+                        rb_move = RBMove(
+                            move="Accept",
+                            refers_to=offer_id,
+                            reasons=["human_acceptance"]
+                        )
+                        self.log(f"[RB Receive] Created Accept move for offer {offer_id}")
+                    else:
+                        rb_move = RBMove(
+                            move="Reject",
+                            refers_to=offer_id,
+                            reasons=["human_rejection"]
+                        )
+                        self.log(f"[RB Receive] Created Reject move for offer {offer_id}")
+
+                    # Process the move through normal handler
+                    self._process_rb_move(message.sender, rb_move)
+                    self.log(f"[RB Receive] Processed {rb_move.move} move")
+
+                    # Return early - already processed
+                    return
+                except Exception as e:
+                    self.log(f"[RB Receive] Error creating Accept/Reject move: {e}")
+
         # Handle special phase transition messages
         if isinstance(message.content, str) and message.content == "__ANNOUNCE_CONFIG__":
             print(f"[{self.name}] MATCHED __ANNOUNCE_CONFIG__!")
@@ -1353,6 +1549,8 @@ class RuleBasedClusterAgent(ClusterAgent):
             self.rb_rejected_offers.clear()
             self.rb_rejected_conditions.clear()  # Clear rejected condition memory
             self.rb_proposed_nodes.clear()  # Clear all
+            self.rb_pending_queries.clear()  # Clear pending queries from previous round
+            self.rb_confirmed_conditions.clear()  # Clear confirmed conditions from previous round
 
             # Restore preserved data
             if preserved_proposed:
@@ -1441,51 +1639,81 @@ class RuleBasedClusterAgent(ClusterAgent):
 
             recipients = self._get_recipient_clusters()
             for recipient in recipients:
-                boundary_nodes = self._get_boundary_nodes_for(recipient)
-                if not boundary_nodes:
-                    continue
+                # Generate proper conditional offer using counterfactual reasoning
+                # This ensures we propose valid configurations that achieve penalty=0
+                self.log(f"[RB Phase] Generating initial conditional offer for {recipient}...")
+                conditional_offer = self._generate_conditional_offer(recipient)
 
-                # Create list of all boundary assignments
-                assignments = []
-                for node in boundary_nodes:
-                    color = self.assignments.get(node)
-                    if color:
-                        assignments.append(Assignment(node=node, colour=color))
-                        self.log(f"[RB Phase] Including in config: {node}={color}")
+                if conditional_offer:
+                    # Found a valid offer with zero-penalty configuration
+                    self.log(f"[RB Phase] Generated valid conditional offer")
 
-                if assignments:
-                    # Send as special ConfigAnnouncement move (unconditional offer with special marker)
-                    offer_id = f"config_{int(time.time())}_{self.name}"
-                    config_move = RBMove(
-                        move="ConditionalOffer",
-                        offer_id=offer_id,
-                        conditions=[],  # Empty = unconditional
-                        assignments=assignments,
-                        reasons=["initial_configuration", "phase_transition"]
-                    )
+                    # Track this offer
+                    if hasattr(conditional_offer, 'conditions') and conditional_offer.conditions:
+                        self.rb_pending_queries[recipient] = (conditional_offer.offer_id, conditional_offer)
+                        self.log(f"[RB Phase] Tracking offer {conditional_offer.offer_id}")
 
-                    # Format and send immediately
+                    # Format and send
                     try:
                         from comm.rb_protocol import format_rb, pretty_rb
-                        msg_text = format_rb(config_move) + " " + pretty_rb(config_move)
+                        msg_text = format_rb(conditional_offer) + " " + pretty_rb(conditional_offer)
                     except ImportError:
-                        msg_text = str(config_move)
+                        msg_text = str(conditional_offer)
+
+                    # Add [report: {...}] so UI can update graph with agent's colors
+                    if hasattr(conditional_offer, 'assignments') and conditional_offer.assignments:
+                        report = {assign.node: assign.colour for assign in conditional_offer.assignments if assign.node in self.nodes}
+                        if report:
+                            msg_text += f" [report: {repr(report)}]"
 
                     self.send(recipient, msg_text)
-                    print(f"[{self.name}] SENT configuration announcement to {recipient}: {msg_text[:200]}")
-                    self.log(f"[RB Phase] Announced configuration to {recipient}: {len(assignments)} assignments")
+                    num_cond = len(conditional_offer.conditions) if hasattr(conditional_offer, 'conditions') and conditional_offer.conditions else 0
+                    num_assign = len(conditional_offer.assignments) if hasattr(conditional_offer, 'assignments') and conditional_offer.assignments else 0
+                    print(f"[{self.name}] SENT conditional offer to {recipient}: {num_cond} conditions, {num_assign} assignments")
+                    self.log(f"[RB Phase] Sent valid conditional offer: {num_cond} conditions, {num_assign} assignments (with report)")
 
-                    # CRITICAL FIX: Do NOT track config offers as active offers!
-                    # Config announcements are informational - they don't require responses.
-                    # If we track them, agents will wait forever for acknowledgments.
-                    # They're not real conditional offers - just status updates.
-                    print(f"[{self.name}] Config offer {offer_id} NOT tracked (announcements don't need responses)")
+                    # Mark boundary nodes as proposed
+                    if hasattr(conditional_offer, 'assignments') and conditional_offer.assignments:
+                        for assign in conditional_offer.assignments:
+                            if hasattr(assign, 'node') and hasattr(assign, 'colour') and assign.node in self.nodes:
+                                self.rb_proposed_nodes.setdefault(recipient, {})[assign.node] = assign.colour
+                        self.log(f"[RB Phase] Marked boundary nodes as proposed")
+                else:
+                    # No valid offer found - just announce current config without conditions
+                    self.log(f"[RB Phase] Could not generate conditional offer, sending config announcement")
+                    boundary_nodes = self._get_boundary_nodes_for(recipient)
+                    if boundary_nodes:
+                        assignments = []
+                        for node in boundary_nodes:
+                            color = self.assignments.get(node)
+                            if color:
+                                assignments.append(Assignment(node=node, colour=color))
 
-                    # NOTE: Do NOT mark nodes as proposed during config announcements!
-                    # Config announcements are just status updates, not regular proposals.
-                    # We need rb_proposed_nodes to stay empty so Priority 0 can detect changes
-                    # on the next iteration and generate proper boundary updates or conditional offers.
-                    self.log(f"[RB Phase] Config announcement sent (not marking as proposed to allow fresh offers)")
+                        if assignments:
+                            offer_id = f"config_{int(time.time())}_{self.name}"
+                            config_move = RBMove(
+                                move="ConditionalOffer",
+                                offer_id=offer_id,
+                                conditions=[],
+                                assignments=assignments,
+                                reasons=["initial_configuration"]
+                            )
+
+                            try:
+                                from comm.rb_protocol import format_rb, pretty_rb
+                                msg_text = format_rb(config_move) + " " + pretty_rb(config_move)
+                            except ImportError:
+                                msg_text = str(config_move)
+
+                            report = {assign.node: assign.colour for assign in assignments}
+                            msg_text += f" [report: {repr(report)}]"
+
+                            self.send(recipient, msg_text)
+                            self.log(f"[RB Phase] Sent config announcement fallback")
+
+                            for assign in assignments:
+                                if hasattr(assign, 'node') and hasattr(assign, 'colour'):
+                                    self.rb_proposed_nodes.setdefault(recipient, {})[assign.node] = assign.colour
 
             print(f"[{self.name}] Finished processing __ANNOUNCE_CONFIG__, returning")
             return

@@ -118,8 +118,19 @@ class LLMRBCommLayer(LLMCommLayer):
         if rb_move:
             nl_text = self._rbmove_to_nl(sender, recipient, rb_move)
             print(f"[LLMRBCommLayer] Converted to NL: {nl_text}")
-            # Return ONLY natural language for display (no [rb:{...}] tag shown to user)
-            return nl_text
+
+            # CRITICAL: Preserve [report: {...}] if present in original content
+            # The report is needed for UI to update graph with agent's node colors
+            report_suffix = ""
+            if isinstance(content, str) and '[report:' in content:
+                import re
+                m = re.search(r'\[report:\s*(\{.*?\})\s*\]', content)
+                if m:
+                    report_suffix = f" [report: {m.group(1)}]"
+                    print(f"[LLMRBCommLayer] Preserved report: {report_suffix}")
+
+            # Return natural language + preserved report
+            return nl_text + report_suffix
 
         # For non-RB content, just return string representation (NO parent paraphrasing)
         print(f"[LLMRBCommLayer] Non-RB content, returning as-is")
@@ -275,7 +286,7 @@ class LLMRBCommLayer(LLMCommLayer):
             if conditions:
                 cond_str = ", ".join([f"{c.node}={c.colour}" for c in conditions])
                 if len(conditions) == 1:
-                    return f"Quick question: if I set {cond_str}, would that work for you?"
+                    return f"Quick question: if you set {cond_str}, would that work for you?"
                 else:
                     return f"Can you check if {cond_str} would be feasible on your side?"
             return "Can you check if this would work?"
@@ -335,36 +346,59 @@ class LLMRBCommLayer(LLMCommLayer):
         if not self.manual:
             prompt = (
                 "Parse the human's message into a structured move. Return ONLY valid JSON.\n\n"
+                "CRITICAL DISTINCTION:\n"
+                "- QUESTIONS (\"Could we..?\", \"What if..?\", \"What about..?\", \"Would... work?\") → FeasibilityQuery or Propose\n"
+                "- NEGATIONS (\"can't\", \"cannot\", \"won't work\", \"impossible\") → Reject with impossible_conditions\n"
+                "- MULTIPLE nodes (\"X and Y\") → FeasibilityQuery with multiple conditions (NOT single-node Propose!)\n\n"
                 "Available moves:\n"
-                "- Propose: suggesting a specific node=colour assignment\n"
+                "- Propose: suggesting a SINGLE node=colour assignment (\"What if I do h4=red?\")\n"
+                "  * Use ONLY for single node suggestions\n"
+                "- FeasibilityQuery: asking if one or MORE assignments would work\n"
+                "  * Use for ANY question about feasibility: \"Could..?\", \"Would..?\", \"What about..?\", \"Can..?\"\n"
+                "  * Use for multiple nodes: \"What about h4=red and h1=green?\" → multiple conditions\n"
+                "  * CRITICAL: If message mentions MULTIPLE node-color pairs, you MUST include ALL of them in conditions\n"
                 "- ConditionalOffer: \"if you do X, I'll do Y\"\n"
                 "- CounterProposal: suggesting alternative to previous proposal\n"
                 "- Accept: agreeing to a proposal\n"
-                "- Reject: disagreeing with a proposal\n"
+                "- Reject: disagreeing with a proposal OR stating impossibility\n"
+                "  * ONLY use Reject for NEGATIONS: \"X can't be Y\", \"X cannot be Y\", \"X won't work\"\n"
+                "  * Extract impossible_conditions: [{\"node\": \"X\", \"colour\": \"Y\"}]\n"
+                "  * DO NOT use Reject for questions\n"
                 "- Commit: confirming they'll use a specific assignment\n"
-                "- FeasibilityQuery: asking if something would work\n"
                 "- FeasibilityResponse: answering whether something works\n\n"
                 "Examples:\n"
                 "Input: 'What if I set h4 to red?'\n"
                 "Output: {\"move\": \"Propose\", \"node\": \"h4\", \"colour\": \"red\"}\n\n"
+                "Input: 'What about h4=red and h1=green?'\n"
+                "Output: {\"move\": \"FeasibilityQuery\", \"conditions\": [{\"node\": \"h4\", \"colour\": \"red\", \"owner\": \"self\"}, {\"node\": \"h1\", \"colour\": \"green\", \"owner\": \"self\"}]}\n\n"
+                "Input: 'Could we do h4 red and h1 green?'\n"
+                "Output: {\"move\": \"FeasibilityQuery\", \"conditions\": [{\"node\": \"h4\", \"colour\": \"red\", \"owner\": \"self\"}, {\"node\": \"h1\", \"colour\": \"green\", \"owner\": \"self\"}]}\n\n"
+                "Input: 'Would h2=blue work for you?'\n"
+                "Output: {\"move\": \"FeasibilityQuery\", \"conditions\": [{\"node\": \"h2\", \"colour\": \"blue\", \"owner\": \"neighbor\"}]}\n\n"
                 "Input: 'If you could do h2=blue, I could make a3=green work'\n"
                 "Output: {\"move\": \"ConditionalOffer\", \"conditions\": [{\"node\": \"h2\", \"colour\": \"blue\", \"owner\": \"neighbor\"}], \"assignments\": [{\"node\": \"a3\", \"colour\": \"green\"}]}\n\n"
                 "Input: 'That works for me!'\n"
                 "Output: {\"move\": \"Accept\"}\n\n"
+                "Input: 'H4 can't ever be green I'm afraid'\n"
+                "Output: {\"move\": \"Reject\", \"impossible_conditions\": [{\"node\": \"h4\", \"colour\": \"green\"}]}\n\n"
                 "Input: 'Sorry, I can't do h5=red because it conflicts'\n"
                 "Output: {\"move\": \"Reject\", \"impossible_conditions\": [{\"node\": \"h5\", \"colour\": \"red\"}]}\n\n"
+                "Input: 'No, h2 cannot be blue'\n"
+                "Output: {\"move\": \"Reject\", \"impossible_conditions\": [{\"node\": \"h2\", \"colour\": \"blue\"}]}\n\n"
+                "Input: 'h1 can never be red when h4 is green'\n"
+                "Output: {\"move\": \"Reject\", \"impossible_combinations\": [[{\"node\": \"h1\", \"colour\": \"red\"}, {\"node\": \"h4\", \"colour\": \"green\"}]]}\n\n"
                 "Input: 'Could you try h1=green instead?'\n"
                 "Output: {\"move\": \"CounterProposal\", \"node\": \"h1\", \"colour\": \"green\"}\n\n"
-                "Input: 'Would h2=blue work for you?'\n"
-                "Output: {\"move\": \"FeasibilityQuery\", \"conditions\": [{\"node\": \"h2\", \"colour\": \"blue\", \"owner\": \"neighbor\"}]}\n\n"
                 "Input: 'Yes, that would work on my side'\n"
                 "Output: {\"move\": \"FeasibilityResponse\", \"is_feasible\": true}\n\n"
                 f"Now parse this message:\n'{text}'\n\n"
                 "Return ONLY the JSON object, no explanation."
             )
 
+            print(f"[LLMRBCommLayer] Calling LLM to parse: '{text}'")
             response = self._call_openai(prompt, max_tokens=200)
             if response:
+                print(f"[LLMRBCommLayer] LLM returned: {response[:200]}")
                 try:
                     # Try to extract JSON from response
                     # Handle case where LLM wraps in markdown code blocks
@@ -375,11 +409,16 @@ class LLMRBCommLayer(LLMCommLayer):
                         cleaned = '\n'.join(lines[1:-1] if len(lines) > 2 else lines)
 
                     obj = json.loads(cleaned)
+                    print(f"[LLMRBCommLayer] Parsed JSON: {obj}")
                     from .rb_protocol import parse_rb
-                    return parse_rb(obj)
+                    rb_move = parse_rb(obj)
+                    print(f"[LLMRBCommLayer] Created RBMove: move={rb_move.move}, impossible_conditions={getattr(rb_move, 'impossible_conditions', None)}")
+                    return rb_move
                 except Exception as e:
                     print(f"[LLMRBCommLayer] Failed to parse LLM response: {e}")
                     print(f"[LLMRBCommLayer] Raw response: {response}")
+            else:
+                print(f"[LLMRBCommLayer] LLM call returned None, falling back to heuristics")
 
         # Fallback to heuristic parsing
         return self._heuristic_nl_to_rbmove(text)

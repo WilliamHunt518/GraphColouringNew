@@ -785,11 +785,21 @@ def run_clustered_simulation(
                     if m.recipient == human_agent.name:
                         # Parse and format the message using the human's comm layer if available
                         if hasattr(human_agent, 'comm_layer') and human_agent.comm_layer:
+                            # CRITICAL: Extract and preserve [report: {...}] before parsing
+                            # The report contains boundary node colors for graph display
+                            import re
+                            content_str = str(m.content)
+                            report_match = re.search(r'\[report:\s*(\{.*?\})\s*\]', content_str)
+                            report_suffix = ""
+                            if report_match:
+                                report_suffix = f" [report: {report_match.group(1)}]"
+
                             # First parse the content (m.content is already formatted by agent's comm layer)
-                            parsed = human_agent.comm_layer.parse_content(m.sender, m.recipient, str(m.content))
+                            parsed = human_agent.comm_layer.parse_content(m.sender, m.recipient, content_str)
                             # Then format it for display with human's comm layer
                             formatted = human_agent.comm_layer.format_content(m.sender, m.recipient, parsed)
-                            reply_texts.append(formatted)
+                            # Re-append the report so UI can extract it
+                            reply_texts.append(formatted + report_suffix)
                         else:
                             reply_texts.append(str(m.content))
                         with open(comm_path, "a", encoding="utf-8") as f:
