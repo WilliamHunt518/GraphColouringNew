@@ -1945,11 +1945,15 @@ class HumanTurnUI:
                 if hasattr(self, '_impossible_btn'):
                     self._impossible_btn.config(state="normal")
 
-                # Start auto-suggestion timer (but not in LLM_RB mode)
-                if not self._auto_suggest_enabled and not getattr(self, '_llm_rb_mode', False):
+                # DISABLE auto-suggestion for all modes with announcement phase
+                # Agents should respond to human messages, not auto-suggest
+                has_announcement = getattr(self, '_has_announcement_phase', False) or getattr(self, '_llm_rb_mode', False)
+                if not has_announcement and not self._auto_suggest_enabled:
                     print("[AutoSuggest] All agents configured - enabling auto-suggestions")
                     self._auto_suggest_enabled = True
                     self._schedule_auto_suggest()
+                elif has_announcement:
+                    print("[AutoSuggest] Disabled in announcement-based modes")
 
         # Trigger UI refresh
         if self._root is not None:
@@ -4610,13 +4614,17 @@ class HumanTurnUI:
                             enable_frame(child)
                     enable_frame(frame)
 
-            # Start auto-suggestion timer (but not in LLM_RB mode - human drives conversation)
-            if not self._auto_suggest_enabled and not getattr(self, '_llm_rb_mode', False):
+            # DISABLE auto-suggestion for all modes with announcement phase
+            # In announcement-based modes, agents should make one offer and wait for human response
+            # AutoSuggest causes spam by stepping agents every 3 seconds
+            has_announcement = getattr(self, '_has_announcement_phase', False) or getattr(self, '_llm_rb_mode', False)
+            if has_announcement:
+                print("[AutoSuggest] Disabled in announcement-based modes - agents wait for human response")
+                self._auto_suggest_enabled = False
+            elif not self._auto_suggest_enabled:
                 print("[AutoSuggest] Human announced - enabling auto-suggestions")
                 self._auto_suggest_enabled = True
                 self._schedule_auto_suggest()
-            elif getattr(self, '_llm_rb_mode', False):
-                print("[AutoSuggest] Disabled in LLM_RB mode - human drives conversation")
 
             print("[UI] Now in BARGAIN phase - conditional offers enabled")
 
