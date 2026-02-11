@@ -752,7 +752,12 @@ def run_clustered_simulation(
                 # Deliver message to agent (even for special tokens like __ANNOUNCE_CONFIG__)
                 # Special tokens still need to be received by agents to trigger phase transitions
                 if not is_special or text in ["__ANNOUNCE_CONFIG__", "__IMPOSSIBLE__"]:
-                    msg = human_agent.send(neigh, text)
+                    # For special tokens, bypass comm layer to preserve the exact string
+                    if text in ["__ANNOUNCE_CONFIG__", "__IMPOSSIBLE__"]:
+                        from agents.base_agent import Message
+                        msg = Message(sender=human_agent.name, recipient=neigh, content=text)
+                    else:
+                        msg = human_agent.send(neigh, text)
                     recipient.receive(msg)
                     with open(comm_path, "a", encoding="utf-8") as f:
                         f.write(f"{_now_iso()}\t{msg.sender}->{msg.recipient}\t{str(msg.content).replace(chr(9),' ')}\n")
