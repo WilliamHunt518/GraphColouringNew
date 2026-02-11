@@ -600,6 +600,14 @@ class LLMCommLayer(BaseCommLayer):
                 # used mainly by the RB baseline; still keep it direct
                 parts = ", ".join([f"{k}={v}" for k, v in data.items()])
                 text = f"My current boundary assignments: {parts}."
+            elif msg_type == "announcement" and isinstance(data, dict):
+                # Initial configuration announcement
+                assignments = data.get("assignments", {})
+                if assignments:
+                    parts = ", ".join([f"{k}={v}" for k, v in sorted(assignments.items())])
+                    text = f"Here's my initial configuration: {parts}"
+                else:
+                    text = "I've configured my nodes."
             elif msg_type == "free_text":
                 text = str(data) if data is not None else ""
             else:

@@ -300,9 +300,9 @@ class HumanTurnUI:
         btns = ttk.Frame(top)
         btns.pack(side="right")
 
-        # Phase status (for RB structured mode and LLM_RB mode)
-        rb_or_llm_rb = getattr(self, '_rb_structured_mode', False) or getattr(self, '_llm_rb_mode', False)
-        if rb_or_llm_rb:
+        # Phase status (for RB structured mode, LLM_RB mode, and all other modes with announcement phase)
+        has_announcement = getattr(self, '_has_announcement_phase', False) or getattr(self, '_rb_structured_mode', False) or getattr(self, '_llm_rb_mode', False)
+        if has_announcement:
             self._announce_config_btn = ttk.Button(btns, text="(Re-)Announce Configuration",
                                                    command=self._announce_configuration)
             self._announce_config_btn.pack(side="left", padx=(0, 6))
@@ -316,8 +316,8 @@ class HumanTurnUI:
         ttk.Button(btns, text="Debug", command=lambda: self._open_debug(debug_agents, get_visible_graph_fn)).pack(side="right", padx=(6, 0))
         ttk.Button(btns, text="Finish", command=self._finish).pack(side="right")
 
-        # Create phase banner frame (for RB mode and LLM_RB mode)
-        if rb_or_llm_rb:
+        # Create phase banner frame (for all modes with announcement phase)
+        if has_announcement:
             phase_banner = tk.Frame(root, height=50, relief=tk.RAISED, borderwidth=2)
             phase_banner.pack(fill="x", padx=0, pady=(0, 5))
 
@@ -353,11 +353,11 @@ class HumanTurnUI:
         # Middle panel with scrollbar for chat panes
         middle_container = ttk.Frame(paned)
 
-        # In RB/LLM_RB configure phase, don't add middle panel yet
+        # In configure phase (all modes with announcement), don't add middle panel yet
         rb_mode = getattr(self, '_rb_structured_mode', False)
         llm_rb_mode = getattr(self, '_llm_rb_mode', False)
-        rb_or_llm_rb = rb_mode or llm_rb_mode
-        if not (rb_or_llm_rb and self._phase == "configure"):
+        has_announcement_phase = getattr(self, '_has_announcement_phase', False) or rb_mode or llm_rb_mode
+        if not (has_announcement_phase and self._phase == "configure"):
             paned.add(middle_container, width=500, minsize=300)  # Controls panel: default 500px, min 300px
 
         # Store for later
@@ -400,8 +400,8 @@ class HumanTurnUI:
         # Add conditionals sidebar (only visible in RB mode)
         conditionals_frame = ttk.Frame(paned)
 
-        # In RB/LLM_RB configure phase, don't add conditionals panel yet
-        if not (rb_or_llm_rb and self._phase == "configure"):
+        # In configure phase (all modes with announcement), don't add conditionals panel yet
+        if not (has_announcement_phase and self._phase == "configure"):
             paned.add(conditionals_frame, width=320, minsize=250)  # Conditionals: default 320px (narrower), min 250px
 
         # Store reference for later use
@@ -416,9 +416,8 @@ class HumanTurnUI:
         canvas.pack(fill="both", expand=True)
         self._canvas = canvas
 
-        # In RB/LLM_RB configure phase, add big button below graph
-        rb_or_llm_rb = rb_mode or getattr(self, '_llm_rb_mode', False)
-        if rb_or_llm_rb and self._phase == "configure":
+        # In configure phase (all modes with announcement), add big button below graph
+        if has_announcement_phase and self._phase == "configure":
             button_container = ttk.Frame(left)
             button_container.pack(fill="x", side="bottom", pady=(10, 10))
 
@@ -519,10 +518,9 @@ class HumanTurnUI:
         # Note: We need to check shift state in _on_canvas_click to not interfere with node clicking
         canvas.bind("<B1-Motion>", _on_graph_shift_drag_move)
 
-        # In RB/LLM_RB mode during configure phase, show big announce button instead of chat panes
+        # In configure phase (all modes with announcement), show big announce button instead of chat panes
         rb_mode = getattr(self, '_rb_structured_mode', False)
-        rb_or_llm_rb = rb_mode or getattr(self, '_llm_rb_mode', False)
-        if rb_or_llm_rb and self._phase == "configure":
+        if has_announcement_phase and self._phase == "configure":
             # Create a prominent announce configuration UI
             configure_container = ttk.Frame(right)
             configure_container.pack(fill="both", expand=True, padx=20, pady=20)
@@ -553,8 +551,8 @@ class HumanTurnUI:
         for neigh in self._neighs:
             pane = ttk.LabelFrame(right, text=f"{neigh}")
 
-            # Hide panes during configure phase in RB/LLM_RB modes
-            if rb_or_llm_rb and self._phase == "configure":
+            # Hide panes during configure phase (all modes with announcement)
+            if has_announcement_phase and self._phase == "configure":
                 # Don't pack yet - will be shown after phase transition
                 pass
             else:
@@ -3802,12 +3800,13 @@ class HumanTurnUI:
         return text, report
 
     def _agent_start(self, neigh: str) -> None:
-        # In RB and LLM_RB modes, agents shouldn't auto-announce at startup
+        # In all modes with announcement phase, agents shouldn't auto-announce at startup
         # The human announces first by clicking "Announce Configuration" button
-        rb_or_llm_rb = (hasattr(self, '_rb_structured_mode') and self._rb_structured_mode) or \
-                       (hasattr(self, '_llm_rb_mode') and self._llm_rb_mode)
-        if rb_or_llm_rb:
-            # Don't start agents automatically in RB/LLM_RB modes
+        has_announcement = (hasattr(self, '_has_announcement_phase') and self._has_announcement_phase) or \
+                          (hasattr(self, '_rb_structured_mode') and self._rb_structured_mode) or \
+                          (hasattr(self, '_llm_rb_mode') and self._llm_rb_mode)
+        if has_announcement:
+            # Don't start agents automatically in modes with announcement phase
             return
 
         self._append_to_transcript(neigh, "[System] Waiting for agent to start…")
@@ -4533,6 +4532,30 @@ class HumanTurnUI:
                     paned.add(self._conditionals_frame, width=320, minsize=250)
 
                 # THEN hide the configure container (now that middle panel is visible)
+                if hasattr(self, '_configure_container'):
+                    self._configure_container.pack_forget()
+
+                # Show neighbor panes (chat panels)
+                if hasattr(self, '_neighbor_panes'):
+                    for neigh, pane in self._neighbor_panes.items():
+                        pane.pack(fill="both", expand=False, pady=6)
+
+            # In LLM_API and other modes with announcement phase
+            else:
+                # Hide the Step 1 button container (below graph)
+                if hasattr(self, '_step1_button_container'):
+                    self._step1_button_container.pack_forget()
+
+                # Add middle panel to paned window
+                if hasattr(self, '_paned_window') and hasattr(self, '_middle_container'):
+                    paned = self._paned_window
+                    paned.add(self._middle_container, width=500, minsize=300)
+
+                # Add conditionals panel
+                if hasattr(self, '_conditionals_frame'):
+                    paned.add(self._conditionals_frame, width=320, minsize=250)
+
+                # Hide the configure container (if it exists)
                 if hasattr(self, '_configure_container'):
                     self._configure_container.pack_forget()
 

@@ -793,6 +793,9 @@ def run_clustered_simulation(
                             report_suffix = ""
                             if report_match:
                                 report_suffix = f" [report: {report_match.group(1)}]"
+                                # REMOVE the report from content_str before parsing to avoid duplication
+                                content_str = content_str[:report_match.start()] + content_str[report_match.end():]
+                                content_str = content_str.strip()
 
                             # First parse the content (m.content is already formatted by agent's comm layer)
                             parsed = human_agent.comm_layer.parse_content(m.sender, m.recipient, content_str)
@@ -886,6 +889,8 @@ def run_clustered_simulation(
             structured_rb_ui = bool(human_msg_type in ("rule_based", "rb"))
             # LLM_RB gets live translation UI instead
             ui._llm_rb_mode = bool(human_msg_type == "llm_rb")
+            # All modes now support announcement phase (RB, LLM_RB, LLM_API/constraints, LLM_F/free_text)
+            ui._has_announcement_phase = True
             # boundary nodes per neighbour (for RB dropdown)
             rb_boundary = {}
             for neigh in [a.name for a in agents if a is not human_agent]:

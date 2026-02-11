@@ -2892,15 +2892,15 @@ Message:"""
                     # Build report of boundary node assignments
                     report = {node: self.assignments.get(node) for node in boundary_nodes if self.assignments.get(node)}
 
-                    # Create announcement message as STRING with embedded [report: ...] (like RB mode)
-                    assignment_str = ", ".join([f"{k}={v}" for k, v in sorted(report.items())])
-                    msg_text = f"Here's my initial configuration: {assignment_str}"
+                    # Send announcement as STRUCTURED MESSAGE (not plain string)
+                    # This ensures LLMCommLayer preserves the report field in the suffix
+                    announcement = {
+                        "type": "announcement",
+                        "data": {"assignments": report},
+                        "report": report  # UI will extract this from [report: ...] suffix
+                    }
 
-                    # Embed report in string format (UI expects this regex pattern)
-                    if report:
-                        msg_text += f" [report: {repr(report)}]"
-
-                    self.send(recipient, msg_text)
+                    self.send(recipient, announcement)
                     self.log(f"[Phase] Sent config announcement to {recipient}: {report}")
 
             self.log(f"[Phase] Finished processing __ANNOUNCE_CONFIG__")
