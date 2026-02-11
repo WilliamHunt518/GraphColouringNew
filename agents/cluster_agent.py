@@ -173,6 +173,12 @@ class ClusterAgent(MultiNodeAgent):
         self._last_message_classification: Optional[Any] = None
         self._last_message_result: Optional[Dict[str, Any]] = None  # Stores handler results (counterfactuals, searches)
 
+        # Two-phase workflow: configure -> bargain (similar to RB mode)
+        # This ensures agents announce their initial graph configuration before negotiation
+        self._phase: str = "configure"  # "configure" or "bargain"
+        self._config_announced: bool = False  # Track if we've announced our config
+        self._config_locked: bool = False  # Lock assignments during announcement (prevents spam)
+
     # ------------------------------------------------------------------
     # Message deduplication helpers
     # ------------------------------------------------------------------
@@ -1874,6 +1880,18 @@ class ClusterAgent(MultiNodeAgent):
         # Otherwise duplicate detection will kick in before we respond
         # Flag will be reset at the END of step() after messages are sent
 
+        # CRITICAL: Check lock FIRST, before any computation (prevents spam after announcement)
+        if getattr(self, '_config_locked', False):
+            self._config_locked = False
+            self.log(f"[Phase] Unlocking after configuration announcement")
+            self.log(f"[Phase] Skipping this entire step - config announcement just sent")
+            return
+
+        # In configure phase, don't do anything - wait for __ANNOUNCE_CONFIG__
+        if getattr(self, '_phase', 'bargain') == 'configure':
+            self.log(f"[Phase] In configure phase - not processing yet")
+            return
+
         # compute new assignments FIRST
         # Store old assignments for detailed change tracking
         old_assignments = dict(self.assignments)
@@ -2264,6 +2282,10 @@ class ClusterAgent(MultiNodeAgent):
             # Generate strategic free-form message using LLM
             body = self._generate_free_text_strategic()
             content = {"type": "free_text", "data": body}
+
+        # REMOVED "something_changed" optimization - was causing spam after announcement
+        # The lock mechanism (_config_locked) is sufficient to prevent spam
+        # Duplicate detection will handle repeated identical messages
 
         # send message to each neighbouring cluster.
         # Include a "report" field containing this cluster's current assignments
@@ -2835,6 +2857,54 @@ Message:"""
         optimisation.
         """
         super().receive(message)
+
+        # Handle special phase transition message __ANNOUNCE_CONFIG__
+        if isinstance(message.content, str) and message.content == "__ANNOUNCE_CONFIG__":
+            self.log(f"[Phase] Received __ANNOUNCE_CONFIG__ from {message.sender}")
+            self.log(f"[Phase] Transitioning to BARGAIN phase")
+
+            # Transition to bargain phase
+            self._phase = "bargain"
+            self._config_announced = True
+            # CRITICAL: Lock BEFORE generating announcements to prevent spam on next step()
+            self._config_locked = True
+
+            # Determine recipient clusters
+            recipients: Set[str] = set()
+            for node in self.nodes:
+                for nbr in self.problem.get_neighbors(node):
+                    if nbr not in self.nodes:
+                        owner = self.owners.get(nbr)
+                        if owner and owner != self.name:
+                            recipients.add(owner)
+
+            # Send initial configuration announcement to each recipient
+            for recipient in recipients:
+                # Get boundary nodes shared with this recipient
+                boundary_nodes = []
+                for node in self.nodes:
+                    for nbr in self.problem.get_neighbors(node):
+                        if nbr not in self.nodes and self.owners.get(nbr) == recipient:
+                            if node not in boundary_nodes:
+                                boundary_nodes.append(node)
+
+                if boundary_nodes:
+                    # Build report of boundary node assignments
+                    report = {node: self.assignments.get(node) for node in boundary_nodes if self.assignments.get(node)}
+
+                    # Create announcement message as STRING with embedded [report: ...] (like RB mode)
+                    assignment_str = ", ".join([f"{k}={v}" for k, v in sorted(report.items())])
+                    msg_text = f"Here's my initial configuration: {assignment_str}"
+
+                    # Embed report in string format (UI expects this regex pattern)
+                    if report:
+                        msg_text += f" [report: {repr(report)}]"
+
+                    self.send(recipient, msg_text)
+                    self.log(f"[Phase] Sent config announcement to {recipient}: {report}")
+
+            self.log(f"[Phase] Finished processing __ANNOUNCE_CONFIG__")
+            return
 
         # Remember the last human utterance (best-effort). The comm layer may wrap
         # messages with [mapping: ...] tags; keep the raw text for keyword checks.
