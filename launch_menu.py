@@ -68,7 +68,7 @@ def main() -> None:
     ttk.Combobox(
         frm,
         textvariable=method_var,
-        values=["RB", "LLM_API", "LLM_F", "LLM_RB"],
+        values=["RB", "LLM_API", "LLM_F", "LLM_RB", "LLM_TOOL", "LLM_REACT"],
         state="readonly",
         width=18,
     ).grid(row=0, column=1, sticky="w", pady=(0, 6))

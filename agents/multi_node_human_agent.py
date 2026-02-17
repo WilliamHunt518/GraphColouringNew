@@ -252,7 +252,7 @@ class MultiNodeHumanAgent(BaseAgent):
             else:
                 print("No neighbour assignments known yet.")
             print(f"Available colours: {', '.join(self.domain)}")
-            print("Enter new assignments for your nodes as comma‑separated pairs (e.g. 'h1=red,h2=green').")
+            print("Enter new assignments for your nodes as comma-separated pairs (e.g. 'h1=red,h2=green').")
             print("Press Enter to keep current assignments.")
             inp = self.prompt(f"[{self.name}] New assignments: ").strip()
             if inp:

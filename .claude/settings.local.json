@@ -32,7 +32,11 @@
       "Bash(awk:*)",
       "Bash(powershell -Command \"Get-ChildItem -Recurse -Filter ''*.pyc'' | Remove-Item -Force; Get-ChildItem -Recurse -Directory -Filter ''__pycache__'' | Remove-Item -Recurse -Force\")",
       "Bash(git checkout:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pip install:*)",
+      "Bash(zip:*)",
+      "WebSearch",
+      "Bash(python3:*)"
     ]
   }
 }

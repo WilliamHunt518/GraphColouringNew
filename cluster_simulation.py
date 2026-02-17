@@ -385,6 +385,37 @@ def run_clustered_simulation(
                     algorithm=algorithm,
                     fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
                 )
+            elif message_type.lower() == "llm_tool":
+                # LLM with tool calling backend
+                from agents.tool_calling_cluster_agent import ToolCallingClusterAgent
+                from comm.speech_llm_layer import SpeechLLMLayer
+                comm_layer = SpeechLLMLayer(model="gpt-4-turbo", use_llm=not manual_mode)
+                agent = ToolCallingClusterAgent(
+                    name=owner,
+                    problem=problem,
+                    comm_layer=comm_layer,
+                    local_nodes=list(local_nodes),
+                    owners=owners,
+                    backend_model="gpt-4-turbo",
+                    algorithm=algorithm,
+                    fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
+                )
+            elif message_type.lower() == "llm_react":
+                # LLM with ReAct pattern backend
+                from agents.react_cluster_agent import ReActClusterAgent
+                from comm.speech_llm_layer import SpeechLLMLayer
+                comm_layer = SpeechLLMLayer(model="gpt-4-turbo", use_llm=not manual_mode)
+                agent = ReActClusterAgent(
+                    name=owner,
+                    problem=problem,
+                    comm_layer=comm_layer,
+                    local_nodes=list(local_nodes),
+                    owners=owners,
+                    backend_model="gpt-4-turbo",
+                    max_react_iterations=10,
+                    algorithm=algorithm,
+                    fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
+                )
             else:
                 # default LLM‑mediated cluster agent
                 # Retain dialogue history so an LLM (when enabled) can condition on
@@ -724,6 +755,7 @@ def run_clustered_simulation(
 
             def on_send(neigh: str, text: str) -> str:
                 nonlocal human_actions, ui_iteration_counter
+                import json  # Import at function level
                 # Special tokens used by the UI:
                 # __INIT__: Let agent initiate dialogue (doesn't count as human action)
                 # __PASS__: Human passes turn, let agent speak (doesn't count as human action)
@@ -757,7 +789,10 @@ def run_clustered_simulation(
                         from agents.base_agent import Message
                         msg = Message(sender=human_agent.name, recipient=neigh, content=text)
                     else:
-                        msg = human_agent.send(neigh, text)
+                        # For normal messages, append current config so agent knows the state
+                        config_report = dict(human_agent.assignments)
+                        msg_with_config = f"{text} [config: {json.dumps(config_report)}]"
+                        msg = human_agent.send(neigh, msg_with_config)
                     recipient.receive(msg)
                     with open(comm_path, "a", encoding="utf-8") as f:
                         f.write(f"{_now_iso()}\t{msg.sender}->{msg.recipient}\t{str(msg.content).replace(chr(9),' ')}\n")
@@ -854,6 +889,31 @@ def run_clustered_simulation(
                     human_agent.assignments = dict(new_assignments)
                 except Exception:
                     pass
+
+                # Notify each agent about relevant color changes
+                from agents.base_agent import Message
+                for agent in agents:
+                    if agent == human_agent:
+                        continue
+
+                    # Find which nodes in new_assignments are this agent's boundary neighbors
+                    boundary_updates = {
+                        node: color
+                        for node, color in new_assignments.items()
+                        if node in agent.neighbour_assignments
+                    }
+
+                    if boundary_updates:
+                        # Send update as simple dict - agent will extract assignments
+                        # (see cluster_agent.py lines 3027-3031)
+                        update_msg = Message(
+                            sender="Human",
+                            recipient=agent.name,
+                            content=boundary_updates  # Simple dict format
+                        )
+                        # Agent.receive() will parse and update neighbour_assignments
+                        print(f"[ColorChange] Notifying {agent.name} of boundary updates: {boundary_updates}")
+                        agent.receive(update_msg)
 
                 # Check for valid coloring after color change
                 try:

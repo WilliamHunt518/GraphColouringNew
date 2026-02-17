@@ -3697,7 +3697,12 @@ class HumanTurnUI:
 
             clean, report = self._extract_and_apply_reports(msg)
             print(f"[UI] After extract_and_apply_reports: clean={clean[:200]}, report={report}")
-            self._append_to_transcript(neigh, f"[{neigh}] {self._humanise(clean)}")
+
+            # Skip displaying silent messages (e.g., initial config announcements)
+            # These update UI colors via report tag but don't appear in chat
+            if not clean.startswith("__SILENT__"):
+                self._append_to_transcript(neigh, f"[{neigh}] {self._humanise(clean)}")
+
             if report:
                 self._redraw_graph()
         self._set_status(neigh, "idle")
@@ -4488,6 +4493,34 @@ class HumanTurnUI:
 
                 import threading
                 threading.Thread(target=_threaded_announce, daemon=True).start()
+
+        # After agents announce, send human's configuration to them
+        # Schedule this after a delay to let agent announcements complete
+        def _send_human_announcements():
+            print("[UI] Sending human announcements to agents...")
+            for neigh in self._neighs:
+                if self._on_send:
+                    # Build human's announcement message
+                    boundary_nodes = [n for n in self._assignments.keys()]
+                    if boundary_nodes:
+                        config_str = ", ".join(f"{n}={self._assignments[n]}" for n in sorted(boundary_nodes))
+                        import json
+                        human_announcement = f"Here's my configuration: {config_str} [report: {json.dumps(self._assignments)}]"
+
+                        try:
+                            print(f"[UI] Sending human announcement to {neigh}: {config_str}")
+                            reply = self._on_send(neigh, human_announcement)
+                            print(f"[UI] Got reply from {neigh}: {reply[:100] if reply else 'None'}...")
+                            if reply and self._root:
+                                self._root.after(0, lambda n=neigh, r=reply: self.add_incoming(n, r))
+                        except Exception as e:
+                            print(f"[UI] Error sending human announcement to {neigh}: {e}")
+                            import traceback
+                            traceback.print_exc()
+
+        # Schedule human announcement after 1 second (let agent announcements complete)
+        if self._root:
+            self._root.after(1000, _send_human_announcements)
 
         # Transition to bargain phase (only on first announcement)
         if self._phase == "configure":

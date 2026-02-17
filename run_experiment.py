@@ -148,6 +148,10 @@ def run_experiment(
         cluster_message_types = {"Human": "free_text", "Agent1": "free_text", "Agent2": "free_text"}
     elif method == "LLM_RB":
         cluster_message_types = {"Human": "llm_rb", "Agent1": "llm_rb", "Agent2": "llm_rb"}
+    elif method == "LLM_TOOL":
+        cluster_message_types = {"Human": "free_text", "Agent1": "llm_tool", "Agent2": "llm_tool"}
+    elif method == "LLM_REACT":
+        cluster_message_types = {"Human": "free_text", "Agent1": "llm_react", "Agent2": "llm_react"}
     else:
         raise ValueError(f"Unknown METHOD: {method}")
 
@@ -183,7 +187,7 @@ def main() -> None:
     import argparse
 
     p = argparse.ArgumentParser(description="Run the clustered graph-colouring study.")
-    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_API", "LLM_F", "LLM_RB"])
+    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_API", "LLM_F", "LLM_RB", "LLM_TOOL", "LLM_REACT"])
     ui = p.add_mutually_exclusive_group()
     ui.add_argument("--use-ui", dest="use_ui", action="store_true")
     ui.add_argument("--no-ui", dest="use_ui", action="store_false")
