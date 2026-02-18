@@ -415,7 +415,7 @@ class RuleBasedClusterAgent(ClusterAgent):
                             assignments.append(Assignment(node, current_color))
 
                     if assignments:
-                        offer_id = f"update_{int(time.time())}_{self.name}"
+                        offer_id = f"update_{int(time.time() * 1000)}_{self.name}"
                         boundary_update_offer = RBMove(
                             move="ConditionalOffer",
                             offer_id=offer_id,
@@ -999,25 +999,28 @@ class RuleBasedClusterAgent(ClusterAgent):
                     for i, node in enumerate(their_boundary):
                         hypothetical_neighbors[node] = their_config[i]
 
-                    for our_config in (our_configs if len(our_boundary) <= 3 else [tuple(self.assignments.get(n, domain[0]) for n in our_boundary)]):
-                        test_assignment = dict(self.assignments)
-                        for i, node in enumerate(our_boundary):
-                            test_assignment[node] = our_config[i]
+                    # Check if this configuration was rejected
+                    config_tuple = tuple(sorted((their_boundary[i], their_config[i]) for i in range(len(their_boundary))))
+                    if config_tuple in self.rb_rejected_conditions[recipient]:
+                        continue  # Skip rejected configs
 
-                        combined = {**hypothetical_neighbors, **test_assignment}
-                        penalty = self.problem.evaluate_assignment(combined)
+                    # Also check if config contains impossible conditions
+                    if recipient in self.rb_impossible_conditions:
+                        config_pairs = [(their_boundary[i], their_config[i]) for i in range(len(their_boundary))]
+                        has_impossible = any(pair in self.rb_impossible_conditions[recipient] for pair in config_pairs)
+                        if has_impossible:
+                            continue  # Skip this config
 
-                        # Check if this configuration was rejected
-                        config_tuple = tuple(sorted((their_boundary[i], their_config[i]) for i in range(len(their_boundary))))
-                        if config_tuple not in self.rb_rejected_conditions[recipient]:
-                            # NEW: Also check if config contains impossible conditions
-                            if recipient in self.rb_impossible_conditions:
-                                config_pairs = [(their_boundary[i], their_config[i]) for i in range(len(their_boundary))]
-                                has_impossible = any(pair in self.rb_impossible_conditions[recipient] for pair in config_pairs)
-                                if has_impossible:
-                                    continue  # Skip this config
+                    # Use compute_assignments() to find our optimal response (mirrors main loop)
+                    old_neighbors = dict(self.neighbour_assignments)
+                    self.neighbour_assignments = hypothetical_neighbors
+                    test_assignment = self.compute_assignments()
+                    self.neighbour_assignments = old_neighbors
 
-                            all_configs_with_penalty.append((penalty, their_config, our_config))
+                    combined = {**hypothetical_neighbors, **test_assignment}
+                    penalty = self.problem.evaluate_assignment(combined)
+
+                    all_configs_with_penalty.append((penalty, their_config, test_assignment))
 
                 # Sort by penalty and pick the best non-rejected one
                 if all_configs_with_penalty:
@@ -1058,9 +1061,8 @@ class RuleBasedClusterAgent(ClusterAgent):
                 for cond in offer.conditions:
                     if hasattr(cond, 'node') and hasattr(cond, 'colour'):
                         if cond.node in our_boundary:
-                            # Find what we would propose for this node
-                            node_idx = our_boundary.index(cond.node)
-                            our_proposed_color = best_our_assignment[node_idx]
+                            # Find what we would propose for this node (dict-based lookup)
+                            our_proposed_color = best_our_assignment.get(cond.node)
                             if cond.colour != our_proposed_color:
                                 offer_matches = False
                                 break
@@ -1129,8 +1131,7 @@ class RuleBasedClusterAgent(ClusterAgent):
                     for assign in offer.assignments:
                         if hasattr(assign, 'node') and hasattr(assign, 'colour'):
                             if assign.node in our_boundary:
-                                node_idx = our_boundary.index(assign.node)
-                                if assign.colour != best_our_assignment[node_idx]:
+                                if assign.colour != best_our_assignment.get(assign.node):
                                     offer_identical = False
                                     break
             else:
@@ -1189,7 +1190,7 @@ class RuleBasedClusterAgent(ClusterAgent):
                     colour=best_our_assignment[node]
                 ))
 
-        offer_id = f"offer_{int(time.time())}_{self.name}"
+        offer_id = f"offer_{int(time.time() * 1000)}_{self.name}"
 
         self.log(f"[ConditionalOffer Gen] ===== GENERATED CONDITIONAL OFFER =====")
         self.log(f"[ConditionalOffer Gen] Offer ID: {offer_id}")
@@ -1208,7 +1209,7 @@ class RuleBasedClusterAgent(ClusterAgent):
 
         # Log what we're proposing in plain English
         conditions_str = ", ".join([f"{node}={color}" for node, color in zip(their_boundary, best_config)])
-        assignments_str = ", ".join([f"{node}={color}" for node, color in zip(our_boundary, best_our_assignment)])
+        assignments_str = ", ".join([f"{node}={best_our_assignment.get(node, '?')}" for node in our_boundary])
         self.log(f"[OFFER VALIDATION] IF {recipient} sets: {conditions_str}")
         self.log(f"[OFFER VALIDATION] THEN {self.name} will set: {assignments_str}")
         self.log(f"[OFFER VALIDATION] Claimed {self.name} penalty: {best_penalty:.3f}")
@@ -1437,7 +1438,11 @@ class RuleBasedClusterAgent(ClusterAgent):
                     # Fall through to keyword-based handling
 
         # INTERCEPT simple acceptance/rejection responses
-        if isinstance(message.content, str):
+        # SKIP this block for messages with structured [rb:{...}] tags — those have formal content
+        # that must be parsed by parse_rb() below. The substring-based heuristic here would
+        # misfire on words like "unacceptable" containing "accept", creating wrong Accept moves.
+        _has_rb_tag = isinstance(message.content, str) and '[rb:{' in message.content
+        if isinstance(message.content, str) and not _has_rb_tag:
             text_lower = message.content.lower().strip()
             # Check for simple acceptance phrases
             acceptance_phrases = ['yes', 'ok', 'fine', 'sure', 'that works', 'yep', 'sounds good', 'accept']
@@ -1672,6 +1677,13 @@ class RuleBasedClusterAgent(ClusterAgent):
                     print(f"[{self.name}] SENT conditional offer to {recipient}: {num_cond} conditions, {num_assign} assignments")
                     self.log(f"[RB Phase] Sent valid conditional offer: {num_cond} conditions, {num_assign} assignments (with report)")
 
+                    # Track in rb_active_offers so it appears in the conditionals sidebar
+                    if hasattr(conditional_offer, 'offer_id') and conditional_offer.offer_id:
+                        self.rb_active_offers[conditional_offer.offer_id] = conditional_offer
+                        self.rb_offer_timestamps[conditional_offer.offer_id] = time.time()
+                        self.rb_offer_iteration[conditional_offer.offer_id] = self.rb_iteration_counter
+                        self.log(f"[RB Track] Recorded initial ConditionalOffer in rb_active_offers: {conditional_offer.offer_id}")
+
                     # Mark boundary nodes as proposed
                     if hasattr(conditional_offer, 'assignments') and conditional_offer.assignments:
                         for assign in conditional_offer.assignments:
@@ -1690,7 +1702,7 @@ class RuleBasedClusterAgent(ClusterAgent):
                                 assignments.append(Assignment(node=node, colour=color))
 
                         if assignments:
-                            offer_id = f"config_{int(time.time())}_{self.name}"
+                            offer_id = f"config_{int(time.time() * 1000)}_{self.name}"
                             config_move = RBMove(
                                 move="ConditionalOffer",
                                 offer_id=offer_id,
@@ -1710,6 +1722,12 @@ class RuleBasedClusterAgent(ClusterAgent):
 
                             self.send(recipient, msg_text)
                             self.log(f"[RB Phase] Sent config announcement fallback")
+
+                            # Track in rb_active_offers so it appears in the conditionals sidebar
+                            self.rb_active_offers[offer_id] = config_move
+                            self.rb_offer_timestamps[offer_id] = time.time()
+                            self.rb_offer_iteration[offer_id] = self.rb_iteration_counter
+                            self.log(f"[RB Track] Recorded fallback ConditionalOffer in rb_active_offers: {offer_id}")
 
                             for assign in assignments:
                                 if hasattr(assign, 'node') and hasattr(assign, 'colour'):
@@ -1862,6 +1880,11 @@ class RuleBasedClusterAgent(ClusterAgent):
                 # Otherwise Priority 0 sends boundary update and returns early, never reaching conditional offer logic
                 self.rb_force_conditional.add(sender)
                 self.log(f"[RB Process] Forcing conditional offer generation for {sender} (will skip Priority 0)")
+
+                # Clear pending query so step() doesn't generate Accept for the rejected offer
+                if sender in self.rb_pending_queries:
+                    del self.rb_pending_queries[sender]
+                    self.log(f"[RB Process] Cleared pending query for {sender} (offer was rejected)")
 
             # NEW: Process impossible conditions FIRST (before checking if offer exists)
             # These are fundamental constraints that must be stored regardless of offer state

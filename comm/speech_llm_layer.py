@@ -356,6 +356,30 @@ Return ONLY the natural language message (no JSON, no extra formatting).
 
             nl_message = response.choices[0].message.content.strip()
 
+            # CRITICAL: Validate LLM output quality
+            # Log warnings for malformed patterns but DO NOT use fallbacks
+            # Policy: If LLM fails, crash or use what we have - never substitute alternatives
+            malformed_patterns = [
+                ", ,",          # Empty item in list: "a, , b"
+                ", and .",      # Trailing conjunction with nothing: "a, and ."
+                ", .",          # Trailing comma-period: "a, ."
+                "assigned ,",   # "assigned , node" (missing first item)
+                "assigned  ,",  # Double space variant
+                ", to ",        # ", to color" (missing node)
+            ]
+
+            for pattern in malformed_patterns:
+                if pattern in nl_message:
+                    print(f"\n{'='*70}")
+                    print(f"WARNING: Speech LLM generated malformed output")
+                    print(f"Pattern found: '{pattern}'")
+                    print(f"Message: {nl_message}")
+                    print(f"Content: {json.dumps(content, indent=2)}")
+                    print(f"Policy: Using LLM output as-is (no fallbacks allowed)")
+                    print(f"{'='*70}\n")
+                    # Continue with LLM output - do not substitute
+                    break
+
             # Add report tag for UI color updates (flat format for UI extraction)
             if "my_assignments" in content:
                 nl_message += f" [report: {json.dumps(content['my_assignments'])}]"

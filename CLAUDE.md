@@ -28,17 +28,6 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### Communication Modes
-
-The system supports multiple within-subject conditions:
-- `RB` — rule-based argumentation (no LLM)
-- `LLM_U` — utility-oriented language
-- `LLM_C` — constraint-oriented language
-- `LLM_F` — free-form negotiation
-- `LLM_RB` (optional) — NL → RB grammar → NL
-
-**Important**: LLMs are used **only as a communication/interpretation layer**. They do **not** solve the optimization problem.
-
 ### API Key Configuration
 
 The OpenAI API key is stored in `api_key.txt` at the project root. This file should **never** be committed.
@@ -101,12 +90,6 @@ Agents use configurable **local optimization algorithms**:
 - `"greedy"` — greedy colouring heuristic (default)
 - `"maxsum"` — exhaustive search
 
-Agents support multiple **message formats**:
-- `cost_list` — utility messages (Max-Sum style)
-- `constraints` — feasible colour sets
-- `free_text` — natural language descriptions
-
-The choice of algorithm is **independent** from message format.
 
 ### Local Optimality vs Satisfaction
 

@@ -2909,7 +2909,7 @@ Message:"""
         # Remember the last human utterance (best-effort). The comm layer may wrap
         # messages with [mapping: ...] tags; keep the raw text for keyword checks.
         try:
-            if str(message.sender).lower() == "human":
+            if str(message.sender).lower() == "human" and isinstance(message.content, str):
                 self._last_human_text = str(message.content)
                 # Flag that human sent a message this turn (forces response even if duplicate)
                 self._received_human_message_this_turn = True
@@ -3007,7 +3007,13 @@ Message:"""
         except Exception:
             pass
         # attempt to parse structured content via the communication layer
-        structured = self.comm_layer.parse_content(message.sender, self.name, content)
+        # Skip LLM parsing for dict content — dicts are already structured (e.g. boundary
+        # update notifications from on_colour_change). Calling parse_content on a raw dict
+        # would stringify it and trigger an unnecessary LLM call on every node click.
+        if isinstance(content, str):
+            structured = self.comm_layer.parse_content(message.sender, self.name, content)
+        else:
+            structured = content  # Already structured; use directly
         try:
             self.debug_incoming_parsed.append(structured)
         except Exception:

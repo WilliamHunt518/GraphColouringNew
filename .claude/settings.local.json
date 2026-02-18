@@ -36,7 +36,10 @@
       "Bash(pip install:*)",
       "Bash(zip:*)",
       "WebSearch",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(venv/Scripts/python.exe:*)",
+      "Bash(git stash:*)",
+      "Bash(venv/Scripts/python:*)"
     ]
   }
 }

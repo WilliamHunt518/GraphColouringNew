@@ -38,9 +38,9 @@ iterations using different algorithms and message types::
     run_clustered_simulation(**CONFIG)
 
 This will create two cluster agents: Alice uses a greedy heuristic and
-sends cost lists, while Bob uses an exhaustive search (Max–Sum) and
-sends free‑form text descriptions of its assignments.  The function
-generates per‑iteration logs, a global penalty summary and
+sends cost lists, while Bob uses an exhaustive search (Maxâ€“Sum) and
+sends freeâ€‘form text descriptions of its assignments.  The function
+generates perâ€‘iteration logs, a global penalty summary and
 visualisations in the specified output directory.
 """
 
@@ -96,16 +96,9 @@ def _get_active_conditionals(agents: List[Any]) -> tuple:
             if "_Human" in offer_id:
                 continue
 
-            # Determine status based on accepted/rejected offers
-            # Check rejected FIRST — explicit user rejection always takes priority over stale accepted state
+            # Determine status based on accepted offers
             accepted_offers = getattr(agent, 'rb_accepted_offers', set())
-            rejected_offers = getattr(agent, 'rb_rejected_offers', set())
-            if offer_id in rejected_offers:
-                status = "rejected"
-            elif offer_id in accepted_offers:
-                status = "accepted"
-            else:
-                status = "pending"
+            status = "accepted" if offer_id in accepted_offers else "pending"
 
             # Extract conditions
             conditions_list = []
@@ -351,7 +344,7 @@ def run_clustered_simulation(
         If ``interactive`` is True and the owner name contains ``"Human"``,
         we instantiate a :class:`MultiNodeHumanAgent` to allow a human
         participant to control the cluster.  Otherwise we choose between
-        the rule‑based baseline and the LLM‑mediated cluster agent based
+        the ruleâ€‘based baseline and the LLMâ€‘mediated cluster agent based
         on the configured ``cluster_message_types``.
         """
         # determine the configured message type and algorithm for this cluster
@@ -359,7 +352,7 @@ def run_clustered_simulation(
         algorithm = cluster_algorithms.get(owner, "maxsum")
         # If interactive and this owner is labelled as human, use the interactive agent.
         if interactive and owner in human_owners:
-            # use a pass‑through communication layer: no LLM summarisation
+            # use a passâ€‘through communication layer: no LLM summarisation
             comm_layer = (LLMRBCommLayer(manual=manual_mode, summariser=summariser, use_history=True) if "llm_rb" in [str(v).lower() for v in cluster_message_types.values()] else PassThroughCommLayer())
             # import locally to avoid circular import at module top level
             from agents.multi_node_human_agent import MultiNodeHumanAgent
@@ -379,9 +372,9 @@ def run_clustered_simulation(
                 fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
             )
         else:
-            # non‑interactive: decide between rule‑based baseline and LLM messages
+            # nonâ€‘interactive: decide between ruleâ€‘based baseline and LLM messages
             if message_type.lower() in ("rule_based","llm_rb"):
-                # instantiate rule‑based baseline with pass‑through communication
+                # instantiate ruleâ€‘based baseline with passâ€‘through communication
                 comm_layer = LLMRBCommLayer(manual=manual_mode, summariser=summariser, use_history=True) if message_type.lower()=="llm_rb" else PassThroughCommLayer()
                 agent = RuleBasedClusterAgent(
                     name=owner,
@@ -424,7 +417,7 @@ def run_clustered_simulation(
                     fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
                 )
             else:
-                # default LLM‑mediated cluster agent
+                # default LLMâ€‘mediated cluster agent
                 # Retain dialogue history so an LLM (when enabled) can condition on
                 # prior turns. This is especially important for LLM-F, but is
                 # also useful for the other LLM conditions.
@@ -508,24 +501,6 @@ def run_clustered_simulation(
             _f.write("")
     except Exception:
         pass
-
-    # Create separate trace file for ReAct agents
-    react_trace_path = os.path.join(output_dir, "react_trace.jsonl")
-    try:
-        with open(react_trace_path, "w", encoding="utf-8") as _f:
-            _f.write("")
-    except Exception:
-        pass
-
-    # Set trace file paths on agents now that files are created
-    for agent in agents:
-        agent_class_name = agent.__class__.__name__
-        if "ToolCalling" in agent_class_name:
-            agent._trace_file = llm_trace_path
-            print(f"[Trace] Set trace file for {agent.name} (ToolCalling): {llm_trace_path}")
-        elif "ReAct" in agent_class_name:
-            agent._react_trace_file = react_trace_path
-            print(f"[Trace] Set react trace file for {agent.name} (ReAct): {react_trace_path}")
 
     # --------------------
     # Ground Truth Analysis Log
@@ -823,21 +798,12 @@ def run_clustered_simulation(
                         f.write(f"{_now_iso()}\t{msg.sender}->{msg.recipient}\t{str(msg.content).replace(chr(9),' ')}\n")
                         f.flush()
 
-                # Update status: agent is thinking
-                if hasattr(ui, 'update_agent_status'):
-                    ui.update_agent_status(recipient.name, "thinking...")
-
                 # step recipient once and capture its reply to human
                 # Step recipient once and capture its reply to human.
                 # For __INIT__ and __PASS__, we step without delivering a message.
                 # For __ANNOUNCE_CONFIG__ and __IMPOSSIBLE__, message was delivered above and agent will respond.
                 recipient.step()
                 iter_counts[recipient.name] += 1
-
-                # Clear status after step completes
-                if hasattr(ui, 'clear_agent_status'):
-                    ui.clear_agent_status(recipient.name)
-
                 # sync after step
                 _sync_neighbour_views()
 
@@ -1095,17 +1061,6 @@ def run_clustered_simulation(
             # Expose checkpoints to problem object so UI can access them
             setattr(problem, 'checkpoints', checkpoints)
 
-            # Set up status callbacks for agents to report progress
-            for agent in agents:
-                if agent is not human_agent:
-                    # Create a status callback for this agent
-                    def make_status_callback(agent_name):
-                        def status_callback(status_msg):
-                            if hasattr(ui, 'update_agent_status'):
-                                ui.update_agent_status(agent_name, status_msg)
-                        return status_callback
-                    agent.status_callback = make_status_callback(agent.name)
-
             ui.run_async_chat(
                 nodes=human_nodes,
                 domain=domain,
@@ -1231,7 +1186,7 @@ def run_clustered_simulation(
                 f.write(f"Iteration {step}: {sender} -> {recipient}: {content}\n")
             f.flush()
 
-        # Summary log (append each iteration) — includes satisfaction flags so
+        # Summary log (append each iteration) â€” includes satisfaction flags so
         # you can verify the human checkbox is being respected.
         human_ok_now = True
         agent_ok_now = True

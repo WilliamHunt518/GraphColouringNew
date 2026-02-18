@@ -226,23 +226,15 @@ class LLMCommLayer(BaseCommLayer):
 
         def _worker() -> None:
             try:
-                self.openai.api_key = self.api_key
-                try:
-                    resp = self.openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=messages,
-                        max_tokens=max_tokens,
-                        n=1,
-                        request_timeout=25,
-                    )
-                except TypeError:
-                    resp = self.openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=messages,
-                        max_tokens=max_tokens,
-                        n=1,
-                    )
-                txt = resp.choices[0].message["content"].strip()
+                client = self.openai.OpenAI(api_key=self.api_key)
+                resp = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    n=1,
+                    timeout=25,
+                )
+                txt = resp.choices[0].message.content.strip()
                 result["text"] = txt
             except Exception as e:
                 result["err"] = e

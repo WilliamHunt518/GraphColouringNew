@@ -4,6 +4,21 @@ This directory contains documentation of fixes applied to the LLM-based agent mo
 
 ## Critical Fixes (2026-02-17)
 
+### 0. ReAct Agent Action Parsing Bug - MOST CRITICAL FOR LLM_REACT MODE
+**File**: `FIX_REACT_ACTION_PARSING.md`
+
+**Problem**: ReAct agents were failing to execute API function calls, causing repeated errors and eventual failure.
+
+**Root Cause**:
+- Regex pattern `r"Action:\s*(\w+)\((.*?)\)"` used non-greedy matching
+- Stopped at FIRST `)`, breaking when arguments contained dictionaries
+- Example: `get_best_response_to(neighbor_assignments={"h1": "red"})` captured as `neighbor_assignments={"h1": "red"` (missing closing `}`)
+- Invalid JSON caused "input format" errors, LLM retried with same bad format
+
+**Fix**: Replaced regex with parenthesis counting algorithm to correctly extract complete arguments with balanced delimiters.
+
+**Impact**: LLM_REACT mode now works reliably - agents parse function calls correctly on first try, no more retries, both Agent1 and Agent2 work.
+
 ### 1. Announcement Phase Fix - MOST CRITICAL
 **File**: `COMPLETE_NEIGHBOR_FIX_SUMMARY.md`, `LLM_PATH_FIX_SUMMARY.md`
 
