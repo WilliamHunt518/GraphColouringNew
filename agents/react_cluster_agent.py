@@ -15,6 +15,7 @@ valuable for research into human-AI coordination.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+import ast
 import json
 import os
 import re
@@ -216,11 +217,28 @@ Final Answer: {
 **CRITICAL**: Notice the example uses simulate_neighbor_change() for testing neighbor nodes, NOT check_feasibility()!
 
 **Workflow** (ALWAYS follow this order):
-1. **ALWAYS check acceptance FIRST**: Call get_best_response_to() with **ALL** CURRENT neighbor assignments
-   - **CRITICAL**: Must include ALL neighbor nodes you know about (e.g., all of h1, h2, h3, h4, h5)
-   - **WRONG**: get_best_response_to({"h4": "red"}) - incomplete!
-   - **CORRECT**: get_best_response_to({"h1": "red", "h2": "blue", "h3": "green", "h4": "red", "h5": "green"}) - all neighbors!
-2. If penalty=0 → SET should_send_message=true, message_type="acceptance", requested_changes={{}}, reason="Current configuration works perfectly!"
+1. **Read the human's message carefully**:
+   - Did they offer MULTIPLE alternatives? ("either X or Y", "h4 could be red or blue")
+     → If so, go to step 1b (multi-alternative workflow)
+   - Did they state/ask about a single scenario?
+     → Go to step 1a (standard workflow)
+
+1a. **Standard workflow** (single scenario or current state):
+   - Call get_best_response_to() with ALL CURRENT neighbor assignments
+   - If penalty=0 → accept
+   - If penalty > 0 → negotiate
+
+1b. **Multi-alternative workflow** (human offered two or more options):
+   - **Test EVERY alternative** before deciding — do NOT stop at the first penalty=0
+   - Call get_best_response_to() for EACH alternative (e.g., one for h4=red, one for h4=blue)
+   - Only AFTER testing all alternatives, decide what to say:
+     - If ALL work → say "Both work!" with acceptance
+     - If SOME work → say which specific ones work and which don't
+     - If NONE work → negotiate with your own counter-proposal
+   - Example message: "I tested both options: h4=red works (I'd use a4=blue) and h4=blue also
+     works (I'd use a5=red). Either is fine!"
+
+2. If penalty=0 (single scenario) → SET should_send_message=true, message_type="acceptance", requested_changes={{}}, reason="Current configuration works perfectly!"
 3. If penalty > 0 → Negotiate (test alternatives with simulate_neighbor_change), then SET should_send_message=true, message_type="proposal" with specific requested_changes
 
 **Guidelines**:
@@ -261,9 +279,18 @@ Final Answer: {
    - Do NOT propose arbitrary changes - only TESTED ones!
 8. Final Answer: Make SPECIFIC request with YOUR PLAN (package deal: "You do X, I'll do Y")
 
+**CRITICAL — Accept vs Propose decision**:
+- Call get_best_response_to() with the ACTUAL CURRENT neighbor colors (no arguments).
+- The "penalty" in that result is the ONLY thing that matters:
+  - **penalty == 0**: Accept! Set message_type="acceptance", requested_changes={{}},
+    my_assignments = EXACTLY the full assignment dict from that get_best_response_to() call.
+  - **penalty > 0**: Propose! Test alternatives to find what the neighbor should change.
+    Only propose changes that have been TESTED with penalty=0.
+- NEVER accept when get_best_response_to() shows penalty > 0 — even if the human is happy.
+
 **When to send a message**:
-- **acceptance**: You checked get_best_response_to() with CURRENT neighbor colors and found penalty=0 → ALWAYS SEND acceptance message! Set message_type="acceptance", requested_changes={{}} (empty)
-- **proposal**: You have a concrete request (change h4 to blue) with a plan → SEND proposal message
+- **acceptance**: get_best_response_to() (no args) returned penalty=0 → ALWAYS SEND acceptance! Set message_type="acceptance", requested_changes={{}} (empty)
+- **proposal**: Even best_response has penalty>0 AND you have a tested simulation with penalty=0 → SEND proposal message
 - **rejection**: Neighbor's suggestion doesn't work, offer alternative → SEND rejection message
 - NEVER send "still working" or "analyzing" messages - these are useless!
 - ONLY set should_send_message=false if you literally have nothing to report (this should be rare!)
@@ -577,6 +604,39 @@ Your messages must ONLY mention:
                     self.satisfied = False
                     self.log(f"[REACT] Not satisfied: penalty={current_penalty}")
 
+            # SAFETY: Programmatic validation — only accept if current state has penalty=0
+            if backend_output.get("message_type") == "acceptance":
+                current_br = self.api.get_best_response_to()
+                can_accept = current_br.get("penalty", float("inf")) < 1e-6
+                if not can_accept:
+                    min_pen = current_br.get("penalty", "?")
+                    self.log(
+                        f"[REACT] OVERRIDE: wrongly accepted (penalty={min_pen}). "
+                        "Converting to proposal."
+                    )
+                    best_assign = {k: v for k, v in current_br.items() if k != "penalty"}
+                    requested_changes = {}
+                    for u, v in self.problem.edges:
+                        my_node = u if u in self.nodes else (v if v in self.nodes else None)
+                        nb_node = v if u in self.nodes else (u if v in self.nodes else None)
+                        if my_node and nb_node and nb_node in self.neighbour_assignments:
+                            my_col = best_assign.get(my_node)
+                            nb_col = self.neighbour_assignments[nb_node]
+                            if my_col and nb_col and my_col == nb_col:
+                                for alt in self.domain:
+                                    if alt != nb_col:
+                                        requested_changes[nb_node] = alt
+                                        break
+                    sc = backend_output.get("structured_content", {})
+                    sc["my_assignments"] = best_assign
+                    sc["requested_changes"] = requested_changes
+                    if not sc.get("reason") and requested_changes:
+                        node, color = next(iter(requested_changes.items()))
+                        sc["reason"] = f"Could you change {node} to {color}?"
+                    backend_output["message_type"] = "proposal"
+                    backend_output["structured_content"] = sc
+                    self.satisfied = False
+
             # Validate message specificity before sending
             if backend_output.get("should_send_message"):
                 structured_content = backend_output.get("structured_content", {})
@@ -589,6 +649,16 @@ Your messages must ONLY mention:
                     # Do NOT send invalid messages - they violate observability rules or are too vague
                     # This prevents partial observability violations and vague/useless messages
                 else:
+                    # On acceptance: apply ALL my_assignments (including boundary nodes) NOW
+                    # so self.assignments is in the committed state before next step().
+                    # Prevents flip-flopping: we found a conflict-free plan, commit to it.
+                    if backend_output.get("message_type") == "acceptance":
+                        committed = structured_content.get("my_assignments", {})
+                        for node, color in committed.items():
+                            if node in self.nodes:
+                                self.assignments[node] = color
+                        self.log(f"[REACT] Committed acceptance assignments: {dict(self.assignments)}")
+
                     # Message passed validation - send it
                     self._send_backend_decision(backend_output)
 
@@ -814,6 +884,9 @@ Your messages must ONLY mention:
     def _parse_final_answer(self, text: str) -> Dict[str, Any]:
         """Parse Final Answer from ReAct text.
 
+        Tries json.loads first, then common JSON repairs, then ast.literal_eval.
+        If all fail, raises RuntimeError (per LLM-Only policy: crash, not suppress).
+
         Parameters
         ----------
         text : str
@@ -824,31 +897,77 @@ Your messages must ONLY mention:
         Dict[str, Any]
             Parsed decision
         """
-        # Extract JSON after "Final Answer:"
+        # Extract block after "Final Answer:"
         match = re.search(r"Final Answer:\s*(\{.*\})", text, re.DOTALL | re.IGNORECASE)
 
-        if match:
-            try:
-                decision = json.loads(match.group(1))
-                return decision
-            except json.JSONDecodeError as e:
-                self.log(f"[REACT] Failed to parse Final Answer JSON: {e}")
+        if not match:
+            raw_text = text[-500:] if len(text) > 500 else text
+            self.log(f"[REACT] No 'Final Answer: {{...}}' block found. Text tail: {raw_text}")
+            raise RuntimeError(
+                "[REACT] LLM did not produce a Final Answer block. "
+                "Check the prompt and LLM output above."
+            )
 
-        # Fallback: If we can't parse JSON, don't send a message
-        # The LLM didn't follow instructions properly
-        self.log(f"[REACT] WARNING: Could not parse Final Answer as JSON - not sending message")
-        self.log(f"[REACT] Skipping this turn - LLM must return valid JSON")
+        raw = match.group(1)
 
-        return {
-            "should_send_message": False,  # Don't send unparseable responses
-            "recipient": "Human",
-            "message_type": "info",
-            "structured_content": {
-                "my_assignments": self.assignments,
-                "reason": "",
-                "requested_changes": {}
-            }
-        }
+        # Attempt 1: strict JSON
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError as e1:
+            self.log(f"[REACT] json.loads failed: {e1}")
+
+        # Repair helper: strip // line comments not inside quoted strings
+        def strip_json_comments(text):
+            lines = text.split('\n')
+            cleaned = []
+            for line in lines:
+                in_string = False
+                result = []
+                i = 0
+                while i < len(line):
+                    c = line[i]
+                    if c == '"' and (i == 0 or line[i - 1] != '\\'):
+                        in_string = not in_string
+                    if not in_string and c == '/' and i + 1 < len(line) and line[i + 1] == '/':
+                        break  # strip from // to end of line
+                    result.append(c)
+                    i += 1
+                cleaned.append(''.join(result).rstrip())
+            return '\n'.join(cleaned)
+
+        # Attempt 2: strip // comments then json.loads
+        repaired = strip_json_comments(raw)
+        try:
+            return json.loads(repaired)
+        except json.JSONDecodeError as e2:
+            self.log(f"[REACT] json.loads after comment-stripping failed: {e2}")
+
+        # Attempt 3: combined repairs — Python booleans/None + trailing commas + comments
+        repaired = strip_json_comments(raw)
+        repaired = re.sub(r'\bTrue\b', 'true', repaired)
+        repaired = re.sub(r'\bFalse\b', 'false', repaired)
+        repaired = re.sub(r'\bNone\b', 'null', repaired)
+        repaired = re.sub(r',\s*([\}\]])', r'\1', repaired)  # trailing commas
+        try:
+            return json.loads(repaired)
+        except json.JSONDecodeError as e3:
+            self.log(f"[REACT] json.loads after full repairs failed: {e3}")
+
+        # Attempt 4: ast.literal_eval handles Python dict syntax (single quotes, etc.)
+        try:
+            result = ast.literal_eval(raw)
+            if isinstance(result, dict):
+                self.log("[REACT] Parsed Final Answer via ast.literal_eval (LLM used Python syntax)")
+                return result
+        except (ValueError, SyntaxError) as e4:
+            self.log(f"[REACT] ast.literal_eval failed: {e4}")
+
+        # All attempts exhausted — crash per LLM-Only policy (no silent suppression)
+        self.log(f"[REACT] FATAL: Could not parse Final Answer. Raw text:\n{raw}")
+        raise RuntimeError(
+            f"[REACT] LLM Final Answer is unparseable JSON. Raw:\n{raw}\n"
+            "Fix the prompt or investigate the LLM output above."
+        )
 
     def _extract_requests_from_text(self, text: str) -> Dict[str, str]:
         """Extract node-color requests from free text.

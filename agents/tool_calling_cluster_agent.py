@@ -196,8 +196,54 @@ class ToolCallingClusterAgent(ClusterAgent):
                 self.satisfied = False
                 self.log(f"[TOOL] Not satisfied: penalty={current_penalty}")
 
+            # SAFETY: Programmatic validation — Phase 3 must not accept when penalty > 0
+            if response_message.get("message_type") == "acceptance":
+                can_accept = api_results.get("__can_accept_current__", False)
+                if not can_accept:
+                    min_pen = api_results.get("current_best_response", {}).get("penalty", "?")
+                    self.log(
+                        f"[TOOL] OVERRIDE: Phase 3 wrongly accepted (penalty={min_pen}). "
+                        "Converting to proposal."
+                    )
+                    # Best assignments for current state (even if still conflicted)
+                    best_assign = api_results.get("__assignments_if_accepting__", dict(self.assignments))
+                    # Find which neighbor nodes conflict with best_assign
+                    requested_changes = {}
+                    for u, v in self.problem.edges:
+                        my_node = u if u in self.nodes else (v if v in self.nodes else None)
+                        nb_node = v if u in self.nodes else (u if v in self.nodes else None)
+                        if my_node and nb_node and nb_node in self.neighbour_assignments:
+                            my_col = best_assign.get(my_node)
+                            nb_col = self.neighbour_assignments[nb_node]
+                            if my_col and nb_col and my_col == nb_col:
+                                # conflict: suggest a different color for the neighbor
+                                for alt in self.domain:
+                                    if alt != nb_col:
+                                        requested_changes[nb_node] = alt
+                                        break
+                    sc = response_message.get("structured_content", {})
+                    sc["my_assignments"] = best_assign
+                    sc["requested_changes"] = requested_changes
+                    if not sc.get("reason") and requested_changes:
+                        node, color = next(iter(requested_changes.items()))
+                        sc["reason"] = f"Could you change {node} to {color}?"
+                    response_message["message_type"] = "proposal"
+                    response_message["structured_content"] = sc
+
             # Send message if translation produced one
             if response_message.get("should_send_message"):
+                # On acceptance: apply ALL my_assignments (including boundary nodes) NOW so
+                # that self.assignments is in the committed state before the next step().
+                # This prevents flip-flopping: we committed to a conflict-free plan, so
+                # we should live in that state immediately.
+                if response_message.get("message_type") == "acceptance":
+                    sc = response_message.get("structured_content", {})
+                    committed = sc.get("my_assignments", {})
+                    for node, color in committed.items():
+                        if node in self.nodes:
+                            self.assignments[node] = color
+                    self.log(f"[TOOL] Committed acceptance assignments: {dict(self.assignments)}")
+
                 self._send_translated_message(response_message)
                 self.log("[TOOL] Message sent successfully")
             else:
@@ -330,9 +376,15 @@ This ensures accurate penalty calculation.
   → get_best_response_to({{"h1": "green", "h4": "blue"}})
   → Test the conditional scenario
 
-"I've set h1=red, h2=blue":
-  → get_current_penalty(), get_best_response_to()
-  → Analyze current state
+"I've set h1=red, h2=blue" (announcement):
+  → get_current_penalty(), get_best_response_to() [test current state first]
+  → ALSO test get_best_response_to for each visible neighbor with each alternative color:
+    e.g. if visible neighbors are h1=red and h4=red, also call:
+    get_best_response_to({{"h1": "blue", "h4": "red"}}),
+    get_best_response_to({{"h1": "green", "h4": "red"}}),
+    get_best_response_to({{"h1": "red", "h4": "blue"}}),
+    get_best_response_to({{"h1": "red", "h4": "green"}})
+  → This ensures Phase 3 always has TESTED conflict-free alternatives to propose
 
 Default (unclear message):
   → get_current_penalty(), get_best_response_to()
@@ -473,11 +525,26 @@ Return ONLY the JSON object. No explanatory text."""
                     results["current_penalty"] = penalty
                     results["current_conflicts"] = conflicts
                 elif method_name == "get_best_response_to":
-                    results["best_response"] = result
+                    # Build a unique key from the neighbor_assignments params so that
+                    # multiple calls (one per alternative) don't overwrite each other.
+                    neighbor_args = params.get("neighbor_assignments", {})
+                    if neighbor_args:
+                        suffix = "_".join(f"{n}{c[:1]}" for n, c in sorted(neighbor_args.items()))
+                        key = f"best_response_{suffix}"
+                    else:
+                        # Fallback: count existing keys to avoid collision
+                        existing = sum(1 for k in results if k.startswith("best_response"))
+                        key = f"best_response_{existing}" if existing else "best_response"
+                    results[key] = result
                 elif method_name == "simulate_neighbor_change":
-                    # Use params to create descriptive key
+                    # Build a unique key from ALL neighbor_nodes values, not just the first key.
                     neighbor_nodes = params.get("neighbor_nodes", {})
-                    key = f"simulate_{list(neighbor_nodes.keys())[0] if neighbor_nodes else 'unknown'}"
+                    if neighbor_nodes:
+                        suffix = "_".join(f"{n}{c[:1]}" for n, c in sorted(neighbor_nodes.items()))
+                        key = f"simulate_{suffix}"
+                    else:
+                        existing = sum(1 for k in results if k.startswith("simulate_"))
+                        key = f"simulate_{existing}"
                     results[key] = result
                 else:
                     results[method_name] = result
@@ -487,6 +554,26 @@ Return ONLY the JSON object. No explanatory text."""
             except Exception as e:
                 self.log(f"[TOOL][PHASE2] Error executing {method_name}: {e}")
                 results[f"{method_name}_error"] = str(e)
+
+        # --- DECISION GUIDE: always compute best response for CURRENT neighbor state ---
+        # Phase 3 must check THIS field (not a dynamically-named best_response_xyz key)
+        # to determine whether acceptance is valid.
+        try:
+            current_br = self.api.get_best_response_to()   # uses current neighbour_assignments
+            results["current_best_response"] = current_br
+            can_accept = current_br.get("penalty", float("inf")) < 1e-6
+            results["__can_accept_current__"] = can_accept
+            results["__assignments_if_accepting__"] = {
+                k: v for k, v in current_br.items() if k != "penalty"
+            }
+            self.log(
+                f"[TOOL][PHASE2] Decision guide: __can_accept_current__={can_accept}, "
+                f"penalty={current_br.get('penalty')}"
+            )
+        except Exception as e:
+            self.log(f"[TOOL][PHASE2] Could not compute decision guide: {e}")
+            results["__can_accept_current__"] = False
+            results["__assignments_if_accepting__"] = dict(self.assignments)
 
         return results
 
@@ -560,12 +647,21 @@ Return ONLY the JSON object. No explanatory text."""
    - "Yes, that works!" (if penalty=0) OR "No, that creates conflicts" (if penalty>0)
    - Then explain why or suggest alternative
 
-3. **Human proposed conditional** ("h4=blue if h1=green"):
+3. **Human proposed conditional with MULTIPLE ALTERNATIVES** ("If h1=red I could do either blue or red for h4"):
+   - The API results contain MULTIPLE best_response_* or simulate_* keys, one per alternative
+   - CRITICAL: Check EACH alternative's penalty separately
+   - Report which specific alternatives work: "Both work!" or "Only h4=blue works"
+   - Do NOT say "current configuration works" — you are answering about FUTURE scenarios
+   - Example: "I tested both options: h4=red works (I'd use a4=blue, a5=green) and h4=blue also works
+     (I'd use a4=blue, a5=red). Either is fine with me!"
+   - If only one works: "h4=red doesn't work for me, but h4=blue does. Could you go with h4=blue?"
+
+4. **Human proposed single conditional** ("h4=blue if h1=green"):
    - Response: Test and answer
    - "Yes, if h1=green and h4=blue, I can set a4=red and it works!"
    - OR "No, that doesn't work because [reason]"
 
-4. **Human announced config**:
+5. **Human announced config**:
    - Response: Acknowledge and propose/accept
    - Standard proposal or acceptance
 
@@ -575,31 +671,35 @@ Return ONLY the JSON object. No explanatory text."""
 
 **Visible neighbor nodes**: {", ".join(visible_neighbors_list) if visible_neighbors_list else "None"}
 
-**Translation Rules**:
+**CRITICAL RULE — How to decide acceptance vs proposal**:
 
-1. **If penalty == 0**: Send ACCEPTANCE
-   - Set message_type="acceptance"
-   - Set requested_changes={{}}
-   - Reason: "Current configuration works!"
+Use the pre-computed boolean `__can_accept_current__` (NOT current_penalty, NOT best_response_*):
 
-2. **If penalty > 0**: Send PROPOSAL
-   - Set message_type="proposal"
-   - Set requested_changes with SPECIFIC node-color pairs
-   - Reason: "Could you change [node] from [old] to [new]?"
+- **`__can_accept_current__` == true**:
+  → Send ACCEPTANCE. The current neighbor colors are fine.
+  → Set message_type="acceptance", requested_changes={{}}
+  → my_assignments = exactly `__assignments_if_accepting__` (do not invent new ones!)
 
-3. **Be Specific**:
-   - Use exact node names (e.g., "h4", not "a neighboring node")
-   - Use exact colors (e.g., "blue", not "a different color")
-   - Template: "Could you change h4 from red to blue?"
+- **`__can_accept_current__` == false**:
+  → Even after optimally recoloring my nodes, conflicts remain with the CURRENT neighbor state.
+  → I need the neighbor to change. Send PROPOSAL.
+  → Look at simulate_* or best_response_* keys in the results for tested alternatives.
+  → Find one where penalty==0, then propose those neighbor colors.
+  → my_assignments = assignments from the TESTED scenario that gives penalty=0
+  → requested_changes = the neighbor node(s) that need to change for that scenario
 
-4. **Partial Observability**:
-   - ONLY mention visible neighbor nodes: {", ".join(visible_neighbors_list)}
-   - ONLY mention your boundary nodes: {", ".join(boundary_nodes)}
-   - NEVER mention internal nodes: {", ".join(n for n in self.nodes if n not in boundary_nodes)}
+**Be Specific**:
+- Use exact node names (e.g., "h4", not "a neighboring node")
+- Use exact colors (e.g., "blue", not "a different color")
 
-5. **Fill my_assignments**:
-   - Use assignments from best_response result
-   - This is YOUR plan (what you'll do)
+**Partial Observability**:
+- ONLY mention visible neighbor nodes: {", ".join(visible_neighbors_list)}
+- ONLY mention your boundary nodes: {", ".join(boundary_nodes)}
+- NEVER mention internal nodes: {", ".join(n for n in self.nodes if n not in boundary_nodes)}
+
+**Fill my_assignments**:
+- For acceptance: use EXACTLY `__assignments_if_accepting__` — never invent your own
+- For proposal: use assignments from the tested alternative scenario that gives penalty=0
 
 **Output Format** (JSON only):
 {{
@@ -614,29 +714,60 @@ Return ONLY the JSON object. No explanatory text."""
 }}
 
 **Decision Logic**:
-1. Look at "current_penalty" in API results
-2. If penalty == 0: Send acceptance message (requested_changes={{}})
-3. If penalty > 0: Look for TESTED alternatives in simulation results
-   - Search for keys starting with "simulation_" in API results
-   - Example: "simulation_h4_blue": {{"penalty": 0.0, ...}}
-   - Find simulations where penalty < 0.01 (these WORK!)
-   - Extract node and color from key: "simulation_h4_blue" → node="h4", color="blue"
-   - Propose the TESTED alternative in requested_changes
-4. Use "best_response" for my_assignments
-5. Be SPECIFIC in reason: "Could you change h4 from red to blue? I tested this and it works."
 
-**CRITICAL**: If penalty > 0, you MUST use simulation results to find tested alternatives.
-DO NOT propose arbitrary changes - only propose changes that were TESTED and have penalty=0.
+STEP 1 — Identify what the human was asking about:
+- Did they ask about a FUTURE scenario ("if I did X")? → answer about that scenario, NOT current state
+- Did they announce their CURRENT colors? → answer about current state
 
-Example API results with simulations:
+STEP 2 — Identify how many scenarios were tested:
+- Count keys starting with "best_response_" or "simulate_" in API results
+- If there are MULTIPLE such keys → human offered alternatives; evaluate EACH one separately
+- Each key's "penalty" field tells you if that specific scenario works
+
+STEP 3 — Choose response type:
+A. **Multiple alternatives tested** (multiple best_response_* keys):
+   - List EACH alternative and whether it works (penalty < 0.01 = works)
+   - If ALL work → "Both/all options work for me!"
+   - If SOME work → "Only [option X] works; [option Y] doesn't"
+   - If NONE work → negotiate with specific counter-proposal
+   - Use message_type="acceptance" if at least one works and you're agreeing to an offer
+   - Populate my_assignments from the first best_response_* key that has penalty < 0.01
+   - Do NOT set requested_changes (empty {{}}) — this is acceptance of their offer
+
+B. **Single scenario tested** (one best_response or simulate key):
+   - If that scenario's penalty == 0 → acceptance
+   - If penalty > 0 → proposal with tested alternative
+
+C. **Current state** (announcement or config update):
+   - FIRST and ONLY decision gate: `__can_accept_current__`
+   - If TRUE → ACCEPT: my_assignments = `__assignments_if_accepting__`, requested_changes={{}}
+   - If FALSE → PROPOSE: look for simulate_* or best_response_* alternatives with penalty=0
+   - NEVER invent my_assignments — always copy from `__assignments_if_accepting__` or a tested key
+
+STEP 4 — Use "best_response" (or best_response_*) for my_assignments
+
+Example: multiple alternatives both work:
+{{
+  "best_response_h1r_h4b": {{"a4": "blue", "a5": "red", "penalty": 0.0}},
+  "best_response_h1r_h4r": {{"a4": "blue", "a5": "green", "penalty": 0.0}}
+}}
+→ Response: "Both options work for me! If you do h1=red with h4=blue I'd use a4=blue,a5=red;
+   if you do h1=red with h4=red I'd use a4=blue,a5=green."
+
+Example: only one alternative works:
+{{
+  "best_response_h1r_h4b": {{"a4": "blue", "a5": "red", "penalty": 0.0}},
+  "best_response_h1r_h4r": {{"a4": "blue", "a5": "green", "penalty": 2.0}}
+}}
+→ Response: "h4=blue works for me (I'd use a4=blue,a5=red) but h4=red doesn't work."
+
+Example: single simulation (legacy format):
 {{
   "current_penalty": 1.0,
-  "simulation_h4_blue": {{"penalty": 0.0, "conflicts": []}},
-  "simulation_h4_green": {{"penalty": 0.5, "conflicts": [("a2", "h4")]}},
-  "simulation_h4_red": {{"penalty": 1.0, "conflicts": [("a2", "h4")]}}
+  "simulate_h4b": {{"new_penalty": 0.0, "conflicts": []}},
+  "simulate_h4g": {{"new_penalty": 0.5, "conflicts": [("a2", "h4")]}}
 }}
-
-In this case, you MUST propose h4=blue (penalty=0), NOT h4=green or h4=red.
+→ Propose h4=blue (penalty=0), NOT h4=green.
 
 Return ONLY the JSON object. No explanatory text."""
 

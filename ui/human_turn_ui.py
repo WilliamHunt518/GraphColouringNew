@@ -140,9 +140,24 @@ class HumanTurnUI:
         #   on_send(neigh, msg, assignments)
         self._on_send: Optional[Callable[..., Optional[str]]] = None
         self._on_colour_change: Optional[Callable[[Dict[str, Any]], None]] = None
+        self._on_constraint_update: Optional[Callable] = None  # constraint viz mode
+        self._condition: str = "C1"  # constraint viz condition
+        self._output_dir: Optional[str] = None
         self._get_agent_satisfied_fn: Optional[Callable[[str], bool]] = None
         self._debug_get_text_fn: Optional[Callable[[], str]] = None
         self._debug_get_visible_graph_fn: Optional[Callable[[str], str]] = None
+
+        # Constraint viz mode flag and state
+        self._constraint_viz_mode: bool = False
+        self._constraint_panel_frames: Dict[str, tk.Frame] = {}
+        self._constraint_status_vars: Dict[str, tk.StringVar] = {}
+        self._constraint_card_areas: Dict[str, tk.Canvas] = {}
+        self._constraint_card_inner: Dict[str, tk.Frame] = {}
+        self._constraint_data: Dict[str, Any] = {}
+        self._feasibility_status_vars: Dict[str, tk.StringVar] = {}
+        self._feasibility_labels: Dict[str, tk.Label] = {}
+        self._feasibility_canvas_areas: Dict[str, tuple] = {}   # agent → (scroll_canvas, inner_frame)
+        self._feasibility_count_vars: Dict[str, tk.StringVar] = {}
 
         # Status tracking for loading indicators
         self._agent_status: Dict[str, str] = {}  # {agent_name: current_status}
@@ -234,6 +249,8 @@ class HumanTurnUI:
         get_visible_graph_fn: Optional[Callable[[str], Any]] = None,
         on_send: Optional[Callable[..., Optional[str]]] = None,
         on_colour_change: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_constraint_update: Optional[Callable] = None,
+        condition: str = "C1",
         get_agent_satisfied_fn: Optional[Callable[[str], bool]] = None,
         debug_get_text_fn: Optional[Callable[[], str]] = None,
         debug_get_visible_graph_fn: Optional[Callable[[str], str]] = None,
@@ -242,6 +259,7 @@ class HumanTurnUI:
         problem: Optional[Any] = None,
         structured_rb_mode: bool = False,
         comm_layer: Optional[Any] = None,
+        output_dir: Optional[str] = None,
         **_ignored_kwargs: Any,
     ) -> None:
         """Start the UI mainloop and block until Finish or consensus."""
@@ -263,10 +281,13 @@ class HumanTurnUI:
         self._neighs = list(neighbour_owners)
         self._on_send = on_send
         self._on_colour_change = on_colour_change
+        self._on_constraint_update = on_constraint_update
+        self._condition = condition
         self._get_agent_satisfied_fn = get_agent_satisfied_fn
         self._debug_get_text_fn = debug_get_text_fn
         self._debug_get_visible_graph_fn = debug_get_visible_graph_fn
         self._fixed_nodes = dict(fixed_nodes) if fixed_nodes else {}
+        self._output_dir = output_dir
 
         if points:
             self._points = dict(points)
@@ -294,11 +315,15 @@ class HumanTurnUI:
 
         self._build_ui(debug_agents=debug_agents, get_visible_graph_fn=get_visible_graph_fn)
 
-        # coin flip starters (independent)
-        for neigh in self._neighs:
-            if random.random() < 0.5:
-                delay_ms = random.randint(250, 900)
-                self._root.after(delay_ms, lambda n=neigh: self._agent_start(n))
+        if getattr(self, '_constraint_viz_mode', False):
+            # Constraint viz mode: populate constraint panels after 200ms
+            self._root.after(200, self._initial_populate)
+        else:
+            # Legacy negotiation mode: coin flip starters
+            for neigh in self._neighs:
+                if random.random() < 0.5:
+                    delay_ms = random.randint(250, 900)
+                    self._root.after(delay_ms, lambda n=neigh: self._agent_start(n))
 
         # periodic refresh
         self._root.after(400, self._periodic_refresh)
@@ -386,7 +411,8 @@ class HumanTurnUI:
         rb_mode = getattr(self, '_rb_structured_mode', False)
         llm_rb_mode = getattr(self, '_llm_rb_mode', False)
         has_announcement_phase = getattr(self, '_has_announcement_phase', False) or rb_mode or llm_rb_mode
-        if not (has_announcement_phase and self._phase == "configure"):
+        _cviz = getattr(self, '_constraint_viz_mode', False)
+        if not (has_announcement_phase and self._phase == "configure") and not _cviz:
             paned.add(middle_container, width=400, minsize=300)  # Controls panel: default 400px (1/3), min 300px
 
         # Store for later
@@ -426,30 +452,41 @@ class HumanTurnUI:
         middle_canvas.bind("<Enter>", on_enter)
         middle_canvas.bind("<Leave>", on_leave)
 
-        # Add conditionals sidebar (only visible in RB mode)
-        conditionals_frame = ttk.Frame(paned)
+        # Add right panel: constraint panels (constraint viz mode) or conditionals sidebar (legacy)
+        right_panel_frame = ttk.Frame(paned)
 
-        # In configure phase (all modes with announcement), don't add conditionals panel yet
-        if not (has_announcement_phase and self._phase == "configure"):
-            paned.add(conditionals_frame, width=400, minsize=250)  # Conditionals: default 400px (1/3), min 250px
+        if getattr(self, '_constraint_viz_mode', False):
+            # Constraint viz: always show constraint panels
+            paned.add(right_panel_frame, width=400, minsize=250)
+            self._conditionals_frame = right_panel_frame
+            self._conditionals_cards_inner = None
+            self._build_feasibility_sidebar(right_panel_frame)
+        else:
+            # Legacy mode: conditionals sidebar
+            conditionals_frame = right_panel_frame
+            # In configure phase (all modes with announcement), don't add conditionals panel yet
+            if not (has_announcement_phase and self._phase == "configure"):
+                paned.add(conditionals_frame, width=400, minsize=250)
+            # Store reference for later use
+            self._conditionals_frame = conditionals_frame
+            self._conditionals_cards_inner = None
+            # Build conditionals sidebar UI
+            self._build_conditionals_sidebar(conditionals_frame)
 
-        # Store reference for later use
-        self._conditionals_frame = conditionals_frame
-        self._conditionals_cards_inner = None  # Will be set when building conditionals UI
-
-        # Build conditionals sidebar UI
-        self._build_conditionals_sidebar(conditionals_frame)
-
-        # Schedule sash positioning to enforce equal panel widths (1/3 each)
+        # Schedule sash positioning
         def _set_equal_sash_positions():
             try:
                 paned.update_idletasks()
                 total_width = paned.winfo_width()
-                if total_width > 100:  # Only if window is properly sized
-                    # Position sashes at 1/3 and 2/3 of total width
-                    paned.sash_place(0, int(total_width / 3), 0)
-                    if len(paned.panes()) > 2:
-                        paned.sash_place(1, int(2 * total_width / 3), 0)
+                if total_width > 100:
+                    if getattr(self, '_constraint_viz_mode', False):
+                        # 2 panels: graph 60%, mini-configs 40%
+                        paned.sash_place(0, int(total_width * 0.60), 0)
+                    else:
+                        # 3 panels: equal 1/3 each
+                        paned.sash_place(0, int(total_width / 3), 0)
+                        if len(paned.panes()) > 2:
+                            paned.sash_place(1, int(2 * total_width / 3), 0)
             except Exception:
                 pass  # Silently fail if sash positioning doesn't work
 
@@ -484,6 +521,7 @@ class HumanTurnUI:
             # Store for later removal
             self._step1_button_container = button_container
         canvas.bind("<Button-1>", self._on_canvas_click)
+        canvas.bind("<Button-3>", self._on_canvas_right_click)
         canvas.bind("<Configure>", self._on_canvas_resize)
 
         # Add zoom with Ctrl + mouse wheel
@@ -591,6 +629,10 @@ class HumanTurnUI:
 
             # Store reference for later phase transitions
             self._configure_container = configure_container
+
+        # Constraint viz mode: skip chat panes (constraints shown as graph overlays)
+        if getattr(self, '_constraint_viz_mode', False):
+            return
 
         # Build chat panes for each neighbor (hidden during configure phase in RB/LLM_RB modes)
         for neigh in self._neighs:
@@ -3001,6 +3043,10 @@ class HumanTurnUI:
                 canvas.create_text(tx + r - int(5 * scale), ty - r + int(5 * scale),
                                  text="🔒", font=("TkDefaultFont", lock_font_size))
 
+        # Constraint viz overlays drawn on top of graph
+        if getattr(self, '_constraint_viz_mode', False):
+            self._draw_constraint_overlays()
+
     def _on_canvas_click(self, ev: tk.Event) -> None:
         # Skip if shift is held (panning mode)
         if ev.state & 0x0001:
@@ -3044,17 +3090,101 @@ class HumanTurnUI:
         if self._hud_var:
             self._hud_var.set(self._hud_text())
 
+        # Constraint viz mode: fire constraint updates in background threads
+        if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_constraint_update', None):
+            snapshot = dict(self._assignments)
+
+            def _bg_update(neigh: str, human_partial: dict) -> None:
+                try:
+                    if hasattr(self, 'update_agent_status'):
+                        self.update_agent_status(neigh, "Computing...")
+                    data = self._on_constraint_update(neigh, human_partial)
+                    self.update_constraint_display(neigh, data)
+                    if hasattr(self, 'clear_agent_status'):
+                        self.clear_agent_status(neigh)
+                except Exception as _exc:
+                    print(f"[ConstraintViz] background update error for {neigh}: {_exc}")
+                    if hasattr(self, 'clear_agent_status'):
+                        self.clear_agent_status(neigh)
+
+            for neigh in self._neighs:
+                threading.Thread(
+                    target=_bg_update,
+                    args=(neigh, snapshot),
+                    daemon=True,
+                ).start()
+
+    def _on_canvas_right_click(self, ev: tk.Event) -> None:
+        """Right-click on a human-owned node resets it to grey (unassigned)."""
+        if not getattr(self, '_constraint_viz_mode', False):
+            return
+
+        offset_x, offset_y = self._graph_canvas_offset
+        scale = self._graph_canvas_scale
+        graph_x = (ev.x - offset_x) / scale
+        graph_y = (ev.y - offset_y) / scale
+
+        best = None
+        best_d = 10**9
+        for n, (nx, ny) in self._node_pos.items():
+            d = (nx - graph_x) ** 2 + (ny - graph_y) ** 2
+            if d < best_d:
+                best_d = d
+                best = n
+        if best is None or self._owners.get(best) != "Human":
+            return
+        if hasattr(self, '_fixed_nodes') and best in self._fixed_nodes:
+            return
+        r = 24
+        if best_d > (r * r):
+            return
+
+        # Reset to unassigned
+        if self._assignments.get(best) is None:
+            return  # already grey, nothing to do
+        self._assignments[best] = None
+        if self._on_colour_change:
+            try:
+                self._on_colour_change(dict(self._assignments))
+            except Exception:
+                pass
+        self._redraw_graph()
+        if self._hud_var:
+            self._hud_var.set(self._hud_text())
+
+        # Fire constraint updates
+        if getattr(self, '_on_constraint_update', None):
+            snapshot = dict(self._assignments)
+
+            def _bg_update(neigh: str, human_partial: dict) -> None:
+                try:
+                    data = self._on_constraint_update(neigh, human_partial)
+                    self.update_constraint_display(neigh, data)
+                except Exception as _exc:
+                    print(f"[ConstraintViz] right-click update error for {neigh}: {_exc}")
+
+            for neigh in self._neighs:
+                threading.Thread(
+                    target=_bg_update,
+                    args=(neigh, snapshot),
+                    daemon=True,
+                ).start()
+
     def _cycle_colour(self, node: str) -> None:
-        if node not in self._assignments:
-            self._assignments[node] = self._domain[0] if self._domain else "blue"
+        # In constraint viz mode, cycle includes None (grey/unassigned) as first step.
+        # In legacy mode, cycle skips None.
+        if getattr(self, '_constraint_viz_mode', False):
+            cycle = [None] + list(self._domain)
+        else:
+            cycle = list(self._domain)
+        if not cycle:
             return
+        current = self._assignments.get(node)
         try:
-            idx = self._domain.index(self._assignments[node])
+            idx = cycle.index(current)
         except ValueError:
-            idx = 0
-        if not self._domain:
-            return
-        self._assignments[node] = self._domain[(idx + 1) % len(self._domain)]
+            idx = -1  # will wrap to 0
+        self._assignments[node] = cycle[(idx + 1) % len(cycle)]
 
     # -------------------- Chat behaviour --------------------
 
@@ -4155,7 +4285,7 @@ class HumanTurnUI:
             global_graph_lines.append("=" * 60)
             global_graph_lines.append("")
 
-            # Collect all nodes from all agents
+            # Collect all nodes from all agents (and human)
             all_agents_nodes = set()
             all_agents_edges = set()
             all_assignments = {}
@@ -4163,6 +4293,20 @@ class HumanTurnUI:
 
             for agent_name, agent_obj in name_to_obj.items():
                 if agent_obj is None:
+                    # "Human" entry: use UI's current assignments
+                    human_assigns = {k: v for k, v in self._assignments.items()
+                                     if v is not None}
+                    all_assignments.update(human_assigns)
+                    human_ns = [n for n, o in self._owners.items() if o == "Human"]
+                    all_agents_nodes.update(human_ns)
+                    # Edges from adjacency if available
+                    if hasattr(self, '_edges'):
+                        for u, v in self._edges:
+                            if u in human_ns or v in human_ns:
+                                all_agents_edges.add(tuple(sorted([u, v])))
+                    # Fixed human nodes
+                    if hasattr(self, '_fixed_nodes'):
+                        all_fixed_nodes.update(self._fixed_nodes.keys())
                     continue
                 try:
                     agent_nodes = list(getattr(agent_obj, "nodes", []))
@@ -4188,7 +4332,11 @@ class HumanTurnUI:
                     pass
 
             # Group nodes by owner/cluster
-            nodes_by_owner = {}
+            nodes_by_owner: Dict[str, List[str]] = {}
+            # Always include Human
+            human_ns = sorted([n for n, o in self._owners.items() if o == "Human"])
+            if human_ns:
+                nodes_by_owner["Human"] = human_ns
             for agent_name, agent_obj in name_to_obj.items():
                 if agent_obj is None:
                     continue
@@ -4800,8 +4948,828 @@ class HumanTurnUI:
         for n, c in self._assignments.items():
             if self._owners.get(n) != "Human":
                 continue
+            if c is None:
+                continue
             score += self._points.get(str(c).lower(), 0)
         return f"Score: {score}"
+
+    # -------------------- Constraint Visualisation Methods --------------------
+
+    def _build_constraint_panels(self, parent: tk.Frame) -> None:
+        """Build constraint information panels (one per agent) for constraint viz mode."""
+        # Store references for updates
+        self._constraint_panel_frames: Dict[str, tk.Frame] = {}
+        self._constraint_status_vars: Dict[str, tk.StringVar] = {}
+        self._constraint_card_areas: Dict[str, tk.Canvas] = {}
+        self._constraint_card_inner: Dict[str, tk.Frame] = {}
+        self._constraint_data: Dict[str, Any] = {}
+
+        root = self._root
+        for neigh in self._neighs:
+            label_frame = ttk.LabelFrame(parent, text=f"{neigh} — Constraint Info")
+            label_frame.pack(fill="both", expand=True, pady=6, padx=4)
+
+            # Status label (feasibility summary)
+            status_var = tk.StringVar(master=root, value="Waiting for first colour change…")
+            self._constraint_status_vars[neigh] = status_var
+            self._status_var[neigh] = status_var  # reuse existing spinner infrastructure
+
+            status_lbl = tk.Label(
+                label_frame,
+                textvariable=status_var,
+                font=("Arial", 10, "italic"),
+                fg="#555",
+                anchor="w",
+            )
+            status_lbl.pack(fill="x", padx=6, pady=(4, 2))
+
+            # Scrollable card area
+            card_canvas = tk.Canvas(label_frame, highlightthickness=0)
+            card_scrollbar = ttk.Scrollbar(label_frame, orient="vertical", command=card_canvas.yview)
+            card_scrollbar.pack(side="right", fill="y")
+            card_canvas.pack(side="left", fill="both", expand=True, padx=4, pady=4)
+            card_canvas.configure(yscrollcommand=card_scrollbar.set)
+
+            inner = tk.Frame(card_canvas, bg="white")
+            win_id = card_canvas.create_window((0, 0), window=inner, anchor="nw")
+
+            def _on_inner_configure(ev, c=card_canvas):
+                c.configure(scrollregion=c.bbox("all"))
+            inner.bind("<Configure>", _on_inner_configure)
+
+            def _on_canvas_configure(ev, c=card_canvas, wid=win_id):
+                c.itemconfig(wid, width=ev.width)
+            card_canvas.bind("<Configure>", _on_canvas_configure)
+
+            self._constraint_card_areas[neigh] = card_canvas
+            self._constraint_card_inner[neigh] = inner
+            self._constraint_panel_frames[neigh] = label_frame
+
+    def _build_feasibility_sidebar(self, parent: ttk.Frame) -> None:
+        """Build the right-hand panel: scrollable mini-subgraph configs per agent."""
+        self._feasibility_canvas_areas = {}
+        self._feasibility_count_vars = {}
+
+        root = self._root
+        title = tk.Label(
+            parent,
+            text="Valid Configurations",
+            font=("Arial", 12, "bold"),
+            anchor="w",
+        )
+        title.pack(fill="x", padx=8, pady=(8, 4))
+
+        sep = ttk.Separator(parent, orient="horizontal")
+        sep.pack(fill="x", padx=8, pady=4)
+
+        for neigh in self._neighs:
+            frame = ttk.LabelFrame(parent, text=neigh)
+            frame.pack(fill="both", expand=True, padx=8, pady=6)
+
+            count_var = tk.StringVar(master=root, value="Waiting…")
+            self._feasibility_count_vars[neigh] = count_var
+            count_lbl = tk.Label(
+                frame,
+                textvariable=count_var,
+                font=("Arial", 9, "italic"),
+                fg="#555",
+                anchor="w",
+            )
+            count_lbl.pack(fill="x", padx=4, pady=(2, 0))
+
+            # Scrollable area for mini-config canvases
+            scroll_canvas = tk.Canvas(frame, highlightthickness=0, bg="white")
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=scroll_canvas.yview)
+            scrollbar.pack(side="right", fill="y")
+            scroll_canvas.pack(side="left", fill="both", expand=True)
+            scroll_canvas.configure(yscrollcommand=scrollbar.set)
+
+            inner = tk.Frame(scroll_canvas, bg="white")
+            wid = scroll_canvas.create_window((0, 0), window=inner, anchor="nw")
+
+            def _on_inner_cfg(ev, c=scroll_canvas):
+                c.configure(scrollregion=c.bbox("all"))
+            inner.bind("<Configure>", _on_inner_cfg)
+
+            def _on_canvas_cfg(ev, c=scroll_canvas, w=wid):
+                c.itemconfig(w, width=ev.width)
+            scroll_canvas.bind("<Configure>", _on_canvas_cfg)
+
+            # Mouse-wheel scrolling
+            def _on_mwheel(ev, c=scroll_canvas):
+                c.yview_scroll(int(-1 * (ev.delta / 120)), "units")
+            scroll_canvas.bind("<MouseWheel>", _on_mwheel)
+
+            self._feasibility_canvas_areas[neigh] = (scroll_canvas, inner)
+
+    def update_constraint_display(self, agent_name: str, data: Dict[str, Any]) -> None:
+        """Public API: update constraint panels for one agent. Thread-safe via root.after."""
+        if self._root is None:
+            return
+        self._constraint_data[agent_name] = data
+        self._root.after(0, lambda: self._render_constraint_panel(agent_name))
+
+    def _render_constraint_panel(self, agent_name: str) -> None:
+        """Redraw constraint cards for one agent panel. Must run on the Tk thread."""
+        data = self._constraint_data.get(agent_name, {})
+
+        # Always update the right-hand mini-graph sidebar and canvas overlays
+        self._render_feasibility_panel(agent_name, data)
+        self._draw_constraint_overlays()
+
+        inner = self._constraint_card_inner.get(agent_name)
+        if inner is None:
+            return  # No card panel (constraint viz mode uses overlays instead)
+
+        # Clear existing cards
+        for widget in inner.winfo_children():
+            widget.destroy()
+
+        feasibility_count = data.get("feasibility_count", 0)
+        is_feasible = data.get("is_feasible", feasibility_count > 0)
+        condition = getattr(self, '_condition', 'C1')
+
+        # Update status label
+        status_var = self._constraint_status_vars.get(agent_name)
+        if status_var:
+            if feasibility_count < 0:
+                status_var.set(f"Error: {data.get('error', 'unknown')}")
+            elif is_feasible:
+                status_var.set(f"{feasibility_count} valid configuration(s)")
+            else:
+                status_var.set("INFEASIBLE — no valid configuration")
+
+        # Infeasible card (all conditions)
+        if not is_feasible:
+            repair = data.get("repair_suggestion", [])
+            card = tk.Frame(inner, bg="#ffcccc", relief=tk.RAISED, bd=1)
+            card.pack(fill="x", padx=4, pady=4)
+            tk.Label(
+                card,
+                text="No valid configuration exists!",
+                font=("Arial", 10, "bold"),
+                fg="#cc0000",
+                bg="#ffcccc",
+                anchor="w",
+            ).pack(fill="x", padx=6, pady=(6, 2))
+            if repair:
+                tk.Label(
+                    card,
+                    text=f"Try unassigning: {', '.join(repair)}",
+                    font=("Arial", 9),
+                    fg="#880000",
+                    bg="#ffcccc",
+                    anchor="w",
+                    wraplength=320,
+                ).pack(fill="x", padx=6, pady=(0, 6))
+            else:
+                tk.Label(
+                    card,
+                    text="Internal conflict — cannot repair by unassigning boundary nodes.",
+                    font=("Arial", 9),
+                    fg="#880000",
+                    bg="#ffcccc",
+                    anchor="w",
+                    wraplength=320,
+                ).pack(fill="x", padx=6, pady=(0, 6))
+
+        # C3 / C4: NL summary card
+        if condition in ("C3", "C4") and "nl_summary" in data:
+            card = tk.Frame(inner, bg="#eef4ff", relief=tk.GROOVE, bd=1)
+            card.pack(fill="x", padx=4, pady=4)
+            tk.Label(
+                card,
+                text=data["nl_summary"],
+                font=("Arial", 10),
+                bg="#eef4ff",
+                anchor="w",
+                justify="left",
+                wraplength=320,
+            ).pack(fill="x", padx=8, pady=8)
+            if condition == "C4":
+                return  # C4 shows only the NL paragraph
+
+        # C1 / C3 (user-centric): consequence sets — show actual configs per colour choice
+        if condition in ("C1", "C3") and is_feasible:
+            consequence_sets = data.get("consequence_sets", {})
+            if consequence_sets:
+                section_lbl = tk.Label(
+                    inner,
+                    text="How your colour choices affect agent options:",
+                    font=("Arial", 9, "bold"),
+                    anchor="w",
+                )
+                section_lbl.pack(fill="x", padx=4, pady=(4, 2))
+
+                for node, colour_configs in sorted(consequence_sets.items()):
+                    card = tk.Frame(inner, bg="#f8f8f8", relief=tk.GROOVE, bd=1)
+                    card.pack(fill="x", padx=4, pady=2)
+                    current_colour = self._assignments.get(node)
+                    tk.Label(
+                        card,
+                        text=f"Node {node}:",
+                        font=("Arial", 9, "bold"),
+                        bg="#f8f8f8",
+                        anchor="w",
+                    ).pack(fill="x", padx=6, pady=(4, 0))
+
+                    # colour_configs is {colour: [list_of_agent_assignment_dicts]}
+                    for colour, configs in sorted(
+                        colour_configs.items(),
+                        key=lambda kv: -len(kv[1])
+                    ):
+                        count = len(configs)
+                        is_current = (colour == current_colour)
+                        header_bg = self._colour_fill(colour) if is_current else "#eeeeee"
+                        marker = " ◀ current" if is_current else ""
+
+                        # Colour header row
+                        hdr = tk.Frame(card, bg=header_bg)
+                        hdr.pack(fill="x", padx=8, pady=(2, 0))
+                        tk.Label(
+                            hdr,
+                            text=f"{colour}: {count} valid agent config(s){marker}",
+                            font=("Arial", 9, "bold" if is_current else "normal"),
+                            bg=header_bg,
+                            anchor="w",
+                        ).pack(side="left", padx=4, pady=2)
+
+                        # Show each config
+                        for cfg in configs:
+                            cfg_str = "  " + ",  ".join(
+                                f"{n}={c}" for n, c in sorted(cfg.items())
+                            )
+                            tk.Label(
+                                card,
+                                text=cfg_str,
+                                font=("Courier", 8),
+                                bg="#f8f8f8",
+                                anchor="w",
+                                fg="#333",
+                            ).pack(fill="x", padx=16, pady=0)
+
+                    # Small spacer
+                    tk.Frame(card, height=4, bg="#f8f8f8").pack()
+            else:
+                tk.Label(
+                    inner,
+                    text="No assigned boundary nodes yet — try clicking your nodes.",
+                    font=("Arial", 9, "italic"),
+                    fg="#777",
+                    anchor="w",
+                    wraplength=320,
+                ).pack(fill="x", padx=8, pady=8)
+
+        # C2 / C4 (agent-centric): domain projection + full feasibility set
+        if condition in ("C2",) and is_feasible:
+            feasibility_set = data.get("feasibility_set", [])
+            domain_projection = data.get("domain_projection", {})
+            if domain_projection:
+                section_lbl = tk.Label(
+                    inner,
+                    text="Agent node colour options:",
+                    font=("Arial", 9, "bold"),
+                    anchor="w",
+                )
+                section_lbl.pack(fill="x", padx=4, pady=(4, 2))
+
+                full_domain = data.get("full_domain", [])
+                for node, colours in sorted(domain_projection.items()):
+                    card = tk.Frame(inner, bg="#f8f8f8", relief=tk.GROOVE, bd=1)
+                    card.pack(fill="x", padx=4, pady=2)
+                    constrained = len(colours) < len(full_domain) if full_domain else False
+                    card_bg = "#fff8cc" if constrained else "#f8f8f8"
+                    card.config(bg=card_bg)
+
+                    colour_str = "{" + ", ".join(sorted(colours, key=str)) + "}" if colours else "{none}"
+                    tk.Label(
+                        card,
+                        text=f"{node}: {colour_str}",
+                        font=("Arial", 9, "bold" if constrained else "normal"),
+                        bg=card_bg,
+                        anchor="w",
+                    ).pack(fill="x", padx=8, pady=4)
+
+            # Show all valid agent configurations
+            if feasibility_set:
+                all_cfg_lbl = tk.Label(
+                    inner,
+                    text=f"All {len(feasibility_set)} valid agent configuration(s):",
+                    font=("Arial", 9, "bold"),
+                    anchor="w",
+                )
+                all_cfg_lbl.pack(fill="x", padx=4, pady=(6, 2))
+                for i, cfg in enumerate(feasibility_set, 1):
+                    cfg_str = f"  {i}. " + ",  ".join(
+                        f"{n}={c}" for n, c in sorted(cfg.items())
+                    )
+                    tk.Label(
+                        inner,
+                        text=cfg_str,
+                        font=("Courier", 8),
+                        bg="white",
+                        anchor="w",
+                        fg="#333",
+                    ).pack(fill="x", padx=8, pady=0)
+
+                # Conditional domains for unassigned boundary nodes
+                conditional_domains = data.get("conditional_domains", {})
+                if conditional_domains:
+                    cond_lbl = tk.Label(
+                        inner,
+                        text="If you assign boundary nodes:",
+                        font=("Arial", 9, "bold"),
+                        anchor="w",
+                    )
+                    cond_lbl.pack(fill="x", padx=4, pady=(6, 2))
+
+                    for bnode, colour_map in sorted(conditional_domains.items()):
+                        for colour, proj in sorted(colour_map.items(), key=str):
+                            constrained_proj = {
+                                n: cs for n, cs in proj.items() if len(cs) < len(full_domain)
+                            } if full_domain else proj
+                            if not constrained_proj and proj:
+                                # No extra constraints — skip
+                                continue
+                            card2 = tk.Frame(inner, bg="#f0f0f8", relief=tk.GROOVE, bd=1)
+                            card2.pack(fill="x", padx=4, pady=2)
+                            summary = "; ".join(
+                                f"{n}: {{{', '.join(sorted(cs, key=str))}}}"
+                                for n, cs in sorted(constrained_proj.items())
+                            ) or "No further restrictions"
+                            tk.Label(
+                                card2,
+                                text=f"If {bnode}={colour}: {summary}",
+                                font=("Arial", 8),
+                                bg="#f0f0f8",
+                                anchor="w",
+                                wraplength=320,
+                            ).pack(fill="x", padx=6, pady=3)
+
+    # ------------------------------------------------------------------ #
+    #  Mini-subgraph sidebar helpers                                       #
+    # ------------------------------------------------------------------ #
+
+    def _draw_mini_config(
+        self,
+        parent_frame: tk.Frame,
+        cfg: Dict[str, Any],
+        nodes: list,
+        edges: list,
+        fixed_nodes: Optional[Dict[str, Any]] = None,
+        width: int = 160,
+        height: int = 100,
+        node_positions: Optional[Dict[str, Tuple]] = None,
+    ) -> tk.Canvas:
+        """Return a small Tk Canvas showing one valid colouring.
+
+        If ``node_positions`` is supplied (a dict of node→(x,y) in the same
+        coordinate space as self._node_pos) the positions are scaled to fit
+        the canvas, mirroring the main graph layout.  Otherwise nodes are
+        arranged in a circle.  Fixed nodes get a thicker outline.
+        The canvas is *not* packed/gridded — the caller handles layout.
+        """
+        import math
+
+        canvas = tk.Canvas(
+            parent_frame, width=width, height=height,
+            bg="white", highlightthickness=1, highlightbackground="#ccc",
+        )
+
+        n = len(nodes)
+        if n == 0:
+            return canvas
+
+        pos: Dict[str, tuple] = {}
+        margin = 18
+
+        if node_positions:
+            # Scale the supplied positions to fit the mini-canvas
+            valid = {nd: node_positions[nd] for nd in nodes if nd in node_positions}
+            if valid:
+                xs = [x for x, _ in valid.values()]
+                ys = [y for _, y in valid.values()]
+                min_x, max_x = min(xs), max(xs)
+                min_y, max_y = min(ys), max(ys)
+                span_x = max(max_x - min_x, 1)
+                span_y = max(max_y - min_y, 1)
+                scale = min((width - 2 * margin) / span_x,
+                            (height - 2 * margin) / span_y)
+                off_x = (width - span_x * scale) / 2
+                off_y = (height - span_y * scale) / 2
+                for nd, (x, y) in valid.items():
+                    pos[nd] = (off_x + (x - min_x) * scale,
+                               off_y + (y - min_y) * scale)
+        else:
+            # Circular layout fallback
+            cx, cy = width // 2, height // 2
+            r = max(min(cx, cy) - margin, 10)
+            sorted_nodes_circ = sorted(nodes)
+            for i, nd in enumerate(sorted_nodes_circ):
+                angle = 2 * math.pi * i / n - math.pi / 2
+                pos[nd] = (cx + r * math.cos(angle), cy + r * math.sin(angle))
+
+        sorted_nodes = sorted(nodes)
+
+        # Draw edges
+        for u, v in edges:
+            if u in pos and v in pos:
+                x1, y1 = pos[u]
+                x2, y2 = pos[v]
+                canvas.create_line(x1, y1, x2, y2, fill="#aaa", width=1)
+
+        # Colour map (matches main graph's _colour_fill palette)
+        _FILL = {"red": "#ffcccc", "green": "#ccffcc", "blue": "#ccccff"}
+        nr = 11  # node-circle radius
+
+        for node in sorted_nodes:
+            if node not in pos:
+                continue
+            x, y = pos[node]
+            colour = cfg.get(node)
+            fill = _FILL.get(str(colour).lower(), "#dddddd") if colour else "#dddddd"
+            is_fixed = bool((fixed_nodes or {}).get(node))
+            outline_w = 2 if is_fixed else 1
+            outline_c = "#000000" if is_fixed else "#555555"
+            canvas.create_oval(
+                x - nr, y - nr, x + nr, y + nr,
+                fill=fill, outline=outline_c, width=outline_w,
+            )
+            canvas.create_text(x, y, text=node, font=("Arial", 7, "bold"), fill="#000")
+
+        return canvas
+
+    def _render_feasibility_panel(self, agent_name: str, data: Dict[str, Any]) -> None:
+        """Redraw the right-hand mini-subgraph panel for one agent.
+
+        Shows each valid agent configuration as a small coloured graph.
+        """
+        areas = self._feasibility_canvas_areas
+        if agent_name not in areas:
+            return
+
+        _scroll_canvas, inner = areas[agent_name]
+
+        # Clear old content
+        for w in inner.winfo_children():
+            w.destroy()
+
+        feasibility_set = data.get("feasibility_set", [])
+        agent_fixed = data.get("fixed_agent_nodes", {})
+        is_feasible = data.get("is_feasible", len(feasibility_set) > 0)
+
+        # Build the human's visible graph: own nodes + visible neighbour nodes + all visible edges.
+        human_nodes = [n for n in self._nodes if self._owners.get(n) == "Human"]
+        visible_agent_nodes = [n for n in self._nodes if self._owners.get(n) != "Human"]
+        display_nodes = list(self._nodes)
+        display_edges = list(self._edges)
+        human_current = {n: self._assignments.get(n) for n in human_nodes}
+        human_fixed = getattr(self, '_fixed_nodes', {})
+        display_fixed = {
+            **{n: True for n in human_nodes if n in human_fixed},
+            **{n: True for n in visible_agent_nodes if n in agent_fixed},
+        }
+
+        # Update count label
+        count_var = self._feasibility_count_vars.get(agent_name)
+        if count_var:
+            if is_feasible:
+                count_var.set(f"{len(feasibility_set)} valid configuration(s)")
+            else:
+                count_var.set("INFEASIBLE — no valid configuration")
+
+        if not is_feasible:
+            lbl = tk.Label(
+                inner, text="No valid configuration exists.",
+                fg="#cc0000", font=("Arial", 9, "bold"),
+                bg="white", anchor="w", wraplength=180,
+            )
+            lbl.pack(fill="x", padx=6, pady=8)
+            repair = data.get("repair_suggestion", [])
+            if repair:
+                tk.Label(
+                    inner,
+                    text=f"Try unassigning: {', '.join(repair)}",
+                    font=("Arial", 8), fg="#880000", bg="white",
+                    anchor="w", wraplength=180,
+                ).pack(fill="x", padx=6, pady=(0, 4))
+            return
+
+        COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
+        CARD_BG   = "white"
+        HOVER_BG  = "#eef4ff"
+        MAX_SHOWN = 12
+
+        # Main graph layout positions (raw, unzoomed) for mini-graph mirroring
+        main_pos = dict(self._node_pos)
+
+        def _bind_tree(widget, event, func):
+            """Bind func to widget and every descendant."""
+            widget.bind(event, func, add=True)
+            for child in widget.winfo_children():
+                _bind_tree(child, event, func)
+
+        def _set_bg_tree(widget, colour):
+            """Recursively set background colour (skip Canvas widgets)."""
+            try:
+                widget.config(bg=colour)
+            except Exception:
+                pass
+            for child in widget.winfo_children():
+                _set_bg_tree(child, colour)
+
+        for idx, cfg in enumerate(feasibility_set[:MAX_SHOWN]):
+            # display_cfg: human nodes at current colour, visible agent nodes from this config
+            display_cfg = {
+                **human_current,
+                **{n: cfg.get(n) for n in visible_agent_nodes if n in cfg},
+            }
+
+            card = tk.Frame(inner, bg=CARD_BG, bd=1, relief=tk.GROOVE,
+                            cursor="hand2")
+            card.pack(fill="x", padx=4, pady=3)
+
+            # ---- Side-by-side layout ----
+            txt_side = tk.Frame(card, bg=CARD_BG)
+            txt_side.pack(side="left", fill="both", expand=True, padx=(6, 2), pady=4)
+
+            graph_side = tk.Frame(card, bg=CARD_BG)
+            graph_side.pack(side="right", padx=(2, 4), pady=4)
+
+            # ---- Text: config number + per-line assignments ----
+            tk.Label(txt_side, text=f"#{idx + 1}",
+                     font=("Arial", 10, "bold"), bg=CARD_BG,
+                     fg="#555", anchor="w").pack(anchor="w")
+
+            for nd in sorted(display_cfg):
+                colour = display_cfg.get(nd)
+                if colour is None:
+                    continue
+                row = tk.Frame(txt_side, bg=CARD_BG)
+                row.pack(anchor="w")
+                tk.Label(row, text=f"  {nd} = ", font=("Arial", 10),
+                         bg=CARD_BG, fg="#555").pack(side="left")
+                fg = COLOUR_FG.get(str(colour).lower(), "#333")
+                tk.Label(row, text=str(colour),
+                         font=("Arial", 10, "bold"), fg=fg,
+                         bg=CARD_BG).pack(side="left")
+
+            # ---- Mini-graph (right side, main layout) ----
+            mini = self._draw_mini_config(
+                graph_side, display_cfg, display_nodes, display_edges, display_fixed,
+                width=160, height=120,
+                node_positions=main_pos,
+            )
+            mini.pack()
+
+            # ---- Hover highlight ----
+            def _enter(e, w=card): _set_bg_tree(w, HOVER_BG)
+            def _leave(e, w=card): _set_bg_tree(w, CARD_BG)
+            _bind_tree(card, "<Enter>", _enter)
+            _bind_tree(card, "<Leave>", _leave)
+
+            # ---- Click: preview this agent config in the main graph ----
+            dcfg_snap = dict(display_cfg)
+            visible_set = set(visible_agent_nodes)
+
+            def _click(e, dcfg=dcfg_snap, vs=visible_set):
+                for nd2, col2 in dcfg.items():
+                    if nd2 in vs and col2 is not None:
+                        self._known_neighbour_colours[nd2] = col2
+                if self._root:
+                    self._root.after(0, self._redraw_graph)
+
+            _bind_tree(card, "<Button-1>", _click)
+
+        if len(feasibility_set) > MAX_SHOWN:
+            tk.Label(
+                inner,
+                text=f"… and {len(feasibility_set) - MAX_SHOWN} more",
+                font=("Arial", 8, "italic"), fg="#777", bg="white",
+            ).pack(pady=4)
+
+    # ------------------------------------------------------------------ #
+    #  Graph canvas constraint overlays                                    #
+    # ------------------------------------------------------------------ #
+
+    def _draw_constraint_overlays(self) -> None:
+        """Overlay per-node info boxes on the graph canvas (C1/C3 constraint viz mode).
+
+        Called at the end of _redraw_graph and after each constraint data update.
+        Destroys old overlay widgets and recreates them, restoring any positions
+        the user has dragged them to (stored in self._overlay_positions).
+        """
+        if not getattr(self, '_constraint_viz_mode', False):
+            return
+        canvas = self._canvas
+        if canvas is None:
+            return
+
+        # Destroy previous overlay Tk widgets and canvas items
+        for w in getattr(self, '_overlay_widgets', []):
+            try:
+                w.destroy()
+            except Exception:
+                pass
+        for cid in getattr(self, '_overlay_item_ids', []) + getattr(self, '_overlay_tether_ids', []):
+            try:
+                canvas.delete(cid)
+            except Exception:
+                pass
+        self._overlay_widgets = []
+        self._overlay_item_ids = []
+        self._overlay_tether_ids = []
+
+        condition = getattr(self, '_condition', 'C1')
+        if condition not in ('C1', 'C3'):
+            return  # C2/C4: right panel already shows domain info
+
+        scale = self._graph_canvas_scale
+        off_x, off_y = self._graph_canvas_offset
+
+        # Collect consequence data: node → colour_map
+        node_info: Dict[str, Dict] = {}
+        for agent_name in self._neighs:
+            data = self._constraint_data.get(agent_name, {})
+            if not data:
+                continue
+            for node, colour_map in data.get('consequence_sets', {}).items():
+                node_info[node] = colour_map
+
+        if not node_info:
+            return
+
+        canvas_w = canvas.winfo_width() or 600
+
+        # Persistent positions: survive redraws (user drags are remembered)
+        if not hasattr(self, '_overlay_positions'):
+            self._overlay_positions: Dict[str, Tuple[int, int]] = {}
+
+        for node, colour_map in node_info.items():
+            if node not in self._node_pos:
+                continue
+            current_colour = self._assignments.get(node)
+
+            # Screen coordinates of the node centre
+            nx, ny = self._node_pos[node]
+            tx = int(nx * scale + off_x)
+            ty = int(ny * scale + off_y)
+            node_r = int(24 * scale)  # owned-node radius
+
+            # Create the floating info box
+            box = self._make_constraint_overlay_box(
+                node, current_colour, colour_map
+            )
+
+            # Use saved position if available, otherwise default (right/left of node)
+            if node in self._overlay_positions:
+                bx, by = self._overlay_positions[node]
+            else:
+                box_w = 240
+                if tx + node_r + 8 + box_w < canvas_w:
+                    bx = tx + node_r + 8
+                else:
+                    bx = tx - node_r - 8 - box_w
+                by = ty - node_r
+
+            # Tether line drawn first so it sits behind the box
+            tether = canvas.create_line(
+                tx, ty, bx, by + 12,
+                fill="#aaaaaa", width=1, dash=(5, 3),
+            )
+            self._overlay_tether_ids.append(tether)
+
+            item = canvas.create_window(bx, by, window=box, anchor='nw')
+            self._overlay_item_ids.append(item)
+            self._overlay_widgets.append(box)
+
+            # ---- Drag binding on the header label ----
+            handle = getattr(box, '_drag_handle', box)
+            drag = {'xr': 0, 'yr': 0, 'cx': bx, 'cy': by}
+
+            def _press(ev, d=drag):
+                d['xr'] = ev.x_root
+                d['yr'] = ev.y_root
+
+            def _move(ev, d=drag, wi=item, ti=tether, ntx=tx, nty=ty, nd=node,
+                      pos=self._overlay_positions):
+                dx = ev.x_root - d['xr']
+                dy = ev.y_root - d['yr']
+                d['xr'] = ev.x_root
+                d['yr'] = ev.y_root
+                d['cx'] += dx
+                d['cy'] += dy
+                canvas.move(wi, dx, dy)
+                canvas.coords(ti, ntx, nty, d['cx'], d['cy'] + 12)
+                # Persist the new position so redraws restore it
+                pos[nd] = (d['cx'], d['cy'])
+
+            handle.bind('<Button-1>', _press)
+            handle.bind('<B1-Motion>', _move)
+
+    def _make_constraint_overlay_box(
+        self,
+        node: str,
+        current_colour: Any,
+        colour_map: Dict[str, Any],
+    ) -> tk.Frame:
+        """Build the floating constraint info box for one boundary node.
+
+        Shows:
+          Because: node=Colour
+          Means:   config1 OR config2 … (coloured assignment text)
+        """
+        COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
+
+        outer = tk.Frame(self._canvas, bg="#888888", bd=1, relief=tk.RAISED)
+
+        # Drag handle header (dark bar with node name + move cursor)
+        header = tk.Label(outer, text=f"⠿ {node}", font=("Arial", 8, "bold"),
+                          bg="#444444", fg="white", padx=6, pady=2,
+                          cursor="fleur", anchor="w")
+        header.pack(fill="x")
+        outer._drag_handle = header  # used by _draw_constraint_overlays
+
+        inner = tk.Frame(outer, bg="white", padx=5, pady=4)
+        inner.pack(fill="both", expand=True)
+
+        # ---- Because ----
+        tk.Label(inner, text="Because:", font=("Arial", 8, "bold"),
+                 bg="white", anchor="w").pack(anchor="w")
+        if current_colour:
+            fg = COLOUR_FG.get(str(current_colour).lower(), "#333")
+            row = tk.Frame(inner, bg="white")
+            row.pack(anchor="w")
+            tk.Label(row, text=f"  {node}=", font=("Arial", 8),
+                     bg="white", fg="#333").pack(side="left")
+            tk.Label(row, text=str(current_colour),
+                     font=("Arial", 8, "bold"), fg=fg,
+                     bg="white").pack(side="left")
+        else:
+            tk.Label(inner, text="  (not yet assigned)",
+                     font=("Arial", 8, "italic"), fg="#999",
+                     bg="white", anchor="w").pack(anchor="w")
+
+        # ---- Means ----
+        tk.Label(inner, text="Means:", font=("Arial", 8, "bold"),
+                 bg="white", anchor="w").pack(anchor="w", pady=(4, 0))
+
+        cur_key = str(current_colour).lower() if current_colour else ""
+        configs = colour_map.get(cur_key) or colour_map.get(str(current_colour), [])
+        MAX_SHOW = 8
+        if configs:
+            for i, cfg in enumerate(configs[:MAX_SHOW]):
+                row = tk.Frame(inner, bg="white")
+                row.pack(anchor="w")
+                first = True
+                for n2, c2 in sorted(cfg.items()):
+                    if not first:
+                        tk.Label(row, text=" AND ", font=("Arial", 7),
+                                 bg="white", fg="#555").pack(side="left")
+                    tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
+                             font=("Arial", 7), bg="white",
+                             fg="#333").pack(side="left")
+                    fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
+                    tk.Label(row, text=str(c2),
+                             font=("Arial", 7, "bold"), fg=fg2,
+                             bg="white").pack(side="left")
+                    first = False
+                if i < min(len(configs), MAX_SHOW) - 1:
+                    tk.Label(inner, text=" OR", font=("Arial", 7),
+                             bg="white", fg="#555",
+                             anchor="w").pack(anchor="w")
+            if len(configs) > MAX_SHOW:
+                tk.Label(inner, text=f"  … ({len(configs)} total)",
+                         font=("Arial", 7, "italic"), fg="#777",
+                         bg="white", anchor="w").pack(anchor="w")
+        elif current_colour:
+            tk.Label(inner, text="  No valid configs",
+                     font=("Arial", 8), fg="#cc0000",
+                     bg="white", anchor="w").pack(anchor="w")
+        else:
+            tk.Label(inner, text="  Assign this node to see options",
+                     font=("Arial", 7, "italic"), fg="#777",
+                     bg="white", anchor="w").pack(anchor="w")
+
+        return outer
+
+    def _initial_populate(self) -> None:
+        """Trigger initial constraint computation before the user has clicked anything."""
+        if not getattr(self, '_constraint_viz_mode', False):
+            return
+        if not getattr(self, '_on_constraint_update', None):
+            return
+        snapshot = dict(self._assignments)
+
+        def _bg_update(neigh: str) -> None:
+            try:
+                data = self._on_constraint_update(neigh, snapshot)
+                self.update_constraint_display(neigh, data)
+            except Exception as _exc:
+                print(f"[ConstraintViz] initial_populate error for {neigh}: {_exc}")
+
+        for neigh in self._neighs:
+            threading.Thread(target=_bg_update, args=(neigh,), daemon=True).start()
 
     # -------------------- Two-Phase Workflow --------------------
 

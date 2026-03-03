@@ -1,13 +1,12 @@
-"""Small launcher UI for running the clustered graph-colouring study.
+"""Small launcher UI for running the constraint visualisation study.
 
-This is intended for quick experiment setup in PyCharm:
+Run from the repository root with:
 
     python launch_menu.py
 
-You can choose the condition (RB / LLM_*), whether to use the Tkinter
-participant UI, the agent's internal algorithm, stopping rules, and the
-maximum number of iterations. Clicking **Start** runs the experiment and
-writes results under ./results/<condition>/
+Choose the condition (C1–C4), graph preset, and fixed constraints.
+Clicking **Start** runs the experiment and writes results under
+./results/<condition>_<timestamp>/
 """
 
 from __future__ import annotations
@@ -27,8 +26,8 @@ def main() -> None:
     from pathlib import Path
 
     root = tk.Tk()
-    root.title("Graph Colouring Study Launcher")
-    root.geometry("520x460")
+    root.title("Graph Colouring Constraint Viz Launcher")
+    root.geometry("520x430")
 
     FONT = ("Arial", 13)
     root.option_add("*TLabel.Font", FONT)
@@ -49,106 +48,134 @@ def main() -> None:
         except Exception:
             pass
 
+    # Preset labels and their properties
+    _PRESET_LABELS = [
+        "Easy (5 nodes)",
+        "Medium (5 nodes, pre-fixed)",
+        "Tight (5 nodes, 2 agent fixed)",
+        "Dense (5 nodes, extra edges)",
+        "Dense+Tight (5 nodes, both)",
+        "Hard (6 nodes)",
+        "Expert (6 nodes, pre-fixed)",
+        "Super (8 nodes, 2 agent fixed)",
+    ]
+    _PRESET_CLI = {
+        "Easy (5 nodes)": "easy",
+        "Medium (5 nodes, pre-fixed)": "medium",
+        "Tight (5 nodes, 2 agent fixed)": "tight",
+        "Dense (5 nodes, extra edges)": "dense",
+        "Dense+Tight (5 nodes, both)": "dense_tight",
+        "Hard (6 nodes)": "hard",
+        "Expert (6 nodes, pre-fixed)": "expert",
+        "Super (8 nodes, 2 agent fixed)": "super",
+    }
+    # Presets with pre-designed fixed nodes — fixed-node controls are irrelevant
+    _PRESET_EXPLICIT = {
+        "Medium (5 nodes, pre-fixed)",
+        "Tight (5 nodes, 2 agent fixed)",
+        "Dense (5 nodes, extra edges)",
+        "Dense+Tight (5 nodes, both)",
+        "Expert (6 nodes, pre-fixed)",
+        "Super (8 nodes, 2 agent fixed)",
+    }
+
     # --- variables with saved defaults ---
-    method_var = tk.StringVar(value=saved_config.get("method", "RB"))
-    graph_preset_var = tk.StringVar(value=saved_config.get("graph_preset", "Easy (5 nodes)"))
+    condition_var = tk.StringVar(value=saved_config.get("condition", "C1"))
+    _saved_preset = saved_config.get("graph_preset", "Easy (5 nodes)")
+    # Migrate old saved value "Hard (6 nodes)" to new label if needed
+    if _saved_preset not in _PRESET_LABELS:
+        _saved_preset = "Easy (5 nodes)"
+    graph_preset_var = tk.StringVar(value=_saved_preset)
     use_ui_var = tk.BooleanVar(value=saved_config.get("use_ui", True))
-    manual_var = tk.BooleanVar(value=saved_config.get("manual", False))
-    alg_var = tk.StringVar(value=saved_config.get("algorithm", "maxsum"))
-    max_iter_var = tk.IntVar(value=saved_config.get("max_iters", 10))
-    k_var = tk.IntVar(value=saved_config.get("k", 2))
-    stop_soft_var = tk.BooleanVar(value=saved_config.get("stop_soft", True))
-    stop_hard_var = tk.BooleanVar(value=saved_config.get("stop_hard", False))
-    cf_utils_var = tk.BooleanVar(value=saved_config.get("cf_utils", True))
+    use_llm_var = tk.BooleanVar(value=saved_config.get("use_llm", False))
     fixed_constraints_var = tk.BooleanVar(value=saved_config.get("fixed_constraints", True))
-    # Default fixed nodes: 1 for Easy, 2 for Hard
-    _preset_default_fixed = 2 if "Hard" in graph_preset_var.get() else 1
+    # Default fixed nodes: 2 for Hard, 1 for Easy; irrelevant for Medium/Expert
+    _cur = graph_preset_var.get()
+    _preset_default_fixed = 2 if "Hard" in _cur or "Expert" in _cur else 1
     num_fixed_nodes_var = tk.IntVar(value=saved_config.get("num_fixed_nodes", _preset_default_fixed))
 
     # --- widgets ---
-    ttk.Label(frm, text="Condition").grid(row=0, column=0, sticky="w", pady=(0, 6))
+    row = 0
+    ttk.Label(frm, text="Condition").grid(row=row, column=0, sticky="w", pady=(0, 6))
     ttk.Combobox(
         frm,
-        textvariable=method_var,
-        values=["RB", "LLM_API", "LLM_F", "LLM_RB", "LLM_TOOL", "LLM_REACT"],
+        textvariable=condition_var,
+        values=["C1", "C2", "C3", "C4"],
         state="readonly",
         width=22,
-    ).grid(row=0, column=1, sticky="w", pady=(0, 6))
+    ).grid(row=row, column=1, sticky="w", pady=(0, 6))
 
-    ttk.Label(frm, text="Graph preset").grid(row=1, column=0, sticky="w", pady=(0, 6))
+    row += 1
+    ttk.Label(
+        frm,
+        text="C1=User-Centric Formulaic\nC2=Agent-Centric Formulaic\nC3=UC Natural Language\nC4=AC Natural Language",
+        font=("Arial", 9),
+        foreground="#555",
+        justify="left",
+    ).grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 8))
+
+    row += 1
+    ttk.Label(frm, text="Graph preset").grid(row=row, column=0, sticky="w", pady=(0, 4))
     preset_combo = ttk.Combobox(
         frm,
         textvariable=graph_preset_var,
-        values=["Easy (5 nodes)", "Hard (6 nodes)"],
+        values=_PRESET_LABELS,
         state="readonly",
         width=22,
     )
-    preset_combo.grid(row=1, column=1, sticky="w", pady=(0, 6))
+    preset_combo.grid(row=row, column=1, sticky="w", pady=(0, 4))
+
+    row += 1
+    ttk.Label(
+        frm,
+        text="All except Easy/Hard use pre-designed fixed constraints\n(fixed-node controls ignored for these)",
+        font=("Arial", 9),
+        foreground="#555",
+        justify="left",
+    ).grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 6))
+
+    fixed_check_widget = ttk.Checkbutton(frm, text="Use fixed node constraints",
+                                          variable=fixed_constraints_var)
+    fixed_spin_label = ttk.Label(frm, text="Fixed nodes per cluster (0-3)")
+    fixed_spin_widget = ttk.Spinbox(frm, from_=0, to=3, textvariable=num_fixed_nodes_var, width=8)
 
     def _on_preset_change(*_):
-        if "Hard" in graph_preset_var.get():
+        sel = graph_preset_var.get()
+        is_explicit = sel in _PRESET_EXPLICIT
+        if "Hard" in sel or "Expert" in sel:
             num_fixed_nodes_var.set(2)
         else:
             num_fixed_nodes_var.set(1)
+        # Grey out fixed-node controls for presets with built-in constraints
+        state = "disabled" if is_explicit else "normal"
+        fixed_check_widget.config(state=state)
+        fixed_spin_label.config(foreground="#aaa" if is_explicit else "#000")
+        fixed_spin_widget.config(state="disabled" if is_explicit else "normal")
 
     graph_preset_var.trace_add("write", _on_preset_change)
 
-    ttk.Label(frm, text="Agent algorithm").grid(row=2, column=0, sticky="w", pady=(0, 6))
-    ttk.Combobox(
-        frm,
-        textvariable=alg_var,
-        values=["greedy", "maxsum"],
-        state="readonly",
-        width=22,
-    ).grid(row=2, column=1, sticky="w", pady=(0, 6))
+    row += 1
+    fixed_check_widget.grid(row=row, column=0, columnspan=2, sticky="w", pady=(4, 6))
 
-    ttk.Checkbutton(frm, text="Use participant UI", variable=use_ui_var).grid(
-        row=3, column=0, columnspan=2, sticky="w", pady=(4, 6)
-    )
-    ttk.Checkbutton(frm, text="Manual LLM mode (no API)", variable=manual_var).grid(
-        row=4, column=0, columnspan=2, sticky="w", pady=(0, 6)
-    )
-    ttk.Checkbutton(frm, text="Use fixed node constraints", variable=fixed_constraints_var).grid(
-        row=5, column=0, columnspan=2, sticky="w", pady=(0, 6)
-    )
+    row += 1
+    fixed_spin_label.grid(row=row, column=0, sticky="w", pady=(0, 10))
+    fixed_spin_widget.grid(row=row, column=1, sticky="w", pady=(0, 10))
 
-    ttk.Label(frm, text="Fixed nodes per cluster (0-3)").grid(row=6, column=0, sticky="w", pady=(0, 10))
-    ttk.Spinbox(frm, from_=0, to=3, textvariable=num_fixed_nodes_var, width=8).grid(
-        row=6, column=1, sticky="w", pady=(0, 10)
-    )
+    # Apply initial state
+    _on_preset_change()
 
+    row += 1
     ttk.Checkbutton(
         frm,
-        text="LLM-U/LLM-C: Counterfactual utilities (best-response)",
-        variable=cf_utils_var,
-    ).grid(row=7, column=0, columnspan=2, sticky="w", pady=(0, 6))
+        text="Use LLM for NL summaries (C3/C4 only)",
+        variable=use_llm_var,
+    ).grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 10))
 
     sep = ttk.Separator(frm)
-    sep.grid(row=8, column=0, columnspan=2, sticky="ew", pady=10)
-
-    ttk.Label(frm, text="Max iterations").grid(row=9, column=0, sticky="w", pady=(0, 6))
-    ttk.Spinbox(frm, from_=1, to=200, textvariable=max_iter_var, width=8).grid(
-        row=9, column=1, sticky="w", pady=(0, 6)
-    )
-
-    ttk.Label(frm, text="Soft convergence K (streak)").grid(row=10, column=0, sticky="w", pady=(0, 6))
-    ttk.Spinbox(frm, from_=1, to=10, textvariable=k_var, width=8).grid(
-        row=10, column=1, sticky="w", pady=(0, 6)
-    )
-
-    ttk.Checkbutton(frm, text="Stop on soft convergence", variable=stop_soft_var).grid(
-        row=11, column=0, columnspan=2, sticky="w", pady=(4, 6)
-    )
-    ttk.Checkbutton(
-        frm,
-        text="Stop on hard convergence (penalty=0) — requires human satisfied",
-        variable=stop_hard_var,
-    ).grid(
-        row=12, column=0, columnspan=2, sticky="w", pady=(0, 10)
-    )
+    sep.grid(row=row + 1, column=0, columnspan=2, sticky="ew", pady=10)
 
     status = tk.StringVar(value="")
-    ttk.Label(frm, textvariable=status).grid(row=13, column=0, columnspan=2, sticky="w")
+    ttk.Label(frm, textvariable=status).grid(row=row + 2, column=0, columnspan=2, sticky="w")
 
     def on_start() -> None:
         try:
@@ -157,16 +184,10 @@ def main() -> None:
 
             # Save current configuration
             current_config = {
-                "method": method_var.get(),
+                "condition": condition_var.get(),
                 "graph_preset": graph_preset_var.get(),
                 "use_ui": bool(use_ui_var.get()),
-                "manual": bool(manual_var.get()),
-                "algorithm": alg_var.get(),
-                "max_iters": int(max_iter_var.get()),
-                "k": int(k_var.get()),
-                "stop_soft": bool(stop_soft_var.get()),
-                "stop_hard": bool(stop_hard_var.get()),
-                "cf_utils": bool(cf_utils_var.get()),
+                "use_llm": bool(use_llm_var.get()),
                 "fixed_constraints": bool(fixed_constraints_var.get()),
                 "num_fixed_nodes": int(num_fixed_nodes_var.get()),
             }
@@ -176,33 +197,20 @@ def main() -> None:
             except Exception:
                 pass
 
-            from pathlib import Path
-
             run_script = Path(__file__).resolve().with_name("run_experiment.py")
             args = [
                 sys.executable,
                 str(run_script),
-                "--method",
-                method_var.get(),
+                "--condition",
+                condition_var.get(),
                 "--use-ui" if bool(use_ui_var.get()) else "--no-ui",
-                "--manual" if bool(manual_var.get()) else "--api",
-                "--max-iters",
-                str(int(max_iter_var.get())),
-                "--agent-alg",
-                alg_var.get(),
-                "--k",
-                str(int(k_var.get())),
             ]
-            args.append("--counterfactual-utils" if bool(cf_utils_var.get()) else "--naive-utils")
-            if bool(stop_soft_var.get()):
-                args.append("--stop-soft")
-            if bool(stop_hard_var.get()):
-                args.append("--stop-hard")
             if bool(fixed_constraints_var.get()):
                 args.append("--fixed-constraints")
                 args.extend(["--num-fixed-nodes", str(int(num_fixed_nodes_var.get()))])
-            # Map display label → CLI value
-            _preset_cli = "hard" if "Hard" in graph_preset_var.get() else "easy"
+            if bool(use_llm_var.get()):
+                args.append("--use-llm")
+            _preset_cli = _PRESET_CLI.get(graph_preset_var.get(), "easy")
             args.extend(["--graph-preset", _preset_cli])
 
             subprocess.Popen(args, cwd=str(run_script.parent))
@@ -210,8 +218,8 @@ def main() -> None:
         except Exception as e:
             status.set(f"Error: {e}")
 
-    ttk.Button(frm, text="Start", command=on_start).grid(row=14, column=0, sticky="w", pady=12)
-    ttk.Button(frm, text="Quit", command=root.destroy).grid(row=14, column=1, sticky="w", pady=12)
+    ttk.Button(frm, text="Start", command=on_start).grid(row=row + 3, column=0, sticky="w", pady=12)
+    ttk.Button(frm, text="Quit", command=root.destroy).grid(row=row + 3, column=1, sticky="w", pady=12)
 
     frm.columnconfigure(1, weight=1)
     root.mainloop()

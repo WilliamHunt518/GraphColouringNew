@@ -1,22 +1,17 @@
-"""Main entry point for the revised clustered graph colouring study.
+"""Main entry point for the constraint visualisation study.
 
 Run from the repository root with:
 
-    python3 code/run_experiment.py
+    python run_experiment.py --condition C1 --use-ui
 
-This script sets up **1 human cluster + 2 agent clusters**, with 5 nodes
-each. The human cluster sits between the two agents and shares 1--2
-boundary edges with each agent.
+Four conditions:
+    C1  : User-Centric Formulaic — logical consequence expressions
+    C2  : Agent-Centric Formulaic — feasible colour domain sets
+    C3  : User-Centric Natural Language (LLM-summarised)
+    C4  : Agent-Centric Natural Language (LLM-summarised)
 
-Toggle the METHOD below to run one of the four conditions:
-
-    RB      : rule-based deliberation baseline
-    LLM_API : constraint-oriented messages with LLM API
-    LLM_F   : free-form messages
-    LLM_RB  : natural language to rule-based grammar
-
-By default, the human is *you* (interactive prompts). You can also enable
-the Tkinter GUI by setting USE_UI=True.
+The human directly manipulates node colours by clicking; agents are passive
+constraint analysers.  Chat panes are replaced with real-time constraint panels.
 """
 
 from __future__ import annotations
@@ -29,16 +24,42 @@ from pathlib import Path
 # CONFIGURE HERE
 # -----------------
 
-METHOD = "RB"   # one of: "RB", "LLM_API", "LLM_F", "LLM_RB"
-USE_UI = True  # True => Tkinter UI for the human turn
-MANUAL_MODE = False  # True => do NOT call an external LLM API
-MAX_ITERS = 10
-AGENT_ALG = "maxsum"  # "greedy" or "maxsum" (exhaustive) - default changed to maxsum for correctness
-CONVERGENCE_K = 2
-STOP_ON_SOFT = True
-STOP_ON_HARD = True
-COUNTERFACTUAL_UTILS = True
-FIXED_CONSTRAINTS = True  # True => 1 fixed node per cluster to force negotiation
+CONDITION = "C1"   # one of: "C1", "C2", "C3", "C4"
+USE_UI = True
+USE_LLM = False    # True => call LLM for NL summaries in C3/C4
+FIXED_CONSTRAINTS = True
+NUM_FIXED_NODES = 1
+
+
+def _check_solvable_explicit(node_names, adjacency, explicit_fixed, domain):
+    """Verify a valid 3-colouring exists with a given set of explicit fixed nodes.
+
+    Uses backtracking (not brute-force product) so it scales to larger graphs.
+    Raises ValueError if unsolvable.
+    """
+    adj_sets = {n: set(adjacency[n]) for n in node_names}
+    free = [n for n in node_names if n not in explicit_fixed]
+    assignment = dict(explicit_fixed)
+
+    def backtrack(idx: int) -> bool:
+        if idx == len(free):
+            return True
+        node = free[idx]
+        for colour in domain:
+            if all(assignment.get(nb) != colour for nb in adj_sets[node]):
+                assignment[node] = colour
+                if backtrack(idx + 1):
+                    return True
+                del assignment[node]
+        return False
+
+    if backtrack(0):
+        return  # solvable – all good
+
+    fixed_str = ", ".join(f"{n}={c}" for n, c in sorted(explicit_fixed.items()))
+    raise ValueError(
+        f"Graph preset is UNSOLVABLE with explicit fixed nodes: {fixed_str}"
+    )
 
 
 def _check_solvable(node_names, adjacency, clusters, domain, num_fixed_nodes):
@@ -78,20 +99,29 @@ def _check_solvable(node_names, adjacency, clusters, domain, num_fixed_nodes):
 
 
 def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
-    """Return (node_names, clusters, adjacency, owners) for the given preset.
+    """Return (node_names, clusters, adjacency, owners, explicit_fixed) for the given preset.
 
     Presets
     -------
-    "easy"  – 5-node-per-cluster topology (unchanged original).
-    "hard"  – 6-node-per-cluster topology; 6-cycle + antipodal h3-h6 chord
-              per cluster, 2 cross-edges per agent pair.
-              Solvability is verified at build time against the same
-              seed-42 fixed-node selection used by cluster_simulation.py.
+    "easy"    – 5-node-per-cluster topology; seed-42 fixed-node selection.
+    "medium"  – Same 5-node topology but with pre-designed explicit fixed
+                nodes (h3=red, a3=green, b3=blue) that create interesting
+                cross-cluster constraint tension.
+    "hard"    – 6-node-per-cluster topology; 6-cycle + antipodal chord;
+                seed-42 fixed-node selection.
+    "expert"  – Same 6-node topology but with pre-designed explicit fixed
+                nodes (h3=green, h6=red, a1=blue, a4=red, b2=green,
+                b5=red) for tighter constraints.
+
+    ``explicit_fixed`` is ``None`` for presets that use seed-42 selection
+    (easy/hard) and a per-cluster dict ``{owner: {node: colour}}`` for
+    presets with pre-designed constraints (medium/expert).
     """
     preset = graph_preset.lower()
     domain = ["red", "green", "blue"]
+    explicit_fixed = None  # default: no pre-designed fixed constraints
 
-    if preset == "easy":
+    if preset in ("easy", "medium"):
         human_nodes = ["h1", "h2", "h3", "h4", "h5"]
         agent1_nodes = ["a1", "a2", "a3", "a4", "a5"]
         agent2_nodes = ["b1", "b2", "b3", "b4", "b5"]
@@ -126,13 +156,114 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
         adjacency["h2"].append("b2"); adjacency["b2"].append("h2")
         adjacency["h5"].append("b2"); adjacency["b2"].append("h5")
 
-    elif preset == "hard":
+        if preset == "medium":
+            # Pre-designed fixed constraints creating interesting cross-cluster tension.
+            # h3=red makes h2 and h4 non-red; a3=green constrains a2/a4; b3=blue
+            # constrains b2 which is also constrained by h2 and h5 choices.
+            # Verified solution: h1=green,h2=blue,h3=red,h4=green,h5=red;
+            #   a1=green,a2=red,a3=green,a4=red,a5=blue;
+            #   b1=red,b2=green,b3=blue,b4=red,b5=blue
+            explicit_fixed = {
+                "Human": {"h3": "red"},
+                "Agent1": {"a3": "green"},
+                "Agent2": {"b3": "blue"},
+            }
+            node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+            all_fixed_tmp: dict = {}
+            for d in explicit_fixed.values():
+                all_fixed_tmp.update(d)
+            _check_solvable_explicit(node_names_tmp, adjacency, all_fixed_tmp, domain)
+
+    elif preset in ("tight", "dense", "dense_tight"):
+        # 5 nodes per cluster — same base topology as easy/medium (5-cycle + chord h2-h5),
+        # but with pre-designed explicit fixed constraints that create tighter problems.
+        # "dense" and "dense_tight" add two extra cross-cluster edges (h3–a1, h1–b5).
+        human_nodes = ["h1", "h2", "h3", "h4", "h5"]
+        agent1_nodes = ["a1", "a2", "a3", "a4", "a5"]
+        agent2_nodes = ["b1", "b2", "b3", "b4", "b5"]
+
+        adjacency = {
+            # Human cluster (5-cycle + chord h2-h5)
+            "h1": ["h2", "h5"],
+            "h2": ["h1", "h3", "h5"],
+            "h3": ["h2", "h4"],
+            "h4": ["h3", "h5"],
+            "h5": ["h1", "h2", "h4"],
+            # Agent1 cluster (5-cycle + chord a2-a5)
+            "a1": ["a2", "a5"],
+            "a2": ["a1", "a3", "a5"],
+            "a3": ["a2", "a4"],
+            "a4": ["a3", "a5"],
+            "a5": ["a1", "a2", "a4"],
+            # Agent2 cluster (5-cycle + chord b2-b5)
+            "b1": ["b2", "b5"],
+            "b2": ["b1", "b3", "b5"],
+            "b3": ["b2", "b4"],
+            "b4": ["b3", "b5"],
+            "b5": ["b1", "b2", "b4"],
+        }
+
+        # Standard cross-cluster edges (same as easy/medium)
+        # Human <-> Agent1: h1--a2, h4--a4, h4--a5
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h4"].append("a4"); adjacency["a4"].append("h4")
+        adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+        # Human <-> Agent2: h2--b2, h5--b2
+        adjacency["h2"].append("b2"); adjacency["b2"].append("h2")
+        adjacency["h5"].append("b2"); adjacency["b2"].append("h5")
+
+        if preset in ("dense", "dense_tight"):
+            # Extra cross-cluster edges: h3–a1 (Agent1 tighter), h1–b5 (Agent2 tighter)
+            adjacency["h3"].append("a1"); adjacency["a1"].append("h3")
+            adjacency["h1"].append("b5"); adjacency["b5"].append("h1")
+
+        if preset == "tight":
+            # 2 fixed per agent cluster (up from 1).
+            # a3=blue + a1=red: forces a2=green, a5=blue uniquely; a4 depends on h4.
+            # b3=red + b5=green: forces b2=blue, b4=blue, b1=red uniquely.
+            # Human has exactly 2 valid colorings (h4=red or h4=green).
+            # Verified solutions (2 total):
+            #   h1=blue,h2=red,h3=blue,h4=red,h5=green  → a4=green
+            #   h1=blue,h2=green,h3=blue,h4=green,h5=red → a4=red
+            explicit_fixed = {
+                "Human":  {"h3": "blue"},
+                "Agent1": {"a3": "blue", "a1": "red"},
+                "Agent2": {"b3": "red", "b5": "green"},
+            }
+        elif preset == "dense":
+            # 2 fixed per agent cluster. Extra edges h3–a1 and h1–b5 add cross tension.
+            # a3=blue + a1=red: h3–a1 cross-edge satisfied (a1=red ≠ h3=green).
+            # b3=red + b5=green: h1–b5 cross-edge satisfied (b5=green ≠ h1=blue).
+            # Verified solution: h1=blue,h2=red,h3=green,h4=red,h5=green;
+            #   a1=red,a2=green,a3=blue,a4=green,a5=blue;
+            #   b1=red,b2=blue,b3=red,b4=blue,b5=green
+            explicit_fixed = {
+                "Human":  {"h3": "green"},
+                "Agent1": {"a3": "blue", "a1": "red"},
+                "Agent2": {"b3": "red", "b5": "green"},
+            }
+        else:  # dense_tight
+            # Dense topology + 2 fixed per agent cluster.
+            # Combines extra cross-edges with tight agent constraints.
+            # b5=green forces h1 ≠ green; h2/h5–b2 cross-edges force b2=blue uniquely.
+            # Verified solution:
+            #   h1=blue,h2=red,h3=green,h4=red,h5=green
+            #   a1=red,a2=green,a3=blue,a4=green,a5=blue
+            #   b1=red,b2=blue,b3=red,b4=blue,b5=green
+            explicit_fixed = {
+                "Human":  {"h3": "green"},
+                "Agent1": {"a3": "blue", "a1": "red"},
+                "Agent2": {"b3": "red", "b5": "green"},
+            }
+
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        all_fixed_tmp: dict = {}
+        for d in explicit_fixed.values():
+            all_fixed_tmp.update(d)
+        _check_solvable_explicit(node_names_tmp, adjacency, all_fixed_tmp, domain)
+
+    elif preset in ("hard", "expert"):
         # 6 nodes per cluster, 2 cross-edges per agent pair.
-        # Internal structure: 6-cycle + antipodal chord (n3–n6 per cluster).
-        # The chord connects the two purely-internal nodes so the h3-h6 fixed
-        # pair must be different colours — compatible with seed-42 assignment.
-        # Cross edges are one-to-one (unlike Easy's one-to-many / many-to-one).
-        # Solvability is verified below by _check_solvable().
         human_nodes = ["h1", "h2", "h3", "h4", "h5", "h6"]
         agent1_nodes = ["a1", "a2", "a3", "a4", "a5", "a6"]
         agent2_nodes = ["b1", "b2", "b3", "b4", "b5", "b6"]
@@ -169,13 +300,86 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
         adjacency["h2"].append("b3"); adjacency["b3"].append("h2")
         adjacency["h5"].append("b6"); adjacency["b6"].append("h5")
 
-        # Verify solvability with the actual fixed-node selection used at runtime
+        if preset == "hard":
+            # Verify solvability with the actual fixed-node selection used at runtime
+            node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+            clusters_tmp = {"Human": human_nodes, "Agent1": agent1_nodes, "Agent2": agent2_nodes}
+            _check_solvable(node_names_tmp, adjacency, clusters_tmp, domain, num_fixed_nodes)
+        else:  # expert
+            # Pre-designed fixed constraints for a tighter problem.
+            # Human: h3=green + h6=red (chord pair — both fixed, different colours).
+            # Agent1: a1=blue (low-degree), a4=red (internal).
+            # Agent2: b2=green, b5=red (both internal; b2 adj to b3/b6 in-cluster).
+            # Verified solution:
+            #   h1=blue,h2=red,h3=green,h4=red,h5=blue,h6=red;
+            #   a1=blue,a2=red,a3=green,a4=red,a5=green,a6=red;
+            #   b1=red,b2=green,b3=blue,b4=green,b5=red,b6=green
+            explicit_fixed = {
+                "Human": {"h3": "green", "h6": "red"},
+                "Agent1": {"a1": "blue", "a4": "red"},
+                "Agent2": {"b2": "green", "b5": "red"},
+            }
+            node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+            all_fixed_tmp = {}
+            for d in explicit_fixed.values():
+                all_fixed_tmp.update(d)
+            _check_solvable_explicit(node_names_tmp, adjacency, all_fixed_tmp, domain)
+
+    elif preset == "super":
+        # 8 nodes per cluster — hardest preset.
+        # Topology: 8-cycle + 1 antipodal chord (x1–x5) per cluster.
+        # Cross-edges: h1–a2, h5–a5 (Human↔Agent1), h3–b3, h7–b7 (Human↔Agent2).
+        # Fixed: 2 per human cluster + 2 per agent cluster (6 total).
+        # Verified solution:
+        #   Human:  h1=blue, h2=green, h3=red,  h4=blue, h5=green, h6=red, h7=blue, h8=red
+        #   Agent1: a1=blue, a2=red,   a3=blue, a4=green, a5=red, a6=blue, a7=green, a8=red
+        #   Agent2: b1=red,  b2=green, b3=blue, b4=red,   b5=green, b6=blue, b7=red, b8=green
+        human_nodes  = [f"h{i}" for i in range(1, 9)]
+        agent1_nodes = [f"a{i}" for i in range(1, 9)]
+        agent2_nodes = [f"b{i}" for i in range(1, 9)]
+
+        def _eight_cycle_with_chord(prefix: str) -> dict:
+            ns = [f"{prefix}{i}" for i in range(1, 9)]
+            adj: dict = {n: [] for n in ns}
+            for i in range(8):
+                a, b = ns[i], ns[(i + 1) % 8]
+                adj[a].append(b)
+                adj[b].append(a)
+            # Antipodal chord: node 1 – node 5  (indices 0 and 4)
+            adj[ns[0]].append(ns[4])
+            adj[ns[4]].append(ns[0])
+            return adj
+
+        adjacency = {}
+        for prefix in ("h", "a", "b"):
+            adjacency.update(_eight_cycle_with_chord(prefix))
+
+        # Cross-cluster edges
+        # Human ↔ Agent1: h1–a2, h5–a5
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h5"].append("a5"); adjacency["a5"].append("h5")
+        # Human ↔ Agent2: h3–b3, h7–b7
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+        adjacency["h7"].append("b7"); adjacency["b7"].append("h7")
+
+        explicit_fixed = {
+            "Human":  {"h3": "red",   "h7": "blue"},
+            "Agent1": {"a4": "green", "a8": "red"},
+            "Agent2": {"b2": "green", "b6": "blue"},
+        }
+
         node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
-        clusters_tmp = {"Human": human_nodes, "Agent1": agent1_nodes, "Agent2": agent2_nodes}
-        _check_solvable(node_names_tmp, adjacency, clusters_tmp, domain, num_fixed_nodes)
+        all_fixed_tmp: dict = {}
+        for d in explicit_fixed.values():
+            all_fixed_tmp.update(d)
+        _check_solvable_explicit(node_names_tmp, adjacency, all_fixed_tmp, domain)
 
     else:
-        raise ValueError(f"Unknown graph_preset: {graph_preset!r}. Use 'easy' or 'hard'.")
+        raise ValueError(
+            f"Unknown graph_preset: {graph_preset!r}. "
+            "Use 'easy', 'medium', 'tight', 'hard', 'expert', "
+            "'dense', 'dense_tight', or 'super'."
+        )
 
     node_names = human_nodes + agent1_nodes + agent2_nodes
     clusters = {"Human": human_nodes, "Agent1": agent1_nodes, "Agent2": agent2_nodes}
@@ -184,98 +388,57 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
         | {n: "Agent1" for n in agent1_nodes}
         | {n: "Agent2" for n in agent2_nodes}
     )
-    return node_names, clusters, adjacency, owners
+    return node_names, clusters, adjacency, owners, explicit_fixed
 
 
 def run_experiment(
     *,
-    method: str,
+    condition: str,
     use_ui: bool,
-    manual_mode: bool,
-    max_iters: int,
-    agent_algorithm: str = "maxsum",  # Changed default from "greedy" to "maxsum" for correctness
-    convergence_k: int = 2,
-    stop_on_soft: bool = True,
-    # Study default: do not auto-stop purely on hard convergence.
-    stop_on_hard: bool = False,
-    counterfactual_utils: bool = True,
+    use_llm: bool = False,
     fixed_constraints: bool = True,
     num_fixed_nodes: int = 1,
     graph_preset: str = "easy",
 ) -> None:
-    # Ensure outputs are written under the *project root* (i.e., the directory
-    # you opened in your IDE / run from). This avoids writing results one level
-    # above the project when the code directory sits inside a larger repository.
     cwd = Path.cwd()
     if (cwd / "code").exists() or (cwd / "run_experiment.py").exists():
         project_root = cwd
     else:
-        # Fallback: treat the parent of this file as the project root.
         project_root = Path(__file__).resolve().parent
 
-    results_dir = project_root / "results" / method.lower()
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    results_dir = project_root / "results" / f"{condition.lower()}_{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
 
+    print(f"[run_experiment] Condition: {condition}")
     print(f"[run_experiment] Writing results to: {results_dir}")
 
-    # Import *from the code package* explicitly (avoid accidentally importing
-    # similarly named modules from the repo root).
-    from cluster_simulation import run_clustered_simulation
+    from cluster_simulation import run_constraint_viz_simulation
 
-    # --- Clustered topology (selected by graph_preset) ---
-    # Pass num_fixed_nodes so the hard preset can self-validate before launch.
-    node_names, clusters, adjacency, owners = _build_topology(
+    node_names, clusters, adjacency, owners, explicit_fixed = _build_topology(
         graph_preset, num_fixed_nodes=num_fixed_nodes if fixed_constraints else 0
     )
     print(f"[run_experiment] Graph preset: {graph_preset!r} ({len(list(clusters.values())[0])} nodes/cluster)")
 
-    # Algorithms per cluster (you can vary this later)
-    # LLM_API mode uses exhaustive search for better solution quality
-    if method == "LLM_API":
-        cluster_algorithms = {"Human": "greedy", "Agent1": "maxsum", "Agent2": "maxsum"}
-    else:
-        cluster_algorithms = {"Human": "greedy", "Agent1": agent_algorithm, "Agent2": agent_algorithm}
-
-    # Message type per cluster. For RB mode, human also uses rule_based to enable structured UI.
-    # For LLM modes, human uses free_text while agents use the specified message type.
-    if method == "RB":
-        cluster_message_types = {"Human": "rule_based", "Agent1": "rule_based", "Agent2": "rule_based"}
-    elif method == "LLM_API":
-        cluster_message_types = {"Human": "free_text", "Agent1": "constraints", "Agent2": "constraints"}
-    elif method == "LLM_F":
-        cluster_message_types = {"Human": "free_text", "Agent1": "free_text", "Agent2": "free_text"}
-    elif method == "LLM_RB":
-        cluster_message_types = {"Human": "llm_rb", "Agent1": "llm_rb", "Agent2": "llm_rb"}
-    elif method == "LLM_TOOL":
-        cluster_message_types = {"Human": "free_text", "Agent1": "llm_tool", "Agent2": "llm_tool"}
-    elif method == "LLM_REACT":
-        cluster_message_types = {"Human": "free_text", "Agent1": "llm_react", "Agent2": "llm_react"}
-    else:
-        raise ValueError(f"Unknown METHOD: {method}")
-
     domain = ["red", "green", "blue"]
 
-    run_clustered_simulation(
+    # Presets with pre-designed fixed nodes (medium/expert) override seed-42 selection.
+    preset_fixed_nodes = explicit_fixed  # None for easy/hard
+
+    run_constraint_viz_simulation(
         node_names=node_names,
         clusters=clusters,
         adjacency=adjacency,
         owners=owners,
-        cluster_algorithms=cluster_algorithms,
-        cluster_message_types=cluster_message_types,
         domain=domain,
-        max_iterations=max_iters,
-        interactive=True,
-        manual_mode=manual_mode,
-        human_owners=["Human"],
-        use_ui=use_ui,
-        ui_title=f"{method} — Human Turn ({graph_preset.capitalize()} preset)",
+        condition=condition,
+        fixed_constraints=fixed_constraints,
+        num_fixed_nodes=num_fixed_nodes,
+        use_llm=use_llm,
         output_dir=str(results_dir),
-        convergence_k=int(convergence_k),
-        stop_on_soft=bool(stop_on_soft),
-        stop_on_hard=bool(stop_on_hard),
-        counterfactual_utils=bool(counterfactual_utils),
-        fixed_constraints=bool(fixed_constraints),
-        num_fixed_nodes=int(num_fixed_nodes),
+        ui_title=f"Constraint Visualisation — {condition} ({graph_preset.capitalize()})",
+        preset_fixed_nodes=preset_fixed_nodes,
     )
 
     print(f"[run_experiment] Finished. Check outputs in: {results_dir}")
@@ -284,45 +447,32 @@ def run_experiment(
 def main() -> None:
     import argparse
 
-    p = argparse.ArgumentParser(description="Run the clustered graph-colouring study.")
-    p.add_argument("--method", default=METHOD, choices=["RB", "LLM_API", "LLM_F", "LLM_RB", "LLM_TOOL", "LLM_REACT"])
+    p = argparse.ArgumentParser(description="Run the constraint visualisation study.")
+    p.add_argument("--condition", default=CONDITION, choices=["C1", "C2", "C3", "C4"])
     ui = p.add_mutually_exclusive_group()
     ui.add_argument("--use-ui", dest="use_ui", action="store_true")
     ui.add_argument("--no-ui", dest="use_ui", action="store_false")
     p.set_defaults(use_ui=USE_UI)
 
-    llm = p.add_mutually_exclusive_group()
-    llm.add_argument("--manual", dest="manual_mode", action="store_true", help="No API calls")
-    llm.add_argument("--api", dest="manual_mode", action="store_false", help="Use API if configured")
-    p.set_defaults(manual_mode=MANUAL_MODE)
-
-    p.add_argument("--max-iters", type=int, default=MAX_ITERS)
-    p.add_argument("--agent-alg", default=AGENT_ALG, choices=["greedy", "maxsum"])
-    p.add_argument("--k", type=int, default=CONVERGENCE_K, help="Soft convergence streak")
-    p.add_argument("--stop-soft", action="store_true", default=STOP_ON_SOFT)
-    p.add_argument("--stop-hard", action="store_true", default=STOP_ON_HARD)
-
-    util = p.add_mutually_exclusive_group()
-    util.add_argument("--counterfactual-utils", dest="counterfactual_utils", action="store_true", help="LLM-U/LLM-C: derive utilities/constraints via best-response counterfactuals")
-    util.add_argument("--naive-utils", dest="counterfactual_utils", action="store_false", help="LLM-U/LLM-C: derive utilities/constraints from current assignment only")
-    p.set_defaults(counterfactual_utils=COUNTERFACTUAL_UTILS)
-
-    p.add_argument("--fixed-constraints", action="store_true", default=FIXED_CONSTRAINTS, help="Fix 1 internal node per cluster to force negotiation")
-    p.add_argument("--num-fixed-nodes", type=int, default=1, choices=[0, 1, 2, 3], help="Number of fixed nodes per cluster (0-3)")
-    p.add_argument("--graph-preset", default="easy", choices=["easy", "hard"], help="Graph topology preset: easy (5 nodes/cluster) or hard (6 nodes/cluster)")
+    p.add_argument("--use-llm", dest="use_llm", action="store_true", default=USE_LLM,
+                   help="Call LLM for NL summaries (C3/C4 only)")
+    p.add_argument("--fixed-constraints", action="store_true", default=FIXED_CONSTRAINTS,
+                   help="Fix internal nodes per cluster to force constraint structure")
+    p.add_argument("--num-fixed-nodes", type=int, default=NUM_FIXED_NODES,
+                   choices=[0, 1, 2, 3], help="Number of fixed nodes per cluster")
+    p.add_argument("--graph-preset", default="easy",
+                   choices=["easy", "medium", "tight", "hard", "expert",
+                            "dense", "dense_tight", "super"],
+                   help="Graph topology: easy/medium/tight/dense/dense_tight (5 nodes), "
+                        "hard/expert (6 nodes), super (8 nodes); "
+                        "medium/tight/expert/dense/dense_tight/super have pre-designed fixed constraints")
 
     args = p.parse_args()
 
     run_experiment(
-        method=args.method,
+        condition=args.condition,
         use_ui=bool(args.use_ui),
-        manual_mode=bool(args.manual_mode),
-        max_iters=int(args.max_iters),
-        agent_algorithm=str(args.agent_alg),
-        convergence_k=int(args.k),
-        stop_on_soft=bool(args.stop_soft),
-        stop_on_hard=bool(args.stop_hard),
-        counterfactual_utils=bool(args.counterfactual_utils),
+        use_llm=bool(args.use_llm),
         fixed_constraints=bool(args.fixed_constraints),
         num_fixed_nodes=int(args.num_fixed_nodes),
         graph_preset=str(args.graph_preset),

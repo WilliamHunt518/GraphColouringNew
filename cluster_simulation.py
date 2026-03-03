@@ -1377,4 +1377,404 @@ def run_clustered_simulation(
     except Exception:
         pass
 
-    
+
+# =============================================================================
+# Constraint Visualisation Simulation (redesigned study)
+# =============================================================================
+
+def run_constraint_viz_simulation(
+    node_names: List[str],
+    clusters: Dict[str, List[str]],
+    adjacency: Dict[str, List[str]],
+    owners: Dict[str, str],
+    domain: List[Any],
+    condition: str,
+    fixed_constraints: bool = True,
+    num_fixed_nodes: int = 1,
+    use_llm: bool = False,
+    output_dir: str = "./cluster_outputs",
+    ui_title: str = "Constraint Visualisation",
+    preset_fixed_nodes: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> None:
+    """Run the redesigned constraint visualisation study.
+
+    Agents become passive constraint analysers; the human directly manipulates
+    colours; chat panes are replaced with real-time constraint information panels.
+
+    Parameters
+    ----------
+    node_names : list[str]
+        Names of all nodes in the graph.
+    clusters : dict[str, list[str]]
+        Mapping from owner name to list of node names.
+    adjacency : dict[str, list[str]]
+        Adjacency map (node → list of neighbours).
+    owners : dict[str, str]
+        Mapping from node → owner name.
+    domain : list[Any]
+        Colour domain (e.g. ``["red", "green", "blue"]``).
+    condition : str
+        Experimental condition: ``"C1"``, ``"C2"``, ``"C3"``, or ``"C4"``.
+    fixed_constraints : bool
+        Whether to fix some internal nodes per cluster.
+    num_fixed_nodes : int
+        How many internal nodes to fix per cluster.
+    use_llm : bool
+        If True and condition is C3/C4, call the LLM for NL summaries.
+    output_dir : str
+        Directory to write logs.
+    ui_title : str
+        Window title for the UI.
+    preset_fixed_nodes : dict or None
+        Pre-designed fixed constraints ``{owner: {node: colour}}``.
+        When provided, overrides the seed-42 random selection for ALL
+        clusters.  Used by the "medium" and "expert" graph presets.
+    """
+    import json as _json
+    import datetime as _datetime
+    import itertools as _itertools
+
+    os.makedirs(output_dir, exist_ok=True)
+    human_owners = ["Human"]
+
+    # ------------------------------------------------------------------
+    # Build problem (edges)
+    # ------------------------------------------------------------------
+    edges: List[tuple] = []
+    for node, nbrs in adjacency.items():
+        for nbr in nbrs:
+            if (nbr, node) not in edges:
+                edges.append((node, nbr))
+
+    problem = GraphColoring(node_names, edges, domain, conflict_penalty=10.0)
+
+    # ------------------------------------------------------------------
+    # Fixed node constraint setup
+    # ------------------------------------------------------------------
+    import random as _random
+    cluster_fixed_nodes: Dict[str, Dict[str, Any]] = {}
+
+    if preset_fixed_nodes is not None:
+        # Use pre-designed explicit constraints (medium/expert presets).
+        # These override fixed_constraints / num_fixed_nodes settings.
+        for owner, fixed_dict in preset_fixed_nodes.items():
+            cluster_fixed_nodes[owner] = dict(fixed_dict)
+            for fn, col in fixed_dict.items():
+                print(f"[Fixed Constraint] {owner}: node {fn} fixed to {col} (preset)")
+    elif fixed_constraints and num_fixed_nodes > 0 and domain:
+        # Seed-42 random selection (easy/hard presets).
+        _random.seed(42)
+        for owner, local_nodes in clusters.items():
+            internal_nodes = [
+                n for n in local_nodes if problem.is_internal_node(n, local_nodes)
+            ]
+            if internal_nodes:
+                num_to_fix = min(num_fixed_nodes, len(internal_nodes))
+                fixed_nodes_list = _random.sample(internal_nodes, num_to_fix)
+                fixed_dict = {}
+                for i, fn in enumerate(fixed_nodes_list):
+                    color_idx = (i + 1) % len(domain) if len(domain) > 1 else 0
+                    fixed_dict[fn] = domain[color_idx]
+                    print(f"[Fixed Constraint] {owner}: node {fn} fixed to {domain[color_idx]}")
+                cluster_fixed_nodes[owner] = fixed_dict
+            else:
+                if local_nodes:
+                    num_to_fix = min(num_fixed_nodes, len(local_nodes))
+                    fixed_nodes_list = local_nodes[:num_to_fix]
+                    fixed_dict = {}
+                    for i, fn in enumerate(fixed_nodes_list):
+                        color_idx = (i + 1) % len(domain) if len(domain) > 1 else 0
+                        fixed_dict[fn] = domain[color_idx]
+                    cluster_fixed_nodes[owner] = fixed_dict
+                else:
+                    cluster_fixed_nodes[owner] = {}
+
+        # Solvability check
+        all_fixed: Dict[str, Any] = {}
+        for d in cluster_fixed_nodes.values():
+            all_fixed.update(d)
+        free_nodes = [n for n in node_names if n not in all_fixed]
+        print(f"[Validation] Checking {len(domain)**len(free_nodes)} colorings for solvability...")
+        found = False
+        for combo in _itertools.product(domain, repeat=len(free_nodes)):
+            candidate = dict(all_fixed)
+            for n, c in zip(free_nodes, combo):
+                candidate[n] = c
+            if problem.evaluate_assignment(candidate) == 0.0:
+                found = True
+                break
+        if not found:
+            raise ValueError(
+                "Problem is UNSOLVABLE with the given fixed constraints.  "
+                "Check graph topology or reduce num_fixed_nodes."
+            )
+        print("[Validation] Problem is solvable.")
+
+    # ------------------------------------------------------------------
+    # Identify human nodes and build visible subgraph
+    # ------------------------------------------------------------------
+    human_nodes: List[str] = []
+    for owner in human_owners:
+        human_nodes.extend(clusters.get(owner, []))
+
+    # Human's visible graph: own nodes + boundary neighbours from agents
+    neigh_nodes: List[str] = []
+    for hn in human_nodes:
+        for nb in problem.get_neighbors(hn):
+            if nb not in human_nodes and nb not in neigh_nodes:
+                neigh_nodes.append(nb)
+    vis_nodes = sorted(set(human_nodes + neigh_nodes))
+    hset = set(human_nodes)
+    vis_edges: List[tuple] = []
+    for u in vis_nodes:
+        for v in problem.get_neighbors(u):
+            if v in vis_nodes and ((u in hset) or (v in hset)):
+                if (v, u) not in vis_edges:
+                    vis_edges.append((u, v))
+
+    # ------------------------------------------------------------------
+    # Instantiate ConstraintAnalysers (one per agent cluster)
+    # ------------------------------------------------------------------
+    from agents.constraint_analyser import ConstraintAnalyser
+
+    constraint_agents: Dict[str, ConstraintAnalyser] = {}
+    for owner, local_nodes in clusters.items():
+        if owner in human_owners:
+            continue
+        # Boundary nodes: human nodes adjacent to this agent's cluster
+        boundary: List[str] = []
+        for hn in human_nodes:
+            for nbr in problem.get_neighbors(hn):
+                if nbr in local_nodes and hn not in boundary:
+                    boundary.append(hn)
+
+        constraint_agents[owner] = ConstraintAnalyser(
+            name=owner,
+            problem=problem,
+            agent_nodes=list(local_nodes),
+            human_nodes=human_nodes,
+            boundary_nodes=boundary,
+            domain=domain,
+            fixed_agent_nodes=cluster_fixed_nodes.get(owner, {}),
+        )
+        print(f"[ConstraintViz] {owner}: {len(local_nodes)} nodes, {len(boundary)} boundary nodes")
+
+    # ------------------------------------------------------------------
+    # LLM layer (C3/C4 only)
+    # ------------------------------------------------------------------
+    llm_layers: Dict[str, Any] = {}
+    if condition in ("C3", "C4") and use_llm:
+        from comm.constraint_llm_layer import ConstraintLLMLayer
+        for owner in constraint_agents:
+            llm_layers[owner] = ConstraintLLMLayer(
+                model="gpt-4o-mini", condition=condition
+            )
+
+    # ------------------------------------------------------------------
+    # Logging setup
+    # ------------------------------------------------------------------
+    change_log_path = os.path.join(output_dir, "colour_change_log.jsonl")
+    with open(change_log_path, "w", encoding="utf-8") as _f:
+        _f.write("")
+
+    # ------------------------------------------------------------------
+    # Human initial assignments (start with None = unassigned / grey)
+    # ------------------------------------------------------------------
+    human_initial_assignments: Dict[str, Any] = {}
+    for hn in human_nodes:
+        fixed_colour = cluster_fixed_nodes.get("Human", {}).get(hn)
+        human_initial_assignments[hn] = fixed_colour  # None if not fixed
+
+    # Also include agent boundary nodes as None (unknown to human)
+    for nb in neigh_nodes:
+        human_initial_assignments[nb] = None
+
+    # ------------------------------------------------------------------
+    # on_colour_change: called by UI when human clicks a node
+    # ------------------------------------------------------------------
+    def on_colour_change(new_assignments: Dict[str, Any]) -> None:
+        """Log colour changes; called from UI on every node click."""
+        try:
+            # Build a view restricted to human + boundary nodes
+            human_partial = {
+                k: v for k, v in new_assignments.items()
+                if k in human_nodes
+            }
+            # Compute global penalty (only human-owned nodes)
+            pen = problem.evaluate_assignment(
+                {k: v for k, v in human_partial.items() if v is not None}
+            )
+            # Compute feasibility counts per agent
+            feasibility_counts: Dict[str, int] = {}
+            for aname, analyser in constraint_agents.items():
+                fs = analyser.compute_feasibility_set(human_partial)
+                feasibility_counts[aname] = len(fs)
+
+            entry = {
+                "timestamp": _datetime.datetime.now().isoformat(timespec="milliseconds"),
+                "human_partial": human_partial,
+                "feasibility_counts": feasibility_counts,
+                "penalty": pen,
+            }
+            with open(change_log_path, "a", encoding="utf-8") as _f:
+                _f.write(_json.dumps(entry) + "\n")
+        except Exception as _exc:
+            print(f"[ConstraintViz] on_colour_change error: {_exc}")
+
+    # ------------------------------------------------------------------
+    # on_constraint_update: called by UI when human clicks a node
+    # Returns a data dict consumed by update_constraint_display()
+    # ------------------------------------------------------------------
+    def on_constraint_update(agent_name: str, human_partial: Dict[str, Any]) -> Dict[str, Any]:
+        """Compute and return constraint data for one agent panel.
+
+        Called in a background thread per agent after each colour change.
+        """
+        analyser = constraint_agents.get(agent_name)
+        if analyser is None:
+            return {"feasibility_count": 0, "error": f"No analyser for {agent_name}"}
+
+        try:
+            feasibility_set = analyser.compute_feasibility_set(human_partial)
+            feasibility_count = len(feasibility_set)
+
+            # Build agent-internal edge list for mini-subgraph rendering in UI
+            agent_node_set = set(analyser.agent_nodes)
+            agent_edges_local: List[tuple] = []
+            for u in analyser.agent_nodes:
+                for v in adjacency.get(u, []):
+                    if v in agent_node_set and (v, u) not in agent_edges_local:
+                        agent_edges_local.append((u, v))
+
+            data: Dict[str, Any] = {
+                "feasibility_count": feasibility_count,
+                "is_feasible": feasibility_count > 0,
+                "full_domain": list(domain),
+                "feasibility_set": feasibility_set,  # always include full set
+                # Topology info for mini-subgraph rendering
+                "agent_nodes": list(analyser.agent_nodes),
+                "agent_edges": agent_edges_local,
+                "fixed_agent_nodes": dict(analyser.fixed_local_nodes),
+            }
+
+            if feasibility_count == 0:
+                # Compute repair suggestion
+                repair = analyser.find_minimal_repair(human_partial)
+                data["repair_suggestion"] = repair if repair is not None else []
+            else:
+                data["repair_suggestion"] = []
+
+            if condition in ("C1", "C3"):
+                # User-centric: consequence sets (how human choices affect configs)
+                # Now returns {node: {colour: [list_of_configs]}} not just counts
+                consequence_sets = analyser.compute_consequence_sets(human_partial)
+                data["consequence_sets"] = consequence_sets
+
+            if condition in ("C2", "C4"):
+                # Agent-centric: domain projection (what colours agents can use)
+                domain_projection = analyser.compute_domain_projection(feasibility_set)
+                data["domain_projection"] = domain_projection
+                # Also compute conditional domains for unassigned boundary nodes
+                conditional_domains = analyser.compute_conditional_domains(human_partial)
+                data["conditional_domains"] = conditional_domains
+
+            # NL summary for C3/C4
+            if condition in ("C3", "C4"):
+                # Build a counts-only version of consequence_sets for the LLM prompt
+                # (it expects {node: {colour: count}} not {node: {colour: [configs]}})
+                if "consequence_sets" in data:
+                    data["consequence_sets_counts"] = {
+                        node: {col: len(configs) for col, configs in colour_map.items()}
+                        for node, colour_map in data["consequence_sets"].items()
+                    }
+                llm_layer = llm_layers.get(agent_name)
+                if llm_layer is not None:
+                    # Pass counts version to LLM
+                    llm_data = dict(data)
+                    if "consequence_sets_counts" in llm_data:
+                        llm_data["consequence_sets"] = llm_data["consequence_sets_counts"]
+                    data["nl_summary"] = llm_layer.summarise(agent_name, llm_data)
+                else:
+                    # Plain-text fallback without LLM
+                    from comm.constraint_llm_layer import ConstraintLLMLayer
+                    _tmp = ConstraintLLMLayer(condition=condition)
+                    fallback_data = dict(data)
+                    if "consequence_sets_counts" in fallback_data:
+                        fallback_data["consequence_sets"] = fallback_data["consequence_sets_counts"]
+                    data["nl_summary"] = _tmp._plain_text_fallback(agent_name, fallback_data)
+
+            return data
+
+        except Exception as _exc:
+            import traceback
+            traceback.print_exc()
+            return {
+                "feasibility_count": -1,
+                "error": str(_exc),
+                "is_feasible": False,
+                "repair_suggestion": [],
+            }
+
+    # ------------------------------------------------------------------
+    # Debug helpers
+    # ------------------------------------------------------------------
+    def _debug_text() -> str:
+        try:
+            lines = [f"Condition: {condition}", f"Graph: {len(node_names)} nodes"]
+            for aname, analyser in constraint_agents.items():
+                lines.append(f"\n[{aname}]")
+                lines.append(f"  Agent nodes: {sorted(analyser.agent_nodes)}")
+                lines.append(f"  Boundary nodes: {sorted(analyser.boundary_nodes)}")
+                lines.append(f"  Fixed: {dict(sorted(analyser.fixed_local_nodes.items()))}")
+                if hasattr(ui, "_assignments"):
+                    partial = {k: v for k, v in ui._assignments.items()
+                               if k in human_nodes}
+                    fs = analyser.compute_feasibility_set(partial)
+                    lines.append(f"  Current feasibility: {len(fs)} configs")
+            return "\n".join(lines)
+        except Exception as _e:
+            return f"(debug error) {_e}"
+
+    def _debug_visible_graph(owner_name: str):
+        local = {n for n, o in owners.items() if o == owner_name}
+        neigh = set()
+        for u in local:
+            for v in adjacency.get(u, []):
+                if v not in local:
+                    neigh.add(v)
+        vis_n = sorted(local | neigh)
+        vis_e = []
+        for u in vis_n:
+            for v in adjacency.get(u, []):
+                if v in vis_n and (u in local or v in local):
+                    if (v, u) not in vis_e:
+                        vis_e.append((u, v))
+        return vis_n, vis_e
+
+    # ------------------------------------------------------------------
+    # Launch UI
+    # ------------------------------------------------------------------
+    from ui.human_turn_ui import HumanTurnUI
+
+    ui = HumanTurnUI(title=ui_title)
+    ui._constraint_viz_mode = True  # Flag for UI to use new layout
+
+    ui.run_async_chat(
+        nodes=human_nodes,
+        domain=domain,
+        owners=owners,
+        current_assignments=human_initial_assignments,
+        neighbour_owners=list(constraint_agents.keys()),
+        visible_graph=(vis_nodes, vis_edges),
+        on_colour_change=on_colour_change,
+        on_constraint_update=on_constraint_update,
+        condition=condition,
+        fixed_nodes=cluster_fixed_nodes.get("Human", {}),
+        problem=problem,
+        output_dir=output_dir,
+        debug_agents=list(constraint_agents.values()),
+        debug_get_text_fn=_debug_text,
+        debug_get_visible_graph_fn=_debug_visible_graph,
+    )
+
+    print(f"[ConstraintViz] Session ended. Logs in: {output_dir}")
