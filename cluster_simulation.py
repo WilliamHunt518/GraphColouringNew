@@ -1725,7 +1725,11 @@ def run_constraint_viz_simulation(
                             configs = colour_map.get(key, [])
                             node_summaries[bnode] = llm_layer.summarise_node(
                                 bnode,
-                                {"current_colour": cur_col, "configs": configs},
+                                {
+                                    "current_colour": cur_col,
+                                    "configs": configs,
+                                    "all_colour_configs": colour_map,
+                                },
                             )
                     elif condition == "C4" and "domain_projection" in data:
                         full_dom = list(domain)
@@ -1755,7 +1759,11 @@ def run_constraint_viz_simulation(
                             configs = colour_map.get(key, [])
                             node_summaries_fb[bnode] = _tmp._node_plain_text_fallback(
                                 bnode,
-                                {"current_colour": cur_col, "configs": configs},
+                                {
+                                    "current_colour": cur_col,
+                                    "configs": configs,
+                                    "all_colour_configs": colour_map,
+                                },
                             )
                     elif condition == "C4" and "domain_projection" in data:
                         full_dom = list(domain)

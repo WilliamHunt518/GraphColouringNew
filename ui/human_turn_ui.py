@@ -164,6 +164,10 @@ class HumanTurnUI:
         self._status_spinner_state: Dict[str, int] = {}  # {agent_name: spinner_frame}
         self._spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
+        # Transcript loading indicators
+        self._loading_transcripts: Dict[str, bool] = {}  # {neigh: is_loading}
+        self._loading_dots_frame: Dict[str, int] = {}  # {neigh: animation frame}
+
         # canvas
         self._canvas: Optional[tk.Canvas] = None
         self._node_pos: Dict[str, Tuple[int, int]] = {}
@@ -3253,13 +3257,61 @@ class HumanTurnUI:
         if widget is None:
             return
 
+        # Configure loading tag on first use
+        try:
+            widget.tag_configure("loading", foreground="#888888")
+        except Exception:
+            pass
+
         # Standard text transcript (canvas mode removed)
         widget.configure(state="normal")
         widget.delete("1.0", "end")
         for ln in self._transcripts.get(neigh, []):
-            widget.insert("end", ln + "\n")
+            if ln.startswith("__LOADING__"):
+                widget.insert("end", ln[len("__LOADING__"):] + "\n", "loading")
+            else:
+                widget.insert("end", ln + "\n")
         widget.configure(state="disabled")
         widget.see("end")
+
+    def _start_transcript_loading(self, neigh: str) -> None:
+        """Add an animated loading placeholder to the transcript immediately."""
+        self._remove_loading_placeholder(neigh)
+        self._transcripts.setdefault(neigh, []).append(f"__LOADING__[{neigh}] ·")
+        self._loading_transcripts[neigh] = True
+        self._loading_dots_frame[neigh] = 0
+        if self._root is not None:
+            self._root.after(0, lambda n=neigh: self._refresh_transcript(n))
+            self._root.after(400, lambda n=neigh: self._animate_transcript_loading(n))
+
+    def _animate_transcript_loading(self, neigh: str) -> None:
+        """Cycle the loading dots in the transcript placeholder."""
+        if not self._loading_transcripts.get(neigh, False):
+            return
+        transcripts = self._transcripts.get(neigh, [])
+        for i in range(len(transcripts) - 1, -1, -1):
+            if transcripts[i].startswith("__LOADING__"):
+                frame = (self._loading_dots_frame.get(neigh, 0) + 1) % 3
+                self._loading_dots_frame[neigh] = frame
+                dots = "·" * (frame + 1)
+                transcripts[i] = f"__LOADING__[{neigh}] {dots}"
+                if self._root is not None:
+                    self._root.after(0, lambda n=neigh: self._refresh_transcript(n))
+                    self._root.after(400, lambda n=neigh: self._animate_transcript_loading(n))
+                break
+
+    def _stop_transcript_loading(self, neigh: str) -> None:
+        """Remove the loading placeholder; call before showing the real reply."""
+        self._loading_transcripts[neigh] = False
+        self._remove_loading_placeholder(neigh)
+
+    def _remove_loading_placeholder(self, neigh: str) -> None:
+        """Remove any __LOADING__ entry from the transcript list (no redraw)."""
+        transcripts = self._transcripts.get(neigh, [])
+        for i in range(len(transcripts) - 1, -1, -1):
+            if transcripts[i].startswith("__LOADING__"):
+                transcripts.pop(i)
+                break
 
     def _parse_and_store_rb_move(self, neigh: str, line: str) -> None:
         """Parse an RB move from transcript line and store it in the argument structure."""
@@ -3827,6 +3879,8 @@ class HumanTurnUI:
         q = self._incoming_queue.get(neigh, [])
         print(f"[UI] _flush_incoming for {neigh}: {len(q)} messages in queue")
         self._write_ui_debug(f"[UI _flush_incoming] Called for {neigh}: {len(q)} messages")
+        if q:
+            self._stop_transcript_loading(neigh)
         while q:
             msg = q.pop(0)
             print(f"[UI] Processing message: {msg[:200]}")
@@ -3916,6 +3970,7 @@ class HumanTurnUI:
         shown = msg if msg.strip() else "(status update)"
         self._append_to_transcript(neigh, f"[You] {shown}")
         self._set_status(neigh, "waiting for reply…")
+        self._start_transcript_loading(neigh)
 
         def worker():
             reply = None
@@ -3930,6 +3985,10 @@ class HumanTurnUI:
 
             if reply:
                 self.add_incoming(neigh, reply)
+            else:
+                # No reply - remove loading placeholder anyway
+                if self._root is not None:
+                    self._root.after(0, lambda n=neigh: self._stop_transcript_loading(n))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -3960,6 +4019,7 @@ class HumanTurnUI:
 
         self._append_to_transcript(neigh, f"[You] {shown}")
         self._set_status(neigh, "waiting for reply…")
+        self._start_transcript_loading(neigh)
 
         def worker():
             reply = None
@@ -3975,6 +4035,9 @@ class HumanTurnUI:
 
             if reply:
                 self.add_incoming(neigh, reply)
+            else:
+                if self._root is not None:
+                    self._root.after(0, lambda n=neigh: self._stop_transcript_loading(n))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -4019,8 +4082,8 @@ class HumanTurnUI:
             # Don't start agents automatically in modes with announcement phase
             return
 
-        self._append_to_transcript(neigh, "[System] Waiting for agent to start…")
         self._set_status(neigh, "waiting for reply…")
+        self._start_transcript_loading(neigh)
 
         def worker():
             reply = None
@@ -4033,6 +4096,7 @@ class HumanTurnUI:
                 self.add_incoming(neigh, reply)
             else:
                 if self._root is not None:
+                    self._root.after(0, lambda n=neigh: self._stop_transcript_loading(n))
                     self._root.after(0, lambda: self._set_status(neigh, "idle"))
 
         threading.Thread(target=worker, daemon=True).start()
@@ -5913,9 +5977,63 @@ class HumanTurnUI:
         # Store initial human configuration
         self._initial_configs["Human"] = dict(self._assignments)
 
-        # Force UI update to show any pending changes before starting announcement
-        if self._root:
-            self._root.update_idletasks()
+        # Track whether this is the first announcement (before phase changes)
+        _is_first_announce = (self._phase == "configure")
+
+        # Transition to bargain phase and show panels BEFORE starting any LLM threads
+        # so that panels appear immediately (empty with loading indicator) rather than
+        # only becoming visible once the LLM has finished generating.
+        if _is_first_announce:
+            self._phase = "bargain"
+
+            if getattr(self, '_rb_structured_mode', False):
+                if hasattr(self, '_step1_button_container'):
+                    self._step1_button_container.pack_forget()
+                if hasattr(self, '_paned_window'):
+                    paned = self._paned_window
+                    if hasattr(self, '_middle_container'):
+                        paned.add(self._middle_container, width=400, minsize=300)
+                    if hasattr(self, '_conditionals_frame'):
+                        paned.add(self._conditionals_frame, width=400, minsize=250)
+                if hasattr(self, '_configure_container'):
+                    self._configure_container.pack_forget()
+                if hasattr(self, '_neighbor_panes'):
+                    for neigh, pane in self._neighbor_panes.items():
+                        pane.pack(fill="both", expand=False, pady=6)
+
+            elif getattr(self, '_llm_rb_mode', False):
+                if hasattr(self, '_step1_button_container'):
+                    self._step1_button_container.pack_forget()
+                if hasattr(self, '_paned_window') and hasattr(self, '_middle_container'):
+                    paned = self._paned_window
+                    paned.add(self._middle_container, width=400, minsize=300)
+                if hasattr(self, '_configure_container'):
+                    self._configure_container.pack_forget()
+                if hasattr(self, '_neighbor_panes'):
+                    for neigh, pane in self._neighbor_panes.items():
+                        pane.pack(fill="both", expand=False, pady=6)
+
+            else:
+                if hasattr(self, '_step1_button_container'):
+                    self._step1_button_container.pack_forget()
+                if hasattr(self, '_paned_window') and hasattr(self, '_middle_container'):
+                    paned = self._paned_window
+                    paned.add(self._middle_container, width=400, minsize=300)
+                if hasattr(self, '_conditionals_frame'):
+                    paned.add(self._conditionals_frame, width=400, minsize=250)
+                if hasattr(self, '_configure_container'):
+                    self._configure_container.pack_forget()
+                if hasattr(self, '_neighbor_panes'):
+                    for neigh, pane in self._neighbor_panes.items():
+                        pane.pack(fill="both", expand=False, pady=6)
+
+            # Force geometry update so panels are rendered before LLM threads return
+            if self._root:
+                self._root.update_idletasks()
+
+            # Add loading indicators immediately so panels show activity right away
+            for neigh in self._neighs:
+                self._start_transcript_loading(neigh)
 
         # Send special message to trigger agents to announce their configurations
         for neigh in self._neighs:
@@ -5995,81 +6113,9 @@ class HumanTurnUI:
         if self._root:
             self._root.after(1000, _send_human_announcements)
 
-        # Transition to bargain phase (only on first announcement)
-        if self._phase == "configure":
-            self._phase = "bargain"
-
-            # In RB mode, transition from simplified layout to 3-panel layout
-            if getattr(self, '_rb_structured_mode', False):
-                # Hide the Step 1 button container
-                if hasattr(self, '_step1_button_container'):
-                    self._step1_button_container.pack_forget()
-
-                # Add middle and right panels to paned window
-                if hasattr(self, '_paned_window'):
-                    paned = self._paned_window
-
-                    # Add middle panel
-                    if hasattr(self, '_middle_container'):
-                        paned.add(self._middle_container, width=400, minsize=300)
-
-                    # Add conditionals panel
-                    if hasattr(self, '_conditionals_frame'):
-                        paned.add(self._conditionals_frame, width=400, minsize=250)
-
-                # Hide the configure container in middle panel (if it exists)
-                if hasattr(self, '_configure_container'):
-                    self._configure_container.pack_forget()
-
-                # Show neighbor panes
-                if hasattr(self, '_neighbor_panes'):
-                    for neigh, pane in self._neighbor_panes.items():
-                        pane.pack(fill="both", expand=False, pady=6)
-
-            # In LLM_RB mode, add middle panel only (no conditionals panel — LLM mode uses chat)
-            elif getattr(self, '_llm_rb_mode', False):
-                # Hide the Step 1 button container (below graph)
-                if hasattr(self, '_step1_button_container'):
-                    self._step1_button_container.pack_forget()
-
-                # Add middle panel to paned window FIRST
-                if hasattr(self, '_paned_window') and hasattr(self, '_middle_container'):
-                    paned = self._paned_window
-                    paned.add(self._middle_container, width=400, minsize=300)
-
-                # THEN hide the configure container (now that middle panel is visible)
-                if hasattr(self, '_configure_container'):
-                    self._configure_container.pack_forget()
-
-                # Show neighbor panes (chat panels)
-                if hasattr(self, '_neighbor_panes'):
-                    for neigh, pane in self._neighbor_panes.items():
-                        pane.pack(fill="both", expand=False, pady=6)
-
-            # In LLM_API and other modes with announcement phase
-            else:
-                # Hide the Step 1 button container (below graph)
-                if hasattr(self, '_step1_button_container'):
-                    self._step1_button_container.pack_forget()
-
-                # Add middle panel to paned window
-                if hasattr(self, '_paned_window') and hasattr(self, '_middle_container'):
-                    paned = self._paned_window
-                    paned.add(self._middle_container, width=400, minsize=300)
-
-                # Add conditionals panel
-                if hasattr(self, '_conditionals_frame'):
-                    paned.add(self._conditionals_frame, width=400, minsize=250)
-
-                # Hide the configure container (if it exists)
-                if hasattr(self, '_configure_container'):
-                    self._configure_container.pack_forget()
-
-                # Show neighbor panes (chat panels)
-                if hasattr(self, '_neighbor_panes'):
-                    for neigh, pane in self._neighbor_panes.items():
-                        pane.pack(fill="both", expand=False, pady=6)
-
+        # On first announcement: update banner, sash positions, conditional builders.
+        # Panel packing was already done above (before threads started).
+        if _is_first_announce:
             # Update phase banner
             if self._phase_banner_label:
                 self._phase_banner_label.config(
@@ -6078,7 +6124,6 @@ class HumanTurnUI:
                 )
             if hasattr(self, '_impossible_btn'):
                 self._impossible_btn.config(state="normal")
-            # Keep announce button enabled for re-announcements
 
             # Set sash positions to enforce equal panel widths after transition
             if hasattr(self, '_paned_window'):
@@ -6088,55 +6133,41 @@ class HumanTurnUI:
                         paned.update_idletasks()
                         total_width = paned.winfo_width()
                         if total_width > 100 and len(paned.panes()) >= 3:
-                            # Position sashes at 1/3 and 2/3 of total width
                             paned.sash_place(0, int(total_width / 3), 0)
                             paned.sash_place(1, int(2 * total_width / 3), 0)
                             print(f"[UI] Set sash positions: {int(total_width / 3)}, {int(2 * total_width / 3)} (total: {total_width})")
                     except Exception as e:
                         print(f"[UI] Error setting sash positions: {e}")
-                # Schedule after UI updates (longer delay to ensure panels are sized)
                 if self._root:
                     self._root.after(800, _set_sash_positions_after_transition)
 
             # Enable conditional builders and update help text
             for neigh in self._neighs:
-                # Update RB mode help labels
                 if neigh in self._rb_help_labels:
                     self._rb_help_labels[neigh].config(
                         text="BARGAIN PHASE: Build conditional offers: 'If they do X, I'll do Y' (both IF and THEN required)",
                         fg="#555"
                     )
-                # Update LLM_RB mode help labels
-                print(f"[UI] Checking LLM_RB help labels for {neigh}")
-                print(f"[UI]   hasattr _llm_rb_help_labels: {hasattr(self, '_llm_rb_help_labels')}")
-                if hasattr(self, '_llm_rb_help_labels'):
-                    print(f"[UI]   {neigh} in dict: {neigh in self._llm_rb_help_labels}")
-                    print(f"[UI]   dict keys: {list(self._llm_rb_help_labels.keys())}")
                 if hasattr(self, '_llm_rb_help_labels') and neigh in self._llm_rb_help_labels:
-                    print(f"[UI] Updating help label for {neigh}")
                     label = self._llm_rb_help_labels[neigh]
                     label.config(
                         text="BARGAIN PHASE: Type natural language messages (e.g., 'I think h1 should be red')",
                         fg="#555"
                     )
-                    label.update_idletasks()  # Force visual refresh
-                    print(f"[UI] Help label updated for {neigh}")
+                    label.update_idletasks()
                 if neigh in self._conditional_builder_frames:
                     frame = self._conditional_builder_frames[neigh]
-                    # Enable all widgets in the frame
                     def enable_frame(widget):
                         if hasattr(widget, 'config'):
                             try:
                                 widget.config(state="normal")
-                            except:
+                            except Exception:
                                 pass
                         for child in widget.winfo_children():
                             enable_frame(child)
                     enable_frame(frame)
 
-            # DISABLE auto-suggestion for all modes with announcement phase
-            # In announcement-based modes, agents should make one offer and wait for human response
-            # AutoSuggest causes spam by stepping agents every 3 seconds
+            # Disable auto-suggestion in announcement-based modes
             has_announcement = getattr(self, '_has_announcement_phase', False) or getattr(self, '_llm_rb_mode', False)
             if has_announcement:
                 print("[AutoSuggest] Disabled in announcement-based modes - agents wait for human response")

@@ -245,9 +245,11 @@ class ConstraintLLMLayer:
                 {
                     "role": "system",
                     "content": (
-                        "You are a concise constraint assistant.  "
-                        "Respond with 1-2 plain English sentences only.  "
-                        "No bullet points, no headers, no extra formatting."
+                        "You are a concise constraint assistant. "
+                        "Respond with exactly 1 plain English sentence. "
+                        "Always name specific nodes (e.g. 'a7 cannot be red'). "
+                        "Never write generic statements about 'neighbouring nodes in general'. "
+                        "No bullet points, no headers."
                     ),
                 },
                 {"role": "user", "content": prompt},
@@ -307,54 +309,125 @@ class ConstraintLLMLayer:
 
         return f"{agent_name}: {feasibility_count} valid configuration(s)."
 
+    @staticmethod
+    def _derive_node_constraints(
+        node: str,
+        current_colour: str,
+        configs: list,
+    ) -> Dict[str, Any]:
+        """Analyse valid-config list to find which agent nodes are constrained.
+
+        Returns a dict with:
+          - ``adjacent``: agent nodes that cannot take ``current_colour``
+            (inferred adjacency — same-colour rule)
+          - ``forced``: agent nodes that have exactly one valid colour
+          - ``restricted``: agent nodes with fewer than 3 options
+          - ``color_sets``: agent_node -> set of available colours
+        """
+        from collections import defaultdict
+        color_sets: Dict[str, set] = defaultdict(set)
+        for cfg in configs:
+            for anode, acol in cfg.items():
+                color_sets[anode].add(str(acol).lower())
+
+        full_domain = {"red", "green", "blue"}
+        cur = str(current_colour).lower()
+        adjacent = {}   # anode -> available colours (cannot be cur_colour)
+        forced = {}     # anode -> only valid colour
+        restricted = {} # anode -> available colours (< 3 options)
+
+        for anode, available in sorted(color_sets.items()):
+            missing = full_domain - available
+            if cur in missing:
+                adjacent[anode] = sorted(available)
+            if len(available) == 1:
+                forced[anode] = next(iter(available))
+            elif len(available) < 3:
+                restricted[anode] = sorted(available)
+
+        return {
+            "adjacent": adjacent,
+            "forced": forced,
+            "restricted": restricted,
+            "color_sets": {k: sorted(v) for k, v in color_sets.items()},
+        }
+
     def _build_node_prompt(self, node: str, node_data: Dict[str, Any]) -> str:
         """Build a prompt for a single-node overlay summary."""
         if self._condition == "C3":
             current_colour = node_data.get("current_colour")
             configs = node_data.get("configs", [])
+            all_colour_configs = node_data.get("all_colour_configs", {})
+
             if not current_colour:
                 return (
-                    f"In a graph colouring puzzle (red/green/blue), boundary node {node} is not yet assigned. "
-                    f"Write exactly 1 plain English sentence encouraging the user to assign it to see its effect."
+                    f"Boundary node {node} is not yet assigned. "
+                    f"Write exactly 1 sentence telling the user to assign it to see its effect."
                 )
-            n = len(configs)
-            if n == 0:
-                configs_detail = "no valid agent configurations"
-            elif n <= 3:
-                examples = "; ".join(
-                    " and ".join(f"{k}={v}" for k, v in sorted(cfg.items()))
-                    for cfg in configs[:3]
+
+            if not configs:
+                # Infeasible: find which other colours would be valid and sample their configs
+                alternatives = []
+                for col, col_cfgs in sorted(all_colour_configs.items()):
+                    if col != str(current_colour).lower() and col_cfgs:
+                        sample = col_cfgs[0]
+                        sample_str = ", ".join(
+                            f"{k}={v}" for k, v in sorted(sample.items())[:3]
+                        )
+                        alternatives.append(f"{node}={col} (agent e.g. {sample_str})")
+                alt_str = "; or ".join(alternatives[:2]) if alternatives else "no other colour works either"
+                return (
+                    f"{node}={current_colour} leaves the agent cluster with no valid configuration. "
+                    f"Feasible alternative(s): {alt_str}. "
+                    f"Write exactly 1 sentence explaining the conflict and naming a concrete alternative "
+                    f"with specific agent node assignments if available. No jargon."
                 )
-                configs_detail = f"{n} valid agent configuration(s): {examples}"
-            else:
-                sample = "; ".join(
-                    " and ".join(f"{k}={v}" for k, v in sorted(cfg.items()))
-                    for cfg in configs[:2]
-                )
-                configs_detail = f"{n} valid agent configuration(s), e.g. {sample}"
+
+            # Feasible: derive specific per-agent-node constraints
+            constraints = self._derive_node_constraints(node, current_colour, configs)
+            adjacent = constraints["adjacent"]
+            forced = constraints["forced"]
+
+            # Build a human-readable fact list, prioritising adjacency constraints
+            facts = []
+            for anode in sorted(adjacent.keys()):
+                available = adjacent[anode]
+                if anode in forced:
+                    facts.append(f"{anode} must be {forced[anode]}")
+                else:
+                    facts.append(
+                        f"{anode} cannot be {current_colour} (can be {' or '.join(available)})"
+                    )
+            # If no adjacency constraints visible, show forced nodes
+            if not facts:
+                for anode, col in sorted(forced.items()):
+                    facts.append(f"{anode} is forced to {col}")
+
+            facts_str = "; ".join(facts[:3]) if facts else "the agent's options are flexible"
             return (
-                f"In a graph colouring puzzle (red/green/blue), the human chose {node}={current_colour}. "
-                f"This results in {configs_detail} for the neighbouring agent cluster. "
-                f"Write exactly 1 plain English sentence describing what this colour choice means "
-                f"for the agent's options. Be concrete and avoid jargon."
+                f"The human set {node}={current_colour}. "
+                f"Direct constraint on agent nodes: {facts_str}. "
+                f"Write exactly 1 short sentence stating the most important specific impact. "
+                f"Use node names. Example: '{node}=red means a7 cannot also be red.' "
+                f"Do NOT write a generic statement about 'neighbours in general'."
             )
+
         elif self._condition == "C4":
             domain = node_data.get("domain", [])
             full_domain = node_data.get("full_domain", ["red", "green", "blue"])
             if not domain:
                 return (
-                    f"In a graph colouring puzzle, agent node {node} has no valid colour options. "
+                    f"Agent node {node} has no valid colour options. "
                     f"Write exactly 1 plain English sentence saying it is infeasible."
                 )
             if len(domain) == len(full_domain):
                 return (
-                    f"In a graph colouring puzzle, agent node {node} can be any of the colours "
-                    f"({', '.join(sorted(full_domain, key=str))}). "
+                    f"Agent node {node} can be any colour ({', '.join(sorted(full_domain, key=str))}). "
                     f"Write exactly 1 plain English sentence confirming full flexibility."
                 )
             colours_str = " or ".join(sorted(domain, key=str))
             return (
-                f"In a graph colouring puzzle (red/green/blue), agent node {node} can only be: {colours_str}. "
+                f"Agent node {node} can only be: {colours_str}. "
                 f"Write exactly 1 plain English sentence describing this constraint naturally. "
                 f"Do not use the word 'domain' or technical jargon."
             )
@@ -369,12 +442,37 @@ class ConstraintLLMLayer:
         if self._condition == "C3":
             current_colour = node_data.get("current_colour")
             configs = node_data.get("configs", [])
+            all_colour_configs = node_data.get("all_colour_configs", {})
             if not current_colour:
                 return f"Assign {node} to see its effect on agent options."
-            n = len(configs)
-            if n == 0:
+            if not configs:
+                # Find a feasible alternative colour
+                for col, col_cfgs in sorted(all_colour_configs.items()):
+                    if col != str(current_colour).lower() and col_cfgs:
+                        sample = col_cfgs[0]
+                        sample_str = ", ".join(f"{k}={v}" for k, v in sorted(sample.items())[:2])
+                        return (
+                            f"{node}={current_colour} leaves no valid agent configurations; "
+                            f"try {col} instead (e.g. {sample_str})."
+                        )
                 return f"{node}={current_colour} leaves no valid agent configurations."
-            return f"{node}={current_colour} allows {n} valid agent configuration(s)."
+            # Derive specific constraints from valid configs
+            constraints = self._derive_node_constraints(node, current_colour, configs)
+            adjacent = constraints["adjacent"]
+            forced = constraints["forced"]
+            facts = []
+            for anode in sorted(adjacent.keys()):
+                if anode in forced:
+                    facts.append(f"{anode} must be {forced[anode]}")
+                else:
+                    avail = adjacent[anode]
+                    facts.append(f"{anode} cannot be {current_colour} (can be {' or '.join(avail)})")
+            if not facts:
+                for anode, col in sorted(forced.items()):
+                    facts.append(f"{anode} forced to {col}")
+            if facts:
+                return f"{node}={current_colour}: {'; '.join(facts[:2])}."
+            return f"{node}={current_colour} allows {len(configs)} valid agent configuration(s)."
         elif self._condition == "C4":
             domain = node_data.get("domain", [])
             if not domain:

@@ -204,7 +204,7 @@ class LLMCommLayer(BaseCommLayer):
 
         system_message = {
             "role": "system",
-            "content": "You are a helpful assistant for translating a multi-agent coordination problem into concise natural language.",
+            "content": "You are a helpful assistant for translating a multi-agent coordination problem into concise natural language. Always be brief — 1-2 sentences maximum.",
         }
         messages: List[Dict[str, str]] = [system_message]
         if self.use_history and self.conversation:
@@ -295,7 +295,7 @@ class LLMCommLayer(BaseCommLayer):
         """Build the full messages list that would be sent to the OpenAI API."""
         system_message = {
             "role": "system",
-            "content": "You are a helpful assistant for interpreting and rendering messages in a multi-agent coordination problem.",
+            "content": "You are a helpful assistant for interpreting and rendering messages in a multi-agent coordination problem. Always be brief — 1-2 sentences maximum.",
         }
         messages = [system_message]
         if self.use_history and self.conversation:
@@ -617,39 +617,46 @@ class LLMCommLayer(BaseCommLayer):
             # do NOT ...
             try:
                 if recipient.lower() == "human" and self.api_key is not None and self.openai is not None:
-                    style_ex = (
-                        "Example style (do not copy verbatim):\n"
-                        "Human: I currently have h1 and h5 both as green\n"
-                        "Agent: Ok. Given those settings I can make a good colouring with score 12. "
-                        "If you were to change h1 to blue, I could get 14 ...\n"
-                    )
                     prompt = (
-                        "You are an agent collaborating with a human on a graph-colouring coordination task.\n\n"
-                        "CRITICAL RULES:\n"
-                        "1. Be PRECISE and CONCRETE - state exact node names and colors\n"
-                        "2. Use NUMBERS - always include scores for options\n"
-                        "3. Stay ON-TOPIC - talk about ONE thing only (either proposals OR questions, not both)\n"
-                        "4. Be CONCISE - maximum 2-3 sentences\n"
-                        "5. NEVER use vague language like 'all is fine', 'looks good', 'maybe'\n"
-                        "6. NEVER mention internal terms like 'cost list', 'mapping', 'JSON', 'penalty'\n\n"
-                        "GOOD MESSAGE EXAMPLES:\n"
-                        "- 'Here are your best options: 1. h1=red, h4=blue → I score 12. 2. h1=green, h4=red → I score 10.'\n"
-                        "- 'I currently see h2=green, h5=blue. With these settings I can score 14.'\n"
-                        "- 'There's a conflict with your current h1=red. If you change h1 to blue I can resolve it and score 11.'\n\n"
-                        "BAD MESSAGE EXAMPLES (DO NOT USE):\n"
-                        "- 'I think everything looks good' (too vague)\n"
-                        "- 'Maybe you could try some alternatives' (no specifics)\n"
-                        "- 'Let me know what you think about the penalty situation' (mentions internal terms)\n\n"
-                        "TASK: Rewrite the draft message below to be clear, specific, and helpful.\n"
-                        "Focus on actionable information. If showing options, list them clearly with scores.\n\n"
-                        f"Agent: {sender} | Recipient: {recipient}\n"
+                        "You are an agent in a graph-colouring coordination task.\n\n"
+                        "RULES (follow exactly):\n"
+                        "1. ONE sentence only. Never write two sentences.\n"
+                        "2. Mention only BOUNDARY nodes (h-prefixed nodes the human can see). "
+                        "Do NOT describe your own internal node assignments.\n"
+                        "3. Include scores/numbers when relevant.\n"
+                        "4. Do NOT start with phrases like 'Setting X to Y would...', "
+                        "'If you change...', 'Given that...', 'Based on...', 'With your current...'. "
+                        "Start with the key fact directly.\n"
+                        "5. No vague filler: 'all is fine', 'looks good', 'I think', 'maybe'.\n"
+                        "6. No internal terms: 'cost list', 'mapping', 'JSON', 'penalty'.\n\n"
+                        "GOOD (direct, short, boundary-node focused):\n"
+                        "- 'Try h1=red, h4=blue — I score 12.'\n"
+                        "- 'h2=green, h5=blue lets me score 14.'\n"
+                        "- 'h1 conflicts; blue there gives me 11.'\n\n"
+                        "BAD:\n"
+                        "- 'Setting h1 to blue would improve...' (wrong opening)\n"
+                        "- 'My nodes a1=red, a2=green, a3=blue...' (internal nodes)\n"
+                        "- Two or more sentences.\n\n"
+                        f"Agent: {sender}\n"
                         f"Structured content: {content}\n"
-                        f"Draft to improve: {text}\n\n"
-                        "Return ONLY the improved message (no explanation):"
+                        f"Draft: {text}\n\n"
+                        "Rewrite as one sentence. Output ONLY that sentence:"
                     )
-                    rewritten = self._call_openai(prompt, max_tokens=140)
+                    rewritten = self._call_openai(prompt, max_tokens=80)
                     if isinstance(rewritten, str) and rewritten.strip():
-                        text = rewritten.strip()
+                        # Strip common verbose preambles as a fallback post-processing step
+                        import re as _re
+                        raw = rewritten.strip()
+                        preamble_pat = _re.compile(
+                            r'^(?:Setting \w+ to \w+ would|If you (?:change|set)|Given that|Based on|With your current|'
+                            r'By (?:changing|setting))[^,\.]*[,\.]?\s*',
+                            _re.IGNORECASE
+                        )
+                        cleaned = preamble_pat.sub('', raw).strip()
+                        # Capitalise first letter if stripping left a lowercase start
+                        if cleaned:
+                            cleaned = cleaned[0].upper() + cleaned[1:]
+                        text = cleaned if cleaned else raw
             except Exception:
                 pass
 
@@ -704,9 +711,8 @@ class LLMCommLayer(BaseCommLayer):
             # automatic LLM mode: if openai available, produce a summarisation
             prompt = (
                 f"Given this mapping of options to scores or assignments: {content}. "
-                f"Rephrase it as a concise message from {sender} to {recipient}. "
-                "Avoid meta-language (e.g., do not say 'the sender is conveying'). "
-                "Include the key:value pairs explicitly."
+                f"Rephrase as a single short sentence from {sender} to {recipient}. "
+                "Be extremely brief. No meta-language. Include key values explicitly."
             )
             summary = self._call_openai(prompt)
             if summary:
