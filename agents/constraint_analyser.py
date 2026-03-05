@@ -196,6 +196,60 @@ class ConstraintAnalyser:
                 result[v][c] = self.compute_domain_projection(fs)
         return result
 
+    def compute_boundary_joint_feasibility(
+        self,
+        human_partial: Dict[str, Any],
+        max_combos: int = 81,
+    ) -> List[Dict[str, Any]]:
+        """Enumerate all joint colour combinations for boundary nodes.
+
+        For each combination of boundary node colours, computes how many valid
+        agent configurations exist.  This enables the LLM to identify patterns
+        like "h1 and h2 must be different colours" or "h1 must be red or green".
+
+        Parameters
+        ----------
+        human_partial : dict
+            Current human colouring.  All boundary node values are OVERRIDDEN
+            by the enumeration; non-boundary values are kept as context.
+        max_combos : int
+            If ``len(domain) ** len(boundary_nodes) > max_combos``, returns
+            ``[]`` (too expensive to enumerate).
+
+        Returns
+        -------
+        list[dict]
+            Each entry: ``{'boundary_assignment': {node: colour},
+            'feasibility_count': int}``.
+            Sorted by feasibility_count descending (feasible combos first).
+            Returns ``[]`` if too many combinations or no boundary nodes.
+        """
+        boundary = self._boundary_nodes
+        if not boundary:
+            return []
+
+        n_combos = len(self._domain) ** len(boundary)
+        if n_combos > max_combos:
+            return []
+
+        # Keep non-boundary human node values as context; override boundary nodes
+        boundary_set = set(boundary)
+        base_partial = {k: v for k, v in human_partial.items() if k not in boundary_set}
+
+        results: List[Dict[str, Any]] = []
+        for combo in itertools.product(self._domain, repeat=len(boundary)):
+            override = dict(base_partial)
+            for node, colour in zip(boundary, combo):
+                override[node] = colour
+            fs = self.compute_feasibility_set(override)
+            results.append({
+                "boundary_assignment": dict(zip(boundary, combo)),
+                "feasibility_count": len(fs),
+            })
+
+        results.sort(key=lambda x: -x["feasibility_count"])
+        return results
+
     def compute_consequence_sets(
         self, human_partial: Dict[str, Any]
     ) -> Dict[str, Dict[Any, List[Dict[str, Any]]]]:

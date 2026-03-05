@@ -165,11 +165,24 @@ def main() -> None:
     _on_preset_change()
 
     row += 1
-    ttk.Checkbutton(
+    use_llm_check = ttk.Checkbutton(
         frm,
         text="Use LLM for NL summaries (C3/C4 only)",
         variable=use_llm_var,
-    ).grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 10))
+    )
+    use_llm_check.grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 10))
+
+    def _on_condition_change(*_):
+        cond = condition_var.get()
+        if cond in ("C3", "C4"):
+            use_llm_var.set(True)          # Auto-enable LLM for NL conditions
+            use_llm_check.config(state="normal")
+        else:
+            use_llm_var.set(False)         # Not applicable for formulaic conditions
+            use_llm_check.config(state="disabled")
+
+    condition_var.trace_add("write", _on_condition_change)
+    _on_condition_change()  # Apply initial state
 
     sep = ttk.Separator(frm)
     sep.grid(row=row + 1, column=0, columnspan=2, sticky="ew", pady=10)

@@ -1569,6 +1569,9 @@ def run_constraint_viz_simulation(
             llm_layers[owner] = ConstraintLLMLayer(
                 model="gpt-4o-mini", condition=condition
             )
+        print(f"[ConstraintViz] LLM layer enabled (condition={condition}, model=gpt-4o-mini)")
+    elif condition in ("C3", "C4"):
+        print(f"[ConstraintViz] LLM layer DISABLED (use_llm=False) — plain-text fallback will be used")
 
     # ------------------------------------------------------------------
     # Logging setup
@@ -1678,22 +1681,61 @@ def run_constraint_viz_simulation(
                 conditional_domains = analyser.compute_conditional_domains(human_partial)
                 data["conditional_domains"] = conditional_domains
 
+            # Always expose boundary nodes list so the UI can draw overlays for all
+            # of them (not only assigned ones).
+            all_boundary_nodes = list(analyser.boundary_nodes)
+            data["boundary_nodes"] = all_boundary_nodes
+
             # NL summary for C3/C4
             if condition in ("C3", "C4"):
                 # Build a counts-only version of consequence_sets for the LLM prompt
                 # (it expects {node: {colour: count}} not {node: {colour: [configs]}})
-                if "consequence_sets" in data:
+                consequence_sets_data = data.get("consequence_sets", {})
+                if consequence_sets_data:
                     data["consequence_sets_counts"] = {
                         node: {col: len(configs) for col, configs in colour_map.items()}
-                        for node, colour_map in data["consequence_sets"].items()
+                        for node, colour_map in consequence_sets_data.items()
                     }
+                # Compute joint boundary feasibility: which combinations of boundary
+                # node colours allow the agent to succeed.  This is the key data the
+                # LLM needs to say things like "h1 and h2 must be different colours".
+                boundary_joint = analyser.compute_boundary_joint_feasibility(human_partial)
+                boundary_set_local = set(analyser.boundary_nodes)
+
                 llm_layer = llm_layers.get(agent_name)
                 if llm_layer is not None:
-                    # Pass counts version to LLM
                     llm_data = dict(data)
                     if "consequence_sets_counts" in llm_data:
                         llm_data["consequence_sets"] = llm_data["consequence_sets_counts"]
+                    # Add rich context for pattern-based NL generation
+                    llm_data["boundary_joint_feasibility"] = boundary_joint
+                    llm_data["boundary_nodes"] = all_boundary_nodes
+                    llm_data["human_boundary_partial"] = {
+                        k: v for k, v in human_partial.items() if k in boundary_set_local
+                    }
                     data["nl_summary"] = llm_layer.summarise(agent_name, llm_data)
+
+                    # Per-node NL summaries for overlay boxes — ALL boundary/agent nodes
+                    node_summaries: Dict[str, str] = {}
+                    if condition == "C3":
+                        for bnode in all_boundary_nodes:
+                            cur_col = human_partial.get(bnode)
+                            colour_map = consequence_sets_data.get(bnode, {})
+                            key = str(cur_col).lower() if cur_col else ""
+                            configs = colour_map.get(key, [])
+                            node_summaries[bnode] = llm_layer.summarise_node(
+                                bnode,
+                                {"current_colour": cur_col, "configs": configs},
+                            )
+                    elif condition == "C4" and "domain_projection" in data:
+                        full_dom = list(domain)
+                        for anode, adom in data["domain_projection"].items():
+                            node_summaries[anode] = llm_layer.summarise_node(
+                                anode,
+                                {"domain": adom, "full_domain": full_dom},
+                            )
+                    if node_summaries:
+                        data["node_summaries"] = node_summaries
                 else:
                     # Plain-text fallback without LLM
                     from comm.constraint_llm_layer import ConstraintLLMLayer
@@ -1702,6 +1744,28 @@ def run_constraint_viz_simulation(
                     if "consequence_sets_counts" in fallback_data:
                         fallback_data["consequence_sets"] = fallback_data["consequence_sets_counts"]
                     data["nl_summary"] = _tmp._plain_text_fallback(agent_name, fallback_data)
+
+                    # Plain-text per-node fallbacks — ALL boundary/agent nodes
+                    node_summaries_fb: Dict[str, str] = {}
+                    if condition == "C3":
+                        for bnode in all_boundary_nodes:
+                            cur_col = human_partial.get(bnode)
+                            colour_map = consequence_sets_data.get(bnode, {})
+                            key = str(cur_col).lower() if cur_col else ""
+                            configs = colour_map.get(key, [])
+                            node_summaries_fb[bnode] = _tmp._node_plain_text_fallback(
+                                bnode,
+                                {"current_colour": cur_col, "configs": configs},
+                            )
+                    elif condition == "C4" and "domain_projection" in data:
+                        full_dom = list(domain)
+                        for anode, adom in data["domain_projection"].items():
+                            node_summaries_fb[anode] = _tmp._node_plain_text_fallback(
+                                anode,
+                                {"domain": adom, "full_domain": full_dom},
+                            )
+                    if node_summaries_fb:
+                        data["node_summaries"] = node_summaries_fb
 
             return data
 

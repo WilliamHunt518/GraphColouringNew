@@ -5414,6 +5414,23 @@ class HumanTurnUI:
         for w in inner.winfo_children():
             w.destroy()
 
+        # NL summary card (C3/C4 only) — shown at top of the sidebar before mini-graphs
+        nl_summary = data.get("nl_summary")
+        condition = getattr(self, '_condition', 'C1')
+        if condition in ("C3", "C4") and nl_summary:
+            nl_frame = tk.Frame(inner, bg="#eef4ff", relief=tk.GROOVE, bd=1)
+            nl_frame.pack(fill="x", padx=4, pady=(4, 6))
+            tk.Label(
+                nl_frame,
+                text=nl_summary,
+                font=("Arial", 10),
+                bg="#eef4ff",
+                fg="#222",
+                anchor="w",
+                justify="left",
+                wraplength=320,
+            ).pack(fill="x", padx=8, pady=8)
+
         feasibility_set = data.get("feasibility_set", [])
         agent_fixed = data.get("fixed_agent_nodes", {})
         is_feasible = data.get("is_feasible", len(feasibility_set) > 0)
@@ -5581,45 +5598,87 @@ class HumanTurnUI:
         self._overlay_tether_ids = []
 
         condition = getattr(self, '_condition', 'C1')
-        if condition not in ('C1', 'C3'):
-            return  # C2/C4: right panel already shows domain info
 
         scale = self._graph_canvas_scale
         off_x, off_y = self._graph_canvas_offset
-
-        # Collect consequence data: node → colour_map
-        node_info: Dict[str, Dict] = {}
-        for agent_name in self._neighs:
-            data = self._constraint_data.get(agent_name, {})
-            if not data:
-                continue
-            for node, colour_map in data.get('consequence_sets', {}).items():
-                node_info[node] = colour_map
-
-        if not node_info:
-            return
-
         canvas_w = canvas.winfo_width() or 600
 
         # Persistent positions: survive redraws (user drags are remembered)
         if not hasattr(self, '_overlay_positions'):
             self._overlay_positions: Dict[str, Tuple[int, int]] = {}
 
-        for node, colour_map in node_info.items():
+        # Build list of (node, box_factory_fn) to create overlays for
+        overlay_items: list = []  # each entry: (node_key, box_widget)
+
+        if condition == 'C1':
+            # C1: overlays only for assigned boundary nodes (consequence_sets keys)
+            node_info: Dict[str, Dict] = {}
+            for agent_name in self._neighs:
+                data = self._constraint_data.get(agent_name, {})
+                if not data:
+                    continue
+                for node, colour_map in data.get('consequence_sets', {}).items():
+                    node_info[node] = colour_map
+
+            for node, colour_map in node_info.items():
+                if node not in self._node_pos:
+                    continue
+                current_colour = self._assignments.get(node)
+                box = self._make_constraint_overlay_box(node, current_colour, colour_map)
+                overlay_items.append((node, box))
+
+        elif condition == 'C3':
+            # C3: overlays for ALL boundary nodes (even unassigned); NL text in Means
+            seen_nodes: set = set()
+            for agent_name in self._neighs:
+                data = self._constraint_data.get(agent_name, {})
+                if not data:
+                    continue
+                consequence_sets = data.get('consequence_sets', {})
+                node_nl = data.get('node_summaries', {})
+                # boundary_nodes includes ALL boundary nodes (assigned or not)
+                for node in data.get('boundary_nodes', consequence_sets.keys()):
+                    if node in seen_nodes or node not in self._node_pos:
+                        continue
+                    seen_nodes.add(node)
+                    current_colour = self._assignments.get(node)
+                    colour_map = consequence_sets.get(node, {})
+                    nl_text = node_nl.get(node)
+                    box = self._make_constraint_overlay_box(
+                        node, current_colour, colour_map, nl_text=nl_text
+                    )
+                    overlay_items.append((node, box))
+
+        elif condition in ('C2', 'C4'):
+            # Agent node overlays using domain_projection
+            for agent_name in self._neighs:
+                data = self._constraint_data.get(agent_name, {})
+                if not data:
+                    continue
+                domain_proj = data.get('domain_projection', {})
+                full_domain = data.get('full_domain', [])
+                node_nl = data.get('node_summaries', {})
+                for node, dom in domain_proj.items():
+                    if node not in self._node_pos:
+                        continue  # only visible (boundary) agent nodes
+                    nl_text = node_nl.get(node) if condition == 'C4' else None
+                    box = self._make_agent_node_overlay_box(
+                        node, dom, full_domain, nl_text=nl_text
+                    )
+                    overlay_items.append((node, box))
+
+        if not overlay_items:
+            return
+
+        for node, box in overlay_items:
             if node not in self._node_pos:
                 continue
-            current_colour = self._assignments.get(node)
 
             # Screen coordinates of the node centre
             nx, ny = self._node_pos[node]
             tx = int(nx * scale + off_x)
             ty = int(ny * scale + off_y)
-            node_r = int(24 * scale)  # owned-node radius
-
-            # Create the floating info box
-            box = self._make_constraint_overlay_box(
-                node, current_colour, colour_map
-            )
+            node_r = int(24 * scale)
 
             # Use saved position if available, otherwise default (right/left of node)
             if node in self._overlay_positions:
@@ -5672,12 +5731,13 @@ class HumanTurnUI:
         node: str,
         current_colour: Any,
         colour_map: Dict[str, Any],
+        nl_text: Optional[str] = None,
     ) -> tk.Frame:
         """Build the floating constraint info box for one boundary node.
 
         Shows:
           Because: node=Colour
-          Means:   config1 OR config2 … (coloured assignment text)
+          Means:   NL summary (if nl_text provided) OR config1 OR config2 … (enumeration)
         """
         COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
 
@@ -5714,42 +5774,113 @@ class HumanTurnUI:
         tk.Label(inner, text="Means:", font=("Arial", 8, "bold"),
                  bg="white", anchor="w").pack(anchor="w", pady=(4, 0))
 
-        cur_key = str(current_colour).lower() if current_colour else ""
-        configs = colour_map.get(cur_key) or colour_map.get(str(current_colour), [])
-        MAX_SHOW = 8
-        if configs:
-            for i, cfg in enumerate(configs[:MAX_SHOW]):
-                row = tk.Frame(inner, bg="white")
-                row.pack(anchor="w")
-                first = True
-                for n2, c2 in sorted(cfg.items()):
-                    if not first:
-                        tk.Label(row, text=" AND ", font=("Arial", 7),
-                                 bg="white", fg="#555").pack(side="left")
-                    tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
-                             font=("Arial", 7), bg="white",
-                             fg="#333").pack(side="left")
-                    fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
-                    tk.Label(row, text=str(c2),
-                             font=("Arial", 7, "bold"), fg=fg2,
-                             bg="white").pack(side="left")
-                    first = False
-                if i < min(len(configs), MAX_SHOW) - 1:
-                    tk.Label(inner, text=" OR", font=("Arial", 7),
-                             bg="white", fg="#555",
-                             anchor="w").pack(anchor="w")
-            if len(configs) > MAX_SHOW:
-                tk.Label(inner, text=f"  … ({len(configs)} total)",
+        if nl_text:
+            # NL summary mode (C3/C4): show LLM-generated sentence
+            tk.Label(inner, text=nl_text, font=("Arial", 8),
+                     bg="white", fg="#1a1a6e", wraplength=220,
+                     justify="left", anchor="w").pack(anchor="w", pady=(2, 0))
+        else:
+            # Formulaic mode (C1/C2): enumerate valid configs
+            cur_key = str(current_colour).lower() if current_colour else ""
+            configs = colour_map.get(cur_key) or colour_map.get(str(current_colour), [])
+            MAX_SHOW = 8
+            if configs:
+                for i, cfg in enumerate(configs[:MAX_SHOW]):
+                    row = tk.Frame(inner, bg="white")
+                    row.pack(anchor="w")
+                    first = True
+                    for n2, c2 in sorted(cfg.items()):
+                        if not first:
+                            tk.Label(row, text=" AND ", font=("Arial", 7),
+                                     bg="white", fg="#555").pack(side="left")
+                        tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
+                                 font=("Arial", 7), bg="white",
+                                 fg="#333").pack(side="left")
+                        fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
+                        tk.Label(row, text=str(c2),
+                                 font=("Arial", 7, "bold"), fg=fg2,
+                                 bg="white").pack(side="left")
+                        first = False
+                    if i < min(len(configs), MAX_SHOW) - 1:
+                        tk.Label(inner, text=" OR", font=("Arial", 7),
+                                 bg="white", fg="#555",
+                                 anchor="w").pack(anchor="w")
+                if len(configs) > MAX_SHOW:
+                    tk.Label(inner, text=f"  … ({len(configs)} total)",
+                             font=("Arial", 7, "italic"), fg="#777",
+                             bg="white", anchor="w").pack(anchor="w")
+            elif current_colour:
+                tk.Label(inner, text="  No valid configs",
+                         font=("Arial", 8), fg="#cc0000",
+                         bg="white", anchor="w").pack(anchor="w")
+            else:
+                tk.Label(inner, text="  Assign this node to see options",
                          font=("Arial", 7, "italic"), fg="#777",
                          bg="white", anchor="w").pack(anchor="w")
-        elif current_colour:
-            tk.Label(inner, text="  No valid configs",
-                     font=("Arial", 8), fg="#cc0000",
-                     bg="white", anchor="w").pack(anchor="w")
+
+        return outer
+
+    def _make_agent_node_overlay_box(
+        self,
+        node: str,
+        domain: list,
+        full_domain: list,
+        nl_text: Optional[str] = None,
+    ) -> tk.Frame:
+        """Build a floating overlay box for an agent node (C2/C4 conditions).
+
+        Shows the valid colour domain for that agent node.
+        If nl_text is provided (C4), shows LLM summary instead of raw domain.
+        """
+        COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
+        COLOUR_BG = {"red": "#ffe0e0", "green": "#e0ffe0", "blue": "#e0e0ff"}
+        constrained = domain and (len(domain) < len(full_domain))
+
+        outer = tk.Frame(self._canvas, bg="#666688", bd=1, relief=tk.RAISED)
+
+        # Drag handle header
+        header = tk.Label(outer, text=f"⠿ {node}", font=("Arial", 8, "bold"),
+                          bg="#334466", fg="white", padx=6, pady=2,
+                          cursor="fleur", anchor="w")
+        header.pack(fill="x")
+        outer._drag_handle = header
+
+        inner = tk.Frame(outer, bg="white", padx=5, pady=4)
+        inner.pack(fill="both", expand=True)
+
+        tk.Label(inner, text="Agent node:", font=("Arial", 8, "bold"),
+                 bg="white", anchor="w").pack(anchor="w")
+        tk.Label(inner, text=f"  {node}", font=("Arial", 8),
+                 bg="white", fg="#333", anchor="w").pack(anchor="w")
+
+        tk.Label(inner, text="Can be:", font=("Arial", 8, "bold"),
+                 bg="white", anchor="w").pack(anchor="w", pady=(4, 0))
+
+        if nl_text:
+            # NL summary mode (C4)
+            tk.Label(inner, text=nl_text, font=("Arial", 8),
+                     bg="white", fg="#1a1a6e", wraplength=220,
+                     justify="left", anchor="w").pack(anchor="w", pady=(2, 0))
         else:
-            tk.Label(inner, text="  Assign this node to see options",
-                     font=("Arial", 7, "italic"), fg="#777",
-                     bg="white", anchor="w").pack(anchor="w")
+            # Formulaic mode (C2): show coloured swatches
+            if not domain:
+                tk.Label(inner, text="  (no valid colours — infeasible)",
+                         font=("Arial", 7, "italic"), fg="#cc0000",
+                         bg="white", anchor="w").pack(anchor="w")
+            else:
+                swatch_row = tk.Frame(inner, bg="white")
+                swatch_row.pack(anchor="w", pady=2)
+                for colour in sorted(domain, key=str):
+                    fg = COLOUR_FG.get(colour, "#333")
+                    bg = COLOUR_BG.get(colour, "#eeeeee")
+                    tk.Label(swatch_row, text=f" {colour} ",
+                             font=("Arial", 7, "bold"), fg=fg, bg=bg,
+                             relief=tk.GROOVE, bd=1,
+                             padx=2, pady=1).pack(side="left", padx=2)
+                if constrained:
+                    tk.Label(inner, text="(constrained)",
+                             font=("Arial", 7, "italic"), fg="#886600",
+                             bg="white", anchor="w").pack(anchor="w")
 
         return outer
 
