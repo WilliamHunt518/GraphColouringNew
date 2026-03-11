@@ -4,11 +4,13 @@ Run from the repository root with:
 
     python run_experiment.py --condition C1 --use-ui
 
-Four conditions:
+Six conditions:
     C1  : User-Centric Formulaic — logical consequence expressions
     C2  : Agent-Centric Formulaic — feasible colour domain sets
-    C3  : User-Centric Natural Language (LLM-summarised)
-    C4  : Agent-Centric Natural Language (LLM-summarised)
+    C3  : Human Domain Formulaic — valid colours for human's own nodes
+    C4  : User-Centric Natural Language (LLM-summarised)
+    C5  : Agent-Centric Natural Language (LLM-summarised)
+    C6  : Human Domain Natural Language (LLM-summarised)
 
 The human directly manipulates node colours by clicking; agents are passive
 constraint analysers.  Chat panes are replaced with real-time constraint panels.
@@ -24,9 +26,9 @@ from pathlib import Path
 # CONFIGURE HERE
 # -----------------
 
-CONDITION = "C1"   # one of: "C1", "C2", "C3", "C4"
+CONDITION = "C1"   # one of: "C1", "C2", "C3", "C4", "C5", "C6"
 USE_UI = True
-USE_LLM = False    # True => call LLM for NL summaries in C3/C4
+USE_LLM = False    # True => call LLM for NL summaries in C4/C5/C6
 FIXED_CONSTRAINTS = True
 NUM_FIXED_NODES = 1
 
@@ -414,8 +416,6 @@ def run_experiment(
     print(f"[run_experiment] Condition: {condition}")
     print(f"[run_experiment] Writing results to: {results_dir}")
 
-    from cluster_simulation import run_constraint_viz_simulation
-
     node_names, clusters, adjacency, owners, explicit_fixed = _build_topology(
         graph_preset, num_fixed_nodes=num_fixed_nodes if fixed_constraints else 0
     )
@@ -426,20 +426,39 @@ def run_experiment(
     # Presets with pre-designed fixed nodes (medium/expert) override seed-42 selection.
     preset_fixed_nodes = explicit_fixed  # None for easy/hard
 
-    run_constraint_viz_simulation(
-        node_names=node_names,
-        clusters=clusters,
-        adjacency=adjacency,
-        owners=owners,
-        domain=domain,
-        condition=condition,
-        fixed_constraints=fixed_constraints,
-        num_fixed_nodes=num_fixed_nodes,
-        use_llm=use_llm,
-        output_dir=str(results_dir),
-        ui_title=f"Constraint Visualisation — {condition} ({graph_preset.capitalize()})",
-        preset_fixed_nodes=preset_fixed_nodes,
-    )
+    if use_ui:
+        from cluster_simulation import run_constraint_viz_simulation
+        run_constraint_viz_simulation(
+            node_names=node_names,
+            clusters=clusters,
+            adjacency=adjacency,
+            owners=owners,
+            domain=domain,
+            condition=condition,
+            fixed_constraints=fixed_constraints,
+            num_fixed_nodes=num_fixed_nodes,
+            use_llm=use_llm,
+            output_dir=str(results_dir),
+            ui_title=f"Constraint Visualisation — {condition} ({graph_preset.capitalize()})",
+            preset_fixed_nodes=preset_fixed_nodes,
+        )
+    else:
+        from cluster_simulation import run_headless_constraint_viz
+        colour_steps = [{}]  # default: one step with nothing assigned
+        run_headless_constraint_viz(
+            node_names=node_names,
+            clusters=clusters,
+            adjacency=adjacency,
+            owners=owners,
+            domain=domain,
+            condition=condition,
+            colour_steps=colour_steps,
+            use_llm=use_llm,
+            preset_fixed_nodes=preset_fixed_nodes,
+            graph_preset=graph_preset,
+            fixed_constraints=fixed_constraints,
+            num_fixed_nodes=num_fixed_nodes,
+        )
 
     print(f"[run_experiment] Finished. Check outputs in: {results_dir}")
 
@@ -448,14 +467,14 @@ def main() -> None:
     import argparse
 
     p = argparse.ArgumentParser(description="Run the constraint visualisation study.")
-    p.add_argument("--condition", default=CONDITION, choices=["C1", "C2", "C3", "C4"])
+    p.add_argument("--condition", default=CONDITION, choices=["C1", "C2", "C3", "C4", "C5", "C6"])
     ui = p.add_mutually_exclusive_group()
     ui.add_argument("--use-ui", dest="use_ui", action="store_true")
     ui.add_argument("--no-ui", dest="use_ui", action="store_false")
     p.set_defaults(use_ui=USE_UI)
 
     p.add_argument("--use-llm", dest="use_llm", action="store_true", default=USE_LLM,
-                   help="Call LLM for NL summaries (C3/C4 only)")
+                   help="Call LLM for NL summaries (C4/C5/C6 only)")
     p.add_argument("--fixed-constraints", action="store_true", default=FIXED_CONSTRAINTS,
                    help="Fix internal nodes per cluster to force constraint structure")
     p.add_argument("--num-fixed-nodes", type=int, default=NUM_FIXED_NODES,

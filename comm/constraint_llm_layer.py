@@ -53,14 +53,15 @@ class ConstraintLLMLayer:
     model : str
         OpenAI model name to use for summarisation.
     condition : str
-        Experimental condition (``"C3"`` = user-centric NL,
-        ``"C4"`` = agent-centric NL).  Determines the prompt template.
+        Experimental condition (``"C4"`` = user-centric NL,
+        ``"C5"`` = agent-centric NL, ``"C6"`` = human-domain NL).
+        Determines the prompt template.
     """
 
     def __init__(
         self,
         model: str = "gpt-4o-mini",
-        condition: str = "C3",
+        condition: str = "C4",
     ) -> None:
         self._model = model
         self._condition = condition
@@ -131,73 +132,34 @@ class ConstraintLLMLayer:
 
         joint_table = self._format_joint_table(boundary_joint)
 
-        if self._condition == "C4":
-            # Agent-centric: explain the agent's node options and what pattern enables them
-            domains = structured_data.get("domain_projection", {})
-
-            if not is_feasible:
-                agent_options = "No valid colour options — agent is currently infeasible."
-            else:
-                opt_parts = []
-                for node, colours in sorted(domains.items()):
-                    if not colours:
-                        opt_parts.append(f"{node}: no options (infeasible)")
-                    elif len(colours) == 1:
-                        opt_parts.append(f"{node}: MUST be {colours[0]}")
-                    elif len(colours) < len(full_domain):
-                        opt_parts.append(f"{node}: can be {' or '.join(sorted(colours, key=str))}")
-                    else:
-                        opt_parts.append(f"{node}: any colour")
-                agent_options = "; ".join(opt_parts) if opt_parts else "(no data)"
-
+        if self._condition == "C5":
+            # Agent-centric: explain what boundary node pattern lets the agent succeed
             prompt_lines = [
-                f"You are helping a human player understand the colour options for agent cluster '{agent_name}'.",
+                f"You are helping a human player understand what colour choices to make",
+                f"so that agent cluster '{agent_name}' can solve its graph colouring puzzle.",
                 f"The puzzle: no two adjacent nodes may share the same colour (red, green, blue).",
                 f"",
                 f"Human's current boundary choices: {current_state}",
                 f"Agent feasibility: {feasibility_count} valid configuration(s).",
-                f"",
-                f"AGENT NODE OPTIONS (given the human's current choices):",
-                f"  {agent_options}",
             ]
             if joint_table:
                 nodes_str = ", ".join(sorted(boundary_nodes))
                 prompt_lines += [
                     f"",
-                    f"WHICH HUMAN BOUNDARY COMBINATIONS ALLOW THE AGENT TO SUCCEED ({nodes_str}):",
+                    f"WHICH OF YOUR BOUNDARY COMBINATIONS ALLOW THE AGENT TO SUCCEED ({nodes_str}):",
                     joint_table,
                 ]
             prompt_lines += [
                 f"",
-                f"Write 1-2 plain English sentences identifying the KEY PATTERN or constraint.",
-                f"Focus on what's most constrained, or what the human needs to maintain.",
-                f"Do NOT mention raw numbers. Be natural and specific.",
-                f"Good examples:",
-                f'  "With your choices, I\'m forced to use green for a2 — everything else is flexible."',
-                f'  "I can solve my cluster as long as h1 and h2 aren\'t both the same colour."',
-                f'  "Blue is blocked for h1 no matter what — please pick red or green."',
+                f"Identify the SINGLE MOST IMPORTANT RULE from the table above.",
+                f"Express it as a simple rule (e.g. 'Keep h1 and h2 different colours').",
+                f"If all combos work, say so briefly. If one colour blocks everything, name it.",
+                f"1 sentence. No agent node names. No raw numbers. Natural phrasing.",
             ]
             return "\n".join(prompt_lines)
 
-        elif self._condition == "C3":
+        elif self._condition == "C4":
             # User-centric: explain what pattern the human needs to follow
-            consequence_counts = structured_data.get(
-                "consequence_sets_counts",
-                structured_data.get("consequence_sets", {}),
-            )
-
-            if consequence_counts:
-                cons_lines = []
-                for node, counts in sorted(consequence_counts.items()):
-                    if isinstance(next(iter(counts.values()), 0), int):
-                        colour_strs = [f"{c}->{n}" for c, n in sorted(counts.items(), key=str)]
-                    else:
-                        colour_strs = [f"{c}->{len(v)}" for c, v in sorted(counts.items(), key=str)]
-                    cons_lines.append(f"  {node}: " + ", ".join(colour_strs))
-                consequence_text = "\n".join(cons_lines)
-            else:
-                consequence_text = "  (no boundary nodes assigned yet)"
-
             prompt_lines = [
                 f"You are helping a human player understand what colour choices to make",
                 f"so that agent '{agent_name}' can solve its graph colouring puzzle.",
@@ -215,17 +177,10 @@ class ConstraintLLMLayer:
                 ]
             prompt_lines += [
                 f"",
-                f"HOW EACH BOUNDARY NODE CHOICE INDIVIDUALLY AFFECTS THE AGENT",
-                f"(node: colour->num_valid_agent_configs if you chose that colour):",
-                consequence_text,
-                f"",
-                f"Write 1-2 plain English sentences identifying the KEY PATTERN the human should follow.",
-                f"Focus on rules like 'must differ', 'must be X', 'avoid Y', or praise if currently fine.",
-                f"Do NOT mention raw numbers. Be natural and specific.",
-                f"Good examples:",
-                f'  "h1 and h2 just need to be different colours — any combination works as long as they\'re not the same."',
-                f'  "You need h1 to be red or green; blue doesn\'t work here regardless of other choices."',
-                f'  "Your current choices are perfect — the agent has plenty of options!"',
+                f"Identify the SINGLE MOST IMPORTANT RULE from the table above.",
+                f"Express it as a simple rule (e.g. 'Keep h1 and h2 different colours').",
+                f"If all combos work, say so briefly. If one colour blocks everything, name it.",
+                f"1 sentence. No agent node names. No raw numbers. Natural phrasing.",
             ]
             return "\n".join(prompt_lines)
 
@@ -245,11 +200,14 @@ class ConstraintLLMLayer:
                 {
                     "role": "system",
                     "content": (
-                        "You are a concise constraint assistant. "
-                        "Respond with exactly 1 plain English sentence. "
-                        "Always name specific nodes (e.g. 'a7 cannot be red'). "
-                        "Never write generic statements about 'neighbouring nodes in general'. "
-                        "No bullet points, no headers."
+                        "You are a concise constraint assistant helping a human player. "
+                        "For node overlay messages: respond with exactly 2 short lines "
+                        "separated by a newline character. "
+                        "Line 1: ≤6 words verdict on the current colour. "
+                        "Line 2: ≤10 words about alternatives or constraints. "
+                        "For panel summaries: respond with exactly 1 plain English sentence. "
+                        "NEVER mention agent-internal nodes (e.g. a1, a2, b1, b2). "
+                        "No bullet points, no headers, no labels like 'Line 1:'."
                     ),
                 },
                 {"role": "user", "content": prompt},
@@ -262,52 +220,10 @@ class ConstraintLLMLayer:
     def _plain_text_fallback(
         self, agent_name: str, structured_data: Dict[str, Any]
     ) -> str:
-        """Generate a plain-text summary without any API call."""
-        feasibility_count = structured_data.get("feasibility_count", 0)
-        is_feasible = feasibility_count > 0
-
-        if not is_feasible:
-            repair = structured_data.get("repair_suggestion", [])
-            if repair:
-                repair_str = ", ".join(repair)
-                return (
-                    f"No valid configuration exists for {agent_name}. "
-                    f"Try changing: {repair_str}."
-                )
-            return f"No valid configuration exists for {agent_name} with the current colours."
-
-        if self._condition == "C4":
-            domains = structured_data.get("domain_projection", {})
-            constrained = [
-                f"{n}: {{{', '.join(sorted(cs, key=str))}}}"
-                for n, cs in sorted(domains.items())
-                if len(cs) < len(structured_data.get("full_domain", ["red","green","blue"]))
-            ]
-            if constrained:
-                return (
-                    f"{agent_name} has {feasibility_count} valid configuration(s).  "
-                    f"Most constrained: {'; '.join(constrained[:3])}."
-                )
-            return f"{agent_name} has {feasibility_count} valid configuration(s)."
-
-        elif self._condition == "C3":
-            consequence_sets = structured_data.get("consequence_sets", {})
-            if consequence_sets:
-                # Find the most constraining human node
-                min_count_node = min(
-                    consequence_sets.items(),
-                    key=lambda kv: min(kv[1].values()) if kv[1] else 999,
-                )
-                node, counts = min_count_node
-                min_count = min(counts.values())
-                return (
-                    f"{agent_name} has {feasibility_count} valid configuration(s).  "
-                    f"Node {node}'s colour is most constraining "
-                    f"(as few as {min_count} valid configs for some choices)."
-                )
-            return f"{agent_name} has {feasibility_count} valid configuration(s)."
-
-        return f"{agent_name}: {feasibility_count} valid configuration(s)."
+        raise NotImplementedError(
+            "Plain-text fallbacks are prohibited by the LLM-Only Policy. "
+            "If the API fails, the run should crash. Use --use-llm for C3/C4."
+        )
 
     @staticmethod
     def _derive_node_constraints(
@@ -352,85 +268,221 @@ class ConstraintLLMLayer:
             "color_sets": {k: sorted(v) for k, v in color_sets.items()},
         }
 
+    @staticmethod
+    def _format_consequence_table(all_consequence_counts: dict) -> str:
+        """Format per-node consequence counts as a compact table."""
+        if not all_consequence_counts:
+            return ""
+        lines = []
+        for n, counts in sorted(all_consequence_counts.items()):
+            parts = [f"{col}={cnt}" for col, cnt in sorted(counts.items())]
+            lines.append(f"  {n}: {', '.join(parts)}")
+        return "\n".join(lines)
+
+    @staticmethod
+    def _format_configs_summary(configs: list, max_show: int = 6) -> str:
+        """Summarise a list of agent configs compactly."""
+        if not configs:
+            return "(none)"
+        lines = []
+        for cfg in configs[:max_show]:
+            parts = [f"{n}={c}" for n, c in sorted(cfg.items())]
+            lines.append("{" + ", ".join(parts) + "}")
+        if len(configs) > max_show:
+            lines.append(f"... ({len(configs)} total)")
+        return "\n".join(f"  {l}" for l in lines)
+
     def _build_node_prompt(self, node: str, node_data: Dict[str, Any]) -> str:
         """Build a prompt for a single-node overlay summary."""
-        if self._condition == "C3":
+        if self._condition == "C4":
             current_colour = node_data.get("current_colour")
             configs = node_data.get("configs", [])
             all_colour_configs = node_data.get("all_colour_configs", {})
+            boundary_nodes = node_data.get("boundary_nodes", [])
+            all_boundary_assignments = node_data.get("all_boundary_assignments", {})
+            all_consequence_counts = node_data.get("all_consequence_counts", {})
+
+            # Build current state of ALL boundary nodes (needed for both branches)
+            state_parts = []
+            for n in sorted(boundary_nodes):
+                col = all_boundary_assignments.get(n)
+                state_parts.append(f"{n}={'?' if col is None else col}")
+            current_state_str = ", ".join(state_parts) if state_parts else "(nothing assigned)"
 
             if not current_colour:
+                joint_data = node_data.get("boundary_joint_feasibility", [])
+                joint_hint = self._format_joint_table(joint_data) if joint_data else ""
+                boundary_nodes_str = ", ".join(sorted(boundary_nodes))
+                all_counts_table = self._format_consequence_table(all_consequence_counts)
                 return (
-                    f"Boundary node {node} is not yet assigned. "
-                    f"Write exactly 1 sentence telling the user to assign it to see its effect."
+                    f"Node {node} is not yet assigned.\n"
+                    f"Boundary nodes: {boundary_nodes_str}\n"
+                    f"Current state: {current_state_str}\n"
+                    + (f"\nJoint feasibility:\n{joint_hint}\n" if joint_hint else "")
+                    + (f"\nConsequence counts:\n{all_counts_table}\n" if all_counts_table else "")
+                    + f"\nWrite exactly 2 lines:\n"
+                    f"Line 1: 'Not yet set.'\n"
+                    f"Line 2 (~8 words): based on the data above, give the most "
+                    f"useful hint about what colour to pick or avoid for {node}. "
+                    f"Name the specific colour(s) to avoid if any. "
+                    f"No agent names. No raw numbers."
                 )
 
-            if not configs:
-                # Infeasible: find which other colours would be valid and sample their configs
-                alternatives = []
-                for col, col_cfgs in sorted(all_colour_configs.items()):
-                    if col != str(current_colour).lower() and col_cfgs:
-                        sample = col_cfgs[0]
-                        sample_str = ", ".join(
-                            f"{k}={v}" for k, v in sorted(sample.items())[:3]
-                        )
-                        alternatives.append(f"{node}={col} (agent e.g. {sample_str})")
-                alt_str = "; or ".join(alternatives[:2]) if alternatives else "no other colour works either"
-                return (
-                    f"{node}={current_colour} leaves the agent cluster with no valid configuration. "
-                    f"Feasible alternative(s): {alt_str}. "
-                    f"Write exactly 1 sentence explaining the conflict and naming a concrete alternative "
-                    f"with specific agent node assignments if available. No jargon."
+            colour_counts = {col: len(cfgs) for col, cfgs in all_colour_configs.items()}
+
+            # Format the joint table
+            joint_data = node_data.get("boundary_joint_feasibility", [])
+            joint_table = self._format_joint_table(joint_data) if joint_data else ""
+
+            # Format consequence counts for ALL boundary nodes
+            consequence_table = self._format_consequence_table(all_consequence_counts)
+
+            # Summarise the actual feasible configs under current colour
+            configs_summary = self._format_configs_summary(configs)
+
+            # What colours are completely blocked (count=0) vs all fine
+            blocked = sorted(col for col, cnt in colour_counts.items() if cnt == 0)
+            ok_colours = sorted(col for col, cnt in colour_counts.items() if cnt > 0)
+
+            prompt_lines = [
+                f"You are helping a human understand their graph colouring choices.",
+                f"The human controls boundary nodes: {', '.join(sorted(boundary_nodes))}.",
+                f"The agent needs to colour its own nodes with no two adjacent nodes the same colour.",
+                f"",
+                f"CURRENT STATE OF ALL BOUNDARY NODES: {current_state_str}",
+                f"",
+            ]
+
+            if joint_table:
+                prompt_lines += [
+                    f"JOINT BOUNDARY FEASIBILITY (all combos of boundary nodes -> agent configs available):",
+                    joint_table,
+                    f"",
+                ]
+
+            if consequence_table:
+                prompt_lines += [
+                    f"CONSEQUENCE COUNTS (for each boundary node, how many agent configs each colour allows):",
+                    consequence_table,
+                    f"",
+                ]
+
+            prompt_lines += [
+                f"FOCUS NODE: {node} = {current_colour}",
+                f"Agent configs that work with {node}={current_colour}:",
+                configs_summary,
+                f"",
+            ]
+
+            if blocked:
+                blocked_str = " and ".join(blocked)
+                prompt_lines.append(
+                    f"NOTE: {blocked_str} {'is' if len(blocked)==1 else 'are'} "
+                    f"completely blocked for {node} (0 valid agent configs)."
                 )
+                prompt_lines.append("")
 
-            # Feasible: derive specific per-agent-node constraints
-            constraints = self._derive_node_constraints(node, current_colour, configs)
-            adjacent = constraints["adjacent"]
-            forced = constraints["forced"]
+            prompt_lines += [
+                f"Write exactly 2 short lines separated by a newline.",
+                f"Line 1 (~5 words): Is {node}={current_colour} a safe/limited/bad choice? Be specific - e.g. 'Red works fine here' or 'Blue blocks the agent'.",
+                f"Line 2 (~8-10 words): Give the ONE most useful rule about {node}.",
+                f"  - Look at the joint table: does {node}'s colour interact with another boundary node?",
+                f"  - Look at the configs: does the agent have plenty of room, or is it squeezed?",
+                f"  - If the agent can handle any colour you pick, say so clearly.",
+                f"  - If there's a specific colour to avoid (e.g. blocked=0), name it directly.",
+                f"  - If two boundary nodes together cause a problem, reference that pattern.",
+                f"BANNED PHRASES: 'also works', 'offers flexibility', 'provides flexibility', 'more flexibility', 'fewer options'.",
+                f"No agent-internal node names. No raw numbers. Natural conversational phrasing.",
+            ]
 
-            # Build a human-readable fact list, prioritising adjacency constraints
-            facts = []
-            for anode in sorted(adjacent.keys()):
-                available = adjacent[anode]
-                if anode in forced:
-                    facts.append(f"{anode} must be {forced[anode]}")
-                else:
-                    facts.append(
-                        f"{anode} cannot be {current_colour} (can be {' or '.join(available)})"
-                    )
-            # If no adjacency constraints visible, show forced nodes
-            if not facts:
-                for anode, col in sorted(forced.items()):
-                    facts.append(f"{anode} is forced to {col}")
+            return "\n".join(prompt_lines)
 
-            facts_str = "; ".join(facts[:3]) if facts else "the agent's options are flexible"
-            return (
-                f"The human set {node}={current_colour}. "
-                f"Direct constraint on agent nodes: {facts_str}. "
-                f"Write exactly 1 short sentence stating the most important specific impact. "
-                f"Use node names. Example: '{node}=red means a7 cannot also be red.' "
-                f"Do NOT write a generic statement about 'neighbours in general'."
-            )
-
-        elif self._condition == "C4":
+        elif self._condition == "C5":
+            # C5 node overlays are on boundary AGENT nodes visible to the human.
+            # Describe what colours that agent node can take given the human's current state.
             domain = node_data.get("domain", [])
             full_domain = node_data.get("full_domain", ["red", "green", "blue"])
             if not domain:
                 return (
-                    f"Agent node {node} has no valid colour options. "
-                    f"Write exactly 1 plain English sentence saying it is infeasible."
+                    f"Agent position {node} is stuck — no colour is currently possible. "
+                    f"Write exactly 1 plain English sentence saying this position is blocked and "
+                    f"the human's nearby choices are causing the conflict. "
+                    f"Do NOT say which specific human node to change."
                 )
             if len(domain) == len(full_domain):
                 return (
-                    f"Agent node {node} can be any colour ({', '.join(sorted(full_domain, key=str))}). "
-                    f"Write exactly 1 plain English sentence confirming full flexibility."
+                    f"Agent position {node} can freely use any colour: {', '.join(sorted(domain, key=str))}. "
+                    f"Write exactly 1 plain English sentence saying this position is unconstrained "
+                    f"by the human's current choices."
                 )
             colours_str = " or ".join(sorted(domain, key=str))
             return (
-                f"Agent node {node} can only be: {colours_str}. "
-                f"Write exactly 1 plain English sentence describing this constraint naturally. "
-                f"Do not use the word 'domain' or technical jargon."
+                f"Agent position {node} is limited to: {colours_str} given the human's current choices. "
+                f"Write exactly 1 plain English sentence describing what this agent position can be coloured. "
+                f"Frame it as what the agent CAN do, not what the human should do. No technical jargon."
             )
+        elif self._condition == "C6":
+            # C6: human-node domain overlay — what can the human still pick here?
+            valid_colours = node_data.get("valid_colours", [])
+            blocked_agents = node_data.get("blocked_agents", {})  # {colour: [agent_names]}
+            current_colour = node_data.get("current_colour")
+            all_assignments = node_data.get("all_assignments", {})
+            all_human_nodes = node_data.get("all_human_nodes", [])
+            full_domain = node_data.get("full_domain", ["red", "green", "blue"])
+
+            # Build current state description
+            state_parts = [
+                f"{n}={'?' if all_assignments.get(n) is None else all_assignments[n]}"
+                for n in sorted(all_human_nodes)
+            ]
+            current_state = ", ".join(state_parts) if state_parts else "(nothing assigned)"
+
+            # Summarise blocked colours with reasons (agent constraints only)
+            blocked_lines = []
+            for col in sorted(blocked_agents.keys()):
+                agents_str = " and ".join(blocked_agents[col])
+                blocked_lines.append(f"  {col}: would leave {agents_str} with no valid solution")
+            blocked_block = "\n".join(blocked_lines) if blocked_lines else "  (none)"
+
+            valid_str = ", ".join(sorted(valid_colours)) if valid_colours else "(none)"
+
+            all_blocked = not valid_colours
+            all_free = (len(valid_colours) == len(full_domain))
+
+            lines = [
+                f"The human is playing a graph colouring puzzle.",
+                f"They control their own cluster of nodes: {', '.join(sorted(all_human_nodes))}.",
+                f"",
+                f"Current state of all human nodes: {current_state}",
+                f"",
+                f"FOCUS NODE: {node}" + (f" (currently {current_colour})" if current_colour else " (unassigned)"),
+                f"Valid colours for {node}: {valid_str}",
+                f"Blocked colours for {node}:",
+                blocked_block,
+                f"",
+                f"Write exactly 2 short lines separated by a newline.",
+            ]
+            if all_blocked:
+                lines += [
+                    f"Line 1 (~5 words): say {node} is completely stuck.",
+                    f"Line 2 (~8 words): explain what needs to change to unblock it.",
+                ]
+            elif all_free:
+                lines += [
+                    f"Line 1 (~5 words): say {node} is completely free.",
+                    f"Line 2 (~8 words): confirm any colour works, or give the most useful tip.",
+                ]
+            else:
+                lines += [
+                    f"Line 1 (~5 words): say which colour(s) are safe for {node}.",
+                    f"Line 2 (~8 words): explain WHY the blocked colour(s) don't work — say 'would break the agent layout' (no agent names).",
+                ]
+            lines += [
+                f"BANNED PHRASES: 'also works', 'flexibility', 'options'.",
+                f"No agent-internal node names. Natural conversational phrasing.",
+            ]
+            return "\n".join(lines)
+
         else:
             return (
                 f"Describe the constraint for node {node} in one sentence. "
@@ -438,47 +490,10 @@ class ConstraintLLMLayer:
             )
 
     def _node_plain_text_fallback(self, node: str, node_data: Dict[str, Any]) -> str:
-        """Plain-text fallback for a single-node summary."""
-        if self._condition == "C3":
-            current_colour = node_data.get("current_colour")
-            configs = node_data.get("configs", [])
-            all_colour_configs = node_data.get("all_colour_configs", {})
-            if not current_colour:
-                return f"Assign {node} to see its effect on agent options."
-            if not configs:
-                # Find a feasible alternative colour
-                for col, col_cfgs in sorted(all_colour_configs.items()):
-                    if col != str(current_colour).lower() and col_cfgs:
-                        sample = col_cfgs[0]
-                        sample_str = ", ".join(f"{k}={v}" for k, v in sorted(sample.items())[:2])
-                        return (
-                            f"{node}={current_colour} leaves no valid agent configurations; "
-                            f"try {col} instead (e.g. {sample_str})."
-                        )
-                return f"{node}={current_colour} leaves no valid agent configurations."
-            # Derive specific constraints from valid configs
-            constraints = self._derive_node_constraints(node, current_colour, configs)
-            adjacent = constraints["adjacent"]
-            forced = constraints["forced"]
-            facts = []
-            for anode in sorted(adjacent.keys()):
-                if anode in forced:
-                    facts.append(f"{anode} must be {forced[anode]}")
-                else:
-                    avail = adjacent[anode]
-                    facts.append(f"{anode} cannot be {current_colour} (can be {' or '.join(avail)})")
-            if not facts:
-                for anode, col in sorted(forced.items()):
-                    facts.append(f"{anode} forced to {col}")
-            if facts:
-                return f"{node}={current_colour}: {'; '.join(facts[:2])}."
-            return f"{node}={current_colour} allows {len(configs)} valid agent configuration(s)."
-        elif self._condition == "C4":
-            domain = node_data.get("domain", [])
-            if not domain:
-                return f"{node} has no valid colours (infeasible)."
-            return f"{node} can be: {', '.join(sorted(domain, key=str))}."
-        return f"Node {node}: see constraint panel."
+        raise NotImplementedError(
+            "Plain-text fallbacks are prohibited by the LLM-Only Policy. "
+            "If the API fails, the run should crash. Use --use-llm for C3/C4."
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -501,15 +516,8 @@ class ConstraintLLMLayer:
             if cache_key in self._cache:
                 return self._cache[cache_key]
 
-        try:
-            prompt = self._build_node_prompt(node, node_data)
-            result = self._call_api(prompt)
-        except Exception as exc:
-            print(
-                f"[ConstraintLLMLayer] Node API call failed for {node} ({exc}); "
-                f"using plain-text fallback."
-            )
-            result = self._node_plain_text_fallback(node, node_data)
+        prompt = self._build_node_prompt(node, node_data)
+        result = self._call_api(prompt)
 
         with self._lock:
             if len(self._cache) >= _MAX_CACHE:
@@ -550,14 +558,8 @@ class ConstraintLLMLayer:
                 return self._cache[cache_key]
 
         # Build prompt and call API
-        try:
-            prompt = self._build_prompt(agent_name, structured_data)
-            result = self._call_api(prompt)
-        except Exception as exc:
-            # Fallback to plain-text summary — this is a display helper, not
-            # an experimental agent, so fallback is explicitly permitted.
-            print(f"[ConstraintLLMLayer] API call failed ({exc}); using plain-text fallback.")
-            result = self._plain_text_fallback(agent_name, structured_data)
+        prompt = self._build_prompt(agent_name, structured_data)
+        result = self._call_api(prompt)
 
         # Store in cache (thread-safe write, evict if full)
         with self._lock:

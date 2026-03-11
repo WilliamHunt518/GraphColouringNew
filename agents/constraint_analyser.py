@@ -196,6 +196,38 @@ class ConstraintAnalyser:
                 result[v][c] = self.compute_domain_projection(fs)
         return result
 
+    def compute_agent_colour_conditions(
+        self,
+        domain_projection: Dict[str, List[Any]],
+        conditional_domains: Dict[str, Dict[Any, Dict[str, List[Any]]]],
+    ) -> Dict[str, Dict[str, Any]]:
+        """Classify each agent node colour as certain or conditional.
+
+        A colour is CERTAIN for agent node a if it is in domain_projection[a]
+        and is never blocked by any unassigned boundary node setting.
+        A colour is CONDITIONAL if there exists (h, h_col) such that a_col is
+        absent from conditional_domains[h][h_col][a]; blocking conditions are
+        expressed as "h \u2260 h_col" strings.
+
+        Returns {agent_node: {"certain": [colours], "conditional": [(colour, [cond_str,...])]}}
+        """
+        result: Dict[str, Dict[str, Any]] = {}
+        for agent_node, valid_colours in domain_projection.items():
+            certain = []
+            conditional = []
+            for a_col in valid_colours:
+                blocking = []
+                for h_node, h_colour_map in conditional_domains.items():
+                    for h_col, agent_domains in h_colour_map.items():
+                        if a_col not in agent_domains.get(agent_node, []):
+                            blocking.append(f"{h_node} \u2260 {h_col}")
+                if blocking:
+                    conditional.append((a_col, blocking))
+                else:
+                    certain.append(a_col)
+            result[agent_node] = {"certain": certain, "conditional": conditional}
+        return result
+
     def compute_boundary_joint_feasibility(
         self,
         human_partial: Dict[str, Any],

@@ -1414,13 +1414,15 @@ def run_constraint_viz_simulation(
     domain : list[Any]
         Colour domain (e.g. ``["red", "green", "blue"]``).
     condition : str
-        Experimental condition: ``"C1"``, ``"C2"``, ``"C3"``, or ``"C4"``.
+        Experimental condition: C1-C3 formulaic (no LLM), C4-C6 natural language (LLM).
+        C1=UC Formulaic, C2=AC Formulaic, C3=Human Domain Formulaic,
+        C4=UC NL, C5=AC NL, C6=Human Domain NL.
     fixed_constraints : bool
         Whether to fix some internal nodes per cluster.
     num_fixed_nodes : int
         How many internal nodes to fix per cluster.
     use_llm : bool
-        If True and condition is C3/C4, call the LLM for NL summaries.
+        If True and condition is C4/C5/C6, call the LLM for NL summaries.
     output_dir : str
         Directory to write logs.
     ui_title : str
@@ -1560,18 +1562,31 @@ def run_constraint_viz_simulation(
         print(f"[ConstraintViz] {owner}: {len(local_nodes)} nodes, {len(boundary)} boundary nodes")
 
     # ------------------------------------------------------------------
-    # LLM layer (C3/C4 only)
+    # LLM layer (C4/C5/C6 only)
     # ------------------------------------------------------------------
     llm_layers: Dict[str, Any] = {}
-    if condition in ("C3", "C4") and use_llm:
+    human_llm_layer = None
+    if condition in ("C4", "C5") and use_llm:
         from comm.constraint_llm_layer import ConstraintLLMLayer
         for owner in constraint_agents:
             llm_layers[owner] = ConstraintLLMLayer(
                 model="gpt-4o-mini", condition=condition
             )
         print(f"[ConstraintViz] LLM layer enabled (condition={condition}, model=gpt-4o-mini)")
-    elif condition in ("C3", "C4"):
-        print(f"[ConstraintViz] LLM layer DISABLED (use_llm=False) — plain-text fallback will be used")
+    elif condition in ("C4", "C5"):
+        raise RuntimeError(
+            f"Condition {condition} requires --use-llm. "
+            "Re-run with --use-llm to enable LLM summarisation."
+        )
+    elif condition == "C6" and use_llm:
+        from comm.constraint_llm_layer import ConstraintLLMLayer
+        human_llm_layer = ConstraintLLMLayer(model="gpt-4o-mini", condition="C6")
+        print(f"[ConstraintViz] LLM layer enabled (condition=C6, model=gpt-4o-mini)")
+    elif condition == "C6":
+        raise RuntimeError(
+            "Condition C6 requires --use-llm. "
+            "Re-run with --use-llm to enable LLM summarisation."
+        )
 
     # ------------------------------------------------------------------
     # Logging setup
@@ -1591,6 +1606,71 @@ def run_constraint_viz_simulation(
     # Also include agent boundary nodes as None (unknown to human)
     for nb in neigh_nodes:
         human_initial_assignments[nb] = None
+
+    # ------------------------------------------------------------------
+    # on_human_domain_update: C5/C6 — valid colours per human node
+    # ------------------------------------------------------------------
+    _human_set = set(human_nodes)
+
+    def on_human_domain_update(human_partial: Dict[str, Any]) -> Dict[str, Any]:
+        """Compute which colours are valid for each human node.
+
+        A colour c is valid for node h_i if:
+          (1) c does not conflict with any already-assigned human neighbour
+          (2) all agent clusters remain feasible with h_i=c added
+
+        Returns dict with 'human_domain' and optionally 'node_summaries'.
+        """
+        result: Dict[str, Any] = {}
+        for h_node in human_nodes:
+            valid = []
+            blocked_agents: Dict[str, List[str]] = {}
+            for colour in domain:
+                # Only check agent feasibility — do NOT filter by human-internal
+                # adjacency, since agents have no visibility into the human's
+                # internal cluster and must not imply knowledge of it.
+                test = dict(human_partial)
+                test[h_node] = colour
+                agents_blocking = [
+                    name for name, analyser in constraint_agents.items()
+                    if len(analyser.compute_feasibility_set(test)) == 0
+                ]
+                if agents_blocking:
+                    blocked_agents[colour] = agents_blocking
+                else:
+                    valid.append(colour)
+            result[h_node] = {
+                "valid": valid,
+                "blocked_agents": blocked_agents,
+                "current": human_partial.get(h_node),
+            }
+
+        data: Dict[str, Any] = {
+            "human_domain": result,
+            "full_domain": list(domain),
+            "human_nodes": human_nodes,
+        }
+
+        # C6: LLM summaries per human node
+        if human_llm_layer is not None:
+            all_assignments = {n: human_partial.get(n) for n in human_nodes}
+            node_summaries: Dict[str, str] = {}
+            for h_node in human_nodes:
+                node_info = result[h_node]
+                node_summaries[h_node] = human_llm_layer.summarise_node(
+                    h_node,
+                    {
+                        "valid_colours": node_info["valid"],
+                        "blocked_agents": node_info["blocked_agents"],
+                        "current_colour": node_info["current"],
+                        "all_assignments": all_assignments,
+                        "all_human_nodes": list(human_nodes),
+                        "full_domain": list(domain),
+                    },
+                )
+            data["node_summaries"] = node_summaries
+
+        return data
 
     # ------------------------------------------------------------------
     # on_colour_change: called by UI when human clicks a node
@@ -1667,19 +1747,27 @@ def run_constraint_viz_simulation(
             else:
                 data["repair_suggestion"] = []
 
-            if condition in ("C1", "C3"):
+            if condition in ("C1", "C4"):
                 # User-centric: consequence sets (how human choices affect configs)
                 # Now returns {node: {colour: [list_of_configs]}} not just counts
                 consequence_sets = analyser.compute_consequence_sets(human_partial)
                 data["consequence_sets"] = consequence_sets
 
-            if condition in ("C2", "C4"):
+            if condition in ("C2", "C5"):
                 # Agent-centric: domain projection (what colours agents can use)
                 domain_projection = analyser.compute_domain_projection(feasibility_set)
                 data["domain_projection"] = domain_projection
                 # Also compute conditional domains for unassigned boundary nodes
                 conditional_domains = analyser.compute_conditional_domains(human_partial)
                 data["conditional_domains"] = conditional_domains
+                # Boundary joint feasibility: which human boundary combos allow agent to succeed
+                boundary_joint_c2 = analyser.compute_boundary_joint_feasibility(human_partial)
+                data["boundary_joint_feasibility"] = boundary_joint_c2
+
+            if condition == "C2":
+                data["agent_colour_conditions"] = analyser.compute_agent_colour_conditions(
+                    domain_projection, conditional_domains
+                )
 
             # Always expose boundary nodes list so the UI can draw overlays for all
             # of them (not only assigned ones).
@@ -1687,7 +1775,7 @@ def run_constraint_viz_simulation(
             data["boundary_nodes"] = all_boundary_nodes
 
             # NL summary for C3/C4
-            if condition in ("C3", "C4"):
+            if condition in ("C4", "C5"):
                 # Build a counts-only version of consequence_sets for the LLM prompt
                 # (it expects {node: {colour: count}} not {node: {colour: [configs]}})
                 consequence_sets_data = data.get("consequence_sets", {})
@@ -1717,7 +1805,18 @@ def run_constraint_viz_simulation(
 
                     # Per-node NL summaries for overlay boxes — ALL boundary/agent nodes
                     node_summaries: Dict[str, str] = {}
-                    if condition == "C3":
+                    if condition == "C4":
+                        # Build cross-node context once for all nodes
+                        all_boundary_assignments = {
+                            n: human_partial.get(n) for n in all_boundary_nodes
+                        }
+                        all_consequence_counts = {
+                            n: {
+                                col: len(cfgs)
+                                for col, cfgs in consequence_sets_data.get(n, {}).items()
+                            }
+                            for n in all_boundary_nodes
+                        }
                         for bnode in all_boundary_nodes:
                             cur_col = human_partial.get(bnode)
                             colour_map = consequence_sets_data.get(bnode, {})
@@ -1729,9 +1828,13 @@ def run_constraint_viz_simulation(
                                     "current_colour": cur_col,
                                     "configs": configs,
                                     "all_colour_configs": colour_map,
+                                    "boundary_joint_feasibility": boundary_joint,
+                                    "boundary_nodes": all_boundary_nodes,
+                                    "all_boundary_assignments": all_boundary_assignments,
+                                    "all_consequence_counts": all_consequence_counts,
                                 },
                             )
-                    elif condition == "C4" and "domain_projection" in data:
+                    elif condition == "C5" and "domain_projection" in data:
                         full_dom = list(domain)
                         for anode, adom in data["domain_projection"].items():
                             node_summaries[anode] = llm_layer.summarise_node(
@@ -1740,40 +1843,6 @@ def run_constraint_viz_simulation(
                             )
                     if node_summaries:
                         data["node_summaries"] = node_summaries
-                else:
-                    # Plain-text fallback without LLM
-                    from comm.constraint_llm_layer import ConstraintLLMLayer
-                    _tmp = ConstraintLLMLayer(condition=condition)
-                    fallback_data = dict(data)
-                    if "consequence_sets_counts" in fallback_data:
-                        fallback_data["consequence_sets"] = fallback_data["consequence_sets_counts"]
-                    data["nl_summary"] = _tmp._plain_text_fallback(agent_name, fallback_data)
-
-                    # Plain-text per-node fallbacks — ALL boundary/agent nodes
-                    node_summaries_fb: Dict[str, str] = {}
-                    if condition == "C3":
-                        for bnode in all_boundary_nodes:
-                            cur_col = human_partial.get(bnode)
-                            colour_map = consequence_sets_data.get(bnode, {})
-                            key = str(cur_col).lower() if cur_col else ""
-                            configs = colour_map.get(key, [])
-                            node_summaries_fb[bnode] = _tmp._node_plain_text_fallback(
-                                bnode,
-                                {
-                                    "current_colour": cur_col,
-                                    "configs": configs,
-                                    "all_colour_configs": colour_map,
-                                },
-                            )
-                    elif condition == "C4" and "domain_projection" in data:
-                        full_dom = list(domain)
-                        for anode, adom in data["domain_projection"].items():
-                            node_summaries_fb[anode] = _tmp._node_plain_text_fallback(
-                                anode,
-                                {"domain": adom, "full_domain": full_dom},
-                            )
-                    if node_summaries_fb:
-                        data["node_summaries"] = node_summaries_fb
 
             return data
 
@@ -1840,6 +1909,7 @@ def run_constraint_viz_simulation(
         visible_graph=(vis_nodes, vis_edges),
         on_colour_change=on_colour_change,
         on_constraint_update=on_constraint_update,
+        on_human_domain_update=on_human_domain_update if condition in ("C3", "C6") else None,
         condition=condition,
         fixed_nodes=cluster_fixed_nodes.get("Human", {}),
         problem=problem,
@@ -1850,3 +1920,230 @@ def run_constraint_viz_simulation(
     )
 
     print(f"[ConstraintViz] Session ended. Logs in: {output_dir}")
+
+
+def run_headless_constraint_viz(
+    node_names,
+    clusters,
+    adjacency,
+    owners,
+    domain,
+    condition,
+    colour_steps,
+    use_llm=False,
+    preset_fixed_nodes=None,
+    graph_preset="unknown",
+    fixed_constraints=True,
+    num_fixed_nodes=1,
+) -> List[Dict[str, Any]]:
+    """Run constraint viz analysis headlessly (no UI).
+
+    colour_steps : list of {node: colour} dicts.  Each step represents the
+    full human assignment state (cumulative, not incremental).
+    Returns list of per-step result dicts.
+    """
+    import itertools as _itertools
+    import random as _random
+
+    human_owners = ["Human"]
+
+    # Build problem
+    edges: List[tuple] = []
+    for node, nbrs in adjacency.items():
+        for nbr in nbrs:
+            if (nbr, node) not in edges:
+                edges.append((node, nbr))
+    problem = GraphColoring(node_names, edges, domain, conflict_penalty=10.0)
+
+    # Fixed node constraint setup
+    cluster_fixed_nodes: Dict[str, Dict[str, Any]] = {}
+    if preset_fixed_nodes is not None:
+        for owner, fixed_dict in preset_fixed_nodes.items():
+            cluster_fixed_nodes[owner] = dict(fixed_dict)
+    elif fixed_constraints and num_fixed_nodes > 0 and domain:
+        _random.seed(42)
+        for owner, local_nodes in clusters.items():
+            internal_nodes = [
+                n for n in local_nodes if problem.is_internal_node(n, local_nodes)
+            ]
+            if internal_nodes:
+                num_to_fix = min(num_fixed_nodes, len(internal_nodes))
+                fixed_nodes_list = _random.sample(internal_nodes, num_to_fix)
+                fixed_dict = {}
+                for i, fn in enumerate(fixed_nodes_list):
+                    color_idx = (i + 1) % len(domain) if len(domain) > 1 else 0
+                    fixed_dict[fn] = domain[color_idx]
+                cluster_fixed_nodes[owner] = fixed_dict
+            else:
+                cluster_fixed_nodes[owner] = {}
+
+    # Human nodes
+    human_nodes: List[str] = []
+    for owner in human_owners:
+        human_nodes.extend(clusters.get(owner, []))
+
+    # Constraint analysers
+    from agents.constraint_analyser import ConstraintAnalyser
+    constraint_agents: Dict[str, Any] = {}
+    for owner, local_nodes in clusters.items():
+        if owner in human_owners:
+            continue
+        boundary: List[str] = []
+        for hn in human_nodes:
+            for nbr in problem.get_neighbors(hn):
+                if nbr in local_nodes and hn not in boundary:
+                    boundary.append(hn)
+        constraint_agents[owner] = ConstraintAnalyser(
+            name=owner,
+            problem=problem,
+            agent_nodes=list(local_nodes),
+            human_nodes=human_nodes,
+            boundary_nodes=boundary,
+            domain=domain,
+            fixed_agent_nodes=cluster_fixed_nodes.get(owner, {}),
+        )
+        print(f"[Headless] {owner}: {len(local_nodes)} nodes, {len(boundary)} boundary nodes")
+
+    # LLM layers
+    llm_layers: Dict[str, Any] = {}
+    if condition in ("C4", "C5") and use_llm:
+        from comm.constraint_llm_layer import ConstraintLLMLayer
+        for owner in constraint_agents:
+            llm_layers[owner] = ConstraintLLMLayer(model="gpt-4o-mini", condition=condition)
+        print(f"[Headless] LLM layer enabled (condition={condition})")
+    elif condition in ("C4", "C5"):
+        raise RuntimeError(
+            f"Condition {condition} requires use_llm=True. "
+            "Re-run with use_llm=True to enable LLM summarisation."
+        )
+
+    def _compute(agent_name: str, human_partial: Dict[str, Any]) -> Dict[str, Any]:
+        analyser = constraint_agents[agent_name]
+        feasibility_set = analyser.compute_feasibility_set(human_partial)
+        feasibility_count = len(feasibility_set)
+
+        agent_node_set = set(analyser.agent_nodes)
+        agent_edges_local: List[tuple] = []
+        for u in analyser.agent_nodes:
+            for v in adjacency.get(u, []):
+                if v in agent_node_set and (v, u) not in agent_edges_local:
+                    agent_edges_local.append((u, v))
+
+        data: Dict[str, Any] = {
+            "feasibility_count": feasibility_count,
+            "is_feasible": feasibility_count > 0,
+            "full_domain": list(domain),
+            "feasibility_set": feasibility_set,
+            "agent_nodes": list(analyser.agent_nodes),
+            "agent_edges": agent_edges_local,
+            "fixed_agent_nodes": dict(analyser.fixed_local_nodes),
+        }
+
+        if feasibility_count == 0:
+            repair = analyser.find_minimal_repair(human_partial)
+            data["repair_suggestion"] = repair if repair is not None else []
+        else:
+            data["repair_suggestion"] = []
+
+        if condition in ("C1", "C4"):
+            consequence_sets = analyser.compute_consequence_sets(human_partial)
+            data["consequence_sets"] = consequence_sets
+
+        domain_projection = None
+        conditional_domains = None
+        if condition in ("C2", "C5"):
+            domain_projection = analyser.compute_domain_projection(feasibility_set)
+            data["domain_projection"] = domain_projection
+            conditional_domains = analyser.compute_conditional_domains(human_partial)
+            data["conditional_domains"] = conditional_domains
+            boundary_joint_c2 = analyser.compute_boundary_joint_feasibility(human_partial)
+            data["boundary_joint_feasibility"] = boundary_joint_c2
+
+        if condition == "C2" and domain_projection is not None and conditional_domains is not None:
+            data["agent_colour_conditions"] = analyser.compute_agent_colour_conditions(
+                domain_projection, conditional_domains
+            )
+
+        all_boundary_nodes = list(analyser.boundary_nodes)
+        data["boundary_nodes"] = all_boundary_nodes
+        boundary_set_local = set(all_boundary_nodes)
+
+        if condition in ("C4", "C5"):
+            consequence_sets_data = data.get("consequence_sets", {})
+            if consequence_sets_data:
+                data["consequence_sets_counts"] = {
+                    node: {col: len(cfgs) for col, cfgs in colour_map.items()}
+                    for node, colour_map in consequence_sets_data.items()
+                }
+            boundary_joint = analyser.compute_boundary_joint_feasibility(human_partial)
+
+            llm_layer = llm_layers.get(agent_name)
+            if llm_layer is not None:
+                llm_data = dict(data)
+                if "consequence_sets_counts" in llm_data:
+                    llm_data["consequence_sets"] = llm_data["consequence_sets_counts"]
+                llm_data["boundary_joint_feasibility"] = boundary_joint
+                llm_data["boundary_nodes"] = all_boundary_nodes
+                llm_data["human_boundary_partial"] = {
+                    k: v for k, v in human_partial.items() if k in boundary_set_local
+                }
+                data["nl_summary"] = llm_layer.summarise(agent_name, llm_data)
+
+                node_summaries: Dict[str, str] = {}
+                if condition == "C4":
+                    all_boundary_assignments = {
+                        n: human_partial.get(n) for n in all_boundary_nodes
+                    }
+                    all_consequence_counts = {
+                        n: {
+                            col: len(cfgs)
+                            for col, cfgs in consequence_sets_data.get(n, {}).items()
+                        }
+                        for n in all_boundary_nodes
+                    }
+                    for bnode in all_boundary_nodes:
+                        cur_col = human_partial.get(bnode)
+                        colour_map = consequence_sets_data.get(bnode, {})
+                        key = str(cur_col).lower() if cur_col else ""
+                        configs = colour_map.get(key, [])
+                        node_summaries[bnode] = llm_layer.summarise_node(
+                            bnode,
+                            {
+                                "current_colour": cur_col,
+                                "configs": configs,
+                                "all_colour_configs": colour_map,
+                                "boundary_joint_feasibility": boundary_joint,
+                                "boundary_nodes": all_boundary_nodes,
+                                "all_boundary_assignments": all_boundary_assignments,
+                                "all_consequence_counts": all_consequence_counts,
+                            },
+                        )
+                elif condition == "C5" and "domain_projection" in data:
+                    full_dom = list(domain)
+                    for anode, adom in data["domain_projection"].items():
+                        node_summaries[anode] = llm_layer.summarise_node(
+                            anode,
+                            {"domain": adom, "full_domain": full_dom},
+                        )
+                if node_summaries:
+                    data["node_summaries"] = node_summaries
+
+        return data
+
+    results = []
+    for step_idx, colour_step in enumerate(colour_steps):
+        human_partial = {n: None for n in human_nodes}
+        human_partial.update({k: v for k, v in colour_step.items() if k in human_nodes})
+        step_result = {"step": step_idx, "colour_step": colour_step, "agents": {}}
+        for agent_name in constraint_agents:
+            data = _compute(agent_name, human_partial)
+            step_result["agents"][agent_name] = data
+            print(f"\n[Step {step_idx}] {agent_name}: "
+                  f"{'OK' if data.get('is_feasible') else 'INFEASIBLE'} "
+                  f"({data.get('feasibility_count', 0)} configs)")
+            if "nl_summary" in data:
+                print(f"  Summary: {data['nl_summary']}")
+            for node, txt in data.get("node_summaries", {}).items():
+                print(f"  {node}: {txt}")
+        results.append(step_result)
+    return results

@@ -100,7 +100,7 @@ def main() -> None:
     ttk.Combobox(
         frm,
         textvariable=condition_var,
-        values=["C1", "C2", "C3", "C4"],
+        values=["C1", "C2", "C3", "C4", "C5", "C6"],
         state="readonly",
         width=22,
     ).grid(row=row, column=1, sticky="w", pady=(0, 6))
@@ -108,7 +108,7 @@ def main() -> None:
     row += 1
     ttk.Label(
         frm,
-        text="C1=User-Centric Formulaic\nC2=Agent-Centric Formulaic\nC3=UC Natural Language\nC4=AC Natural Language",
+        text="C1=User-Centric Formulaic\nC2=Agent-Centric Formulaic\nC3=Human Domain Formulaic\nC4=UC Natural Language\nC5=AC Natural Language\nC6=Human Domain Natural Language",
         font=("Arial", 9),
         foreground="#555",
         justify="left",
@@ -167,14 +167,14 @@ def main() -> None:
     row += 1
     use_llm_check = ttk.Checkbutton(
         frm,
-        text="Use LLM for NL summaries (C3/C4 only)",
+        text="Use LLM for NL summaries (C4/C5/C6 only)",
         variable=use_llm_var,
     )
     use_llm_check.grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 10))
 
     def _on_condition_change(*_):
         cond = condition_var.get()
-        if cond in ("C3", "C4"):
+        if cond in ("C4", "C5", "C6"):
             use_llm_var.set(True)          # Auto-enable LLM for NL conditions
             use_llm_check.config(state="normal")
         else:

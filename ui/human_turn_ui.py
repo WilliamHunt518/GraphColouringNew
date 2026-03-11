@@ -128,6 +128,12 @@ class HumanTurnUI:
         self._graph_canvas_offset: Tuple[int, int] = (0, 0)
         self._graph_drag_start: Optional[Tuple[int, int]] = None
 
+        # Node cooldown (prevents rapid colour switching)
+        self._node_cooldowns: Dict[str, float] = {}   # {node: expiry_timestamp}
+        self._cooldown_seconds: int = 15
+        self._cooldown_ticker_active: bool = False
+        self._colour_popup: Optional[tk.Toplevel] = None
+
         # LLM_RB live translation
         self._llm_rb_translation_labels: Dict[str, tk.Label] = {}
         self._llm_rb_debounce_ids: Dict[str, Optional[str]] = {}
@@ -173,6 +179,8 @@ class HumanTurnUI:
         self._node_pos: Dict[str, Tuple[int, int]] = {}
         self._node_items: Dict[str, int] = {}
         self._edge_items: List[Tuple[str, str, int]] = []
+        self._label_text_items: Dict[str, int] = {}   # canvas item IDs for node labels
+        self._timer_text_items: Dict[str, int] = {}   # canvas item IDs for cooldown timers
         self._hud_var: Optional[tk.StringVar] = None
 
         # debug window
@@ -254,6 +262,7 @@ class HumanTurnUI:
         on_send: Optional[Callable[..., Optional[str]]] = None,
         on_colour_change: Optional[Callable[[Dict[str, Any]], None]] = None,
         on_constraint_update: Optional[Callable] = None,
+        on_human_domain_update: Optional[Callable] = None,
         condition: str = "C1",
         get_agent_satisfied_fn: Optional[Callable[[str], bool]] = None,
         debug_get_text_fn: Optional[Callable[[], str]] = None,
@@ -286,6 +295,8 @@ class HumanTurnUI:
         self._on_send = on_send
         self._on_colour_change = on_colour_change
         self._on_constraint_update = on_constraint_update
+        self._on_human_domain_update = on_human_domain_update
+        self._human_domain_data: Dict[str, Any] = {}
         self._condition = condition
         self._get_agent_satisfied_fn = get_agent_satisfied_fn
         self._debug_get_text_fn = debug_get_text_fn
@@ -2918,6 +2929,8 @@ class HumanTurnUI:
         canvas.delete("all")
         self._edge_items.clear()
         self._node_items.clear()
+        self._label_text_items.clear()
+        self._timer_text_items.clear()
 
         for u, v in self._edges:
             if u not in self._node_pos or v not in self._node_pos:
@@ -2950,7 +2963,20 @@ class HumanTurnUI:
             ow = self._outline_width_for_colour(col) if col is not None else 2
             item = canvas.create_oval(x - r, y - r, x + r, y + r, fill=fill, outline=outline, width=ow)
             self._node_items[n] = item
-            canvas.create_text(x, y, text=f"{n}", font=("TkDefaultFont", 10 if is_owned else 9))
+            if is_owned and n in self._node_cooldowns:
+                remaining = self._node_cooldowns[n] - time.time()
+                if remaining > 0:
+                    lbl = canvas.create_text(x, y - 6, text=f"{n}", font=("TkDefaultFont", 10 if is_owned else 9))
+                    self._label_text_items[n] = lbl
+                    tmr = canvas.create_text(x, y + 8, text=f"\u23f1{math.ceil(remaining)}s",
+                                             font=("TkDefaultFont", 8), fill="#cc6600")
+                    self._timer_text_items[n] = tmr
+                else:
+                    lbl = canvas.create_text(x, y, text=f"{n}", font=("TkDefaultFont", 10 if is_owned else 9))
+                    self._label_text_items[n] = lbl
+            else:
+                lbl = canvas.create_text(x, y, text=f"{n}", font=("TkDefaultFont", 10 if is_owned else 9))
+                self._label_text_items[n] = lbl
 
             # Visual indicators for fixed (immutable) nodes
             if hasattr(self, '_fixed_nodes') and n in self._fixed_nodes:
@@ -2969,6 +2995,8 @@ class HumanTurnUI:
         canvas.delete("all")
         self._edge_items.clear()
         self._node_items.clear()
+        self._label_text_items.clear()
+        self._timer_text_items.clear()
 
         # Get current transformations
         scale = self._graph_canvas_scale
@@ -3021,7 +3049,21 @@ class HumanTurnUI:
             self._node_items[n] = item
 
             font_size = max(6, int((10 if is_owned else 9) * scale))
-            canvas.create_text(tx, ty, text=f"{n}", font=("TkDefaultFont", font_size))
+            if is_owned and n in self._node_cooldowns:
+                remaining = self._node_cooldowns[n] - time.time()
+                if remaining > 0:
+                    lbl = canvas.create_text(tx, ty - int(6 * scale), text=f"{n}", font=("TkDefaultFont", font_size))
+                    self._label_text_items[n] = lbl
+                    timer_fs = max(5, int(8 * scale))
+                    tmr = canvas.create_text(tx, ty + int(8 * scale), text=f"\u23f1{math.ceil(remaining)}s",
+                                             font=("TkDefaultFont", timer_fs), fill="#cc6600")
+                    self._timer_text_items[n] = tmr
+                else:
+                    lbl = canvas.create_text(tx, ty, text=f"{n}", font=("TkDefaultFont", font_size))
+                    self._label_text_items[n] = lbl
+            else:
+                lbl = canvas.create_text(tx, ty, text=f"{n}", font=("TkDefaultFont", font_size))
+                self._label_text_items[n] = lbl
 
             # Visual indicators for fixed (immutable) nodes
             if hasattr(self, '_fixed_nodes') and n in self._fixed_nodes:
@@ -3084,39 +3126,15 @@ class HumanTurnUI:
         if best_d > (r * r):
             return
 
-        self._cycle_colour(best)
-        if self._on_colour_change:
-            try:
-                self._on_colour_change(dict(self._assignments))
-            except Exception:
-                pass
-        self._redraw_graph()
-        if self._hud_var:
-            self._hud_var.set(self._hud_text())
+        # Check cooldown before allowing colour change
+        if best in self._node_cooldowns and time.time() < self._node_cooldowns[best]:
+            return
 
-        # Constraint viz mode: fire constraint updates in background threads
-        if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_constraint_update', None):
-            snapshot = dict(self._assignments)
-
-            def _bg_update(neigh: str, human_partial: dict) -> None:
-                try:
-                    if hasattr(self, 'update_agent_status'):
-                        self.update_agent_status(neigh, "Computing...")
-                    data = self._on_constraint_update(neigh, human_partial)
-                    self.update_constraint_display(neigh, data)
-                    if hasattr(self, 'clear_agent_status'):
-                        self.clear_agent_status(neigh)
-                except Exception as _exc:
-                    print(f"[ConstraintViz] background update error for {neigh}: {_exc}")
-                    if hasattr(self, 'clear_agent_status'):
-                        self.clear_agent_status(neigh)
-
-            for neigh in self._neighs:
-                threading.Thread(
-                    target=_bg_update,
-                    args=(neigh, snapshot),
-                    daemon=True,
-                ).start()
+        # Compute node canvas position for popup placement
+        nx, ny = self._node_pos[best]
+        node_canvas_x = int(nx * self._graph_canvas_scale + self._graph_canvas_offset[0])
+        node_canvas_y = int(ny * self._graph_canvas_scale + self._graph_canvas_offset[1])
+        self._show_colour_picker(best, node_canvas_x, node_canvas_y)
 
     def _on_canvas_right_click(self, ev: tk.Event) -> None:
         """Right-click on a human-owned node resets it to grey (unassigned)."""
@@ -3141,6 +3159,10 @@ class HumanTurnUI:
             return
         r = 24
         if best_d > (r * r):
+            return
+
+        # Check cooldown
+        if best in self._node_cooldowns and time.time() < self._node_cooldowns[best]:
             return
 
         # Reset to unassigned
@@ -3189,6 +3211,203 @@ class HumanTurnUI:
         except ValueError:
             idx = -1  # will wrap to 0
         self._assignments[node] = cycle[(idx + 1) % len(cycle)]
+
+    # -------------------- Colour picker & cooldown --------------------
+
+    def _apply_colour_change(self, node: str, colour: Any) -> None:
+        """Assign colour to node, start cooldown, fire all downstream callbacks."""
+        self._assignments[node] = colour
+
+        # Start cooldown
+        self._node_cooldowns[node] = time.time() + self._cooldown_seconds
+        if not self._cooldown_ticker_active and self._root:
+            self._cooldown_ticker_active = True
+            self._root.after(1000, self._tick_cooldowns)
+
+        if self._on_colour_change:
+            try:
+                self._on_colour_change(dict(self._assignments))
+            except Exception:
+                pass
+        self._redraw_graph()
+        if self._hud_var:
+            self._hud_var.set(self._hud_text())
+
+        # Constraint viz mode: fire constraint updates in background threads
+        if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_constraint_update', None):
+            snapshot = dict(self._assignments)
+
+            def _bg_update(neigh: str, human_partial: dict) -> None:
+                try:
+                    if hasattr(self, 'update_agent_status'):
+                        self.update_agent_status(neigh, "Computing...")
+                    data = self._on_constraint_update(neigh, human_partial)
+                    self.update_constraint_display(neigh, data)
+                    if hasattr(self, 'clear_agent_status'):
+                        self.clear_agent_status(neigh)
+                except Exception as _exc:
+                    print(f"[ConstraintViz] background update error for {neigh}: {_exc}")
+                    if hasattr(self, 'clear_agent_status'):
+                        self.clear_agent_status(neigh)
+
+            for neigh in self._neighs:
+                threading.Thread(target=_bg_update, args=(neigh, snapshot), daemon=True).start()
+
+        # C5/C6: fire human-domain update in a background thread
+        if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_human_domain_update', None):
+            snapshot_hd = dict(self._assignments)
+
+            def _bg_human_domain(human_partial: dict) -> None:
+                try:
+                    data = self._on_human_domain_update(human_partial)
+                    self.update_human_domain_display(data)
+                except Exception as _exc:
+                    print(f"[ConstraintViz] human_domain update error: {_exc}")
+
+            threading.Thread(target=_bg_human_domain, args=(snapshot_hd,), daemon=True).start()
+
+    def _show_colour_picker(self, node: str, canvas_x: int, canvas_y: int) -> None:
+        """Show a colour-picker popup above the clicked node."""
+        # Close any existing popup first
+        if self._colour_popup is not None:
+            try:
+                if self._colour_popup.winfo_exists():
+                    self._colour_popup.destroy()
+            except Exception:
+                pass
+            self._colour_popup = None
+
+        popup = tk.Toplevel(self._root)
+        popup.overrideredirect(True)
+        popup.attributes('-topmost', True)
+
+        # Build colour options (include None/unassigned in constraint viz mode)
+        if getattr(self, '_constraint_viz_mode', False):
+            options: List[Any] = [None] + list(self._domain)
+        else:
+            options = list(self._domain)
+
+        # Colour maps
+        _FILL = {"red": "#ffcccc", "green": "#ccffcc", "blue": "#ccccff"}
+        _OUTLINE = {"red": "#cc4444", "green": "#44aa44", "blue": "#4444cc"}
+
+        outer = tk.Frame(popup, bg="#2d2d2d", bd=2, relief="solid")
+        outer.pack(padx=1, pady=1)
+
+        tk.Label(outer, text=f"Set colour for  {node}",
+                 bg="#2d2d2d", fg="#eeeeee",
+                 font=("TkDefaultFont", 9, "bold")).pack(pady=(5, 3), padx=8)
+
+        swatch_row = tk.Frame(outer, bg="#2d2d2d")
+        swatch_row.pack(padx=6, pady=(0, 6))
+
+        def _pick(colour: Any) -> None:
+            self._colour_popup = None
+            try:
+                popup.destroy()
+            except Exception:
+                pass
+            self._apply_colour_change(node, colour)
+
+        for colour in options:
+            s = str(colour).lower() if colour is not None else ""
+            fill = _FILL.get(s, "#dddddd") if colour is not None else "#dddddd"
+            outline = _OUTLINE.get(s, "#999999") if colour is not None else "#999999"
+            label = (str(colour)[:1].upper() if colour is not None else "—")
+
+            c = tk.Canvas(swatch_row, width=38, height=38, bg="#2d2d2d",
+                          highlightthickness=0, cursor="hand2")
+            c.pack(side="left", padx=3)
+            c.create_oval(3, 3, 35, 35, fill=fill, outline=outline, width=2)
+            c.create_text(19, 19, text=label, font=("TkDefaultFont", 10, "bold"), fill="#333333")
+            c.bind("<Button-1>", lambda _e, col=colour: _pick(col))
+
+        # Position popup above the node on screen
+        canvas_widget = self._canvas
+        if canvas_widget is None:
+            popup.destroy()
+            return
+        popup.update_idletasks()
+        pw = popup.winfo_reqwidth()
+        ph = popup.winfo_reqheight()
+        root_x = canvas_widget.winfo_rootx() + canvas_x
+        root_y = canvas_widget.winfo_rooty() + canvas_y
+
+        r_px = int(24 * self._graph_canvas_scale)
+        px = root_x - pw // 2
+        py = root_y - r_px - ph - 8  # 8 px gap above node
+
+        # Keep on screen
+        sw = popup.winfo_screenwidth()
+        px = max(0, min(px, sw - pw))
+        py = max(0, py)
+
+        popup.geometry(f"+{px}+{py}")
+
+        def _close_popup(_e: Any = None) -> None:
+            if self._colour_popup is popup:
+                self._colour_popup = None
+            try:
+                popup.destroy()
+            except Exception:
+                pass
+
+        popup.bind("<FocusOut>", _close_popup)
+        popup.bind("<Escape>", _close_popup)
+        popup.focus_set()
+        self._colour_popup = popup
+
+    def _tick_cooldowns(self) -> None:
+        """1-second tick: update only timer text items in-place (no full redraw)."""
+        if not self._root:
+            self._cooldown_ticker_active = False
+            return
+        canvas = self._canvas
+        if canvas is None:
+            self._cooldown_ticker_active = False
+            return
+
+        now = time.time()
+        scale = self._graph_canvas_scale
+        offset_x, offset_y = self._graph_canvas_offset
+
+        # Expire cooldowns and remove their timer items from the canvas
+        expired = [n for n, exp in list(self._node_cooldowns.items()) if exp <= now]
+        for n in expired:
+            del self._node_cooldowns[n]
+            # Remove timer text item
+            tid = self._timer_text_items.pop(n, None)
+            if tid is not None:
+                try:
+                    canvas.delete(tid)
+                except Exception:
+                    pass
+            # Move node label back to vertical centre
+            lid = self._label_text_items.get(n)
+            if lid is not None and n in self._node_pos:
+                nx, ny = self._node_pos[n]
+                tx = nx * scale + offset_x
+                ty = ny * scale + offset_y
+                try:
+                    canvas.coords(lid, tx, ty)
+                except Exception:
+                    pass
+
+        # Update still-active timer texts
+        for n, exp in self._node_cooldowns.items():
+            remaining = exp - now
+            secs = math.ceil(remaining)
+            tid = self._timer_text_items.get(n)
+            if tid is not None:
+                try:
+                    canvas.itemconfigure(tid, text=f"\u23f1{secs}s")
+                except Exception:
+                    pass
+
+        if self._node_cooldowns:
+            self._root.after(1000, self._tick_cooldowns)
+        else:
+            self._cooldown_ticker_active = False
 
     # -------------------- Chat behaviour --------------------
 
@@ -5133,6 +5352,13 @@ class HumanTurnUI:
         self._constraint_data[agent_name] = data
         self._root.after(0, lambda: self._render_constraint_panel(agent_name))
 
+    def update_human_domain_display(self, data: Dict[str, Any]) -> None:
+        """Public API: update human-domain overlay (C5/C6). Thread-safe via root.after."""
+        if self._root is None:
+            return
+        self._human_domain_data = data
+        self._root.after(0, self._draw_constraint_overlays)
+
     def _render_constraint_panel(self, agent_name: str) -> None:
         """Redraw constraint cards for one agent panel. Must run on the Tk thread."""
         data = self._constraint_data.get(agent_name, {})
@@ -5197,8 +5423,8 @@ class HumanTurnUI:
                     wraplength=320,
                 ).pack(fill="x", padx=6, pady=(0, 6))
 
-        # C3 / C4: NL summary card
-        if condition in ("C3", "C4") and "nl_summary" in data:
+        # C4 / C5: NL summary card
+        if condition in ("C4", "C5") and "nl_summary" in data:
             card = tk.Frame(inner, bg="#eef4ff", relief=tk.GROOVE, bd=1)
             card.pack(fill="x", padx=4, pady=4)
             tk.Label(
@@ -5210,11 +5436,11 @@ class HumanTurnUI:
                 justify="left",
                 wraplength=320,
             ).pack(fill="x", padx=8, pady=8)
-            if condition == "C4":
-                return  # C4 shows only the NL paragraph
+            if condition == "C5":
+                return  # C5 shows only the NL paragraph
 
-        # C1 / C3 (user-centric): consequence sets — show actual configs per colour choice
-        if condition in ("C1", "C3") and is_feasible:
+        # C1 / C4 (user-centric): consequence sets — show actual configs per colour choice
+        if condition in ("C1", "C4") and is_feasible:
             consequence_sets = data.get("consequence_sets", {})
             if consequence_sets:
                 section_lbl = tk.Label(
@@ -5238,6 +5464,7 @@ class HumanTurnUI:
                     ).pack(fill="x", padx=6, pady=(4, 0))
 
                     # colour_configs is {colour: [list_of_agent_assignment_dicts]}
+                    COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
                     for colour, configs in sorted(
                         colour_configs.items(),
                         key=lambda kv: -len(kv[1])
@@ -5246,31 +5473,44 @@ class HumanTurnUI:
                         is_current = (colour == current_colour)
                         header_bg = self._colour_fill(colour) if is_current else "#eeeeee"
                         marker = " ◀ current" if is_current else ""
+                        feasible_str = f"{count} valid option(s)" if count > 0 else "no valid options"
 
-                        # Colour header row
                         hdr = tk.Frame(card, bg=header_bg)
                         hdr.pack(fill="x", padx=8, pady=(2, 0))
                         tk.Label(
                             hdr,
-                            text=f"{colour}: {count} valid agent config(s){marker}",
+                            text=f"{colour}: {feasible_str}{marker}",
                             font=("Arial", 9, "bold" if is_current else "normal"),
                             bg=header_bg,
                             anchor="w",
                         ).pack(side="left", padx=4, pady=2)
 
-                        # Show each config
-                        for cfg in configs:
-                            cfg_str = "  " + ",  ".join(
-                                f"{n}={c}" for n, c in sorted(cfg.items())
-                            )
-                            tk.Label(
-                                card,
-                                text=cfg_str,
-                                font=("Courier", 8),
-                                bg="#f8f8f8",
-                                anchor="w",
-                                fg="#333",
-                            ).pack(fill="x", padx=16, pady=0)
+                        # C1 only: for current colour, list all valid configs
+                        # in AND/OR format (mirrors the original design).
+                        if is_current and configs and condition == "C1":
+                            configs_frame = tk.Frame(card, bg="#f8f8f8")
+                            configs_frame.pack(fill="x", padx=12, pady=(0, 2))
+                            for c_idx, cfg in enumerate(configs):
+                                row = tk.Frame(configs_frame, bg="#f8f8f8")
+                                row.pack(anchor="w")
+                                parts = sorted(cfg.items())
+                                for p_idx, (anode, acolour) in enumerate(parts):
+                                    fg = COLOUR_FG.get(str(acolour).lower(), "#333")
+                                    tk.Label(row, text=f"{anode}=",
+                                             font=("Arial", 8), bg="#f8f8f8",
+                                             fg="#555").pack(side="left")
+                                    tk.Label(row, text=str(acolour),
+                                             font=("Arial", 8, "bold"),
+                                             bg="#f8f8f8", fg=fg).pack(side="left")
+                                    if p_idx < len(parts) - 1:
+                                        tk.Label(row, text=" AND ",
+                                                 font=("Arial", 8), bg="#f8f8f8",
+                                                 fg="#555").pack(side="left")
+                                if c_idx < len(configs) - 1:
+                                    tk.Label(configs_frame, text="OR",
+                                             font=("Arial", 8, "italic"),
+                                             bg="#f8f8f8", fg="#888",
+                                             anchor="w").pack(anchor="w", padx=4)
 
                     # Small spacer
                     tk.Frame(card, height=4, bg="#f8f8f8").pack()
@@ -5284,91 +5524,46 @@ class HumanTurnUI:
                     wraplength=320,
                 ).pack(fill="x", padx=8, pady=8)
 
-        # C2 / C4 (agent-centric): domain projection + full feasibility set
+        # C2 (agent-centric): boundary joint feasibility — which neighbour combos work
         if condition in ("C2",) and is_feasible:
-            feasibility_set = data.get("feasibility_set", [])
-            domain_projection = data.get("domain_projection", {})
-            if domain_projection:
+            boundary_joint = data.get("boundary_joint_feasibility", [])
+            boundary_nodes = data.get("boundary_nodes", [])
+            if boundary_joint:
+                nodes_str = ", ".join(sorted(boundary_nodes))
                 section_lbl = tk.Label(
                     inner,
-                    text="Agent node colour options:",
+                    text=f"Which of your colour combinations allow the agent to succeed ({nodes_str}):",
                     font=("Arial", 9, "bold"),
                     anchor="w",
+                    wraplength=320,
                 )
                 section_lbl.pack(fill="x", padx=4, pady=(4, 2))
 
-                full_domain = data.get("full_domain", [])
-                for node, colours in sorted(domain_projection.items()):
-                    card = tk.Frame(inner, bg="#f8f8f8", relief=tk.GROOVE, bd=1)
-                    card.pack(fill="x", padx=4, pady=2)
-                    constrained = len(colours) < len(full_domain) if full_domain else False
-                    card_bg = "#fff8cc" if constrained else "#f8f8f8"
-                    card.config(bg=card_bg)
-
-                    colour_str = "{" + ", ".join(sorted(colours, key=str)) + "}" if colours else "{none}"
+                for entry in boundary_joint:
+                    ba = entry.get("boundary_assignment", {})
+                    count = entry.get("feasibility_count", 0)
+                    combo_str = ", ".join(f"{n}={c}" for n, c in sorted(ba.items()))
+                    ok = count > 0
+                    card_bg = "#e8ffe8" if ok else "#ffe8e8"
+                    marker = "✓" if ok else "✗"
+                    card = tk.Frame(inner, bg=card_bg, relief=tk.GROOVE, bd=1)
+                    card.pack(fill="x", padx=4, pady=1)
                     tk.Label(
                         card,
-                        text=f"{node}: {colour_str}",
-                        font=("Arial", 9, "bold" if constrained else "normal"),
+                        text=f"{marker}  {combo_str}",
+                        font=("Arial", 9),
                         bg=card_bg,
                         anchor="w",
-                    ).pack(fill="x", padx=8, pady=4)
-
-            # Show all valid agent configurations
-            if feasibility_set:
-                all_cfg_lbl = tk.Label(
+                    ).pack(fill="x", padx=8, pady=2)
+            else:
+                # Fallback: just show feasibility count
+                tk.Label(
                     inner,
-                    text=f"All {len(feasibility_set)} valid agent configuration(s):",
-                    font=("Arial", 9, "bold"),
+                    text=f"Agent has {data.get('feasibility_count', 0)} valid configuration(s) with current boundary choices.",
+                    font=("Arial", 9),
                     anchor="w",
-                )
-                all_cfg_lbl.pack(fill="x", padx=4, pady=(6, 2))
-                for i, cfg in enumerate(feasibility_set, 1):
-                    cfg_str = f"  {i}. " + ",  ".join(
-                        f"{n}={c}" for n, c in sorted(cfg.items())
-                    )
-                    tk.Label(
-                        inner,
-                        text=cfg_str,
-                        font=("Courier", 8),
-                        bg="white",
-                        anchor="w",
-                        fg="#333",
-                    ).pack(fill="x", padx=8, pady=0)
-
-                # Conditional domains for unassigned boundary nodes
-                conditional_domains = data.get("conditional_domains", {})
-                if conditional_domains:
-                    cond_lbl = tk.Label(
-                        inner,
-                        text="If you assign boundary nodes:",
-                        font=("Arial", 9, "bold"),
-                        anchor="w",
-                    )
-                    cond_lbl.pack(fill="x", padx=4, pady=(6, 2))
-
-                    for bnode, colour_map in sorted(conditional_domains.items()):
-                        for colour, proj in sorted(colour_map.items(), key=str):
-                            constrained_proj = {
-                                n: cs for n, cs in proj.items() if len(cs) < len(full_domain)
-                            } if full_domain else proj
-                            if not constrained_proj and proj:
-                                # No extra constraints — skip
-                                continue
-                            card2 = tk.Frame(inner, bg="#f0f0f8", relief=tk.GROOVE, bd=1)
-                            card2.pack(fill="x", padx=4, pady=2)
-                            summary = "; ".join(
-                                f"{n}: {{{', '.join(sorted(cs, key=str))}}}"
-                                for n, cs in sorted(constrained_proj.items())
-                            ) or "No further restrictions"
-                            tk.Label(
-                                card2,
-                                text=f"If {bnode}={colour}: {summary}",
-                                font=("Arial", 8),
-                                bg="#f0f0f8",
-                                anchor="w",
-                                wraplength=320,
-                            ).pack(fill="x", padx=6, pady=3)
+                    wraplength=320,
+                ).pack(fill="x", padx=8, pady=8)
 
     # ------------------------------------------------------------------ #
     #  Mini-subgraph sidebar helpers                                       #
@@ -5478,10 +5673,10 @@ class HumanTurnUI:
         for w in inner.winfo_children():
             w.destroy()
 
-        # NL summary card (C3/C4 only) — shown at top of the sidebar before mini-graphs
+        # NL summary card (C4/C5 only) — shown at top of the sidebar before mini-graphs
         nl_summary = data.get("nl_summary")
         condition = getattr(self, '_condition', 'C1')
-        if condition in ("C3", "C4") and nl_summary:
+        if condition in ("C4", "C5") and nl_summary:
             nl_frame = tk.Frame(inner, bg="#eef4ff", relief=tk.GROOVE, bd=1)
             nl_frame.pack(fill="x", padx=4, pady=(4, 6))
             tk.Label(
@@ -5691,8 +5886,8 @@ class HumanTurnUI:
                 box = self._make_constraint_overlay_box(node, current_colour, colour_map)
                 overlay_items.append((node, box))
 
-        elif condition == 'C3':
-            # C3: overlays for ALL boundary nodes (even unassigned); NL text in Means
+        elif condition == 'C4':
+            # C4: overlays for ALL boundary nodes (even unassigned); NL text in Means
             seen_nodes: set = set()
             for agent_name in self._neighs:
                 data = self._constraint_data.get(agent_name, {})
@@ -5713,7 +5908,7 @@ class HumanTurnUI:
                     )
                     overlay_items.append((node, box))
 
-        elif condition in ('C2', 'C4'):
+        elif condition in ('C2', 'C5'):
             # Agent node overlays using domain_projection
             for agent_name in self._neighs:
                 data = self._constraint_data.get(agent_name, {})
@@ -5725,11 +5920,30 @@ class HumanTurnUI:
                 for node, dom in domain_proj.items():
                     if node not in self._node_pos:
                         continue  # only visible (boundary) agent nodes
-                    nl_text = node_nl.get(node) if condition == 'C4' else None
+                    nl_text = node_nl.get(node) if condition == 'C5' else None
+                    acc = data.get('agent_colour_conditions', {}).get(node, {}) if condition == 'C2' else {}
                     box = self._make_agent_node_overlay_box(
-                        node, dom, full_domain, nl_text=nl_text
+                        node, dom, full_domain, nl_text=nl_text,
+                        agent_colour_conditions=acc,
                     )
                     overlay_items.append((node, box))
+
+        elif condition in ('C3', 'C6'):
+            # Human-node overlays: valid colour domains for the human's own nodes
+            hd = getattr(self, '_human_domain_data', {})
+            human_domain = hd.get('human_domain', {})
+            full_domain = hd.get('full_domain', list(self._domain))
+            node_nl = hd.get('node_summaries', {})
+            seen_nodes_hd: set = set()
+            for node, node_info in human_domain.items():
+                if node in seen_nodes_hd or node not in self._node_pos:
+                    continue
+                seen_nodes_hd.add(node)
+                nl_text = node_nl.get(node) if condition == 'C6' else None
+                box = self._make_human_domain_overlay_box(
+                    node, node_info, full_domain, nl_text=nl_text
+                )
+                overlay_items.append((node, box))
 
         if not overlay_items:
             return
@@ -5844,37 +6058,64 @@ class HumanTurnUI:
                      bg="white", fg="#1a1a6e", wraplength=220,
                      justify="left", anchor="w").pack(anchor="w", pady=(2, 0))
         else:
-            # Formulaic mode (C1/C2): enumerate valid configs
+            # Formulaic mode (C1/C2): show count + visible-neighbour constraints only.
+            # Filter configs to nodes visible in the graph (_node_pos) to avoid
+            # naming agent-internal nodes the human cannot see.
             cur_key = str(current_colour).lower() if current_colour else ""
             configs = colour_map.get(cur_key) or colour_map.get(str(current_colour), [])
-            MAX_SHOW = 8
+            visible_nodes = set(self._node_pos.keys())
+            MAX_SHOW = 6
             if configs:
-                for i, cfg in enumerate(configs[:MAX_SHOW]):
-                    row = tk.Frame(inner, bg="white")
-                    row.pack(anchor="w")
-                    first = True
-                    for n2, c2 in sorted(cfg.items()):
-                        if not first:
-                            tk.Label(row, text=" AND ", font=("Arial", 7),
-                                     bg="white", fg="#555").pack(side="left")
-                        tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
-                                 font=("Arial", 7), bg="white",
-                                 fg="#333").pack(side="left")
-                        fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
-                        tk.Label(row, text=str(c2),
-                                 font=("Arial", 7, "bold"), fg=fg2,
-                                 bg="white").pack(side="left")
-                        first = False
-                    if i < min(len(configs), MAX_SHOW) - 1:
-                        tk.Label(inner, text=" OR", font=("Arial", 7),
-                                 bg="white", fg="#555",
-                                 anchor="w").pack(anchor="w")
-                if len(configs) > MAX_SHOW:
-                    tk.Label(inner, text=f"  … ({len(configs)} total)",
-                             font=("Arial", 7, "italic"), fg="#777",
-                             bg="white", anchor="w").pack(anchor="w")
+                total = len(configs)
+                # Build visible-only filtered configs and deduplicate
+                filtered_cfgs = []
+                seen_sigs = set()
+                for cfg in configs:
+                    vis_cfg = {n2: c2 for n2, c2 in cfg.items()
+                               if n2 in visible_nodes and n2 != node}
+                    sig = tuple(sorted(vis_cfg.items()))
+                    if sig not in seen_sigs:
+                        seen_sigs.add(sig)
+                        filtered_cfgs.append(vis_cfg)
+
+                # Count summary
+                tk.Label(inner, text=f"  {total} valid option(s)",
+                         font=("Arial", 8), fg="#1a6e1a",
+                         bg="white", anchor="w").pack(anchor="w")
+
+                # Show visible-neighbour entries if informative
+                if filtered_cfgs and any(filtered_cfgs):
+                    tk.Label(inner, text="Neighbour constraints:",
+                             font=("Arial", 7, "italic"), fg="#555",
+                             bg="white", anchor="w").pack(anchor="w", pady=(3, 0))
+                    for i, vis_cfg in enumerate(filtered_cfgs[:MAX_SHOW]):
+                        if not vis_cfg:
+                            continue
+                        row = tk.Frame(inner, bg="white")
+                        row.pack(anchor="w")
+                        first = True
+                        for n2, c2 in sorted(vis_cfg.items()):
+                            if not first:
+                                tk.Label(row, text=" AND ", font=("Arial", 7),
+                                         bg="white", fg="#555").pack(side="left")
+                            tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
+                                     font=("Arial", 7), bg="white",
+                                     fg="#333").pack(side="left")
+                            fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
+                            tk.Label(row, text=str(c2),
+                                     font=("Arial", 7, "bold"), fg=fg2,
+                                     bg="white").pack(side="left")
+                            first = False
+                        if i < min(len(filtered_cfgs), MAX_SHOW) - 1:
+                            tk.Label(inner, text=" OR", font=("Arial", 7),
+                                     bg="white", fg="#555",
+                                     anchor="w").pack(anchor="w")
+                    if len(filtered_cfgs) > MAX_SHOW:
+                        tk.Label(inner, text=f"  … ({len(filtered_cfgs)} combinations)",
+                                 font=("Arial", 7, "italic"), fg="#777",
+                                 bg="white", anchor="w").pack(anchor="w")
             elif current_colour:
-                tk.Label(inner, text="  No valid configs",
+                tk.Label(inner, text="  No valid configs — try a different colour",
                          font=("Arial", 8), fg="#cc0000",
                          bg="white", anchor="w").pack(anchor="w")
             else:
@@ -5890,6 +6131,7 @@ class HumanTurnUI:
         domain: list,
         full_domain: list,
         nl_text: Optional[str] = None,
+        agent_colour_conditions: Optional[dict] = None,
     ) -> tk.Frame:
         """Build a floating overlay box for an agent node (C2/C4 conditions).
 
@@ -5926,25 +6168,143 @@ class HumanTurnUI:
                      bg="white", fg="#1a1a6e", wraplength=220,
                      justify="left", anchor="w").pack(anchor="w", pady=(2, 0))
         else:
-            # Formulaic mode (C2): show coloured swatches
+            # C2 formulaic: Possible / Conditional sections
+            acc = agent_colour_conditions or {}
+            certain = acc.get("certain", [])
+            conditional = acc.get("conditional", [])  # [(colour, [cond_str,...])]
+
             if not domain:
-                tk.Label(inner, text="  (no valid colours — infeasible)",
-                         font=("Arial", 7, "italic"), fg="#cc0000",
-                         bg="white", anchor="w").pack(anchor="w")
-            else:
+                tk.Label(inner, text="(no valid colours)", font=("Arial", 7, "italic"),
+                         fg="#cc0000", bg="white", anchor="w").pack(anchor="w")
+            elif not acc:
+                # acc not yet computed (first render): fall back to plain swatches
                 swatch_row = tk.Frame(inner, bg="white")
                 swatch_row.pack(anchor="w", pady=2)
-                for colour in sorted(domain, key=str):
-                    fg = COLOUR_FG.get(colour, "#333")
-                    bg = COLOUR_BG.get(colour, "#eeeeee")
-                    tk.Label(swatch_row, text=f" {colour} ",
-                             font=("Arial", 7, "bold"), fg=fg, bg=bg,
-                             relief=tk.GROOVE, bd=1,
+                for col in sorted(domain, key=str):
+                    tk.Label(swatch_row, text=f" {col} ",
+                             font=("Arial", 7, "bold"), fg=COLOUR_FG.get(col, "#333"),
+                             bg=COLOUR_BG.get(col, "#eee"), relief=tk.GROOVE, bd=1,
                              padx=2, pady=1).pack(side="left", padx=2)
-                if constrained:
-                    tk.Label(inner, text="(constrained)",
-                             font=("Arial", 7, "italic"), fg="#886600",
-                             bg="white", anchor="w").pack(anchor="w")
+            else:
+                if certain:
+                    tk.Label(inner, text="Possible:", font=("Arial", 7, "bold"),
+                             bg="white", fg="#006600", anchor="w").pack(anchor="w", pady=(4, 0))
+                    row = tk.Frame(inner, bg="white")
+                    row.pack(anchor="w", padx=4)
+                    for i, col in enumerate(sorted(certain, key=str)):
+                        if i > 0:
+                            tk.Label(row, text=" OR ", font=("Arial", 7),
+                                     bg="white", fg="#555").pack(side="left")
+                        tk.Label(row, text=f" {col} ",
+                                 font=("Arial", 7, "bold"),
+                                 fg=COLOUR_FG.get(col, "#333"), bg=COLOUR_BG.get(col, "#eee"),
+                                 relief=tk.GROOVE, bd=1, padx=2, pady=1).pack(side="left", padx=1)
+
+                if conditional:
+                    tk.Label(inner, text="Conditional:", font=("Arial", 7, "bold"),
+                             bg="white", fg="#884400", anchor="w").pack(anchor="w", pady=(4, 0))
+                    for col, cond_strs in conditional:
+                        cond_display = " AND ".join(sorted(set(cond_strs)))
+                        cond_row = tk.Frame(inner, bg="white")
+                        cond_row.pack(anchor="w", padx=4)
+                        tk.Label(cond_row, text=f" {col} ",
+                                 font=("Arial", 7, "bold"),
+                                 fg=COLOUR_FG.get(col, "#333"), bg=COLOUR_BG.get(col, "#eee"),
+                                 relief=tk.GROOVE, bd=1, padx=2, pady=1).pack(side="left")
+                        tk.Label(cond_row, text=f" IF {cond_display}",
+                                 font=("Arial", 7), fg="#555", bg="white").pack(side="left")
+
+        return outer
+
+    def _make_human_domain_overlay_box(
+        self,
+        node: str,
+        node_info: dict,
+        full_domain: list,
+        nl_text: Optional[str] = None,
+    ) -> tk.Frame:
+        """Build a floating overlay for a human node (C3/C6): shows valid colours.
+
+        node_info keys: valid, blocked_agents, current.
+        blocked_agents: {colour: [agent_names]} — colours that break agent feasibility.
+        """
+        COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
+        COLOUR_BG = {"red": "#ffe0e0", "green": "#e0ffe0", "blue": "#e0e0ff"}
+
+        valid = node_info.get("valid", [])
+        blocked_agents = node_info.get("blocked_agents", {})
+        current = node_info.get("current")
+        all_blocked = (not valid)
+        all_free = (len(valid) == len(full_domain))
+
+        header_bg = "#446644" if not all_blocked else "#884422"
+        outer = tk.Frame(self._canvas, bg=header_bg, bd=1, relief=tk.RAISED)
+
+        header = tk.Label(outer, text=f"⠿ {node}", font=("Arial", 8, "bold"),
+                          bg=header_bg, fg="white", padx=6, pady=2,
+                          cursor="fleur", anchor="w")
+        header.pack(fill="x")
+        outer._drag_handle = header
+
+        inner = tk.Frame(outer, bg="white", padx=5, pady=4)
+        inner.pack(fill="both", expand=True)
+
+        # Current colour indicator
+        if current:
+            tk.Label(inner, text="Current:", font=("Arial", 8, "bold"),
+                     bg="white", anchor="w").pack(anchor="w")
+            fg = COLOUR_FG.get(str(current).lower(), "#333")
+            bg = COLOUR_BG.get(str(current).lower(), "#eee")
+            row = tk.Frame(inner, bg="white")
+            row.pack(anchor="w", padx=4, pady=(0, 3))
+            tk.Label(row, text=f" {current} ", font=("Arial", 8, "bold"),
+                     fg=fg, bg=bg, relief=tk.GROOVE, bd=1,
+                     padx=2, pady=1).pack(side="left")
+
+        tk.Label(inner, text="Can pick:", font=("Arial", 8, "bold"),
+                 bg="white", anchor="w").pack(anchor="w", pady=(2, 0))
+
+        if nl_text:
+            # C6: LLM summary
+            tk.Label(inner, text=nl_text, font=("Arial", 8),
+                     bg="white", fg="#1a1a6e", wraplength=220,
+                     justify="left", anchor="w").pack(anchor="w", pady=(2, 0))
+        elif all_blocked:
+            tk.Label(inner, text="(nothing — change a neighbour)",
+                     font=("Arial", 7, "italic"), fg="#cc0000",
+                     bg="white", anchor="w").pack(anchor="w")
+        elif all_free:
+            tk.Label(inner, text="Any colour works here",
+                     font=("Arial", 7, "italic"), fg="#006600",
+                     bg="white", anchor="w").pack(anchor="w")
+        else:
+            # Formulaic: show valid swatches + briefly note blocked
+            swatch_row = tk.Frame(inner, bg="white")
+            swatch_row.pack(anchor="w", pady=2)
+            for i, col in enumerate(sorted(valid, key=str)):
+                if i > 0:
+                    tk.Label(swatch_row, text=" or ", font=("Arial", 7),
+                             bg="white", fg="#555").pack(side="left")
+                tk.Label(swatch_row, text=f" {col} ",
+                         font=("Arial", 7, "bold"),
+                         fg=COLOUR_FG.get(col, "#333"), bg=COLOUR_BG.get(col, "#eee"),
+                         relief=tk.GROOVE, bd=1, padx=2, pady=1).pack(side="left", padx=1)
+
+            # Show blocked colours with reason (agent constraints only)
+            if blocked_agents:
+                tk.Label(inner, text="Avoid:", font=("Arial", 7, "bold"),
+                         bg="white", fg="#884400", anchor="w").pack(anchor="w", pady=(3, 0))
+                for col in sorted(blocked_agents.keys()):
+                    reason_row = tk.Frame(inner, bg="white")
+                    reason_row.pack(anchor="w", padx=4)
+                    tk.Label(reason_row, text=f" {col} ",
+                             font=("Arial", 7, "bold"),
+                             fg=COLOUR_FG.get(col, "#888"),
+                             bg="#f0f0f0",
+                             relief=tk.GROOVE, bd=1, padx=2, pady=1).pack(side="left")
+                    tk.Label(reason_row, text=" breaks agent",
+                             font=("Arial", 7, "italic"), fg="#888",
+                             bg="white").pack(side="left")
 
         return outer
 
@@ -5952,19 +6312,27 @@ class HumanTurnUI:
         """Trigger initial constraint computation before the user has clicked anything."""
         if not getattr(self, '_constraint_viz_mode', False):
             return
-        if not getattr(self, '_on_constraint_update', None):
-            return
         snapshot = dict(self._assignments)
 
-        def _bg_update(neigh: str) -> None:
-            try:
-                data = self._on_constraint_update(neigh, snapshot)
-                self.update_constraint_display(neigh, data)
-            except Exception as _exc:
-                print(f"[ConstraintViz] initial_populate error for {neigh}: {_exc}")
+        if getattr(self, '_on_constraint_update', None):
+            def _bg_update(neigh: str) -> None:
+                try:
+                    data = self._on_constraint_update(neigh, snapshot)
+                    self.update_constraint_display(neigh, data)
+                except Exception as _exc:
+                    print(f"[ConstraintViz] initial_populate error for {neigh}: {_exc}")
 
-        for neigh in self._neighs:
-            threading.Thread(target=_bg_update, args=(neigh,), daemon=True).start()
+            for neigh in self._neighs:
+                threading.Thread(target=_bg_update, args=(neigh,), daemon=True).start()
+
+        if getattr(self, '_on_human_domain_update', None):
+            def _bg_hd() -> None:
+                try:
+                    data = self._on_human_domain_update(snapshot)
+                    self.update_human_domain_display(data)
+                except Exception as _exc:
+                    print(f"[ConstraintViz] initial_populate human_domain error: {_exc}")
+            threading.Thread(target=_bg_hd, daemon=True).start()
 
     # -------------------- Two-Phase Workflow --------------------
 
