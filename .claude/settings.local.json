@@ -43,7 +43,11 @@
       "Bash(cmd /c \"dir E:\\\\Files\\\\PhD-Main\\\\GC-New\\\\GIT_LOCAL_ROOT\\\\GraphColouringNew\\\\test_output 2>&1 | head -20\")",
       "Bash(cmd /c \"type E:\\\\Files\\\\PhD-Main\\\\GC-New\\\\GIT_LOCAL_ROOT\\\\GraphColouringNew\\\\results\\\\llm_tool\\\\llm_trace.jsonl\")",
       "Bash(wc:*)",
-      "Bash(venvScriptspython.exe:*)"
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && venv/Scripts/pip install openpyxl -q && echo \"installed\")",
+      "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && del _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
+      "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && rm _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
+      "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && rm _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax ok'\\)\")"
     ]
   }
 }

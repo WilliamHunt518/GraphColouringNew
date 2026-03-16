@@ -401,6 +401,7 @@ def run_experiment(
     fixed_constraints: bool = True,
     num_fixed_nodes: int = 1,
     graph_preset: str = "easy",
+    output_dir: str | None = None,
 ) -> None:
     cwd = Path.cwd()
     if (cwd / "code").exists() or (cwd / "run_experiment.py").exists():
@@ -410,7 +411,10 @@ def run_experiment(
 
     import datetime
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = project_root / "results" / f"{condition.lower()}_{timestamp}"
+    if output_dir is not None:
+        results_dir = Path(output_dir)
+    else:
+        results_dir = project_root / "results" / f"{condition.lower()}_{timestamp}"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"[run_experiment] Condition: {condition}")
@@ -485,6 +489,8 @@ def main() -> None:
                    help="Graph topology: easy/medium/tight/dense/dense_tight (5 nodes), "
                         "hard/expert (6 nodes), super (8 nodes); "
                         "medium/tight/expert/dense/dense_tight/super have pre-designed fixed constraints")
+    p.add_argument("--output-dir", default=None,
+                   help="Override output directory (default: results/<condition>_<timestamp>)")
 
     args = p.parse_args()
 
@@ -495,6 +501,7 @@ def main() -> None:
         fixed_constraints=bool(args.fixed_constraints),
         num_fixed_nodes=int(args.num_fixed_nodes),
         graph_preset=str(args.graph_preset),
+        output_dir=args.output_dir,
     )
 
 
