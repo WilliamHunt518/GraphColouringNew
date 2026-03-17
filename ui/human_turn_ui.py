@@ -313,14 +313,13 @@ class HumanTurnUI:
         # Per-node colour domain restrictions (complex constraints).
         # Maps node → list of allowed colours.  Empty = unconstrained.
         self._node_domains: Dict[str, List[Any]] = dict(node_domains) if node_domains else {}
+        # True only for complex constraint modes (cx_easy / cx_medium / cx_hard).
+        # Controls whether arc rings are drawn on human-owned nodes.
+        self._complex_constraints: bool = bool(self._node_domains)
         # Also treat 1-colour domain nodes as fixed (they cannot be changed)
         for _n, _dom in self._node_domains.items():
             if len(_dom) == 1 and _n not in self._fixed_nodes:
                 self._fixed_nodes[_n] = _dom[0]
-        # Reverse: give simple fixed nodes a 1-colour domain so the arc ring renders them
-        for _n, _col in self._fixed_nodes.items():
-            if _n not in self._node_domains:
-                self._node_domains[_n] = [_col]
         self._output_dir = output_dir
 
         # Track per-agent feasibility for Finish button gating.
@@ -3154,9 +3153,8 @@ class HumanTurnUI:
                 canvas.create_text(tx + r - int(5 * scale), ty - r + int(5 * scale),
                                  text="🔒", font=("TkDefaultFont", lock_font_size))
 
-            # Domain arc ring — only on human-owned nodes, only when complex
-            # constraints are active (node_domains non-empty).
-            if is_owned and hasattr(self, '_node_domains') and self._node_domains:
+            # Domain arc ring — only on human-owned nodes in complex constraint modes.
+            if is_owned and getattr(self, '_complex_constraints', False):
                 self._draw_domain_arcs(canvas, tx, ty, r, n, scale)
 
         # Constraint viz overlays drawn on top of graph
@@ -5984,21 +5982,21 @@ class HumanTurnUI:
         overlay_items: list = []  # each entry: (node_key, box_widget)
 
         if condition == 'C1':
-            # C1: overlays only for assigned boundary nodes (consequence_sets keys)
-            node_info: Dict[str, Dict] = {}
+            # C1: overlays for ALL boundary nodes (assigned or not)
+            seen_nodes_c1: set = set()
             for agent_name in self._neighs:
                 data = self._constraint_data.get(agent_name, {})
                 if not data:
                     continue
-                for node, colour_map in data.get('consequence_sets', {}).items():
-                    node_info[node] = colour_map
-
-            for node, colour_map in node_info.items():
-                if node not in self._node_pos:
-                    continue
-                current_colour = self._assignments.get(node)
-                box = self._make_constraint_overlay_box(node, current_colour, colour_map)
-                overlay_items.append((node, box))
+                consequence_sets = data.get('consequence_sets', {})
+                for node in data.get('boundary_nodes', consequence_sets.keys()):
+                    if node in seen_nodes_c1 or node not in self._node_pos:
+                        continue
+                    seen_nodes_c1.add(node)
+                    current_colour = self._assignments.get(node)
+                    colour_map = consequence_sets.get(node, {})
+                    box = self._make_constraint_overlay_box(node, current_colour, colour_map)
+                    overlay_items.append((node, box))
 
         elif condition == 'C4':
             # C4: overlays for ALL boundary nodes (even unassigned); NL text in Means

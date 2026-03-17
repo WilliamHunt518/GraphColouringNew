@@ -70,8 +70,8 @@ CROSS_EDGE_COLOR = "#d05030"
 CROSS_EDGE_WIDTH = 2
 
 ALL_PRESETS = [
-    "easy", "medium", "tight", "dense", "dense_tight",
-    "hard", "expert", "super",
+    "easy", "tight", "hard",
+    "cx_easy", "cx_medium", "cx_hard",
 ]
 
 
@@ -133,6 +133,14 @@ class LayoutEditor:
         ttk.Button(top, text="Load Saved",    command=self._load_saved_cmd).pack(side="left", padx=2)
         ttk.Button(top, text="Reset to Auto", command=self._reset_to_auto).pack(side="left", padx=2)
         ttk.Button(top, text="Save Layout",   command=self._save_layout).pack(side="left", padx=(12, 2))
+
+        tk.Label(top, text="  Copy from:", font=("Arial", 11)).pack(side="left")
+        self.copy_from_var = tk.StringVar(value=ALL_PRESETS[0])
+        ttk.Combobox(
+            top, textvariable=self.copy_from_var,
+            values=ALL_PRESETS, state="readonly", width=12,
+        ).pack(side="left", padx=(4, 2))
+        ttk.Button(top, text="Apply", command=self._copy_from_preset).pack(side="left", padx=2)
 
         self.status_var = tk.StringVar(value="")
         tk.Label(top, textvariable=self.status_var,
@@ -210,7 +218,7 @@ class LayoutEditor:
 
     def _load_preset(self, preset: str) -> None:
         self.preset = preset
-        node_names, clusters, adjacency, owners, _ = _build_topology(preset)
+        node_names, clusters, adjacency, owners, *_ = _build_topology(preset)
 
         self.nodes = node_names
         self.clusters = clusters
@@ -352,6 +360,48 @@ class LayoutEditor:
         self.status_var.set(
             f"Saved '{self.preset}' → {LAYOUT_FILE.name}  "
             f"({len(self.node_pos)} nodes, {len(self.overlay_pos)} overlays)"
+        )
+
+    def _copy_from_preset(self) -> None:
+        src = self.copy_from_var.get()
+        if src == self.preset:
+            self.status_var.set("Source and target are the same preset — nothing copied.")
+            return
+        if not LAYOUT_FILE.exists():
+            self.status_var.set("No saved layouts file found.")
+            return
+        try:
+            with open(LAYOUT_FILE, encoding="utf-8") as f:
+                all_layouts: dict = json.load(f)
+        except Exception as exc:
+            self.status_var.set(f"Error reading layout file: {exc}")
+            return
+        if src not in all_layouts:
+            self.status_var.set(f"No saved layout for '{src}' to copy from.")
+            return
+        saved = all_layouts[src]
+        # Map positions by node name — only copy nodes that exist in current preset
+        copied_nodes = {
+            n: (int(v[0] * self._cw), int(v[1] * self._ch))
+            for n, v in saved.items()
+            if n != "__overlays__" and isinstance(v, list) and n in self.nodes
+        }
+        missing = [n for n in self.nodes if n not in copied_nodes]
+        if missing:
+            self.status_var.set(
+                f"Topology mismatch — nodes not in '{src}': {', '.join(missing)}. Copy aborted."
+            )
+            return
+        self.node_pos = copied_nodes
+        if "__overlays__" in saved:
+            self.overlay_pos = {
+                n: (int(v[0] * self._cw), int(v[1] * self._ch))
+                for n, v in saved["__overlays__"].items()
+                if isinstance(v, list) and n in self.nodes
+            }
+        self._redraw()
+        self.status_var.set(
+            f"Copied layout from '{src}' → '{self.preset}'. Hit Save Layout to commit."
         )
 
     # ------------------------------------------------------------------

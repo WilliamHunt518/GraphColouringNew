@@ -313,9 +313,6 @@ class ConstraintAnalyser:
         """
         result: Dict[str, Dict[Any, List[Dict[str, Any]]]] = {}
         for v in self._boundary_nodes:
-            current_colour = human_partial.get(v)
-            if current_colour is None:
-                continue  # unassigned — no "consequence" to show
             result[v] = {}
             for c in self._domain:
                 override = dict(human_partial)
