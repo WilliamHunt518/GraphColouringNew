@@ -27,7 +27,7 @@ def main() -> None:
 
     root = tk.Tk()
     root.title("Graph Colouring Constraint Viz Launcher")
-    root.geometry("520x430")
+    root.geometry("520x530")
 
     FONT = ("Arial", 13)
     root.option_add("*TLabel.Font", FONT)
@@ -80,6 +80,8 @@ def main() -> None:
     }
 
     # --- variables with saved defaults ---
+    participant_name_var = tk.StringVar(value=saved_config.get("participant_name", ""))
+    test_run_var = tk.BooleanVar(value=saved_config.get("test_run", False))
     condition_var = tk.StringVar(value=saved_config.get("condition", "C1"))
     _saved_preset = saved_config.get("graph_preset", "Easy (5 nodes)")
     # Migrate old saved value "Hard (6 nodes)" to new label if needed
@@ -96,6 +98,22 @@ def main() -> None:
 
     # --- widgets ---
     row = 0
+    ttk.Label(frm, text="Participant name").grid(row=row, column=0, sticky="w", pady=(0, 4))
+    ttk.Entry(frm, textvariable=participant_name_var, width=24).grid(
+        row=row, column=1, sticky="w", pady=(0, 4)
+    )
+
+    row += 1
+    test_run_check = ttk.Checkbutton(
+        frm,
+        text="Test run  (saves to results/tempTest, overwritten each time)",
+        variable=test_run_var,
+    )
+    test_run_check.grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 10))
+
+    ttk.Separator(frm).grid(row=row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+    row += 2
+
     ttk.Label(frm, text="Condition").grid(row=row, column=0, sticky="w", pady=(0, 6))
     ttk.Combobox(
         frm,
@@ -197,6 +215,8 @@ def main() -> None:
 
             # Save current configuration
             current_config = {
+                "participant_name": participant_name_var.get().strip(),
+                "test_run": bool(test_run_var.get()),
                 "condition": condition_var.get(),
                 "graph_preset": graph_preset_var.get(),
                 "use_ui": bool(use_ui_var.get()),
@@ -225,6 +245,11 @@ def main() -> None:
                 args.append("--use-llm")
             _preset_cli = _PRESET_CLI.get(graph_preset_var.get(), "easy")
             args.extend(["--graph-preset", _preset_cli])
+            _pname = participant_name_var.get().strip()
+            if _pname:
+                args.extend(["--participant-name", _pname])
+            if bool(test_run_var.get()):
+                args.append("--test-run")
 
             subprocess.Popen(args, cwd=str(run_script.parent))
             status.set("Launched. Experiment running in a new window.")

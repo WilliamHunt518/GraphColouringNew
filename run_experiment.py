@@ -393,6 +393,40 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
     return node_names, clusters, adjacency, owners, explicit_fixed
 
 
+def _assign_participant_id(
+    results_root: Path,
+    participant_name: str,
+    condition: str,
+    graph_preset: str,
+    date_str: str,
+) -> str:
+    """Return a new anonymous participant ID (e.g. P001) and record it in the mapping file."""
+    import csv
+
+    mapping_file = results_root / "participant_mapping.csv"
+    existing_ids: list[int] = []
+
+    if mapping_file.exists():
+        with open(mapping_file, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                pid = row.get("ID", "")
+                if pid.startswith("P") and pid[1:].isdigit():
+                    existing_ids.append(int(pid[1:]))
+
+    next_num = max(existing_ids, default=0) + 1
+    participant_id = f"P{next_num:03d}"
+
+    write_header = not mapping_file.exists()
+    with open(mapping_file, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(["ID", "Name", "Date", "Condition", "GraphPreset"])
+        writer.writerow([participant_id, participant_name, date_str, condition, graph_preset])
+
+    return participant_id
+
+
 def run_experiment(
     *,
     condition: str,
@@ -402,6 +436,8 @@ def run_experiment(
     num_fixed_nodes: int = 1,
     graph_preset: str = "easy",
     output_dir: str | None = None,
+    participant_name: str = "",
+    test_run: bool = False,
 ) -> None:
     cwd = Path.cwd()
     if (cwd / "code").exists() or (cwd / "run_experiment.py").exists():
@@ -410,15 +446,35 @@ def run_experiment(
         project_root = Path(__file__).resolve().parent
 
     import datetime
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    now = datetime.datetime.now()
+    date_str = now.strftime("%Y-%m-%d")
+
     if output_dir is not None:
         results_dir = Path(output_dir)
+    elif test_run:
+        results_dir = project_root / "results" / "tempTest"
+        # Wipe previous test run so it doesn't accumulate
+        import shutil
+        if results_dir.exists():
+            shutil.rmtree(results_dir)
     else:
-        results_dir = project_root / "results" / f"{condition.lower()}_{timestamp}"
+        results_root = project_root / "results"
+        results_root.mkdir(parents=True, exist_ok=True)
+        participant_id = _assign_participant_id(
+            results_root,
+            participant_name or "unknown",
+            condition,
+            graph_preset,
+            date_str,
+        )
+        results_dir = results_root / date_str / participant_id
     results_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"[run_experiment] Condition: {condition}")
-    print(f"[run_experiment] Writing results to: {results_dir}")
+    if test_run:
+        print(f"[run_experiment] TEST RUN — Writing results to: {results_dir}")
+    else:
+        print(f"[run_experiment] Writing results to: {results_dir}")
 
     node_names, clusters, adjacency, owners, explicit_fixed = _build_topology(
         graph_preset, num_fixed_nodes=num_fixed_nodes if fixed_constraints else 0
@@ -445,6 +501,7 @@ def run_experiment(
             output_dir=str(results_dir),
             ui_title=f"Constraint Visualisation — {condition} ({graph_preset.capitalize()})",
             preset_fixed_nodes=preset_fixed_nodes,
+            graph_preset=graph_preset,
         )
     else:
         from cluster_simulation import run_headless_constraint_viz
@@ -490,7 +547,11 @@ def main() -> None:
                         "hard/expert (6 nodes), super (8 nodes); "
                         "medium/tight/expert/dense/dense_tight/super have pre-designed fixed constraints")
     p.add_argument("--output-dir", default=None,
-                   help="Override output directory (default: results/<condition>_<timestamp>)")
+                   help="Override output directory (default: results/YYYY-MM-DD/<participant-id>)")
+    p.add_argument("--participant-name", default="",
+                   help="Participant's real name (mapped to an anonymous ID in the results directory)")
+    p.add_argument("--test-run", action="store_true", default=False,
+                   help="Save to results/tempTest (overwritten each run); no mapping entry created")
 
     args = p.parse_args()
 
@@ -502,6 +563,8 @@ def main() -> None:
         num_fixed_nodes=int(args.num_fixed_nodes),
         graph_preset=str(args.graph_preset),
         output_dir=args.output_dir,
+        participant_name=str(args.participant_name),
+        test_run=bool(args.test_run),
     )
 
 

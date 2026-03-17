@@ -54,6 +54,9 @@ class HumanTurnUI:
         self._debug_logger.info(f"=== Conditional Builder Debug Session Started ===")
         self._debug_logger.info(f"Log file: {log_file}")
 
+        # graph preset (set externally before setup(); used to load saved node layouts)
+        self._graph_preset: str = ""
+
         # termination
         self.end_reason: str = ""  # set to "consensus" when all parties tick satisfied
 
@@ -350,7 +353,11 @@ class HumanTurnUI:
     def _build_ui(self, debug_agents: Optional[List[Any]], get_visible_graph_fn: Optional[Callable[[str], Any]]) -> None:
         root = self._ensure_root()
         root.title(self._title)
-        root.geometry("1320x820")
+        if getattr(self, '_constraint_viz_mode', False):
+            # Start maximised so the sash percentage fires on the full-size window
+            root.state('zoomed')
+        else:
+            root.geometry("1320x820")
 
         top = ttk.Frame(root)
         top.pack(fill="x", padx=8, pady=6)
@@ -415,20 +422,22 @@ class HumanTurnUI:
         # Always pack the paned window
         paned.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # Create left panel for graph (always present)
-        left = ttk.Frame(paned)
-        paned.add(left, width=400, minsize=250)  # Graph panel: default 400px (1/3), min 250px
-
-        # Middle panel with scrollbar for chat panes
-        middle_container = ttk.Frame(paned)
-
         # In configure phase (all modes with announcement), don't add middle panel yet
         rb_mode = getattr(self, '_rb_structured_mode', False)
         llm_rb_mode = getattr(self, '_llm_rb_mode', False)
         has_announcement_phase = getattr(self, '_has_announcement_phase', False) or rb_mode or llm_rb_mode
         _cviz = getattr(self, '_constraint_viz_mode', False)
+
+        # Create left panel for graph (always present)
+        # Constraint-viz mode uses an 80/20 split, so give the graph panel a larger initial hint
+        left = ttk.Frame(paned)
+        paned.add(left, width=900 if _cviz else 400, minsize=250)
+
+        # Middle panel with scrollbar for chat panes
+        middle_container = ttk.Frame(paned)
+
         if not (has_announcement_phase and self._phase == "configure") and not _cviz:
-            paned.add(middle_container, width=400, minsize=300)  # Controls panel: default 400px (1/3), min 300px
+            paned.add(middle_container, width=400, minsize=300)
 
         # Store for later
         self._middle_container = middle_container
@@ -471,8 +480,8 @@ class HumanTurnUI:
         right_panel_frame = ttk.Frame(paned)
 
         if getattr(self, '_constraint_viz_mode', False):
-            # Constraint viz: always show constraint panels
-            paned.add(right_panel_frame, width=400, minsize=250)
+            # Constraint viz: always show constraint panels (20% of window)
+            paned.add(right_panel_frame, width=200, minsize=180)
             self._conditionals_frame = right_panel_frame
             self._conditionals_cards_inner = None
             self._build_feasibility_sidebar(right_panel_frame)
@@ -488,25 +497,47 @@ class HumanTurnUI:
             # Build conditionals sidebar UI
             self._build_conditionals_sidebar(conditionals_frame)
 
-        # Schedule sash positioning
-        def _set_equal_sash_positions():
+        # Schedule sash positioning — retry until the window is actually mapped
+        # (winfo_width can return 1 or 0 if called before the WM maps the window)
+        _sash_retries = [0]
+
+        def _set_sash_positions():
             try:
                 paned.update_idletasks()
                 total_width = paned.winfo_width()
-                if total_width > 100:
-                    if getattr(self, '_constraint_viz_mode', False):
-                        # 2 panels: graph 60%, mini-configs 40%
-                        paned.sash_place(0, int(total_width * 0.60), 0)
-                    else:
-                        # 3 panels: equal 1/3 each
-                        paned.sash_place(0, int(total_width / 3), 0)
-                        if len(paned.panes()) > 2:
-                            paned.sash_place(1, int(2 * total_width / 3), 0)
+                if total_width <= 100:
+                    # Window not mapped yet — retry up to ~3 seconds
+                    _sash_retries[0] += 1
+                    if _sash_retries[0] < 15:
+                        root.after(200, _set_sash_positions)
+                    return
+                if getattr(self, '_constraint_viz_mode', False):
+                    # 2 panels: graph 80%, info panel 20%
+                    paned.sash_place(0, int(total_width * 0.80), 0)
+                else:
+                    # 3 panels: equal 1/3 each
+                    paned.sash_place(0, int(total_width // 3), 0)
+                    if len(paned.panes()) > 2:
+                        paned.sash_place(1, int(2 * total_width // 3), 0)
             except Exception:
-                pass  # Silently fail if sash positioning doesn't work
+                pass
 
-        # Schedule after window is mapped (500ms delay to ensure sizing is complete)
-        root.after(500, _set_equal_sash_positions)
+        root.after(100, _set_sash_positions)
+
+        # Re-apply the sash ratio whenever the window is resized (e.g. maximise/restore).
+        # Debounced 300ms so it doesn't fight the user while they drag the window border.
+        # Sash drags do NOT trigger root <Configure>, so manual panel resizing still works.
+        if getattr(self, '_constraint_viz_mode', False):
+            _resize_pending = [None]
+
+            def _on_root_resize(event):
+                if event.widget is not root:
+                    return
+                if _resize_pending[0] is not None:
+                    root.after_cancel(_resize_pending[0])
+                _resize_pending[0] = root.after(300, _set_sash_positions)
+
+            root.bind('<Configure>', _on_root_resize)
 
         # Create canvas in left panel (always)
         canvas = tk.Canvas(left, bg="white", highlightthickness=1, highlightbackground="#ccc")
@@ -2886,6 +2917,39 @@ class HumanTurnUI:
             return
         w = max(canvas.winfo_width(), 900)
         h = max(canvas.winfo_height(), 700)
+
+        # Try to load a saved layout for this preset
+        if self._graph_preset:
+            from pathlib import Path as _Path
+            layout_file = _Path(__file__).parent / "node_layouts.json"
+            if layout_file.exists():
+                try:
+                    import json as _json
+                    with open(layout_file) as _f:
+                        all_layouts = _json.load(_f)
+                    if self._graph_preset in all_layouts:
+                        saved = all_layouts[self._graph_preset]
+                        visible = set(self._nodes)
+                        # Use v[0]/v[1] indexing — avoids unpacking crash when
+                        # "__overlays__" value is a dict rather than a [fx, fy] list
+                        loaded = {
+                            n: (int(v[0] * w), int(v[1] * h))
+                            for n, v in saved.items()
+                            if n in visible and isinstance(v, list)
+                        }
+                        if all(n in loaded for n in self._nodes):
+                            self._node_pos.update(loaded)
+                            # Also load saved overlay positions if present
+                            if "__overlays__" in saved:
+                                self._overlay_positions = {
+                                    n: (int(v[0] * w), int(v[1] * h))
+                                    for n, v in saved["__overlays__"].items()
+                                    if isinstance(v, list)
+                                }
+                            return
+                except Exception:
+                    pass  # fall through to algorithmic layout
+
         cx, cy = w / 2.0, h / 2.0
 
         owned = [n for n in self._nodes if self._owners.get(n) == "Human"]

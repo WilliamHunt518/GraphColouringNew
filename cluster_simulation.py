@@ -1395,6 +1395,7 @@ def run_constraint_viz_simulation(
     output_dir: str = "./cluster_outputs",
     ui_title: str = "Constraint Visualisation",
     preset_fixed_nodes: Optional[Dict[str, Dict[str, Any]]] = None,
+    graph_preset: str = "",
 ) -> None:
     """Run the redesigned constraint visualisation study.
 
@@ -1899,6 +1900,7 @@ def run_constraint_viz_simulation(
 
     ui = HumanTurnUI(title=ui_title)
     ui._constraint_viz_mode = True  # Flag for UI to use new layout
+    ui._graph_preset = graph_preset  # Used to load saved node layouts
 
     ui.run_async_chat(
         nodes=human_nodes,

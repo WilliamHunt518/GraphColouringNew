@@ -1086,9 +1086,10 @@ class StudyApp:
         footer = self._footer(page)
         inner = self._scrollable(page)
 
+        _ORDINALS = ["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH"]
         dyn_opts = [
-            f"{c} — {CONDITION_INFO.get(c, c)}"
-            for c in self.selected_conditions
+            f"{_ORDINALS[i]} MODE — {CONDITION_INFO.get(c, c)}"
+            for i, c in enumerate(self.selected_conditions)
         ]
         wmap = self._render_survey(inner, FINAL_QUESTIONS, dyn_opts=dyn_opts)
 
