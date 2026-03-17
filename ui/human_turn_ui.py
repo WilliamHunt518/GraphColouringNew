@@ -131,6 +131,10 @@ class HumanTurnUI:
         self._graph_canvas_offset: Tuple[int, int] = (0, 0)
         self._graph_drag_start: Optional[Tuple[int, int]] = None
 
+        # Overlay drag guard: True while user is dragging an overlay panel.
+        # Prevents _draw_constraint_overlays from destroying a widget mid-drag.
+        self._overlay_drag_active: bool = False
+
         # Node cooldown (prevents rapid colour switching)
         self._node_cooldowns: Dict[str, float] = {}   # {node: expiry_timestamp}
         self._cooldown_seconds: int = 15
@@ -276,6 +280,7 @@ class HumanTurnUI:
         structured_rb_mode: bool = False,
         comm_layer: Optional[Any] = None,
         output_dir: Optional[str] = None,
+        node_domains: Optional[Dict[str, List[Any]]] = None,
         **_ignored_kwargs: Any,
     ) -> None:
         """Start the UI mainloop and block until Finish or consensus."""
@@ -305,7 +310,22 @@ class HumanTurnUI:
         self._debug_get_text_fn = debug_get_text_fn
         self._debug_get_visible_graph_fn = debug_get_visible_graph_fn
         self._fixed_nodes = dict(fixed_nodes) if fixed_nodes else {}
+        # Per-node colour domain restrictions (complex constraints).
+        # Maps node → list of allowed colours.  Empty = unconstrained.
+        self._node_domains: Dict[str, List[Any]] = dict(node_domains) if node_domains else {}
+        # Also treat 1-colour domain nodes as fixed (they cannot be changed)
+        for _n, _dom in self._node_domains.items():
+            if len(_dom) == 1 and _n not in self._fixed_nodes:
+                self._fixed_nodes[_n] = _dom[0]
+        # Reverse: give simple fixed nodes a 1-colour domain so the arc ring renders them
+        for _n, _col in self._fixed_nodes.items():
+            if _n not in self._node_domains:
+                self._node_domains[_n] = [_col]
         self._output_dir = output_dir
+
+        # Track per-agent feasibility for Finish button gating.
+        # Starts False; updated each time update_constraint_display is called.
+        self._agent_feasibility: Dict[str, bool] = {}
 
         if points:
             self._points = dict(points)
@@ -390,7 +410,8 @@ class HumanTurnUI:
             self._impossible_btn.pack(side="left", padx=(0, 6))
 
         ttk.Button(btns, text="Debug", command=lambda: self._open_debug(debug_agents, get_visible_graph_fn)).pack(side="right", padx=(6, 0))
-        ttk.Button(btns, text="Finish", command=self._finish).pack(side="right")
+        self._finish_btn = ttk.Button(btns, text="Finish", command=self._finish, state="disabled")
+        self._finish_btn.pack(side="right")
 
         # Create phase banner frame (for all modes with announcement phase)
         if has_announcement:
@@ -3042,14 +3063,6 @@ class HumanTurnUI:
                 lbl = canvas.create_text(x, y, text=f"{n}", font=("TkDefaultFont", 10 if is_owned else 9))
                 self._label_text_items[n] = lbl
 
-            # Visual indicators for fixed (immutable) nodes
-            if hasattr(self, '_fixed_nodes') and n in self._fixed_nodes:
-                # Orange dashed ring around fixed nodes
-                canvas.create_oval(x - r - 4, y - r - 4, x + r + 4, y + r + 4,
-                                 outline="#FF8C00", width=3, dash=(3, 2), fill="")
-                # Lock icon
-                canvas.create_text(x + r - 8, y - r + 8, text="🔒",
-                                 font=("TkDefaultFont", 10))
 
     def _redraw_graph(self) -> None:
         """Redraw graph with zoom and pan transformations applied."""
@@ -3129,20 +3142,8 @@ class HumanTurnUI:
                 lbl = canvas.create_text(tx, ty, text=f"{n}", font=("TkDefaultFont", font_size))
                 self._label_text_items[n] = lbl
 
-            # Visual indicators for fixed (immutable) nodes
-            if hasattr(self, '_fixed_nodes') and n in self._fixed_nodes:
-                # Orange dashed ring around fixed nodes
-                ring_offset = int(4 * scale)
-                canvas.create_oval(tx - r - ring_offset, ty - r - ring_offset,
-                                 tx + r + ring_offset, ty + r + ring_offset,
-                                 outline="#FF8C00", width=max(1, int(3 * scale)),
-                                 dash=(3, 2), fill="")
-                # Lock icon
-                lock_font_size = max(6, int(10 * scale))
-                canvas.create_text(tx + r - int(8 * scale), ty - r + int(8 * scale),
-                                 text="🔒", font=("TkDefaultFont", lock_font_size))
             # Visual indicators for committed (soft-locked) nodes
-            elif hasattr(self, '_committed_nodes') and n in self._committed_nodes:
+            if hasattr(self, '_committed_nodes') and n in self._committed_nodes:
                 # Gold ring around committed nodes (thicker than fixed, solid)
                 ring_offset = int(2 * scale)
                 canvas.create_oval(tx - r - ring_offset, ty - r - ring_offset,
@@ -3152,6 +3153,11 @@ class HumanTurnUI:
                 lock_font_size = max(5, int(8 * scale))
                 canvas.create_text(tx + r - int(5 * scale), ty - r + int(5 * scale),
                                  text="🔒", font=("TkDefaultFont", lock_font_size))
+
+            # Domain arc ring — only on human-owned nodes, only when complex
+            # constraints are active (node_domains non-empty).
+            if is_owned and hasattr(self, '_node_domains') and self._node_domains:
+                self._draw_domain_arcs(canvas, tx, ty, r, n, scale)
 
         # Constraint viz overlays drawn on top of graph
         if getattr(self, '_constraint_viz_mode', False):
@@ -3296,6 +3302,7 @@ class HumanTurnUI:
         self._redraw_graph()
         if self._hud_var:
             self._hud_var.set(self._hud_text())
+        self._update_finish_button()
 
         # Constraint viz mode: fire constraint updates in background threads
         if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_constraint_update', None):
@@ -3345,11 +3352,13 @@ class HumanTurnUI:
         popup.overrideredirect(True)
         popup.attributes('-topmost', True)
 
-        # Build colour options (include None/unassigned in constraint viz mode)
+        # Build colour options — restrict to node's allowed domain if complex constraints active
+        _allowed = self._node_domains.get(node, self._domain) if hasattr(self, '_node_domains') else self._domain
+        _allowed_set = set(str(c).lower() for c in _allowed)
         if getattr(self, '_constraint_viz_mode', False):
-            options: List[Any] = [None] + list(self._domain)
+            options: List[Any] = [None] + [c for c in self._domain if str(c).lower() in _allowed_set]
         else:
-            options = list(self._domain)
+            options = [c for c in self._domain if str(c).lower() in _allowed_set]
 
         # Colour maps
         _FILL = {"red": "#ffcccc", "green": "#ccffcc", "blue": "#ccccff"}
@@ -5423,9 +5432,43 @@ class HumanTurnUI:
         self._human_domain_data = data
         self._root.after(0, self._draw_constraint_overlays)
 
+    def _check_finish_ready(self) -> bool:
+        """Return True when the Finish button should be enabled."""
+        # All human-owned nodes must be assigned
+        human_nodes = [n for n in self._nodes if self._owners.get(n) == "Human"]
+        if any(self._assignments.get(n) is None for n in human_nodes):
+            return False
+        # No internal clashes among human nodes
+        human_set = set(human_nodes)
+        for u, v in self._edges:
+            if u in human_set and v in human_set:
+                if (self._assignments.get(u) is not None
+                        and self._assignments.get(u) == self._assignments.get(v)):
+                    return False
+        # All agents must have reported feasible configurations
+        if not self._neighs:
+            return True
+        return all(self._agent_feasibility.get(n, False) for n in self._neighs)
+
+    def _update_finish_button(self) -> None:
+        """Enable or disable the Finish button based on current readiness."""
+        btn = getattr(self, '_finish_btn', None)
+        if btn is None:
+            return
+        try:
+            btn.config(state="normal" if self._check_finish_ready() else "disabled")
+        except Exception:
+            pass
+
     def _render_constraint_panel(self, agent_name: str) -> None:
         """Redraw constraint cards for one agent panel. Must run on the Tk thread."""
         data = self._constraint_data.get(agent_name, {})
+
+        # Update per-agent feasibility for Finish button gating
+        feasibility_count = data.get("feasibility_count", 0)
+        is_feasible = data.get("is_feasible", feasibility_count > 0)
+        self._agent_feasibility[agent_name] = bool(is_feasible)
+        self._update_finish_button()
 
         # Always update the right-hand mini-graph sidebar and canvas overlays
         self._render_feasibility_panel(agent_name, data)
@@ -5905,6 +5948,13 @@ class HumanTurnUI:
         if canvas is None:
             return
 
+        # If an overlay is currently being dragged, defer the redraw until the
+        # drag ends.  Destroying the widget mid-drag would reset the drag state
+        # (xr/yr) to 0 on the replacement widget, causing a huge jump.
+        if getattr(self, '_overlay_drag_active', False):
+            self._root.after(150, self._draw_constraint_overlays)
+            return
+
         # Destroy previous overlay Tk widgets and canvas items
         for w in getattr(self, '_overlay_widgets', []):
             try:
@@ -6051,6 +6101,10 @@ class HumanTurnUI:
             def _press(ev, d=drag):
                 d['xr'] = ev.x_root
                 d['yr'] = ev.y_root
+                self._overlay_drag_active = True
+
+            def _release(ev):
+                self._overlay_drag_active = False
 
             def _move(ev, d=drag, wi=item, ti=tether, ntx=tx, nty=ty, nd=node,
                       pos=self._overlay_positions):
@@ -6066,7 +6120,62 @@ class HumanTurnUI:
                 pos[nd] = (d['cx'], d['cy'])
 
             handle.bind('<Button-1>', _press)
+            handle.bind('<ButtonRelease-1>', _release)
             handle.bind('<B1-Motion>', _move)
+
+    def _draw_domain_arcs(
+        self,
+        canvas: tk.Canvas,
+        tx: float,
+        ty: float,
+        r: int,
+        node: str,
+        scale: float,
+    ) -> None:
+        """Draw a full-circle domain ring around a human-owned node.
+
+        The ring is divided into equal arcs — one per allowed colour.
+        Arcs fill the full 360° with no gaps:
+          1 colour  → 360° single arc
+          2 colours → 180° each
+          3 colours → 120° each
+
+        Canonical clockwise colour order starting from the top: red, green, blue.
+        Unconstrained nodes (not in _node_domains) show all three colours.
+        """
+        COLOUR_ORDER = ["red", "green", "blue"]
+        COLOUR_HEX   = {"red": "#cc2222", "green": "#22aa22", "blue": "#2244cc"}
+
+        # Determine which colours are allowed (in canonical order)
+        node_dom = self._node_domains.get(node)
+        if node_dom is not None:
+            allowed_lower = set(str(c).lower() for c in node_dom)
+            allowed = [c for c in COLOUR_ORDER if c in allowed_lower]
+        else:
+            allowed = list(COLOUR_ORDER)  # unconstrained — show all three
+
+        if not allowed:
+            return
+
+        n_colours = len(allowed)
+        arc_span  = 360.0 / n_colours   # each arc fills an equal share
+
+        ring_r = r + max(7, int(9 * scale))
+        arc_w  = max(4, int(6 * scale))
+
+        # Start at 90° (top), sweep clockwise (negative extent in Tkinter)
+        start = 90.0
+        for colour in allowed:
+            canvas.create_arc(
+                tx - ring_r, ty - ring_r,
+                tx + ring_r, ty + ring_r,
+                start=start,
+                extent=-arc_span,
+                style=tk.ARC,
+                outline=COLOUR_HEX.get(colour, "#888888"),
+                width=arc_w,
+            )
+            start -= arc_span
 
     def _make_constraint_overlay_box(
         self,

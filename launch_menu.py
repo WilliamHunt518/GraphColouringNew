@@ -48,52 +48,49 @@ def main() -> None:
         except Exception:
             pass
 
-    # Preset labels and their properties
+    # ── Simple-constraint presets (fixed nodes) ──────────────────────────
+    # ── Complex-constraint presets (per-node colour domains) ─────────────
     _PRESET_LABELS = [
-        "Easy (5 nodes)",
-        "Medium (5 nodes, pre-fixed)",
-        "Tight (5 nodes, 2 agent fixed)",
-        "Dense (5 nodes, extra edges)",
-        "Dense+Tight (5 nodes, both)",
-        "Hard (6 nodes)",
-        "Expert (6 nodes, pre-fixed)",
-        "Super (8 nodes, 2 agent fixed)",
+        "── Simple Constraints ──────────────",
+        "Easy    –  Simple Constraints",
+        "Tight   –  Simple Constraints",
+        "Hard    –  Simple Constraints",
+        "── Complex Constraints ─────────────",
+        "Easy    –  Complex Constraints",
+        "Medium  –  Complex Constraints",
+        "Hard    –  Complex Constraints",
     ]
     _PRESET_CLI = {
-        "Easy (5 nodes)": "easy",
-        "Medium (5 nodes, pre-fixed)": "medium",
-        "Tight (5 nodes, 2 agent fixed)": "tight",
-        "Dense (5 nodes, extra edges)": "dense",
-        "Dense+Tight (5 nodes, both)": "dense_tight",
-        "Hard (6 nodes)": "hard",
-        "Expert (6 nodes, pre-fixed)": "expert",
-        "Super (8 nodes, 2 agent fixed)": "super",
+        "Easy    –  Simple Constraints":   "easy",
+        "Tight   –  Simple Constraints":   "tight",
+        "Hard    –  Simple Constraints":   "hard",
+        "Easy    –  Complex Constraints":  "cx_easy",
+        "Medium  –  Complex Constraints":  "cx_medium",
+        "Hard    –  Complex Constraints":  "cx_hard",
     }
-    # Presets with pre-designed fixed nodes — fixed-node controls are irrelevant
+    # Complex presets have pre-designed domains — fixed-node controls irrelevant
     _PRESET_EXPLICIT = {
-        "Medium (5 nodes, pre-fixed)",
-        "Tight (5 nodes, 2 agent fixed)",
-        "Dense (5 nodes, extra edges)",
-        "Dense+Tight (5 nodes, both)",
-        "Expert (6 nodes, pre-fixed)",
-        "Super (8 nodes, 2 agent fixed)",
+        "Tight   –  Simple Constraints",
+        "Easy    –  Complex Constraints",
+        "Medium  –  Complex Constraints",
+        "Hard    –  Complex Constraints",
     }
 
     # --- variables with saved defaults ---
     participant_name_var = tk.StringVar(value=saved_config.get("participant_name", ""))
     test_run_var = tk.BooleanVar(value=saved_config.get("test_run", False))
     condition_var = tk.StringVar(value=saved_config.get("condition", "C1"))
-    _saved_preset = saved_config.get("graph_preset", "Easy (5 nodes)")
-    # Migrate old saved value "Hard (6 nodes)" to new label if needed
-    if _saved_preset not in _PRESET_LABELS:
-        _saved_preset = "Easy (5 nodes)"
+    _saved_preset = saved_config.get("graph_preset", "Easy    –  Simple Constraints")
+    # Migrate old saved values to new labels
+    if _saved_preset not in _PRESET_LABELS or _saved_preset.startswith("──"):
+        _saved_preset = "Easy    –  Simple Constraints"
     graph_preset_var = tk.StringVar(value=_saved_preset)
     use_ui_var = tk.BooleanVar(value=saved_config.get("use_ui", True))
     use_llm_var = tk.BooleanVar(value=saved_config.get("use_llm", False))
     fixed_constraints_var = tk.BooleanVar(value=saved_config.get("fixed_constraints", True))
-    # Default fixed nodes: 2 for Hard, 1 for Easy; irrelevant for Medium/Expert
+    # Default fixed nodes: 2 for Hard, 1 for Easy; irrelevant for explicit presets
     _cur = graph_preset_var.get()
-    _preset_default_fixed = 2 if "Hard" in _cur or "Expert" in _cur else 1
+    _preset_default_fixed = 2 if "Hard" in _cur else 1
     num_fixed_nodes_var = tk.IntVar(value=saved_config.get("num_fixed_nodes", _preset_default_fixed))
 
     # --- widgets ---
@@ -146,7 +143,7 @@ def main() -> None:
     row += 1
     ttk.Label(
         frm,
-        text="All except Easy/Hard use pre-designed fixed constraints\n(fixed-node controls ignored for these)",
+        text="Simple: fixed nodes constrain one node to one colour.\nComplex: each node limited to 1–3 allowed colours.",
         font=("Arial", 9),
         foreground="#555",
         justify="left",
@@ -159,12 +156,15 @@ def main() -> None:
 
     def _on_preset_change(*_):
         sel = graph_preset_var.get()
+        # If user somehow selected a header, revert to first real preset
+        if sel not in _PRESET_CLI:
+            graph_preset_var.set("Easy    –  Simple Constraints")
+            return
         is_explicit = sel in _PRESET_EXPLICIT
-        if "Hard" in sel or "Expert" in sel:
+        if "Hard" in sel:
             num_fixed_nodes_var.set(2)
         else:
             num_fixed_nodes_var.set(1)
-        # Grey out fixed-node controls for presets with built-in constraints
         state = "disabled" if is_explicit else "normal"
         fixed_check_widget.config(state=state)
         fixed_spin_label.config(foreground="#aaa" if is_explicit else "#000")

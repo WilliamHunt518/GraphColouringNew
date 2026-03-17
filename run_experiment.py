@@ -64,6 +64,37 @@ def _check_solvable_explicit(node_names, adjacency, explicit_fixed, domain):
     )
 
 
+def _check_solvable_with_domains(node_names, adjacency, node_domains, domain):
+    """Verify a valid colouring exists respecting per-node domain restrictions.
+
+    Uses backtracking.  Raises ValueError if unsolvable.
+    """
+    adj_sets = {n: set(adjacency[n]) for n in node_names}
+    assignment: dict = {}
+
+    def _domain_for(node):
+        return node_domains.get(node, domain)
+
+    def backtrack(idx: int) -> bool:
+        if idx == len(node_names):
+            return True
+        node = node_names[idx]
+        for colour in _domain_for(node):
+            if all(assignment.get(nb) != colour for nb in adj_sets[node]):
+                assignment[node] = colour
+                if backtrack(idx + 1):
+                    return True
+                del assignment[node]
+        return False
+
+    if backtrack(0):
+        return
+    raise ValueError(
+        "Graph with complex constraints is UNSOLVABLE.  "
+        "Check domain restrictions or graph topology."
+    )
+
+
 def _check_solvable(node_names, adjacency, clusters, domain, num_fixed_nodes):
     """Simulate the EXACT fixed-node selection (seed=42) used by cluster_simulation.py
     and verify a valid 3-colouring exists.  Raises ValueError with a diagnostic
@@ -101,7 +132,7 @@ def _check_solvable(node_names, adjacency, clusters, domain, num_fixed_nodes):
 
 
 def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
-    """Return (node_names, clusters, adjacency, owners, explicit_fixed) for the given preset.
+    """Return (node_names, clusters, adjacency, owners, explicit_fixed, node_domains) for the given preset.
 
     Presets
     -------
@@ -122,6 +153,7 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
     preset = graph_preset.lower()
     domain = ["red", "green", "blue"]
     explicit_fixed = None  # default: no pre-designed fixed constraints
+    node_domains: dict | None = None  # default: no per-node domain restrictions
 
     if preset in ("easy", "medium"):
         human_nodes = ["h1", "h2", "h3", "h4", "h5"]
@@ -376,6 +408,114 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
             all_fixed_tmp.update(d)
         _check_solvable_explicit(node_names_tmp, adjacency, all_fixed_tmp, domain)
 
+    elif preset in ("cx_easy", "cx_medium", "cx_hard"):
+        # Complex-constraint presets: per-node colour domain restrictions.
+        # Every node is restricted to 1–3 colours; 1-colour nodes are "fixed".
+        # Topology is the same 5-node base (cx_easy/cx_medium) or 6-node (cx_hard).
+
+        if preset == "cx_hard":
+            # --- 6-node per cluster (mirrors "hard" topology) ---
+            human_nodes  = ["h1","h2","h3","h4","h5","h6"]
+            agent1_nodes = ["a1","a2","a3","a4","a5","a6"]
+            agent2_nodes = ["b1","b2","b3","b4","b5","b6"]
+
+            adjacency = {
+                "h1":["h2","h6"], "h2":["h1","h3"], "h3":["h2","h4","h6"],
+                "h4":["h3","h5"], "h5":["h4","h6"], "h6":["h5","h1","h3"],
+                "a1":["a2","a6"], "a2":["a1","a3"], "a3":["a2","a4","a6"],
+                "a4":["a3","a5"], "a5":["a4","a6"], "a6":["a5","a1","a3"],
+                "b1":["b2","b6"], "b2":["b1","b3"], "b3":["b2","b4","b6"],
+                "b4":["b3","b5"], "b5":["b4","b6"], "b6":["b5","b1","b3"],
+            }
+            adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+            adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+            adjacency["h2"].append("b3"); adjacency["b3"].append("h2")
+            adjacency["h5"].append("b6"); adjacency["b6"].append("h5")
+
+            # Per-node domain restrictions (verified solution:
+            #   h1=blue,h2=red,h3=green,h4=red,h5=blue,h6=red;
+            #   a1=blue,a2=red,a3=green,a4=red,a5=green,a6=red;
+            #   b1=red,b2=green,b3=blue,b4=green,b5=red,b6=green)
+            node_domains = {
+                "h1":["blue","red"],   "h2":["red","green"],
+                "h3":["green"],        "h4":["red","blue"],
+                "h5":["blue","green"], "h6":["red"],
+                "a1":["blue","green"], "a2":["red","blue"],
+                "a3":["green","red"],  "a4":["red"],
+                "a5":["green","blue"], "a6":["red","blue"],
+                "b1":["red","blue"],   "b2":["green"],
+                "b3":["blue","red"],   "b4":["green","blue"],
+                "b5":["red","green"],  "b6":["green","red"],
+            }
+            explicit_fixed = {
+                "Human":  {"h3":"green","h6":"red"},
+                "Agent1": {"a4":"red"},
+                "Agent2": {"b2":"green"},
+            }
+
+        else:
+            # --- 5-node per cluster (mirrors "easy" topology) ---
+            human_nodes  = ["h1","h2","h3","h4","h5"]
+            agent1_nodes = ["a1","a2","a3","a4","a5"]
+            agent2_nodes = ["b1","b2","b3","b4","b5"]
+
+            adjacency = {
+                "h1":["h2","h5"], "h2":["h1","h3","h5"],
+                "h3":["h2","h4"], "h4":["h3","h5"], "h5":["h1","h2","h4"],
+                "a1":["a2","a5"], "a2":["a1","a3","a5"],
+                "a3":["a2","a4"], "a4":["a3","a5"], "a5":["a1","a2","a4"],
+                "b1":["b2","b5"], "b2":["b1","b3","b5"],
+                "b3":["b2","b4"], "b4":["b3","b5"], "b5":["b1","b2","b4"],
+            }
+            adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+            adjacency["h4"].append("a4"); adjacency["a4"].append("h4")
+            adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+            adjacency["h2"].append("b2"); adjacency["b2"].append("h2")
+            adjacency["h5"].append("b2"); adjacency["b2"].append("h5")
+
+            if preset == "cx_easy":
+                # Moderate restrictions — several solutions remain.
+                # Verified solution:
+                #   h1=red,h2=blue,h3=red,h4=blue,h5=green;
+                #   a1=blue,a2=green,a3=blue,a4=green,a5=red;
+                #   b1=green,b2=red,b3=blue,b4=red,b5=blue
+                node_domains = {
+                    "h1":["red","green"],  "h2":["blue","red"],
+                    "h4":["blue","green"], "h5":["red","green"],
+                    "a1":["blue","red"],   "a2":["green","blue"],
+                    "a4":["green","red"],  "a5":["red","green"],
+                    "b2":["red","blue"],
+                    "b4":["red","blue"],   "b5":["blue","green"],
+                }
+                explicit_fixed = {"Human":{},"Agent1":{},"Agent2":{}}
+
+            else:  # cx_medium
+                # Tighter restrictions with three fixed nodes.
+                # Verified solution:
+                #   h1=red,h2=blue,h3=red,h4=blue,h5=green;
+                #   a1=blue,a2=green,a3=blue,a4=green,a5=red;
+                #   b1=green,b2=red,b3=blue,b4=red,b5=blue
+                node_domains = {
+                    "h1":["red","green"],  "h2":["blue","red"],
+                    "h3":["red"],          "h4":["blue","green"],
+                    "h5":["red","green"],
+                    "a1":["blue","green"], "a2":["green","blue"],
+                    "a3":["blue"],         "a4":["green","red"],
+                    "a5":["red","green"],
+                    "b1":["green","blue"], "b2":["red"],
+                    "b3":["blue","red"],   "b4":["red","blue"],
+                    "b5":["blue","green"],
+                }
+                explicit_fixed = {
+                    "Human":  {"h3":"red"},
+                    "Agent1": {"a3":"blue"},
+                    "Agent2": {"b2":"red"},
+                }
+
+        # Verify solvability
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
     else:
         raise ValueError(
             f"Unknown graph_preset: {graph_preset!r}. "
@@ -390,7 +530,7 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
         | {n: "Agent1" for n in agent1_nodes}
         | {n: "Agent2" for n in agent2_nodes}
     )
-    return node_names, clusters, adjacency, owners, explicit_fixed
+    return node_names, clusters, adjacency, owners, explicit_fixed, node_domains
 
 
 def _assign_participant_id(
@@ -476,7 +616,7 @@ def run_experiment(
     else:
         print(f"[run_experiment] Writing results to: {results_dir}")
 
-    node_names, clusters, adjacency, owners, explicit_fixed = _build_topology(
+    node_names, clusters, adjacency, owners, explicit_fixed, node_domains = _build_topology(
         graph_preset, num_fixed_nodes=num_fixed_nodes if fixed_constraints else 0
     )
     print(f"[run_experiment] Graph preset: {graph_preset!r} ({len(list(clusters.values())[0])} nodes/cluster)")
@@ -502,6 +642,7 @@ def run_experiment(
             ui_title=f"Constraint Visualisation — {condition} ({graph_preset.capitalize()})",
             preset_fixed_nodes=preset_fixed_nodes,
             graph_preset=graph_preset,
+            node_domains=node_domains,
         )
     else:
         from cluster_simulation import run_headless_constraint_viz
@@ -541,11 +682,11 @@ def main() -> None:
     p.add_argument("--num-fixed-nodes", type=int, default=NUM_FIXED_NODES,
                    choices=[0, 1, 2, 3], help="Number of fixed nodes per cluster")
     p.add_argument("--graph-preset", default="easy",
-                   choices=["easy", "medium", "tight", "hard", "expert",
-                            "dense", "dense_tight", "super"],
-                   help="Graph topology: easy/medium/tight/dense/dense_tight (5 nodes), "
-                        "hard/expert (6 nodes), super (8 nodes); "
-                        "medium/tight/expert/dense/dense_tight/super have pre-designed fixed constraints")
+                   choices=["easy", "tight", "hard",
+                            "cx_easy", "cx_medium", "cx_hard",
+                            "medium", "expert", "dense", "dense_tight", "super"],
+                   help="Presets: easy/tight/hard (simple constraints), "
+                        "cx_easy/cx_medium/cx_hard (complex per-node domain constraints)")
     p.add_argument("--output-dir", default=None,
                    help="Override output directory (default: results/YYYY-MM-DD/<participant-id>)")
     p.add_argument("--participant-name", default="",

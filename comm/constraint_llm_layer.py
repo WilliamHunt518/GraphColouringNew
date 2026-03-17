@@ -324,7 +324,8 @@ class ConstraintLLMLayer:
                     f"Line 1: 'Not yet set.'\n"
                     f"Line 2 (~8 words): based on the data above, give the most "
                     f"useful hint about what colour to pick or avoid for {node}. "
-                    f"Name the specific colour(s) to avoid if any. "
+                    f"Only name a colour as 'avoid' if the joint feasibility table shows it fails "
+                    f"in ALL combinations — otherwise say it depends on other nodes. "
                     f"No agent names. No raw numbers."
                 )
 
@@ -340,8 +341,26 @@ class ConstraintLLMLayer:
             # Summarise the actual feasible configs under current colour
             configs_summary = self._format_configs_summary(configs)
 
-            # What colours are completely blocked (count=0) vs all fine
-            blocked = sorted(col for col, cnt in colour_counts.items() if cnt == 0)
+            # Classify blocked colours using the joint feasibility table where available,
+            # so we only call a colour "blocked" if it fails in ALL joint combinations
+            # (not just when other nodes are frozen at their current values).
+            if joint_data:
+                globally_blocked = sorted(
+                    col for col in colour_counts
+                    if not any(
+                        entry["feasibility_count"] > 0
+                        for entry in joint_data
+                        if entry["boundary_assignment"].get(node) == col
+                    )
+                )
+                conditionally_blocked = sorted(
+                    col for col in colour_counts
+                    if colour_counts[col] == 0 and col not in globally_blocked
+                )
+            else:
+                # Fallback to marginal analysis if no joint data
+                globally_blocked = sorted(col for col, cnt in colour_counts.items() if cnt == 0)
+                conditionally_blocked = []
             ok_colours = sorted(col for col, cnt in colour_counts.items() if cnt > 0)
 
             prompt_lines = [
@@ -362,7 +381,7 @@ class ConstraintLLMLayer:
 
             if consequence_table:
                 prompt_lines += [
-                    f"CONSEQUENCE COUNTS (for each boundary node, how many agent configs each colour allows):",
+                    f"CONSEQUENCE COUNTS (for each boundary node, how many agent configs each colour allows, given other nodes stay fixed):",
                     consequence_table,
                     f"",
                 ]
@@ -374,24 +393,38 @@ class ConstraintLLMLayer:
                 f"",
             ]
 
-            if blocked:
-                blocked_str = " and ".join(blocked)
+            if globally_blocked:
+                blocked_str = " and ".join(globally_blocked)
                 prompt_lines.append(
-                    f"NOTE: {blocked_str} {'is' if len(blocked)==1 else 'are'} "
-                    f"completely blocked for {node} (0 valid agent configs)."
+                    f"NOTE: {blocked_str} {'is' if len(globally_blocked)==1 else 'are'} "
+                    f"always blocked for {node} — no joint combination with other boundary nodes rescues it."
+                )
+                prompt_lines.append("")
+            if conditionally_blocked:
+                cond_str = " and ".join(conditionally_blocked)
+                prompt_lines.append(
+                    f"NOTE: {cond_str} {'is' if len(conditionally_blocked)==1 else 'are'} "
+                    f"currently problematic for {node} given other nodes' current colours, "
+                    f"but could work if other boundary nodes also change."
                 )
                 prompt_lines.append("")
 
             prompt_lines += [
                 f"Write exactly 2 short lines separated by a newline.",
-                f"Line 1 (~5 words): Is {node}={current_colour} a safe/limited/bad choice? Be specific - e.g. 'Red works fine here' or 'Blue blocks the agent'.",
+                f"Line 1 (~5 words): Is {node}={current_colour} a good/limited/bad choice? Be specific.",
+                f"  Good examples: 'Red works fine here', 'Blue leaves few options', 'Green fits well'.",
+                f"  NEVER say 'blocks the agent' — the agent can always attempt a colouring; only say",
+                f"  a colour 'rules out' or 'eliminates' the agent if it appears in the 'always blocked' note.",
+                f"  For anything less severe, say it 'limits', 'tightens', or 'reduces' choices.",
                 f"Line 2 (~8-10 words): Give the ONE most useful rule about {node}.",
                 f"  - Look at the joint table: does {node}'s colour interact with another boundary node?",
                 f"  - Look at the configs: does the agent have plenty of room, or is it squeezed?",
                 f"  - If the agent can handle any colour you pick, say so clearly.",
-                f"  - If there's a specific colour to avoid (e.g. blocked=0), name it directly.",
+                f"  - Only say a colour 'rules out' the agent if it appears in the 'always blocked' note above.",
+                f"  - If a colour is only conditionally problematic, say it depends on other nodes.",
                 f"  - If two boundary nodes together cause a problem, reference that pattern.",
-                f"BANNED PHRASES: 'also works', 'offers flexibility', 'provides flexibility', 'more flexibility', 'fewer options'.",
+                f"BANNED PHRASES: 'also works', 'offers flexibility', 'provides flexibility', 'more flexibility',",
+                f"  'blocks the agent', 'agent cannot work', 'agent is stuck'.",
                 f"No agent-internal node names. No raw numbers. Natural conversational phrasing.",
             ]
 
@@ -475,10 +508,10 @@ class ConstraintLLMLayer:
             else:
                 lines += [
                     f"Line 1 (~5 words): say which colour(s) are safe for {node}.",
-                    f"Line 2 (~8 words): explain WHY the blocked colour(s) don't work — say 'would break the agent layout' (no agent names).",
+                    f"Line 2 (~8 words): explain WHY those colours are problematic — say they 'leave no valid layout' or 'rule out a solution' (no agent names, no 'blocks the agent').",
                 ]
             lines += [
-                f"BANNED PHRASES: 'also works', 'flexibility', 'options'.",
+                f"BANNED PHRASES: 'also works', 'flexibility', 'options', 'blocks the agent', 'agent is stuck'.",
                 f"No agent-internal node names. Natural conversational phrasing.",
             ]
             return "\n".join(lines)

@@ -59,6 +59,7 @@ class ConstraintAnalyser:
         boundary_nodes: List[str],
         domain: List[Any],
         fixed_agent_nodes: Optional[Dict[str, Any]] = None,
+        node_domains: Optional[Dict[str, List[Any]]] = None,
     ) -> None:
         self.name = name
         self._problem = problem
@@ -67,6 +68,9 @@ class ConstraintAnalyser:
         self._boundary_nodes: List[str] = list(boundary_nodes)
         self._domain: List[Any] = list(domain)
         self._fixed: Dict[str, Any] = dict(fixed_agent_nodes) if fixed_agent_nodes else {}
+        # Per-node domain restrictions (complex constraints).  Maps node →
+        # allowed colours.  Nodes absent from this dict use self._domain.
+        self._node_domains: Dict[str, List[Any]] = dict(node_domains) if node_domains else {}
 
         # Free agent nodes: agent nodes that are NOT fixed.
         self._free_agent_nodes: List[str] = [
@@ -132,7 +136,8 @@ class ConstraintAnalyser:
         """
         valid_configs: List[Dict[str, Any]] = []
 
-        for combo in itertools.product(self._domain, repeat=len(self._free_agent_nodes)):
+        _per_node = [self._node_domains.get(n, self._domain) for n in self._free_agent_nodes]
+        for combo in itertools.product(*_per_node):
             candidate = self._build_candidate(combo, human_partial)
             if self._is_feasible(candidate):
                 # Return only agent-node assignments
@@ -189,7 +194,7 @@ class ConstraintAnalyser:
             if human_partial.get(v) is not None:
                 continue  # already assigned — not "conditional"
             result[v] = {}
-            for c in self._domain:
+            for c in self._node_domains.get(v, self._domain):
                 override = dict(human_partial)
                 override[v] = c
                 fs = self.compute_feasibility_set(override)
@@ -260,7 +265,10 @@ class ConstraintAnalyser:
         if not boundary:
             return []
 
-        n_combos = len(self._domain) ** len(boundary)
+        _boundary_domains = [self._node_domains.get(n, self._domain) for n in boundary]
+        n_combos = 1
+        for d in _boundary_domains:
+            n_combos *= len(d)
         if n_combos > max_combos:
             return []
 
@@ -269,7 +277,8 @@ class ConstraintAnalyser:
         base_partial = {k: v for k, v in human_partial.items() if k not in boundary_set}
 
         results: List[Dict[str, Any]] = []
-        for combo in itertools.product(self._domain, repeat=len(boundary)):
+        _boundary_per_node = _boundary_domains
+        for combo in itertools.product(*_boundary_per_node):
             override = dict(base_partial)
             for node, colour in zip(boundary, combo):
                 override[node] = colour

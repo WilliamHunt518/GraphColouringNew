@@ -47,7 +47,9 @@
       "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && venv/Scripts/pip install openpyxl -q && echo \"installed\")",
       "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && del _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
       "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && rm _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
-      "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && rm _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax ok'\\)\")"
+      "Bash(cd E:/Files/PhD-Main/GC-New/GIT_LOCAL_ROOT/GraphColouringNew && rm _cleanup.py && venv/Scripts/python -c \"import ast; ast.parse\\(open\\('study_launcher.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax ok'\\)\")",
+      "Bash(rm -rf results/c1_* results/c2_* results/c3_* results/llm_rb results/llm_tool results/rb results/participant_mapping.csv)",
+      "Bash(rm -f conditional_builder_debug_*.log)"
     ]
   }
 }

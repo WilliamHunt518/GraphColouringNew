@@ -1396,6 +1396,7 @@ def run_constraint_viz_simulation(
     ui_title: str = "Constraint Visualisation",
     preset_fixed_nodes: Optional[Dict[str, Dict[str, Any]]] = None,
     graph_preset: str = "",
+    node_domains: Optional[Dict[str, List[Any]]] = None,
 ) -> None:
     """Run the redesigned constraint visualisation study.
 
@@ -1559,6 +1560,7 @@ def run_constraint_viz_simulation(
             boundary_nodes=boundary,
             domain=domain,
             fixed_agent_nodes=cluster_fixed_nodes.get(owner, {}),
+            node_domains=node_domains,
         )
         print(f"[ConstraintViz] {owner}: {len(local_nodes)} nodes, {len(boundary)} boundary nodes")
 
@@ -1919,6 +1921,7 @@ def run_constraint_viz_simulation(
         debug_agents=list(constraint_agents.values()),
         debug_get_text_fn=_debug_text,
         debug_get_visible_graph_fn=_debug_visible_graph,
+        node_domains=node_domains,
     )
 
     print(f"[ConstraintViz] Session ended. Logs in: {output_dir}")
