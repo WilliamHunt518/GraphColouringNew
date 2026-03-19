@@ -137,7 +137,7 @@ class HumanTurnUI:
 
         # Node cooldown (prevents rapid colour switching)
         self._node_cooldowns: Dict[str, float] = {}   # {node: expiry_timestamp}
-        self._cooldown_seconds: int = 15
+        self._cooldown_seconds: int = 5
         self._cooldown_ticker_active: bool = False
         self._colour_popup: Optional[tk.Toplevel] = None
 
@@ -180,6 +180,11 @@ class HumanTurnUI:
         # Transcript loading indicators
         self._loading_transcripts: Dict[str, bool] = {}  # {neigh: is_loading}
         self._loading_dots_frame: Dict[str, int] = {}  # {neigh: animation frame}
+
+        # Move counter
+        self._move_count: int = 0
+        self._move_count_var: Optional[tk.StringVar] = None
+        self._move_count_label: Optional[tk.Label] = None
 
         # canvas
         self._canvas: Optional[tk.Canvas] = None
@@ -383,6 +388,20 @@ class HumanTurnUI:
 
         self._hud_var = tk.StringVar(master=root, value=self._hud_text())
         ttk.Label(top, textvariable=self._hud_var).pack(side="left")
+
+        # Move counter (top-right corner)
+        self._move_count_var = tk.StringVar(master=root, value="Moves: 0")
+        self._move_count_label = tk.Label(
+            top,
+            textvariable=self._move_count_var,
+            font=("TkDefaultFont", 20, "bold"),
+            bg="#22bb44",
+            fg="white",
+            relief="raised",
+            padx=14,
+            pady=4,
+        )
+        self._move_count_label.pack(side="right", padx=(8, 0))
 
         # Checkpoint button bar
         checkpoint_frame = ttk.Frame(top)
@@ -2203,6 +2222,11 @@ class HumanTurnUI:
             if self._hud_var:
                 self._hud_var.set(self._hud_text())
 
+            # Update move counter
+            if changed_nodes:
+                self._move_count += len(changed_nodes)
+                self._refresh_move_counter()
+
             # Notify callback for color changes
             if changed_nodes and self._on_colour_change:
                 self._on_colour_change(dict(self._assignments))
@@ -2359,6 +2383,11 @@ class HumanTurnUI:
         if self._hud_var:
             self._hud_var.set(self._hud_text())
 
+        # Update move counter
+        if changes:
+            self._move_count += len(changes)
+            self._refresh_move_counter()
+
         # Notify callback for color changes
         if self._on_colour_change:
             self._on_colour_change(dict(self._assignments))
@@ -2486,6 +2515,11 @@ class HumanTurnUI:
         # Update HUD score display
         if self._hud_var:
             self._hud_var.set(self._hud_text())
+
+        # Update move counter
+        if changes:
+            self._move_count += len(changes)
+            self._refresh_move_counter()
 
         # Notify callback for color changes
         if self._on_colour_change:
@@ -3186,9 +3220,13 @@ class HumanTurnUI:
         if self._owners.get(best) != "Human":
             return
 
-        # Prevent clicking fixed nodes (immutable constraints)
+        # In complex-constraints mode, "fixed" nodes are domain-restricted (e.g. only
+        # one colour allowed). Allow clicking so the picker shows the single option;
+        # the colour picker itself enforces the restriction via _node_domains.
+        # In simple modes, truly fixed nodes remain unclickable.
         if hasattr(self, '_fixed_nodes') and best in self._fixed_nodes:
-            return
+            if not getattr(self, '_complex_constraints', False):
+                return
 
         r = 24
         if best_d > (r * r):
@@ -3237,6 +3275,8 @@ class HumanTurnUI:
         if self._assignments.get(best) is None:
             return  # already grey, nothing to do
         self._assignments[best] = None
+        self._move_count += 1
+        self._refresh_move_counter()
         if self._on_colour_change:
             try:
                 self._on_colour_change(dict(self._assignments))
@@ -3284,7 +3324,14 @@ class HumanTurnUI:
 
     def _apply_colour_change(self, node: str, colour: Any) -> None:
         """Assign colour to node, start cooldown, fire all downstream callbacks."""
+        # No-op if the colour hasn't changed — re-selecting the same colour
+        # should not count as a move or trigger a cooldown.
+        current = self._assignments.get(node)
+        if current is not None and str(current).lower() == str(colour).lower():
+            return
         self._assignments[node] = colour
+        self._move_count += 1
+        self._refresh_move_counter()
 
         # Start cooldown
         self._node_cooldowns[node] = time.time() + self._cooldown_seconds
@@ -5307,6 +5354,33 @@ class HumanTurnUI:
             score += self._points.get(str(c).lower(), 0)
         return f"Score: {score}"
 
+    def _moves_colour(self, count: int) -> str:
+        """Return a hex colour on a green→yellow→red scale.
+
+        Green at 0 moves, yellow at N moves, red at 2N moves,
+        where N = number of human-owned nodes.
+        """
+        n_human = sum(1 for o in self._owners.values() if o == "Human") or 1
+        t = min(count / max(2 * n_human, 1), 1.0)
+        if t <= 0.5:
+            s = t / 0.5
+            r = int(0x22 + s * (0xf0 - 0x22))
+            g = int(0xbb + s * (0xc0 - 0xbb))
+            b = int(0x44 + s * (0x00 - 0x44))
+        else:
+            s = (t - 0.5) / 0.5
+            r = int(0xf0 + s * (0xcc - 0xf0))
+            g = int(0xc0 + s * (0x22 - 0xc0))
+            b = int(0x00 + s * (0x22 - 0x00))
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _refresh_move_counter(self) -> None:
+        """Update the move counter label text and background colour."""
+        if self._move_count_label is None or self._move_count_var is None:
+            return
+        self._move_count_var.set(f"Moves: {self._move_count}")
+        self._move_count_label.configure(bg=self._moves_colour(self._move_count))
+
     # -------------------- Constraint Visualisation Methods --------------------
 
     def _build_constraint_panels(self, parent: tk.Frame) -> None:
@@ -5548,13 +5622,49 @@ class HumanTurnUI:
         if condition in ("C1", "C4") and is_feasible:
             consequence_sets = data.get("consequence_sets", {})
             if consequence_sets:
+                # Detect pre-game state: no boundary node has been assigned yet
+                any_assigned = any(
+                    self._assignments.get(n) is not None
+                    for n in consequence_sets
+                )
+
+                if not any_assigned:
+                    # Pre-game summary card: show the full space of possibilities
+                    pre_card = tk.Frame(inner, bg="#e8f4e8", relief=tk.GROOVE, bd=1)
+                    pre_card.pack(fill="x", padx=4, pady=(6, 2))
+                    tk.Label(
+                        pre_card,
+                        text=f"✓ {feasibility_count} valid configuration(s) available — everything is open",
+                        font=("Arial", 10, "bold"),
+                        bg="#e8f4e8",
+                        fg="#1a6b1a",
+                        anchor="w",
+                        wraplength=320,
+                    ).pack(fill="x", padx=8, pady=(6, 2))
+                    tk.Label(
+                        pre_card,
+                        text="No constraints active yet. Click one of your nodes to see how each colour choice narrows the agent's options.",
+                        font=("Arial", 9),
+                        bg="#e8f4e8",
+                        fg="#2a5a2a",
+                        anchor="w",
+                        wraplength=320,
+                        justify="left",
+                    ).pack(fill="x", padx=8, pady=(0, 6))
+
                 section_lbl = tk.Label(
                     inner,
-                    text="How your colour choices affect agent options:",
+                    text=(
+                        "Options per colour for each of your boundary nodes:"
+                        if not any_assigned
+                        else "How your colour choices affect agent options:"
+                    ),
                     font=("Arial", 9, "bold"),
                     anchor="w",
                 )
                 section_lbl.pack(fill="x", padx=4, pady=(4, 2))
+
+                COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
 
                 for node, colour_configs in sorted(consequence_sets.items()):
                     card = tk.Frame(inner, bg="#f8f8f8", relief=tk.GROOVE, bd=1)
@@ -5569,13 +5679,12 @@ class HumanTurnUI:
                     ).pack(fill="x", padx=6, pady=(4, 0))
 
                     # colour_configs is {colour: [list_of_agent_assignment_dicts]}
-                    COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
                     for colour, configs in sorted(
                         colour_configs.items(),
                         key=lambda kv: -len(kv[1])
                     ):
                         count = len(configs)
-                        is_current = (colour == current_colour)
+                        is_current = (colour == str(current_colour).lower() if current_colour else False)
                         header_bg = self._colour_fill(colour) if is_current else "#eeeeee"
                         marker = " ◀ current" if is_current else ""
                         feasible_str = f"{count} valid option(s)" if count > 0 else "no valid options"
@@ -5590,12 +5699,30 @@ class HumanTurnUI:
                             anchor="w",
                         ).pack(side="left", padx=4, pady=2)
 
-                        # C1 only: for current colour, list all valid configs
-                        # in AND/OR format (mirrors the original design).
-                        if is_current and configs and condition == "C1":
+                        # C1: show AND/OR config list for the current colour.
+                        # In pre-game (nothing assigned), show configs for the top-ranked
+                        # colour (most options) so the panel has real content to read.
+                        show_configs = condition == "C1" and configs and (
+                            is_current or (
+                                not any_assigned and count == max(
+                                    len(v) for v in colour_configs.values()
+                                )
+                            )
+                        )
+                        if show_configs:
                             configs_frame = tk.Frame(card, bg="#f8f8f8")
                             configs_frame.pack(fill="x", padx=12, pady=(0, 2))
-                            for c_idx, cfg in enumerate(configs):
+                            if not any_assigned:
+                                tk.Label(
+                                    configs_frame,
+                                    text=f"(best-case: {colour} gives the most options — example configs)",
+                                    font=("Arial", 8, "italic"),
+                                    bg="#f8f8f8",
+                                    fg="#888",
+                                    anchor="w",
+                                ).pack(anchor="w")
+                            MAX_PREGAME_CONFIGS = 4 if not any_assigned else len(configs)
+                            for c_idx, cfg in enumerate(configs[:MAX_PREGAME_CONFIGS]):
                                 row = tk.Frame(configs_frame, bg="#f8f8f8")
                                 row.pack(anchor="w")
                                 parts = sorted(cfg.items())
@@ -5611,18 +5738,26 @@ class HumanTurnUI:
                                         tk.Label(row, text=" AND ",
                                                  font=("Arial", 8), bg="#f8f8f8",
                                                  fg="#555").pack(side="left")
-                                if c_idx < len(configs) - 1:
+                                if c_idx < min(MAX_PREGAME_CONFIGS, len(configs)) - 1:
                                     tk.Label(configs_frame, text="OR",
                                              font=("Arial", 8, "italic"),
                                              bg="#f8f8f8", fg="#888",
                                              anchor="w").pack(anchor="w", padx=4)
+                            if not any_assigned and len(configs) > MAX_PREGAME_CONFIGS:
+                                tk.Label(
+                                    configs_frame,
+                                    text=f"… and {len(configs) - MAX_PREGAME_CONFIGS} more",
+                                    font=("Arial", 8, "italic"),
+                                    bg="#f8f8f8",
+                                    fg="#888",
+                                ).pack(anchor="w", padx=4)
 
                     # Small spacer
                     tk.Frame(card, height=4, bg="#f8f8f8").pack()
             else:
                 tk.Label(
                     inner,
-                    text="No assigned boundary nodes yet — try clicking your nodes.",
+                    text="No boundary nodes found — check configuration.",
                     font=("Arial", 9, "italic"),
                     fg="#777",
                     anchor="w",
@@ -6161,14 +6296,17 @@ class HumanTurnUI:
         ring_r = r + max(7, int(9 * scale))
         arc_w  = max(4, int(6 * scale))
 
-        # Start at 90° (top), sweep clockwise (negative extent in Tkinter)
+        # Start at 90° (top), sweep clockwise (negative extent in Tkinter).
+        # Tkinter drops a full 360° arc entirely, so clamp to 359.9° for the
+        # single-colour case to guarantee the ring is always visible.
         start = 90.0
+        extent = -min(arc_span, 359.9)
         for colour in allowed:
             canvas.create_arc(
                 tx - ring_r, ty - ring_r,
                 tx + ring_r, ty + ring_r,
                 start=start,
-                extent=-arc_span,
+                extent=extent,
                 style=tk.ARC,
                 outline=COLOUR_HEX.get(colour, "#888888"),
                 width=arc_w,
@@ -6215,7 +6353,9 @@ class HumanTurnUI:
                      font=("Arial", 8, "bold"), fg=fg,
                      bg="white").pack(side="left")
         else:
-            tk.Label(inner, text="  (not yet assigned)",
+            n_open = sum(1 for cfgs in colour_map.values() if cfgs) if colour_map else 0
+            not_assigned_text = "  (not yet assigned — all colours viable)" if n_open == len(colour_map) and colour_map else "  (not yet assigned)"
+            tk.Label(inner, text=not_assigned_text,
                      font=("Arial", 8, "italic"), fg="#999",
                      bg="white", anchor="w").pack(anchor="w")
 
@@ -6290,9 +6430,75 @@ class HumanTurnUI:
                          font=("Arial", 8), fg="#cc0000",
                          bg="white", anchor="w").pack(anchor="w")
             else:
-                tk.Label(inner, text="  Assign this node to see options",
-                         font=("Arial", 7, "italic"), fg="#777",
-                         bg="white", anchor="w").pack(anchor="w")
+                # Unassigned: show per-colour option counts + example configs for best colour
+                if colour_map:
+                    colour_counts = {col: len(cfgs) for col, cfgs in colour_map.items() if cfgs is not None}
+                    if any(n > 0 for n in colour_counts.values()):
+                        # Summary row: counts per colour
+                        total_all = sum(colour_counts.values())
+                        count_parts = "  ".join(
+                            f"{col}: {cnt}"
+                            for col, cnt in sorted(colour_counts.items(), key=lambda kv: -kv[1])
+                        )
+                        tk.Label(inner, text=f"  All colours open — options per colour:",
+                                 font=("Arial", 7, "italic"), fg="#555",
+                                 bg="white", anchor="w").pack(anchor="w")
+                        tk.Label(inner, text=f"  {count_parts}",
+                                 font=("Arial", 8, "bold"), fg="#1a6e1a",
+                                 bg="white", anchor="w").pack(anchor="w")
+
+                        # Show top 3 configs for the colour with most options
+                        best_col = max(colour_counts, key=lambda c: colour_counts[c])
+                        best_configs = colour_map.get(best_col, [])
+                        filtered_cfgs = []
+                        seen_sigs: set = set()
+                        for cfg in best_configs:
+                            vis_cfg = {n2: c2 for n2, c2 in cfg.items()
+                                       if n2 in visible_nodes and n2 != node}
+                            sig = tuple(sorted(vis_cfg.items()))
+                            if sig not in seen_sigs and vis_cfg:
+                                seen_sigs.add(sig)
+                                filtered_cfgs.append(vis_cfg)
+
+                        if filtered_cfgs:
+                            tk.Label(inner,
+                                     text=f"e.g. if {node}={best_col}:",
+                                     font=("Arial", 7, "italic"), fg="#555",
+                                     bg="white", anchor="w").pack(anchor="w", pady=(3, 0))
+                            MAX_EG = 3
+                            for i, vis_cfg in enumerate(filtered_cfgs[:MAX_EG]):
+                                row = tk.Frame(inner, bg="white")
+                                row.pack(anchor="w")
+                                first = True
+                                for n2, c2 in sorted(vis_cfg.items()):
+                                    if not first:
+                                        tk.Label(row, text=" AND ", font=("Arial", 7),
+                                                 bg="white", fg="#555").pack(side="left")
+                                    tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
+                                             font=("Arial", 7), bg="white",
+                                             fg="#333").pack(side="left")
+                                    fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
+                                    tk.Label(row, text=str(c2),
+                                             font=("Arial", 7, "bold"), fg=fg2,
+                                             bg="white").pack(side="left")
+                                    first = False
+                                if i < min(len(filtered_cfgs), MAX_EG) - 1:
+                                    tk.Label(inner, text=" OR", font=("Arial", 7),
+                                             bg="white", fg="#555",
+                                             anchor="w").pack(anchor="w")
+                            if len(filtered_cfgs) > MAX_EG:
+                                tk.Label(inner,
+                                         text=f"  … ({colour_counts[best_col]} total)",
+                                         font=("Arial", 7, "italic"), fg="#777",
+                                         bg="white", anchor="w").pack(anchor="w")
+                    else:
+                        tk.Label(inner, text="  No valid options available",
+                                 font=("Arial", 7, "italic"), fg="#cc0000",
+                                 bg="white", anchor="w").pack(anchor="w")
+                else:
+                    tk.Label(inner, text="  Assign this node to see options",
+                             font=("Arial", 7, "italic"), fg="#777",
+                             bg="white", anchor="w").pack(anchor="w")
 
         return outer
 

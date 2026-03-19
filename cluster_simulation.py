@@ -499,6 +499,9 @@ def run_clustered_simulation(
     summary_path = os.path.join(output_dir, "iteration_summary.txt")
     with open(summary_path, "w", encoding="utf-8") as _f:
         _f.write("")
+    human_moves_log_path = os.path.join(output_dir, "human_moves_log.jsonl")
+    with open(human_moves_log_path, "w", encoding="utf-8") as _f:
+        _f.write("")
 
     # Persist all LLM prompt/response traces (including manual/heuristic runs)
     # so non-convergence can be diagnosed post-hoc.
@@ -915,14 +918,41 @@ def run_clustered_simulation(
 
                 return "\n".join(reply_texts).strip()
 
+            # Move tracking for on_colour_change logging
+            _prev_human_assignments: Dict[str, Any] = {}
+            _human_move_count: int = 0
+
             def on_colour_change(new_assignments: Dict[str, Any]) -> None:
                 """Handle human color changes via canvas clicks - check for valid colorings."""
-                nonlocal ui_iteration_counter
+                nonlocal ui_iteration_counter, _prev_human_assignments, _human_move_count
                 # Update human agent assignments
                 try:
                     human_agent.assignments = dict(new_assignments)
                 except Exception:
                     pass
+
+                # Log each changed node as an individual move
+                human_nodes_set = set(getattr(human_agent, 'nodes', []))
+                changed = {
+                    n: {"from": _prev_human_assignments.get(n), "to": v}
+                    for n, v in new_assignments.items()
+                    if n in human_nodes_set and _prev_human_assignments.get(n) != v
+                }
+                if changed:
+                    _human_move_count += len(changed)
+                    try:
+                        entry = {
+                            "timestamp": _now_iso(),
+                            "move_number": _human_move_count,
+                            "changes": changed,
+                            "total_moves_so_far": _human_move_count,
+                        }
+                        with open(human_moves_log_path, "a", encoding="utf-8") as _mf:
+                            _mf.write(json.dumps(entry) + "\n")
+                            _mf.flush()
+                    except Exception as _me:
+                        print(f"[MoveLog] Error writing move log: {_me}")
+                _prev_human_assignments = dict(new_assignments)
 
                 # Notify each agent about relevant color changes
                 from agents.base_agent import Message
@@ -1286,6 +1316,9 @@ def run_clustered_simulation(
             f.write(f"\nStopped early at iteration {stop_iteration} due to {stop_reason}.\n")
         else:
             f.write(f"\nReached max_iterations={max_iterations}.\n")
+        # Log human move count from UI widget counter (most accurate)
+        final_move_count = getattr(human_ui, '_move_count', 0)
+        f.write(f"Human total colour changes (moves): {final_move_count}\n")
         f.flush()
     # generate simple visualisation of the graph topology
     try:

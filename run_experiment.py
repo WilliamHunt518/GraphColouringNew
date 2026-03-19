@@ -136,15 +136,23 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
 
     Presets
     -------
-    "easy"    – 5-node-per-cluster topology; seed-42 fixed-node selection.
-    "medium"  – Same 5-node topology but with pre-designed explicit fixed
-                nodes (h3=red, a3=green, b3=blue) that create interesting
-                cross-cluster constraint tension.
-    "hard"    – 6-node-per-cluster topology; 6-cycle + antipodal chord;
-                seed-42 fixed-node selection.
-    "expert"  – Same 6-node topology but with pre-designed explicit fixed
-                nodes (h3=green, h6=red, a1=blue, a4=red, b2=green,
-                b5=red) for tighter constraints.
+    "easy"         – 5-node-per-cluster topology; seed-42 fixed-node selection.
+    "medium"       – Same 5-node topology but with pre-designed explicit fixed
+                     nodes (h3=red, a3=green, b3=blue) that create interesting
+                     cross-cluster constraint tension.
+    "hard"         – 6-node-per-cluster topology; 6-cycle + antipodal chord;
+                     seed-42 fixed-node selection.
+    "expert"       – Same 6-node topology but with pre-designed explicit fixed
+                     nodes (h3=green, h6=red, a1=blue, a4=red, b2=green,
+                     b5=red) for tighter constraints.
+    "cx_easy_plus" – 5-node complex-constraint topology with h3 connected to
+                     BOTH agents (h3--a1 and h3--b3) as extra cross-cluster
+                     edges.  No single-colour fixed nodes; all domains 2-colour.
+                     Harder than cx_easy due to h3 being a cross-cluster hub.
+    "cx_hard_free" – 6-node complex-constraint topology (same as cx_hard) but
+                     with NO single-colour fixed nodes.  The four cx_hard fixed
+                     nodes (h3, h6, a4, b2) are each relaxed to a 2-colour
+                     domain, removing the immediate narrowing they provided.
 
     ``explicit_fixed`` is ``None`` for presets that use seed-42 selection
     (easy/hard) and a per-cluster dict ``{owner: {node: colour}}`` for
@@ -516,11 +524,305 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
         node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
         _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
 
+    elif preset == "cx_easy_plus":
+        # 5-node topology (identical to cx_easy/cx_medium base) but with two extra
+        # cross-cluster edges from h3 — the node that had NO cross-cluster connections
+        # in the standard easy layout.  h3 now connects to BOTH agents (h3--a1, h3--b3),
+        # making it a genuine coordination bottleneck on the human side.
+        #
+        # All nodes have exactly 2-colour domains; no node is fixed to 1 colour.
+        # This makes the problem harder than cx_easy (more cross-cluster coupling) while
+        # still having no single forced choices to lean on.
+        #
+        # Verified solution:
+        #   h1=red,  h2=blue, h3=red,  h4=blue, h5=green
+        #   a1=blue, a2=green,a3=blue, a4=green,a5=red
+        #   b1=green,b2=red,  b3=blue, b4=red,  b5=blue
+        human_nodes  = ["h1","h2","h3","h4","h5"]
+        agent1_nodes = ["a1","a2","a3","a4","a5"]
+        agent2_nodes = ["b1","b2","b3","b4","b5"]
+
+        adjacency = {
+            "h1":["h2","h5"], "h2":["h1","h3","h5"],
+            "h3":["h2","h4"], "h4":["h3","h5"], "h5":["h1","h2","h4"],
+            "a1":["a2","a5"], "a2":["a1","a3","a5"],
+            "a3":["a2","a4"], "a4":["a3","a5"], "a5":["a1","a2","a4"],
+            "b1":["b2","b5"], "b2":["b1","b3","b5"],
+            "b3":["b2","b4"], "b4":["b3","b5"], "b5":["b1","b2","b4"],
+        }
+        # Standard cross-cluster edges (same as easy)
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h4"].append("a4"); adjacency["a4"].append("h4")
+        adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+        adjacency["h2"].append("b2"); adjacency["b2"].append("h2")
+        adjacency["h5"].append("b2"); adjacency["b2"].append("h5")
+        # NEW: h3 connected to both agents (was previously isolated cross-cluster)
+        adjacency["h3"].append("a1"); adjacency["a1"].append("h3")
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+
+        node_domains = {
+            "h1":["red","green"],  "h2":["blue","red"],
+            "h3":["red","green"],  "h4":["blue","green"],  "h5":["red","green"],
+            "a1":["blue","red"],   "a2":["green","blue"],
+            "a3":["blue","red"],   "a4":["green","red"],   "a5":["red","green"],
+            "b1":["green","red"],  "b2":["red","blue"],
+            "b3":["blue","green"], "b4":["red","blue"],    "b5":["blue","green"],
+        }
+        explicit_fixed = {"Human":{},"Agent1":{},"Agent2":{}}
+
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_hard_free":
+        # 6-node topology identical to cx_hard, but with NO single-colour fixed nodes.
+        # The four nodes that cx_hard fixes to 1 colour (h3, h6, a4, b2) are each given
+        # a 2-colour domain instead.  Every other node keeps its cx_hard 2-colour domain.
+        #
+        # This is harder than cx_easy/cx_medium (larger graph, more internal structure)
+        # and harder than cx_easy_plus (6 nodes per cluster instead of 5), but without
+        # the immediate narrowing that single-colour fixed nodes provide.
+        #
+        # Verified solution (same as cx_hard):
+        #   h1=blue,h2=red, h3=green,h4=red, h5=blue,h6=red
+        #   a1=blue,a2=red, a3=green,a4=red, a5=green,a6=red
+        #   b1=red, b2=green,b3=blue,b4=green,b5=red, b6=green
+        human_nodes  = ["h1","h2","h3","h4","h5","h6"]
+        agent1_nodes = ["a1","a2","a3","a4","a5","a6"]
+        agent2_nodes = ["b1","b2","b3","b4","b5","b6"]
+
+        adjacency = {
+            "h1":["h2","h6"], "h2":["h1","h3"], "h3":["h2","h4","h6"],
+            "h4":["h3","h5"], "h5":["h4","h6"], "h6":["h5","h1","h3"],
+            "a1":["a2","a6"], "a2":["a1","a3"], "a3":["a2","a4","a6"],
+            "a4":["a3","a5"], "a5":["a4","a6"], "a6":["a5","a1","a3"],
+            "b1":["b2","b6"], "b2":["b1","b3"], "b3":["b2","b4","b6"],
+            "b4":["b3","b5"], "b5":["b4","b6"], "b6":["b5","b1","b3"],
+        }
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+        adjacency["h2"].append("b3"); adjacency["b3"].append("h2")
+        adjacency["h5"].append("b6"); adjacency["b6"].append("h5")
+
+        # Same as cx_hard but h3/h6/a4/b2 expanded from 1 colour to 2.
+        node_domains = {
+            "h1":["blue","red"],   "h2":["red","green"],
+            "h3":["green","blue"], "h4":["red","blue"],
+            "h5":["blue","green"], "h6":["red","green"],
+            "a1":["blue","green"], "a2":["red","blue"],
+            "a3":["green","red"],  "a4":["red","green"],
+            "a5":["green","blue"], "a6":["red","blue"],
+            "b1":["red","blue"],   "b2":["green","red"],
+            "b3":["blue","red"],   "b4":["green","blue"],
+            "b5":["red","green"],  "b6":["green","red"],
+        }
+        explicit_fixed = {"Human":{},"Agent1":{},"Agent2":{}}
+
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_expert":
+        # 6-node per cluster — same internal topology as cx_hard (6-cycle + chord x3–x6),
+        # but with 6 cross-cluster edges instead of 4.  EVERY human node is directly
+        # constrained by at least one agent (vs 2 unconstrained nodes in cx_hard/cx_hard_free).
+        #
+        # Cross-edges:  h1–a2, h4–a5, h3–a1 (new)  for Human↔Agent1
+        #               h2–b3, h5–b6, h6–b1 (new)  for Human↔Agent2
+        #
+        # Design intent: the user has no "safe" node to start with — every move
+        # requires reasoning about what the agents must do.  Tight 2-colour domains
+        # create long forced cascades once any single node is resolved:
+        #   h1=blue → h2=red(forced) → h3=green(forced) → h4=red(forced) → h5=blue(forced)
+        #             h6=red(forced) → and all of Agent1+Agent2 cascade from cross-edges.
+        #
+        # Verified solution:
+        #   h1=blue, h2=red, h3=green, h4=red, h5=blue, h6=red
+        #   a1=blue, a2=red, a3=green, a4=red, a5=blue, a6=red
+        #   b1=blue, b2=red, b3=green, b4=red, b5=blue, b6=red
+        human_nodes  = ["h1","h2","h3","h4","h5","h6"]
+        agent1_nodes = ["a1","a2","a3","a4","a5","a6"]
+        agent2_nodes = ["b1","b2","b3","b4","b5","b6"]
+
+        adjacency = {
+            "h1":["h2","h6"], "h2":["h1","h3"], "h3":["h2","h4","h6"],
+            "h4":["h3","h5"], "h5":["h4","h6"], "h6":["h5","h1","h3"],
+            "a1":["a2","a6"], "a2":["a1","a3"], "a3":["a2","a4","a6"],
+            "a4":["a3","a5"], "a5":["a4","a6"], "a6":["a5","a1","a3"],
+            "b1":["b2","b6"], "b2":["b1","b3"], "b3":["b2","b4","b6"],
+            "b4":["b3","b5"], "b5":["b4","b6"], "b6":["b5","b1","b3"],
+        }
+        # Standard edges
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+        adjacency["h2"].append("b3"); adjacency["b3"].append("h2")
+        adjacency["h5"].append("b6"); adjacency["b6"].append("h5")
+        # New edges — cover h3 and h6 so all human nodes are cross-constrained
+        adjacency["h3"].append("a1"); adjacency["a1"].append("h3")
+        adjacency["h6"].append("b1"); adjacency["b1"].append("h6")
+
+        node_domains = {
+            # h1=blue: wrong=green; h2 domain traps blue (h1–h2 direct conflict)
+            "h1":["blue","green"],  "h2":["red","blue"],
+            # h3: trapped by h2+h6 both red (chord); wrong=red creates double conflict
+            "h3":["green","red"],   "h4":["red","green"],
+            # h5: both neighbours (h4,h6) are red; wrong=red = immediate double conflict
+            "h5":["blue","red"],    "h6":["red","blue"],
+            # Agent1: a1 trapped by h3 cross-edge; a5 trapped by h4 cross-edge
+            "a1":["blue","green"],  "a2":["red","blue"],
+            "a3":["green","red"],   "a4":["red","green"],
+            "a5":["blue","red"],    "a6":["red","blue"],
+            # Agent2: b1 trapped by h6 cross-edge; b6 trapped by h5 cross-edge
+            "b1":["blue","red"],    "b2":["red","blue"],
+            "b3":["green","blue"],  "b4":["red","green"],
+            "b5":["blue","red"],    "b6":["red","blue"],
+        }
+        explicit_fixed = {"Human":{},"Agent1":{},"Agent2":{}}
+
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_gauntlet":
+        # 6-node per cluster — 6 cross-cluster edges where h2 and h5 are each constrained
+        # by BOTH agents simultaneously.  h3 and h6 have no direct cross-edges but are
+        # tightly coupled to h2/h5 internally.
+        #
+        # Cross-edges:  h1–a2, h2–a3 (new), h4–a5, h5–a6 (new)  for Human↔Agent1
+        #               h2–b3, h5–b6                              for Human↔Agent2
+        #
+        # Design intent:
+        #   h2 is constrained by Agent1 (a3) AND Agent2 (b3) simultaneously.
+        #   h5 is constrained by Agent1 (a6) AND Agent2 (b6) simultaneously.
+        #   The user cannot safely assign h2 or h5 until they know what BOTH agents
+        #   intend to do — forcing genuine bilateral coordination before any move.
+        #
+        # Ultra-tight domain design: a3 and b3 both green in the target solution,
+        # so h2 ≠ green from both sides → h2 = red (doubly forced).
+        # Similarly a6 and b6 both red → h5 ≠ red from both sides → h5 = blue.
+        #
+        # Verified solution (one of 60):
+        #   h1=blue, h2=red, h3=green, h4=red, h5=blue, h6=red
+        #   a1=blue, a2=red, a3=green, a4=red, a5=blue, a6=red
+        #   b1=green,b2=blue,b3=green, b4=red, b5=blue, b6=red
+        human_nodes  = ["h1","h2","h3","h4","h5","h6"]
+        agent1_nodes = ["a1","a2","a3","a4","a5","a6"]
+        agent2_nodes = ["b1","b2","b3","b4","b5","b6"]
+
+        adjacency = {
+            "h1":["h2","h6"], "h2":["h1","h3"], "h3":["h2","h4","h6"],
+            "h4":["h3","h5"], "h5":["h4","h6"], "h6":["h5","h1","h3"],
+            "a1":["a2","a6"], "a2":["a1","a3"], "a3":["a2","a4","a6"],
+            "a4":["a3","a5"], "a5":["a4","a6"], "a6":["a5","a1","a3"],
+            "b1":["b2","b6"], "b2":["b1","b3"], "b3":["b2","b4","b6"],
+            "b4":["b3","b5"], "b5":["b4","b6"], "b6":["b5","b1","b3"],
+        }
+        # Human↔Agent1: h1–a2, h2–a3 (h2 gets its first agent constraint here), h4–a5, h5–a6
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h2"].append("a3"); adjacency["a3"].append("h2")
+        adjacency["h4"].append("a5"); adjacency["a5"].append("h4")
+        adjacency["h5"].append("a6"); adjacency["a6"].append("h5")
+        # Human↔Agent2: h2–b3 (h2 now doubly constrained), h5–b6 (h5 now doubly constrained)
+        adjacency["h2"].append("b3"); adjacency["b3"].append("h2")
+        adjacency["h5"].append("b6"); adjacency["b6"].append("h5")
+
+        # h2 domain [red,green]: a3=green → h2≠green → h2=red (forced by Agent1)
+        #                        b3=green → h2≠green → h2=red (forced by Agent2)
+        #                        Both agents independently force h2=red.
+        # h5 domain [blue,red]:  a6=red  → h5≠red  → h5=blue (forced by Agent1)
+        #                        b6=red  → h5≠red  → h5=blue (forced by Agent2)
+        node_domains = {
+            "h1":["blue","green"],  "h2":["red","green"],
+            "h3":["green","red"],   "h4":["red","green"],
+            "h5":["blue","red"],    "h6":["red","blue"],
+            # Agent1: a3=green forces h2; a6=red forces h5
+            "a1":["blue","red"],    "a2":["red","blue"],
+            "a3":["green","blue"],  "a4":["red","green"],
+            "a5":["blue","green"],  "a6":["red","blue"],
+            # Agent2: b3=green forces h2; b6=red forces h5
+            "b1":["red","green"],   "b2":["blue","red"],
+            "b3":["green","red"],   "b4":["red","blue"],
+            "b5":["blue","green"],  "b6":["red","green"],
+        }
+        explicit_fixed = {"Human":{},"Agent1":{},"Agent2":{}}
+
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_super":
+        # 8-node per cluster — combines the size of the "super" topology with
+        # per-node domain restrictions.  This is the largest and most structurally
+        # complex preset.
+        #
+        # Topology per cluster: 8-cycle + antipodal chord (x1–x5).
+        # Cross-edges: h1–a2, h5–a5  (Human↔Agent1)
+        #              h3–b3, h7–b7  (Human↔Agent2)
+        #
+        # Design intent: the 8-node cycle creates longer deduction chains than
+        # the 6-node version.  Every domain is 2-colour and aligned so that
+        # knowing any one cross-boundary value cascades through 5–6 nodes before
+        # reaching a free choice.  Unlike cx_expert/gauntlet, the human cluster
+        # has no doubly-constrained nodes — but the sheer chain length (8 nodes
+        # per cluster) means mistakes propagate further before they manifest.
+        #
+        # Verified solution:
+        #   h: blue, red, green, blue, red, green, blue, red
+        #   a: red,  green, blue, red,  green, blue, red,  green
+        #   b: green, blue, red,  green, blue, red,  green, blue
+        human_nodes  = [f"h{i}" for i in range(1, 9)]
+        agent1_nodes = [f"a{i}" for i in range(1, 9)]
+        agent2_nodes = [f"b{i}" for i in range(1, 9)]
+
+        def _eight_cycle_chord(prefix: str) -> dict:
+            ns = [f"{prefix}{i}" for i in range(1, 9)]
+            adj: dict = {n: [] for n in ns}
+            for i in range(8):
+                a_n, b_n = ns[i], ns[(i + 1) % 8]
+                adj[a_n].append(b_n)
+                adj[b_n].append(a_n)
+            # Antipodal chord: node 1 – node 5 (indices 0 and 4)
+            adj[ns[0]].append(ns[4])
+            adj[ns[4]].append(ns[0])
+            return adj
+
+        adjacency = {}
+        for pfx in ("h", "a", "b"):
+            adjacency.update(_eight_cycle_chord(pfx))
+
+        # Cross-cluster edges (same as "super" simple-constraint preset)
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h5"].append("a5"); adjacency["a5"].append("h5")
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+        adjacency["h7"].append("b7"); adjacency["b7"].append("h7")
+
+        # Tight 2-colour domains.  Rotating pattern per cluster:
+        #   h: B R G B R G B R  (blue=1,4,7; red=2,5,8; green=3,6)
+        #   a: R G B R G B R G  (shifted +1)
+        #   b: G B R G B R G B  (shifted +2)
+        # Wrong option for each node is the "next colour in the wheel" — locally
+        # plausible but creates a conflict 2–3 hops away via adjacency chains.
+        node_domains = {
+            "h1":["blue","red"],    "h2":["red","green"],
+            "h3":["green","blue"],  "h4":["blue","green"],
+            "h5":["red","blue"],    "h6":["green","red"],
+            "h7":["blue","green"],  "h8":["red","blue"],
+            "a1":["red","blue"],    "a2":["green","red"],
+            "a3":["blue","green"],  "a4":["red","blue"],
+            "a5":["green","blue"],  "a6":["blue","red"],
+            "a7":["red","green"],   "a8":["green","blue"],
+            "b1":["green","red"],   "b2":["blue","green"],
+            "b3":["red","blue"],    "b4":["green","red"],
+            "b5":["blue","red"],    "b6":["red","green"],
+            "b7":["green","blue"],  "b8":["blue","green"],
+        }
+        explicit_fixed = {"Human":{},"Agent1":{},"Agent2":{}}
+
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
     else:
         raise ValueError(
             f"Unknown graph_preset: {graph_preset!r}. "
             "Use 'easy', 'medium', 'tight', 'hard', 'expert', "
-            "'dense', 'dense_tight', or 'super'."
+            "'dense', 'dense_tight', 'super', 'cx_easy', 'cx_medium', 'cx_hard', "
+            "'cx_easy_plus', 'cx_hard_free', 'cx_expert', 'cx_gauntlet', or 'cx_super'."
         )
 
     node_names = human_nodes + agent1_nodes + agent2_nodes
@@ -684,9 +986,12 @@ def main() -> None:
     p.add_argument("--graph-preset", default="easy",
                    choices=["easy", "tight", "hard",
                             "cx_easy", "cx_medium", "cx_hard",
+                            "cx_easy_plus", "cx_hard_free",
+                            "cx_expert", "cx_gauntlet", "cx_super",
                             "medium", "expert", "dense", "dense_tight", "super"],
                    help="Presets: easy/tight/hard (simple constraints), "
-                        "cx_easy/cx_medium/cx_hard (complex per-node domain constraints)")
+                        "cx_easy/cx_medium/cx_hard (complex per-node domain constraints), "
+                        "cx_easy_plus/cx_hard_free/cx_expert/cx_gauntlet/cx_super (harder)")
     p.add_argument("--output-dir", default=None,
                    help="Override output directory (default: results/YYYY-MM-DD/<participant-id>)")
     p.add_argument("--participant-name", default="",

@@ -59,14 +59,25 @@ def main() -> None:
         "Easy    –  Complex Constraints",
         "Medium  –  Complex Constraints",
         "Hard    –  Complex Constraints",
+        "── Harder ───────────────────────────",
+        "Easy+   –  Complex Constraints",
+        "Hard (no fixed)  –  Complex Constraints",
+        "Expert  –  All nodes cross-constrained",
+        "Gauntlet  –  Dual-agent bottlenecks",
+        "Super   –  8 nodes + complex domains",
     ]
     _PRESET_CLI = {
-        "Easy    –  Simple Constraints":   "easy",
-        "Tight   –  Simple Constraints":   "tight",
-        "Hard    –  Simple Constraints":   "hard",
-        "Easy    –  Complex Constraints":  "cx_easy",
-        "Medium  –  Complex Constraints":  "cx_medium",
-        "Hard    –  Complex Constraints":  "cx_hard",
+        "Easy    –  Simple Constraints":              "easy",
+        "Tight   –  Simple Constraints":              "tight",
+        "Hard    –  Simple Constraints":              "hard",
+        "Easy    –  Complex Constraints":             "cx_easy",
+        "Medium  –  Complex Constraints":             "cx_medium",
+        "Hard    –  Complex Constraints":             "cx_hard",
+        "Easy+   –  Complex Constraints":             "cx_easy_plus",
+        "Hard (no fixed)  –  Complex Constraints":   "cx_hard_free",
+        "Expert  –  All nodes cross-constrained":    "cx_expert",
+        "Gauntlet  –  Dual-agent bottlenecks":       "cx_gauntlet",
+        "Super   –  8 nodes + complex domains":      "cx_super",
     }
     # Complex presets have pre-designed domains — fixed-node controls irrelevant
     _PRESET_EXPLICIT = {
@@ -74,6 +85,11 @@ def main() -> None:
         "Easy    –  Complex Constraints",
         "Medium  –  Complex Constraints",
         "Hard    –  Complex Constraints",
+        "Easy+   –  Complex Constraints",
+        "Hard (no fixed)  –  Complex Constraints",
+        "Expert  –  All nodes cross-constrained",
+        "Gauntlet  –  Dual-agent bottlenecks",
+        "Super   –  8 nodes + complex domains",
     }
 
     # --- variables with saved defaults ---

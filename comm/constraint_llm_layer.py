@@ -132,6 +132,64 @@ class ConstraintLLMLayer:
 
         joint_table = self._format_joint_table(boundary_joint)
 
+        # Pre-analyse the joint table to give the LLM a precise classification
+        # so it cannot fall back to vague "avoid X" language.
+        joint_analysis_lines: list = []
+        if boundary_joint:
+            total_combos = len(boundary_joint)
+            valid_combos = sum(1 for r in boundary_joint if r["feasibility_count"] > 0)
+            if valid_combos == total_combos:
+                joint_analysis_lines.append(
+                    "CLASSIFICATION: ALL_OPEN — every combination of boundary node colours works. "
+                    "The agent has no hard constraints on the human's choices at this stage."
+                )
+            else:
+                # Find colours that are impossible in ALL combinations where they appear
+                colour_valid: dict = {}
+                for r in boundary_joint:
+                    for n, c in r["boundary_assignment"].items():
+                        key = (n, c)
+                        if key not in colour_valid:
+                            colour_valid[key] = False
+                        if r["feasibility_count"] > 0:
+                            colour_valid[key] = True
+                always_blocked = [(n, c) for (n, c), ok in colour_valid.items() if not ok]
+                conditionally_blocked = [(n, c) for (n, c), ok in colour_valid.items()
+                                         if ok and any(
+                                             r["feasibility_count"] == 0
+                                             for r in boundary_joint
+                                             if r["boundary_assignment"].get(n) == c
+                                         )]
+                if always_blocked:
+                    blocked_strs = [f"{n}={c}" for n, c in always_blocked]
+                    joint_analysis_lines.append(
+                        f"HARD CONSTRAINTS (impossible in ALL joint combinations — no rescue): "
+                        + ", ".join(blocked_strs)
+                        + ". These MUST be described as impossible, not as preferences."
+                    )
+                if conditionally_blocked:
+                    cond_strs = [f"{n}={c}" for n, c in conditionally_blocked]
+                    joint_analysis_lines.append(
+                        f"CONDITIONAL CONSTRAINTS (fail only in some combinations): "
+                        + ", ".join(cond_strs)
+                        + ". These MUST be described as conditional (works only if...), not as hard blocks."
+                    )
+                if valid_combos == 0:
+                    joint_analysis_lines.append(
+                        "CLASSIFICATION: INFEASIBLE — no combination works currently."
+                    )
+
+        joint_analysis = "\n".join(joint_analysis_lines)
+
+        _output_rules = (
+            "\nOUTPUT RULES — you MUST follow these:\n"
+            "  - If a colour is in HARD CONSTRAINTS above → say 'X is impossible' or 'X cannot be used'. NEVER say 'avoid'.\n"
+            "  - If a colour is in CONDITIONAL CONSTRAINTS → say 'X only works if Y is Z'. NEVER say 'avoid'.\n"
+            "  - If ALL_OPEN → say 'any combination works' or 'all options are open'.\n"
+            "  - BANNED WORDS: 'avoid', 'prefer', 'better' (too vague — be decisive).\n"
+            "  1 sentence. No agent node names. No raw numbers. Natural phrasing."
+        )
+
         if self._condition == "C5":
             # Agent-centric: explain what boundary node pattern lets the agent succeed
             prompt_lines = [
@@ -149,12 +207,14 @@ class ConstraintLLMLayer:
                     f"WHICH OF YOUR BOUNDARY COMBINATIONS ALLOW THE AGENT TO SUCCEED ({nodes_str}):",
                     joint_table,
                 ]
+            if joint_analysis:
+                prompt_lines += ["", joint_analysis]
             prompt_lines += [
                 f"",
                 f"Identify the SINGLE MOST IMPORTANT RULE from the table above.",
-                f"Express it as a simple rule (e.g. 'Keep h1 and h2 different colours').",
-                f"If all combos work, say so briefly. If one colour blocks everything, name it.",
-                f"1 sentence. No agent node names. No raw numbers. Natural phrasing.",
+                f"Express it as a simple, decisive rule (e.g. 'h1 and h2 must be different colours',",
+                f"  'Green is impossible for h1', 'Blue only works if h2 is red').",
+                _output_rules,
             ]
             return "\n".join(prompt_lines)
 
@@ -175,12 +235,14 @@ class ConstraintLLMLayer:
                     f"WHICH OF YOUR BOUNDARY COMBINATIONS ALLOW THE AGENT TO SUCCEED ({nodes_str}):",
                     joint_table,
                 ]
+            if joint_analysis:
+                prompt_lines += ["", joint_analysis]
             prompt_lines += [
                 f"",
                 f"Identify the SINGLE MOST IMPORTANT RULE from the table above.",
-                f"Express it as a simple rule (e.g. 'Keep h1 and h2 different colours').",
-                f"If all combos work, say so briefly. If one colour blocks everything, name it.",
-                f"1 sentence. No agent node names. No raw numbers. Natural phrasing.",
+                f"Express it as a simple, decisive rule (e.g. 'h1 and h2 must be different colours',",
+                f"  'Green is impossible for h1', 'Blue only works if h2 is red').",
+                _output_rules,
             ]
             return "\n".join(prompt_lines)
 
@@ -314,19 +376,50 @@ class ConstraintLLMLayer:
                 joint_hint = self._format_joint_table(joint_data) if joint_data else ""
                 boundary_nodes_str = ", ".join(sorted(boundary_nodes))
                 all_counts_table = self._format_consequence_table(all_consequence_counts)
+
+                # Pre-classify colours from the joint table so the LLM can be precise
+                colour_class_lines = []
+                if joint_data and all_consequence_counts and node in all_consequence_counts:
+                    counts = all_consequence_counts[node]
+                    all_colours = list(counts.keys())
+                    globally_impossible = [
+                        col for col in all_colours
+                        if not any(
+                            e["feasibility_count"] > 0
+                            for e in joint_data
+                            if e["boundary_assignment"].get(node) == col
+                        )
+                    ]
+                    all_fine = not globally_impossible and all(c > 0 for c in counts.values())
+                    if globally_impossible:
+                        colour_class_lines.append(
+                            f"HARD CONSTRAINT: {', '.join(globally_impossible)} is IMPOSSIBLE for {node} "
+                            f"in every joint combination — there is no scenario where it works."
+                        )
+                    if all_fine:
+                        colour_class_lines.append(
+                            f"ALL COLOURS VIABLE: every colour works for {node} at this stage."
+                        )
+
+                pre_classify = "\n".join(colour_class_lines)
+
                 return (
                     f"Node {node} is not yet assigned.\n"
                     f"Boundary nodes: {boundary_nodes_str}\n"
                     f"Current state: {current_state_str}\n"
                     + (f"\nJoint feasibility:\n{joint_hint}\n" if joint_hint else "")
                     + (f"\nConsequence counts:\n{all_counts_table}\n" if all_counts_table else "")
+                    + (f"\n{pre_classify}\n" if pre_classify else "")
                     + f"\nWrite exactly 2 lines:\n"
                     f"Line 1: 'Not yet set.'\n"
-                    f"Line 2 (~8 words): based on the data above, give the most "
-                    f"useful hint about what colour to pick or avoid for {node}. "
-                    f"Only name a colour as 'avoid' if the joint feasibility table shows it fails "
-                    f"in ALL combinations — otherwise say it depends on other nodes. "
-                    f"No agent names. No raw numbers."
+                    f"Line 2 (~8 words): Give the single most decisive insight for {node}.\n"
+                    f"  RULES — you MUST follow these exactly:\n"
+                    f"  - If a colour is IMPOSSIBLE (shown above) → say 'X is not viable here' or 'X cannot be used'\n"
+                    f"  - If a colour only fails in SOME combinations → say 'X works only if [other node] is Y'\n"
+                    f"  - If all colours work equally → say 'All colours are open — pick freely'\n"
+                    f"  - If one colour leaves significantly more agent options → say 'X gives the most room'\n"
+                    f"  BANNED WORDS: 'avoid', 'prefer', 'better' — be specific and decisive, not vague.\n"
+                    f"  No agent names. No raw numbers."
                 )
 
             colour_counts = {col: len(cfgs) for col, cfgs in all_colour_configs.items()}
@@ -409,21 +502,61 @@ class ConstraintLLMLayer:
                 )
                 prompt_lines.append("")
 
+            # Pre-classify the current colour so the LLM must be precise
+            if globally_blocked and current_colour in globally_blocked:
+                verdict_class = "IMPOSSIBLE"
+                verdict_guide = (
+                    f"The current colour ({current_colour}) is IMPOSSIBLE — "
+                    f"no joint combination of boundary nodes can rescue it. "
+                    f"Line 1 MUST say this clearly: e.g. 'Impossible here' or '{current_colour.capitalize()} cannot be used'."
+                )
+            elif conditionally_blocked and current_colour in conditionally_blocked:
+                verdict_class = "CONDITIONAL"
+                verdict_guide = (
+                    f"The current colour ({current_colour}) currently fails but COULD work if other boundary nodes change. "
+                    f"Line 1 MUST reflect this conditional status: e.g. '{current_colour.capitalize()} works only if others change' or "
+                    f"'{current_colour.capitalize()} is blocked — depends on other nodes'."
+                )
+            elif ok_colours:
+                # Check how many options the current colour leaves vs the best
+                current_count = len(all_colour_configs.get(current_colour, []))
+                max_count = max(len(cfgs) for cfgs in all_colour_configs.values()) if all_colour_configs else 1
+                if max_count > 0 and current_count < max_count * 0.5:
+                    verdict_class = "LIMITING"
+                    verdict_guide = (
+                        f"The current colour ({current_colour}) works but leaves significantly fewer options than the best alternative. "
+                        f"Line 1 MUST reflect this: e.g. '{current_colour.capitalize()} works, but tight' or '{current_colour.capitalize()} limits the options'."
+                    )
+                elif current_count == max_count or current_count >= max_count * 0.8:
+                    verdict_class = "FINE"
+                    verdict_guide = (
+                        f"The current colour ({current_colour}) works well with plenty of options. "
+                        f"Line 1 should reflect this positively: e.g. '{current_colour.capitalize()} works fine here' or 'Good choice'."
+                    )
+                else:
+                    verdict_class = "LIMITING"
+                    verdict_guide = (
+                        f"The current colour ({current_colour}) is viable but somewhat restrictive. "
+                        f"Line 1 MUST reflect this: e.g. '{current_colour.capitalize()} is a bit tight' or '{current_colour.capitalize()} narrows the options'."
+                    )
+            else:
+                verdict_class = "UNKNOWN"
+                verdict_guide = f"Describe whether {current_colour} is a good or bad choice for {node}."
+
             prompt_lines += [
+                f"CLASSIFICATION: {verdict_class}",
+                f"{verdict_guide}",
+                f"",
                 f"Write exactly 2 short lines separated by a newline.",
-                f"Line 1 (~5 words): Is {node}={current_colour} a good/limited/bad choice? Be specific.",
-                f"  Good examples: 'Red works fine here', 'Blue leaves few options', 'Green fits well'.",
-                f"  NEVER say 'blocks the agent' — the agent can always attempt a colouring; only say",
-                f"  a colour 'rules out' or 'eliminates' the agent if it appears in the 'always blocked' note.",
-                f"  For anything less severe, say it 'limits', 'tightens', or 'reduces' choices.",
-                f"Line 2 (~8-10 words): Give the ONE most useful rule about {node}.",
-                f"  - Look at the joint table: does {node}'s colour interact with another boundary node?",
-                f"  - Look at the configs: does the agent have plenty of room, or is it squeezed?",
-                f"  - If the agent can handle any colour you pick, say so clearly.",
-                f"  - Only say a colour 'rules out' the agent if it appears in the 'always blocked' note above.",
-                f"  - If a colour is only conditionally problematic, say it depends on other nodes.",
-                f"  - If two boundary nodes together cause a problem, reference that pattern.",
-                f"BANNED PHRASES: 'also works', 'offers flexibility', 'provides flexibility', 'more flexibility',",
+                f"Line 1 (~5 words): MUST match the classification above — be decisive and specific.",
+                f"Line 2 (~8-10 words): Give the ONE most useful rule about {node}. Follow these in order:",
+                f"  - If IMPOSSIBLE: explain WHY (e.g. 'Forces adjacent nodes into conflict regardless').",
+                f"  - If CONDITIONAL: name the condition explicitly (e.g. 'Works if h2 is blue instead').",
+                f"  - If LIMITING or FINE: does {node}'s colour interact with another boundary node in the joint table?",
+                f"    If yes, name that pattern (e.g. 'Works unless h2 is also red').",
+                f"    If no interaction, describe how much room the agent has.",
+                f"  - If all colours work equally well, say 'Agent has full flexibility with any choice'.",
+                f"BANNED PHRASES: 'avoid', 'prefer', 'better', 'also works', 'offers flexibility',",
                 f"  'blocks the agent', 'agent cannot work', 'agent is stuck'.",
                 f"No agent-internal node names. No raw numbers. Natural conversational phrasing.",
             ]
