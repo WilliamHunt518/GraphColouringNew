@@ -207,6 +207,14 @@ class HumanTurnUI:
         # done flag for async session
         self._done = threading.Event()
 
+        # Synchronous submission history (constraint viz mode)
+        self._submission_history: List[Dict] = []        # [{num, timestamp, assignments, responses}]
+        self._submit_btn: Optional[ttk.Button] = None
+        self._history_bar: Optional[tk.Frame] = None
+        self._has_pending_changes: bool = False
+        self._last_submitted_assignments: Optional[Dict] = None
+        self._submission_computing: bool = False          # True while bg threads are running
+
     def _ensure_root(self) -> tk.Tk:
         """Ensure a Tk root exists before creating any tk.Variable."""
         if self._root is None:
@@ -431,6 +439,20 @@ class HumanTurnUI:
         self._finish_btn = ttk.Button(btns, text="Finish", command=self._finish, state="disabled")
         self._finish_btn.pack(side="right")
 
+        # Constraint viz mode: Submit button (synchronous step trigger)
+        if getattr(self, '_constraint_viz_mode', False):
+            self._submit_btn = ttk.Button(
+                btns, text="Submit Configuration",
+                command=self._submit_configuration,
+                style="Submit.TButton",
+            )
+            self._submit_btn.pack(side="left", padx=(0, 10))
+            # Style: green when pending changes, grey when up-to-date
+            style = ttk.Style()
+            style.configure("Submit.TButton", font=("TkDefaultFont", 10, "bold"))
+            style.configure("SubmitPending.TButton", font=("TkDefaultFont", 10, "bold"),
+                            foreground="white", background="#2a9d2a")
+
         # Create phase banner frame (for all modes with announcement phase)
         if has_announcement:
             phase_banner = tk.Frame(root, height=50, relief=tk.RAISED, borderwidth=2)
@@ -446,6 +468,45 @@ class HumanTurnUI:
             )
             self._phase_banner_label.pack(fill="both", expand=True)
             self._phase_banner = phase_banner
+
+        # Constraint viz mode: history bar (shown below top bar)
+        if getattr(self, '_constraint_viz_mode', False):
+            history_outer = tk.Frame(root, bg="#1e1e2e", pady=4)
+            history_outer.pack(fill="x", padx=0)
+            tk.Label(
+                history_outer, text="  Attempts:", font=("TkDefaultFont", 9, "bold"),
+                bg="#1e1e2e", fg="#aaaacc",
+            ).pack(side="left", padx=(6, 4))
+            # Scrollable inner frame
+            hist_canvas = tk.Canvas(history_outer, height=180, bg="#1e1e2e",
+                                    highlightthickness=0)
+            hist_canvas.pack(side="left", fill="x", expand=True)
+            hist_inner = tk.Frame(hist_canvas, bg="#1e1e2e")
+            hist_win = hist_canvas.create_window((0, 0), window=hist_inner, anchor="nw")
+            def _hist_inner_cfg(ev, c=hist_canvas, w=hist_win):
+                c.configure(scrollregion=c.bbox("all"))
+                c.itemconfig(w, height=ev.height)
+            hist_inner.bind("<Configure>", _hist_inner_cfg)
+            # horizontal scrollbar (hidden by default — only appears if many attempts)
+            hist_scroll = ttk.Scrollbar(history_outer, orient="horizontal",
+                                        command=hist_canvas.xview)
+            hist_canvas.configure(xscrollcommand=hist_scroll.set)
+            # Only show scrollbar when content overflows
+            def _maybe_show_scroll(ev, c=hist_canvas, s=hist_scroll):
+                bbox = c.bbox("all")
+                if bbox and bbox[2] > c.winfo_width():
+                    s.pack(side="bottom", fill="x")
+                else:
+                    try:
+                        s.pack_forget()
+                    except Exception:
+                        pass
+            hist_inner.bind("<Configure>", lambda ev: _maybe_show_scroll(ev))
+            self._history_bar = hist_inner
+            tk.Label(history_outer, text="(no attempts yet)",
+                     bg="#1e1e2e", fg="#555577",
+                     font=("TkDefaultFont", 9, "italic")).pack(side="left", padx=4)
+            self._history_placeholder = history_outer.winfo_children()[-1]
 
         main = ttk.Frame(root)
         main.pack(fill="both", expand=True)
@@ -3232,9 +3293,10 @@ class HumanTurnUI:
         if best_d > (r * r):
             return
 
-        # Check cooldown before allowing colour change
-        if best in self._node_cooldowns and time.time() < self._node_cooldowns[best]:
-            return
+        # Check cooldown before allowing colour change (not used in constraint viz mode)
+        if not getattr(self, '_constraint_viz_mode', False):
+            if best in self._node_cooldowns and time.time() < self._node_cooldowns[best]:
+                return
 
         # Compute node canvas position for popup placement
         nx, ny = self._node_pos[best]
@@ -3267,9 +3329,10 @@ class HumanTurnUI:
         if best_d > (r * r):
             return
 
-        # Check cooldown
-        if best in self._node_cooldowns and time.time() < self._node_cooldowns[best]:
-            return
+        # Check cooldown (not used in constraint viz mode)
+        if not getattr(self, '_constraint_viz_mode', False):
+            if best in self._node_cooldowns and time.time() < self._node_cooldowns[best]:
+                return
 
         # Reset to unassigned
         if self._assignments.get(best) is None:
@@ -3286,23 +3349,10 @@ class HumanTurnUI:
         if self._hud_var:
             self._hud_var.set(self._hud_text())
 
-        # Fire constraint updates
-        if getattr(self, '_on_constraint_update', None):
-            snapshot = dict(self._assignments)
-
-            def _bg_update(neigh: str, human_partial: dict) -> None:
-                try:
-                    data = self._on_constraint_update(neigh, human_partial)
-                    self.update_constraint_display(neigh, data)
-                except Exception as _exc:
-                    print(f"[ConstraintViz] right-click update error for {neigh}: {_exc}")
-
-            for neigh in self._neighs:
-                threading.Thread(
-                    target=_bg_update,
-                    args=(neigh, snapshot),
-                    daemon=True,
-                ).start()
+        # Constraint viz mode: mark pending changes (updates happen on Submit, not live)
+        if getattr(self, '_constraint_viz_mode', False):
+            self._has_pending_changes = True
+            self._refresh_submit_button()
 
     def _cycle_colour(self, node: str) -> None:
         # In constraint viz mode, cycle includes None (grey/unassigned) as first step.
@@ -3333,11 +3383,12 @@ class HumanTurnUI:
         self._move_count += 1
         self._refresh_move_counter()
 
-        # Start cooldown
-        self._node_cooldowns[node] = time.time() + self._cooldown_seconds
-        if not self._cooldown_ticker_active and self._root:
-            self._cooldown_ticker_active = True
-            self._root.after(1000, self._tick_cooldowns)
+        # Start cooldown (skipped in constraint viz mode)
+        if not getattr(self, '_constraint_viz_mode', False):
+            self._node_cooldowns[node] = time.time() + self._cooldown_seconds
+            if not self._cooldown_ticker_active and self._root:
+                self._cooldown_ticker_active = True
+                self._root.after(1000, self._tick_cooldowns)
 
         if self._on_colour_change:
             try:
@@ -3349,38 +3400,10 @@ class HumanTurnUI:
             self._hud_var.set(self._hud_text())
         self._update_finish_button()
 
-        # Constraint viz mode: fire constraint updates in background threads
-        if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_constraint_update', None):
-            snapshot = dict(self._assignments)
-
-            def _bg_update(neigh: str, human_partial: dict) -> None:
-                try:
-                    if hasattr(self, 'update_agent_status'):
-                        self.update_agent_status(neigh, "Computing...")
-                    data = self._on_constraint_update(neigh, human_partial)
-                    self.update_constraint_display(neigh, data)
-                    if hasattr(self, 'clear_agent_status'):
-                        self.clear_agent_status(neigh)
-                except Exception as _exc:
-                    print(f"[ConstraintViz] background update error for {neigh}: {_exc}")
-                    if hasattr(self, 'clear_agent_status'):
-                        self.clear_agent_status(neigh)
-
-            for neigh in self._neighs:
-                threading.Thread(target=_bg_update, args=(neigh, snapshot), daemon=True).start()
-
-        # C5/C6: fire human-domain update in a background thread
-        if getattr(self, '_constraint_viz_mode', False) and getattr(self, '_on_human_domain_update', None):
-            snapshot_hd = dict(self._assignments)
-
-            def _bg_human_domain(human_partial: dict) -> None:
-                try:
-                    data = self._on_human_domain_update(human_partial)
-                    self.update_human_domain_display(data)
-                except Exception as _exc:
-                    print(f"[ConstraintViz] human_domain update error: {_exc}")
-
-            threading.Thread(target=_bg_human_domain, args=(snapshot_hd,), daemon=True).start()
+        # Constraint viz mode: mark pending changes (updates happen on Submit, not live)
+        if getattr(self, '_constraint_viz_mode', False):
+            self._has_pending_changes = True
+            self._refresh_submit_button()
 
     def _show_colour_picker(self, node: str, canvas_x: int, canvas_y: int) -> None:
         """Show a colour-picker popup above the clicked node."""
@@ -6116,6 +6139,9 @@ class HumanTurnUI:
         # Build list of (node, box_factory_fn) to create overlays for
         overlay_items: list = []  # each entry: (node_key, box_widget)
 
+        # Use the submitted snapshot for overlay content so panels only update on Submit
+        submitted = self._last_submitted_assignments or self._assignments
+
         if condition == 'C1':
             # C1: overlays for ALL boundary nodes (assigned or not)
             seen_nodes_c1: set = set()
@@ -6128,7 +6154,7 @@ class HumanTurnUI:
                     if node in seen_nodes_c1 or node not in self._node_pos:
                         continue
                     seen_nodes_c1.add(node)
-                    current_colour = self._assignments.get(node)
+                    current_colour = submitted.get(node)
                     colour_map = consequence_sets.get(node, {})
                     box = self._make_constraint_overlay_box(node, current_colour, colour_map)
                     overlay_items.append((node, box))
@@ -6147,7 +6173,7 @@ class HumanTurnUI:
                     if node in seen_nodes or node not in self._node_pos:
                         continue
                     seen_nodes.add(node)
-                    current_colour = self._assignments.get(node)
+                    current_colour = submitted.get(node)
                     colour_map = consequence_sets.get(node, {})
                     nl_text = node_nl.get(node)
                     box = self._make_constraint_overlay_box(
@@ -6393,6 +6419,25 @@ class HumanTurnUI:
                 tk.Label(inner, text=f"  {total} valid option(s)",
                          font=("Arial", 8), fg="#1a6e1a",
                          bg="white", anchor="w").pack(anchor="w")
+
+                # Show other colours that are also valid
+                other_valid = [
+                    (col, len(cfgs))
+                    for col, cfgs in sorted(colour_map.items())
+                    if col != cur_key and cfgs and len(cfgs) > 0
+                ]
+                if other_valid:
+                    also_row = tk.Frame(inner, bg="white")
+                    also_row.pack(anchor="w", pady=(1, 0))
+                    tk.Label(also_row, text="  Also OK: ",
+                             font=("Arial", 7, "italic"), fg="#555",
+                             bg="white").pack(side="left")
+                    for i, (col, cnt) in enumerate(other_valid):
+                        fg_col = COLOUR_FG.get(col, "#333")
+                        lbl_text = col if i == len(other_valid) - 1 else col + ","
+                        tk.Label(also_row, text=lbl_text,
+                                 font=("Arial", 7, "bold"), fg=fg_col,
+                                 bg="white").pack(side="left")
 
                 # Show visible-neighbour entries if informative
                 if filtered_cfgs and any(filtered_cfgs):
@@ -6686,21 +6731,53 @@ class HumanTurnUI:
         return outer
 
     def _initial_populate(self) -> None:
-        """Trigger initial constraint computation before the user has clicked anything."""
+        """Trigger initial constraint computation before the user has clicked anything.
+
+        Treated as submission #0 (the starting state) and recorded in history.
+        """
         if not getattr(self, '_constraint_viz_mode', False):
             return
         snapshot = dict(self._assignments)
 
-        if getattr(self, '_on_constraint_update', None):
-            def _bg_update(neigh: str) -> None:
-                try:
-                    data = self._on_constraint_update(neigh, snapshot)
-                    self.update_constraint_display(neigh, data)
-                except Exception as _exc:
-                    print(f"[ConstraintViz] initial_populate error for {neigh}: {_exc}")
+        if not getattr(self, '_on_constraint_update', None):
+            return
 
-            for neigh in self._neighs:
-                threading.Thread(target=_bg_update, args=(neigh,), daemon=True).start()
+        # Create a history entry for the initial state
+        entry: Dict[str, Any] = {
+            "num": 0,
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "assignments": snapshot,
+            "responses": {},
+            "is_feasible": {},
+        }
+        self._submission_history.append(entry)
+        self._last_submitted_assignments = snapshot
+        self._has_pending_changes = False
+        self._submission_computing = True
+        self._refresh_submit_button()
+        # Don't add #0 to the history bar — it's the pre-game initial state
+
+        total = len(self._neighs)
+        done_count = [0]
+
+        def _bg_update(neigh: str) -> None:
+            try:
+                data = self._on_constraint_update(neigh, snapshot)
+                entry["responses"][neigh] = data
+                entry["is_feasible"][neigh] = data.get(
+                    "is_feasible", data.get("feasibility_count", 0) > 0
+                )
+                self.update_constraint_display(neigh, data)
+            except Exception as _exc:
+                print(f"[ConstraintViz] initial_populate error for {neigh}: {_exc}")
+            finally:
+                done_count[0] += 1
+                if done_count[0] >= total:
+                    if self._root:
+                        self._root.after(0, lambda: self._on_submission_complete(entry))
+
+        for neigh in self._neighs:
+            threading.Thread(target=_bg_update, args=(neigh,), daemon=True).start()
 
         if getattr(self, '_on_human_domain_update', None):
             def _bg_hd() -> None:
@@ -6710,6 +6787,318 @@ class HumanTurnUI:
                 except Exception as _exc:
                     print(f"[ConstraintViz] initial_populate human_domain error: {_exc}")
             threading.Thread(target=_bg_hd, daemon=True).start()
+
+    # -------------------- Synchronous Submit & History (Constraint Viz) --------------------
+
+    def _all_human_nodes_assigned(self) -> bool:
+        """Return True when every human-owned node has a colour assigned."""
+        human_nodes = [n for n in self._nodes if self._owners.get(n) == "Human"
+                       and n not in getattr(self, '_fixed_nodes', {})]
+        return all(self._assignments.get(n) is not None for n in human_nodes)
+
+    def _refresh_submit_button(self) -> None:
+        """Update the Submit button label/style to reflect pending state."""
+        btn = self._submit_btn
+        if btn is None:
+            return
+        if self._submission_computing:
+            btn.config(text="Computing…", state="disabled")
+        elif not self._all_human_nodes_assigned():
+            btn.config(text="Assign all nodes first", state="disabled")
+        elif self._has_pending_changes:
+            btn.config(text="Submit Configuration  ▶", state="normal")
+        else:
+            btn.config(text="Configuration Submitted", state="normal")
+
+    def _submit_configuration(self) -> None:
+        """Save current assignments to history and fire all constraint-update callbacks."""
+        if self._submission_computing:
+            return
+        if not getattr(self, '_on_constraint_update', None):
+            return
+
+        snapshot = dict(self._assignments)
+        num = len(self._submission_history) + 1
+        entry: Dict[str, Any] = {
+            "num": num,
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "assignments": snapshot,
+            "responses": {},
+            "is_feasible": {},
+        }
+        self._submission_history.append(entry)
+        self._last_submitted_assignments = snapshot
+        self._has_pending_changes = False
+        self._submission_computing = True
+        self._refresh_submit_button()
+
+        # Add history bar button immediately (shows "computing" state)
+        self._add_to_history_bar(entry, computing=True)
+
+        total = len(self._neighs)
+        if total == 0:
+            self._submission_computing = False
+            self._refresh_submit_button()
+            return
+
+        done_count = [0]
+
+        def _bg_update(neigh: str) -> None:
+            try:
+                self.update_agent_status(neigh, "Computing…")
+                data = self._on_constraint_update(neigh, snapshot)
+                entry["responses"][neigh] = data
+                entry["is_feasible"][neigh] = data.get("is_feasible",
+                                                        data.get("feasibility_count", 0) > 0)
+                self.update_constraint_display(neigh, data)
+                self.clear_agent_status(neigh)
+
+                # Also fire human-domain update if available
+                if getattr(self, '_on_human_domain_update', None):
+                    try:
+                        hd_data = self._on_human_domain_update(snapshot)
+                        self.update_human_domain_display(hd_data)
+                    except Exception as hd_exc:
+                        print(f"[Submit] human_domain update error: {hd_exc}")
+            except Exception as exc:
+                print(f"[Submit] error for {neigh}: {exc}")
+                self.clear_agent_status(neigh)
+            finally:
+                done_count[0] += 1
+                if done_count[0] >= total:
+                    if self._root:
+                        self._root.after(0, lambda: self._on_submission_complete(entry))
+
+        for neigh in self._neighs:
+            threading.Thread(target=_bg_update, args=(neigh,), daemon=True).start()
+
+    def _on_submission_complete(self, entry: Dict) -> None:
+        """Called on the Tk thread once all agents have responded to a submission."""
+        self._submission_computing = False
+        self._refresh_submit_button()
+        # Refresh the history bar button with final feasibility result (#0 is silent)
+        if entry.get("num", 0) > 0:
+            self._add_to_history_bar(entry, computing=False, refresh=True)
+
+    def _draw_history_mini_graph(self, canvas: "tk.Canvas", assignments: Dict,
+                                  w: int, h: int) -> None:
+        """Draw a small graph of human-owned nodes onto *canvas* (w×h pixels)."""
+        COLOUR_FILL = {"red": "#ff6666", "green": "#44bb44", "blue": "#4466ff"}
+        COLOUR_OUT  = {"red": "#aa0000", "green": "#006600", "blue": "#0000aa"}
+
+        human_nodes = [n for n in self._nodes if self._owners.get(n) == "Human"]
+        if not human_nodes:
+            return
+
+        positions = {n: self._node_pos[n] for n in human_nodes if n in self._node_pos}
+        if not positions:
+            return
+
+        # Normalise positions to fit in canvas with padding, then centre
+        pad = 16
+        xs = [p[0] for p in positions.values()]
+        ys = [p[1] for p in positions.values()]
+        x_min, x_max = min(xs), max(xs)
+        y_min, y_max = min(ys), max(ys)
+        span_x = max(x_max - x_min, 1)
+        span_y = max(y_max - y_min, 1)
+        avail_w = w - 2 * pad
+        avail_h = h - 2 * pad
+        scale = min(avail_w / span_x, avail_h / span_y)
+
+        # Centre the fitted content in the available space
+        fitted_w = span_x * scale
+        fitted_h = span_y * scale
+        off_x = pad + (avail_w - fitted_w) / 2
+        off_y = pad + (avail_h - fitted_h) / 2
+
+        def to_canvas(nx, ny):
+            cx = off_x + (nx - x_min) * scale
+            cy = off_y + (ny - y_min) * scale
+            return cx, cy
+
+        # Draw edges between human nodes
+        human_set = set(human_nodes)
+        for u, v in self._edges:
+            if u in human_set and v in human_set and u in positions and v in positions:
+                x1, y1 = to_canvas(*positions[u])
+                x2, y2 = to_canvas(*positions[v])
+                canvas.create_line(x1, y1, x2, y2, fill="#666666", width=1)
+
+        # Draw nodes
+        r = max(8, int(scale * 0.35))
+        r = min(r, 18)
+        for node in human_nodes:
+            if node not in positions:
+                continue
+            cx, cy = to_canvas(*positions[node])
+            col = assignments.get(node)
+            col_str = str(col).lower() if col is not None else ""
+            fill = COLOUR_FILL.get(col_str, "#888888")
+            outline = COLOUR_OUT.get(col_str, "#444444")
+            canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
+                               fill=fill, outline=outline, width=1)
+            canvas.create_text(cx, cy, text=node,
+                               font=("TkDefaultFont", 8, "bold"), fill="white")
+
+    def _add_to_history_bar(self, entry: Dict, computing: bool = False,
+                             refresh: bool = False) -> None:
+        """Add or refresh a card for *entry* in the history bar."""
+        bar = self._history_bar
+        if bar is None:
+            return
+
+        # Hide the placeholder label on first entry
+        if hasattr(self, '_history_placeholder') and self._history_placeholder is not None:
+            try:
+                self._history_placeholder.pack_forget()
+            except Exception:
+                pass
+            self._history_placeholder = None
+
+        tag = f"_hist_btn_{entry['num']}"
+
+        # If refreshing an existing button, destroy the old one
+        if refresh:
+            for w in bar.winfo_children():
+                if getattr(w, '_hist_tag', None) == tag:
+                    w.destroy()
+                    break
+
+        feasible_all = all(entry["is_feasible"].values()) if entry["is_feasible"] else None
+        if computing:
+            status_text = f"#{entry['num']}  ⏳"
+            bg = "#333355"
+            fg = "#aaaacc"
+        elif feasible_all is True:
+            status_text = f"#{entry['num']}  ✓"
+            bg = "#1a4d1a"
+            fg = "#88ff88"
+        elif feasible_all is False:
+            status_text = f"#{entry['num']}  ✗"
+            bg = "#4d1a1a"
+            fg = "#ff8888"
+        else:
+            status_text = f"#{entry['num']}"
+            bg = "#333355"
+            fg = "#aaaacc"
+
+        MINI_W, MINI_H = 90, 150
+
+        # Outer frame acts as the clickable card
+        card = tk.Frame(bar, bg=bg, relief="raised", bd=1, cursor="hand2")
+        card._hist_tag = tag  # type: ignore[attr-defined]
+        card.pack(side="left", padx=3, pady=2)
+
+        # Mini graph canvas
+        mini = tk.Canvas(card, width=MINI_W, height=MINI_H, bg=bg,
+                         highlightthickness=0)
+        mini.pack(padx=2, pady=(3, 0))
+        self._draw_history_mini_graph(mini, entry["assignments"], MINI_W, MINI_H)
+
+        # Status label below graph
+        tk.Label(card, text=status_text, bg=bg, fg=fg,
+                 font=("TkDefaultFont", 8)).pack(pady=(1, 3))
+
+        # Bind click on all children
+        callback = lambda e, ent=entry: self._view_history_entry(ent)
+        for w in (card, mini) + tuple(card.winfo_children()):
+            w.bind("<Button-1>", callback)
+
+    def _view_history_entry(self, entry: Dict) -> None:
+        """Open a popup showing a past submission: assignments, responses, restore option."""
+        popup = tk.Toplevel(self._root)
+        popup.title(f"Attempt #{entry['num']} — {entry['timestamp']}")
+        popup.geometry("520x480")
+        popup.resizable(True, True)
+        popup.attributes("-topmost", True)
+
+        # ---- Header ----
+        hdr = tk.Frame(popup, bg="#1e1e2e", pady=6)
+        hdr.pack(fill="x")
+        tk.Label(hdr, text=f"Attempt #{entry['num']}",
+                 font=("TkDefaultFont", 13, "bold"),
+                 bg="#1e1e2e", fg="white").pack(side="left", padx=10)
+        tk.Label(hdr, text=entry["timestamp"],
+                 font=("TkDefaultFont", 11), bg="#1e1e2e", fg="#aaaacc").pack(side="left")
+
+        # ---- Assignments table ----
+        f_assign = ttk.LabelFrame(popup, text="Your Assignment")
+        f_assign.pack(fill="x", padx=10, pady=(8, 4))
+
+        COLOUR_BG = {"red": "#ffcccc", "green": "#ccffcc", "blue": "#ccccff"}
+        COLOUR_FG = {"red": "#880000", "green": "#005500", "blue": "#000088"}
+
+        assignments = entry["assignments"]
+        human_nodes = sorted(
+            n for n, o in self._owners.items() if o == "Human" and n in assignments
+        )
+        row_frame = tk.Frame(f_assign)
+        row_frame.pack(fill="x", padx=6, pady=4)
+        for node in human_nodes:
+            col = assignments.get(node)
+            col_str = str(col) if col is not None else "—"
+            bg = COLOUR_BG.get(col_str, "#eeeeee") if col is not None else "#dddddd"
+            fg = COLOUR_FG.get(col_str, "#333333")
+            cell = tk.Frame(row_frame, bg=bg, relief="groove", bd=1)
+            cell.pack(side="left", padx=3, pady=2, ipadx=4, ipady=2)
+            tk.Label(cell, text=node, font=("TkDefaultFont", 9, "bold"),
+                     bg=bg, fg=fg).pack()
+            tk.Label(cell, text=col_str, font=("TkDefaultFont", 9),
+                     bg=bg, fg=fg).pack()
+
+        # ---- Responses per agent ----
+        responses = entry.get("responses", {})
+        if responses:
+            f_resp = ttk.LabelFrame(popup, text="Agent Responses")
+            f_resp.pack(fill="both", expand=True, padx=10, pady=4)
+            resp_text = tk.Text(f_resp, height=10, font=("Courier", 9),
+                                wrap="word", state="normal")
+            resp_text.pack(fill="both", expand=True, padx=4, pady=4)
+
+            for agent, data in sorted(responses.items()):
+                feas_count = data.get("feasibility_count", "?")
+                is_feas = data.get("is_feasible", feas_count != 0)
+                status_icon = "✓" if is_feas else "✗"
+                resp_text.insert("end", f"{status_icon} {agent}: {feas_count} valid config(s)\n",
+                                 "bold" if is_feas else "bad")
+                nl_summary = data.get("nl_summary", "")
+                if nl_summary:
+                    resp_text.insert("end", f"   {nl_summary}\n")
+                resp_text.insert("end", "\n")
+
+            resp_text.tag_config("bold", foreground="#006600", font=("Courier", 9, "bold"))
+            resp_text.tag_config("bad", foreground="#cc0000", font=("Courier", 9, "bold"))
+            resp_text.config(state="disabled")
+        else:
+            tk.Label(popup, text="(No responses recorded — attempt may still be computing)",
+                     fg="#888888", font=("TkDefaultFont", 9, "italic")).pack(pady=6)
+
+        # ---- Restore button ----
+        def _restore() -> None:
+            fixed = getattr(self, '_fixed_nodes', {})
+            for node, colour in assignments.items():
+                if node in fixed:
+                    continue  # never overwrite fixed nodes
+                if self._owners.get(node) == "Human":
+                    self._assignments[node] = colour
+            self._has_pending_changes = True
+            self._redraw_graph()
+            if self._hud_var:
+                self._hud_var.set(self._hud_text())
+            self._refresh_submit_button()
+            popup.destroy()
+
+        btn_row = tk.Frame(popup)
+        btn_row.pack(fill="x", padx=10, pady=(4, 10))
+        tk.Button(btn_row, text="Restore this configuration",
+                  command=_restore,
+                  bg="#2255aa", fg="white",
+                  font=("TkDefaultFont", 10, "bold"),
+                  padx=10, pady=4).pack(side="left")
+        tk.Button(btn_row, text="Close",
+                  command=popup.destroy,
+                  padx=10, pady=4).pack(side="right")
 
     # -------------------- Two-Phase Workflow --------------------
 

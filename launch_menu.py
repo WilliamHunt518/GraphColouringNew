@@ -65,6 +65,13 @@ def main() -> None:
         "Expert  –  All nodes cross-constrained",
         "Gauntlet  –  Dual-agent bottlenecks",
         "Super   –  8 nodes + complex domains",
+        "Tight II  –  Simple Constraints",
+        "Tight III  –  Simple Constraints",
+        "Tight IV  –  Simple Constraints",
+        "Trio    –  Three Agents",
+        "Trio II –  Three Agents",
+        "Trio CX    –  Three Agents",
+        "Trio CX II –  Three Agents",
     ]
     _PRESET_CLI = {
         "Easy    –  Simple Constraints":              "easy",
@@ -78,6 +85,13 @@ def main() -> None:
         "Expert  –  All nodes cross-constrained":    "cx_expert",
         "Gauntlet  –  Dual-agent bottlenecks":       "cx_gauntlet",
         "Super   –  8 nodes + complex domains":      "cx_super",
+        "Tight II  –  Simple Constraints":           "tight2",
+        "Tight III  –  Simple Constraints":          "tight3",
+        "Tight IV  –  Simple Constraints":           "tight4",
+        "Trio    –  Three Agents":                   "trio",
+        "Trio II –  Three Agents":                   "trio_tight",
+        "Trio CX    –  Three Agents":                "trio_cx",
+        "Trio CX II –  Three Agents":                "trio_tight_cx",
     }
     # Complex presets have pre-designed domains — fixed-node controls irrelevant
     _PRESET_EXPLICIT = {
@@ -90,6 +104,13 @@ def main() -> None:
         "Expert  –  All nodes cross-constrained",
         "Gauntlet  –  Dual-agent bottlenecks",
         "Super   –  8 nodes + complex domains",
+        "Tight II  –  Simple Constraints",
+        "Tight III  –  Simple Constraints",
+        "Tight IV  –  Simple Constraints",
+        "Trio    –  Three Agents",
+        "Trio II –  Three Agents",
+        "Trio CX    –  Three Agents",
+        "Trio CX II –  Three Agents",
     }
 
     # --- variables with saved defaults ---
