@@ -48,9 +48,17 @@ def main() -> None:
         except Exception:
             pass
 
-    # ── Simple-constraint presets (fixed nodes) ──────────────────────────
-    # ── Complex-constraint presets (per-node colour domains) ─────────────
-    _PRESET_LABELS = [
+    # ── Main experimental presets ─────────────────────────────────────────
+    _MAIN_LABELS = [
+        "Easy 8-A  –  8-node CX (2 agents)",
+        "Easy 8-B  –  8-node CX (2 agents)",
+        "Easy 8-C  –  8-node CX (2 agents)",
+        "Hard 8-A  –  8-node CX (2 agents)",
+        "Hard 8-B  –  8-node CX (2 agents)",
+        "Hard 8-C  –  8-node CX (2 agents)",
+    ]
+    # ── Dev/testing presets (shown only when "Testing modes" is ticked) ───
+    _TESTING_LABELS = [
         "── Simple Constraints ──────────────",
         "Easy    –  Simple Constraints",
         "Tight   –  Simple Constraints",
@@ -72,8 +80,20 @@ def main() -> None:
         "Trio II –  Three Agents",
         "Trio CX    –  Three Agents",
         "Trio CX II –  Three Agents",
+        "── Other test sizes ─────────────────",
+        "Test XL  –  10-node CX (2 agents)",
+        "Test Trio –  8-node CX (3 agents)",
     ]
+    # All selectable labels (headers excluded automatically by _on_preset_change)
+    _PRESET_LABELS = _MAIN_LABELS + _TESTING_LABELS
+
     _PRESET_CLI = {
+        "Easy 8-A  –  8-node CX (2 agents)":         "cx_easy_8",
+        "Easy 8-B  –  8-node CX (2 agents)":         "cx_easy_8_b",
+        "Easy 8-C  –  8-node CX (2 agents)":         "cx_easy_8_c",
+        "Hard 8-A  –  8-node CX (2 agents)":         "cx_hard_8",
+        "Hard 8-B  –  8-node CX (2 agents)":         "cx_hard_8_b",
+        "Hard 8-C  –  8-node CX (2 agents)":         "cx_hard_8_c",
         "Easy    –  Simple Constraints":              "easy",
         "Tight   –  Simple Constraints":              "tight",
         "Hard    –  Simple Constraints":              "hard",
@@ -92,9 +112,17 @@ def main() -> None:
         "Trio II –  Three Agents":                   "trio_tight",
         "Trio CX    –  Three Agents":                "trio_cx",
         "Trio CX II –  Three Agents":                "trio_tight_cx",
+        "Test XL  –  10-node CX (2 agents)":         "cx_test_10",
+        "Test Trio –  8-node CX (3 agents)":         "cx_test_trio_8",
     }
     # Complex presets have pre-designed domains — fixed-node controls irrelevant
     _PRESET_EXPLICIT = {
+        "Easy 8-A  –  8-node CX (2 agents)",
+        "Easy 8-B  –  8-node CX (2 agents)",
+        "Easy 8-C  –  8-node CX (2 agents)",
+        "Hard 8-A  –  8-node CX (2 agents)",
+        "Hard 8-B  –  8-node CX (2 agents)",
+        "Hard 8-C  –  8-node CX (2 agents)",
         "Tight   –  Simple Constraints",
         "Easy    –  Complex Constraints",
         "Medium  –  Complex Constraints",
@@ -111,16 +139,19 @@ def main() -> None:
         "Trio II –  Three Agents",
         "Trio CX    –  Three Agents",
         "Trio CX II –  Three Agents",
+        "Test XL  –  10-node CX (2 agents)",
+        "Test Trio –  8-node CX (3 agents)",
     }
 
     # --- variables with saved defaults ---
     participant_name_var = tk.StringVar(value=saved_config.get("participant_name", ""))
     test_run_var = tk.BooleanVar(value=saved_config.get("test_run", False))
     condition_var = tk.StringVar(value=saved_config.get("condition", "C1"))
-    _saved_preset = saved_config.get("graph_preset", "Easy    –  Simple Constraints")
-    # Migrate old saved values to new labels
-    if _saved_preset not in _PRESET_LABELS or _saved_preset.startswith("──"):
-        _saved_preset = "Easy    –  Simple Constraints"
+    testing_modes_var = tk.BooleanVar(value=saved_config.get("testing_modes", False))
+    _saved_preset = saved_config.get("graph_preset", _MAIN_LABELS[0])
+    # Migrate old/unknown saved values to the first main preset
+    if _saved_preset not in _PRESET_CLI or _saved_preset.startswith("──"):
+        _saved_preset = _MAIN_LABELS[0]
     graph_preset_var = tk.StringVar(value=_saved_preset)
     use_ui_var = tk.BooleanVar(value=saved_config.get("use_ui", True))
     use_llm_var = tk.BooleanVar(value=saved_config.get("use_llm", False))
@@ -171,7 +202,7 @@ def main() -> None:
     preset_combo = ttk.Combobox(
         frm,
         textvariable=graph_preset_var,
-        values=_PRESET_LABELS,
+        values=_MAIN_LABELS,
         state="readonly",
         width=22,
     )
@@ -193,9 +224,9 @@ def main() -> None:
 
     def _on_preset_change(*_):
         sel = graph_preset_var.get()
-        # If user somehow selected a header, revert to first real preset
+        # If user somehow selected a header, revert to first main preset
         if sel not in _PRESET_CLI:
-            graph_preset_var.set("Easy    –  Simple Constraints")
+            graph_preset_var.set(_MAIN_LABELS[0])
             return
         is_explicit = sel in _PRESET_EXPLICIT
         if "Hard" in sel:
@@ -209,6 +240,24 @@ def main() -> None:
 
     graph_preset_var.trace_add("write", _on_preset_change)
 
+    def _on_testing_toggle(*_):
+        if testing_modes_var.get():
+            preset_combo["values"] = _MAIN_LABELS + _TESTING_LABELS
+        else:
+            preset_combo["values"] = _MAIN_LABELS
+            # If a testing preset is active, revert to first main preset
+            if graph_preset_var.get() not in set(_MAIN_LABELS):
+                graph_preset_var.set(_MAIN_LABELS[0])
+
+    testing_modes_var.trace_add("write", _on_testing_toggle)
+
+    row += 1
+    ttk.Checkbutton(
+        frm,
+        text="Show testing / dev presets",
+        variable=testing_modes_var,
+    ).grid(row=row, column=0, columnspan=2, sticky="w", pady=(0, 6))
+
     row += 1
     fixed_check_widget.grid(row=row, column=0, columnspan=2, sticky="w", pady=(4, 6))
 
@@ -217,6 +266,7 @@ def main() -> None:
     fixed_spin_widget.grid(row=row, column=1, sticky="w", pady=(0, 10))
 
     # Apply initial state
+    _on_testing_toggle()
     _on_preset_change()
 
     row += 1
@@ -260,6 +310,7 @@ def main() -> None:
                 "use_llm": bool(use_llm_var.get()),
                 "fixed_constraints": bool(fixed_constraints_var.get()),
                 "num_fixed_nodes": int(num_fixed_nodes_var.get()),
+                "testing_modes": bool(testing_modes_var.get()),
             }
             try:
                 with open(config_path, "w") as f:

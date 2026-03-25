@@ -72,6 +72,8 @@ CROSS_EDGE_WIDTH = 2
 ALL_PRESETS = [
     "easy", "tight", "hard",
     "cx_easy", "cx_medium", "cx_hard",
+    "cx_easy_8", "cx_easy_8_b", "cx_easy_8_c",
+    "cx_hard_8", "cx_hard_8_b", "cx_hard_8_c",
 ]
 
 

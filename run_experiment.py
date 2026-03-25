@@ -131,6 +131,50 @@ def _check_solvable(node_names, adjacency, clusters, domain, num_fixed_nodes):
     )
 
 
+def _apply_isomorphic_shift(base_result: tuple, node_shift: int, colour_cycle: int) -> tuple:
+    """Return an isomorphically equivalent variant of a _build_topology result.
+
+    node_shift   – rotate each cluster's 1-based node labels by this offset
+                   (e.g. shift=2 on 8 nodes: h1→h3, h7→h1, h8→h2)
+    colour_cycle – steps to rotate the canonical colour order [blue, green, red]:
+                     0 = identity
+                     1 = blue→green, green→red, red→blue
+                     2 = blue→red,   green→blue, red→green
+    The graph structure is identical; only node labels and colour names change,
+    so the problem is fully isomorphic to the original.
+    """
+    node_names, clusters, adjacency, owners, explicit_fixed, node_domains = base_result
+
+    COLOURS = ["blue", "green", "red"]
+    colour_map = {COLOURS[i]: COLOURS[(i + colour_cycle) % 3] for i in range(3)}
+
+    rename: dict = {}
+    for cname, nodes in clusters.items():
+        if not nodes:
+            continue
+        prefix = nodes[0][0]  # "h", "a", "b", "c", …
+        n = len(nodes)
+        for i, node in enumerate(nodes):
+            rename[node] = f"{prefix}{(i + node_shift) % n + 1}"
+
+    def _r(nd: str) -> str:
+        return rename.get(nd, nd)
+
+    def _c(col: str) -> str:
+        return colour_map.get(col.lower(), col)
+
+    return (
+        [_r(nd) for nd in node_names],
+        {cname: [_r(nd) for nd in nodes] for cname, nodes in clusters.items()},
+        {_r(u): [_r(v) for v in nbrs] for u, nbrs in adjacency.items()},
+        {_r(nd): owner for nd, owner in owners.items()},
+        {cname: {_r(nd): _c(col) for nd, col in fixed.items()}
+         for cname, fixed in explicit_fixed.items()},
+        {_r(nd): [_c(c) for c in dom] for nd, dom in node_domains.items()}
+        if node_domains else None,
+    )
+
+
 def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
     """Return (node_names, clusters, adjacency, owners, explicit_fixed, node_domains) for the given preset.
 
@@ -1075,13 +1119,353 @@ def _build_topology(graph_preset: str, num_fixed_nodes: int = 2) -> tuple:
         node_names_tmp = human_nodes + agent1_nodes + agent2_nodes + agent3_nodes
         _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
 
+    elif preset == "cx_easy_8":
+        # ── Easy 8-node testing preset: 2 agents, lighter cx constraints ──
+        # Topology: agent clusters use 8-cycle + 4 antipodal chords {x1–x5, x2–x6, x3–x7, x4–x8}.
+        # Human cluster uses 8-cycle + modified chords {h1–h5, h2–h6, h3–h7, h4–h1}:
+        #   h4–h1 replaces the antipodal h4–h8, making h1 a hub (degree 6) and h8 low-degree (2).
+        #
+        # Cross-edges (7 total):
+        #   h1–a2, h5–a5, h6–a2  (Human↔Agent1; a2 shared between h1 and h6)
+        #   h1–b1, h3–b3, h5–b5, h7–b7  (Human↔Agent2)
+        # h1/h5 face both agents; h6→a2 is the only shared agent boundary node.
+        #
+        # Constraints (~50% of nodes — 12/24 — have 2-colour domains; no fixed nodes):
+        #   Human (4/8): h1=[blue,red]  h2=[red,green]  h4=[red,green]  h5=[green,red]
+        #   Agent1 (4/8): a1=[blue,red]  a2=[green,red]  a5=[red,blue]  a6=[blue,red]
+        #   Agent2 (4/8): b1=[green,red]  b3=[red,blue]  b5=[red,blue]  b7=[blue,green]
+        #
+        # Verified solution:
+        #   h: blue, red,   green, red,   green, blue, red,   green
+        #   a: blue, green, blue,  green, red,   blue, green, red
+        #   b: green,blue,  red,   green, blue,  red,  blue,  red
+        human_nodes  = [f"h{i}" for i in range(1, 9)]
+        agent1_nodes = [f"a{i}" for i in range(1, 9)]
+        agent2_nodes = [f"b{i}" for i in range(1, 9)]
+
+        def _mk_8cyc_antipodal(prefix: str) -> dict:
+            ns = [f"{prefix}{i}" for i in range(1, 9)]
+            adj: dict = {n: [] for n in ns}
+            for i in range(8):
+                a_n, b_n = ns[i], ns[(i + 1) % 8]
+                adj[a_n].append(b_n); adj[b_n].append(a_n)
+            for i in range(4):
+                adj[ns[i]].append(ns[i + 4]); adj[ns[i + 4]].append(ns[i])
+            return adj
+
+        adjacency = {}
+        for pfx in ("a", "b"):
+            adjacency.update(_mk_8cyc_antipodal(pfx))
+
+        h_ns = [f"h{i}" for i in range(1, 9)]
+        adjacency.update({n: [] for n in h_ns})
+        for i in range(8):
+            u, v = h_ns[i], h_ns[(i + 1) % 8]
+            adjacency[u].append(v); adjacency[v].append(u)
+        for chord in [("h1", "h5"), ("h2", "h6"), ("h3", "h7"), ("h4", "h1")]:
+            adjacency[chord[0]].append(chord[1]); adjacency[chord[1]].append(chord[0])
+
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h5"].append("a5"); adjacency["a5"].append("h5")
+        adjacency["h6"].append("a2"); adjacency["a2"].append("h6")
+        adjacency["h1"].append("b1"); adjacency["b1"].append("h1")
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+        adjacency["h5"].append("b5"); adjacency["b5"].append("h5")
+        adjacency["h7"].append("b7"); adjacency["b7"].append("h7")
+
+        node_domains = {
+            "h1": ["blue", "red"],    # adj a2=green, b1=green cross-edges → h1≠green
+            "h2": ["red", "green"],   # adj h1=[blue,red] (cycle)          → h2≠blue
+            "h4": ["red", "green"],   # adj h1=[blue,red] (chord h4–h1)    → h4≠blue
+            "h5": ["green", "red"],   # adj h4=[red,green] + h1 (chord)    → h5≠blue
+            "a1": ["blue", "red"],    # adj a2=[green,red] (cycle)         → a1≠green
+            "a2": ["green", "red"],   # adj h1=blue, h6=blue cross-edges   → a2≠blue
+            "a5": ["red", "blue"],    # adj h5=green cross-edge            → a5≠green
+            "a6": ["blue", "red"],    # adj a2=[green,red] (chord a2–a6)   → a6≠green
+            "b1": ["green", "red"],   # adj h1=blue cross-edge             → b1≠blue
+            "b3": ["red", "blue"],    # adj h3=green cross-edge            → b3≠green
+            "b5": ["red", "blue"],    # adj h5=green cross-edge            → b5≠green
+            "b7": ["blue", "green"],  # adj h7=red   cross-edge            → b7≠red
+        }
+        explicit_fixed = {"Human": {}, "Agent1": {}, "Agent2": {}}
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_hard_8":
+        # ── Hard 8-node testing preset: 2 agents, denser cross-edges, tighter agent constraints ──
+        # Same internal topology as cx_easy_8 (h4–h1 chord for human, antipodal for agents).
+        #
+        # Cross-edges (10 total — ~43% more than easy_8):
+        #   h1–a2, h5–a5, h6–a2, h3–a6, h1–a8  (Human↔Agent1)
+        #   h1–b1, h3–b3, h5–b5, h4–b5, h7–b7  (Human↔Agent2)
+        # Two shared agent boundary nodes:
+        #   a2: receives h1 and h6 (both blue → domain unchanged [green,red])
+        #   b5: receives h5=green and h4=red → b5≠green,≠red → b5=[blue] FIXED
+        # h1 connects to 4 cross-cluster neighbours (a2, a8, b1); h3 spans both agents (a6, b3).
+        #
+        # Constraints (~67% of nodes — 16/24 — have restricted domains; b5 is fixed):
+        #   Human (4/8):  h1=[blue,red]  h2=[red,green]  h4=[red,green]  h5=[green,red]
+        #   Agent1 (6/8): a1=[blue,red]  a2=[green,red]  a5=[red,blue]   a6=[blue,red]
+        #                 a7=[green,red]  a8=[red,green]
+        #   Agent2 (6/8): b1=[green,red]  b2=[blue,red]  b3=[red,blue]   b4=[green,blue]
+        #                 b5=[blue] (fixed)  b7=[blue,green]
+        #
+        # Verified solution:
+        #   h: blue, red,   green, red,   green, blue, red,   green
+        #   a: blue, green, blue,  green, red,   blue, green, red
+        #   b: green,blue,  red,   green, blue,  red,  blue,  red
+        human_nodes  = [f"h{i}" for i in range(1, 9)]
+        agent1_nodes = [f"a{i}" for i in range(1, 9)]
+        agent2_nodes = [f"b{i}" for i in range(1, 9)]
+
+        def _mk_8cyc_antipodal_h8(prefix: str) -> dict:
+            ns = [f"{prefix}{i}" for i in range(1, 9)]
+            adj: dict = {n: [] for n in ns}
+            for i in range(8):
+                a_n, b_n = ns[i], ns[(i + 1) % 8]
+                adj[a_n].append(b_n); adj[b_n].append(a_n)
+            for i in range(4):
+                adj[ns[i]].append(ns[i + 4]); adj[ns[i + 4]].append(ns[i])
+            return adj
+
+        adjacency = {}
+        for pfx in ("a", "b"):
+            adjacency.update(_mk_8cyc_antipodal_h8(pfx))
+
+        h_ns = [f"h{i}" for i in range(1, 9)]
+        adjacency.update({n: [] for n in h_ns})
+        for i in range(8):
+            u, v = h_ns[i], h_ns[(i + 1) % 8]
+            adjacency[u].append(v); adjacency[v].append(u)
+        for chord in [("h1", "h5"), ("h2", "h6"), ("h3", "h7"), ("h4", "h1")]:
+            adjacency[chord[0]].append(chord[1]); adjacency[chord[1]].append(chord[0])
+
+        # Human↔Agent1 (h6 shares a2 with h1; h3 reaches a6; h1 also reaches a8)
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h5"].append("a5"); adjacency["a5"].append("h5")
+        adjacency["h6"].append("a2"); adjacency["a2"].append("h6")
+        adjacency["h3"].append("a6"); adjacency["a6"].append("h3")
+        adjacency["h1"].append("a8"); adjacency["a8"].append("h1")
+        # Human↔Agent2 (h4 shares b5 with h5 → b5 fixed; h3 spans both agents)
+        adjacency["h1"].append("b1"); adjacency["b1"].append("h1")
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+        adjacency["h5"].append("b5"); adjacency["b5"].append("h5")
+        adjacency["h4"].append("b5"); adjacency["b5"].append("h4")
+        adjacency["h7"].append("b7"); adjacency["b7"].append("h7")
+
+        node_domains = {
+            # Human (4/8) — same as easy_8
+            "h1": ["blue", "red"],    # cross-edges to a2, a8, b1          → h1≠green
+            "h2": ["red", "green"],   # adj h1=[blue,red] (cycle)          → h2≠blue
+            "h4": ["red", "green"],   # adj h1=[blue,red] (chord h4–h1)    → h4≠blue
+            "h5": ["green", "red"],   # adj h4=[red,green] + h1 (chord)    → h5≠blue
+            # Agent1 (6/8)
+            "a1": ["blue", "red"],    # adj a2=[green,red] (cycle)         → a1≠green
+            "a2": ["green", "red"],   # adj h1=blue, h6=blue cross-edges   → a2≠blue
+            "a5": ["red", "blue"],    # adj h5=green cross-edge            → a5≠green
+            "a6": ["blue", "red"],    # adj h3=green cross-edge + chord    → a6≠green
+            "a7": ["green", "red"],   # adj a6=[blue,red] (cycle)          → a7≠blue
+            "a8": ["red", "green"],   # adj h1=blue cross-edge             → a8≠blue
+            # Agent2 (6/8)
+            "b1": ["green", "red"],   # adj h1=blue cross-edge             → b1≠blue
+            "b2": ["blue", "red"],    # adj b1=[green,red] (cycle)         → b2≠green
+            "b3": ["red", "blue"],    # adj h3=green cross-edge            → b3≠green
+            "b4": ["green", "blue"],  # adj b3=[red,blue] (cycle)          → b4≠red
+            "b5": ["blue"],           # adj h5=green + h4=red → ≠green,≠red → fixed blue
+            "b7": ["blue", "green"],  # adj h7=red   cross-edge            → b7≠red
+        }
+        explicit_fixed = {"Human": {}, "Agent1": {}, "Agent2": {}}
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_test_10":
+        # ── Testing preset: 10 nodes per cluster, 2 agents, moderate cx constraints ──
+        # Topology: 10-cycle + 5 chords {x1–x5, x2–x6, x3–x7, x4–x8, x5–x9} per cluster.
+        # Nodes x1–x4 and x6–x10 have degree 3 (2 cycle + 1 chord); x5 has degree 4
+        # (2 cycle + chords to x1 and x9) — ~36% more internal edges than 10-cycle+1.
+        #
+        # Cross-edges (6 total, 50% more than original 4):
+        #   h1–a2, h5–a5, h6–a6  (Human↔Agent1)
+        #   h3–b3, h8–b8, h6–b6  (Human↔Agent2)
+        # h6 connects to BOTH agents (a6 and b6), making it the bilateral hub.
+        # h6's neighbours a6=blue and b6=red force h6=green uniquely.
+        #
+        # Constraints (~50% of nodes have 2-colour domain, 50% fully free):
+        #   h1: adj a2=green               → h1≠green  → [blue, red]
+        #   h6: adj a6=blue, b6=red        → h6≠blue,≠red → [green, red]  (forced green)
+        #   a1: adj a2=green, a10=green, a5=green (chord) → a1≠green → [red, blue]
+        #   a2: adj h1=blue cross-edge     → a2≠blue   → [green, red]
+        #   a5: adj h5=red  cross-edge     → a5≠red    → [green, blue]
+        #   a6: adj h6=green cross-edge    → a6≠green  → [blue, red]
+        #   b3: adj h3=green cross-edge    → b3≠green  → [red, blue]
+        #   b6: adj h6=green cross-edge    → b6≠green  → [red, blue]
+        #   b8: adj h8=red   cross-edge    → b8≠red    → [blue, green]
+        # No fixed (1-colour) nodes.
+        #
+        # Verified solution:
+        #   h:  blue, red,  green, blue, red,  green, blue, red,  green, red
+        #   a:  red,  green,blue,  red,  green,blue,  red,  green,blue,  green
+        #   b:  green,blue, red,   green,blue, red,   green,blue, red,   blue
+        human_nodes  = [f"h{i}" for i in range(1, 11)]
+        agent1_nodes = [f"a{i}" for i in range(1, 11)]
+        agent2_nodes = [f"b{i}" for i in range(1, 11)]
+
+        def _mk_10cyc(prefix: str) -> dict:
+            ns = [f"{prefix}{i}" for i in range(1, 11)]
+            adj: dict = {n: [] for n in ns}
+            for i in range(10):
+                a_n, b_n = ns[i], ns[(i + 1) % 10]
+                adj[a_n].append(b_n); adj[b_n].append(a_n)
+            # 4 chords x1–x5, x2–x6, x3–x7, x4–x8 (antipodal pairs in first half)
+            for i in range(4):
+                adj[ns[i]].append(ns[i + 4]); adj[ns[i + 4]].append(ns[i])
+            # Extra chord x5–x9 (ns[4] to ns[8])
+            adj[ns[4]].append(ns[8]); adj[ns[8]].append(ns[4])
+            return adj
+
+        adjacency = {}
+        for pfx in ("h", "a", "b"):
+            adjacency.update(_mk_10cyc(pfx))
+
+        # Human↔Agent1
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h5"].append("a5"); adjacency["a5"].append("h5")
+        adjacency["h6"].append("a6"); adjacency["a6"].append("h6")
+        # Human↔Agent2
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+        adjacency["h8"].append("b8"); adjacency["b8"].append("h8")
+        adjacency["h6"].append("b6"); adjacency["b6"].append("h6")  # h6 faces both agents
+
+        # ~50% of nodes (15/30) have 2-colour domains; no fixed nodes.
+        node_domains = {
+            "h1": ["blue", "red"],    # adj a2=green cross-edge          → h1≠green
+            "h2": ["red", "green"],   # adj h1=[blue,red] (cycle) + chord h6=[green,red] → h2≠blue
+            "h5": ["red", "green"],   # adj h1(chord) + h6=[green,red](chord) → h5≠blue
+            "h6": ["green", "red"],   # adj a6=blue, b6=red cross-edges  → h6≠blue,≠red
+            "a1": ["red", "blue"],    # internal adj a2=G, a10=G, a5=G   → a1≠green
+            "a2": ["green", "red"],   # adj h1=blue  cross-edge          → a2≠blue
+            "a3": ["blue", "red"],    # adj a2=[green,red] (cycle) → a3≠green
+            "a5": ["green", "blue"],  # adj h5=red   cross-edge          → a5≠red
+            "a6": ["blue", "red"],    # adj h6=green cross-edge          → a6≠green
+            "a7": ["red", "green"],   # adj a6=[blue,red] (cycle) → a7≠blue
+            "b2": ["blue", "green"],  # adj b6=[red,blue] (chord x2–x6) → b2≠red
+            "b3": ["red", "blue"],    # adj h3=green cross-edge          → b3≠green
+            "b5": ["blue", "green"],  # adj b6=[red,blue] (cycle) → b5≠red
+            "b6": ["red", "blue"],    # adj h6=green cross-edge          → b6≠green
+            "b8": ["blue", "green"],  # adj h8=red   cross-edge          → b8≠red
+        }
+        explicit_fixed = {"Human": {}, "Agent1": {}, "Agent2": {}}
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset == "cx_test_trio_8":
+        # ── Testing preset: 8 nodes per cluster, 3 agents, moderate cx constraints ──
+        # 4 clusters: Human + Agent1 (a) + Agent2 (b) + Agent3 (c), 8 nodes each.
+        # Topology: 8-cycle + 4 antipodal chords {x1–x5, x2–x6, x3–x7, x4–x8} per cluster.
+        #
+        # Cross-edges (9 total, 50% more than original 6):
+        #   h1–a2, h5–a5, h2–a3  (Human↔Agent1)
+        #   h3–b3, h7–b7, h5–b5  (Human↔Agent2)
+        #   h2–c4, h6–c6, h8–c8  (Human↔Agent3)
+        # h5 connects to Agent1 (a5) and Agent2 (b5) — dual-agent hub.
+        # h2 connects to Agent1 (a3) and Agent3 (c4) — dual-agent hub.
+        # Only h4 has no cross-cluster edge — the single freely safe start node.
+        #
+        # Constraints (~31% of nodes have 2-colour domain, 69% fully free):
+        #   h5: adj a5=green, b5=blue → h5≠green,≠blue → [red, green]  (forced red)
+        #   a2: adj h1=blue  → a2≠blue  → [green, red]
+        #   a3: adj h2=red   → a3≠red   → [blue, green]
+        #   a5: adj h5=red   → a5≠red   → [green, blue]
+        #   b3: adj h3=green → b3≠green → [red, blue]
+        #   b5: adj h5=red   → b5≠red   → [blue, green]
+        #   b7: adj h7=blue  → b7≠blue  → [green, red]
+        #   c4: adj h2=red   → c4≠red   → [blue, green]
+        #   c6: adj h6=green → c6≠green → [red, blue]
+        #   c8: adj h8=red   → c8≠red   → [green, blue]
+        # No fixed (1-colour) nodes.
+        #
+        # Verified solution:
+        #   h: blue, red,   green, blue, red,   green, blue, red
+        #   a: red,  green, blue,  red,  green, blue,  red,  green
+        #   b: green,blue,  red,   green,blue,  red,   green,blue
+        #   c: blue, green, red,   blue, green, red,   blue, green
+        human_nodes  = [f"h{i}" for i in range(1, 9)]
+        agent1_nodes = [f"a{i}" for i in range(1, 9)]
+        agent2_nodes = [f"b{i}" for i in range(1, 9)]
+        agent3_nodes = [f"c{i}" for i in range(1, 9)]
+
+        def _mk_8cyc_trio(prefix: str) -> dict:
+            ns = [f"{prefix}{i}" for i in range(1, 9)]
+            adj: dict = {n: [] for n in ns}
+            for i in range(8):
+                a_n, b_n = ns[i], ns[(i + 1) % 8]
+                adj[a_n].append(b_n); adj[b_n].append(a_n)
+            # 4 antipodal chords: x1–x5, x2–x6, x3–x7, x4–x8
+            for i in range(4):
+                adj[ns[i]].append(ns[i + 4]); adj[ns[i + 4]].append(ns[i])
+            return adj
+
+        adjacency = {}
+        for pfx in ("h", "a", "b", "c"):
+            adjacency.update(_mk_8cyc_trio(pfx))
+
+        # Human↔Agent1 (h1, h5, h2)
+        adjacency["h1"].append("a2"); adjacency["a2"].append("h1")
+        adjacency["h5"].append("a5"); adjacency["a5"].append("h5")
+        adjacency["h2"].append("a3"); adjacency["a3"].append("h2")
+        # Human↔Agent2 (h3, h7, h5 — h5 faces both Agent1 and Agent2)
+        adjacency["h3"].append("b3"); adjacency["b3"].append("h3")
+        adjacency["h7"].append("b7"); adjacency["b7"].append("h7")
+        adjacency["h5"].append("b5"); adjacency["b5"].append("h5")
+        # Human↔Agent3 (h2, h6, h8 — h2 faces both Agent1 and Agent3)
+        adjacency["h2"].append("c4"); adjacency["c4"].append("h2")
+        adjacency["h6"].append("c6"); adjacency["c6"].append("h6")
+        adjacency["h8"].append("c8"); adjacency["c8"].append("h8")
+
+        # ~50% of nodes (16/32) have 2-colour domains; no fixed nodes.
+        node_domains = {
+            "h1": ["blue", "red"],    # adj a2=[green,red] cross-edge → h1≠green
+            "h3": ["green", "blue"],  # adj b3=[red,blue]  cross-edge → h3≠red
+            "h5": ["red", "green"],   # adj a5=green, b5=blue cross-edges → h5≠green,≠blue
+            "a1": ["red", "blue"],    # adj a2=[green,red] (cycle) → a1≠green
+            "a2": ["green", "red"],   # adj h1=blue  cross-edge → a2≠blue
+            "a3": ["blue", "green"],  # adj h2=red   cross-edge → a3≠red
+            "a5": ["green", "blue"],  # adj h5=red   cross-edge → a5≠red
+            "a6": ["blue", "red"],    # adj a2=[green,red] (chord a2–a6) → a6≠green
+            "b3": ["red", "blue"],    # adj h3=green cross-edge → b3≠green
+            "b4": ["green", "blue"],  # adj b3=[red,blue] (cycle) → b4≠red
+            "b5": ["blue", "green"],  # adj h5=red   cross-edge → b5≠red
+            "b7": ["green", "red"],   # adj h7=blue  cross-edge → b7≠blue
+            "c2": ["green", "red"],   # adj c6=[red,blue] (chord c2–c6) → c2≠blue
+            "c4": ["blue", "green"],  # adj h2=red   cross-edge → c4≠red
+            "c6": ["red", "blue"],    # adj h6=green cross-edge → c6≠green
+            "c8": ["green", "blue"],  # adj h8=red   cross-edge → c8≠red
+        }
+        explicit_fixed = {"Human": {}, "Agent1": {}, "Agent2": {}, "Agent3": {}}
+        node_names_tmp = human_nodes + agent1_nodes + agent2_nodes + agent3_nodes
+        _check_solvable_with_domains(node_names_tmp, adjacency, node_domains, domain)
+
+    elif preset in ("cx_easy_8_b", "cx_easy_8_c", "cx_hard_8_b", "cx_hard_8_c"):
+        # Isomorphic variants — same structure as the base preset, shifted so
+        # participants see different node labels and colour assignments.
+        _base, _shift, _cycle = {
+            "cx_easy_8_b": ("cx_easy_8", 2, 1),  # hub moves to h3; blue→green
+            "cx_easy_8_c": ("cx_easy_8", 4, 2),  # hub moves to h5; blue→red
+            "cx_hard_8_b": ("cx_hard_8", 2, 1),
+            "cx_hard_8_c": ("cx_hard_8", 4, 2),
+        }[preset]
+        return _apply_isomorphic_shift(_build_topology(_base, num_fixed_nodes), _shift, _cycle)
+
     else:
         raise ValueError(
             f"Unknown graph_preset: {graph_preset!r}. "
             "Use 'easy', 'medium', 'tight', 'tight2', 'tight3', 'tight4', 'hard', 'expert', "
             "'dense', 'dense_tight', 'super', 'cx_easy', 'cx_medium', 'cx_hard', "
             "'cx_easy_plus', 'cx_hard_free', 'cx_expert', 'cx_gauntlet', 'cx_super', "
-            "'trio', 'trio_tight', 'trio_cx', or 'trio_tight_cx'."
+            "'trio', 'trio_tight', 'trio_cx', 'trio_tight_cx', "
+            "'cx_easy_8', 'cx_easy_8_b', 'cx_easy_8_c', "
+            "'cx_hard_8', 'cx_hard_8_b', 'cx_hard_8_c', "
+            "'cx_test_10', or 'cx_test_trio_8'."
         )
 
     node_names = human_nodes + agent1_nodes + agent2_nodes + agent3_nodes
@@ -1253,7 +1637,10 @@ def main() -> None:
                             "cx_easy_plus", "cx_hard_free",
                             "cx_expert", "cx_gauntlet", "cx_super",
                             "trio", "trio_tight", "trio_cx", "trio_tight_cx",
-                            "medium", "expert", "dense", "dense_tight", "super"],
+                            "medium", "expert", "dense", "dense_tight", "super",
+                            "cx_easy_8", "cx_easy_8_b", "cx_easy_8_c",
+                            "cx_hard_8", "cx_hard_8_b", "cx_hard_8_c",
+                            "cx_test_10", "cx_test_trio_8"],
                    help="Presets: easy/tight/hard (simple constraints), "
                         "cx_easy/cx_medium/cx_hard (complex per-node domain constraints), "
                         "cx_easy_plus/cx_hard_free/cx_expert/cx_gauntlet/cx_super (harder)")

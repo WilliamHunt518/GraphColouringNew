@@ -5108,6 +5108,10 @@ class HumanTurnUI:
                     tags="fixed"
                 )
 
+            # Domain constraint arcs (only for nodes with restricted domains)
+            if self._node_domains and node in self._node_domains:
+                self._draw_domain_arcs(canvas, x, y, radius, node, 1.0)
+
             # Node label
             canvas.create_text(
                 x, y,
@@ -5124,6 +5128,17 @@ class HumanTurnUI:
             ("━━", "#4682B4", "Cross-cluster edge", 2),
             ("━━", "#CCCCCC", "Intra-cluster edge", 1),
         ]
+
+        # Domain arc legend (only shown when there are constrained nodes)
+        if self._node_domains:
+            canvas.create_text(
+                legend_x, legend_y + len(legend_items) * 20 + 8,
+                text="Coloured ring = domain constraint (arc per allowed colour)",
+                anchor="w",
+                font=("Arial", 9),
+                fill="#555555",
+                tags="legend"
+            )
 
         canvas.create_text(
             legend_x, legend_y - 15,
