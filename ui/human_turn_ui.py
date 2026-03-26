@@ -60,6 +60,10 @@ class HumanTurnUI:
         # termination
         self.end_reason: str = ""  # set to "consensus" when all parties tick satisfied
 
+        # Optional external callback fired on every satisfaction checkbox change.
+        # Signature: cb(neighbour: str, satisfied: bool, assignments: dict) -> None
+        self._submission_cb: Optional[Callable] = None
+
         # state
         self._domain: List[Any] = []
         self._nodes: List[str] = []
@@ -4486,6 +4490,16 @@ class HumanTurnUI:
             return fn(neigh, msg)  # type: ignore[misc]
 
     def _on_human_sat_change(self, neigh: str) -> None:
+        if self._submission_cb is not None:
+            try:
+                sat_val = bool(self._human_sat[neigh].get())
+                self._submission_cb(
+                    neigh,
+                    sat_val,
+                    dict(getattr(self, "_assignments", {})),
+                )
+            except Exception:
+                pass
         self._check_consensus()
 
     def _check_consensus(self) -> None:

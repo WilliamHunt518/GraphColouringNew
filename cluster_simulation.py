@@ -483,6 +483,9 @@ def run_clustered_simulation(
     satisfied_streak = 0
     stop_reason: Optional[str] = None
     stop_iteration: Optional[int] = None
+    _human_move_count: int = 0       # updated inside UI branch; readable at end of run
+    checkpoints: List[Dict[str, Any]] = []  # valid-solution snapshots; populated in UI branch
+    checkpoint_id_counter: int = 0   # shared counter for both UI and headless paths
 
     # --------------------
     # Live logging setup
@@ -501,6 +504,12 @@ def run_clustered_simulation(
         _f.write("")
     human_moves_log_path = os.path.join(output_dir, "human_moves_log.jsonl")
     with open(human_moves_log_path, "w", encoding="utf-8") as _f:
+        _f.write("")
+    submissions_log_path = os.path.join(output_dir, "submissions_log.jsonl")
+    with open(submissions_log_path, "w", encoding="utf-8") as _f:
+        _f.write("")
+    checkpoints_log_path = os.path.join(output_dir, "checkpoints.jsonl")
+    with open(checkpoints_log_path, "w", encoding="utf-8") as _f:
         _f.write("")
 
     # Persist all LLM prompt/response traces (including manual/heuristic runs)
@@ -1105,22 +1114,28 @@ def run_clustered_simulation(
             # ----------------------------
             # Initialize checkpoint system for UI mode
             # ----------------------------
-            checkpoints: List[Dict[str, Any]] = []
-            checkpoint_id_counter = 0
             ui_iteration_counter = 0
 
             def create_checkpoint(iteration: int, assignments: Dict[str, Any], penalty: float, score: float) -> Dict[str, Any]:
                 """Create a checkpoint snapshot when a valid coloring is reached."""
                 nonlocal checkpoint_id_counter
                 checkpoint_id_counter += 1
-                return {
+                cp = {
                     "id": checkpoint_id_counter,
                     "iteration": iteration,
                     "assignments": dict(assignments),
                     "penalty": penalty,
                     "score": score,
-                    "timestamp": datetime.datetime.now().isoformat(),
+                    "timestamp": _now_iso(),
+                    "total_moves": _human_move_count,
                 }
+                try:
+                    with open(checkpoints_log_path, "a", encoding="utf-8") as _cf:
+                        _cf.write(json.dumps(cp) + "\n")
+                        _cf.flush()
+                except Exception as _ce:
+                    print(f"[Checkpoint] Error writing checkpoint: {_ce}")
+                return cp
 
             # Expose checkpoints to problem object so UI can access them
             setattr(problem, 'checkpoints', checkpoints)
@@ -1135,6 +1150,40 @@ def run_clustered_simulation(
                                 ui.update_agent_status(agent_name, status_msg)
                         return status_callback
                     agent.status_callback = make_status_callback(agent.name)
+
+            # --- Submission logging callback ---
+            # Fired every time the human ticks/unticks "I'm satisfied" for any neighbour.
+            def _on_submission(neigh: str, satisfied: bool, human_assigns: Dict[str, Any]) -> None:
+                try:
+                    all_assign: Dict[str, Any] = {}
+                    for ag in agents:
+                        if hasattr(ag, "assignments") and isinstance(ag.assignments, dict):
+                            all_assign.update(ag.assignments)
+                    all_assign.update(human_assigns)
+                    pen = problem.evaluate_assignment(all_assign)
+                    score = problem.compute_score(all_assign) if hasattr(problem, "compute_score") else 0
+                    entry = {
+                        "timestamp": _now_iso(),
+                        "event": "human_sat_change",
+                        "neighbour": neigh,
+                        "satisfied": satisfied,
+                        "human_sat_state": {
+                            n: bool(ui._human_sat[n].get())
+                            for n in getattr(ui, "_neighs", [])
+                            if n in getattr(ui, "_human_sat", {})
+                        },
+                        "all_assignments": all_assign,
+                        "penalty": pen,
+                        "score": score,
+                        "total_moves": _human_move_count,
+                    }
+                    with open(submissions_log_path, "a", encoding="utf-8") as _sf:
+                        _sf.write(json.dumps(entry) + "\n")
+                        _sf.flush()
+                except Exception as _se:
+                    print(f"[SubmissionLog] Error: {_se}")
+
+            ui._submission_cb = _on_submission
 
             ui.run_async_chat(
                 nodes=human_nodes,
@@ -1168,11 +1217,8 @@ def run_clustered_simulation(
             pass
 
     # ----------------------------
-    # Checkpoint system for undo/restore
+    # Checkpoint system for undo/restore (headless / sync path)
     # ----------------------------
-    checkpoints: List[Dict[str, Any]] = []
-    checkpoint_id_counter = 0
-
     def create_checkpoint(iteration: int, assignments: Dict[str, Any], penalty: float, score: float) -> Dict[str, Any]:
         """Create a checkpoint snapshot when a valid coloring is reached."""
         nonlocal checkpoint_id_counter
@@ -1311,15 +1357,42 @@ def run_clustered_simulation(
         
     # Final live-log flush and stop reason
     _flush_agent_logs()
+    final_move_count = getattr(human_ui, '_move_count', _human_move_count)
     with open(summary_path, "a", encoding="utf-8") as f:
         if stop_reason is not None:
             f.write(f"\nStopped early at iteration {stop_iteration} due to {stop_reason}.\n")
         else:
             f.write(f"\nReached max_iterations={max_iterations}.\n")
         # Log human move count from UI widget counter (most accurate)
-        final_move_count = getattr(human_ui, '_move_count', 0)
         f.write(f"Human total colour changes (moves): {final_move_count}\n")
         f.flush()
+
+    # --- Write final_state.json ---
+    try:
+        final_all_assign: Dict[str, Any] = {}
+        for ag in agents:
+            if hasattr(ag, "assignments") and isinstance(ag.assignments, dict):
+                final_all_assign.update(ag.assignments)
+        final_pen = problem.evaluate_assignment(final_all_assign)
+        final_score = problem.compute_score(final_all_assign) if hasattr(problem, "compute_score") else 0
+        _checkpoints_for_final = checkpoints
+        final_state = {
+            "timestamp_end": _now_iso(),
+            "stop_reason": stop_reason or "max_iterations",
+            "stop_iteration": stop_iteration,
+            "total_moves": final_move_count,
+            "final_assignments": final_all_assign,
+            "final_penalty": final_pen,
+            "final_score": final_score,
+            "valid_solution_found": final_pen <= 1e-9,
+            "checkpoints": _checkpoints_for_final,
+            "num_checkpoints": len(_checkpoints_for_final),
+        }
+        with open(os.path.join(output_dir, "final_state.json"), "w", encoding="utf-8") as _fsf:
+            _fsf.write(json.dumps(final_state, indent=2))
+    except Exception as _fse:
+        print(f"[FinalState] Error writing final_state.json: {_fse}")
+
     # generate simple visualisation of the graph topology
     try:
         import matplotlib.pyplot as plt

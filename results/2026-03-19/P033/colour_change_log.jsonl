@@ -1,0 +1,6 @@
+{"timestamp": "2026-03-19T14:06:30.840", "human_partial": {"h1": null, "h2": null, "h3": null, "h4": null, "h5": "blue", "h6": null}, "feasibility_counts": {"Agent1": 5, "Agent2": 6}, "penalty": 0.0}
+{"timestamp": "2026-03-19T14:06:35.007", "human_partial": {"h1": "blue", "h2": null, "h3": null, "h4": null, "h5": "blue", "h6": null}, "feasibility_counts": {"Agent1": 5, "Agent2": 6}, "penalty": 0.0}
+{"timestamp": "2026-03-19T14:06:36.356", "human_partial": {"h1": "blue", "h2": null, "h3": null, "h4": null, "h5": "blue", "h6": "red"}, "feasibility_counts": {"Agent1": 5, "Agent2": 6}, "penalty": 0.0}
+{"timestamp": "2026-03-19T14:06:38.281", "human_partial": {"h1": "blue", "h2": null, "h3": "green", "h4": null, "h5": "blue", "h6": "red"}, "feasibility_counts": {"Agent1": 5, "Agent2": 6}, "penalty": 0.0}
+{"timestamp": "2026-03-19T14:06:40.284", "human_partial": {"h1": "blue", "h2": "red", "h3": "green", "h4": null, "h5": "blue", "h6": "red"}, "feasibility_counts": {"Agent1": 5, "Agent2": 6}, "penalty": 0.0}
+{"timestamp": "2026-03-19T14:06:43.547", "human_partial": {"h1": "blue", "h2": "red", "h3": "green", "h4": "red", "h5": "blue", "h6": "red"}, "feasibility_counts": {"Agent1": 5, "Agent2": 6}, "penalty": 0.0}

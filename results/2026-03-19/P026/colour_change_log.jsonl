@@ -1,0 +1,4 @@
+{"timestamp": "2026-03-19T13:07:39.707", "human_partial": {"h1": "red", "h2": null, "h3": "red", "h4": null, "h5": null}, "feasibility_counts": {"Agent1": 1, "Agent2": 2}, "penalty": 0.0}
+{"timestamp": "2026-03-19T13:07:41.653", "human_partial": {"h1": "red", "h2": null, "h3": "red", "h4": "blue", "h5": null}, "feasibility_counts": {"Agent1": 1, "Agent2": 2}, "penalty": 0.0}
+{"timestamp": "2026-03-19T13:07:44.990", "human_partial": {"h1": "red", "h2": null, "h3": "red", "h4": "blue", "h5": "green"}, "feasibility_counts": {"Agent1": 1, "Agent2": 2}, "penalty": 0.0}
+{"timestamp": "2026-03-19T13:07:46.697", "human_partial": {"h1": "red", "h2": "blue", "h3": "red", "h4": "blue", "h5": "green"}, "feasibility_counts": {"Agent1": 1, "Agent2": 2}, "penalty": 0.0}

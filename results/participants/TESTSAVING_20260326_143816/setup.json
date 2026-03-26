@@ -1,0 +1,17 @@
+{
+  "participant_name": "TESTSAVING",
+  "timestamp_start": "20260326_143816",
+  "selected_conditions": [
+    "C1",
+    "C2",
+    "C4"
+  ],
+  "condition_presets": {
+    "C1": "cx_easy_8",
+    "C2": "cx_easy_8_b",
+    "C4": "cx_easy_8_c"
+  },
+  "use_llm": true,
+  "fixed_constraints": true,
+  "num_fixed_nodes": 1
+}

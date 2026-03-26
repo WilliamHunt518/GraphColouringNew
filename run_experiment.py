@@ -1560,6 +1560,26 @@ def run_experiment(
         results_dir = results_root / date_str / participant_id
     results_dir.mkdir(parents=True, exist_ok=True)
 
+    # Write run-level metadata so each output directory is self-contained.
+    import json as _json
+    _run_config = {
+        "condition": condition,
+        "graph_preset": graph_preset,
+        "participant_name": participant_name,
+        "timestamp_start": now.isoformat(),
+        "use_llm": use_llm,
+        "fixed_constraints": fixed_constraints,
+        "num_fixed_nodes": num_fixed_nodes,
+        "test_run": test_run,
+        "output_dir": str(results_dir),
+    }
+    try:
+        (results_dir / "run_config.json").write_text(
+            _json.dumps(_run_config, indent=2), encoding="utf-8"
+        )
+    except Exception as _e:
+        print(f"[run_experiment] Warning: could not write run_config.json: {_e}")
+
     print(f"[run_experiment] Condition: {condition}")
     if test_run:
         print(f"[run_experiment] TEST RUN — Writing results to: {results_dir}")

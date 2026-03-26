@@ -64,10 +64,16 @@ CONDITION_INFO: dict[str, str] = {
 }
 
 GRAPH_PRESETS = [
+    "cx_easy_8", "cx_easy_8_b", "cx_easy_8_c",
+    "cx_hard_8", "cx_hard_8_b", "cx_hard_8_c",
     "easy", "medium", "tight", "hard",
     "expert", "dense", "dense_tight", "super",
 ]
-EXPLICIT_PRESETS = {"medium", "tight", "dense", "dense_tight", "expert", "super"}
+EXPLICIT_PRESETS = {
+    "cx_easy_8", "cx_easy_8_b", "cx_easy_8_c",
+    "cx_hard_8", "cx_hard_8_b", "cx_hard_8_c",
+    "medium", "tight", "dense", "dense_tight", "expert", "super",
+}
 
 # ── Question definitions ──────────────────────────────────────────────────────
 # Each question is a dict with keys:
@@ -299,7 +305,7 @@ class StudyApp:
         # ── Study-wide state ──────────────────────────────────────────────
         self.participant_name: str = ""
         self.selected_conditions: list[str] = []
-        self.graph_preset: str = "medium"
+        self.condition_presets: dict[str, str] = {}
         self.use_llm: bool = False
         self._fixed_constraints: bool = True
         self._num_fixed_nodes: int = 1
@@ -594,14 +600,15 @@ class StudyApp:
         out_dir.mkdir(parents=True, exist_ok=True)
         run_script = Path(__file__).resolve().with_name("run_experiment.py")
 
+        preset = self.condition_presets.get(condition, GRAPH_PRESETS[0])
         args = [
             sys.executable, str(run_script),
             "--condition", condition,
             "--use-ui",
             "--output-dir", str(out_dir),
-            "--graph-preset", self.graph_preset,
+            "--graph-preset", preset,
         ]
-        if self._fixed_constraints and self.graph_preset not in EXPLICIT_PRESETS:
+        if self._fixed_constraints and preset not in EXPLICIT_PRESETS:
             args += ["--fixed-constraints",
                      "--num-fixed-nodes", str(self._num_fixed_nodes)]
         if self.use_llm and condition in ("C4", "C5", "C6"):
@@ -635,7 +642,7 @@ class StudyApp:
 
     def show_setup(self) -> None:
         """Compact launch-menu style configuration screen."""
-        self.root.geometry("580x560")
+        self.root.geometry("720x560")
         self.root.resizable(False, False)
 
         # ── Load saved config ─────────────────────────────────────────────
@@ -682,47 +689,46 @@ class StudyApp:
             row=row, column=0, columnspan=2, sticky="w")
         ttk.Label(frm, text="Order", foreground="#555555").grid(
             row=row, column=2, sticky="w")
+        ttk.Label(frm, text="Graph preset", foreground="#555555").grid(
+            row=row, column=3, sticky="w", padx=(8, 0))
         row += 1
         ttk.Label(frm,
-                  text="Tick each condition and assign a run order (1 = first).",
+                  text="Tick each condition, set its run order (1 = first) and graph preset.",
                   font=("Arial", 9), foreground="#555555").grid(
-            row=row, column=0, columnspan=3, sticky="w", pady=(0, 4))
+            row=row, column=0, columnspan=4, sticky="w", pady=(0, 4))
         row += 1
 
         saved_conds: dict = saved.get("conditions", {})
-        cond_vars: dict[str, tuple[tk.BooleanVar, tk.StringVar]] = {}
+        saved_presets: dict = saved.get("condition_presets", {})
+        cond_vars: dict[str, tuple[tk.BooleanVar, tk.StringVar, tk.StringVar]] = {}
         for code, cname in CONDITION_INFO.items():
-            saved_order = saved_conds.get(code, "")
+            saved_entry = saved_conds.get(code, "")
+            # saved_conds values may be plain order strings (old format)
+            saved_order = str(saved_entry) if saved_entry else ""
+            saved_preset = saved_presets.get(code, GRAPH_PRESETS[0])
             cv = tk.BooleanVar(value=bool(saved_order))
-            ov = tk.StringVar(value=str(saved_order))
-            cond_vars[code] = (cv, ov)
+            ov = tk.StringVar(value=saved_order)
+            pv = tk.StringVar(value=saved_preset)
+            cond_vars[code] = (cv, ov, pv)
             ttk.Checkbutton(frm, text=f"{code}  —  {cname}",
                             variable=cv).grid(
                 row=row, column=0, columnspan=2, sticky="w", pady=1)
             ttk.Spinbox(frm, from_=1, to=6, textvariable=ov, width=5).grid(
                 row=row, column=2, sticky="w", pady=1)
+            ttk.Combobox(frm, textvariable=pv, values=GRAPH_PRESETS,
+                         state="readonly", width=16).grid(
+                row=row, column=3, sticky="w", padx=(8, 0), pady=1)
             row += 1
 
-        ttk.Separator(frm).grid(row=row, column=0, columnspan=3,
+        ttk.Separator(frm).grid(row=row, column=0, columnspan=4,
                                 sticky="ew", pady=(6, 8))
-        row += 1
-
-        # ── Graph preset ──────────────────────────────────────────────────
-        ttk.Label(frm, text="Graph preset").grid(
-            row=row, column=0, sticky="w", pady=(0, 4))
-        preset_var = tk.StringVar(value=saved.get("graph_preset", "medium"))
-        preset_combo = ttk.Combobox(
-            frm, textvariable=preset_var, values=GRAPH_PRESETS,
-            state="readonly", width=22)
-        preset_combo.grid(row=row, column=1, columnspan=2,
-                          sticky="w", pady=(0, 4))
         row += 1
 
         # ── Fixed-node controls ───────────────────────────────────────────
         fixed_var = tk.BooleanVar(value=saved.get("fixed_constraints", True))
         fixed_check = ttk.Checkbutton(frm, text="Use fixed node constraints",
                                       variable=fixed_var)
-        fixed_check.grid(row=row, column=0, columnspan=3,
+        fixed_check.grid(row=row, column=0, columnspan=4,
                          sticky="w", pady=(2, 0))
         row += 1
 
@@ -734,26 +740,16 @@ class StudyApp:
         fixed_spin.grid(row=row, column=1, sticky="w")
         row += 1
 
-        def _on_preset_change(*_) -> None:
-            is_explicit = preset_var.get() in EXPLICIT_PRESETS
-            state = "disabled" if is_explicit else "normal"
-            fixed_check.config(state=state)
-            fixed_spin.config(state=state)
-            fixed_lbl.config(foreground="#aaaaaa" if is_explicit else "#000000")
-
-        preset_var.trace_add("write", _on_preset_change)
-        _on_preset_change()
-
         # ── LLM toggle ────────────────────────────────────────────────────
         llm_var = tk.BooleanVar(value=saved.get("use_llm", False))
         ttk.Checkbutton(
             frm,
             text="Use LLM for NL summaries (C4 / C5 / C6 only)",
             variable=llm_var,
-        ).grid(row=row, column=0, columnspan=3, sticky="w", pady=(4, 0))
+        ).grid(row=row, column=0, columnspan=4, sticky="w", pady=(4, 0))
         row += 1
 
-        ttk.Separator(frm).grid(row=row, column=0, columnspan=3,
+        ttk.Separator(frm).grid(row=row, column=0, columnspan=4,
                                 sticky="ew", pady=(8, 4))
         row += 1
 
@@ -761,7 +757,7 @@ class StudyApp:
         status_var = tk.StringVar()
         ttk.Label(frm, textvariable=status_var,
                   foreground=FG_E).grid(
-            row=row, column=0, columnspan=2, sticky="w")
+            row=row, column=0, columnspan=3, sticky="w")
 
         def _start() -> None:
             name = name_var.get().strip()
@@ -770,7 +766,7 @@ class StudyApp:
                 return
 
             selected: list[tuple[int, str]] = []
-            for code, (cv, ov) in cond_vars.items():
+            for code, (cv, ov, pv) in cond_vars.items():
                 if cv.get():
                     s = ov.get().strip()
                     if not s:
@@ -788,14 +784,21 @@ class StudyApp:
 
             selected.sort()
 
+            # Collect per-condition presets
+            cond_presets = {
+                code: pv.get()
+                for code, (cv, ov, pv) in cond_vars.items()
+                if cv.get()
+            }
+
             # Persist config (excluding the participant name)
             cfg = {
                 "conditions": {
                     code: ov.get()
-                    for code, (cv, ov) in cond_vars.items()
+                    for code, (cv, ov, pv) in cond_vars.items()
                     if cv.get()
                 },
-                "graph_preset": preset_var.get(),
+                "condition_presets": cond_presets,
                 "fixed_constraints": bool(fixed_var.get()),
                 "num_fixed_nodes": int(fixed_num_var.get()),
                 "use_llm": bool(llm_var.get()),
@@ -809,7 +812,7 @@ class StudyApp:
             # Store study state
             self.participant_name = name
             self.selected_conditions = [c for _, c in selected]
-            self.graph_preset = preset_var.get()
+            self.condition_presets = cond_presets
             self.use_llm = bool(llm_var.get())
             self._fixed_constraints = bool(fixed_var.get())
             self._num_fixed_nodes = int(fixed_num_var.get())
@@ -829,7 +832,7 @@ class StudyApp:
                 "participant_name": self.participant_name,
                 "timestamp_start": ts,
                 "selected_conditions": self.selected_conditions,
-                "graph_preset": self.graph_preset,
+                "condition_presets": self.condition_presets,
                 "use_llm": self.use_llm,
                 "fixed_constraints": self._fixed_constraints,
                 "num_fixed_nodes": self._num_fixed_nodes,
@@ -838,10 +841,10 @@ class StudyApp:
             self.show_pre_questionnaire()
 
         ttk.Button(frm, text="Start Study →", command=_start).grid(
-            row=row, column=2, sticky="e", pady=4)
+            row=row, column=3, sticky="e", pady=4)
         row += 1
         ttk.Button(frm, text="Quit", command=self.root.destroy).grid(
-            row=row, column=2, sticky="e")
+            row=row, column=3, sticky="e")
 
         frm.columnconfigure(1, weight=1)
 
@@ -942,9 +945,10 @@ class StudyApp:
         card = tk.Frame(inner, bg=BG_W,
                         highlightthickness=1, highlightbackground="#e5e7eb")
         card.pack(fill="x", pady=8)
+        preset = self.condition_presets.get(cond, GRAPH_PRESETS[0])
         lines = [
             ("Condition",    f"{cond} — {cname}"),
-            ("Graph preset", self.graph_preset.capitalize()),
+            ("Graph preset", preset),
             ("Run",          f"{idx + 1} of {n}"),
         ]
         for label, value in lines:
