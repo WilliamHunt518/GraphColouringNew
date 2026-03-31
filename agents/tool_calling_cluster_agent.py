@@ -66,7 +66,7 @@ class ToolCallingClusterAgent(ClusterAgent):
         comm_layer: Any,
         local_nodes: List[str],
         owners: Dict[str, str],
-        backend_model: str = "gpt-4-turbo",
+        backend_model: str = "claude-haiku-4-5-20251001",
         **kwargs
     ) -> None:
         super().__init__(
@@ -81,19 +81,19 @@ class ToolCallingClusterAgent(ClusterAgent):
         # Initialize API library
         self.api = ClusterAgentAPI(self)
 
-        # Initialize OpenAI client (REQUIRED - fail fast if not available)
+        # Initialize Anthropic client (REQUIRED - fail fast if not available)
         try:
-            from openai import OpenAI
+            from anthropic import Anthropic
             api_key = self._load_api_key()
-            self.backend_llm = OpenAI(api_key=api_key)
+            self.backend_llm = Anthropic(api_key=api_key)
             self.backend_model = backend_model
             self.log(f"[TOOL] Translation layer initialized with {backend_model}")
         except FileNotFoundError as e:
-            error_msg = f"[TOOL] FATAL: {e}\nLLM_TOOL mode requires OpenAI API key. Cannot continue."
+            error_msg = f"[TOOL] FATAL: {e}\nLLM_TOOL mode requires Anthropic API key. Cannot continue."
             print(f"\n{'='*70}\nERROR: {error_msg}\n{'='*70}\n")
             raise SystemExit(error_msg)
         except Exception as e:
-            error_msg = f"[TOOL] FATAL: Failed to initialize OpenAI client: {e}\nLLM_TOOL mode requires valid API key. Cannot continue."
+            error_msg = f"[TOOL] FATAL: Failed to initialize Anthropic client: {e}\nLLM_TOOL mode requires valid API key. Cannot continue."
             print(f"\n{'='*70}\nERROR: {error_msg}\n{'='*70}\n")
             raise SystemExit(error_msg)
 
@@ -104,13 +104,13 @@ class ToolCallingClusterAgent(ClusterAgent):
         self.log(f"[TOOL] Initialized ToolCallingClusterAgent as translation layer")
 
     def _load_api_key(self) -> str:
-        """Load OpenAI API key from api_key.txt."""
+        """Load Anthropic API key from api_key.txt."""
         key_file = "api_key.txt"
         if os.path.exists(key_file):
-            with open(key_file, "r") as f:
+            with open(key_file, "r", encoding="utf-8-sig") as f:
                 return f.read().strip()
         else:
-            raise FileNotFoundError("api_key.txt not found. Please create it with your OpenAI API key.")
+            raise FileNotFoundError("api_key.txt not found. Please create it with your Anthropic API key.")
 
     def step(self) -> None:
         """Execute one reasoning step using 3-phase translation architecture.
@@ -407,15 +407,14 @@ Default (unclear message):
 Return ONLY the JSON object. No explanatory text."""
 
         try:
-            response = self.backend_llm.chat.completions.create(
+            response = self.backend_llm.messages.create(
                 model=self.backend_model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,  # Deterministic translation
+                temperature=0.0,
                 max_tokens=1000,
-                response_format={"type": "json_object"}
             )
 
-            result_text = response.choices[0].message.content
+            result_text = response.content[0].text
             self.log(f"[TOOL][PHASE1] LLM response: {result_text[:200]}")
 
             result = json.loads(result_text)
@@ -772,15 +771,14 @@ Example: single simulation (legacy format):
 Return ONLY the JSON object. No explanatory text."""
 
         try:
-            response = self.backend_llm.chat.completions.create(
+            response = self.backend_llm.messages.create(
                 model=self.backend_model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,  # Deterministic translation
+                temperature=0.0,
                 max_tokens=1500,
-                response_format={"type": "json_object"}
             )
 
-            result_text = response.choices[0].message.content
+            result_text = response.content[0].text
             self.log(f"[TOOL][PHASE3] LLM response: {result_text[:200]}")
 
             result = json.loads(result_text)

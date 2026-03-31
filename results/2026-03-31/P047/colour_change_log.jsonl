@@ -1,0 +1,2 @@
+{"timestamp": "2026-03-31T11:18:45.764", "human_partial": {"h1": null, "h2": null, "h3": "green", "h4": null, "h5": null, "h6": null, "h7": null, "h8": null}, "feasibility_counts": {"Agent1": 8, "Agent2": 12}, "penalty": 0.0}
+{"timestamp": "2026-03-31T11:18:48.892", "human_partial": {"h1": null, "h2": null, "h3": "green", "h4": null, "h5": "green", "h6": null, "h7": null, "h8": null}, "feasibility_counts": {"Agent1": 8, "Agent2": 12}, "penalty": 0.0}

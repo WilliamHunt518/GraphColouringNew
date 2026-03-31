@@ -48,7 +48,7 @@ class SpeechLLMLayer:
         Whether to use LLM
     """
 
-    def __init__(self, model: str = "gpt-4-turbo", use_llm: bool = True) -> None:
+    def __init__(self, model: str = "claude-haiku-4-5-20251001", use_llm: bool = True) -> None:
         """Initialize speech layer.
 
         Parameters
@@ -63,25 +63,25 @@ class SpeechLLMLayer:
 
         if use_llm:
             try:
-                from openai import OpenAI
+                from anthropic import Anthropic
                 api_key = self._load_api_key()
-                self.llm = OpenAI(api_key=api_key)
+                self.llm = Anthropic(api_key=api_key)
             except Exception as e:
                 print(f"\n{'='*70}")
                 print(f"FATAL ERROR: Failed to initialize Speech LLM")
                 print(f"Error: {e}")
-                print(f"LLM_TOOL mode requires working OpenAI API")
-                print(f"Check api_key.txt and OpenAI account credits")
+                print(f"LLM_TOOL mode requires working Claude API")
+                print(f"Check api_key.txt and Anthropic account credits")
                 print(f"{'='*70}\n")
                 raise SystemExit(f"Speech LLM initialization FAILED: {e}") from e
         else:
             self.llm = None
 
     def _load_api_key(self) -> str:
-        """Load OpenAI API key from api_key.txt."""
+        """Load Anthropic API key from api_key.txt."""
         key_file = "api_key.txt"
         if os.path.exists(key_file):
-            with open(key_file, "r") as f:
+            with open(key_file, "r", encoding="utf-8-sig") as f:
                 return f.read().strip()
         else:
             raise FileNotFoundError("api_key.txt not found")
@@ -229,15 +229,14 @@ Return ONLY a JSON object with these keys:
 }}
 """
 
-            response = self.llm.chat.completions.create(
+            response = self.llm.messages.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
                 temperature=0.3,
                 max_tokens=500
             )
 
-            result = json.loads(response.choices[0].message.content)
+            result = json.loads(response.content[0].text)
             result["original_text"] = nl_text
             return result
 
@@ -245,7 +244,7 @@ Return ONLY a JSON object with these keys:
             print(f"\n{'='*70}")
             print(f"FATAL ERROR: Speech LLM parsing failed")
             print(f"Error: {e}")
-            print(f"LLM_TOOL mode requires working OpenAI API - no fallbacks allowed")
+            print(f"LLM_TOOL mode requires working Claude API - no fallbacks allowed")
             print(f"{'='*70}\n")
             raise SystemExit(f"Speech LLM parsing FAILED: {e}") from e
 
@@ -347,14 +346,14 @@ Message types:
 Return ONLY the natural language message (no JSON, no extra formatting).
 """
 
-            response = self.llm.chat.completions.create(
+            response = self.llm.messages.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,  # Reduced from 0.7 for more deterministic output
+                temperature=0.3,
                 max_tokens=300
             )
 
-            nl_message = response.choices[0].message.content.strip()
+            nl_message = response.content[0].text.strip()
 
             # CRITICAL: Validate LLM output quality
             # Log warnings for malformed patterns but DO NOT use fallbacks

@@ -5440,6 +5440,7 @@ class HumanTurnUI:
         # Store references for updates
         self._constraint_panel_frames: Dict[str, tk.Frame] = {}
         self._constraint_status_vars: Dict[str, tk.StringVar] = {}
+        self._constraint_status_labels: Dict[str, tk.Label] = {}
         self._constraint_card_areas: Dict[str, tk.Canvas] = {}
         self._constraint_card_inner: Dict[str, tk.Frame] = {}
         self._constraint_data: Dict[str, Any] = {}
@@ -5449,7 +5450,7 @@ class HumanTurnUI:
             label_frame = ttk.LabelFrame(parent, text=f"{neigh} — Constraint Info")
             label_frame.pack(fill="both", expand=True, pady=6, padx=4)
 
-            # Status label (feasibility summary)
+            # Status label (feasibility summary) — text/colour updated dynamically
             status_var = tk.StringVar(master=root, value="Waiting for first colour change…")
             self._constraint_status_vars[neigh] = status_var
             self._status_var[neigh] = status_var  # reuse existing spinner infrastructure
@@ -5457,11 +5458,12 @@ class HumanTurnUI:
             status_lbl = tk.Label(
                 label_frame,
                 textvariable=status_var,
-                font=("Arial", 10, "italic"),
+                font=("Arial", 10, "bold"),
                 fg="#555",
                 anchor="w",
             )
             status_lbl.pack(fill="x", padx=6, pady=(4, 2))
+            self._constraint_status_labels[neigh] = status_lbl
 
             # Scrollable card area
             card_canvas = tk.Canvas(label_frame, highlightthickness=0)
@@ -5489,6 +5491,7 @@ class HumanTurnUI:
         """Build the right-hand panel: scrollable mini-subgraph configs per agent."""
         self._feasibility_canvas_areas = {}
         self._feasibility_count_vars = {}
+        self._feasibility_status_labels: Dict[str, tk.Label] = {}
 
         root = self._root
         title = tk.Label(
@@ -5511,11 +5514,12 @@ class HumanTurnUI:
             count_lbl = tk.Label(
                 frame,
                 textvariable=count_var,
-                font=("Arial", 9, "italic"),
+                font=("Arial", 10, "bold"),
                 fg="#555",
                 anchor="w",
             )
             count_lbl.pack(fill="x", padx=4, pady=(2, 0))
+            self._feasibility_status_labels[neigh] = count_lbl
 
             # Scrollable area for mini-config canvases
             scroll_canvas = tk.Canvas(frame, highlightthickness=0, bg="white")
@@ -5584,6 +5588,18 @@ class HumanTurnUI:
         except Exception:
             pass
 
+    @staticmethod
+    def _status_class(feasibility_count: int) -> tuple:
+        """Map feasibility count to (display_text, fg_colour, bg_colour) for status labels."""
+        if feasibility_count < 0:
+            return "Error", "#555555", "#eeeeee"
+        elif feasibility_count == 0:
+            return "IMPOSSIBLE — no valid layout", "#cc0000", "#ffdddd"
+        elif feasibility_count <= 2:
+            return f"MARGINAL — {feasibility_count} config(s) left", "#884400", "#fff3cc"
+        else:
+            return f"{feasibility_count} valid configuration(s)", "#006600", "#e8f8e8"
+
     def _render_constraint_panel(self, agent_name: str) -> None:
         """Redraw constraint cards for one agent panel. Must run on the Tk thread."""
         data = self._constraint_data.get(agent_name, {})
@@ -5610,27 +5626,32 @@ class HumanTurnUI:
         is_feasible = data.get("is_feasible", feasibility_count > 0)
         condition = getattr(self, '_condition', 'C1')
 
-        # Update status label
+        # Update status label with colour coding
+        status_text, status_fg, status_bg = self._status_class(feasibility_count)
         status_var = self._constraint_status_vars.get(agent_name)
         if status_var:
             if feasibility_count < 0:
                 status_var.set(f"Error: {data.get('error', 'unknown')}")
-            elif is_feasible:
-                status_var.set(f"{feasibility_count} valid configuration(s)")
             else:
-                status_var.set("INFEASIBLE — no valid configuration")
+                status_var.set(status_text)
+        status_lbl = getattr(self, '_constraint_status_labels', {}).get(agent_name)
+        if status_lbl:
+            try:
+                status_lbl.config(fg=status_fg, bg=status_bg)
+            except Exception:
+                pass
 
         # Infeasible card (all conditions)
         if not is_feasible:
             repair = data.get("repair_suggestion", [])
-            card = tk.Frame(inner, bg="#ffcccc", relief=tk.RAISED, bd=1)
+            card = tk.Frame(inner, bg="#ffdddd", relief=tk.RAISED, bd=1)
             card.pack(fill="x", padx=4, pady=4)
             tk.Label(
                 card,
-                text="No valid configuration exists!",
+                text="No valid configuration exists.",
                 font=("Arial", 10, "bold"),
                 fg="#cc0000",
-                bg="#ffcccc",
+                bg="#ffdddd",
                 anchor="w",
             ).pack(fill="x", padx=6, pady=(6, 2))
             if repair:
@@ -5998,13 +6019,18 @@ class HumanTurnUI:
             **{n: True for n in visible_agent_nodes if n in agent_fixed},
         }
 
-        # Update count label
+        # Update count label with colour coding (matches constraint panel status)
+        raw_count = data.get("feasibility_count", len(feasibility_set) if is_feasible else 0)
+        status_text, status_fg, status_bg = self._status_class(raw_count)
         count_var = self._feasibility_count_vars.get(agent_name)
         if count_var:
-            if is_feasible:
-                count_var.set(f"{len(feasibility_set)} valid configuration(s)")
-            else:
-                count_var.set("INFEASIBLE — no valid configuration")
+            count_var.set(status_text)
+        count_lbl = getattr(self, '_feasibility_status_labels', {}).get(agent_name)
+        if count_lbl:
+            try:
+                count_lbl.config(fg=status_fg, bg=status_bg)
+            except Exception:
+                pass
 
         if not is_feasible:
             lbl = tk.Label(
@@ -6382,12 +6408,30 @@ class HumanTurnUI:
           Means:   NL summary (if nl_text provided) OR config1 OR config2 … (enumeration)
         """
         COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
+        COLOUR_BG = {"red": "#ffe0e0", "green": "#e0ffe0", "blue": "#e0e0ff"}
+
+        # Determine node status from current colour's config count
+        if current_colour:
+            cur_key = str(current_colour).lower()
+            cur_count = len(colour_map.get(cur_key) or [])
+            if cur_count == 0:
+                header_bg = "#8b0000"   # dark red  — IMPOSSIBLE
+                status_tag = " ✕"
+            elif cur_count <= 2:
+                header_bg = "#7a4800"   # dark orange — MARGINAL
+                status_tag = " !"
+            else:
+                header_bg = "#1a5c1a"   # dark green  — OK
+                status_tag = " ✓"
+        else:
+            header_bg = "#444444"       # neutral — unassigned
+            status_tag = ""
 
         outer = tk.Frame(self._canvas, bg="#888888", bd=1, relief=tk.RAISED)
 
-        # Drag handle header (dark bar with node name + move cursor)
-        header = tk.Label(outer, text=f"⠿ {node}", font=("Arial", 8, "bold"),
-                          bg="#444444", fg="white", padx=6, pady=2,
+        # Drag handle header (coloured by status, with node name + move cursor)
+        header = tk.Label(outer, text=f"⠿ {node}{status_tag}", font=("Arial", 8, "bold"),
+                          bg=header_bg, fg="white", padx=6, pady=2,
                           cursor="fleur", anchor="w")
         header.pack(fill="x")
         outer._drag_handle = header  # used by _draw_constraint_overlays
@@ -6399,14 +6443,16 @@ class HumanTurnUI:
         tk.Label(inner, text="Because:", font=("Arial", 8, "bold"),
                  bg="white", anchor="w").pack(anchor="w")
         if current_colour:
-            fg = COLOUR_FG.get(str(current_colour).lower(), "#333")
+            col_lower = str(current_colour).lower()
             row = tk.Frame(inner, bg="white")
             row.pack(anchor="w")
             tk.Label(row, text=f"  {node}=", font=("Arial", 8),
                      bg="white", fg="#333").pack(side="left")
-            tk.Label(row, text=str(current_colour),
-                     font=("Arial", 8, "bold"), fg=fg,
-                     bg="white").pack(side="left")
+            tk.Label(row, text=f" {col_lower} ",
+                     font=("Arial", 8, "bold"),
+                     fg=COLOUR_FG.get(col_lower, "#333"),
+                     bg=COLOUR_BG.get(col_lower, "#eee"),
+                     relief=tk.GROOVE, bd=1, padx=2, pady=1).pack(side="left", padx=2)
         else:
             n_open = sum(1 for cfgs in colour_map.values() if cfgs) if colour_map else 0
             not_assigned_text = "  (not yet assigned — all colours viable)" if n_open == len(colour_map) and colour_map else "  (not yet assigned)"
@@ -6430,141 +6476,145 @@ class HumanTurnUI:
             cur_key = str(current_colour).lower() if current_colour else ""
             configs = colour_map.get(cur_key) or colour_map.get(str(current_colour), [])
             visible_nodes = set(self._node_pos.keys())
-            MAX_SHOW = 6
+            # Pre-compute baseline domains: union of all colours across all configs for all colour choices
+            baseline_domains: dict = {}
+            for _cfgs in colour_map.values():
+                for _cfg in (_cfgs or []):
+                    for _n2, _c2 in _cfg.items():
+                        if _n2 in visible_nodes and _n2 != node:
+                            baseline_domains.setdefault(_n2, set()).add(_c2)
+
+            def _compute_restrictions(col_cfgs: list) -> tuple:
+                """Return (restricted_nodes_count, avg_pct_reduction) or (None, None) if no visible neighbours."""
+                constrained: dict = {}
+                for _cfg in col_cfgs:
+                    for _n2, _c2 in _cfg.items():
+                        if _n2 in visible_nodes and _n2 != node:
+                            constrained.setdefault(_n2, set()).add(_c2)
+                if not constrained:
+                    return None, None
+                restricted = 0
+                total_pct = 0.0
+                for _n2, c_set in constrained.items():
+                    base = baseline_domains.get(_n2, c_set)
+                    if len(base) > len(c_set):
+                        restricted += 1
+                        total_pct += (len(base) - len(c_set)) / len(base) * 100
+                avg_pct = total_pct / restricted if restricted > 0 else 0.0
+                return restricted, avg_pct
+
             if configs:
                 total = len(configs)
-                # Build visible-only filtered configs and deduplicate
-                filtered_cfgs = []
-                seen_sigs = set()
-                for cfg in configs:
-                    vis_cfg = {n2: c2 for n2, c2 in cfg.items()
-                               if n2 in visible_nodes and n2 != node}
-                    sig = tuple(sorted(vis_cfg.items()))
-                    if sig not in seen_sigs:
-                        seen_sigs.add(sig)
-                        filtered_cfgs.append(vis_cfg)
+                restricted_nodes, avg_pct = _compute_restrictions(configs)
 
-                # Count summary
-                tk.Label(inner, text=f"  {total} valid option(s)",
-                         font=("Arial", 8), fg="#1a6e1a",
+                # Current colour: count + constraint on one line
+                if restricted_nodes is None or restricted_nodes == 0:
+                    cur_constraint = "no impact on rest of graph"
+                    cur_fg = "#555"
+                else:
+                    cur_constraint = f"removes {restricted_nodes} config(s) (−{avg_pct:.0f}%)"
+                    cur_fg = "#884400"
+                tk.Label(inner, text=f"  {total} configs — {cur_constraint}",
+                         font=("Arial", 8), fg=cur_fg,
                          bg="white", anchor="w").pack(anchor="w")
 
-                # Show other colours that are also valid
+                # Alternatives: per-row with count + constraint
                 other_valid = [
-                    (col, len(cfgs))
+                    (col, cfgs)
                     for col, cfgs in sorted(colour_map.items())
                     if col != cur_key and cfgs and len(cfgs) > 0
                 ]
                 if other_valid:
-                    also_row = tk.Frame(inner, bg="white")
-                    also_row.pack(anchor="w", pady=(1, 0))
-                    tk.Label(also_row, text="  Also OK: ",
-                             font=("Arial", 7, "italic"), fg="#555",
-                             bg="white").pack(side="left")
-                    for i, (col, cnt) in enumerate(other_valid):
-                        fg_col = COLOUR_FG.get(col, "#333")
-                        lbl_text = col if i == len(other_valid) - 1 else col + ","
-                        tk.Label(also_row, text=lbl_text,
-                                 font=("Arial", 7, "bold"), fg=fg_col,
-                                 bg="white").pack(side="left")
-
-                # Show visible-neighbour entries if informative
-                if filtered_cfgs and any(filtered_cfgs):
-                    tk.Label(inner, text="Neighbour constraints:",
+                    tk.Label(inner, text="  Also OK:",
                              font=("Arial", 7, "italic"), fg="#555",
                              bg="white", anchor="w").pack(anchor="w", pady=(3, 0))
-                    for i, vis_cfg in enumerate(filtered_cfgs[:MAX_SHOW]):
-                        if not vis_cfg:
-                            continue
-                        row = tk.Frame(inner, bg="white")
-                        row.pack(anchor="w")
-                        first = True
-                        for n2, c2 in sorted(vis_cfg.items()):
-                            if not first:
-                                tk.Label(row, text=" AND ", font=("Arial", 7),
-                                         bg="white", fg="#555").pack(side="left")
-                            tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
-                                     font=("Arial", 7), bg="white",
-                                     fg="#333").pack(side="left")
-                            fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
-                            tk.Label(row, text=str(c2),
-                                     font=("Arial", 7, "bold"), fg=fg2,
-                                     bg="white").pack(side="left")
-                            first = False
-                        if i < min(len(filtered_cfgs), MAX_SHOW) - 1:
-                            tk.Label(inner, text=" OR", font=("Arial", 7),
-                                     bg="white", fg="#555",
-                                     anchor="w").pack(anchor="w")
-                    if len(filtered_cfgs) > MAX_SHOW:
-                        tk.Label(inner, text=f"  … ({len(filtered_cfgs)} combinations)",
-                                 font=("Arial", 7, "italic"), fg="#777",
-                                 bg="white", anchor="w").pack(anchor="w")
+                    for col, col_cfgs in other_valid:
+                        cnt = len(col_cfgs)
+                        r_nodes, r_pct = _compute_restrictions(col_cfgs)
+                        if r_nodes is None or r_nodes == 0:
+                            effect_text = f"  {cnt} configs — no impact on rest of graph"
+                            eff_fg = "#555"
+                        else:
+                            effect_text = f"  {cnt} configs — removes {r_nodes} config(s) (−{r_pct:.0f}%)"
+                            eff_fg = "#884400"
+                        alt_row = tk.Frame(inner, bg="white")
+                        alt_row.pack(anchor="w", pady=(1, 0))
+                        tk.Label(alt_row, text="  ", bg="white").pack(side="left")
+                        tk.Label(alt_row, text=f" {col} ",
+                                 font=("Arial", 7, "bold"),
+                                 fg=COLOUR_FG.get(col, "#333"),
+                                 bg=COLOUR_BG.get(col, "#eee"),
+                                 relief=tk.GROOVE, bd=1,
+                                 padx=2, pady=1).pack(side="left")
+                        tk.Label(alt_row, text=effect_text,
+                                 font=("Arial", 7), fg=eff_fg,
+                                 bg="white").pack(side="left")
+
             elif current_colour:
-                tk.Label(inner, text="  No valid configs — try a different colour",
+                tk.Label(inner, text="  No valid configs",
                          font=("Arial", 8), fg="#cc0000",
                          bg="white", anchor="w").pack(anchor="w")
+                # Show alternatives
+                other_valid = [
+                    (col, cfgs)
+                    for col, cfgs in sorted(colour_map.items())
+                    if col != cur_key and cfgs and len(cfgs) > 0
+                ]
+                if other_valid:
+                    tk.Label(inner, text="  Try instead:",
+                             font=("Arial", 7, "italic"), fg="#555",
+                             bg="white", anchor="w").pack(anchor="w", pady=(3, 0))
+                    for col, col_cfgs in other_valid:
+                        cnt = len(col_cfgs)
+                        r_nodes, r_pct = _compute_restrictions(col_cfgs)
+                        if r_nodes is None or r_nodes == 0:
+                            effect_text = f"  {cnt} configs — no impact on rest of graph"
+                            eff_fg = "#555"
+                        else:
+                            effect_text = f"  {cnt} configs — removes {r_nodes} config(s) (−{r_pct:.0f}%)"
+                            eff_fg = "#884400"
+                        alt_row = tk.Frame(inner, bg="white")
+                        alt_row.pack(anchor="w", pady=(1, 0))
+                        tk.Label(alt_row, text="  ", bg="white").pack(side="left")
+                        tk.Label(alt_row, text=f" {col} ",
+                                 font=("Arial", 7, "bold"),
+                                 fg=COLOUR_FG.get(col, "#333"),
+                                 bg=COLOUR_BG.get(col, "#eee"),
+                                 relief=tk.GROOVE, bd=1,
+                                 padx=2, pady=1).pack(side="left")
+                        tk.Label(alt_row, text=effect_text,
+                                 font=("Arial", 7), fg=eff_fg,
+                                 bg="white").pack(side="left")
             else:
                 # Unassigned: show per-colour option counts + example configs for best colour
                 if colour_map:
                     colour_counts = {col: len(cfgs) for col, cfgs in colour_map.items() if cfgs is not None}
                     if any(n > 0 for n in colour_counts.values()):
-                        # Summary row: counts per colour
-                        total_all = sum(colour_counts.values())
-                        count_parts = "  ".join(
-                            f"{col}: {cnt}"
-                            for col, cnt in sorted(colour_counts.items(), key=lambda kv: -kv[1])
-                        )
-                        tk.Label(inner, text=f"  All colours open — options per colour:",
-                                 font=("Arial", 7, "italic"), fg="#555",
-                                 bg="white", anchor="w").pack(anchor="w")
-                        tk.Label(inner, text=f"  {count_parts}",
-                                 font=("Arial", 8, "bold"), fg="#1a6e1a",
-                                 bg="white", anchor="w").pack(anchor="w")
-
-                        # Show top 3 configs for the colour with most options
-                        best_col = max(colour_counts, key=lambda c: colour_counts[c])
-                        best_configs = colour_map.get(best_col, [])
-                        filtered_cfgs = []
-                        seen_sigs: set = set()
-                        for cfg in best_configs:
-                            vis_cfg = {n2: c2 for n2, c2 in cfg.items()
-                                       if n2 in visible_nodes and n2 != node}
-                            sig = tuple(sorted(vis_cfg.items()))
-                            if sig not in seen_sigs and vis_cfg:
-                                seen_sigs.add(sig)
-                                filtered_cfgs.append(vis_cfg)
-
-                        if filtered_cfgs:
-                            tk.Label(inner,
-                                     text=f"e.g. if {node}={best_col}:",
-                                     font=("Arial", 7, "italic"), fg="#555",
-                                     bg="white", anchor="w").pack(anchor="w", pady=(3, 0))
-                            MAX_EG = 3
-                            for i, vis_cfg in enumerate(filtered_cfgs[:MAX_EG]):
-                                row = tk.Frame(inner, bg="white")
-                                row.pack(anchor="w")
-                                first = True
-                                for n2, c2 in sorted(vis_cfg.items()):
-                                    if not first:
-                                        tk.Label(row, text=" AND ", font=("Arial", 7),
-                                                 bg="white", fg="#555").pack(side="left")
-                                    tk.Label(row, text=f"  {n2}=" if first else f"{n2}=",
-                                             font=("Arial", 7), bg="white",
-                                             fg="#333").pack(side="left")
-                                    fg2 = COLOUR_FG.get(str(c2).lower(), "#333")
-                                    tk.Label(row, text=str(c2),
-                                             font=("Arial", 7, "bold"), fg=fg2,
-                                             bg="white").pack(side="left")
-                                    first = False
-                                if i < min(len(filtered_cfgs), MAX_EG) - 1:
-                                    tk.Label(inner, text=" OR", font=("Arial", 7),
-                                             bg="white", fg="#555",
-                                             anchor="w").pack(anchor="w")
-                            if len(filtered_cfgs) > MAX_EG:
-                                tk.Label(inner,
-                                         text=f"  … ({colour_counts[best_col]} total)",
-                                         font=("Arial", 7, "italic"), fg="#777",
-                                         bg="white", anchor="w").pack(anchor="w")
+                        # One row per colour: [badge] N configs — impact
+                        for col, cnt in sorted(colour_counts.items(), key=lambda kv: -kv[1]):
+                            if cnt == 0:
+                                continue
+                            col_cfgs = colour_map.get(col, [])
+                            r_nodes, r_pct = _compute_restrictions(col_cfgs)
+                            effect_row = tk.Frame(inner, bg="white")
+                            effect_row.pack(anchor="w", pady=(1, 0))
+                            tk.Label(effect_row, text="  ", bg="white").pack(side="left")
+                            tk.Label(effect_row, text=f" {col} ",
+                                     font=("Arial", 7, "bold"),
+                                     fg=COLOUR_FG.get(col, "#333"),
+                                     bg=COLOUR_BG.get(col, "#eee"),
+                                     relief=tk.GROOVE, bd=1,
+                                     padx=2, pady=1).pack(side="left")
+                            if r_nodes is None or r_nodes == 0:
+                                effect_text = f"  {cnt} configs — no impact on rest of graph"
+                            else:
+                                effect_text = (
+                                    f"  {cnt} configs — removes {r_nodes}"
+                                    f" config(s) (−{r_pct:.0f}%)"
+                                )
+                            tk.Label(effect_row, text=effect_text,
+                                     font=("Arial", 7), fg="#555",
+                                     bg="white").pack(side="left")
                     else:
                         tk.Label(inner, text="  No valid options available",
                                  font=("Arial", 7, "italic"), fg="#cc0000",

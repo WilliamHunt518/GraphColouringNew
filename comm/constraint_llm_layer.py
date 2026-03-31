@@ -12,7 +12,7 @@ Design notes
 - Fallback: if the API call fails, a plain-text formatted string is returned.
   This is intentional — the LLM layer is a *display helper*, not an
   experimental agent.  Fallback does NOT contaminate experimental data.
-- Uses openai.OpenAI client (new API style, openai>=1.0.0).
+- Uses anthropic.Anthropic client.
 - Reads api_key.txt from the project root (same as other layers).
 """
 
@@ -31,9 +31,9 @@ _MAX_CACHE = 256
 
 
 def _load_api_key() -> Optional[str]:
-    """Read the OpenAI API key from api_key.txt."""
+    """Read the Anthropic API key from api_key.txt."""
     try:
-        key = _API_KEY_PATH.read_text(encoding="utf-8").strip()
+        key = _API_KEY_PATH.read_text(encoding="utf-8-sig").strip()
         return key if key else None
     except FileNotFoundError:
         return None
@@ -60,7 +60,7 @@ class ConstraintLLMLayer:
 
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
+        model: str = "claude-haiku-4-5-20251001",
         condition: str = "C4",
     ) -> None:
         self._model = model
@@ -75,20 +75,20 @@ class ConstraintLLMLayer:
     # ------------------------------------------------------------------
 
     def _get_client(self):
-        """Lazily initialise the OpenAI client."""
+        """Lazily initialise the Anthropic client."""
         if self._client is None:
             if self._api_key is None:
                 raise RuntimeError(
                     "No API key found in api_key.txt.  "
-                    "Cannot call OpenAI in LLM mode."
+                    "Cannot call Claude in LLM mode."
                 )
             try:
-                import openai
-                self._client = openai.OpenAI(api_key=self._api_key)
+                import anthropic
+                self._client = anthropic.Anthropic(api_key=self._api_key)
             except ImportError:
                 raise RuntimeError(
-                    "openai package not installed.  "
-                    "Run: pip install openai"
+                    "anthropic package not installed.  "
+                    "Run: pip install anthropic"
                 )
         return self._client
 
@@ -183,10 +183,10 @@ class ConstraintLLMLayer:
 
         _output_rules = (
             "\nOUTPUT RULES — you MUST follow these:\n"
-            "  - If a colour is in HARD CONSTRAINTS above → say 'X is impossible' or 'X cannot be used'. NEVER say 'avoid'.\n"
+            "  - If a colour is in HARD CONSTRAINTS above → state what IS possible: e.g. 'Only red and green work' or 'h1 and h2 must differ'. Do NOT just say 'X is impossible' — the count already shows that; show the knock-on instead.\n"
             "  - If a colour is in CONDITIONAL CONSTRAINTS → say 'X only works if Y is Z'. NEVER say 'avoid'.\n"
-            "  - If ALL_OPEN → say 'any combination works' or 'all options are open'.\n"
-            "  - BANNED WORDS: 'avoid', 'prefer', 'better' (too vague — be decisive).\n"
+            "  - If ALL_OPEN → say something more specific than 'all options are open' — e.g. 'The agent can handle any combination here', 'No restrictions on your boundary choices'.\n"
+            "  - BANNED WORDS: 'avoid', 'prefer', 'better', 'unavailable', 'pick freely', 'all options are open' (too generic — be specific).\n"
             "  1 sentence. No agent node names. No raw numbers. Natural phrasing."
         )
 
@@ -254,30 +254,25 @@ class ConstraintLLMLayer:
             )
 
     def _call_api(self, prompt: str) -> str:
-        """Call the OpenAI API and return the response text."""
+        """Call the Claude API and return the response text."""
         client = self._get_client()
-        resp = client.chat.completions.create(
+        resp = client.messages.create(
             model=self._model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a concise constraint assistant helping a human player. "
-                        "For node overlay messages: respond with exactly 2 short lines "
-                        "separated by a newline character. "
-                        "Line 1: ≤6 words verdict on the current colour. "
-                        "Line 2: ≤10 words about alternatives or constraints. "
-                        "For panel summaries: respond with exactly 1 plain English sentence. "
-                        "NEVER mention agent-internal nodes (e.g. a1, a2, b1, b2). "
-                        "No bullet points, no headers, no labels like 'Line 1:'."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
+            system=(
+                "You are a concise constraint assistant helping a human player. "
+                "For node overlay messages: respond with exactly 2 short lines "
+                "separated by a newline character. "
+                "Line 1: ≤6 words verdict on the current colour. "
+                "Line 2: ≤10 words about alternatives or constraints. "
+                "For panel summaries: respond with exactly 1 plain English sentence. "
+                "NEVER mention agent-internal nodes (e.g. a1, a2, b1, b2). "
+                "No bullet points, no headers, no labels like 'Line 1:'."
+            ),
+            messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
             temperature=0.3,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content[0].text.strip()
 
     def _plain_text_fallback(
         self, agent_name: str, structured_data: Dict[str, Any]
@@ -410,19 +405,28 @@ class ConstraintLLMLayer:
                     + (f"\nJoint feasibility:\n{joint_hint}\n" if joint_hint else "")
                     + (f"\nConsequence counts:\n{all_counts_table}\n" if all_counts_table else "")
                     + (f"\n{pre_classify}\n" if pre_classify else "")
-                    + f"\nWrite exactly 2 lines:\n"
-                    f"Line 1: 'Not yet set.'\n"
-                    f"Line 2 (~8 words): Give the single most decisive insight for {node}.\n"
-                    f"  RULES — you MUST follow these exactly:\n"
-                    f"  - If a colour is IMPOSSIBLE (shown above) → say 'X is not viable here' or 'X cannot be used'\n"
+                    + f"\nWrite exactly 2 short lines:\n"
+                    f"Line 1 (~5 words): A brief verdict about dependency or impact — NOT a list of which colours are available.\n"
+                    f"  The interface already shows counts per colour, so do NOT say 'All colours open', 'Two colours work', etc.\n"
+                    f"  EXCEPTION: mention a colour only if it would surprise the user — a colour appears selectable but has ZERO valid agent configs.\n"
+                    f"  Instead: say something about the situation, e.g. 'No constraint from {node} yet', 'Depends on what {boundary_nodes_str} is', 'Agent unconstrained so far'.\n"
+                    f"Line 2 (~8 words): The single most decisive cross-node insight.\n"
+                    f"  RULES — follow in order:\n"
+                    f"  - If a colour is IMPOSSIBLE (shown above) → name the effect: e.g. 'That colour forces a conflict regardless of the other node'\n"
                     f"  - If a colour only fails in SOME combinations → say 'X works only if [other node] is Y'\n"
-                    f"  - If all colours work equally → say 'All colours are open — pick freely'\n"
-                    f"  - If one colour leaves significantly more agent options → say 'X gives the most room'\n"
-                    f"  BANNED WORDS: 'avoid', 'prefer', 'better' — be specific and decisive, not vague.\n"
+                    f"  - If all colours work equally → describe the cross-node freedom: e.g. 'Your choice here won't restrict the other boundary node'\n"
+                    f"  - If one colour leaves significantly more agent options → say 'X gives the agent most room'\n"
+                    f"  BANNED PHRASES: 'avoid', 'prefer', 'better', 'unavailable', 'X cannot be used', 'X is not viable', 'pick freely',\n"
+                    f"    'All colours are open', 'N colours viable', 'all three work' — be specific, not generic.\n"
                     f"  No agent names. No raw numbers."
                 )
 
             colour_counts = {col: len(cfgs) for col, cfgs in all_colour_configs.items()}
+
+            # Node's explicit allowed domain (colours the UI lets the user pick).
+            # Colours outside this are already excluded visually — don't mention them.
+            node_allowed_domain = node_data.get("node_allowed_domain") or list(colour_counts.keys())
+            node_allowed_domain_set = {str(c).lower() for c in node_allowed_domain}
 
             # Format the joint table
             joint_data = node_data.get("boundary_joint_feasibility", [])
@@ -456,6 +460,16 @@ class ConstraintLLMLayer:
                 conditionally_blocked = []
             ok_colours = sorted(col for col, cnt in colour_counts.items() if cnt > 0)
 
+            # Colours that are selectable by the user (in their domain) but have zero
+            # agent configs — the non-obvious "surprise" worth flagging explicitly.
+            agent_blocked_in_domain = [
+                col for col in globally_blocked if col in node_allowed_domain_set
+            ]
+            # Colours excluded purely by domain restriction (already shown in UI) — don't mention.
+            domain_excluded = [
+                col for col in globally_blocked if col not in node_allowed_domain_set
+            ]
+
             prompt_lines = [
                 f"You are helping a human understand their graph colouring choices.",
                 f"The human controls boundary nodes: {', '.join(sorted(boundary_nodes))}.",
@@ -486,11 +500,22 @@ class ConstraintLLMLayer:
                 f"",
             ]
 
-            if globally_blocked:
-                blocked_str = " and ".join(globally_blocked)
+            if agent_blocked_in_domain:
+                # Only flag colours that appear selectable but the agent can't use
+                blocked_str = " and ".join(agent_blocked_in_domain)
                 prompt_lines.append(
-                    f"NOTE: {blocked_str} {'is' if len(globally_blocked)==1 else 'are'} "
-                    f"always blocked for {node} — no joint combination with other boundary nodes rescues it."
+                    f"NOTE: {blocked_str} {'is' if len(agent_blocked_in_domain)==1 else 'are'} "
+                    f"always blocked for {node} — selectable by the user but no joint combination rescues it. "
+                    f"This is non-obvious and worth flagging."
+                )
+                prompt_lines.append("")
+            if domain_excluded:
+                # These are already excluded in the UI — don't mention them in your output
+                excl_str = " and ".join(domain_excluded)
+                prompt_lines.append(
+                    f"SILENT (do NOT mention): {excl_str} {'is' if len(domain_excluded)==1 else 'are'} "
+                    f"excluded by a domain restriction already visible in the interface. "
+                    f"Treat these as non-existent for your message."
                 )
                 prompt_lines.append("")
             if conditionally_blocked:
@@ -503,19 +528,21 @@ class ConstraintLLMLayer:
                 prompt_lines.append("")
 
             # Pre-classify the current colour so the LLM must be precise
+            ok_str = " or ".join(ok_colours) if ok_colours else "another colour"
             if globally_blocked and current_colour in globally_blocked:
                 verdict_class = "IMPOSSIBLE"
                 verdict_guide = (
                     f"The current colour ({current_colour}) is IMPOSSIBLE — "
                     f"no joint combination of boundary nodes can rescue it. "
-                    f"Line 1 MUST say this clearly: e.g. 'Impossible here' or '{current_colour.capitalize()} cannot be used'."
+                    f"Line 1: a short directive — e.g. 'Switch to {ok_str}' or '{current_colour.capitalize()} won't work here'. "
+                    f"Do NOT list which colours are available (the UI shows that)."
                 )
             elif conditionally_blocked and current_colour in conditionally_blocked:
                 verdict_class = "CONDITIONAL"
                 verdict_guide = (
                     f"The current colour ({current_colour}) currently fails but COULD work if other boundary nodes change. "
-                    f"Line 1 MUST reflect this conditional status: e.g. '{current_colour.capitalize()} works only if others change' or "
-                    f"'{current_colour.capitalize()} is blocked — depends on other nodes'."
+                    f"Line 1: show the dependency without listing colours — e.g. 'Risky — depends on the other node' or "
+                    f"'{current_colour.capitalize()} holds only if neighbours shift'."
                 )
             elif ok_colours:
                 # Check how many options the current colour leaves vs the best
@@ -525,39 +552,45 @@ class ConstraintLLMLayer:
                     verdict_class = "LIMITING"
                     verdict_guide = (
                         f"The current colour ({current_colour}) works but leaves significantly fewer options than the best alternative. "
-                        f"Line 1 MUST reflect this: e.g. '{current_colour.capitalize()} works, but tight' or '{current_colour.capitalize()} limits the options'."
+                        f"Line 1: convey tightness without listing colours — e.g. '{current_colour.capitalize()} is tight for the agent' or 'Agent has less room here'."
                     )
                 elif current_count == max_count or current_count >= max_count * 0.8:
                     verdict_class = "FINE"
                     verdict_guide = (
                         f"The current colour ({current_colour}) works well with plenty of options. "
-                        f"Line 1 should reflect this positively: e.g. '{current_colour.capitalize()} works fine here' or 'Good choice'."
+                        f"Line 1: convey this positively without listing colours — e.g. 'Agent adapts well to this' or 'No pressure from {node} here'."
                     )
                 else:
                     verdict_class = "LIMITING"
                     verdict_guide = (
                         f"The current colour ({current_colour}) is viable but somewhat restrictive. "
-                        f"Line 1 MUST reflect this: e.g. '{current_colour.capitalize()} is a bit tight' or '{current_colour.capitalize()} narrows the options'."
+                        f"Line 1: convey mild restriction without listing colours — e.g. 'A bit limiting for the agent' or 'Narrows the agent's room slightly'."
                     )
             else:
                 verdict_class = "UNKNOWN"
-                verdict_guide = f"Describe whether {current_colour} is a good or bad choice for {node}."
+                verdict_guide = f"Line 1: brief verdict on whether {current_colour} helps or hurts — no colour listing."
 
             prompt_lines += [
                 f"CLASSIFICATION: {verdict_class}",
                 f"{verdict_guide}",
                 f"",
                 f"Write exactly 2 short lines separated by a newline.",
-                f"Line 1 (~5 words): MUST match the classification above — be decisive and specific.",
-                f"Line 2 (~8-10 words): Give the ONE most useful rule about {node}. Follow these in order:",
-                f"  - If IMPOSSIBLE: explain WHY (e.g. 'Forces adjacent nodes into conflict regardless').",
-                f"  - If CONDITIONAL: name the condition explicitly (e.g. 'Works if h2 is blue instead').",
-                f"  - If LIMITING or FINE: does {node}'s colour interact with another boundary node in the joint table?",
-                f"    If yes, name that pattern (e.g. 'Works unless h2 is also red').",
-                f"    If no interaction, describe how much room the agent has.",
-                f"  - If all colours work equally well, say 'Agent has full flexibility with any choice'.",
-                f"BANNED PHRASES: 'avoid', 'prefer', 'better', 'also works', 'offers flexibility',",
-                f"  'blocks the agent', 'agent cannot work', 'agent is stuck'.",
+                f"Line 1 (~5 words): A brief verdict about IMPACT or DEPENDENCY — NOT a report of which colours are available.",
+                f"  The interface already shows counts per colour. Do NOT say things like 'Red and green work', 'Two colours open',",
+                f"  'All three viable', etc. — those restate what the human can already read.",
+                f"  EXCEPTION: you MAY mention a specific colour if it would SURPRISE the user — i.e. a colour is",
+                f"  selectable but has ZERO valid agent configurations (the UI count chip shows it but the agent can't use it).",
+                f"  Otherwise focus on impact/dependency: e.g. 'Risky — tied to {', '.join(n for n in (node_data.get('boundary_nodes') or []) if n != node)[:20]}',",
+                f"  'No knock-on from this', 'Agent adapts well', 'Switch to {ok_str}', 'Only valid if other changes'.",
+                f"Line 2 (~8-10 words): The ONE most useful CROSS-NODE insight. Follow in order:",
+                f"  - If IMPOSSIBLE: explain the knock-on — e.g. 'No combo with the other node rescues this' or '{ok_str} gives the agent more room'.",
+                f"  - If CONDITIONAL: name the exact dependency — e.g. 'Works if the other boundary node changes to X'.",
+                f"  - If LIMITING or FINE: check the consequence counts for OTHER boundary nodes.",
+                f"    State the knock-on: e.g. 'This leaves the other boundary node with only one choice' or 'The other boundary node stays fully open'.",
+                f"    If truly no cross-node effect, describe the agent's overall flexibility.",
+                f"BANNED PHRASES (in both lines): 'avoid', 'prefer', 'better', 'also works', 'offers flexibility', 'unavailable',",
+                f"  'blocks the agent', 'agent cannot work', 'X cannot be used', 'X is not viable',",
+                f"  'remain equally open', 'pick freely', 'all options are open', 'all colours work', 'X colours viable'.",
                 f"No agent-internal node names. No raw numbers. Natural conversational phrasing.",
             ]
 

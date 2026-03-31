@@ -74,7 +74,7 @@ class ReActClusterAgent(ClusterAgent):
         comm_layer: Any,
         local_nodes: List[str],
         owners: Dict[str, str],
-        backend_model: str = "gpt-4-turbo",
+        backend_model: str = "claude-haiku-4-5-20251001",
         max_react_iterations: int = 10,
         **kwargs
     ) -> None:
@@ -90,19 +90,19 @@ class ReActClusterAgent(ClusterAgent):
         # Initialize API library
         self.api = ClusterAgentAPI(self)
 
-        # Initialize OpenAI client (REQUIRED - fail fast if not available)
+        # Initialize Anthropic client (REQUIRED - fail fast if not available)
         try:
-            from openai import OpenAI
+            from anthropic import Anthropic
             api_key = self._load_api_key()
-            self.backend_llm = OpenAI(api_key=api_key)
+            self.backend_llm = Anthropic(api_key=api_key)
             self.backend_model = backend_model
             self.log(f"[REACT] Backend LLM initialized successfully")
         except FileNotFoundError as e:
-            error_msg = f"[REACT] FATAL: {e}\nLLM_REACT mode requires OpenAI API key. Cannot continue."
+            error_msg = f"[REACT] FATAL: {e}\nLLM_REACT mode requires Anthropic API key. Cannot continue."
             print(f"\n{'='*70}\nERROR: {error_msg}\n{'='*70}\n")
             raise SystemExit(error_msg)
         except Exception as e:
-            error_msg = f"[REACT] FATAL: Failed to initialize OpenAI client: {e}\nLLM_REACT mode requires valid API key. Cannot continue."
+            error_msg = f"[REACT] FATAL: Failed to initialize Anthropic client: {e}\nLLM_REACT mode requires valid API key. Cannot continue."
             print(f"\n{'='*70}\nERROR: {error_msg}\n{'='*70}\n")
             raise SystemExit(error_msg)
 
@@ -116,13 +116,13 @@ class ReActClusterAgent(ClusterAgent):
         self.log(f"[REACT] Initialized ReActClusterAgent with model={backend_model}, max_iterations={max_react_iterations}")
 
     def _load_api_key(self) -> str:
-        """Load OpenAI API key from api_key.txt."""
+        """Load Anthropic API key from api_key.txt."""
         key_file = "api_key.txt"
         if os.path.exists(key_file):
-            with open(key_file, "r") as f:
+            with open(key_file, "r", encoding="utf-8-sig") as f:
                 return f.read().strip()
         else:
-            raise FileNotFoundError("api_key.txt not found. Please create it with your OpenAI API key.")
+            raise FileNotFoundError("api_key.txt not found. Please create it with your Anthropic API key.")
 
     def _load_react_prompt(self) -> str:
         """Load ReAct system prompt with examples.
@@ -532,21 +532,17 @@ Your messages must ONLY mention:
                 self.log(f"[REACT] Iteration {iteration + 1}/{self.max_react_iterations}")
 
                 # LLM generates thought + action
-                messages = [
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": "\n".join(trajectory) if trajectory else "Begin reasoning."}
-                ]
-
                 self.log(f"[REACT] Calling backend LLM...")
-                response = self.backend_llm.chat.completions.create(
+                response = self.backend_llm.messages.create(
                     model=self.backend_model,
-                    messages=messages,
+                    system=prompt,
+                    messages=[{"role": "user", "content": "\n".join(trajectory) if trajectory else "Begin reasoning."}],
                     temperature=0.7,
                     max_tokens=1000,
-                    stop=["Observation:"]
+                    stop_sequences=["Observation:"]
                 )
 
-                thought_action = response.choices[0].message.content
+                thought_action = response.content[0].text
                 trajectory.append(thought_action)
 
                 self.log(f"[REACT] Thought+Action: {thought_action[:200]}...")
@@ -1431,21 +1427,17 @@ Begin reasoning now. Be proactive and constructive."""
             for iteration in range(self.max_react_iterations):
                 print(f"[{self.name}][REACT] ReAct iteration {iteration + 1}/{self.max_react_iterations}")
                 # LLM generates thought + action
-                messages = [
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": "\n".join(trajectory) if trajectory else "Begin reasoning."}
-                ]
-
                 print(f"[{self.name}][REACT] Calling backend LLM...")
-                response = self.backend_llm.chat.completions.create(
+                response = self.backend_llm.messages.create(
                     model=self.backend_model,
-                    messages=messages,
-                    stop=["Observation:"],
+                    system=prompt,
+                    messages=[{"role": "user", "content": "\n".join(trajectory) if trajectory else "Begin reasoning."}],
+                    stop_sequences=["Observation:"],
                     temperature=0.7,
                     max_tokens=1500
                 )
 
-                thought_action = response.choices[0].message.content
+                thought_action = response.content[0].text
                 print(f"[{self.name}][REACT] LLM response: {thought_action[:150]}...")
                 trajectory.append(thought_action)
 

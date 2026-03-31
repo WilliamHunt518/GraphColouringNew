@@ -396,14 +396,14 @@ def run_clustered_simulation(
                 # LLM with tool calling backend
                 from agents.tool_calling_cluster_agent import ToolCallingClusterAgent
                 from comm.speech_llm_layer import SpeechLLMLayer
-                comm_layer = SpeechLLMLayer(model="gpt-4-turbo", use_llm=not manual_mode)
+                comm_layer = SpeechLLMLayer(model="claude-haiku-4-5-20251001", use_llm=not manual_mode)
                 agent = ToolCallingClusterAgent(
                     name=owner,
                     problem=problem,
                     comm_layer=comm_layer,
                     local_nodes=list(local_nodes),
                     owners=owners,
-                    backend_model="gpt-4-turbo",
+                    backend_model="claude-haiku-4-5-20251001",
                     algorithm=algorithm,
                     fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
                 )
@@ -411,14 +411,14 @@ def run_clustered_simulation(
                 # LLM with ReAct pattern backend
                 from agents.react_cluster_agent import ReActClusterAgent
                 from comm.speech_llm_layer import SpeechLLMLayer
-                comm_layer = SpeechLLMLayer(model="gpt-4-turbo", use_llm=not manual_mode)
+                comm_layer = SpeechLLMLayer(model="claude-haiku-4-5-20251001", use_llm=not manual_mode)
                 agent = ReActClusterAgent(
                     name=owner,
                     problem=problem,
                     comm_layer=comm_layer,
                     local_nodes=list(local_nodes),
                     owners=owners,
-                    backend_model="gpt-4-turbo",
+                    backend_model="claude-haiku-4-5-20251001",
                     max_react_iterations=10,
                     algorithm=algorithm,
                     fixed_local_nodes=cluster_fixed_nodes.get(owner, {}),
@@ -1679,9 +1679,9 @@ def run_constraint_viz_simulation(
         from comm.constraint_llm_layer import ConstraintLLMLayer
         for owner in constraint_agents:
             llm_layers[owner] = ConstraintLLMLayer(
-                model="gpt-4o-mini", condition=condition
+                model="claude-haiku-4-5-20251001", condition=condition
             )
-        print(f"[ConstraintViz] LLM layer enabled (condition={condition}, model=gpt-4o-mini)")
+        print(f"[ConstraintViz] LLM layer enabled (condition={condition}, model=claude-haiku-4-5-20251001)")
     elif condition in ("C4", "C5"):
         raise RuntimeError(
             f"Condition {condition} requires --use-llm. "
@@ -1689,8 +1689,8 @@ def run_constraint_viz_simulation(
         )
     elif condition == "C6" and use_llm:
         from comm.constraint_llm_layer import ConstraintLLMLayer
-        human_llm_layer = ConstraintLLMLayer(model="gpt-4o-mini", condition="C6")
-        print(f"[ConstraintViz] LLM layer enabled (condition=C6, model=gpt-4o-mini)")
+        human_llm_layer = ConstraintLLMLayer(model="claude-haiku-4-5-20251001", condition="C6")
+        print(f"[ConstraintViz] LLM layer enabled (condition=C6, model=claude-haiku-4-5-20251001)")
     elif condition == "C6":
         raise RuntimeError(
             "Condition C6 requires --use-llm. "
@@ -1931,6 +1931,7 @@ def run_constraint_viz_simulation(
                             colour_map = consequence_sets_data.get(bnode, {})
                             key = str(cur_col).lower() if cur_col else ""
                             configs = colour_map.get(key, [])
+                            bnode_domain = (node_domains or {}).get(bnode, domain)
                             node_summaries[bnode] = llm_layer.summarise_node(
                                 bnode,
                                 {
@@ -1941,6 +1942,7 @@ def run_constraint_viz_simulation(
                                     "boundary_nodes": all_boundary_nodes,
                                     "all_boundary_assignments": all_boundary_assignments,
                                     "all_consequence_counts": all_consequence_counts,
+                                    "node_allowed_domain": list(bnode_domain),
                                 },
                             )
                     elif condition == "C5" and "domain_projection" in data:
@@ -2120,7 +2122,7 @@ def run_headless_constraint_viz(
     if condition in ("C4", "C5") and use_llm:
         from comm.constraint_llm_layer import ConstraintLLMLayer
         for owner in constraint_agents:
-            llm_layers[owner] = ConstraintLLMLayer(model="gpt-4o-mini", condition=condition)
+            llm_layers[owner] = ConstraintLLMLayer(model="claude-haiku-4-5-20251001", condition=condition)
         print(f"[Headless] LLM layer enabled (condition={condition})")
     elif condition in ("C4", "C5"):
         raise RuntimeError(
@@ -2217,6 +2219,7 @@ def run_headless_constraint_viz(
                         colour_map = consequence_sets_data.get(bnode, {})
                         key = str(cur_col).lower() if cur_col else ""
                         configs = colour_map.get(key, [])
+                        bnode_domain = (node_domains or {}).get(bnode, domain)
                         node_summaries[bnode] = llm_layer.summarise_node(
                             bnode,
                             {
@@ -2227,6 +2230,7 @@ def run_headless_constraint_viz(
                                 "boundary_nodes": all_boundary_nodes,
                                 "all_boundary_assignments": all_boundary_assignments,
                                 "all_consequence_counts": all_consequence_counts,
+                                "node_allowed_domain": list(bnode_domain),
                             },
                         )
                 elif condition == "C5" and "domain_projection" in data:

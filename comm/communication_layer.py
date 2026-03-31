@@ -110,23 +110,23 @@ class LLMCommLayer(BaseCommLayer):
         # attempt to read API key from api_key.txt in parent directory
         import os
         self.api_key: Optional[str] = None
-        self.openai = None  # type: ignore
+        self.anthropic = None  # type: ignore
         # Determine path relative to this file (comm directory)
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
         key_path = os.path.join(base_dir, "api_key.txt")
         if os.path.exists(key_path):
             try:
-                with open(key_path, "r", encoding="utf-8") as f:
+                with open(key_path, "r", encoding="utf-8-sig") as f:
                     key = f.read().strip()
                     if key:
                         self.api_key = key
             except Exception:
                 pass
         try:
-            import openai  # type: ignore
-            self.openai = openai
+            import anthropic  # type: ignore
+            self.anthropic = anthropic
         except ImportError:
-            self.openai = None
+            self.anthropic = None
 
         # conversation history flag
         # When ``use_history`` is True the communication layer will retain all prompts and
@@ -150,9 +150,9 @@ class LLMCommLayer(BaseCommLayer):
 
         # Debug information to indicate whether LLM summarisation is enabled
         try:
-            if self.openai is None:
+            if self.anthropic is None:
                 print(
-                    "[LLMCommLayer] OpenAI package not available. Falling back to heuristic communication."
+                    "[LLMCommLayer] anthropic package not available. Falling back to heuristic communication."
                 )
             elif self.api_key is None:
                 print(
@@ -160,7 +160,7 @@ class LLMCommLayer(BaseCommLayer):
                 )
             else:
                 print(
-                    "[LLMCommLayer] OpenAI package and API key detected. LLM summarisation enabled."
+                    "[LLMCommLayer] Claude API detected. LLM summarisation enabled."
                 )
         except Exception:
             pass
@@ -189,16 +189,16 @@ class LLMCommLayer(BaseCommLayer):
             self._debug_flush_cursor = len(self.debug_calls)
 
     def _call_openai(self, prompt: str, max_tokens: int = 60) -> Optional[str]:
-        """Helper to call the OpenAI API if available.
+        """Helper to call the Claude API if available.
 
         This must never block the UI indefinitely. We run the request in a worker
         thread and enforce a hard timeout. On timeout/failure we return None so
         callers fall back to heuristic messaging.
         """
-        if self.api_key is None or self.openai is None:
+        if self.api_key is None or self.anthropic is None:
             return None
         try:
-            print(f"[LLMCommLayer] Attempting OpenAI API call with prompt: {prompt[:60]}...")
+            print(f"[LLMCommLayer] Attempting Claude API call with prompt: {prompt[:60]}...")
         except Exception:
             pass
 
@@ -226,15 +226,17 @@ class LLMCommLayer(BaseCommLayer):
 
         def _worker() -> None:
             try:
-                client = self.openai.OpenAI(api_key=self.api_key)
-                resp = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=messages,
+                client = self.anthropic.Anthropic(api_key=self.api_key)
+                # Separate system message from user/assistant history
+                system_content = system_message["content"]
+                user_messages = [m for m in messages if m["role"] != "system"]
+                resp = client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    system=system_content,
+                    messages=user_messages,
                     max_tokens=max_tokens,
-                    n=1,
-                    timeout=25,
                 )
-                txt = resp.choices[0].message.content.strip()
+                txt = resp.content[0].text.strip()
                 result["text"] = txt
             except Exception as e:
                 result["err"] = e
@@ -245,14 +247,14 @@ class LLMCommLayer(BaseCommLayer):
 
         if th.is_alive():
             try:
-                print("[LLMCommLayer] OpenAI call timed out (30s). Falling back to heuristic communication.")
+                print("[LLMCommLayer] Claude API call timed out (30s). Falling back to heuristic communication.")
             except Exception:
                 pass
             return None
 
         if result.get("err") is not None:
             try:
-                print(f"[LLMCommLayer] OpenAI API call failed: {result['err']}")
+                print(f"[LLMCommLayer] Claude API call failed: {result['err']}")
             except Exception:
                 pass
             return None
@@ -263,7 +265,7 @@ class LLMCommLayer(BaseCommLayer):
 
         try:
             self.debug_calls.append({
-                "kind": "openai_call",
+                "kind": "claude_call",
                 "prompt": prompt,
                 "messages": messages,
                 "max_tokens": max_tokens,

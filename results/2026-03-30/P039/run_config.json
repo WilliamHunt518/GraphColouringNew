@@ -1,0 +1,11 @@
+{
+  "condition": "C2",
+  "graph_preset": "cx_easy_8",
+  "participant_name": "",
+  "timestamp_start": "2026-03-30T13:43:52.991441",
+  "use_llm": false,
+  "fixed_constraints": true,
+  "num_fixed_nodes": 1,
+  "test_run": false,
+  "output_dir": "G:\\Files\\Code\\GraphColouringNew\\results\\2026-03-30\\P039"
+}
