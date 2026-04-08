@@ -1901,6 +1901,9 @@ def run_constraint_viz_simulation(
                 # LLM needs to say things like "h1 and h2 must be different colours".
                 boundary_joint = analyser.compute_boundary_joint_feasibility(human_partial)
                 boundary_set_local = set(analyser.boundary_nodes)
+                # Also store in data so the UI can use it for hover constraint lines
+                data["boundary_joint_feasibility"] = boundary_joint
+                data["boundary_nodes"] = all_boundary_nodes
 
                 llm_layer = llm_layers.get(agent_name)
                 if llm_layer is not None:
@@ -2195,6 +2198,9 @@ def run_headless_constraint_viz(
                     for node, colour_map in consequence_sets_data.items()
                 }
             boundary_joint = analyser.compute_boundary_joint_feasibility(human_partial)
+            # Also store in data so the UI can use it for hover constraint lines
+            data["boundary_joint_feasibility"] = boundary_joint
+            data["boundary_nodes"] = all_boundary_nodes
 
             llm_layer = llm_layers.get(agent_name)
             if llm_layer is not None:

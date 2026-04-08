@@ -6284,8 +6284,10 @@ class HumanTurnUI:
                     continue
                 consequence_sets = data.get('consequence_sets', {})
                 node_nl = data.get('node_summaries', {})
+                bjd_c4 = data.get('boundary_joint_feasibility', [])
+                all_bn_c4 = data.get('boundary_nodes', list(consequence_sets.keys()))
                 # boundary_nodes includes ALL boundary nodes (assigned or not)
-                for node in data.get('boundary_nodes', consequence_sets.keys()):
+                for node in all_bn_c4:
                     if node in seen_nodes or node not in self._node_pos:
                         continue
                     seen_nodes.add(node)
@@ -6293,7 +6295,9 @@ class HumanTurnUI:
                     colour_map = consequence_sets.get(node, {})
                     nl_text = node_nl.get(node)
                     box = self._make_constraint_overlay_box(
-                        node, current_colour, colour_map, nl_text=nl_text
+                        node, current_colour, colour_map, nl_text=nl_text,
+                        boundary_joint_data=bjd_c4,
+                        all_boundary_nodes=all_bn_c4,
                     )
                     overlay_items.append((node, box))
 
@@ -6449,11 +6453,11 @@ class HumanTurnUI:
         configs_after = sum(r.get("feasibility_count", 0) for r in relevant)
         if not relevant:
             return {}, total_configs, configs_after
-        strengths: Dict[str, Tuple[float, int, int]] = {}
+        strengths: Dict[str, Tuple[float, int, int, List[str]]] = {}
         for other in all_boundary_nodes:
             if other == source_node:
                 continue
-            zero_count = 0
+            zero_colours: List[str] = []
             seen_colours: set = set()
             for row in relevant:
                 col = str(row.get("boundary_assignment", {}).get(other, "")).lower()
@@ -6462,10 +6466,11 @@ class HumanTurnUI:
                 if col not in seen_colours:
                     seen_colours.add(col)
                     if row.get("feasibility_count", 1) == 0:
-                        zero_count += 1
+                        zero_colours.append(col)
             if seen_colours:
                 total = len(seen_colours)
-                strengths[other] = (zero_count / max(total, 1), zero_count, total)
+                zero_count = len(zero_colours)
+                strengths[other] = (zero_count / max(total, 1), zero_count, total, zero_colours)
         return strengths, total_configs, configs_after
 
     @staticmethod
@@ -6506,7 +6511,10 @@ class HumanTurnUI:
             hit_key: Optional[tuple] = None
             hit_entry: Optional[tuple] = None
             for entry in self._overlay_hover_data:
-                widget, nd, col, bjd, abn, dom = entry
+                # Entry is (widget, nd, col, bjd, abn, dom) or
+                # (widget, nd, col, bjd, abn, dom, sub_check_fn)
+                widget, nd, col, bjd, abn, dom = entry[:6]
+                sub_check = entry[6] if len(entry) > 6 else None
                 try:
                     if not widget.winfo_exists():
                         continue
@@ -6517,9 +6525,10 @@ class HumanTurnUI:
                 except Exception:
                     continue
                 if wx <= mx < wx + ww and wy <= my < wy + wh:
-                    hit_key = (nd, col)
-                    hit_entry = entry
-                    break
+                    if sub_check is None or sub_check(mx, my):
+                        hit_key = (nd, col)
+                        hit_entry = entry
+                        break
             if hit_key != self._current_hover_key:
                 self._current_hover_key = hit_key
                 if hit_entry is not None:
@@ -6568,22 +6577,23 @@ class HumanTurnUI:
         strengths, total_configs, configs_after = self._compute_hover_strengths(
             source_node, pinned_colour, boundary_joint_data, all_boundary_nodes, domain
         )
-        removed_configs = total_configs - configs_after
-        pct = removed_configs / total_configs * 100 if total_configs > 0 else 0
-        if removed_configs > 0:
-            line_label = f"removes {removed_configs}/{total_configs} configs (−{pct:.0f}%)"
-        else:
-            line_label = f"no impact ({total_configs} configs remain)"
-        self._hover_log(f"[draw_hover] strengths={strengths} label={line_label}")
+        self._hover_log(f"[draw_hover] strengths={strengths}")
         sx, sy = self._node_canvas_pos(source_node)
         drawn = 0
-        for other_node, (strength, blocked, total) in strengths.items():
+        for other_node, (strength, blocked, total, blocked_cols) in strengths.items():
             if strength <= 0 or other_node not in self._node_pos:
                 continue
             tx, ty = self._node_canvas_pos(other_node)
             style = self._strength_to_style(strength, pinned_colour)
             item_id = self._curved_constraint_line(canvas, sx, sy, tx, ty, **style)
             self._hover_constraint_line_ids.append(item_id)
+
+            # Per-arc label: show which colours are blocked at the target node
+            if blocked_cols:
+                blocked_names = ", ".join(blocked_cols)
+                line_label = f"{blocked}/{total} colours blocked (no {blocked_names})"
+            else:
+                line_label = f"0/{total} colours blocked"
 
             # Label at the curve's control point (perpendicular offset midpoint)
             mx, my = (sx + tx) / 2, (sy + ty) / 2
@@ -6782,24 +6792,52 @@ class HumanTurnUI:
                  bg="white", anchor="w").pack(anchor="w", pady=(4, 0))
 
         if nl_text:
-            # NL summary mode (C4): show LLM-generated sentence
-            nl_lbl = tk.Label(inner, text=nl_text, font=("Arial", 8),
-                              bg="white", fg="#1a1a6e", wraplength=220,
-                              justify="left", anchor="w", cursor="hand2")
-            nl_lbl.pack(anchor="w", pady=(2, 0))
-            # Collect all boundary nodes across all agents for mention detection
-            _all_bn: List[str] = []
-            for _an in self._neighs:
-                for _bn in self._constraint_data.get(_an, {}).get("boundary_nodes", []):
-                    if _bn not in _all_bn:
-                        _all_bn.append(_bn)
-            if _all_bn:
-                _node_snap = node
-                _text_snap = nl_text
-                _bn_snap = list(_all_bn)
-                nl_lbl.bind("<Enter>", lambda e, _n=_node_snap, _t=_text_snap, _bn=_bn_snap:
-                            self._draw_nl_mention_lines(_n, _t, _bn))
-                nl_lbl.bind("<Leave>", self._clear_hover_constraint_lines)
+            # C4: render NL text in a Text widget with embedded colour-name
+            # badge labels (groove box, coloured — consistent with C1).
+            # Each badge is a real tk.Label so polling hover works on its bounds.
+            _NL_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
+            _NL_BG = {"red": "#ffe0e0", "green": "#e0ffe0", "blue": "#e0e0ff"}
+
+            txt_height = max(2, min(6, len(nl_text) // 26 + 2))
+            txt = tk.Text(
+                inner, wrap="word", width=27, height=txt_height,
+                font=("Arial", 8), bg="white", fg="#1a1a6e",
+                relief="flat", bd=0, highlightthickness=0,
+                state="normal", cursor="arrow",
+            )
+            txt.pack(anchor="w", pady=(2, 0), fill="x")
+
+            # Parse text; replace colour names with embedded badge labels
+            _colour_pat = re.compile(r'\b(red|green|blue)\b', re.IGNORECASE)
+            _last = 0
+            _badge_entries: List[tuple] = []   # (badge_widget, colour)
+            for _m in _colour_pat.finditer(nl_text):
+                if _m.start() > _last:
+                    txt.insert("end", nl_text[_last:_m.start()])
+                _cl = _m.group().lower()
+                badge = tk.Label(
+                    txt,
+                    text=f" {_m.group()} ",
+                    font=("Arial", 8, "bold"),
+                    fg=_NL_FG.get(_cl, "#333"),
+                    bg=_NL_BG.get(_cl, "#eee"),
+                    relief=tk.GROOVE, bd=1,
+                    padx=1, pady=0,
+                )
+                txt.window_create("end", window=badge)
+                _badge_entries.append((badge, _cl))
+                _last = _m.end()
+            if _last < len(nl_text):
+                txt.insert("end", nl_text[_last:])
+            txt.config(state="disabled")
+
+            # Register each badge widget as a hover zone (no sub-check needed —
+            # each badge has its own screen bounds detectable by winfo_root*)
+            if _bjd and _abn:
+                for _badge, _col_m in _badge_entries:
+                    self._overlay_hover_data.append(
+                        (_badge, _nd, _col_m, _bjd, _abn, _dom)
+                    )
         else:
             # Formulaic mode (C1/C2): show count + visible-neighbour constraints only.
             # Filter configs to nodes visible in the graph (_node_pos) to avoid
