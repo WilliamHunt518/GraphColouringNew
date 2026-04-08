@@ -1861,6 +1861,9 @@ def run_constraint_viz_simulation(
                 # Now returns {node: {colour: [list_of_configs]}} not just counts
                 consequence_sets = analyser.compute_consequence_sets(human_partial)
                 data["consequence_sets"] = consequence_sets
+                if condition == "C1":
+                    boundary_joint_c1 = analyser.compute_boundary_joint_feasibility(human_partial)
+                    data["boundary_joint_feasibility"] = boundary_joint_c1
 
             if condition in ("C2", "C5"):
                 # Agent-centric: domain projection (what colours agents can use)
@@ -2161,6 +2164,9 @@ def run_headless_constraint_viz(
         if condition in ("C1", "C4"):
             consequence_sets = analyser.compute_consequence_sets(human_partial)
             data["consequence_sets"] = consequence_sets
+            if condition == "C1":
+                boundary_joint_c1 = analyser.compute_boundary_joint_feasibility(human_partial)
+                data["boundary_joint_feasibility"] = boundary_joint_c1
 
         domain_projection = None
         conditional_domains = None

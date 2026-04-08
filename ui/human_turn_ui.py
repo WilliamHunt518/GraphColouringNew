@@ -219,6 +219,12 @@ class HumanTurnUI:
         self._last_submitted_assignments: Optional[Dict] = None
         self._submission_computing: bool = False          # True while bg threads are running
 
+        # Hover constraint line canvas item IDs (cleared on mouse-leave)
+        self._hover_constraint_line_ids: List[int] = []
+        self._current_hover_key: Optional[tuple] = None  # (node, colour) being hovered
+        # Registered hover zones for polling: [(widget, node, colour, bjd, abn, dom)]
+        self._overlay_hover_data: List[tuple] = []
+
     def _ensure_root(self) -> tk.Tk:
         """Ensure a Tk root exists before creating any tk.Variable."""
         if self._root is None:
@@ -381,6 +387,8 @@ class HumanTurnUI:
 
         # periodic refresh
         self._root.after(400, self._periodic_refresh)
+        # hover polling for canvas-embedded overlay widgets
+        self._root.after(200, self._poll_hover_overlay)
 
         self._root.mainloop()
 
@@ -3454,6 +3462,17 @@ class HumanTurnUI:
                 pass
             self._apply_colour_change(node, colour)
 
+        # Look up boundary joint data for this node so swatches can show hover lines
+        _swatch_bjd: list = []
+        _swatch_abn: list = []
+        for _an in self._neighs:
+            _ad = self._constraint_data.get(_an, {})
+            if node in _ad.get('boundary_nodes', []):
+                _swatch_bjd = _ad.get('boundary_joint_feasibility', [])
+                _swatch_abn = _ad.get('boundary_nodes', [])
+                break
+        _swatch_dom = list(self._domain)
+
         for colour in options:
             s = str(colour).lower() if colour is not None else ""
             fill = _FILL.get(s, "#dddddd") if colour is not None else "#dddddd"
@@ -3466,6 +3485,11 @@ class HumanTurnUI:
             c.create_oval(3, 3, 35, 35, fill=fill, outline=outline, width=2)
             c.create_text(19, 19, text=label, font=("TkDefaultFont", 10, "bold"), fill="#333333")
             c.bind("<Button-1>", lambda _e, col=colour: _pick(col))
+            # Register for hover-line polling (only for real colours, not "—")
+            if colour is not None and _swatch_bjd and _swatch_abn:
+                self._overlay_hover_data.append(
+                    (c, node, s, _swatch_bjd, _swatch_abn, _swatch_dom)
+                )
 
         # Position popup above the node on screen
         canvas_widget = self._canvas
@@ -5600,6 +5624,13 @@ class HumanTurnUI:
         else:
             return f"{feasibility_count} valid configuration(s)", "#006600", "#e8f8e8"
 
+    @staticmethod
+    def _bind_tree(widget: tk.Widget, event: str, callback) -> None:
+        """Bind callback to widget and every descendant."""
+        widget.bind(event, callback, add=True)
+        for child in widget.winfo_children():
+            HumanTurnUI._bind_tree(child, event, callback)
+
     def _render_constraint_panel(self, agent_name: str) -> None:
         """Redraw constraint cards for one agent panel. Must run on the Tk thread."""
         data = self._constraint_data.get(agent_name, {})
@@ -5771,6 +5802,29 @@ class HumanTurnUI:
                             bg=header_bg,
                             anchor="w",
                         ).pack(side="left", padx=4, pady=2)
+
+                        # Hover: draw constraint lines to affected boundary nodes
+                        _bjd = data.get("boundary_joint_feasibility", [])
+                        _abn = data.get("boundary_nodes", [])
+                        self._hover_log(
+                            f"[C1 panel setup] node={node} colour={colour} "
+                            f"bjd_len={len(_bjd)} abn={_abn} "
+                            f"data_keys={list(data.keys())}"
+                        )
+                        if _bjd and _abn:
+                            def _on_enter(e, _nd=node, _col=colour, _bjd=_bjd,
+                                          _abn=_abn, _dom=list(self._domain)):
+                                self._hover_log(f"[Enter] node={_nd} colour={_col}")
+                                self._draw_hover_constraint_lines(_nd, _col, _bjd, _abn, _dom)
+                            def _on_leave(e):
+                                self._hover_log("[Leave]")
+                                self._clear_hover_constraint_lines()
+                            HumanTurnUI._bind_tree(hdr, "<Enter>", _on_enter)
+                            HumanTurnUI._bind_tree(hdr, "<Leave>", _on_leave)
+                        else:
+                            self._hover_log(
+                                f"[C1 panel setup] SKIPPING bindings — bjd empty={not _bjd} abn empty={not _abn}"
+                            )
 
                         # C1: show AND/OR config list for the current colour.
                         # In pre-game (nothing assigned), show configs for the top-ranked
@@ -6180,6 +6234,7 @@ class HumanTurnUI:
         self._overlay_widgets = []
         self._overlay_item_ids = []
         self._overlay_tether_ids = []
+        self._overlay_hover_data = []   # repopulated by _make_constraint_overlay_box
 
         condition = getattr(self, '_condition', 'C1')
 
@@ -6205,13 +6260,19 @@ class HumanTurnUI:
                 if not data:
                     continue
                 consequence_sets = data.get('consequence_sets', {})
-                for node in data.get('boundary_nodes', consequence_sets.keys()):
+                bjd = data.get('boundary_joint_feasibility', [])
+                all_bn = data.get('boundary_nodes', list(consequence_sets.keys()))
+                for node in all_bn:
                     if node in seen_nodes_c1 or node not in self._node_pos:
                         continue
                     seen_nodes_c1.add(node)
                     current_colour = submitted.get(node)
                     colour_map = consequence_sets.get(node, {})
-                    box = self._make_constraint_overlay_box(node, current_colour, colour_map)
+                    box = self._make_constraint_overlay_box(
+                        node, current_colour, colour_map,
+                        boundary_joint_data=bjd,
+                        all_boundary_nodes=all_bn,
+                    )
                     overlay_items.append((node, box))
 
         elif condition == 'C4':
@@ -6337,6 +6398,238 @@ class HumanTurnUI:
             handle.bind('<ButtonRelease-1>', _release)
             handle.bind('<B1-Motion>', _move)
 
+    # ------------------------------------------------------------------ #
+    #  Hover constraint lines                                              #
+    # ------------------------------------------------------------------ #
+
+    def _hover_log(self, msg: str) -> None:
+        """Append msg to hover_debug.log next to this source file."""
+        try:
+            import datetime as _dt
+            import os as _os
+            log_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "hover_debug.log")
+            ts = _dt.datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            with open(log_path, "a", encoding="utf-8") as _f:
+                _f.write(f"{ts}  {msg}\n")
+        except Exception:
+            pass
+
+    def _node_canvas_pos(self, node: str) -> Tuple[float, float]:
+        """Convert raw node position to canvas pixel coordinates."""
+        nx, ny = self._node_pos[node]
+        s = self._graph_canvas_scale
+        ox, oy = self._graph_canvas_offset
+        return nx * s + ox, ny * s + oy
+
+    def _compute_hover_strengths(
+        self,
+        source_node: str,
+        pinned_colour: str,
+        boundary_joint_data: List[Dict],
+        all_boundary_nodes: List[str],
+        domain: List[Any],
+    ) -> Tuple[Dict[str, Tuple[float, int, int]], int, int]:
+        """Return (per_node_dict, total_configs, configs_after_pin).
+
+        per_node_dict maps other_node → (strength, zero_colour_count, total_colour_count).
+        strength = fraction of other_node's colours that have zero feasibility
+        when source_node is pinned to pinned_colour.
+
+        total_configs = sum of all feasibility_counts (no pinning).
+        configs_after_pin = sum of feasibility_counts when source_node = pinned_colour.
+        """
+        if not boundary_joint_data or not domain:
+            return {}, 0, 0
+        pinned_lower = str(pinned_colour).lower()
+        relevant = [
+            row for row in boundary_joint_data
+            if str(row.get("boundary_assignment", {}).get(source_node, "")).lower() == pinned_lower
+        ]
+        total_configs = sum(r.get("feasibility_count", 0) for r in boundary_joint_data)
+        configs_after = sum(r.get("feasibility_count", 0) for r in relevant)
+        if not relevant:
+            return {}, total_configs, configs_after
+        strengths: Dict[str, Tuple[float, int, int]] = {}
+        for other in all_boundary_nodes:
+            if other == source_node:
+                continue
+            zero_count = 0
+            seen_colours: set = set()
+            for row in relevant:
+                col = str(row.get("boundary_assignment", {}).get(other, "")).lower()
+                if not col:
+                    continue
+                if col not in seen_colours:
+                    seen_colours.add(col)
+                    if row.get("feasibility_count", 1) == 0:
+                        zero_count += 1
+            if seen_colours:
+                total = len(seen_colours)
+                strengths[other] = (zero_count / max(total, 1), zero_count, total)
+        return strengths, total_configs, configs_after
+
+    @staticmethod
+    def _strength_to_style(strength: float, colour: str = "") -> Dict[str, Any]:
+        """Map constraint strength 0→1 to canvas line style dict.
+
+        Line colour matches the hovered colour; width encodes strength.
+        """
+        _COLOUR_HEX = {"red": "#dd2222", "green": "#22aa44", "blue": "#2244dd"}
+        fill = _COLOUR_HEX.get(str(colour).lower(), "#888888")
+        # Width range 4–12 (doubled from 2–6)
+        width = max(4, round(3.0 + 9.0 * strength))
+        return {"fill": fill, "width": width, "dash": (8, 4)}
+
+    def _curved_constraint_line(
+        self, canvas: tk.Canvas, x0: float, y0: float, x1: float, y1: float, **kwargs
+    ) -> int:
+        """Draw a smoothed 3-point line with perpendicular midpoint offset."""
+        mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+        dx, dy = x1 - x0, y1 - y0
+        length = max((dx ** 2 + dy ** 2) ** 0.5, 1)
+        offset = 30
+        cx = mx - dy / length * offset
+        cy = my + dx / length * offset
+        return canvas.create_line(x0, y0, cx, cy, x1, y1, smooth=True, **kwargs)
+
+    def _poll_hover_overlay(self) -> None:
+        """Poll mouse position every 80 ms and draw/clear hover constraint lines.
+
+        Used because <Enter>/<Motion> events are not reliably delivered to
+        widgets embedded as canvas window items on Windows.
+        """
+        if not self._root:
+            return
+        try:
+            mx = self._root.winfo_pointerx()
+            my = self._root.winfo_pointery()
+            hit_key: Optional[tuple] = None
+            hit_entry: Optional[tuple] = None
+            for entry in self._overlay_hover_data:
+                widget, nd, col, bjd, abn, dom = entry
+                try:
+                    if not widget.winfo_exists():
+                        continue
+                    wx = widget.winfo_rootx()
+                    wy = widget.winfo_rooty()
+                    ww = widget.winfo_width()
+                    wh = widget.winfo_height()
+                except Exception:
+                    continue
+                if wx <= mx < wx + ww and wy <= my < wy + wh:
+                    hit_key = (nd, col)
+                    hit_entry = entry
+                    break
+            if hit_key != self._current_hover_key:
+                self._current_hover_key = hit_key
+                if hit_entry is not None:
+                    _, nd, col, bjd, abn, dom = hit_entry
+                    self._hover_log(f"[poll_hit] node={nd} colour={col}")
+                    self._draw_hover_constraint_lines(nd, col, bjd, abn, dom)
+                else:
+                    self._clear_hover_constraint_lines()
+        except Exception:
+            pass
+        finally:
+            if self._root:
+                self._root.after(80, self._poll_hover_overlay)
+
+    def _clear_hover_constraint_lines(self, _event=None) -> None:
+        """Remove all hover constraint line canvas items."""
+        canvas = self._canvas
+        if canvas is None:
+            return
+        for item_id in self._hover_constraint_line_ids:
+            try:
+                canvas.delete(item_id)
+            except Exception:
+                pass
+        self._hover_constraint_line_ids.clear()
+
+    def _draw_hover_constraint_lines(
+        self,
+        source_node: str,
+        pinned_colour: str,
+        boundary_joint_data: List[Dict],
+        all_boundary_nodes: List[str],
+        domain: List[Any],
+    ) -> None:
+        """Draw curved dashed lines from source_node to constrained boundary nodes."""
+        self._clear_hover_constraint_lines()
+        canvas = self._canvas
+        self._hover_log(
+            f"[draw_hover] source={source_node} colour={pinned_colour} "
+            f"canvas={'ok' if canvas else 'NONE'} "
+            f"node_in_pos={source_node in self._node_pos} "
+            f"bjd_len={len(boundary_joint_data)} dom={domain}"
+        )
+        if canvas is None or source_node not in self._node_pos:
+            return
+        strengths, total_configs, configs_after = self._compute_hover_strengths(
+            source_node, pinned_colour, boundary_joint_data, all_boundary_nodes, domain
+        )
+        removed_configs = total_configs - configs_after
+        pct = removed_configs / total_configs * 100 if total_configs > 0 else 0
+        if removed_configs > 0:
+            line_label = f"removes {removed_configs}/{total_configs} configs (−{pct:.0f}%)"
+        else:
+            line_label = f"no impact ({total_configs} configs remain)"
+        self._hover_log(f"[draw_hover] strengths={strengths} label={line_label}")
+        sx, sy = self._node_canvas_pos(source_node)
+        drawn = 0
+        for other_node, (strength, blocked, total) in strengths.items():
+            if strength <= 0 or other_node not in self._node_pos:
+                continue
+            tx, ty = self._node_canvas_pos(other_node)
+            style = self._strength_to_style(strength, pinned_colour)
+            item_id = self._curved_constraint_line(canvas, sx, sy, tx, ty, **style)
+            self._hover_constraint_line_ids.append(item_id)
+
+            # Label at the curve's control point (perpendicular offset midpoint)
+            mx, my = (sx + tx) / 2, (sy + ty) / 2
+            dx, dy = tx - sx, ty - sy
+            length = max((dx ** 2 + dy ** 2) ** 0.5, 1)
+            lx = mx - dy / length * 30
+            ly = my + dx / length * 30
+            tid = canvas.create_text(
+                lx, ly, text=line_label,
+                font=("Arial", 14, "bold"),
+                fill=style["fill"], anchor="center",
+            )
+            bbox = canvas.bbox(tid)
+            if bbox:
+                rx0, ry0, rx1, ry1 = bbox
+                rid = canvas.create_rectangle(
+                    rx0 - 3, ry0 - 2, rx1 + 3, ry1 + 2,
+                    fill="white", outline=style["fill"], width=1,
+                )
+                canvas.tag_raise(tid, rid)
+                self._hover_constraint_line_ids.extend([rid, tid])
+            else:
+                self._hover_constraint_line_ids.append(tid)
+            drawn += 1
+        self._hover_log(f"[draw_hover] drew {drawn} line(s)")
+
+    def _draw_nl_mention_lines(
+        self,
+        source_node: str,
+        nl_text: str,
+        all_boundary_nodes: List[str],
+    ) -> None:
+        """Draw solid teal lines to boundary nodes mentioned by name in nl_text."""
+        self._clear_hover_constraint_lines()
+        canvas = self._canvas
+        if canvas is None or source_node not in self._node_pos:
+            return
+        sx, sy = self._node_canvas_pos(source_node)
+        for node in all_boundary_nodes:
+            if node != source_node and node in nl_text and node in self._node_pos:
+                tx, ty = self._node_canvas_pos(node)
+                item_id = self._curved_constraint_line(
+                    canvas, sx, sy, tx, ty, fill="#007777", width=2, dash=()
+                )
+                self._hover_constraint_line_ids.append(item_id)
+
     def _draw_domain_arcs(
         self,
         canvas: tk.Canvas,
@@ -6400,6 +6693,8 @@ class HumanTurnUI:
         current_colour: Any,
         colour_map: Dict[str, Any],
         nl_text: Optional[str] = None,
+        boundary_joint_data: Optional[List[Dict]] = None,
+        all_boundary_nodes: Optional[List[str]] = None,
     ) -> tk.Frame:
         """Build the floating constraint info box for one boundary node.
 
@@ -6409,6 +6704,28 @@ class HumanTurnUI:
         """
         COLOUR_FG = {"red": "#cc0000", "green": "#006600", "blue": "#0000cc"}
         COLOUR_BG = {"red": "#ffe0e0", "green": "#e0ffe0", "blue": "#e0e0ff"}
+
+        _bjd = boundary_joint_data or []
+        _abn = all_boundary_nodes or []
+        _dom = list(self._domain)
+        _nd = node
+
+        # <Enter>/<Leave> and passive <Motion> are not reliably delivered to
+        # widgets embedded as canvas window items on Windows.  Instead, register
+        # each colour row in self._overlay_hover_data so the polling timer
+        # (_poll_hover_overlay) can detect hover by comparing mouse screen coords
+        # against widget screen bounds.
+        def _bind_hover(widget: tk.Widget, col: str) -> None:
+            """Register widget as a hover zone for (node, col)."""
+            if not (_bjd and _abn):
+                return
+            _c = str(col).lower()
+            self._overlay_hover_data.append((widget, _nd, _c, _bjd, _abn, _dom))
+
+        self._hover_log(
+            f"[overlay_box] node={node} cur={current_colour} "
+            f"bjd_len={len(_bjd)} abn={_abn}"
+        )
 
         # Determine node status from current colour's config count
         if current_colour:
@@ -6465,10 +6782,24 @@ class HumanTurnUI:
                  bg="white", anchor="w").pack(anchor="w", pady=(4, 0))
 
         if nl_text:
-            # NL summary mode (C3/C4): show LLM-generated sentence
-            tk.Label(inner, text=nl_text, font=("Arial", 8),
-                     bg="white", fg="#1a1a6e", wraplength=220,
-                     justify="left", anchor="w").pack(anchor="w", pady=(2, 0))
+            # NL summary mode (C4): show LLM-generated sentence
+            nl_lbl = tk.Label(inner, text=nl_text, font=("Arial", 8),
+                              bg="white", fg="#1a1a6e", wraplength=220,
+                              justify="left", anchor="w", cursor="hand2")
+            nl_lbl.pack(anchor="w", pady=(2, 0))
+            # Collect all boundary nodes across all agents for mention detection
+            _all_bn: List[str] = []
+            for _an in self._neighs:
+                for _bn in self._constraint_data.get(_an, {}).get("boundary_nodes", []):
+                    if _bn not in _all_bn:
+                        _all_bn.append(_bn)
+            if _all_bn:
+                _node_snap = node
+                _text_snap = nl_text
+                _bn_snap = list(_all_bn)
+                nl_lbl.bind("<Enter>", lambda e, _n=_node_snap, _t=_text_snap, _bn=_bn_snap:
+                            self._draw_nl_mention_lines(_n, _t, _bn))
+                nl_lbl.bind("<Leave>", self._clear_hover_constraint_lines)
         else:
             # Formulaic mode (C1/C2): show count + visible-neighbour constraints only.
             # Filter configs to nodes visible in the graph (_node_pos) to avoid
@@ -6514,9 +6845,11 @@ class HumanTurnUI:
                 else:
                     cur_constraint = f"removes {restricted_nodes} config(s) (−{avg_pct:.0f}%)"
                     cur_fg = "#884400"
-                tk.Label(inner, text=f"  {total} configs — {cur_constraint}",
-                         font=("Arial", 8), fg=cur_fg,
-                         bg="white", anchor="w").pack(anchor="w")
+                _cur_lbl = tk.Label(inner, text=f"  {total} configs — {cur_constraint}",
+                                    font=("Arial", 8), fg=cur_fg,
+                                    bg="white", anchor="w", cursor="hand2")
+                _cur_lbl.pack(anchor="w")
+                _bind_hover(_cur_lbl, cur_key)
 
                 # Alternatives: per-row with count + constraint
                 other_valid = [
@@ -6537,7 +6870,7 @@ class HumanTurnUI:
                         else:
                             effect_text = f"  {cnt} configs — removes {r_nodes} config(s) (−{r_pct:.0f}%)"
                             eff_fg = "#884400"
-                        alt_row = tk.Frame(inner, bg="white")
+                        alt_row = tk.Frame(inner, bg="white", cursor="hand2")
                         alt_row.pack(anchor="w", pady=(1, 0))
                         tk.Label(alt_row, text="  ", bg="white").pack(side="left")
                         tk.Label(alt_row, text=f" {col} ",
@@ -6549,6 +6882,7 @@ class HumanTurnUI:
                         tk.Label(alt_row, text=effect_text,
                                  font=("Arial", 7), fg=eff_fg,
                                  bg="white").pack(side="left")
+                        _bind_hover(alt_row, col)
 
             elif current_colour:
                 tk.Label(inner, text="  No valid configs",
@@ -6573,7 +6907,7 @@ class HumanTurnUI:
                         else:
                             effect_text = f"  {cnt} configs — removes {r_nodes} config(s) (−{r_pct:.0f}%)"
                             eff_fg = "#884400"
-                        alt_row = tk.Frame(inner, bg="white")
+                        alt_row = tk.Frame(inner, bg="white", cursor="hand2")
                         alt_row.pack(anchor="w", pady=(1, 0))
                         tk.Label(alt_row, text="  ", bg="white").pack(side="left")
                         tk.Label(alt_row, text=f" {col} ",
@@ -6585,6 +6919,7 @@ class HumanTurnUI:
                         tk.Label(alt_row, text=effect_text,
                                  font=("Arial", 7), fg=eff_fg,
                                  bg="white").pack(side="left")
+                        _bind_hover(alt_row, col)
             else:
                 # Unassigned: show per-colour option counts + example configs for best colour
                 if colour_map:
@@ -6596,7 +6931,7 @@ class HumanTurnUI:
                                 continue
                             col_cfgs = colour_map.get(col, [])
                             r_nodes, r_pct = _compute_restrictions(col_cfgs)
-                            effect_row = tk.Frame(inner, bg="white")
+                            effect_row = tk.Frame(inner, bg="white", cursor="hand2")
                             effect_row.pack(anchor="w", pady=(1, 0))
                             tk.Label(effect_row, text="  ", bg="white").pack(side="left")
                             tk.Label(effect_row, text=f" {col} ",
@@ -6615,6 +6950,7 @@ class HumanTurnUI:
                             tk.Label(effect_row, text=effect_text,
                                      font=("Arial", 7), fg="#555",
                                      bg="white").pack(side="left")
+                            _bind_hover(effect_row, col)
                     else:
                         tk.Label(inner, text="  No valid options available",
                                  font=("Arial", 7, "italic"), fg="#cc0000",
