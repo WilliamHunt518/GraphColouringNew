@@ -1,3 +1,0 @@
-{"timestamp": "2026-04-08T10:35:58.468", "human_partial": {"h1": "red", "h2": null, "h3": null, "h4": null, "h5": null, "h6": null, "h7": null, "h8": null}, "feasibility_counts": {"Agent1": 6, "Agent2": 8}, "penalty": 0.0}
-{"timestamp": "2026-04-08T10:35:59.663", "human_partial": {"h1": "red", "h2": "green", "h3": null, "h4": null, "h5": null, "h6": null, "h7": null, "h8": null}, "feasibility_counts": {"Agent1": 6, "Agent2": 8}, "penalty": 0.0}
-{"timestamp": "2026-04-08T10:36:00.916", "human_partial": {"h1": "red", "h2": "green", "h3": "blue", "h4": null, "h5": null, "h6": null, "h7": null, "h8": null}, "feasibility_counts": {"Agent1": 6, "Agent2": 6}, "penalty": 0.0}

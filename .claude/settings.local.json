@@ -51,7 +51,10 @@
       "Bash(rm -rf results/c1_* results/c2_* results/c3_* results/llm_rb results/llm_tool results/rb results/participant_mapping.csv)",
       "Bash(rm -f conditional_builder_debug_*.log)",
       "Bash(source venv/Scripts/activate)",
-      "Bash(source venv/bin/activate)"
+      "Bash(source venv/bin/activate)",
+      "Bash(rm -rf \"G:/Files/Code/GraphColouringNew/results/2026-03-17\" \"G:/Files/Code/GraphColouringNew/results/2026-03-19\" \"G:/Files/Code/GraphColouringNew/results/2026-03-26\" \"G:/Files/Code/GraphColouringNew/results/2026-03-30\" \"G:/Files/Code/GraphColouringNew/results/2026-03-31\" \"G:/Files/Code/GraphColouringNew/results/2026-04-08\" \"G:/Files/Code/GraphColouringNew/results/participants\" \"G:/Files/Code/GraphColouringNew/results/old\" \"G:/Files/Code/GraphColouringNew/results/old_debug\" \"G:/Files/Code/GraphColouringNew/results/participant_mapping.csv\" \"G:/Files/Code/GraphColouringNew/results/\"*.txt \"G:/Files/Code/GraphColouringNew/results/\"*.log)",
+      "Bash(rm -rf \"G:/Files/Code/GraphColouringNew/logs/old\" \"G:/Files/Code/GraphColouringNew/logs/old_debug\" \"G:/Files/Code/GraphColouringNew/logs/\"*.txt \"G:/Files/Code/GraphColouringNew/logs/\"*.log)",
+      "Bash(kill %1)"
     ]
   }
 }

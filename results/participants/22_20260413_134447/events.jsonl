@@ -1,0 +1,4 @@
+{"ts": 1776084287.4635084, "event": "session_start", "participant_id": "22", "mode": "mode1", "graph": "study_12", "colours": ["red", "blue"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 3, "blue": 1}, "AgentA": {"red": 1, "blue": 4}, "AgentB": {"red": 2, "blue": 2}}}
+{"ts": 1776084287.5120451, "event": "attempt_start", "attempt": 1}
+{"ts": 1776084287.5121272, "event": "node_ready", "attempt": 1, "node": "n01", "node_index": 0}
+{"ts": 1776084287.512174, "event": "session_end", "total_attempts": 0, "score_trajectory": [], "session_elapsed_s": 0.05}

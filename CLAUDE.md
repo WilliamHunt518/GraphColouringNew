@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
 ## Project Overview
 
-This is a **research-grade prototype** for studying **human–agent coordination via language** in a **clustered graph-colouring** task with **partial observability**. The system is designed for rigorous academic experiments where determinism, logging, and observability constraints are critical.
+This is a **research-grade prototype** for studying **trust and collaboration with autonomous AI agents** via a graph-colouring task. The application is used in a human-subjects study with a **2×2 within-subjects design**.
 
 ## Running the Code
 
@@ -14,164 +14,136 @@ This is a **research-grade prototype** for studying **human–agent coordination
 python launch_menu.py
 ```
 
-This launches a GUI menu for configuring and running experiments. Defaults are designed to work out of the box.
+This opens a simple launcher to configure participant ID, mode, graph preset, and seed, then spawns the experiment window.
+
+### Direct Entry Point (for testing)
+
+```bash
+python run_experiment.py --participant P01 --mode mode1 --graph study_12
+python run_experiment.py --participant P01 --mode mode2a --graph study_12
+python run_experiment.py --participant P01 --mode mode2b --graph study_12
+```
 
 ### Python Environment
 
-The project uses a Python virtual environment (`venv/`). Activate it before running:
+The project uses system Python. Ensure Tkinter is available.
 
 ```bash
-# Windows
-venv\Scripts\activate
-
-# Unix/macOS
-source venv/bin/activate
+python -m tkinter   # should open a test window
 ```
-
-### API Key Configuration
-
-The OpenAI API key is stored in `api_key.txt` at the project root. This file should **never** be committed.
 
 ## Architecture
 
-### System Design
+### Study Design
 
-The graph is partitioned into 3 clusters in the default experiment:
+- **Mode 1 — Manual Collaborative**: At each node (in fixed sequential order), AI agents propose a colour with rationale. The human makes the final choice.
+- **Mode 2A — Autonomous (High Quality)**: A multi-agent deliberation pre-plans a full solution (~80% optimal choices). The human reviews and accepts/modifies each step.
+- **Mode 2B — Autonomous (Low Quality)**: Same as 2A but with ~30% optimal choices. Visually identical to 2A.
 
-```
-Agent1 ← → Human ← → Agent2
-```
+### Sequential Colouring
 
-Each participant (human or agent) controls one cluster and coordinates through boundary nodes.
+Nodes are coloured **one at a time in a fixed order** (no skipping or reordering). This forces path dependency and suboptimal local decisions — the study variable.
 
-### Partial Observability (CRITICAL - DO NOT BREAK)
+### Scoring
 
-- Each participant **fully sees** their own cluster (nodes + internal edges)
-- Each participant sees **only boundary neighbours** from other clusters
-- Neighbour colours are known only via:
-  - Explicit reports in messages
-  - Boundary-node colours visible through inter-cluster edges in the UI
-
-**Never leak hidden topology**. Neighbour node colours must not be shown unless they are boundary nodes AND the colour is known via assignment or report.
-
-### Termination Semantics
-
-The system does **not** auto-terminate on `penalty==0`. For the async chat UI, the run ends when **consensus** is reached:
-- Human ticks "I'm satisfied" in each neighbour chat window
-- Agent reports `agent.satisfied == True`
-
-When consensus is reached, UI closes with `ui.end_reason == "consensus"`.
+- Each participant (Human, AgentA, AgentB) earns points when a node is coloured with their assigned colour
+- All colourings are valid — no adjacency penalty
+- **Shared score** = sum of all individual scores
+- Defaults: Human earns 3/1 pts for Red/Blue; AgentA earns 1/4 for Red/Blue; AgentB earns 2/2
+- Blue is globally optimal (7 pts/node) but Human individually prefers Red (3 pts personal)
 
 ### Key Components
 
 ```
-launch_menu.py              # GUI launcher for experiments
-run_experiment.py           # Entry point for single run with config
-cluster_simulation.py       # Main simulation loop + UI wiring
-agents/cluster_agent.py     # Per-cluster solver + message generation
-agents/rule_based_cluster_agent.py  # RB mode agent
-comm/communication_layer.py # Renders structured messages to natural language
-ui/human_turn_ui.py         # Tkinter GUI (graph view + 2 async chat panes)
-problems/graph_coloring.py  # Graph coloring problem definition
+launch_menu.py         # GUI launcher
+run_experiment.py      # CLI entry point
+simulation.py          # ColourSession orchestrator (attempt loop)
+
+study/
+  config.py            # StudyConfig + dataclasses
+  graphs.py            # Graph presets (study_12, study_15)
+  session.py           # SessionManager — tracks in-progress attempt
+  logger.py            # StudyLogger — writes JSONL events
+
+problems/
+  graph_coloring.py    # GraphColoring (topology only — KEEP UNCHANGED)
+  scoring.py           # PointsScorer, ScoringResult
+
+agents/
+  proposal_agent.py    # Mode 1: per-node proposals with template rationales
+  planning_agent.py    # Mode 2: full-plan deliberation with quality bias
+
+ui/
+  graph_canvas.py      # GraphCanvas widget (pan/zoom graph display)
+  scoring_hud.py       # ScoringHUD widget (shared + individual scores)
+  colouring_ui.py      # ColourStudyWindow (main experiment window)
+  results_panel.py     # AttemptResultsWindow (end-of-attempt summary)
+  node_layouts.json    # Fractional node positions per preset
 ```
 
-### Data Flow (Async UI)
+### Data Logging
 
-1. Human edits colours by clicking owned nodes
-2. Human sends message in chat pane (Agent1 or Agent2)
-3. UI invokes `on_send(neigh, msg, current_assignments)` in background thread
-4. Simulation routes message to relevant agent controller
-5. Agent updates beliefs, runs local solver, responds
-6. UI updates: chat transcript, neighbour colours (from `[report: {...}]`), graph rendering
+All events written to `results/participants/<pid>_<timestamp>/events.jsonl`.
 
-### Agent Architecture
-
-Agents use configurable **local optimization algorithms**:
-- `"greedy"` — greedy colouring heuristic (default)
-- `"maxsum"` — exhaustive search
-
-
-### Local Optimality vs Satisfaction
-
-Clusters are small, so agents may "snap" to the best local assignment when greedy search stalls. This is **intentional** and improves stability in experiments.
-
-## Logging
-
-Outputs are written to `results/<mode>_<timestamp>/`:
-
-- `Agent1_log.txt`, `Agent2_log.txt`, `Human_log.txt` — per-participant logs
-- `communication_log.txt` — message exchange log
-- `iteration_summary.txt` — iteration-by-iteration summary
-- `results/llm_trace.jsonl` — LLM prompt/response/parse/render events (when enabled)
-
-Logs are appended incrementally so crashes yield partial traces.
+Key logged events:
+- `colour_chosen` — node, colour, source (`human`/`accepted_plan`/`modified_plan`), `decision_time_s`, `agents_agreed`
+- `explanation_click` — tracks when user expands agent rationale
+- `plan_modified` — tracks overrides in Mode 2 (plan_colour vs chosen_colour)
+- `attempt_complete` — final assignment, score breakdown, elapsed time
+- `session_end` — score trajectory across all attempts
 
 ## Development Guidelines
 
-### Key Files to Modify
+### Adding a New Graph Preset
 
-- **Message style/prompting**: `comm/communication_layer.py`
-- **Counterfactual enumeration**: `agents/cluster_agent.py`
-- **UI behaviour**: `ui/human_turn_ui.py`
-- **Orchestration/logging**: `cluster_simulation.py`
+1. Add a `GraphDef` entry to `study/graphs.py`
+2. Add node coordinates to `ui/node_layouts.json` (fractional 0–1 range, keyed by preset name)
+3. Add to `GRAPH_CONFIGS` and `NODE_REGIONS` dicts in `study/graphs.py`
 
-### Adding a New Communication Mode
+### Changing Scoring Weights
 
-1. Add mode to launcher dropdown in `launch_menu.py`
-2. Implement comm layer in `comm/` directory
-3. Wire agent creation to use it in `cluster_simulation.py`
-4. Ensure logs include LLM traces if required
+Edit `DEFAULT_POINTS` in `study/config.py`. All values are per-node, per-colour.
 
-### Indentation Hygiene
+### Modifying Agent Logic
 
-Python indentation errors have been a recurring integration hazard. When adding helpers:
-- Move helpers into a separate module file, OR
-- Keep helper functions inside the class with consistent indentation
+- **Mode 1 proposals**: `agents/proposal_agent.py` — `propose_for_node()` method
+- **Mode 2 plan**: `agents/planning_agent.py` — `_deliberate_node()` method; quality bias is in `generate_plan()`
 
-### Testing
+### Never Modify
 
-Run each mode from `launch_menu.py` and verify:
-- UI renders correctly
-- Messaging works bidirectionally
-- Neighbour visibility respects partial observability
-- Logs are generated correctly
+- `problems/graph_coloring.py` — used as-is for graph topology; do not change
+- `ui/node_layouts.json` node positions for existing presets (break existing studies)
 
 ## Critical Constraints
 
-1. **Partial observability**: Never expose hidden topology or non-boundary nodes
-2. **Determinism**: System must produce reproducible results for research validity
-3. **No auto-termination**: System does not stop on penalty==0; requires consensus
-4. **LLM role**: LLMs are communication layers only, not problem solvers
-5. **Logging fidelity**: All agent reasoning and messages must be logged
+1. **No LLMs** — all agent logic is deterministic and rule-based
+2. **Determinism** — seeded `random.Random` ensures reproducibility across sessions
+3. **No auto-termination** — user always explicitly finishes via the results window
+4. **Logging fidelity** — all decisions must be logged with timestamps
+5. **UI language** — use "agent" or "assistant", never "AI" or "LLM"
 
-## Common Issues
+## Legacy Files
 
-See `docs/TROUBLESHOOTING.md` for detailed troubleshooting. Quick checks:
+The following files are from the previous implementation and are **not imported** by the new code. They are kept for reference but should be ignored:
 
-- **UI closes instantly**: Check `cluster_simulation.py` UI branch and ensure UI loop blocks
-- **No agent replies**: Check `ui/human_turn_ui.py` background thread + `on_send` callback signature
-- **Consensus never ends**: Ensure agents update `agent.satisfied` and UI polling is running
+- `cluster_simulation.py` — old orchestration layer
+- `study_launcher.py` — old multi-condition launcher
+- `agents/cluster_agent.py` and variants
+- `comm/` — LLM communication layers
+- `docs/` — old architecture docs
 
 ## Project Structure
 
 ```
 .
-├── agents/              # Agent implementations
-├── comm/                # Communication layer implementations
-├── problems/            # Problem definitions (graph coloring)
-├── ui/                  # Tkinter UI components
-├── docs/                # Additional documentation
-├── results/             # Experimental outputs (gitignored)
-├── test_output/         # Test run outputs (gitignored)
-├── launch_menu.py       # Main launcher
-├── run_experiment.py    # Programmatic experiment runner
-├── cluster_simulation.py # Simulation orchestrator
-└── api_key.txt          # OpenAI API key (gitignored)
+├── agents/                # Agent implementations (new: proposal_agent, planning_agent)
+├── comm/                  # Legacy (unused)
+├── docs/                  # Legacy docs (unused)
+├── problems/              # Problem definitions
+├── study/                 # Study management (config, session, logger, graphs)
+├── ui/                    # Tkinter UI components
+├── results/               # Experimental outputs (gitignored)
+├── launch_menu.py         # Main launcher
+├── run_experiment.py      # CLI entry point
+└── simulation.py          # Session orchestrator
 ```
-
-## Additional Documentation
-
-- `README.md` — High-level overview and quick start
-- `docs/ARCHITECTURE.md` — Detailed architecture notes
-- `docs/DEVELOPER_GUIDE.md` — Where to change things
-- `docs/TROUBLESHOOTING.md` — Common issues and solutions

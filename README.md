@@ -1,105 +1,60 @@
-# GraphColouringNew — Human–Agent Coordination Prototype
+# Graph Colouring Trust Study
 
-This repository implements a **research-grade** prototype for studying **human–agent coordination via language**
-in a **clustered graph-colouring** task with **partial observability**.
+An interactive graph-colouring application for a human-subjects study on **trust and collaboration with autonomous AI agents**.
 
-The system is **not a toy**: determinism, logging, and correctness of observability boundaries are treated as first-class
-engineering constraints.
-
----
-
-## What you can run (normal workflow)
-
-**Run the launcher** (this is the standard entry-point):
+## Quick Start
 
 ```bash
 python launch_menu.py
 ```
 
-Defaults are designed to work. Select a communication mode from the dropdown, then run.
+## Overview
 
-Modes (within-subject conditions):
+Participants colour a graph node-by-node (in a fixed sequential order) in collaboration with AI agents. The goal is to maximise a shared score — each participant earns points when nodes are assigned their preferred colour.
 
-- `RB` — rule-based argumentation (no LLM)
-- `LLM_U` — utility-oriented language
-- `LLM_C` — constraint-oriented language
-- `LLM_F` — free-form negotiation
-- (optional) `LLM_RB` — NL → RB grammar → NL (if enabled in the codebase)
+The study uses a **2×2 within-subjects design**:
 
-> LLMs are used as a **communication / interpretation layer only**. They do **not** solve the optimisation problem.
+| Condition | Session 1 | Session 2 |
+|---|---|---|
+| A | Mode 1 | Mode 2A |
+| B | Mode 2A | Mode 1 |
+| C | Mode 1 | Mode 2B |
+| D | Mode 2B | Mode 1 |
 
----
+### Mode 1 — Manual Collaborative
 
-## Core research assumptions (do not break)
+At each node, agents each propose a colour with a brief rationale. The human makes the final choice. Proposals can be expanded for fuller reasoning (tracked for analysis).
 
-### Partial observability (critical)
+### Mode 2A — Autonomous Planning (High Quality)
 
-- Each participant (human or agent) **fully** sees its **own cluster** (nodes + internal edges).
-- Each participant sees **only boundary neighbours** from other clusters.
-- A participant may only know neighbour colours via:
-  - explicit reports embedded in messages, and/or
-  - boundary-node colours implied by the visible inter-cluster edges in the UI.
+Before colouring begins, the autonomous agent system runs a multi-agent deliberation to produce a complete proposed solution. The plan is presented step-by-step — the human can accept, request an explanation, or modify each step. Mode 2A produces near-optimal plans (~80% of the time).
 
-### Termination semantics
+### Mode 2B — Autonomous Planning (Low Quality)
 
-The system does **not** auto-terminate on penalty==0.
+Identical UI to Mode 2A, but the underlying plan is frequently suboptimal (~30% optimal choices). Designed to measure overtrust.
 
-For the **async chat UI**, the run ends when **consensus** is reached:
+## Scoring
 
-- For each neighbour chat window:
-  - the **human** ticks “I’m satisfied”, and
-  - the **agent** reports itself satisfied (internally `agent.satisfied == True`)
+- **Human**: earns 3 pts per Red node, 1 pt per Blue node
+- **AgentA**: earns 1 pt per Red node, 4 pts per Blue node
+- **AgentB**: earns 2 pts per Red or Blue node
+- **Shared score** (displayed prominently): sum of all individual scores
+- Blue gives 7 pts/node total; Red gives 6 pts/node — but Human individually prefers Red
 
-When consensus is reached, the UI closes and `ui.end_reason == "consensus"`.
+Participants can attempt the same graph up to 3 times, with the expectation of improving over iterations.
 
----
+## Data Collected
 
-## Logging (important)
+All events are logged to `results/participants/<pid>_<timestamp>/events.jsonl`:
 
-Outputs are written under `results/<mode>_<timestamp>/` and include:
+- Per-node decision time
+- Explanation click-throughs
+- Override rate (Mode 2: how often human modifies the agent's plan)
+- Score trajectory across 3 attempts
+- Agent agreement patterns
 
-- `Agent1_log.txt`, `Agent2_log.txt`, `Human_log.txt`
-- `communication_log.txt`
-- `iteration_summary.txt`
-- `results/llm_trace.jsonl` (prompt/response/parse/render events where enabled)
+## Configuration
 
-The logs are appended incrementally so crashes still yield partial traces.
+All parameters (graph topology, score weights, quality ratios, number of attempts) are configurable in `study/config.py` and `study/graphs.py`.
 
----
-
-## Code structure (high-level)
-
-- `launch_menu.py` — UI launcher used during development and experiments
-- `run_experiment.py` — experiment entry for one run (mode selection, config)
-- `cluster_simulation.py` — clustered simulation loop + UI wiring
-- `agents/cluster_agent.py` — per-cluster solver + message generation
-- `comm/communication_layer.py` — renders structured messages into human-facing text
-- `ui/human_turn_ui.py` — Tkinter GUI (graph view + 2 async chat panes + debug window)
-
-Documentation lives in `docs/`.
-
----
-
-## Development notes
-
-### Avoid indentation drift bugs
-
-Python indentation errors have been a recurring integration hazard.
-If you add helpers, prefer:
-- moving helpers into a separate module file, or
-- keeping helper functions *inside* the class with consistent indentation.
-
-### Local optimality vs satisfaction
-
-Clusters are small, so the agent may “snap” to the best local assignment when greedy search stalls.
-This is intentional and improves stability in experiments.
-
----
-
-## Quick troubleshooting
-
-- **UI closes instantly**: check `cluster_simulation.py` UI branch and ensure the UI loop blocks.
-- **No agent replies**: check `ui/human_turn_ui.py` background thread + `on_send` callback signature.
-- **Consensus never ends**: ensure agents update `agent.satisfied` and UI polling is running.
-
-See `docs/TROUBLESHOOTING.md` for more.
+See `CLAUDE.md` for developer documentation.

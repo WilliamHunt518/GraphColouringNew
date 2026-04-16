@@ -1,0 +1,15 @@
+{"ts": 1776181054.6293936, "event": "session_start", "participant_id": "P20260414_163734", "mode": "mode1", "graph": "study_12", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
+{"ts": 1776181054.6849923, "event": "attempt_start", "attempt": 1}
+{"ts": 1776181054.785993, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
+{"ts": 1776181054.7931368, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776181058.6769624, "event": "colour_chosen", "attempt": 1, "node": "H1", "colour": "red", "source": "human", "decision_time_s": 3.891, "agents_agreed": false}
+{"ts": 1776181058.8789434, "event": "node_ready", "attempt": 1, "node": "H2", "node_index": 1}
+{"ts": 1776181058.8848293, "event": "proposals_shown", "attempt": 1, "node": "H2", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776181060.1930046, "event": "colour_chosen", "attempt": 1, "node": "H2", "colour": "green", "source": "human", "decision_time_s": 1.314, "agents_agreed": false}
+{"ts": 1776181060.3940532, "event": "node_ready", "attempt": 1, "node": "H3", "node_index": 2}
+{"ts": 1776181060.3997772, "event": "proposals_shown", "attempt": 1, "node": "H3", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776181069.300722, "event": "colour_chosen", "attempt": 1, "node": "H3", "colour": "green", "source": "human", "decision_time_s": 8.907, "agents_agreed": false}
+{"ts": 1776181069.5017903, "event": "node_ready", "attempt": 1, "node": "H4", "node_index": 3}
+{"ts": 1776181069.5073445, "event": "proposals_shown", "attempt": 1, "node": "H4", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776181085.7794323, "event": "abandonment", "attempt": 1, "node_index": 3, "reason": "window_closed"}
+{"ts": 1776181085.7988353, "event": "session_end", "total_attempts": 0, "score_trajectory": [], "session_elapsed_s": 31.39}

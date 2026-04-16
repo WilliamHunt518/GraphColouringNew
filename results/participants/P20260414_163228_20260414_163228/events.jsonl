@@ -1,0 +1,12 @@
+{"ts": 1776180748.5097826, "event": "session_start", "participant_id": "P20260414_163228", "mode": "mode1", "graph": "study_12", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
+{"ts": 1776180748.56078, "event": "attempt_start", "attempt": 1}
+{"ts": 1776180748.6609955, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
+{"ts": 1776180748.6705506, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776180751.0494342, "event": "colour_chosen", "attempt": 1, "node": "H1", "colour": "red", "source": "human", "decision_time_s": 2.388, "agents_agreed": false}
+{"ts": 1776180751.2513413, "event": "node_ready", "attempt": 1, "node": "H2", "node_index": 1}
+{"ts": 1776180751.2607746, "event": "proposals_shown", "attempt": 1, "node": "H2", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776180754.4613087, "event": "colour_chosen", "attempt": 1, "node": "H2", "colour": "green", "source": "human", "decision_time_s": 3.21, "agents_agreed": false}
+{"ts": 1776180754.6624002, "event": "node_ready", "attempt": 1, "node": "H3", "node_index": 2}
+{"ts": 1776180754.671494, "event": "proposals_shown", "attempt": 1, "node": "H3", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "green"}]}
+{"ts": 1776180758.1622202, "event": "abandonment", "attempt": 1, "node_index": 2, "reason": "window_closed"}
+{"ts": 1776180758.184874, "event": "session_end", "total_attempts": 0, "score_trajectory": [], "session_elapsed_s": 9.69}
