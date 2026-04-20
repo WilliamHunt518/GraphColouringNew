@@ -1,0 +1,5 @@
+{"ts": 1776426304.2167234, "event": "game_start", "seed": 42, "n_robots": 12, "duration": 120, "window_w": 2048, "window_h": 1152}
+{"ts": 1776426315.0036554, "event": "clash_start", "elapsed": 9.00800000000002, "pairs": [[5, 9]]}
+{"ts": 1776426317.193717, "event": "switch_requested", "robot_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 11.180999999999989}
+{"ts": 1776426322.1857433, "event": "clash_end", "elapsed": 16.189999999999895, "clash_seconds_so_far": 7.18200000000003}
+{"ts": 1776426338.6959796, "event": "quit", "elapsed": 32.67999999999888, "clash_seconds": 7.18200000000003}
