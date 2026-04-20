@@ -380,6 +380,212 @@ S18_3C_XABC = GraphDef(
 
 
 # ===========================================================================
+# Hub-topology graphs
+#
+# Each cluster is a star: one hub node connected to all satellites.
+# Human hub (H1) connects directly to agent hub nodes, so the human's
+# very first choice cascades through the hub to block an entire colour
+# from all of the agent's satellite nodes.
+#
+# Variants:
+#   hub12      — 12 nodes (4 each), cross-edges H1-A1 and H1-B1
+#   hub12_tri  — same + A1-B1 edge, closing a 3-hub triangle; forces all
+#                three hubs to distinct colours
+#   hub15_deep — 15 nodes (5 each), hub triangle + H2-A1 and H3-B1 so
+#                two human satellite nodes also constrain each agent hub
+# ===========================================================================
+
+_HUB12_NODES = ["H1", "H2", "H3", "H4", "A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4"]
+_HUB12_REGIONS: Dict[str, str] = {
+    "H1": "Human", "H2": "Human", "H3": "Human", "H4": "Human",
+    "A1": "AgentA", "A2": "AgentA", "A3": "AgentA", "A4": "AgentA",
+    "B1": "AgentB", "B2": "AgentB", "B3": "AgentB", "B4": "AgentB",
+}
+
+_HUB15_NODES = [
+    "H1", "H2", "H3", "H4", "H5",
+    "A1", "A2", "A3", "A4", "A5",
+    "B1", "B2", "B3", "B4", "B5",
+]
+_HUB15_REGIONS: Dict[str, str] = {
+    "H1": "Human", "H2": "Human", "H3": "Human", "H4": "Human", "H5": "Human",
+    "A1": "AgentA", "A2": "AgentA", "A3": "AgentA", "A4": "AgentA", "A5": "AgentA",
+    "B1": "AgentB", "B2": "AgentB", "B3": "AgentB", "B4": "AgentB", "B5": "AgentB",
+}
+
+# Star interiors — hub connects to every satellite
+_HUB12_INT = [
+    ("H1", "H2"), ("H1", "H3"), ("H1", "H4"),
+    ("A1", "A2"), ("A1", "A3"), ("A1", "A4"),
+    ("B1", "B2"), ("B1", "B3"), ("B1", "B4"),
+]
+
+_HUB15_INT = [
+    ("H1", "H2"), ("H1", "H3"), ("H1", "H4"), ("H1", "H5"),
+    ("A1", "A2"), ("A1", "A3"), ("A1", "A4"), ("A1", "A5"),
+    ("B1", "B2"), ("B1", "B3"), ("B1", "B4"), ("B1", "B5"),
+]
+
+# Cross-edge building blocks
+_HUB_CROSS_HA  = [("H1", "A1")]
+_HUB_CROSS_HB  = [("H1", "B1")]
+_HUB_TRI       = [("A1", "B1")]            # closes the 3-hub triangle
+_HUB15_EXTRA   = [("H2", "A1"), ("H3", "B1")]  # satellite→hub, double-constrains hubs
+
+
+HUB12 = GraphDef(
+    name="hub12",
+    nodes=_HUB12_NODES,
+    edges=_HUB12_INT + _HUB_CROSS_HA + _HUB_CROSS_HB,
+    node_order=_HUB12_NODES,
+    layout_preset="hub12",
+    colours=["red", "blue", "green"],
+    points_config=DEFAULT_POINTS,
+    agent_configs=DEFAULT_AGENTS,
+)
+
+HUB12_TRI = GraphDef(
+    name="hub12_tri",
+    nodes=_HUB12_NODES,
+    edges=_HUB12_INT + _HUB_CROSS_HA + _HUB_CROSS_HB + _HUB_TRI,
+    node_order=_HUB12_NODES,
+    layout_preset="hub12",
+    colours=["red", "blue", "green"],
+    points_config=DEFAULT_POINTS,
+    agent_configs=DEFAULT_AGENTS,
+)
+
+HUB15_DEEP = GraphDef(
+    name="hub15_deep",
+    nodes=_HUB15_NODES,
+    edges=_HUB15_INT + _HUB_CROSS_HA + _HUB_CROSS_HB + _HUB_TRI + _HUB15_EXTRA,
+    node_order=_HUB15_NODES,
+    layout_preset="hub15",
+    colours=["red", "blue", "green"],
+    points_config=DEFAULT_POINTS,
+    agent_configs=DEFAULT_AGENTS,
+)
+
+
+# ---------------------------------------------------------------------------
+# hub18 — 18 nodes (6 per cluster), hub topology enriched with extra links
+#
+# Internal structure (per cluster): star hub→all-5-satellites plus two
+# satellite-pair edges (X2-X3 and X4-X5), creating local triangles with
+# the hub and adding intra-cluster colour pressure.
+#
+# Cross-edge structure:
+#   Hub triangle:     H1-A1, H1-B1, A1-B1  (forces all 3 hubs to distinct colours)
+#   H→A satellite:   H3-A2  (H3 is in the H2-H3 pair; A2 is in the A2-A3 pair)
+#   H→B satellite:   H5-B3  (H5 is in the H4-H5 pair; B3 is in the B2-B3 pair)
+#   A↔B satellite:   A4-B4  (A4 is in the A4-A5 pair; B4 is in the B4-B5 pair)
+#
+# Cascade example (H1=Red):
+#   A1≠Red, B1≠Red, A1≠B1 → hubs get Blue/Green in some order.
+#   If A1=Blue → A2,A3,A4,A5,A6≠Blue; A2-A3 edge further constrains A2,A3.
+#   H3 (in the H2-H3 pair, so H3≠H2) also constrains A2 via H3-A2.
+#   A4-B4 edge means A4's colour also restricts B4.
+# ---------------------------------------------------------------------------
+
+_HUB18_NODES = [
+    "H1", "H2", "H3", "H4", "H5", "H6",
+    "A1", "A2", "A3", "A4", "A5", "A6",
+    "B1", "B2", "B3", "B4", "B5", "B6",
+]
+_HUB18_REGIONS: Dict[str, str] = {
+    "H1": "Human", "H2": "Human", "H3": "Human",
+    "H4": "Human", "H5": "Human", "H6": "Human",
+    "A1": "AgentA", "A2": "AgentA", "A3": "AgentA",
+    "A4": "AgentA", "A5": "AgentA", "A6": "AgentA",
+    "B1": "AgentB", "B2": "AgentB", "B3": "AgentB",
+    "B4": "AgentB", "B5": "AgentB", "B6": "AgentB",
+}
+
+# Star (hub→all satellites) + two satellite-pair edges per cluster
+_HUB18_INT = [
+    ("H1", "H2"), ("H1", "H3"), ("H1", "H4"), ("H1", "H5"), ("H1", "H6"),
+    ("H2", "H3"), ("H4", "H5"),
+    ("A1", "A2"), ("A1", "A3"), ("A1", "A4"), ("A1", "A5"), ("A1", "A6"),
+    ("A2", "A3"), ("A4", "A5"),
+    ("B1", "B2"), ("B1", "B3"), ("B1", "B4"), ("B1", "B5"), ("B1", "B6"),
+    ("B2", "B3"), ("B4", "B5"),
+]
+
+# Hub triangle + satellite cross-links threading through the satellite pairs
+_HUB18_CROSS = [
+    ("H1", "A1"), ("H1", "B1"), ("A1", "B1"),  # hub triangle
+    ("H3", "A2"),                                # H2-H3 pair → A2-A3 pair
+    ("H5", "B3"),                                # H4-H5 pair → B2-B3 pair
+    ("A4", "B4"),                                # A4-A5 pair ↔ B4-B5 pair
+]
+
+HUB18 = GraphDef(
+    name="hub18",
+    nodes=_HUB18_NODES,
+    edges=_HUB18_INT + _HUB18_CROSS,
+    node_order=_HUB18_NODES,
+    layout_preset="hub18",
+    colours=["red", "blue", "green"],
+    points_config=DEFAULT_POINTS,
+    agent_configs=DEFAULT_AGENTS,
+)
+
+
+# ---------------------------------------------------------------------------
+# hub18b — asymmetric variant of hub18
+#
+# Each cluster has a different internal sub-structure so the constraint
+# patterns differ noticeably between agents:
+#
+#   Human  — hub + H2-H3-H4 chain (two triangles with hub: H1-H2-H3 and
+#             H1-H3-H4); H5 and H6 hang freely off the hub.
+#   AgentA — hub + two separate satellite pairs (A3-A4, A5-A6); A2 hangs
+#             freely. The two pairs are independent of each other.
+#   AgentB — hub + B2-B3-B4 chain (same topology as human's chain, but
+#             differently wired cross-cluster); B5 and B6 hang freely.
+#
+# Cross-edges (all distinct from hub18):
+#   Hub triangle:   H1-A1, H1-B1, A1-B1
+#   H4→A3          (chain-end of human → first member of A's A3-A4 pair)
+#   H2→B2          (chain-start of human → chain-start of B)
+#   A6↔B6          (the free leaves of A and B are cross-linked)
+#
+# Result: human choices propagate differently into A (via H4) and B (via H2).
+# A6-B6 creates a lateral constraint independent of the hub chain.
+# ---------------------------------------------------------------------------
+
+_HUB18B_INT = [
+    # Human: hub star + H2-H3-H4 chain
+    ("H1", "H2"), ("H1", "H3"), ("H1", "H4"), ("H1", "H5"), ("H1", "H6"),
+    ("H2", "H3"), ("H3", "H4"),
+    # AgentA: hub star + two disjoint satellite pairs
+    ("A1", "A2"), ("A1", "A3"), ("A1", "A4"), ("A1", "A5"), ("A1", "A6"),
+    ("A3", "A4"), ("A5", "A6"),
+    # AgentB: hub star + B2-B3-B4 chain
+    ("B1", "B2"), ("B1", "B3"), ("B1", "B4"), ("B1", "B5"), ("B1", "B6"),
+    ("B2", "B3"), ("B3", "B4"),
+]
+
+_HUB18B_CROSS = [
+    ("H1", "A1"), ("H1", "B1"), ("A1", "B1"),  # hub triangle
+    ("H4", "A3"),                                # human chain-end → A's A3-A4 pair
+    ("H2", "B2"),                                # human chain-start → B's chain-start
+    ("A6", "B6"),                                # free leaves cross-linked
+]
+
+HUB18B = GraphDef(
+    name="hub18b",
+    nodes=_HUB18_NODES,
+    edges=_HUB18B_INT + _HUB18B_CROSS,
+    node_order=_HUB18_NODES,
+    layout_preset="hub18b",
+    colours=["red", "blue", "green"],
+    points_config=DEFAULT_POINTS,
+    agent_configs=DEFAULT_AGENTS,
+)
+
+
+# ===========================================================================
 # Registry
 # ===========================================================================
 
@@ -404,6 +610,12 @@ GRAPH_CONFIGS = {
     # 24-node 4-agent (s18 + C)
     "s18_3c_c":      S18_3C_C,
     "s18_3c_xabc":   S18_3C_XABC,
+    # hub-topology 3-agent
+    "hub12":         HUB12,
+    "hub12_tri":     HUB12_TRI,
+    "hub15_deep":    HUB15_DEEP,
+    "hub18":         HUB18,
+    "hub18b":        HUB18B,
 }
 
 NODE_REGIONS = {
@@ -421,6 +633,11 @@ NODE_REGIONS = {
     "s12_3c_xabc":   _S12C_REGIONS,
     "s18_3c_c":      _S18C_REGIONS,
     "s18_3c_xabc":   _S18C_REGIONS,
+    "hub12":         _HUB12_REGIONS,
+    "hub12_tri":     _HUB12_REGIONS,
+    "hub15_deep":    _HUB15_REGIONS,
+    "hub18":         _HUB18_REGIONS,
+    "hub18b":        _HUB18_REGIONS,
 }
 
 

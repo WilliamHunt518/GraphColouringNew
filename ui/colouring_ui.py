@@ -727,16 +727,57 @@ class ColourStudyWindow:
 
     def _advance_plan(self) -> None:
         self._current_plan_step_index += 1
-        if not self._session.is_complete:
-            self._session.mark_node_ready()
-            self._logger.log_node_ready(
-                self._attempt,
-                self._session.current_node,
-                self._session.current_index,
-            )
+        if self._session.is_complete:
+            self._finish_attempt()
+        else:
+            self._root.after(200, self._advance_to_next_human_plan_step)
+
+    def _advance_to_next_human_plan_step(self) -> None:
+        """
+        Walk the plan forward, auto-applying agent-owned steps with a brief visual
+        pause between each, until we reach a Human node or the end.
+        """
+        node = self._session.current_node
+        if node is None:
+            self._finish_attempt()
+            return
+
+        self._session.mark_node_ready()
+        self._logger.log_node_ready(self._attempt, node, self._session.current_index)
+
+        region = self._config.node_regions.get(node, "")
+        if region == self._config.human_name:
             self._refresh_mode2_step()
         else:
-            self._finish_attempt()
+            self._auto_apply_plan_step(node)
+            if self._session.is_complete:
+                self._root.after(300, self._finish_attempt)
+            else:
+                self._root.after(500, self._advance_to_next_human_plan_step)
+
+    def _auto_apply_plan_step(self, node: str) -> None:
+        """Apply the plan's colour for an agent-owned node without human interaction."""
+        if self._plan is None or self._current_plan_step_index >= len(self._plan.steps):
+            return
+        step = self._plan.steps[self._current_plan_step_index]
+        colour = step.colour
+
+        decision = self._session.record_decision(
+            colour=colour,
+            source="agent_auto",
+            explanation_clicked=False,
+            agents_agreed=True,
+        )
+        self._logger.log_colour_chosen(
+            attempt=self._attempt,
+            node=node,
+            colour=colour,
+            source="agent_auto",
+            decision_time_s=decision.decision_time_s,
+            agents_agreed=True,
+        )
+        self._post_decision(node, colour)
+        self._current_plan_step_index += 1
 
     # ------------------------------------------------------------------
     # Shared helpers
@@ -1031,13 +1072,7 @@ class ColourStudyWindow:
                 btn.config(state=tk.DISABLED)
             self._root.after(100, self._advance_to_next_human_node)
         else:
-            self._session.mark_node_ready()
-            self._logger.log_node_ready(
-                self._attempt,
-                self._session.current_node,
-                self._session.current_index,
-            )
-            self._root.after(100, self._refresh_mode2_step)
+            self._root.after(100, self._advance_to_next_human_plan_step)
 
         if self._owns_root:
             self._root.mainloop()

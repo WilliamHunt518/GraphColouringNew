@@ -1,0 +1,6 @@
+{"ts": 1776681855.0583644, "event": "session_start", "participant_id": "P20260420_114414", "mode": "mode1", "graph": "hub18", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
+{"ts": 1776681855.1096168, "event": "attempt_start", "attempt": 1}
+{"ts": 1776681855.2098346, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
+{"ts": 1776681855.216933, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "blue"}]}
+{"ts": 1776682051.4959462, "event": "abandonment", "attempt": 1, "node_index": 0, "reason": "window_closed"}
+{"ts": 1776682051.5177221, "event": "session_end", "total_attempts": 0, "score_trajectory": [], "session_elapsed_s": 196.46}

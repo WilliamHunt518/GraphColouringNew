@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from study.config import AgentConfig, ColourPointsConfig
 from agents.proposal_agent import ProposalAgent
@@ -64,6 +64,7 @@ class PlanningAgent:
         agent_configs: List[AgentConfig],
         points_config: ColourPointsConfig,
         node_order: List[str],
+        edges: List[Tuple[str, str]],
         quality: float = 0.8,
         seed: int = 42,
     ) -> None:
@@ -72,6 +73,7 @@ class PlanningAgent:
         ]
         self._points = points_config
         self._node_order = node_order
+        self._edges = edges
         self._quality = quality
         self._base_seed = seed
         self._shared_totals = points_config.total_per_colour()
@@ -163,8 +165,24 @@ class PlanningAgent:
         """
         log: List[str] = [f"  Node {node}:"]
 
-        # Collect agent votes (self-interested, no adjacency logic needed for planning)
-        votes: Dict[str, int] = {c: 0 for c in self._points.colours}
+        # Find colours already used by adjacent nodes (would cause a clash)
+        adjacent_colours: set[str] = set()
+        for u, v in self._edges:
+            if u == node and v in current_assignment:
+                adjacent_colours.add(current_assignment[v])
+            elif v == node and u in current_assignment:
+                adjacent_colours.add(current_assignment[u])
+
+        all_colours = self._points.colours
+        safe_colours = [c for c in all_colours if c not in adjacent_colours]
+        candidates = safe_colours if safe_colours else list(all_colours)
+
+        if adjacent_colours:
+            log.append(f"    Adjacent colours already placed: {sorted(adjacent_colours)}")
+            log.append(f"    Safe candidates: {candidates}")
+
+        # Collect agent votes (self-interested)
+        votes: Dict[str, int] = {c: 0 for c in all_colours}
         agent_votes: Dict[str, tuple] = {}   # name -> (colour, rationale)
         for agent in self._agents:
             colour, rationale = agent.vote_for_colour()
@@ -175,14 +193,16 @@ class PlanningAgent:
                 f"({agent.preferred_colour.capitalize()} preferred)"
             )
 
-        # Determine winner by quality-biased selection
+        # Best safe colour by shared score
+        best_safe = max(candidates, key=lambda c: self._shared_totals.get(c, 0))
+
+        # Quality-biased selection among safe candidates only
         if rng.random() < self._quality:
-            chosen = self._optimal_colour
-            selection_method = "shared-optimal"
+            chosen = best_safe
+            selection_method = "shared-optimal (safe)"
         else:
-            # Random selection (weighted by votes as a tiebreaker, but random)
-            chosen = rng.choice(self._points.colours)
-            selection_method = "random exploration"
+            chosen = rng.choice(candidates)
+            selection_method = "random exploration (safe)"
 
         shared_score = self._shared_totals.get(chosen, 0)
         log.append(

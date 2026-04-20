@@ -1,0 +1,63 @@
+{"ts": 1776681237.049986, "event": "session_start", "participant_id": "P20260420_113356", "mode": "mode1", "graph": "hub12_tri", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
+{"ts": 1776681237.112447, "event": "attempt_start", "attempt": 1}
+{"ts": 1776681237.2158053, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
+{"ts": 1776681237.2249682, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "red"}]}
+{"ts": 1776681250.7103155, "event": "colour_chosen", "attempt": 1, "node": "H1", "colour": "red", "source": "human", "decision_time_s": 13.494, "agents_agreed": false}
+{"ts": 1776681250.9363556, "event": "node_ready", "attempt": 1, "node": "H2", "node_index": 1}
+{"ts": 1776681250.941354, "event": "proposals_shown", "attempt": 1, "node": "H2", "proposals": []}
+{"ts": 1776681252.9033477, "event": "colour_chosen", "attempt": 1, "node": "H2", "colour": "green", "source": "human", "decision_time_s": 1.967, "agents_agreed": false}
+{"ts": 1776681253.1111434, "event": "node_ready", "attempt": 1, "node": "H3", "node_index": 2}
+{"ts": 1776681253.1151195, "event": "proposals_shown", "attempt": 1, "node": "H3", "proposals": []}
+{"ts": 1776681253.6442997, "event": "colour_chosen", "attempt": 1, "node": "H3", "colour": "green", "source": "human", "decision_time_s": 0.533, "agents_agreed": false}
+{"ts": 1776681253.8568528, "event": "node_ready", "attempt": 1, "node": "H4", "node_index": 3}
+{"ts": 1776681253.8606186, "event": "proposals_shown", "attempt": 1, "node": "H4", "proposals": []}
+{"ts": 1776681254.1272216, "event": "colour_chosen", "attempt": 1, "node": "H4", "colour": "green", "source": "human", "decision_time_s": 0.27, "agents_agreed": false}
+{"ts": 1776681254.339301, "event": "node_ready", "attempt": 1, "node": "A1", "node_index": 4}
+{"ts": 1776681254.3393543, "event": "colour_chosen", "attempt": 1, "node": "A1", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681254.8408573, "event": "node_ready", "attempt": 1, "node": "A2", "node_index": 5}
+{"ts": 1776681254.8409111, "event": "colour_chosen", "attempt": 1, "node": "A2", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681255.3458333, "event": "node_ready", "attempt": 1, "node": "A3", "node_index": 6}
+{"ts": 1776681255.3458781, "event": "colour_chosen", "attempt": 1, "node": "A3", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681255.8585687, "event": "node_ready", "attempt": 1, "node": "A4", "node_index": 7}
+{"ts": 1776681255.8586223, "event": "colour_chosen", "attempt": 1, "node": "A4", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681256.3698637, "event": "node_ready", "attempt": 1, "node": "B1", "node_index": 8}
+{"ts": 1776681256.3699183, "event": "colour_chosen", "attempt": 1, "node": "B1", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681256.882692, "event": "node_ready", "attempt": 1, "node": "B2", "node_index": 9}
+{"ts": 1776681256.8827477, "event": "colour_chosen", "attempt": 1, "node": "B2", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681257.3870707, "event": "node_ready", "attempt": 1, "node": "B3", "node_index": 10}
+{"ts": 1776681257.387115, "event": "colour_chosen", "attempt": 1, "node": "B3", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681257.8911395, "event": "node_ready", "attempt": 1, "node": "B4", "node_index": 11}
+{"ts": 1776681257.8911927, "event": "colour_chosen", "attempt": 1, "node": "B4", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681258.1929994, "event": "attempt_complete", "attempt": 1, "assignment": {"H1": "red", "H2": "green", "H3": "green", "H4": "green", "A1": "blue", "A2": "green", "A3": "green", "A4": "green", "B1": "green", "B2": "red", "B3": "red", "B4": "red"}, "score": {"total": 91, "by_owner": {"Human": 31, "AgentA": 22, "AgentB": 38}}, "elapsed_s": 21.1}
+{"ts": 1776681259.7892594, "event": "replay_requested", "attempt": 1}
+{"ts": 1776681259.8041272, "event": "attempt_start", "attempt": 2}
+{"ts": 1776681259.9059007, "event": "node_ready", "attempt": 2, "node": "H1", "node_index": 0}
+{"ts": 1776681259.9115334, "event": "proposals_shown", "attempt": 2, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "red"}]}
+{"ts": 1776681270.1548138, "event": "colour_chosen", "attempt": 2, "node": "H1", "colour": "green", "source": "human", "decision_time_s": 10.249, "agents_agreed": false}
+{"ts": 1776681270.3560872, "event": "node_ready", "attempt": 2, "node": "H2", "node_index": 1}
+{"ts": 1776681270.3607392, "event": "proposals_shown", "attempt": 2, "node": "H2", "proposals": []}
+{"ts": 1776681271.052842, "event": "colour_chosen", "attempt": 2, "node": "H2", "colour": "red", "source": "human", "decision_time_s": 0.697, "agents_agreed": false}
+{"ts": 1776681271.2687757, "event": "node_ready", "attempt": 2, "node": "H3", "node_index": 2}
+{"ts": 1776681271.2724135, "event": "proposals_shown", "attempt": 2, "node": "H3", "proposals": []}
+{"ts": 1776681271.6318088, "event": "colour_chosen", "attempt": 2, "node": "H3", "colour": "red", "source": "human", "decision_time_s": 0.363, "agents_agreed": false}
+{"ts": 1776681271.8448281, "event": "node_ready", "attempt": 2, "node": "H4", "node_index": 3}
+{"ts": 1776681271.8483515, "event": "proposals_shown", "attempt": 2, "node": "H4", "proposals": []}
+{"ts": 1776681272.2668223, "event": "colour_chosen", "attempt": 2, "node": "H4", "colour": "red", "source": "human", "decision_time_s": 0.422, "agents_agreed": false}
+{"ts": 1776681272.4683635, "event": "node_ready", "attempt": 2, "node": "A1", "node_index": 4}
+{"ts": 1776681272.468415, "event": "colour_chosen", "attempt": 2, "node": "A1", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681272.9801922, "event": "node_ready", "attempt": 2, "node": "A2", "node_index": 5}
+{"ts": 1776681272.9802456, "event": "colour_chosen", "attempt": 2, "node": "A2", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681273.4920888, "event": "node_ready", "attempt": 2, "node": "A3", "node_index": 6}
+{"ts": 1776681273.4921384, "event": "colour_chosen", "attempt": 2, "node": "A3", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681274.0008588, "event": "node_ready", "attempt": 2, "node": "A4", "node_index": 7}
+{"ts": 1776681274.0009103, "event": "colour_chosen", "attempt": 2, "node": "A4", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681274.5136356, "event": "node_ready", "attempt": 2, "node": "B1", "node_index": 8}
+{"ts": 1776681274.5136955, "event": "colour_chosen", "attempt": 2, "node": "B1", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681275.0273106, "event": "node_ready", "attempt": 2, "node": "B2", "node_index": 9}
+{"ts": 1776681275.027362, "event": "colour_chosen", "attempt": 2, "node": "B2", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681275.537987, "event": "node_ready", "attempt": 2, "node": "B3", "node_index": 10}
+{"ts": 1776681275.538038, "event": "colour_chosen", "attempt": 2, "node": "B3", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681276.049162, "event": "node_ready", "attempt": 2, "node": "B4", "node_index": 11}
+{"ts": 1776681276.0492115, "event": "colour_chosen", "attempt": 2, "node": "B4", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776681276.3615594, "event": "attempt_complete", "attempt": 2, "assignment": {"H1": "green", "H2": "red", "H3": "red", "H4": "red", "A1": "blue", "A2": "green", "A3": "green", "A4": "green", "B1": "red", "B2": "green", "B3": "green", "B4": "green"}, "score": {"total": 91, "by_owner": {"Human": 31, "AgentA": 22, "AgentB": 38}}, "elapsed_s": 16.57}
+{"ts": 1776681287.3335826, "event": "session_end", "total_attempts": 2, "score_trajectory": [91, 91], "session_elapsed_s": 50.28}

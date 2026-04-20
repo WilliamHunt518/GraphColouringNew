@@ -77,6 +77,7 @@ class ColourSession:
                 agent_configs=cfg.agent_configs,
                 points_config=cfg.points_config,
                 node_order=cfg.graph_def.node_order,
+                edges=cfg.graph_def.edges,
                 quality=quality,
                 seed=cfg.seed,
             )
