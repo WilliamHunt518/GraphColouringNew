@@ -225,7 +225,7 @@ class ColourStudyWindow:
         """Breadcrumb bar showing all nodes in order."""
         ttk.Label(parent, text="Progress: ", font=("TkDefaultFont", 8)).pack(side=tk.LEFT)
         self._seq_labels: Dict[str, tk.Label] = {}
-        for node in self._config.graph_def.node_order:
+        for node in self._session.node_order:
             lbl = tk.Label(
                 parent,
                 text=node,

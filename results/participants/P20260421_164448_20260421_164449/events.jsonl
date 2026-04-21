@@ -1,0 +1,51 @@
+{"ts": 1776786289.481334, "event": "session_start", "participant_id": "P20260421_164448", "mode": "mode1", "graph": "hub18b", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
+{"ts": 1776786289.86433, "event": "attempt_start", "attempt": 1}
+{"ts": 1776786289.999834, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
+{"ts": 1776786290.04495, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "red"}]}
+{"ts": 1776786329.921193, "event": "colour_chosen", "attempt": 1, "node": "H1", "colour": "blue", "source": "human", "decision_time_s": 39.921, "agents_agreed": false}
+{"ts": 1776786330.1356928, "event": "node_ready", "attempt": 1, "node": "H2", "node_index": 1}
+{"ts": 1776786330.1539302, "event": "proposals_shown", "attempt": 1, "node": "H2", "proposals": [{"agent": "AgentB", "colour": "red"}]}
+{"ts": 1776786342.3079708, "event": "colour_chosen", "attempt": 1, "node": "H2", "colour": "red", "source": "human", "decision_time_s": 12.172, "agents_agreed": false}
+{"ts": 1776786342.517889, "event": "node_ready", "attempt": 1, "node": "H3", "node_index": 2}
+{"ts": 1776786342.539833, "event": "proposals_shown", "attempt": 1, "node": "H3", "proposals": []}
+{"ts": 1776786346.6636007, "event": "colour_chosen", "attempt": 1, "node": "H3", "colour": "green", "source": "human", "decision_time_s": 4.146, "agents_agreed": false}
+{"ts": 1776786346.8863995, "event": "node_ready", "attempt": 1, "node": "H4", "node_index": 3}
+{"ts": 1776786346.9021056, "event": "proposals_shown", "attempt": 1, "node": "H4", "proposals": [{"agent": "AgentA", "colour": "blue"}]}
+{"ts": 1776786350.0162137, "event": "colour_chosen", "attempt": 1, "node": "H4", "colour": "red", "source": "human", "decision_time_s": 3.13, "agents_agreed": false}
+{"ts": 1776786350.219029, "event": "node_ready", "attempt": 1, "node": "H5", "node_index": 4}
+{"ts": 1776786350.2442007, "event": "proposals_shown", "attempt": 1, "node": "H5", "proposals": []}
+{"ts": 1776786353.3768094, "event": "colour_chosen", "attempt": 1, "node": "H5", "colour": "red", "source": "human", "decision_time_s": 3.158, "agents_agreed": false}
+{"ts": 1776786353.5832853, "event": "node_ready", "attempt": 1, "node": "H6", "node_index": 5}
+{"ts": 1776786353.5832853, "event": "proposals_shown", "attempt": 1, "node": "H6", "proposals": []}
+{"ts": 1776786355.218953, "event": "colour_chosen", "attempt": 1, "node": "H6", "colour": "red", "source": "human", "decision_time_s": 1.636, "agents_agreed": false}
+{"ts": 1776786355.4260454, "event": "node_ready", "attempt": 1, "node": "A1", "node_index": 6}
+{"ts": 1776786355.4260454, "event": "colour_chosen", "attempt": 1, "node": "A1", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786355.9335015, "event": "node_ready", "attempt": 1, "node": "A2", "node_index": 7}
+{"ts": 1776786355.9335015, "event": "colour_chosen", "attempt": 1, "node": "A2", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786356.4425259, "event": "node_ready", "attempt": 1, "node": "A3", "node_index": 8}
+{"ts": 1776786356.4425259, "event": "colour_chosen", "attempt": 1, "node": "A3", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786356.951479, "event": "node_ready", "attempt": 1, "node": "A4", "node_index": 9}
+{"ts": 1776786356.951479, "event": "colour_chosen", "attempt": 1, "node": "A4", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786357.4612045, "event": "node_ready", "attempt": 1, "node": "A5", "node_index": 10}
+{"ts": 1776786357.4612045, "event": "colour_chosen", "attempt": 1, "node": "A5", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786357.9713714, "event": "node_ready", "attempt": 1, "node": "A6", "node_index": 11}
+{"ts": 1776786357.9713714, "event": "colour_chosen", "attempt": 1, "node": "A6", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786358.4815137, "event": "node_ready", "attempt": 1, "node": "B1", "node_index": 12}
+{"ts": 1776786358.4815137, "event": "colour_chosen", "attempt": 1, "node": "B1", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786358.991151, "event": "node_ready", "attempt": 1, "node": "B2", "node_index": 13}
+{"ts": 1776786358.991151, "event": "colour_chosen", "attempt": 1, "node": "B2", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786359.5005012, "event": "node_ready", "attempt": 1, "node": "B3", "node_index": 14}
+{"ts": 1776786359.5005012, "event": "colour_chosen", "attempt": 1, "node": "B3", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786360.0101237, "event": "node_ready", "attempt": 1, "node": "B4", "node_index": 15}
+{"ts": 1776786360.0101237, "event": "colour_chosen", "attempt": 1, "node": "B4", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786360.5207567, "event": "node_ready", "attempt": 1, "node": "B5", "node_index": 16}
+{"ts": 1776786360.5207567, "event": "colour_chosen", "attempt": 1, "node": "B5", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786361.029935, "event": "node_ready", "attempt": 1, "node": "B6", "node_index": 17}
+{"ts": 1776786361.029935, "event": "colour_chosen", "attempt": 1, "node": "B6", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786361.3481681, "event": "attempt_complete", "attempt": 1, "assignment": {"H1": "blue", "H2": "red", "H3": "green", "H4": "red", "H5": "red", "H6": "red", "A1": "green", "A2": "blue", "A3": "blue", "A4": "red", "A5": "blue", "A6": "red", "B1": "red", "B2": "green", "B3": "blue", "B4": "green", "B5": "green", "B6": "green"}, "score": {"total": 132, "by_owner": {"Human": 45, "AgentA": 39, "AgentB": 48}}, "elapsed_s": 71.76}
+{"ts": 1776786386.2403204, "event": "replay_requested", "attempt": 1}
+{"ts": 1776786386.3039525, "event": "attempt_start", "attempt": 2}
+{"ts": 1776786386.415813, "event": "node_ready", "attempt": 2, "node": "H1", "node_index": 0}
+{"ts": 1776786386.4319038, "event": "proposals_shown", "attempt": 2, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "red"}]}
+{"ts": 1776786408.2278101, "event": "abandonment", "attempt": 2, "node_index": 0, "reason": "window_closed"}
+{"ts": 1776786408.3556383, "event": "session_end", "total_attempts": 1, "score_trajectory": [132], "session_elapsed_s": 118.87}

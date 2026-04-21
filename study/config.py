@@ -82,6 +82,10 @@ class StudyConfig:
     # Human participant name shown in UI / logs
     human_name: str = "Human"
 
+    # Turn-order randomisation
+    random_turn_order: bool = False   # shuffle the node sequence each attempt
+    include_agent_turns: bool = False  # if True, agent nodes join the shuffle too
+
 
 # ---------------------------------------------------------------------------
 # Default study configuration — 3 colours

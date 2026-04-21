@@ -101,6 +101,8 @@ def config_from_dict(d: dict):
         seed=d.get("seed", 42),
         output_dir=_Path(d.get("output_dir", "results/participants")),
         human_name=d.get("human_name", "Human"),
+        random_turn_order=d.get("random_turn_order", False),
+        include_agent_turns=d.get("include_agent_turns", False),
     )
 
 

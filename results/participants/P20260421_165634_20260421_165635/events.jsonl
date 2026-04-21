@@ -1,0 +1,95 @@
+{"ts": 1776786995.2276347, "event": "session_start", "participant_id": "P20260421_165634", "mode": "mode2a", "graph": "hub18b", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
+{"ts": 1776786995.355094, "event": "attempt_start", "attempt": 1}
+{"ts": 1776786995.4823093, "event": "node_ready", "attempt": 1, "node": "A3", "node_index": 0}
+{"ts": 1776786995.4823093, "event": "colour_chosen", "attempt": 1, "node": "A3", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786995.998237, "event": "node_ready", "attempt": 1, "node": "B1", "node_index": 1}
+{"ts": 1776786995.998237, "event": "colour_chosen", "attempt": 1, "node": "B1", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786996.4945116, "event": "node_ready", "attempt": 1, "node": "B2", "node_index": 2}
+{"ts": 1776786996.4945116, "event": "colour_chosen", "attempt": 1, "node": "B2", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776786997.004942, "event": "node_ready", "attempt": 1, "node": "H3", "node_index": 3}
+{"ts": 1776786997.004942, "event": "plan_step_shown", "attempt": 1, "node": "H4", "plan_colour": "red"}
+{"ts": 1776787000.7863345, "event": "plan_accepted", "attempt": 1, "node": "H4"}
+{"ts": 1776787000.7863345, "event": "colour_chosen", "attempt": 1, "node": "H4", "colour": "red", "source": "accepted_plan", "decision_time_s": 3.781, "agents_agreed": true}
+{"ts": 1776787001.012612, "event": "node_ready", "attempt": 1, "node": "A1", "node_index": 4}
+{"ts": 1776787001.012612, "event": "colour_chosen", "attempt": 1, "node": "A1", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787001.5337644, "event": "node_ready", "attempt": 1, "node": "H4", "node_index": 5}
+{"ts": 1776787001.5410063, "event": "plan_step_shown", "attempt": 1, "node": "H6", "plan_colour": "red"}
+{"ts": 1776787002.7751107, "event": "plan_accepted", "attempt": 1, "node": "H6"}
+{"ts": 1776787002.7751107, "event": "colour_chosen", "attempt": 1, "node": "H6", "colour": "red", "source": "accepted_plan", "decision_time_s": 1.241, "agents_agreed": true}
+{"ts": 1776787003.000697, "event": "node_ready", "attempt": 1, "node": "B4", "node_index": 6}
+{"ts": 1776787003.000697, "event": "colour_chosen", "attempt": 1, "node": "B4", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787003.5119672, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 7}
+{"ts": 1776787003.5119672, "event": "plan_step_shown", "attempt": 1, "node": "A2", "plan_colour": "green"}
+{"ts": 1776787004.5214162, "event": "plan_accepted", "attempt": 1, "node": "A2"}
+{"ts": 1776787004.5214162, "event": "colour_chosen", "attempt": 1, "node": "A2", "colour": "green", "source": "accepted_plan", "decision_time_s": 1.009, "agents_agreed": true}
+{"ts": 1776787004.7455003, "event": "node_ready", "attempt": 1, "node": "B5", "node_index": 8}
+{"ts": 1776787004.7455003, "event": "colour_chosen", "attempt": 1, "node": "B5", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787005.2601256, "event": "node_ready", "attempt": 1, "node": "B3", "node_index": 9}
+{"ts": 1776787005.2601256, "event": "colour_chosen", "attempt": 1, "node": "B3", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787005.7754095, "event": "node_ready", "attempt": 1, "node": "B6", "node_index": 10}
+{"ts": 1776787005.7754095, "event": "colour_chosen", "attempt": 1, "node": "B6", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787006.14525, "event": "plan_accepted", "attempt": 1, "node": "A6"}
+{"ts": 1776787006.14525, "event": "colour_chosen", "attempt": 1, "node": "A6", "colour": "blue", "source": "accepted_plan", "decision_time_s": 0.37, "agents_agreed": true}
+{"ts": 1776787006.2894418, "event": "node_ready", "attempt": 1, "node": "A5", "node_index": 12}
+{"ts": 1776787006.2894418, "event": "colour_chosen", "attempt": 1, "node": "A5", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787006.3709826, "event": "node_ready", "attempt": 1, "node": "H6", "node_index": 13}
+{"ts": 1776787006.3709826, "event": "plan_step_shown", "attempt": 1, "node": "B2", "plan_colour": "green"}
+{"ts": 1776787006.8056433, "event": "node_ready", "attempt": 1, "node": "H6", "node_index": 13}
+{"ts": 1776787006.8056433, "event": "plan_step_shown", "attempt": 1, "node": "B2", "plan_colour": "green"}
+{"ts": 1776787007.6754782, "event": "plan_accepted", "attempt": 1, "node": "B2"}
+{"ts": 1776787007.6754782, "event": "colour_chosen", "attempt": 1, "node": "B2", "colour": "green", "source": "accepted_plan", "decision_time_s": 0.87, "agents_agreed": true}
+{"ts": 1776787007.9007673, "event": "node_ready", "attempt": 1, "node": "A2", "node_index": 14}
+{"ts": 1776787007.902792, "event": "colour_chosen", "attempt": 1, "node": "A2", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787008.4142518, "event": "node_ready", "attempt": 1, "node": "H5", "node_index": 15}
+{"ts": 1776787008.4162793, "event": "plan_step_shown", "attempt": 1, "node": "B4", "plan_colour": "green"}
+{"ts": 1776787009.8154101, "event": "plan_accepted", "attempt": 1, "node": "B4"}
+{"ts": 1776787009.8154101, "event": "colour_chosen", "attempt": 1, "node": "B4", "colour": "green", "source": "accepted_plan", "decision_time_s": 1.401, "agents_agreed": true}
+{"ts": 1776787010.0379782, "event": "node_ready", "attempt": 1, "node": "A4", "node_index": 16}
+{"ts": 1776787010.0379782, "event": "colour_chosen", "attempt": 1, "node": "A4", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787010.551497, "event": "node_ready", "attempt": 1, "node": "H2", "node_index": 17}
+{"ts": 1776787010.553518, "event": "plan_step_shown", "attempt": 1, "node": "B6", "plan_colour": "green"}
+{"ts": 1776787011.3270946, "event": "plan_accepted", "attempt": 1, "node": "B6"}
+{"ts": 1776787011.3270946, "event": "colour_chosen", "attempt": 1, "node": "B6", "colour": "green", "source": "accepted_plan", "decision_time_s": 0.776, "agents_agreed": true}
+{"ts": 1776787011.3413453, "event": "attempt_complete", "attempt": 1, "assignment": {"A3": "green", "B1": "red", "B2": "blue", "H3": "red", "A1": "red", "H4": "red", "B4": "red", "H1": "green", "B5": "green", "B3": "blue", "B6": "green", "A6": "blue", "A5": "blue", "H6": "green", "A2": "red", "H5": "green", "A4": "green", "H2": "green"}, "score": {"total": 34, "by_owner": {"Human": 4, "AgentA": 3, "AgentB": 27}}, "elapsed_s": 16.03}
+{"ts": 1776787013.787746, "event": "replay_requested", "attempt": 1}
+{"ts": 1776787013.8526964, "event": "attempt_start", "attempt": 2}
+{"ts": 1776787013.9848547, "event": "node_ready", "attempt": 2, "node": "B6", "node_index": 0}
+{"ts": 1776787013.9848547, "event": "colour_chosen", "attempt": 2, "node": "B6", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787014.502777, "event": "node_ready", "attempt": 2, "node": "H6", "node_index": 1}
+{"ts": 1776787014.502777, "event": "plan_step_shown", "attempt": 2, "node": "H2", "plan_colour": "red"}
+{"ts": 1776787015.5039573, "event": "plan_accepted", "attempt": 2, "node": "H2"}
+{"ts": 1776787015.5039573, "event": "colour_chosen", "attempt": 2, "node": "H2", "colour": "red", "source": "accepted_plan", "decision_time_s": 1.001, "agents_agreed": true}
+{"ts": 1776787015.727727, "event": "node_ready", "attempt": 2, "node": "A4", "node_index": 2}
+{"ts": 1776787015.727727, "event": "colour_chosen", "attempt": 2, "node": "A4", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787016.2497509, "event": "node_ready", "attempt": 2, "node": "B3", "node_index": 3}
+{"ts": 1776787016.2497509, "event": "colour_chosen", "attempt": 2, "node": "B3", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787016.7655506, "event": "node_ready", "attempt": 2, "node": "A6", "node_index": 4}
+{"ts": 1776787016.7655506, "event": "colour_chosen", "attempt": 2, "node": "A6", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787016.781411, "event": "plan_accepted", "attempt": 2, "node": "H6"}
+{"ts": 1776787016.781411, "event": "colour_chosen", "attempt": 2, "node": "H6", "colour": "red", "source": "accepted_plan", "decision_time_s": 0.016, "agents_agreed": true}
+{"ts": 1776787017.0079722, "event": "node_ready", "attempt": 2, "node": "A2", "node_index": 6}
+{"ts": 1776787017.0079722, "event": "colour_chosen", "attempt": 2, "node": "A2", "colour": "red", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787017.2786584, "event": "node_ready", "attempt": 2, "node": "A5", "node_index": 7}
+{"ts": 1776787017.2786584, "event": "colour_chosen", "attempt": 2, "node": "A5", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787017.5220573, "event": "node_ready", "attempt": 2, "node": "H2", "node_index": 8}
+{"ts": 1776787017.5285428, "event": "plan_step_shown", "attempt": 2, "node": "A3", "plan_colour": "green"}
+{"ts": 1776787017.796311, "event": "node_ready", "attempt": 2, "node": "H2", "node_index": 8}
+{"ts": 1776787017.796311, "event": "plan_step_shown", "attempt": 2, "node": "A3", "plan_colour": "green"}
+{"ts": 1776787018.511556, "event": "plan_accepted", "attempt": 2, "node": "A3"}
+{"ts": 1776787018.511556, "event": "colour_chosen", "attempt": 2, "node": "A3", "colour": "green", "source": "accepted_plan", "decision_time_s": 0.715, "agents_agreed": true}
+{"ts": 1776787018.734817, "event": "node_ready", "attempt": 2, "node": "B1", "node_index": 9}
+{"ts": 1776787018.734817, "event": "colour_chosen", "attempt": 2, "node": "B1", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787019.2435508, "event": "node_ready", "attempt": 2, "node": "H1", "node_index": 10}
+{"ts": 1776787019.2435508, "event": "plan_step_shown", "attempt": 2, "node": "A5", "plan_colour": "green"}
+{"ts": 1776787019.989798, "event": "plan_accepted", "attempt": 2, "node": "A5"}
+{"ts": 1776787019.989798, "event": "colour_chosen", "attempt": 2, "node": "A5", "colour": "green", "source": "accepted_plan", "decision_time_s": 0.746, "agents_agreed": true}
+{"ts": 1776787020.2124443, "event": "node_ready", "attempt": 2, "node": "H5", "node_index": 11}
+{"ts": 1776787020.2184932, "event": "plan_step_shown", "attempt": 2, "node": "A6", "plan_colour": "blue"}
+{"ts": 1776787021.1943452, "event": "plan_accepted", "attempt": 2, "node": "A6"}
+{"ts": 1776787021.1943452, "event": "colour_chosen", "attempt": 2, "node": "A6", "colour": "blue", "source": "accepted_plan", "decision_time_s": 0.982, "agents_agreed": true}
+{"ts": 1776787021.4071379, "event": "node_ready", "attempt": 2, "node": "B4", "node_index": 12}
+{"ts": 1776787021.4071379, "event": "colour_chosen", "attempt": 2, "node": "B4", "colour": "blue", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787021.922985, "event": "node_ready", "attempt": 2, "node": "A1", "node_index": 13}
+{"ts": 1776787021.922985, "event": "colour_chosen", "attempt": 2, "node": "A1", "colour": "green", "source": "agent_auto", "decision_time_s": 0.0, "agents_agreed": true}
+{"ts": 1776787022.2277017, "event": "abandonment", "attempt": 2, "node_index": 14, "reason": "window_closed"}
+{"ts": 1776787022.3698041, "event": "session_end", "total_attempts": 1, "score_trajectory": [34], "session_elapsed_s": 27.14}

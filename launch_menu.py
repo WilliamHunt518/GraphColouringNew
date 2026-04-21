@@ -71,8 +71,29 @@ def main() -> None:
     seed_var = tk.IntVar(value=42)
     ttk.Entry(root, textvariable=seed_var, width=8).grid(row=4, column=1, sticky="w", **pad)
 
+    # --- Random turn order ---
+    random_order_var = tk.BooleanVar(value=False)
+    random_order_cb = ttk.Checkbutton(
+        root,
+        text="Random turn order",
+        variable=random_order_var,
+        command=lambda: include_agents_cb.config(
+            state=tk.NORMAL if random_order_var.get() else tk.DISABLED
+        ),
+    )
+    random_order_cb.grid(row=5, column=0, columnspan=2, sticky="w", **pad)
+
+    include_agents_var = tk.BooleanVar(value=False)
+    include_agents_cb = ttk.Checkbutton(
+        root,
+        text="Include agent turns in shuffle",
+        variable=include_agents_var,
+        state=tk.DISABLED,
+    )
+    include_agents_cb.grid(row=6, column=0, columnspan=2, sticky="w", padx=28, pady=2)
+
     ttk.Separator(root, orient=tk.HORIZONTAL).grid(
-        row=5, column=0, columnspan=2, sticky="ew", pady=6
+        row=7, column=0, columnspan=2, sticky="ew", pady=6
     )
 
     # --- Start button ---
@@ -122,6 +143,8 @@ def main() -> None:
             "max_attempts": max_attempts,
             "seed": seed,
             "output_dir": "results/participants",
+            "random_turn_order": random_order_var.get(),
+            "include_agent_turns": include_agents_var.get(),
         }
 
         config_json = json.dumps(config_dict)
@@ -134,7 +157,7 @@ def main() -> None:
         root.destroy()
 
     ttk.Button(root, text="Start Session", command=start, width=18).grid(
-        row=6, column=0, columnspan=2, pady=8
+        row=8, column=0, columnspan=2, pady=8
     )
 
     root.mainloop()

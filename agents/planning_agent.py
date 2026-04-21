@@ -89,6 +89,7 @@ class PlanningAgent:
         self,
         attempt_number: int,
         prior_attempts: List[Dict[str, str]],
+        node_order: List[str] | None = None,
     ) -> Plan:
         """
         Run deliberation and return a complete Plan.
@@ -99,19 +100,25 @@ class PlanningAgent:
             1-based; used so that later attempts may improve earlier ones.
         prior_attempts:
             Full assignments from previous attempts (may be empty).
+        node_order:
+            The actual colouring sequence for this attempt.  When random turn
+            order is active this will differ from the graph's canonical order.
+            Defaults to the order supplied at construction time.
         """
+        effective_order = node_order if node_order is not None else self._node_order
         rng = random.Random(self._base_seed + attempt_number)
         steps: List[PlannedStep] = []
         deliberation_log: List[str] = [
             f"=== Autonomous planning — attempt {attempt_number} ===",
             f"Strategy: {'high-quality' if self._quality >= 0.5 else 'exploratory'}",
             f"Shared-optimal colour: {self._optimal_colour.capitalize()}",
+            f"Turn order: {effective_order}",
             "",
         ]
 
         current_assignment: Dict[str, str] = {}
 
-        for node in self._node_order:
+        for node in effective_order:
             step, log_lines = self._deliberate_node(
                 node=node,
                 rng=rng,

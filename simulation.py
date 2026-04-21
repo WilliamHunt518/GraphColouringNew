@@ -9,6 +9,7 @@ Manages:
 """
 from __future__ import annotations
 
+import random as _random
 import time
 from typing import Dict, List, Optional
 
@@ -107,14 +108,26 @@ class ColourSession:
             for child in list(win_top.winfo_children()):
                 child.destroy()
 
+            node_order = list(cfg.graph_def.node_order)
+            if cfg.random_turn_order:
+                rng = _random.Random(cfg.seed + attempt_num)
+                if cfg.include_agent_turns:
+                    rng.shuffle(node_order)
+                else:
+                    human_nodes = [n for n in node_order if cfg.node_regions.get(n) == cfg.human_name]
+                    agent_nodes = [n for n in node_order if cfg.node_regions.get(n) != cfg.human_name]
+                    rng.shuffle(human_nodes)
+                    node_order = human_nodes + agent_nodes
+
             plan: Optional[Plan] = None
             if planner is not None:
                 plan = planner.generate_plan(
                     attempt_number=attempt_num,
                     prior_attempts=list(self._completed_attempts),
+                    node_order=node_order,
                 )
 
-            session = SessionManager(cfg.graph_def.node_order)
+            session = SessionManager(node_order)
             dbg(f"  SessionManager created, node_order len={len(session.node_order)}, first={session.node_order[0] if session.node_order else 'EMPTY'}")
 
             decision_var.set("waiting")
