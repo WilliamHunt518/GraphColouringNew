@@ -1,0 +1,1183 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{tabularx}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+\newcommand{\Human}{\textsf{Human}}
+\newcommand{\AgentA}{\textsf{AgentA}}
+\newcommand{\AgentB}{\textsf{AgentB}}
+\newcommand{\Shared}{\textit{shared}}
+
+\title{Trust Calibration and Collaborative Decision-Making in\\
+       Human--Agent Sequential Graph Colouring:\\
+       A Within-Subjects Experimental Study}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+%% ============================================================
+\begin{abstract}
+%% ============================================================
+
+We present a controlled experiment investigating how humans calibrate trust in AI agents
+across differing levels of agent autonomy and plan quality.  The task is a sequential
+graph-colouring problem in which a human participant and two rule-based AI agents jointly
+colour the nodes of a graph, earning individual and shared scores that depend on colour
+choices.  The payoff structure creates a deliberate tension: each participant's individually
+preferred colour differs from the shared-optimal colour, so maximising the team score
+requires coordination and a degree of individual sacrifice.  Three experimental conditions
+vary the degree of agent autonomy and plan quality: in Mode~1, agents issue per-node
+proposals with explicit rationales and the human decides; in Mode~2A, agents pre-plan the
+full colouring with 80\% probability of picking the shared-optimal colour; in Mode~2B, the
+same autonomous planning process is used but with only a 30\% probability of choosing the
+shared-optimal colour.  Critically, the interface for Mode~2A and Mode~2B is visually
+identical, so participants cannot detect quality differences from presentation alone.  We
+measure shared score, individual score, plan-modification rate, explanation engagement, and
+decision latency, together with score improvement across repeated attempts.  The study
+offers a controlled platform for examining trust calibration, appropriate reliance, and the
+interaction between agent transparency and agent competence in human--AI collaborative
+settings.
+
+\end{abstract}
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+%% ============================================================
+
+A central challenge in human--AI collaboration is calibrating trust appropriately: humans
+should rely on AI agents when those agents are competent and override them when they are
+not~\citep{lee2004trust,parasuraman2010complacency}.  Miscalibrated trust takes two forms:
+\emph{overtrust}, in which users accept AI recommendations even when the AI is wrong, and
+\emph{undertrust}, in which users override good recommendations unnecessarily.  Both forms
+are costly, but overtrust receives more attention in safety-critical domains because it can
+cause humans to defer to confident-looking but incorrect AI outputs.
+
+A key variable shaping trust calibration is the \emph{transparency} of the AI's reasoning
+process.  When an agent shows its rationale---why it recommends a particular action, what
+information it used, what trade-offs it considered---users have more material with which to
+evaluate reliability.  Autonomous agents that produce pre-made plans and present them for
+human approval represent a particular transparency challenge: the user can see the
+recommendation but not the planning process that produced it.
+
+We study these dynamics using a graph-colouring task that operationalises individual-vs-team
+trade-offs in a simple, reproducible setting.  The graph is divided among three participants
+(one human, two AI agents), each controlling a distinct cluster of nodes.  Participants
+colour their nodes sequentially, one at a time, in a fixed order.  The payoff structure is
+designed so that each participant's selfishly preferred colour differs from the colour that
+maximises the shared team score.  This creates a coordination dilemma: a participant who
+always chooses their personally preferred colour earns more individually but less as a team;
+a participant who always chooses the shared-optimal colour sacrifices personal gain for
+collective benefit.
+
+Three experimental conditions differ in how AI agent advice is delivered:
+
+\begin{description}[leftmargin=2em,itemsep=2pt]
+  \item[Mode~1 (Manual Collaborative)]  For each node in the human's cluster, both AI
+    agents issue a proposed colour with a short written rationale and a table of expected
+    scores.  The human sees these proposals simultaneously and then makes their own colour
+    choice, unconstrained by the proposals.  Agent nodes are coloured automatically by
+    the respective agent's own rule-based logic.
+  \item[Mode~2A (Autonomous, High Quality)]  Before colouring begins, a planning agent
+    runs a deliberation process over the full node sequence and produces a complete
+    proposed colouring.  The plan is then presented to the human one step at a time; the
+    human can accept or override each step.  The planning process picks the shared-optimal
+    colour with probability 0.8, so roughly 80\% of plan steps are objectively good for
+    the team.
+  \item[Mode~2B (Autonomous, Low Quality)]  Structurally identical to Mode~2A.  The
+    interface, terminology, and presentation are the same.  The only difference is that
+    the planning process picks the shared-optimal colour with probability 0.3, producing
+    substantially lower-quality plans.  Participants are not told which quality condition
+    they are in.
+\end{description}
+
+This design allows us to ask: when the interface is held constant and only the underlying
+plan quality changes, do participants adjust their override behaviour appropriately?  Do
+participants who engage with agent rationales (by clicking to expand them) show better
+calibration?  Does score improve across repeated attempts (up to three per session) as
+participants learn the task and the agents' tendencies?
+
+The rest of this paper is organised as follows.  Section~\ref{sec:related} reviews related
+work.  Section~\ref{sec:task} defines the sequential graph-colouring task and its scoring
+model.  Section~\ref{sec:graphs} describes the graph topologies used in the study.
+Section~\ref{sec:conditions} specifies the three experimental conditions in detail.
+Section~\ref{sec:agents} describes the agent models underlying each condition.
+Section~\ref{sec:interface} describes the interface.
+Section~\ref{sec:procedure} describes the experimental procedure.
+Section~\ref{sec:measures} defines the dependent variables and hypotheses.
+Section~\ref{sec:results} presents the results (to be completed).
+
+%% ============================================================
+\section{Related Work}
+\label{sec:related}
+%% ============================================================
+
+\subsection{Trust in Automation and AI}
+
+Lee and See~\citeyearpar{lee2004trust} define trust in automation as ``the attitude that an
+agent will help achieve an individual's goals in a situation characterised by uncertainty
+and vulnerability.''  A large body of literature has documented that trust does not
+automatically track competence: humans exhibit automation bias (uncritical acceptance of
+automated outputs)~\citep{parasuraman2010complacency} as well as automation disuse
+(ignoring reliable automation).  Appropriate reliance is the goal: Buccinca et al.\
+\citeyearpar{buccinca2021trust} show that cognitive forcing functions---interventions that
+require users to reason before viewing AI recommendations---can reduce overtrust.  Our
+design takes a different approach, varying the quality of the underlying agent while
+holding the interface constant, to test whether participants detect quality differences
+behaviourally.
+
+\subsection{Human--AI Teaming in Optimisation Tasks}
+
+Several studies have used combinatorial optimisation tasks to investigate human--AI
+collaboration.  Wilder et al.~\citeyearpar{wilder2021learning} study human--AI teams on
+scheduling problems, finding that humans override AI recommendations more when AI
+explanations are present but not always more accurately.  Lai and Tan~\citeyearpar{lai2019human}
+find that providing model explanations improves human decision accuracy only when
+explanations correctly reflect the model's actual reasoning.  Our setting isolates a
+similar question: does having access to an explanation (by clicking ``Explain'' in Mode~2)
+correlate with better override decisions?
+
+\subsection{Sequential Decision-Making and Path Dependency}
+
+The sequential colouring structure of our task introduces path dependency: a suboptimal
+choice early in the sequence constrains later options.  This mirrors real-world scenarios
+such as project planning, resource allocation, and shift scheduling, where decisions
+accumulate.  Kahneman et al.~\citeyearpar{kahneman1982judgment} document how early choices
+anchor subsequent ones; in our setting, the first few node colour decisions may set an
+inertial trajectory that the human then accepts rather than revises.  The repeated-attempt
+structure (up to three attempts per session) allows us to measure whether and how quickly
+participants learn to break this inertia.
+
+\subsection{Graph Colouring as a Coordination Task}
+
+Graph colouring has been used as a canonical coordination task in distributed constraint
+optimisation~\citep{modi2005adopt,rogers2011bounded}.  Unlike classical DCOP settings,
+our version does not penalise constraint violations as hard constraints---all colourings
+are valid, but only some are \emph{optimal} under a shared scoring function.  This makes
+the task an \emph{optimisation under conflicting incentives} rather than a feasibility
+problem, which is both more realistic (agents' interests often misalign partially rather
+than completely) and allows continuous measurement of coordination quality via score.
+
+%% ============================================================
+\section{Task: Sequential Graph Colouring}
+\label{sec:task}
+%% ============================================================
+
+\subsection{Graph Structure}
+
+The experimental task uses an undirected graph $G = (V, E)$ partitioned among three
+participants: a human $h$ and two AI agents $a_1$ (\AgentA) and $a_2$ (\AgentB).  Each
+participant controls a disjoint cluster of nodes:
+
+\[
+  V = V_h \sqcup V_{a_1} \sqcup V_{a_2}
+\]
+
+where $V_p$ denotes the set of nodes owned by participant $p$.  Edges $E$ include
+both \emph{intra-cluster} edges (between nodes in the same cluster) and
+\emph{inter-cluster} edges (between nodes in different clusters).  Inter-cluster edges
+are the coordination interface: a colour chosen for a node in one cluster may clash with
+or constrain choices in adjacent clusters.
+
+Each participant assigns a colour from the shared domain $\mathcal{C} = \{\text{red},
+\text{blue}, \text{green}\}$ to each of their nodes.  Unlike standard graph-colouring
+problems, there is no \emph{hard} constraint requiring adjacent nodes to have different
+colours.  Instead, adjacency conflicts incur a \emph{score penalty} described in
+Section~\ref{sec:scoring}.  This design choice ensures that all colourings are valid (the
+task always terminates) while retaining the incentive to avoid conflicts.
+
+\subsection{Sequential Colouring}
+\label{sec:sequential}
+
+Nodes are coloured \emph{one at a time} in a fixed predetermined order.  The default
+order is: all human-owned nodes ($V_h$), followed by all \AgentA-owned nodes
+($V_{a_1}$), followed by all \AgentB-owned nodes ($V_{a_2}$).  Nodes within each
+cluster follow the order specified by the graph definition.
+
+This sequential structure introduces \emph{path dependency}: once a node is coloured,
+its choice constrains (or at minimum influences) the optimal choices for subsequently
+coloured adjacent nodes.  Because human nodes are coloured first, the human's decisions
+constrain the agents more than the agents' decisions constrain the human.  This is an
+intentional asymmetry: we are interested in how humans make decisions while anticipating
+(or failing to anticipate) their downstream effects on agent scoring.
+
+An optional \emph{random turn order} mode shuffles the ordering within each attempt.
+When enabled with the \texttt{include\_agent\_turns} flag, agent nodes may be
+interspersed with human nodes; when disabled (default), only human nodes are reordered
+among themselves, and all agent nodes follow.  In both cases, the planning agent
+(Mode~2) re-plans according to the actual shuffled order, ensuring the plan corresponds
+to the sequence presented to the user.
+
+Participants cannot skip or reorder nodes.  They colour nodes strictly in the presented
+sequence: in Mode~1, they see agent proposals for the current node, then choose; in
+Mode~2, they see the agent's pre-planned recommendation for the current node, then
+accept or override.
+
+\subsection{Scoring Model}
+\label{sec:scoring}
+
+The scoring system supports both individual and collective performance measurement.
+Each colour assignment earns points for \emph{every} participant simultaneously, with
+different amounts per participant.  Table~\ref{tab:default_points} shows the default
+per-node point values.
+
+\begin{table}[h]
+\centering
+\caption{Default per-node point values for each colour and participant.
+         Shared total is the sum across all three participants.
+         Each participant's individually preferred colour (maximum personal gain) is shown in bold.}
+\label{tab:default_points}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Colour} & \textbf{Human} & \textbf{AgentA} & \textbf{AgentB} & \textbf{Shared Total} \\
+\midrule
+\textbf{Red}   & \textbf{4}    & 1              & 2               & 7 \\
+Blue            & 1             & \textbf{4}     & 2               & 7 \\
+Green           & 2             & 2              & \textbf{4}      & 8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key feature of this payoff structure is that:
+\begin{enumerate}[nosep]
+  \item Each participant has a \emph{different} individually preferred colour (the colour
+    that maximises their personal points on any given node).
+  \item The \emph{shared-optimal} colour --- the colour that maximises the sum of all
+    participants' points --- is green (8 pts total), which is \AgentB's preferred colour
+    but not the preferred choice for \Human{} or \AgentA.
+  \item Choosing one's own preferred colour sacrifices 1 point of shared score per node
+    relative to always choosing green.
+\end{enumerate}
+
+This creates a \emph{social dilemma} structure embedded within a sequential colouring
+task.  A human who always chooses red earns the maximum personal score (4 pts/node)
+but contributes only 7 pts/node to the shared pool.  A human who defers to green earns
+only 2 pts/node personally but contributes 8 pts/node to the shared total.  Whether
+participants sacrifice personal gain for shared benefit --- and whether agent advice
+moves them in either direction --- is a primary outcome of interest.
+
+\paragraph{Clash Penalty.}
+If two adjacent nodes (sharing an edge in $E$) are assigned the same colour, a penalty
+of 10~points is deducted from the shared score.  For intra-participant clashes (both
+nodes owned by the same participant), the full penalty is deducted from that participant's
+individual score.  For inter-participant clashes (adjacent nodes owned by different
+participants), the penalty is split: $\lfloor 10/2 \rfloor = 5$ points from each owner.
+Formally, the score for a complete assignment $x : V \to \mathcal{C}$ is:
+
+\begin{equation}
+  \text{Score}_p(x) = \sum_{v \in V_p} \text{pts}_p(x_v)
+    - \sum_{\substack{(u,v) \in E \\ x_u = x_v}} \text{penalty}(u, v, p)
+  \label{eq:score}
+\end{equation}
+
+where $\text{pts}_p(c)$ is participant $p$'s point value for colour $c$ (from
+Table~\ref{tab:default_points}), and $\text{penalty}(u, v, p)$ is the portion of the
+clash penalty on edge $(u,v)$ allocated to participant $p$.
+
+The shared score is $\text{Score}_{\Shared}(x) = \sum_p \text{Score}_p(x)$.  The
+maximally achievable shared score, with no clashes, is $8 \times |V|$ (all nodes
+green).  The minimum achievable shared score depends on the graph topology and the
+number of edges.
+
+\paragraph{Score interpretation.}
+Because the graph is fixed within a session, the shared score is bounded above and
+below by constants determined by the topology.  The key observable is therefore the
+\emph{fraction of the maximum shared score} achieved, and the \emph{deviation from
+optimal} (all-green assignment).  A secondary observable is the \emph{individual-vs-team
+trade-off}: participants who choose red more often earn more personally but contribute
+less collectively.
+
+\subsection{Repeated Attempts}
+
+Each experimental session consists of up to $A$ attempts (default $A = 3$) on the same
+graph instance.  After completing an attempt, the participant sees a results screen
+showing the final colouring, a score breakdown, and (from the second attempt onwards)
+a comparison with previous attempts.  They may then choose to start another attempt or
+end the session.
+
+Each new attempt begins with the graph in the same initial (uncoloured) state; the
+previous attempt's colouring is displayed as a visual reference but does not constrain
+the new attempt.  In Mode~2, a new plan is generated for each attempt using the
+same random seed incremented by the attempt number, so the plan for attempt~$k$ is a
+deterministic function of the graph, the seed, and $k$.  Across attempts, planning
+quality is held constant (same mode, same $k$-dependent seed), but the sequential
+nature of the task means participants who learned from the previous attempt can apply
+that knowledge.
+
+%% ============================================================
+\section{Graph Topologies}
+\label{sec:graphs}
+%% ============================================================
+
+The study includes a family of systematically designed graph instances spanning three
+cluster sizes and two topological families.  All graphs are defined with nodes partitioned
+into two or three agent clusters plus one human cluster, and all use the same colour domain
+$\mathcal{C} = \{\text{red}, \text{blue}, \text{green}\}$.
+
+\subsection{Standard Cluster Graphs}
+
+Standard graphs are characterised by dense intra-cluster connectivity and sparse
+inter-cluster edges.  Table~\ref{tab:standard_graphs} summarises the variants.
+
+\begin{table}[h]
+\centering
+\caption{Standard cluster graph variants.  $n$ = total nodes;
+         $n_c$ = nodes per cluster; $|E|$ = total edges.}
+\label{tab:standard_graphs}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Name} & \textbf{Description} & $n$ & $n_c$ & $|E|$ \\
+\midrule
+\texttt{s9\_3c}      & 3 clusters $\times$ 3 nodes; internal triangles; H--A and H--B cross-edges  & 9  & 3 & 12 \\
+\texttt{s9\_3c\_xab} & \texttt{s9\_3c} + explicit A--B cross-links (2 edges)                      & 9  & 3 & 14 \\
+\texttt{s12\_3c}     & 3 clusters $\times$ 4 nodes; quad + diagonal per cluster; 6 cross-edges   & 12 & 4 & 17 \\
+\texttt{s12\_3c\_xab}& \texttt{s12\_3c} + A--B cross-links (2 edges)                             & 12 & 4 & 19 \\
+\texttt{s18\_3c}     & 3 clusters $\times$ 6 nodes; 6-cycle + 2 chords; 6 cross-edges            & 18 & 6 & 26 \\
+\texttt{s18\_3c\_xab}& \texttt{s18\_3c} + A--B cross-links (3 edges)                             & 18 & 6 & 29 \\
+\midrule
+\texttt{s9\_3c\_c}   & 4-player variant of \texttt{s9\_3c} (adds \AgentC{} cluster)              & 12 & 3 & -- \\
+\texttt{s12\_3c\_c}  & 4-player variant of \texttt{s12\_3c}                                       & 16 & 4 & -- \\
+\texttt{s18\_3c\_c}  & 4-player variant of \texttt{s18\_3c}                                       & 24 & 6 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The \texttt{xab} variants add direct cross-edges between the two agent clusters (not
+mediated by the human cluster), increasing inter-agent coupling and reducing the human's
+structural centrality in the coordination problem.
+
+\subsection{Hub Topology Graphs}
+
+Hub graphs use a \emph{star topology} within each cluster: one hub node is connected to
+all satellite nodes in the cluster.  This topology concentrates constraint propagation
+through the hub node, creating a cleaner path-dependency structure.  Table~\ref{tab:hub_graphs}
+summarises the hub variants.
+
+\begin{table}[h]
+\centering
+\caption{Hub topology graph variants.  $n$ = total nodes; architecture is
+         the intra-cluster structure; cross-edges is the inter-cluster connection pattern.}
+\label{tab:hub_graphs}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Name} & \textbf{Architecture} & $n$ & \textbf{Key cross-edges} \\
+\midrule
+\texttt{hub12}      & Star (hub + 3 satellites) per cluster & 12 & $h_1$--$a_1$, $h_1$--$b_1$ \\
+\texttt{hub12\_tri} & \texttt{hub12} + $a_1$--$b_1$                                  & 12 & Hub triangle \\
+\texttt{hub15\_deep}& Hub triangle + $h_2$--$a_1$, $h_3$--$b_1$                    & 15 & Deep cross-constraints \\
+\texttt{hub18}      & Hub + satellite pairs per cluster; full hub triangle           & 18 & Hub triangle + pair threading \\
+\texttt{hub18b}     & Asymmetric: H chain, A disjoint pairs, B chain                & 18 & Hub triangle + asymmetric links \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Hub topologies have the property that the hub node's colour forces or strongly
+constrains the colours of adjacent cluster hubs (via inter-cluster edges).  In
+\texttt{hub12}, for example, colouring $h_1$ (the human hub) to red immediately
+constrains $a_1$ (the \AgentA{} hub) to be non-red, and $b_1$ (the \AgentB{} hub) to
+also be non-red.  This cascades through both agent clusters.
+
+The asymmetric \texttt{hub18b} variant models realistic organisational heterogeneity:
+the human cluster and \AgentB{} cluster have chain internal structure (which propagates
+colour constraints along the chain), while \AgentA{}'s cluster has disjoint pairs
+(which do not propagate constraints as strongly).  This creates an interesting
+scenario where the human's constraints ripple through structurally different agent
+clusters at different rates.
+
+\subsection{Colouring Order}
+
+In the default (non-random) turn order, nodes are coloured in a fixed sequence:
+all human-cluster nodes, then all \AgentA-cluster nodes, then all \AgentB-cluster nodes.
+Within each cluster, nodes follow the order defined in the graph specification (typically
+hub first, then satellites in index order).
+
+This ordering ensures that the human acts first and sets the context for both agents.
+The agents' automatic colouring decisions (in Mode~1) or plan steps (in Mode~2) are
+then presented after the human has committed their choices, reflecting the causal
+structure of the task.
+
+%% ============================================================
+\section{Experimental Conditions}
+\label{sec:conditions}
+%% ============================================================
+
+The study uses a within-subjects design with three conditions applied to each participant.
+The conditions are:
+
+\begin{description}[leftmargin=2em, itemsep=4pt]
+  \item[Mode~1 — Manual Collaborative]
+    Per-node proposals.  For each human-owned node, both agents
+    simultaneously issue a proposed colour accompanied by a written rationale.
+    A score-prediction table shows each agent's expected outcome under each
+    possible colour choice.  The human reads these proposals and then freely
+    chooses any colour.  After all human nodes are coloured, agent nodes are
+    coloured automatically by the agents' own greedy logic.
+
+  \item[Mode~2A — Autonomous, High Quality]
+    The planning agent generates a complete proposed colouring for all nodes
+    before the session starts, using a quality parameter of $q = 0.8$: each
+    plan step independently picks the shared-optimal colour with probability
+    0.8, and picks a random safe colour with probability 0.2.  This plan is
+    presented to the human one step at a time.  For human-owned nodes, the
+    participant can accept the plan's recommendation or override it.  For
+    agent-owned nodes, the plan step is applied automatically with a brief
+    visual pause.
+
+  \item[Mode~2B — Autonomous, Low Quality]
+    Identical in interface and interaction structure to Mode~2A.  The
+    planning agent uses quality parameter $q = 0.3$: each plan step picks
+    the shared-optimal colour with probability 0.3 only, making the plan
+    substantially worse on average.  Participants are not informed of the
+    quality level; the interface is intentionally indistinguishable from
+    Mode~2A.
+\end{description}
+
+\paragraph{Within-subjects counterbalancing.}
+All participants complete all three conditions.  Conditions are presented in
+counterbalanced order across participants to control for learning and fatigue effects.
+A different graph instance (from the families described in Section~\ref{sec:graphs})
+is used for each condition.  Graph instances are matched on the number of nodes,
+cluster sizes, and approximate scoring difficulty.
+
+\paragraph{Design rationale.}
+Mode~1 represents a \emph{transparent advisory} interface: the agent is fully
+explainable at the per-node level and the human always retains final decision authority.
+Mode~2A represents a \emph{competent autonomous} system: the agent plans well and the
+human's role shifts toward review and approval.  Mode~2B represents an
+\emph{incompetent autonomous} system that \emph{looks} identical to Mode~2A.  The
+comparison between Mode~2A and Mode~2B is the primary test of whether participants
+appropriately calibrate trust based on the quality of outcomes rather than the form of
+the interface.  The comparison between Mode~1 and Mode~2 (pooling 2A and 2B) tests
+the effect of interaction style: per-node deliberation versus pre-planned review.
+
+%% ============================================================
+\section{Agent Models}
+\label{sec:agents}
+%% ============================================================
+
+All agent logic is deterministic and rule-based.  No large language model or learned
+model is used.  This design choice ensures full reproducibility, eliminates variance due
+to stochastic model outputs, and allows precise control over agent quality.  The term
+``agent'' is used throughout the interface; participants are not told the mechanism.
+
+\subsection{Proposal Agent (Mode~1)}
+\label{sec:proposal_agent}
+
+The proposal agent (\texttt{ProposalAgent}) generates a per-node colour recommendation
+each time a new human-owned node becomes active.  Each AI agent runs this logic
+independently; both proposals are shown simultaneously.
+
+\paragraph{Adjacency analysis.}
+The agent first identifies which of its own nodes are adjacent (share an edge) to the
+current human node.  If the agent has no adjacent node, it does not generate a proposal
+for this step.  If multiple adjacent nodes exist, the agent selects one reference node
+using a priority rule: already-coloured adjacent nodes take precedence (actionable
+advice); among uncoloured nodes, the first in alphabetical order is chosen.
+
+\paragraph{Colour recommendation.}
+The recommendation logic depends on the reference node's status:
+\begin{itemize}[nosep]
+  \item \textbf{Reference node already coloured:} Recommend the first colour (in
+    $\{\text{red}, \text{blue}, \text{green}\}$ order) that does not clash with the
+    reference node's colour.  This avoids a cross-cluster penalty.
+  \item \textbf{Reference node not yet coloured:} The agent anticipates placing its own
+    preferred colour on the reference node later, so it recommends a colour for the
+    human node that avoids clashing with that anticipated choice.  Specifically, it
+    recommends the first colour that is \emph{not} the agent's preferred colour.
+\end{itemize}
+If no non-clashing colour exists (e.g.\ all colours are ruled out simultaneously), the
+agent falls back to the first available colour in domain order.
+
+\paragraph{Rationale generation.}
+Each proposal includes a short rationale (one or two sentences displayed inline) and a
+full rationale (expandable detail, shown on user request).  Short rationales follow one
+of two templates:
+
+\begin{itemize}[nosep]
+  \item \textit{Clash avoidance}: ``My node $X$ is already [colour] --- I recommend
+    [colour] here so our adjacent nodes don't clash.''
+  \item \textit{Future planning}: ``My node $X$ is next to this one and I plan to colour
+    it [preferred] --- so I recommend [colour] here to keep our nodes well-coordinated.''
+\end{itemize}
+
+When the attempt number is greater than 1, a note is added comparing the current
+recommendation to the previous attempt's colour at this node: ``Last attempt this was
+[colour]; my recommendation is [colour] this time.''
+
+Full rationales include: the adjacent node identification, the rationale for colour
+selection, a per-colour point table for all participants, shared-score contributions per
+colour, and a count of remaining uncoloured nodes.
+
+\paragraph{Expected score display.}
+In addition to the written rationale, Mode~1 shows a score-prediction table (described
+in Section~\ref{sec:interface}) showing each agent's expected score contribution under
+each possible colour choice for the current node.  This is computed using a forward
+simulation: for each possible colour $c$ that the human might choose, the agent
+greedily colours its remaining nodes (preferring clash avoidance, then score
+maximisation), and reports the agent's resulting total score.  This gives participants
+explicit quantitative information about the consequences of their choices for each
+agent.
+
+\paragraph{Self-colouring (agent-owned nodes).}
+When an agent-owned node becomes active (after all human nodes are decided), the agent
+colours it automatically using a greedy policy: avoid clashing with already-coloured
+adjacent nodes; among clash-free candidates, pick the colour that maximises the agent's
+own score for that node.
+
+\subsection{Planning Agent (Mode~2)}
+\label{sec:planning_agent}
+
+The planning agent (\texttt{PlanningAgent}) produces a complete proposed colouring
+for all nodes \emph{before} the session begins.  This plan is then delivered to the
+participant step by step.
+
+\paragraph{Deliberation process.}
+The planning agent is initialised with a quality parameter $q \in [0, 1]$.  In the
+study, $q = 0.8$ for Mode~2A and $q = 0.3$ for Mode~2B.  A seeded random number
+generator is initialised with seed $s + k$, where $s$ is the session seed and $k$ is
+the attempt number (1-based), ensuring different but reproducible plans across attempts.
+
+For each node in the colouring sequence, the deliberation process runs as follows:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Clash detection:} Identify all colours already assigned to adjacent
+    nodes (nodes already coloured in the current plan-in-progress).  Colours that
+    would clash with an adjacent already-planned colour are excluded; the remaining
+    colours are the \emph{safe candidates}.  If all colours clash (which can occur in
+    dense graphs), all colours are re-admitted as candidates.
+
+  \item \textbf{Agent votes:} Each sub-agent independently ``votes'' for its preferred
+    colour (the colour that maximises its own per-node points, regardless of the graph
+    context).  Votes are logged in the deliberation record.
+
+  \item \textbf{Quality-biased selection:} A random draw determines the selection
+    mechanism for this step:
+    \begin{itemize}[nosep]
+      \item With probability $q$: select the safe candidate with the highest
+        shared-score total (the shared-optimal safe colour).  This is the
+        ``high-quality'' choice.
+      \item With probability $1 - q$: select uniformly at random from the safe
+        candidates.  This may coincidentally be the shared-optimal colour, but is not
+        guided by shared score.
+    \end{itemize}
+
+  \item \textbf{Rationale generation:} A short rationale and full rationale are
+    generated, templated as:
+    \begin{itemize}[nosep]
+      \item Short (shared-optimal): ``[Colour] gives the team $N$ pts on this node,
+        which maximises our shared score.''
+      \item Short (random): ``[Colour] was selected for [node] after agent deliberation
+        (team score: $N$ pts).''
+    \end{itemize}
+    The full rationale includes all agent votes, the vote tally per colour, the
+    shared-score contribution of each colour, the selection method, and the final
+    choice.
+\end{enumerate}
+
+\paragraph{Deliberation log.}
+The complete deliberation log is accessible to participants via a collapsible panel in
+the interface (labelled ``How was this plan made?'').  This log shows the step-by-step
+deliberation for every node: which colours were safe, how each agent voted, which
+selection method was used, and what the expected score contribution is.  An interaction
+event is logged whenever a participant opens this panel.
+
+\paragraph{Expected score.}
+The expected shared score for the full plan is computed as the sum of the shared-score
+contributions of the chosen colour at each node, before considering any clashes.  This
+figure is displayed in the plan summary panel.
+
+\paragraph{Plan invariance.}
+Because the planning process uses a seeded RNG, the same graph instance, seed, and
+attempt number always produce the same plan.  This means Mode~2A and Mode~2B plans are
+reproducible and their quality is deterministic.  Within a condition, different
+participants see different plans only if they use different seeds (configurable at
+session launch).
+
+%% ============================================================
+\section{Interface}
+\label{sec:interface}
+%% ============================================================
+
+The experiment interface is implemented in Python using the Tkinter GUI toolkit.  All
+conditions use the same application window and layout; only the right-hand panel changes
+between Mode~1 and Mode~2.
+
+\subsection{Window Layout}
+
+The main window ($1020 \times 660$ minimum) is divided into three horizontal zones:
+
+\begin{description}[leftmargin=2em, itemsep=2pt]
+  \item[Top — Scoring HUD]  A horizontal bar showing the current shared score (large,
+    green) and individual score cards for each participant (colour chip + name + points).
+    Updates after every colour decision.
+  \item[Middle — Main Panel]  Divided into a left pane (graph display) and a right
+    pane (mode-specific interaction panel).
+  \item[Bottom — Sequence Bar]  A breadcrumb row of small cells, one per node,
+    showing colouring progress.  Grey cells are uncoloured; filled cells show the
+    assigned colour.
+\end{description}
+
+\subsection{Graph Display (Left Pane)}
+
+The left pane contains two graph canvases stacked vertically:
+
+\begin{itemize}[nosep]
+  \item \textbf{Overview canvas} ($440 \times 280$~px): Shows the complete graph with
+    all nodes and edges.  Nodes are positioned according to precomputed fractional
+    coordinates stored per graph preset.  Coloured nodes show their assigned colour;
+    uncoloured nodes are grey.
+  \item \textbf{Neighbourhood canvas} ($440 \times 210$~px): Shows the current active
+    node and its direct neighbours in isolation.  Provides a local view that highlights
+    the immediate constraint context.
+\end{itemize}
+
+\subsection{Mode~1 Right Panel}
+
+The Mode~1 panel contains the following elements from top to bottom:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Reward key}: A small table showing the point values of each colour for
+    the human participant, with the highest-value colour highlighted.
+  \item \textbf{Current node label}: Displays the name of the active node.
+  \item \textbf{Score prediction table}: A grid with rows for each agent that has an
+    adjacent node, and columns for each colour.  Each cell shows the agent's predicted
+    score contribution if the human chooses that colour, with a star ($\star$) marking
+    the agent's own preferred colour.
+  \item \textbf{Colour choice buttons}: One button per colour, enabled only after
+    proposals have been shown.  Clicking a button records the decision and advances to
+    the next node.
+\end{enumerate}
+
+Agent proposals are shown automatically when a human node becomes active.  Both agents'
+proposals and the score table appear simultaneously.  When the human clicks a colour
+button, the decision is logged (including source = ``human'', decision time, and whether
+a majority of agents agreed with the choice).
+
+\subsection{Mode~2 Right Panel}
+
+The Mode~2 panel presents the current plan step:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Proposed colour}: The plan's recommended colour for the current node,
+    displayed prominently.
+  \item \textbf{Short rationale}: One or two sentences from the planning agent's
+    rationale for this recommendation, displayed below the proposed colour.
+  \item \textbf{Action buttons}: Three buttons --- \textit{Accept} (records the plan's
+    colour, source = ``accepted\_plan''), \textit{Explain} (toggles the full rationale
+    text), and \textit{Modify} (opens a sub-panel with colour buttons for overriding
+    the plan, source = ``modified\_plan'').
+  \item \textbf{Full rationale panel}: A scrollable text field (hidden by default,
+    toggled by Explain) showing the complete rationale for this step including all agent
+    votes, vote tallies, and shared-score contributions per colour.
+  \item \textbf{Deliberation log panel}: A collapsible text field accessible via a
+    labelled checkbox, showing the complete planning deliberation log for the whole
+    session.
+\end{enumerate}
+
+For agent-owned nodes in Mode~2, the plan step is applied automatically with a 500~ms
+visual pause, and no buttons are shown.  The participant observes the plan being executed
+but cannot intervene.
+
+\subsection{End-of-Attempt Results Panel}
+
+When all nodes have been coloured, the colouring panel is replaced in-place by a results
+view showing:
+
+\begin{itemize}[nosep]
+  \item A final graph rendering with the completed colouring.
+  \item A score table: each participant's name, preferred colour, individual score, and
+    clash penalty (if any).
+  \item The \textbf{shared total} score, displayed prominently.
+  \item A score history table (from the second attempt onwards) listing the shared
+    total for each attempt, with markers indicating the current attempt and the best
+    attempt.
+  \item \textbf{Action buttons}: ``Start Next Attempt'' (if attempts remain) and
+    ``Finish Session''.
+\end{itemize}
+
+The previous attempt's colouring is preloaded as a visual overlay on the graph at the
+start of each new attempt (with a 200~ms delay for canvas layout), giving participants a
+reference without constraining their choices.
+
+\subsection{Event Logging}
+
+All interactions are written to a JSONL event log at\\
+\texttt{results/participants/<pid>\_<timestamp>/events.jsonl}.  Each line is a JSON
+object with a Unix timestamp and event type.  Table~\ref{tab:events} lists the key
+logged events.
+
+\begin{table}[h]
+\centering
+\caption{Key JSONL events logged during each session.
+         All events include a Unix timestamp \texttt{ts} and event type \texttt{event}.}
+\label{tab:events}
+\begin{tabularx}{\linewidth}{lX}
+\toprule
+\textbf{Event type}          & \textbf{Fields logged} \\
+\midrule
+\texttt{session\_start}      & participant\_id, mode, graph, colours, seed, max\_attempts, points\_config \\
+\texttt{attempt\_start}      & attempt number (1-based) \\
+\texttt{node\_ready}         & attempt, node, node\_index (starts per-node timer) \\
+\texttt{proposals\_shown}    & (Mode~1) attempt, node, proposals [\{agent, colour\}] \\
+\texttt{explanation\_click}  & (Mode~1) attempt, node, agent name \\
+\texttt{colour\_chosen}      & attempt, node, colour, source, decision\_time\_s, agents\_agreed \\
+\texttt{plan\_step\_shown}   & (Mode~2) attempt, node, plan\_colour \\
+\texttt{plan\_accepted}      & (Mode~2) attempt, node, plan\_colour \\
+\texttt{plan\_modified}      & (Mode~2) attempt, node, plan\_colour, chosen\_colour \\
+\texttt{plan\_explanation\_clicked} & (Mode~2) attempt, node \\
+\texttt{deliberation\_log\_opened}  & (Mode~2) attempt \\
+\texttt{attempt\_complete}   & attempt, assignment \{node: colour\}, score \{total, by\_owner\}, elapsed\_s \\
+\texttt{replay\_requested}   & attempt (user chose to start another attempt) \\
+\texttt{session\_end}        & total\_attempts, score\_trajectory [int], session\_elapsed\_s \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The \texttt{colour\_chosen} event includes \texttt{source} $\in$ \{``human'',
+``accepted\_plan'', ``modified\_plan'', ``agent\_auto''\}, distinguishing human
+initiative, plan acceptance, plan override, and automatic agent colouring.  The
+\texttt{agents\_agreed} field (boolean) records whether a majority of agents whose
+proposals or plan recommended this node had recommended the chosen colour.
+Decision time is measured from the moment the node was made active
+(\texttt{node\_ready}) to the moment the colour button was pressed.
+
+%% ============================================================
+\section{Procedure}
+\label{sec:procedure}
+%% ============================================================
+
+\subsection{Session Structure}
+
+Each session is launched via a graphical configuration screen where the experimenter (or
+participant, in unattended conditions) enters the participant ID, selects the mode and
+graph preset, sets the random seed, and specifies the maximum number of attempts.  A
+subprocess then opens the experiment window.
+
+A session consists of the following stages:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Introduction and practice}: Participants are introduced to the graph
+    colouring task, the scoring system, and the interface.  (Specific instructions TBD
+    per study protocol.)
+  \item \textbf{Experimental task}: The participant completes the colouring task in the
+    assigned condition, with up to $A = 3$ attempts.
+  \item \textbf{Post-condition questionnaire}: After each condition, participants
+    complete a questionnaire on workload, trust, and perceived agent quality.  (Scale
+    details TBD.)
+\end{enumerate}
+
+\subsection{Within-Attempt Flow}
+
+Within each attempt, the interaction proceeds as follows:
+
+\begin{enumerate}[nosep]
+  \item For Mode~2 only: the planning agent generates the complete plan (logged
+    internally; plan generation is not visible to the participant).
+  \item The first node in the sequence is activated.
+  \item For each human-owned node:
+    \begin{itemize}[nosep]
+      \item Mode~1: Agent proposals appear; the participant reads and chooses a colour.
+      \item Mode~2: The plan's recommendation appears; the participant accepts or overrides.
+    \end{itemize}
+  \item For each agent-owned node: the agent's colour is applied automatically (Mode~1:
+    greedy rule; Mode~2: plan step), with a 500~ms visual pause.
+  \item When all nodes are coloured, the results panel appears.  The score is displayed
+    and compared with previous attempts.
+  \item The participant chooses ``Start Next Attempt'' or ``Finish Session''.
+\end{enumerate}
+
+\subsection{Randomisation and Reproducibility}
+
+All stochastic elements (plan generation, optional node order shuffle) are controlled by
+a session seed $s$ (default: 42).  The plan for attempt $k$ uses RNG seed $s + k$.
+If random turn order is enabled, the node sequence for attempt $k$ is derived from
+$s + k$ before plan generation, so plan and presentation order are always consistent.
+This ensures full reproducibility: given the same participant ID, mode, graph, and seed,
+the entire session is deterministic.
+
+%% ============================================================
+\section{Dependent Variables and Hypotheses}
+\label{sec:measures}
+%% ============================================================
+
+\subsection{Primary Outcome: Shared Score}
+
+The primary dependent variable is the \emph{shared score} achieved at the end of each
+attempt.  This is the sum of all participants' individual scores after applying clash
+penalties (Equation~\ref{eq:score}).  The maximum achievable shared score is $8|V|$
+(all nodes green, no clashes).  We report both raw scores and \emph{efficiency}:
+$\eta = \text{Score}_\Shared / (8|V|)$.
+
+\subsection{Secondary Outcomes}
+
+\paragraph{Individual vs.\ shared trade-off.}
+The human participant's individual score relative to the shared score.  A participant who
+consistently chooses red (their preferred colour) earns higher individual scores but lower
+shared scores.
+
+\paragraph{Plan modification rate (Mode~2 only).}
+The proportion of human-node plan steps that the participant overrides
+(\texttt{source} = ``modified\_plan'').  High modification rate in Mode~2B (low quality)
+relative to Mode~2A (high quality) is evidence of appropriate trust calibration; similar
+modification rates across 2A and 2B would suggest participants cannot detect quality
+differences.
+
+\paragraph{Explanation engagement.}
+The proportion of nodes for which the participant expanded the full rationale (Mode~1:
+\texttt{explanation\_click}; Mode~2: \texttt{plan\_explanation\_clicked}).  Also, the
+proportion of attempts in which the deliberation log was opened
+(\texttt{deliberation\_log\_opened}).
+
+\paragraph{Decision latency.}
+The mean \texttt{decision\_time\_s} per node, computed from event timestamps.  Longer
+decision times may indicate deeper deliberation; shorter times may indicate automatic
+acceptance.
+
+\paragraph{Score improvement across attempts.}
+The difference in shared score between attempt $k$ and attempt 1, $\Delta_k =
+\text{Score}^{(k)} - \text{Score}^{(1)}$.  Positive $\Delta$ indicates learning;
+negative $\Delta$ would be unexpected and may indicate fatigue or strategy abandonment.
+
+\paragraph{Agents-agreed rate.}
+The proportion of decisions for which the majority of agents recommended the colour the
+participant ultimately chose (\texttt{agents\_agreed} = True).  In Mode~1 this reflects
+whether the participant followed agent advice; in Mode~2 it is equivalent to the
+plan-acceptance rate.
+
+\subsection{Hypotheses}
+
+\begin{description}[leftmargin=2em, itemsep=3pt]
+  \item[H1 \textit{(Quality detection)}]
+    Participants will modify a higher proportion of plan steps in Mode~2B than in
+    Mode~2A, showing appropriate behavioural trust calibration based on perceived plan
+    quality.
+
+  \item[H2 \textit{(Score gap)}]
+    Mode~2A will produce higher shared scores than Mode~2B, and the gap will be larger
+    when modification rates are well-calibrated (i.e., participants override low-quality
+    steps without over-riding high-quality ones).
+
+  \item[H3 \textit{(Transparency benefit)}]
+    Mode~1 will produce better-calibrated decisions than Mode~2, because per-node
+    proposals with explicit rationales give participants more material to evaluate each
+    recommendation individually, compared to a pre-committed plan.
+
+  \item[H4 \textit{(Explanation engagement and calibration)}]
+    Participants who engage with full rationales (explanation click rate above the
+    median) will show better plan modification calibration in Mode~2: they will override
+    low-quality plan steps more often while accepting high-quality steps at similar rates.
+
+  \item[H5 \textit{(Learning across attempts)}]
+    Shared scores will improve significantly from attempt~1 to attempt~3, with the
+    improvement larger in Mode~2B than Mode~2A (because there is more room to improve by
+    overriding bad recommendations) and larger in Mode~2 than Mode~1 (because learning
+    the agent's plan tendencies is more useful when the same plan structure recurs).
+
+  \item[H6 \textit{(Individual vs.\ shared sacrifice)}]
+    Participants who accept more agent recommendations (higher agents-agreed rate) will
+    show lower individual scores but higher shared scores, consistent with trading
+    personal gain for collective benefit as the agents advise.
+\end{description}
+
+%% ============================================================
+\section{Results}
+\label{sec:results}
+%% ============================================================
+
+\textit{This section will be completed once data collection is finished.  The subsections
+below provide the planned analysis structure.}
+
+\subsection{Overview of Data Collected}
+
+[Table: participant count, conditions completed, attempt counts, any exclusions.]
+
+\subsection{Primary Outcome: Shared Score by Condition}
+
+[ANOVA or mixed-effects model on shared score with condition (Mode~1, 2A, 2B) as the
+within-subjects factor and attempt number as a covariate.  Report means, standard
+deviations, and effect sizes.  Include a figure showing mean shared score per condition
+across attempts.]
+
+\subsection{Plan Modification Rate (Modes~2A vs 2B)}
+
+[Paired comparison of modification rates between Mode~2A and Mode~2B.  Report whether
+participants modify more steps in Mode~2B (H1).  Break down by node position in sequence
+to test whether modification rates change as participants progress through an attempt.]
+
+\subsection{Explanation Engagement}
+
+[Descriptive statistics of explanation click rates per condition.  Test H4: do
+high-engagers show better calibration?  Report median split analysis and correlation
+between engagement and plan modification calibration.]
+
+\subsection{Decision Latency}
+
+[Mean decision time per node by condition, with standard error.  Compare latency for
+accepted-plan vs.\ modified-plan steps (Mode~2) and for conditions with vs.\ without
+explanation clicks (Mode~1).]
+
+\subsection{Score Improvement Across Attempts}
+
+[Plot score trajectory (score vs.\ attempt number) per condition.  Test H5 with a
+linear trend test on score across attempts.  Report improvement magnitude $\Delta_3
+= \text{Score}^{(3)} - \text{Score}^{(1)}$ by condition.]
+
+\subsection{Individual vs.\ Shared Trade-off}
+
+[Scatter plot: individual score vs.\ shared score per participant per condition.  Report
+correlation between agents-agreed rate and (a) individual score and (b) shared score,
+testing H6.]
+
+%% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+%% ============================================================
+
+\textit{To be completed.  Planned discussion points:}
+
+\begin{itemize}[nosep]
+  \item Whether the interface indistinguishability of Mode~2A and Mode~2B produces
+    overtrust (low modification in 2B) or whether participants can detect quality
+    through outcome patterns across nodes.
+  \item The role of rationale transparency: does Mode~1's per-node explainability
+    produce meaningfully different behaviour from Mode~2's global plan transparency?
+  \item Path dependency effects: are early-sequence decisions predictive of final
+    shared score, and do participants who make globally better early choices (e.g.,
+    choosing green for high-adjacency nodes) achieve higher totals?
+  \item Comparison with a na\"{i}ve baseline (all human nodes red, all agents optimal)
+    to contextualise score achievements.
+  \item Implications for the design of autonomous AI systems: what transparency
+    mechanisms are necessary for users to detect and compensate for poor-quality
+    autonomous plans?
+\end{itemize}
+
+%% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+%% ============================================================
+
+\textit{To be completed.}
+
+We have described a controlled experimental platform for studying trust calibration and
+collaborative decision-making in sequential human--agent graph colouring.  The platform's
+key features are: (1) a payoff structure that creates an intrinsic tension between
+individual and collective optimisation; (2) a sequential colouring order that introduces
+path dependency; (3) three experimental conditions that vary agent autonomy and plan
+quality while holding the interface constant; and (4) fine-grained event logging that
+supports analysis of decision timing, explanation engagement, and score trajectories
+across repeated attempts.
+
+The distinguishing feature of the design is that Mode~2A and Mode~2B are
+\emph{superficially identical}: same visual layout, same language, same plan-presentation
+mechanism.  Whether participants detect the quality difference and calibrate their
+override behaviour accordingly is the central empirical question.  A finding of overtrust
+(no calibration) would suggest that interface presentation alone determines reliance
+patterns, regardless of actual quality.  A finding of appropriate calibration would
+suggest that participants can perform implicit quality inference from outcome patterns
+within a single session.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\clearpage
+\appendix
+\renewcommand{\thesection}{\Alph{section}}
+
+%% ============================================================
+\section{Scoring Model: Formal Specification}
+\label{app:scoring}
+%% ============================================================
+
+\subsection{Point Configuration}
+
+Let $\mathcal{P} = \{h, a_1, a_2\}$ be the set of participants.  The point function
+$\text{pts} : \mathcal{P} \times \mathcal{C} \to \mathbb{Z}_{\geq 0}$ is given by
+Table~\ref{tab:default_points} in the main text.  The shared-score contribution of
+colour $c$ (regardless of node or participant) is:
+
+\[
+  \text{shared}(c) = \sum_{p \in \mathcal{P}} \text{pts}(p, c)
+\]
+
+In the default configuration: $\text{shared}(\text{red}) = 7$,
+$\text{shared}(\text{blue}) = 7$, $\text{shared}(\text{green}) = 8$.
+
+\subsection{Clash Penalty Allocation}
+
+For edge $(u, v) \in E$ with $x_u = x_v$ (same colour), the clash penalty of
+$\delta = 10$ is allocated as follows.  Let $\mathrm{owner}(u)$ denote the participant
+who owns node $u$.
+
+\[
+  \text{penalty}(u, v, p) = \begin{cases}
+    \delta & \text{if } \mathrm{owner}(u) = \mathrm{owner}(v) = p \\
+    \lfloor \delta / 2 \rfloor + (\delta \bmod 2) & \text{if } \mathrm{owner}(u) = p \neq \mathrm{owner}(v) \\
+    \lfloor \delta / 2 \rfloor & \text{if } \mathrm{owner}(v) = p \neq \mathrm{owner}(u) \\
+    0 & \text{otherwise}
+  \end{cases}
+\]
+
+For $\delta = 10$: intra-participant clashes cost 10 to the owning participant;
+inter-participant clashes cost 5 to each owner (since $10 \bmod 2 = 0$).
+
+\subsection{Optimal and Baseline Scores}
+
+For a graph with $|V| = n$ nodes and $|E_{\times}|$ inter-cluster edges:
+
+\begin{itemize}[nosep]
+  \item \textbf{Upper bound (no clashes, all green)}: $\text{shared}(\text{green}) \times n = 8n$.
+  \item \textbf{Penalty for all-red}:  $\text{shared}(\text{red}) \times n = 7n$.
+  \item \textbf{Penalty if clashes occur}: each clash deducts 10 from the shared total.
+\end{itemize}
+
+The difference between all-green and all-red is $n$ shared points.  For the default
+12-node graph, this is 12 shared points, a 12.5\% difference on the theoretical maximum.
+
+%% ============================================================
+\section{Planning Agent: Algorithm}
+\label{app:planning}
+%% ============================================================
+
+Algorithm~\ref{alg:plan} gives the pseudocode for the planning agent's deliberation
+process.
+
+\begin{algorithm}
+\caption{PlanningAgent.generate\_plan($k$, prior\_attempts, node\_order)}
+\label{alg:plan}
+\begin{algorithmic}[1]
+\REQUIRE Attempt number $k$, list of prior assignments, node sequence $\sigma$,
+         quality $q \in [0,1]$, seed $s$
+\STATE Initialise $\mathrm{rng} \gets \text{Random}(s + k)$
+\STATE $\mathrm{assignment} \gets \{\}$; $\mathrm{plan} \gets []$
+\FORALL{$v$ in $\sigma$}
+  \STATE $\mathrm{adj\_colours} \gets \{x_u \mid (u,v) \in E, u \in \mathrm{assignment}\}$
+  \STATE $\mathrm{candidates} \gets \mathcal{C} \setminus \mathrm{adj\_colours}$
+  \IF{$\mathrm{candidates} = \emptyset$}
+    \STATE $\mathrm{candidates} \gets \mathcal{C}$ \COMMENT{admit all if full clash}
+  \ENDIF
+  \STATE \texttt{// Sub-agent votes (self-interested, ignored for selection)}
+  \FORALL{agent $a$}
+    \STATE vote $\gets \argmax_{c} \text{pts}(a, c)$
+  \ENDFOR
+  \STATE $c^* \gets \argmax_{c \in \mathrm{candidates}} \text{shared}(c)$ \COMMENT{best safe colour}
+  \IF{$\mathrm{rng.random()} < q$}
+    \STATE $\mathrm{chosen} \gets c^*$ \COMMENT{quality: pick shared-optimal}
+  \ELSE
+    \STATE $\mathrm{chosen} \gets \mathrm{rng.choice}(\mathrm{candidates})$ \COMMENT{explore randomly}
+  \ENDIF
+  \STATE $\mathrm{assignment}[v] \gets \mathrm{chosen}$
+  \STATE Append $\mathrm{PlannedStep}(v, \mathrm{chosen}, \ldots)$ to $\mathrm{plan}$
+\ENDFOR
+\RETURN $\mathrm{Plan}(\mathrm{plan}, \sum_v \text{shared}(\mathrm{assignment}[v]), k)$
+\end{algorithmic}
+\end{algorithm}
+
+Note that sub-agent votes are recorded in the deliberation log (and shown to participants
+in the full rationale) but do not affect the colour selection.  The selection mechanism
+depends solely on the quality draw and the shared-score ordering of safe candidates.
+
+%% ============================================================
+\section{Proposal Agent: Algorithm}
+\label{app:proposal}
+%% ============================================================
+
+Algorithm~\ref{alg:proposal} gives the pseudocode for the proposal agent's per-node
+recommendation.
+
+\begin{algorithm}
+\caption{ProposalAgent.propose\_for\_node($v$, assignment\_so\_far, attempt)}
+\label{alg:proposal}
+\begin{algorithmic}[1]
+\REQUIRE Current node $v$, partial assignment so far, attempt number
+\STATE $\mathrm{adjacent} \gets \{u \in V_a \mid (u,v) \in E\}$
+\IF{$\mathrm{adjacent} = \emptyset$}
+  \RETURN None \COMMENT{no proposal if no adjacent agent node}
+\ENDIF
+\STATE $\mathrm{coloured\_adj} \gets \{u \in \mathrm{adjacent} \mid u \in \mathrm{assignment\_so\_far}\}$
+\IF{$\mathrm{coloured\_adj} \neq \emptyset$}
+  \STATE $\mathrm{ref} \gets$ any $u \in \mathrm{coloured\_adj}$
+  \STATE $\mathrm{avoid} \gets \{\mathrm{assignment\_so\_far}[\mathrm{ref}]\}$
+  \STATE $\mathrm{rationale\_type} \gets$ ``clash\_avoidance''
+\ELSE
+  \STATE $\mathrm{ref} \gets$ first of $\mathrm{adjacent}$ alphabetically
+  \STATE $\mathrm{avoid} \gets \{\mathrm{preferred\_colour}(a)\}$
+  \STATE $\mathrm{rationale\_type} \gets$ ``future\_planning''
+\ENDIF
+\STATE $\mathrm{candidates} \gets \mathcal{C} \setminus \mathrm{avoid}$
+\IF{$\mathrm{candidates} = \emptyset$}
+  \STATE $\mathrm{candidates} \gets \mathcal{C}$
+\ENDIF
+\STATE $\mathrm{recommended} \gets \mathrm{candidates}[0]$ \COMMENT{first in domain order}
+\RETURN $\mathrm{NodeProposal}(v, \mathrm{recommended}, \text{rationale}(\mathrm{rationale\_type}, \ldots))$
+\end{algorithmic}
+\end{algorithm}
+
+%% ============================================================
+\section{Event Log Schema}
+\label{app:schema}
+%% ============================================================
+
+Each line of the JSONL log is a JSON object.  Below is the complete field specification
+for the most important events.
+
+\paragraph{\texttt{colour\_chosen}}
+\begin{verbatim}
+{
+  "ts": <float>,            // Unix timestamp
+  "event": "colour_chosen",
+  "attempt": <int>,         // 1-based
+  "node": <str>,            // node identifier (e.g. "H1")
+  "colour": <str>,          // "red" | "blue" | "green"
+  "source": <str>,          // "human" | "accepted_plan" |
+                            //  "modified_plan" | "agent_auto"
+  "decision_time_s": <float>, // seconds from node_ready to click
+  "agents_agreed": <bool>   // majority of agents recommended this colour
+}
+\end{verbatim}
+
+\paragraph{\texttt{attempt\_complete}}
+\begin{verbatim}
+{
+  "ts": <float>,
+  "event": "attempt_complete",
+  "attempt": <int>,
+  "assignment": { <node>: <colour>, ... },
+  "score": {
+    "total": <int>,
+    "by_owner": { <participant>: <int>, ... }
+  },
+  "elapsed_s": <float>
+}
+\end{verbatim}
+
+\paragraph{\texttt{session\_end}}
+\begin{verbatim}
+{
+  "ts": <float>,
+  "event": "session_end",
+  "total_attempts": <int>,
+  "score_trajectory": [<int>, ...],  // shared score per attempt
+  "session_elapsed_s": <float>
+}
+\end{verbatim}
+
+\end{document}
