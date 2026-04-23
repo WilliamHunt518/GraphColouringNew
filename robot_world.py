@@ -23,6 +23,13 @@ APPROACH_RADIUS = CONNECT_RADIUS * 1.25  # = 350 px
 _DEFAULT_ARENA_W = 750
 _DEFAULT_ARENA_H = 700
 
+# Named complexity presets: (n_robots, v_min, v_max)
+COMPLEXITY_PRESETS = {
+    "easy":   (8,  8.0, 15.0),
+    "medium": (12, 10.0, 22.0),
+    "hard":   (16, 15.0, 30.0),
+}
+
 
 @dataclass
 class Robot:
@@ -43,15 +50,19 @@ class RobotWorld:
         self,
         n_robots: int = 12,
         seed: int = 42,
-        duration: float = 120.0,
+        duration: float = 90.0,
         arena_w: int = _DEFAULT_ARENA_W,
         arena_h: int = _DEFAULT_ARENA_H,
+        v_min: float = SPEED_MIN,
+        v_max: float = SPEED_MAX,
     ) -> None:
         self.rng = random.Random(seed)
         self.n_robots = n_robots
         self.duration = duration
         self.arena_w = arena_w
         self.arena_h = arena_h
+        self.v_min = v_min
+        self.v_max = v_max
         self.elapsed = 0.0
         self.clash_seconds = 0.0
 
@@ -63,9 +74,11 @@ class RobotWorld:
         self.warning_pairs: set[tuple[int, int]] = set()  # approaching but not yet connected
 
     def _init_robots(self, n: int) -> None:
-        cols = [0.20, 0.40, 0.60, 0.80]
-        rows = [0.25, 0.50, 0.75]
-        grid = [(c * self.arena_w, r * self.arena_h) for r in rows for c in cols]
+        n_cols = min(4, n)
+        n_rows = math.ceil(n / n_cols)
+        col_pos = [(i + 0.5) / n_cols for i in range(n_cols)]
+        row_pos = [(i + 0.5) / n_rows for i in range(n_rows)]
+        grid = [(c * self.arena_w, r * self.arena_h) for r in row_pos for c in col_pos]
 
         channels_pool = list(CHANNELS) * ((n // len(CHANNELS)) + 1)
         self.rng.shuffle(channels_pool)
@@ -79,7 +92,7 @@ class RobotWorld:
             y = max(ROBOT_RADIUS, min(self.arena_h - ROBOT_RADIUS,
                                       by + self.rng.uniform(-jitter, jitter)))
             angle = self.rng.uniform(0, 2 * math.pi)
-            speed = self.rng.uniform(SPEED_MIN, SPEED_MAX)
+            speed = self.rng.uniform(self.v_min, self.v_max)
             self.robots.append(Robot(
                 id=i, x=x, y=y,
                 vx=math.cos(angle) * speed,
@@ -114,10 +127,11 @@ class RobotWorld:
                 current_angle = math.atan2(r.vy, r.vx)
                 nudge = self.rng.uniform(-math.pi / 2, math.pi / 2)
                 new_angle = current_angle + nudge
-                new_speed = self.rng.uniform(SPEED_MIN, SPEED_MAX)
+                new_speed = self.rng.uniform(self.v_min, self.v_max)
                 r.vx = math.cos(new_angle) * new_speed
                 r.vy = math.sin(new_angle) * new_speed
                 r.next_turn_in = self.rng.uniform(TURN_INTERVAL_MIN, TURN_INTERVAL_MAX)
+
 
             r.x += r.vx * dt
             r.y += r.vy * dt
