@@ -6,6 +6,7 @@ study_runner.py — researcher setup window + sequential trial orchestrator.
 from __future__ import annotations
 
 import json
+import os
 import time
 import tkinter as tk
 from dataclasses import dataclass, field
@@ -16,6 +17,7 @@ from typing import Dict, List, Optional
 import pygame
 
 from robot_world import COMPLEXITY_PRESETS, SPEED_MIN, SPEED_MAX, SWITCH_DURATION
+from panel_window import monitor_rect
 
 
 # ── Trial configuration ───────────────────────────────────────────────────────
@@ -39,6 +41,8 @@ class StudyConfig:
     participant_id: str
     trials: List[TrialConfig] = field(default_factory=list)
     output_root: str = "results/participants"
+    arena_monitor: int = 0
+    panel_monitor: int = 1
 
 
 # ── Presets ───────────────────────────────────────────────────────────────────
@@ -60,6 +64,15 @@ _CONFIG_PATH  = Path.home() / ".drone_study_config.json"
 _DEFAULT_TRIALS = ["Tutorial", "Easy — perfect", "Medium — noisy"]
 
 
+def _detect_num_displays() -> int:
+    try:
+        import ctypes
+        n = ctypes.windll.user32.GetSystemMetrics(80)  # SM_CMONITORS
+        return max(1, n)
+    except Exception:
+        return 2
+
+
 # ── Setup window ──────────────────────────────────────────────────────────────
 
 class StudySetupWindow:
@@ -67,6 +80,7 @@ class StudySetupWindow:
 
     def __init__(self) -> None:
         self.config: Optional[StudyConfig] = None
+        self._n_displays = _detect_num_displays()
 
         self._root = tk.Tk()
         self._root.title("Drone Study — Researcher Setup")
@@ -102,6 +116,26 @@ class StudySetupWindow:
         self._pid_var = tk.StringVar()
         ttk.Entry(root, textvariable=self._pid_var, width=20).grid(
             row=row, column=1, columnspan=2, sticky="w", **pad)
+        row += 1
+
+        # ── Monitor selection ─────────────────────────────────────────────────
+        n = self._n_displays
+        mon_values = list(range(n))
+
+        ttk.Label(root, text="Arena monitor:").grid(row=row, column=0, sticky="e", **pad)
+        self._arena_mon_var = tk.IntVar(value=self._saved.get("arena_monitor", 0))
+        ttk.Combobox(root, textvariable=self._arena_mon_var,
+                     values=mon_values, state="readonly", width=4).grid(
+            row=row, column=1, sticky="w", **pad)
+        ttk.Label(root, text="(primary)" if n == 1 else f"of {n}",
+                  foreground="gray").grid(row=row, column=2, sticky="w")
+        row += 1
+
+        ttk.Label(root, text="Panel monitor:").grid(row=row, column=0, sticky="e", **pad)
+        self._panel_mon_var = tk.IntVar(value=self._saved.get("panel_monitor", min(1, n - 1)))
+        ttk.Combobox(root, textvariable=self._panel_mon_var,
+                     values=mon_values, state="readonly", width=4).grid(
+            row=row, column=1, sticky="w", **pad)
         row += 1
 
         ttk.Separator(root, orient=tk.HORIZONTAL).grid(
@@ -168,9 +202,21 @@ class StudySetupWindow:
                 return   # validation error already shown
             trials.append(cfg)
 
-        self._save_config({"trials": [tr.preset_name for tr in self._trial_rows]})
+        arena_monitor = self._arena_mon_var.get()
+        panel_monitor = self._panel_mon_var.get()
 
-        self.config = StudyConfig(participant_id=pid, trials=trials)
+        self._save_config({
+            "trials": [tr.preset_name for tr in self._trial_rows],
+            "arena_monitor": arena_monitor,
+            "panel_monitor": panel_monitor,
+        })
+
+        self.config = StudyConfig(
+            participant_id=pid,
+            trials=trials,
+            arena_monitor=arena_monitor,
+            panel_monitor=panel_monitor,
+        )
         self._root.destroy()
 
 
@@ -405,8 +451,20 @@ def _show_completion_screen(screen: pygame.Surface, results: List[dict]) -> None
 # ── Study orchestrator ────────────────────────────────────────────────────────
 
 def run_study(config: StudyConfig) -> None:
+    _ab = monitor_rect(config.arena_monitor)
+    if _ab:
+        os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
+    os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+
+    if _ab:
+        screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
+    else:
+        info = pygame.display.Info()
+        screen = pygame.display.set_mode(
+            (info.current_w, info.current_h), pygame.NOFRAME
+        )
     pygame.display.set_caption("Drone Channel Assignment — Study")
 
     ts = time.strftime("%Y%m%d_%H%M%S")
@@ -454,6 +512,8 @@ def run_study(config: StudyConfig) -> None:
                     seed=trial.seed,
                     screen=screen,
                     output_dir=str(trial_dir),
+                    arena_monitor=config.arena_monitor,
+                    panel_monitor=config.panel_monitor,
                 )
             else:
                 # Resolve n_robots / v_min / v_max from complexity preset if not overridden
@@ -470,6 +530,8 @@ def run_study(config: StudyConfig) -> None:
                     study_mode=True,
                     output_dir=str(trial_dir),
                     screen=screen,
+                    arena_monitor=config.arena_monitor,
+                    panel_monitor=config.panel_monitor,
                 )
 
             result = result or {}

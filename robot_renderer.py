@@ -12,7 +12,6 @@ from robot_world import (
 
 PANEL_W = 310
 PANEL_PAD = 14
-DETACH_BTN_H = 22  # height of the pop-out button strip at panel bottom
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 COL_ARENA_BG     = (28, 28, 42)
@@ -132,7 +131,6 @@ class RobotRenderer:
         self.suggestion_channel_btn_rects: Dict[str, pygame.Rect] = {}
         self.suggestion_apply_rect:  Optional[pygame.Rect] = None
         self.suggestion_cancel_rect: Optional[pygame.Rect] = None
-        self.detach_btn_rect:        Optional[pygame.Rect] = None
 
         # Updated each frame from world
         self._switch_duration: float = SWITCH_DURATION
@@ -148,19 +146,41 @@ class RobotRenderer:
 
     # ── Public entry point ────────────────────────────────────────────────────
 
+    def update_screen(self, new_screen: pygame.Surface) -> None:
+        """Replace the main display surface (call after pygame.display.set_mode)."""
+        self.screen = new_screen
+        self._ps    = new_screen          # reset active panel target too
+        self.window_w, self.window_h = new_screen.get_size()
+        # Recreate alpha compositing surfaces at the correct size
+        self._prox_surf = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
+        self._drag_surf  = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
+
     def set_panel_surface(self, surf: Optional[pygame.Surface]) -> None:
         """
-        Attach an external surface for the side panel (detached window mode).
-        Pass None to revert to inline rendering on self.screen.
+        Attach an external surface for the side panel (separate window mode).
+        Call once at setup (or when the panel window changes). For the per-frame
+        SDL2 surface refresh, use refresh_panel_surface() instead.
         """
         self._panel_surface = surf
         if surf is None:
             self._panel_offset_x = self.panel_x
             self.arena_w = self.window_w - PANEL_W
         else:
-            self._panel_offset_x = 0
+            # Center PANEL_W content if the panel window is wider
+            surf_w = surf.get_width()
+            self._panel_offset_x = max(0, (surf_w - PANEL_W) // 2)
             # Arena expands to fill the full main window
             self.arena_w = self.window_w
+        # Recreate compositing surfaces to match the new arena width
+        self._prox_surf = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
+        self._drag_surf  = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
+
+    def refresh_panel_surface(self, surf: pygame.Surface) -> None:
+        """
+        Replace the panel surface reference each frame (SDL2 surfaces become
+        stale after flip()).  Does not recompute layout or recreate surfaces.
+        """
+        self._panel_surface = surf
 
     def draw_frame(
         self,
@@ -189,12 +209,11 @@ class RobotRenderer:
         self.suggestion_channel_btn_rects.clear()
         self.suggestion_apply_rect  = None
         self.suggestion_cancel_rect = None
-        self.detach_btn_rect        = None
 
         # Set active panel drawing targets for this frame
         if panel_detached and self._panel_surface is not None:
             self._ps = self._panel_surface
-            self._px = 0
+            self._px = self._panel_offset_x
         else:
             self._ps = self.screen
             self._px = self.panel_x
@@ -228,9 +247,6 @@ class RobotRenderer:
         else:
             n_assigned = sum(1 for r in world.robots if r.channel is not None)
             self._draw_hud(world, selected_ids, state, n_assigned)
-
-        # Detach/reattach button at very bottom of panel
-        self._draw_detach_button(panel_detached)
 
         # M1 arena popup — only in normal (non-suggestion) mode
         if popup_drone_id is not None and suggestion is None and state in ("PLAYING", "SETUP"):
@@ -583,7 +599,7 @@ class RobotRenderer:
         panel_h = ps.get_height()
         mg_aspect = world.arena_h / world.arena_w if world.arena_w > 0 else 1.0
         mg_h_ideal = int(mg_w * mg_aspect)
-        bottom_reserve = 140 + DETACH_BTN_H
+        bottom_reserve = 140
         mg_h = max(80, min(mg_h_ideal, panel_h - mg_y - bottom_reserve))
         mg_x = self._px + PANEL_PAD
 
@@ -697,7 +713,7 @@ class RobotRenderer:
             y += 18
 
         # ── Apply / Cancel pinned to bottom ───────────────────────────────────
-        by = panel_h - 60 - DETACH_BTN_H
+        by = panel_h - 60
         if by < y + 16:
             by = y + 16
         self._panel_sep(by - 10)
@@ -718,23 +734,6 @@ class RobotRenderer:
 
         self.suggestion_apply_rect  = apply_rect
         self.suggestion_cancel_rect = cancel_rect
-
-    def _draw_detach_button(self, panel_detached: bool) -> None:
-        """Render the pop-out / re-attach button at the very bottom of the panel."""
-        ps  = self._ps
-        px  = self._px + PANEL_PAD
-        pw  = PANEL_W - PANEL_PAD * 2
-        ph  = ps.get_height()
-        by  = ph - DETACH_BTN_H
-        label = "◀ Re-attach panel" if panel_detached else "Pop out panel →"
-        col   = (60, 60, 80)
-        tcol  = (130, 130, 160)
-        pygame.draw.line(ps, COL_PANEL_BORDER, (self._px, by), (self._px + PANEL_W, by), 1)
-        btn_rect = pygame.Rect(px, by + 2, pw, DETACH_BTN_H - 4)
-        pygame.draw.rect(ps, col, btn_rect, border_radius=4)
-        s = self.fonts["tiny"].render(label, True, tcol)
-        ps.blit(s, s.get_rect(center=btn_rect.center))
-        self.detach_btn_rect = btn_rect
 
     # ── Tutorial callout ──────────────────────────────────────────────────────
 

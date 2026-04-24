@@ -1,0 +1,34 @@
+{
+  "participant_id": "P20260424_162951",
+  "start_time": "20260424_162953",
+  "n_trials": 3,
+  "trials": [
+    {
+      "label": "Tutorial",
+      "complexity": "medium",
+      "seed": 42,
+      "duration": 0,
+      "epsilon": 0.0,
+      "switch_duration": 3.0,
+      "is_tutorial": true
+    },
+    {
+      "label": "Easy-perfect",
+      "complexity": "easy",
+      "seed": 42,
+      "duration": 90,
+      "epsilon": 0.0,
+      "switch_duration": 3.0,
+      "is_tutorial": false
+    },
+    {
+      "label": "Medium-noisy",
+      "complexity": "medium",
+      "seed": 42,
+      "duration": 120,
+      "epsilon": 0.4,
+      "switch_duration": 3.0,
+      "is_tutorial": false
+    }
+  ]
+}

@@ -5,6 +5,7 @@ Entry point: run_tutorial(screen, output_dir, seed)
 """
 from __future__ import annotations
 import math
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Set, Tuple
@@ -16,6 +17,7 @@ from robot_renderer import RobotRenderer, TutorialCallout, PANEL_W
 from game_logger import GameLogger
 from agents.channel_agent import ChannelAdvisor
 from robot_game import _StudyExit, _apply_suggestion
+from panel_window import DetachedPanelWindow, is_supported as panel_detach_supported, monitor_rect
 
 
 # ── Tutorial step definition ──────────────────────────────────────────────────
@@ -379,16 +381,31 @@ def run_tutorial(
     seed: int = 0,
     screen: Optional[pygame.Surface] = None,
     output_dir: Optional[str] = None,
+    arena_monitor: int = 0,
+    panel_monitor: int = 1,
 ) -> Dict:
     _owns_display = screen is None
     if _owns_display:
+        _ab = monitor_rect(arena_monitor)
+        if _ab:
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
+        os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
         pygame.init()
-        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+
+        if _ab:
+            screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
+        else:
+            info = pygame.display.Info()
+            screen = pygame.display.set_mode(
+                (info.current_w, info.current_h), pygame.NOFRAME
+            )
         pygame.display.set_caption("Drone Channel Assignment — Tutorial")
 
     clock    = pygame.time.Clock()
     window_w, window_h = screen.get_size()
-    arena_w  = window_w - PANEL_W
+    # Panel is always in a separate window; arena uses the full screen width
+    arena_w  = window_w
 
     world    = RobotWorld(n_robots=6, seed=seed, duration=99999,
                           arena_w=arena_w, arena_h=window_h,
@@ -419,6 +436,25 @@ def run_tutorial(
     pending_suggestion: Optional[Dict[int,str]] = None
     suggestion_overrides: Dict[int,str]    = {}
     pending_infeasible  = False
+    panel_detached      = False
+    _panel_win: Optional[DetachedPanelWindow] = None
+
+    # Open the panel window immediately on the chosen monitor
+    if panel_detach_supported():
+        try:
+            _pb = monitor_rect(panel_monitor)
+            if _pb is None:
+                n_mon = pygame.display.get_num_displays()
+                pmon  = min(panel_monitor, n_mon - 1)
+                _raw  = pygame.display.get_display_bounds(pmon)
+                _pb   = (_raw[0], _raw[1], _raw[2], _raw[3])
+            _panel_win = DetachedPanelWindow(_pb[2], _pb[3], pos_x=_pb[0], pos_y=_pb[1])
+            renderer.set_panel_surface(_panel_win.get_fresh_surface())
+            panel_detached = True
+            logger.log("tutorial_panel_opened", monitor=panel_monitor)
+        except Exception as exc:
+            logger.log("tutorial_panel_open_failed", reason=str(exc))
+
     mouse_down_pos:     Optional[Tuple[int,int]] = None
     drag_pos:           Optional[Tuple[int,int]] = None
     is_dragging         = False
@@ -455,7 +491,13 @@ def run_tutorial(
             _sync_from_gs()
             game_state["selected_ids"] = selected_ids
 
-            for event in pygame.event.get():
+            raw_events = pygame.event.get()
+            # Split events if panel is detached
+            panel_events: List[pygame.event.Event] = []
+            if panel_detached and _panel_win is not None:
+                panel_events, raw_events = _panel_win.filter_events(raw_events)
+
+            for event in raw_events:
                 if event.type == pygame.QUIT:
                     logger.log("tutorial_quit", elapsed=world.elapsed, step=director._index + 1)
                     raise _StudyExit()
@@ -480,50 +522,53 @@ def run_tutorial(
                     logger.log("tutorial_mouse_down", x=mx, y=my,
                                step=director._index + 1, elapsed=world.elapsed)
 
-                    # ── Suggestion panel buttons ──────────────────────────────
+                    # ── Suggestion panel buttons (inline panel only) ──────────
                     if pending_suggestion is not None:
-                        if popup_drone_id is not None:
-                            for ch, rect in renderer.suggestion_channel_btn_rects.items():
-                                if rect.collidepoint(mx, my):
-                                    old_ch = suggestion_overrides.get(popup_drone_id)
-                                    suggestion_overrides[popup_drone_id] = ch
-                                    if old_ch != ch:
-                                        logger.log("tutorial_suggestion_channel_picked",
-                                                   drone_id=popup_drone_id, channel=ch,
-                                                   step=director._index + 1, elapsed=world.elapsed)
-                                    break
-                        if renderer.suggestion_apply_rect \
-                                and renderer.suggestion_apply_rect.collidepoint(mx, my):
-                            n_overrides = sum(
-                                1 for did, ch in suggestion_overrides.items()
-                                if pending_suggestion.get(did) != ch
-                            )
-                            logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
-                            _apply_suggestion(world, suggestion_overrides, logger,
-                                              mode="M2", instant=True)
-                            pending_suggestion    = None
-                            suggestion_overrides  = {}
-                            selected_ids          = set()
-                            popup_drone_id        = None
-                            game_state["last_action"]          = "suggestion_applied"
-                            game_state["pending_suggestion"]   = None
-                            game_state["popup_drone_id"]       = None
-                            game_state["selected_ids"]         = selected_ids
-                            continue
-                        if renderer.suggestion_cancel_rect \
-                                and renderer.suggestion_cancel_rect.collidepoint(mx, my):
-                            logger.log_suggestion_cancelled(world.elapsed)
-                            pending_suggestion  = None
-                            suggestion_overrides = {}
-                            popup_drone_id      = None
-                            game_state["pending_suggestion"] = None
-                            game_state["popup_drone_id"]     = None
-                            continue
+                        if not panel_detached:
+                            # Panel button hits only apply when panel is inline
+                            if popup_drone_id is not None:
+                                for ch, rect in renderer.suggestion_channel_btn_rects.items():
+                                    if rect.collidepoint(mx, my):
+                                        old_ch = suggestion_overrides.get(popup_drone_id)
+                                        suggestion_overrides[popup_drone_id] = ch
+                                        if old_ch != ch:
+                                            logger.log("tutorial_suggestion_channel_picked",
+                                                       drone_id=popup_drone_id, channel=ch,
+                                                       step=director._index + 1, elapsed=world.elapsed)
+                                        break
+                            if renderer.suggestion_apply_rect \
+                                    and renderer.suggestion_apply_rect.collidepoint(mx, my):
+                                n_overrides = sum(
+                                    1 for did, ch in suggestion_overrides.items()
+                                    if pending_suggestion.get(did) != ch
+                                )
+                                logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
+                                _apply_suggestion(world, suggestion_overrides, logger,
+                                                  mode="M2", instant=True)
+                                pending_suggestion    = None
+                                suggestion_overrides  = {}
+                                selected_ids          = set()
+                                popup_drone_id        = None
+                                game_state["last_action"]          = "suggestion_applied"
+                                game_state["pending_suggestion"]   = None
+                                game_state["popup_drone_id"]       = None
+                                game_state["selected_ids"]         = selected_ids
+                                continue
+                            if renderer.suggestion_cancel_rect \
+                                    and renderer.suggestion_cancel_rect.collidepoint(mx, my):
+                                logger.log_suggestion_cancelled(world.elapsed)
+                                pending_suggestion  = None
+                                suggestion_overrides = {}
+                                popup_drone_id      = None
+                                game_state["pending_suggestion"] = None
+                                game_state["popup_drone_id"]     = None
+                                continue
+                        # Either inline (no button hit) or detached: block arena interaction
                         mouse_down_pos = (mx, my); drag_pos = (mx, my); is_dragging = False
                         continue
 
-                    # ── HUD group-action buttons ──────────────────────────────
-                    if selected_ids:
+                    # ── HUD group-action buttons (inline panel only) ──────────
+                    if selected_ids and not panel_detached:
                         if "suggest" in renderer.hud_button_rects \
                                 and renderer.hud_button_rects["suggest"].collidepoint(mx, my):
                             cur = {r.id: r.channel for r in world.robots}
@@ -692,6 +737,99 @@ def run_tutorial(
 
                     mouse_down_pos = None; drag_pos = None; is_dragging = False
 
+            # ── Events from panel window ──────────────────────────────────────
+            for event in panel_events:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    mx, my = event.pos
+
+                    # Suggestion panel buttons
+                    if pending_suggestion is not None:
+                        if popup_drone_id is not None:
+                            for ch, rect in renderer.suggestion_channel_btn_rects.items():
+                                if rect.collidepoint(mx, my):
+                                    old_ch = suggestion_overrides.get(popup_drone_id)
+                                    suggestion_overrides[popup_drone_id] = ch
+                                    if old_ch != ch:
+                                        logger.log("tutorial_suggestion_channel_picked",
+                                                   drone_id=popup_drone_id, channel=ch,
+                                                   step=director._index + 1, elapsed=world.elapsed)
+                                    break
+                        if renderer.suggestion_apply_rect \
+                                and renderer.suggestion_apply_rect.collidepoint(mx, my):
+                            n_overrides = sum(
+                                1 for did, ch in suggestion_overrides.items()
+                                if pending_suggestion.get(did) != ch
+                            )
+                            logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
+                            _apply_suggestion(world, suggestion_overrides, logger,
+                                              mode="M2", instant=True)
+                            pending_suggestion    = None
+                            suggestion_overrides  = {}
+                            selected_ids          = set()
+                            popup_drone_id        = None
+                            game_state["last_action"]          = "suggestion_applied"
+                            game_state["pending_suggestion"]   = None
+                            game_state["popup_drone_id"]       = None
+                            game_state["selected_ids"]         = selected_ids
+                        elif renderer.suggestion_cancel_rect \
+                                and renderer.suggestion_cancel_rect.collidepoint(mx, my):
+                            logger.log_suggestion_cancelled(world.elapsed)
+                            pending_suggestion   = None
+                            suggestion_overrides = {}
+                            popup_drone_id       = None
+                            game_state["pending_suggestion"] = None
+                            game_state["popup_drone_id"]     = None
+
+                    # HUD group-action buttons
+                    elif selected_ids:
+                        if "suggest" in renderer.hud_button_rects \
+                                and renderer.hud_button_rects["suggest"].collidepoint(mx, my):
+                            cur = {r.id: r.channel for r in world.robots}
+                            forced = game_state.get("tutorial_forced_suggestion")
+                            if forced is not None:
+                                proposed, infeas = forced, False
+                            else:
+                                proposed, infeas = advisor.suggest(
+                                    list(selected_ids), cur, world.edges,
+                                    near_pairs=list(world.warning_pairs))
+                            logger.log_suggestion_requested(list(selected_ids), cur, world.elapsed)
+                            logger.log_suggestion_shown(list(selected_ids), proposed, infeas, world.elapsed)
+                            pending_suggestion   = proposed
+                            suggestion_overrides = dict(proposed)
+                            pending_infeasible   = infeas
+                            popup_drone_id       = None
+                            game_state["pending_suggestion"] = pending_suggestion
+                            game_state["last_action"]        = "suggestion_shown"
+                        elif "auto_assign" in renderer.hud_button_rects \
+                                and renderer.hud_button_rects["auto_assign"].collidepoint(mx, my):
+                            cur = {r.id: r.channel for r in world.robots}
+                            proposed, infeas = advisor.suggest(
+                                list(selected_ids), cur, world.edges,
+                                near_pairs=list(world.warning_pairs))
+                            logger.log_auto_assign_applied(list(selected_ids), proposed, infeas, world.elapsed)
+                            _apply_suggestion(world, proposed, logger, mode="M3", instant=True)
+                            old_sel = list(selected_ids)
+                            selected_ids  = set()
+                            popup_drone_id = None
+                            game_state["selected_ids"]   = selected_ids
+                            game_state["popup_drone_id"] = None
+                            game_state["last_action"]    = "auto_assign_applied"
+                            logger.log_group_deselected(old_sel, world.elapsed)
+
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if pending_suggestion is not None:
+                        mx, my = event.pos
+                        for did, rect in renderer.suggestion_node_rects.items():
+                            if rect.collidepoint(mx, my):
+                                prev_popup = popup_drone_id
+                                popup_drone_id = did if did != popup_drone_id else None
+                                game_state["popup_drone_id"] = popup_drone_id
+                                if popup_drone_id is not None:
+                                    logger.log_suggestion_node_selected(did, world.elapsed)
+                                elif prev_popup is not None:
+                                    logger.log_suggestion_node_deselected(prev_popup, world.elapsed)
+                                break
+
             # ── Director tick ─────────────────────────────────────────────────
             prev_idx = director._index
             if director.tick(dt, game_state):
@@ -718,6 +856,11 @@ def run_tutorial(
                 _make_drag_rect(mouse_down_pos, drag_pos)
                 if is_dragging and mouse_down_pos and drag_pos else None
             )
+
+            # Refresh the panel surface — it becomes stale after each flip()
+            if panel_detached and _panel_win is not None:
+                renderer.refresh_panel_surface(_panel_win.get_fresh_surface())
+
             renderer.draw_frame(
                 world, "PLAYING",
                 popup_drone_id=popup_drone_id,
@@ -727,12 +870,17 @@ def run_tutorial(
                 suggestion_overrides=suggestion_overrides,
                 pending_infeasible=pending_infeasible,
                 tutorial_callout=director.current_callout,
+                panel_detached=panel_detached,
             )
             pygame.display.flip()
+            if panel_detached and _panel_win is not None:
+                _panel_win.flip()
 
     except _StudyExit:
         pass
     finally:
+        if _panel_win is not None:
+            _panel_win.close()
         logger.log("tutorial_complete", steps_completed=director._index, ts=time.time())
         logger.close()
 

@@ -1,0 +1,5 @@
+{"ts": 1777046322.4165678, "event": "tutorial_start"}
+{"ts": 1777046322.4165678, "event": "tutorial_panel_open_failed", "reason": "module 'pygame.display' has no attribute 'get_display_bounds'"}
+{"ts": 1777046326.0481484, "event": "tutorial_key_down", "key": 27, "key_name": "escape", "step": 1, "elapsed": 0.0}
+{"ts": 1777046326.0481484, "event": "tutorial_quit", "elapsed": 0.0, "step": 1}
+{"ts": 1777046326.0481484, "event": "tutorial_complete", "steps_completed": 0}

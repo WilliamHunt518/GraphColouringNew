@@ -5,11 +5,13 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import pygame
 
+import os
+
 from robot_world import RobotWorld, SPEED_MIN, SPEED_MAX, SWITCH_DURATION
 from robot_renderer import RobotRenderer, PANEL_W
 from game_logger import GameLogger
 from agents.channel_agent import ChannelAdvisor
-from panel_window import DetachedPanelWindow, is_supported as panel_detach_supported
+from panel_window import DetachedPanelWindow, is_supported as panel_detach_supported, monitor_rect
 
 
 class _StudyExit(Exception):
@@ -73,16 +75,35 @@ def run_game(
     study_mode: bool = False,
     output_dir: Optional[str] = None,
     screen: Optional[pygame.Surface] = None,
+    arena_monitor: int = 0,
+    panel_monitor: int = 1,
 ) -> Optional[Dict]:
     _owns_display = screen is None
     if _owns_display:
+        # Resolve monitor bounds BEFORE pygame.init() so SDL2 positions the
+        # window correctly at creation — avoids Windows DX fullscreen
+        # optimisations that trigger when a borderless window is repositioned
+        # after creation to cover a monitor exactly.
+        _ab = monitor_rect(arena_monitor)
+        if _ab:
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
+        os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
         pygame.init()
-        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+
+        if _ab:
+            screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
+        else:
+            info = pygame.display.Info()
+            screen = pygame.display.set_mode(
+                (info.current_w, info.current_h), pygame.NOFRAME
+            )
         pygame.display.set_caption("Drone Channel Assignment")
 
     clock = pygame.time.Clock()
     window_w, window_h = screen.get_size()
-    arena_w = window_w - PANEL_W
+    # Panel is always in a separate window, so arena uses the full screen width
+    arena_w = window_w
 
     def make_world() -> RobotWorld:
         return RobotWorld(n_robots, seed, duration,
@@ -128,40 +149,34 @@ def run_game(
     result:       Optional[Dict] = None
     study_advance = False   # set True when user presses SPACE on ENDED in study_mode
 
+    # ── Open the panel window immediately on the chosen monitor ───────────────
     panel_detached = False
     _panel_win: Optional[DetachedPanelWindow] = None
+
+    if panel_detach_supported():
+        try:
+            _pb = monitor_rect(panel_monitor)
+            if _pb is None:
+                # pygame already init'd — fall back to its query
+                n_mon = pygame.display.get_num_displays()
+                pmon  = min(panel_monitor, n_mon - 1)
+                _raw  = pygame.display.get_display_bounds(pmon)
+                _pb   = (_raw[0], _raw[1], _raw[2], _raw[3])
+            _panel_win = DetachedPanelWindow(_pb[2], _pb[3], pos_x=_pb[0], pos_y=_pb[1])
+            renderer.set_panel_surface(_panel_win.get_fresh_surface())
+            panel_detached = True
+            logger.log("panel_opened", monitor=panel_monitor, elapsed=0.0)
+        except Exception as exc:
+            logger.log("panel_open_failed", reason=str(exc), elapsed=0.0)
 
     # ── Event loop ────────────────────────────────────────────────────────────
     def _handle_panel_click(mx: int, my: int, instant: bool) -> bool:
         """
-        Process a click at (mx, my) against panel hit-rects.
+        Process a click at (mx, my) in panel-surface coordinates.
         Returns True if the click was consumed by the panel.
         """
         nonlocal pending_suggestion, suggestion_overrides, pending_infeasible
-        nonlocal popup_drone_id, selected_ids, last_action, panel_detached, _panel_win
-
-        # ── Detach / re-attach button ──────────────────────────────────────
-        if renderer.detach_btn_rect and renderer.detach_btn_rect.collidepoint(mx, my):
-            if not panel_detached:
-                if panel_detach_supported():
-                    try:
-                        _panel_win = DetachedPanelWindow(PANEL_W, window_h)
-                        renderer.set_panel_surface(_panel_win.surface)
-                        panel_detached = True
-                        logger.log_panel_detached(world.elapsed)
-                    except Exception as exc:
-                        logger.log("panel_detach_failed", reason=str(exc),
-                                   elapsed=world.elapsed)
-                else:
-                    logger.log("panel_detach_unavailable", elapsed=world.elapsed)
-            else:
-                if _panel_win is not None:
-                    _panel_win.close()
-                    _panel_win = None
-                renderer.set_panel_surface(None)
-                panel_detached = False
-                logger.log_panel_reattached(world.elapsed)
-            return True
+        nonlocal popup_drone_id, selected_ids, last_action
 
         # ── Suggestion panel ───────────────────────────────────────────────
         if pending_suggestion is not None:
@@ -309,13 +324,6 @@ def run_game(
                         continue
                     mx, my = event.pos
                     instant = (state == "SETUP")
-
-                    # Panel area (inline or detached-but-click-forwarded)
-                    in_panel = (mx >= renderer.panel_x) and not panel_detached
-                    if in_panel:
-                        _handle_panel_click(mx, my, instant)
-                        mouse_down_pos = (mx, my); drag_pos = (mx, my); is_dragging = False
-                        continue
 
                     # ── M1 popup channel buttons ──────────────────────────────
                     if popup_drone_id is not None and renderer.popup_rects:
@@ -509,6 +517,10 @@ def run_game(
                 if is_dragging and mouse_down_pos and drag_pos
                 else None
             )
+
+            # Refresh the panel surface each frame — it becomes stale after flip()
+            if panel_detached and _panel_win is not None:
+                renderer.refresh_panel_surface(_panel_win.get_fresh_surface())
 
             renderer.draw_frame(
                 world, state,
