@@ -212,8 +212,11 @@ class RobotWorld:
                     self.warning_pairs.add((i, j))
 
     def _accumulate_clashes(self, dt: float) -> None:
-        if self.clashing_pairs:
-            self.clash_seconds += dt
+        n = len(self.clashing_pairs)
+        if n:
+            # Each simultaneous clashing pair contributes independently,
+            # so 2 pairs = 2× rate, 3 pairs = 3× rate, etc.
+            self.clash_seconds += dt * n
 
     @property
     def is_clashing(self) -> bool:

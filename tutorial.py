@@ -34,6 +34,7 @@ class TutorialStep:
     disabled_buttons: frozenset          = field(default_factory=frozenset)
     completion_check: Optional[Callable[[dict], bool]] = None
     setup_fn: Optional[Callable[[RobotWorld, dict], None]] = None
+    preserve_suggestion: bool            = False  # keep pending_suggestion across step transition
 
 
 # ── Tutorial director ─────────────────────────────────────────────────────────
@@ -122,11 +123,14 @@ class TutorialDirector:
         self._entered       = False
         self._pulse         = 0.0
         self._step_elapsed  = 0.0
-        game_state["last_action"]           = None
+        game_state["last_action"]  = None
         game_state["selected_ids"].clear()
-        game_state["pending_suggestion"]    = None
-        game_state["popup_drone_id"]        = None
-        game_state.pop("tutorial_forced_suggestion", None)
+        game_state["popup_drone_id"] = None
+        # Preserve suggestion state if the incoming step needs it (e.g. step 6b)
+        next_step = self._steps[self._index] if self._index < len(self._steps) else None
+        if next_step is None or not next_step.preserve_suggestion:
+            game_state["pending_suggestion"] = None
+            game_state.pop("tutorial_forced_suggestion", None)
 
 
 # ── Step setup helpers ────────────────────────────────────────────────────────
@@ -145,7 +149,7 @@ def _place(world: RobotWorld, configs: List[Tuple]) -> None:
 
 
 def _make_steps(world: RobotWorld) -> List[TutorialStep]:
-    N      = 8
+    N       = 10
     DB_ALL  = frozenset({"suggest", "auto_assign"})   # both disabled
     DB_AUTO = frozenset({"auto_assign"})              # must use Suggest
     DB_SUG  = frozenset({"suggest"})                  # must use Auto-assign
@@ -200,8 +204,10 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
     def check_5(gs: dict) -> bool:
         return gs["last_action"] == "suggestion_applied"
 
-    # ── Step 6: M2 forced error — user must spot & fix ───────────────────────
-    def setup_6(w: RobotWorld, gs: dict) -> None:
+    # ── Step 6a: Select & suggest to get to the review screen ───────────────
+    # Same layout as steps 2/3. User must pick the two clashing drones and
+    # click Suggest themselves before we reveal the bad suggestion.
+    def setup_6a(w: RobotWorld, gs: dict) -> None:
         _place(w, [
             (0, 0.38, 0.50, "red",   0, 0),
             (1, 0.56, 0.50, "red",   0, 0),
@@ -210,12 +216,20 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (4, 0.72, 0.82, "blue",  0, 0),
             (5, 0.88, 0.72, "green", 0, 0),
         ])
-        gs["selected_ids"].update({0, 1})
-        # Force a bad suggestion: both green — they'll still clash
+        # Pre-arm the bad suggestion so it fires when Suggest is clicked
         gs["tutorial_forced_suggestion"] = {0: "green", 1: "green"}
 
-    def check_6(gs: dict) -> bool:
-        # Only advance once they've applied AND actually resolved the clash
+    def check_6a(gs: dict) -> bool:
+        # Advance once the user has clicked Suggest and seen the proposal
+        return gs["last_action"] == "suggestion_shown"
+
+    # ── Step 6b: Spot the mistake and override ───────────────────────────────
+    def setup_6b(w: RobotWorld, gs: dict) -> None:
+        # No world reset — the bad suggestion is already visible in the panel.
+        # Keep the forced suggestion key so the mini-graph still shows the clash.
+        pass
+
+    def check_6b(gs: dict) -> bool:
         return (gs["last_action"] == "suggestion_applied"
                 and not gs["world"].clashing_pairs)
 
@@ -233,8 +247,25 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
     def check_7(gs: dict) -> bool:
         return gs["last_action"] == "auto_assign_applied"
 
-    # ── Step 8: Free practice ────────────────────────────────────────────────
+    # ── Step 8: Unsolvable K4 cluster ────────────────────────────────────────
+    # Four drones placed within CONNECT_RADIUS (~420 px) of each other.
+    # With only 3 channels, at least one pair MUST share a channel (pigeonhole).
+    # All six pairs are within range → K4 subgraph → chromatic number = 4 > 3.
+    # The user tries their best; the tutorial explains the situation.
     def setup_8(w: RobotWorld, gs: dict) -> None:
+        _place(w, [
+            (0, 0.28, 0.40, "red",   0, 0),
+            (1, 0.44, 0.36, "green", 0, 0),
+            (2, 0.44, 0.56, "blue",  0, 0),
+            (3, 0.28, 0.60, "red",   0, 0),   # matches D0 → immediate clash
+            (4, 0.78, 0.28, "blue",  0, 0),
+            (5, 0.78, 0.72, "green", 0, 0),
+        ])
+
+    # Step 8 advances on SPACE (no automatic completion); user explores then moves on.
+
+    # ── Step 9: Free practice ────────────────────────────────────────────────
+    def setup_9(w: RobotWorld, gs: dict) -> None:
         import random as _rng
         rng  = _rng.Random(99)
         spd  = (w.v_min + w.v_max) / 2
@@ -254,7 +285,8 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             heading="Welcome",
             body="Your task: manage radio channels for a drone swarm. "
                  "SCORING — every second that two drones on the SAME channel are within range, "
-                 "the clash timer ticks up. Lower clash time = better score. "
+                 "the clash timer ticks up. Each simultaneous clash pair counts separately — "
+                 "two clashes at once score twice as fast. Lower clash time = better. "
                  "Press SPACE to continue.",
             highlight_ids=[], advance_on_space=True, freeze=True,
             disabled_buttons=DB_ALL, setup_fn=setup_1),
@@ -294,15 +326,24 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             completion_check=check_5, disabled_buttons=DB_AUTO, setup_fn=setup_5),
 
         TutorialStep(6, N,
-            heading="Spot the Mistake — Override a Bad Suggestion",
-            body="The assistant made an error: it put D0 and D1 both on GREEN — "
-                 "they will still clash (red line in the mini-graph preview). "
-                 "Click D0 or D1 in the mini-graph, pick a different channel, then Apply.",
+            heading="Let's Try Again — Suggest for D0 & D1",
+            body="D0 and D1 are clashing on RED again. Select them (drag or Ctrl+click), "
+                 "then click Suggest. We'll check what the assistant recommends.",
             highlight_ids=[0, 1], highlight_color=(230, 60, 60),
             advance_on_space=False, freeze=True,
-            completion_check=check_6, disabled_buttons=DB_AUTO, setup_fn=setup_6),
+            completion_check=check_6a, disabled_buttons=DB_AUTO, setup_fn=setup_6a),
 
         TutorialStep(7, N,
+            heading="Spot the Mistake — Override a Bad Suggestion",
+            body="The assistant put D0 and D1 both on GREEN — they will STILL clash "
+                 "(red line in the mini-graph). Click D0 or D1 in the mini-graph, "
+                 "pick a different channel for one of them, then click Apply.",
+            highlight_ids=[0, 1], highlight_color=(230, 60, 60),
+            advance_on_space=False, freeze=True,
+            completion_check=check_6b, disabled_buttons=DB_AUTO, setup_fn=setup_6b,
+            preserve_suggestion=True),
+
+        TutorialStep(8, N,
             heading="Auto-Assign — Mode 3",
             body="D0 and D1 are clashing again. Select them (drag or Ctrl+click), "
                  "then click 'Auto-assign' — channels are applied instantly without a review step.",
@@ -310,13 +351,25 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             advance_on_space=False, freeze=True,
             completion_check=check_7, disabled_buttons=DB_SUG, setup_fn=setup_7),
 
-        TutorialStep(8, N,
+        TutorialStep(9, N,
+            heading="When There's No Perfect Solution",
+            body="D0–D3 are all within range of each other — a complete group of 4. "
+                 "With only 3 channels, at least one pair MUST share — it's a mathematical "
+                 "certainty (pigeonhole principle). Try to find the assignment with the "
+                 "fewest clashes: the best you can do here is 1 clashing pair. "
+                 "Use any mode to experiment, then press SPACE to continue.",
+            highlight_ids=[0, 1, 2, 3], highlight_color=(230, 60, 60),
+            advance_on_space=True, freeze=True,
+            disabled_buttons=frozenset(), setup_fn=setup_8),
+
+        TutorialStep(10, N,
             heading="Free Practice",
-            body="All three modes covered! The drones are now moving. "
-                 "Use M1 (click), M2 (Suggest), or M3 (Auto-assign) freely — "
-                 "try to keep clash time low. Press SPACE when you're ready to start the real trial.",
+            body="All modes covered — including handling the unavoidable! "
+                 "The drones are now moving. Use M1 (click), M2 (Suggest), or M3 (Auto-assign) "
+                 "freely. Try to keep clash time low. "
+                 "Press SPACE when you're ready to start the real trial.",
             highlight_ids=[], advance_on_space=True, freeze=False,
-            min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_8),
+            min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_9),
     ]
 
 
@@ -359,6 +412,8 @@ def run_tutorial(
         "world":            world,
     }
 
+    from robot_game import _drone_at
+
     selected_ids:       Set[int]           = game_state["selected_ids"]
     popup_drone_id:     Optional[int]      = None
     pending_suggestion: Optional[Dict[int,str]] = None
@@ -371,49 +426,79 @@ def run_tutorial(
     prev_clashing       = False
     step_start_ts       = time.time()
 
+    def _sync_from_gs() -> None:
+        nonlocal popup_drone_id, pending_suggestion, selected_ids
+        popup_drone_id     = game_state["popup_drone_id"]
+        pending_suggestion = game_state["pending_suggestion"]
+        selected_ids       = game_state["selected_ids"]
+
+    def _on_step_advance(prev_idx: int, keep_suggestion: bool = False) -> None:
+        nonlocal selected_ids, popup_drone_id, pending_suggestion
+        nonlocal suggestion_overrides, pending_infeasible, step_start_ts
+        _log_step_transition(logger, prev_idx, step_start_ts)
+        step_start_ts = time.time()
+        _sync_from_gs()
+        if not keep_suggestion:
+            suggestion_overrides = {}
+            pending_infeasible   = False
+        else:
+            # Re-sync overrides from the preserved suggestion
+            if pending_suggestion is not None:
+                suggestion_overrides = dict(pending_suggestion)
+
     try:
         while True:
             dt = clock.tick(60) / 1000.0
             dt = min(dt, 0.05)
 
             # Sync aliases back from game_state (director may have mutated them)
-            popup_drone_id     = game_state["popup_drone_id"]
-            pending_suggestion = game_state["pending_suggestion"]
+            _sync_from_gs()
             game_state["selected_ids"] = selected_ids
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    logger.log("tutorial_quit", elapsed=world.elapsed)
+                    logger.log("tutorial_quit", elapsed=world.elapsed, step=director._index + 1)
                     raise _StudyExit()
 
                 elif event.type == pygame.KEYDOWN:
+                    logger.log("tutorial_key_down",
+                               key=event.key, key_name=pygame.key.name(event.key),
+                               step=director._index + 1, elapsed=world.elapsed)
                     if event.key == pygame.K_ESCAPE:
-                        logger.log("tutorial_quit", elapsed=world.elapsed)
+                        logger.log("tutorial_quit", elapsed=world.elapsed, step=director._index + 1)
                         raise _StudyExit()
                     elif event.key == pygame.K_SPACE:
                         prev_step = director._index
                         director.on_space(game_state)
                         if director._index != prev_step:
-                            _log_step_transition(logger, prev_step, step_start_ts)
-                            step_start_ts       = time.time()
-                            selected_ids        = game_state["selected_ids"]
-                            popup_drone_id      = game_state["popup_drone_id"]
-                            pending_suggestion  = game_state["pending_suggestion"]
-                            suggestion_overrides = {}
-                            pending_infeasible   = False
+                            next_step = director._steps[director._index] if director._index < len(director._steps) else None
+                            keep = (next_step is not None and next_step.preserve_suggestion)
+                            _on_step_advance(prev_step, keep_suggestion=keep)
 
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     mx, my = event.pos
+                    logger.log("tutorial_mouse_down", x=mx, y=my,
+                               step=director._index + 1, elapsed=world.elapsed)
 
                     # ── Suggestion panel buttons ──────────────────────────────
                     if pending_suggestion is not None:
                         if popup_drone_id is not None:
                             for ch, rect in renderer.suggestion_channel_btn_rects.items():
                                 if rect.collidepoint(mx, my):
+                                    old_ch = suggestion_overrides.get(popup_drone_id)
                                     suggestion_overrides[popup_drone_id] = ch
+                                    if old_ch != ch:
+                                        logger.log("tutorial_suggestion_channel_picked",
+                                                   drone_id=popup_drone_id, channel=ch,
+                                                   step=director._index + 1, elapsed=world.elapsed)
                                     break
                         if renderer.suggestion_apply_rect \
                                 and renderer.suggestion_apply_rect.collidepoint(mx, my):
+                            n_overrides = sum(
+                                1 for did, ch in suggestion_overrides.items()
+                                if pending_suggestion.get(did) != ch
+                            )
+                            logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
                             _apply_suggestion(world, suggestion_overrides, logger,
                                               mode="M2", instant=True)
                             pending_suggestion    = None
@@ -427,6 +512,7 @@ def run_tutorial(
                             continue
                         if renderer.suggestion_cancel_rect \
                                 and renderer.suggestion_cancel_rect.collidepoint(mx, my):
+                            logger.log_suggestion_cancelled(world.elapsed)
                             pending_suggestion  = None
                             suggestion_overrides = {}
                             popup_drone_id      = None
@@ -441,7 +527,6 @@ def run_tutorial(
                         if "suggest" in renderer.hud_button_rects \
                                 and renderer.hud_button_rects["suggest"].collidepoint(mx, my):
                             cur = {r.id: r.channel for r in world.robots}
-                            # Use forced suggestion if the director has one for this step
                             forced = game_state.get("tutorial_forced_suggestion")
                             if forced is not None:
                                 proposed, infeas = forced, False
@@ -449,6 +534,8 @@ def run_tutorial(
                                 proposed, infeas = advisor.suggest(
                                     list(selected_ids), cur, world.edges,
                                     near_pairs=list(world.warning_pairs))
+                            logger.log_suggestion_requested(list(selected_ids), cur, world.elapsed)
+                            logger.log_suggestion_shown(list(selected_ids), proposed, infeas, world.elapsed)
                             pending_suggestion   = proposed
                             suggestion_overrides = dict(proposed)
                             pending_infeasible   = infeas
@@ -463,12 +550,15 @@ def run_tutorial(
                             proposed, infeas = advisor.suggest(
                                 list(selected_ids), cur, world.edges,
                                 near_pairs=list(world.warning_pairs))
+                            logger.log_auto_assign_applied(list(selected_ids), proposed, infeas, world.elapsed)
                             _apply_suggestion(world, proposed, logger, mode="M3", instant=True)
+                            old_sel = list(selected_ids)
                             selected_ids  = set()
                             popup_drone_id = None
                             game_state["selected_ids"]   = selected_ids
                             game_state["popup_drone_id"] = None
                             game_state["last_action"]    = "auto_assign_applied"
+                            logger.log_group_deselected(old_sel, world.elapsed)
                             continue
 
                     # ── M1 popup ──────────────────────────────────────────────
@@ -482,17 +572,26 @@ def run_tutorial(
                                     world._detect_edges()
                                     logger.log_switch_requested(
                                         popup_drone_id, robot.channel, ch, world.elapsed, mode="M1")
+                                else:
+                                    logger.log("tutorial_m1_same_channel",
+                                               drone_id=popup_drone_id, channel=ch,
+                                               step=director._index + 1, elapsed=world.elapsed)
+                                old_popup = popup_drone_id
                                 game_state["last_action"]    = "M1_switch"
                                 popup_drone_id               = None
                                 game_state["popup_drone_id"] = None
+                                logger.log_popup_dismissed(old_popup, world.elapsed)
                                 break
                         else:
-                            if mx < arena_w:
+                            if mx < renderer.arena_w:
                                 mouse_down_pos = (mx, my); drag_pos = (mx, my)
                         continue
 
-                    if mx < arena_w:
+                    if mx < renderer.arena_w:
                         mouse_down_pos = (mx, my); drag_pos = (mx, my); is_dragging = False
+                    else:
+                        logger.log("tutorial_panel_click_miss", x=mx, y=my,
+                                   step=director._index + 1, elapsed=world.elapsed)
 
                 elif event.type == pygame.MOUSEMOTION:
                     if mouse_down_pos is not None and pygame.mouse.get_pressed()[0]:
@@ -508,9 +607,18 @@ def run_tutorial(
                             mx, my = event.pos
                             for did, rect in renderer.suggestion_node_rects.items():
                                 if rect.collidepoint(mx, my):
+                                    prev_popup = popup_drone_id
                                     popup_drone_id = did if did != popup_drone_id else None
                                     game_state["popup_drone_id"] = popup_drone_id
+                                    if popup_drone_id is not None:
+                                        logger.log_suggestion_node_selected(did, world.elapsed)
+                                    elif prev_popup is not None:
+                                        logger.log_suggestion_node_deselected(prev_popup, world.elapsed)
                                     break
+                            else:
+                                logger.log("tutorial_suggestion_panel_miss",
+                                           x=event.pos[0], y=event.pos[1],
+                                           step=director._index + 1, elapsed=world.elapsed)
                         mouse_down_pos = None; drag_pos = None; is_dragging = False
                         continue
 
@@ -524,39 +632,63 @@ def run_tutorial(
                         x0, y0 = mouse_down_pos; x1, y1 = drag_pos
                         box    = pygame.Rect(min(x0,x1), min(y0,y1), abs(x1-x0), abs(y1-y0))
                         new_sel = {r.id for r in world.robots if box.collidepoint(int(r.x), int(r.y))}
+                        prev_sel = list(selected_ids)
                         selected_ids = (selected_ids ^ new_sel) if ctrl else new_sel
                         popup_drone_id = None
                         game_state["selected_ids"]   = selected_ids
                         game_state["popup_drone_id"] = None
                         if selected_ids:
+                            logger.log_group_selected(list(selected_ids), "box", world.elapsed)
                             game_state["last_action"] = "group_selected"
+                        elif prev_sel:
+                            logger.log_group_deselected(prev_sel, world.elapsed)
                     else:
-                        from robot_game import _drone_at
-                        clicked = _drone_at((mx, my), world, arena_w)
+                        clicked = _drone_at((mx, my), world, renderer.arena_w)
                         if clicked is not None:
                             if ctrl:
                                 if clicked in selected_ids:
                                     selected_ids.discard(clicked)
+                                    logger.log("tutorial_ctrl_deselect", drone_id=clicked,
+                                               step=director._index + 1, elapsed=world.elapsed)
                                 else:
                                     selected_ids.add(clicked)
+                                    logger.log("tutorial_ctrl_select", drone_id=clicked,
+                                               step=director._index + 1, elapsed=world.elapsed)
                                 popup_drone_id = None
                                 game_state["selected_ids"]   = selected_ids
                                 game_state["popup_drone_id"] = None
                                 if selected_ids:
+                                    logger.log_group_selected(list(selected_ids), "ctrl_click", world.elapsed)
                                     game_state["last_action"] = "group_selected"
                             elif selected_ids:
+                                old_sel = list(selected_ids)
                                 selected_ids   = set()
                                 popup_drone_id = clicked if clicked != popup_drone_id else None
                                 game_state["selected_ids"]   = selected_ids
                                 game_state["popup_drone_id"] = popup_drone_id
+                                logger.log_group_deselected(old_sel, world.elapsed)
+                                if popup_drone_id is not None:
+                                    logger.log_popup_opened(popup_drone_id, world.elapsed)
                             else:
-                                popup_drone_id = clicked if clicked != popup_drone_id else None
+                                new_popup = clicked if clicked != popup_drone_id else None
+                                if popup_drone_id is not None and new_popup is None:
+                                    logger.log_popup_dismissed(popup_drone_id, world.elapsed)
+                                elif new_popup is not None:
+                                    logger.log_popup_opened(new_popup, world.elapsed)
+                                popup_drone_id = new_popup
                                 game_state["popup_drone_id"] = popup_drone_id
                         else:
+                            prev_sel = list(selected_ids)
+                            prev_popup = popup_drone_id
                             selected_ids   = set()
                             popup_drone_id = None
                             game_state["selected_ids"]   = selected_ids
                             game_state["popup_drone_id"] = None
+                            if prev_sel:
+                                logger.log_group_deselected(prev_sel, world.elapsed)
+                            if prev_popup is not None:
+                                logger.log_popup_dismissed(prev_popup, world.elapsed)
+                            logger.log_arena_click_miss(mx, my, world.elapsed)
 
                     mouse_down_pos = None; drag_pos = None; is_dragging = False
 
@@ -565,13 +697,9 @@ def run_tutorial(
             if director.tick(dt, game_state):
                 break
             if director._index != prev_idx:
-                _log_step_transition(logger, prev_idx, step_start_ts)
-                step_start_ts        = time.time()
-                selected_ids         = game_state["selected_ids"]
-                popup_drone_id       = game_state["popup_drone_id"]
-                pending_suggestion   = game_state["pending_suggestion"]
-                suggestion_overrides = {}
-                pending_infeasible   = False
+                next_step = director._steps[director._index] if director._index < len(director._steps) else None
+                keep = (next_step is not None and next_step.preserve_suggestion)
+                _on_step_advance(prev_idx, keep_suggestion=keep)
 
             # ── Physics ───────────────────────────────────────────────────────
             if not director.is_frozen:

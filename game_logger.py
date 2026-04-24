@@ -90,5 +90,33 @@ class GameLogger:
     def log_quit(self, elapsed: float, clash_seconds: float) -> None:
         self.log("quit", elapsed=elapsed, clash_seconds=clash_seconds)
 
+    def log_popup_opened(self, drone_id: int, elapsed: float) -> None:
+        self.log("popup_opened", drone_id=drone_id, elapsed=elapsed)
+
+    def log_popup_dismissed(self, drone_id: int, elapsed: float) -> None:
+        self.log("popup_dismissed", drone_id=drone_id, elapsed=elapsed)
+
+    def log_group_deselected(self, drone_ids: List[int], elapsed: float) -> None:
+        self.log("group_deselected", drone_ids=drone_ids, elapsed=elapsed)
+
+    def log_arena_click_miss(self, x: int, y: int, elapsed: float) -> None:
+        self.log("arena_click_miss", x=x, y=y, elapsed=elapsed)
+
+    def log_suggestion_node_selected(
+        self, drone_id: int, elapsed: float
+    ) -> None:
+        self.log("suggestion_node_selected", drone_id=drone_id, elapsed=elapsed)
+
+    def log_suggestion_node_deselected(
+        self, drone_id: int, elapsed: float
+    ) -> None:
+        self.log("suggestion_node_deselected", drone_id=drone_id, elapsed=elapsed)
+
+    def log_panel_detached(self, elapsed: float) -> None:
+        self.log("panel_detached", elapsed=elapsed)
+
+    def log_panel_reattached(self, elapsed: float) -> None:
+        self.log("panel_reattached", elapsed=elapsed)
+
     def close(self) -> None:
         self._fh.close()
