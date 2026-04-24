@@ -6,10 +6,10 @@ from typing import Any, Dict, List, Optional
 
 
 class GameLogger:
-    def __init__(self, output_dir: str = "logs") -> None:
+    def __init__(self, output_dir: str = "logs", filename: Optional[str] = None) -> None:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
-        ts = time.strftime("%Y%m%d_%H%M%S")
-        self._path = Path(output_dir) / f"game_{ts}.jsonl"
+        fname = filename if filename else f"game_{time.strftime('%Y%m%d_%H%M%S')}.jsonl"
+        self._path = Path(output_dir) / fname
         self._fh = self._path.open("a", encoding="utf-8")
 
     def log(self, event_type: str, **kwargs: Any) -> None:

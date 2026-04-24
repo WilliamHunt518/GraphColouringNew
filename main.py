@@ -11,7 +11,8 @@ def main() -> None:
     )
     parser.add_argument("--seed",     type=int,   default=42,   help="RNG seed")
     parser.add_argument("--duration", type=float, default=90.0, help="Trial duration in seconds")
-    parser.add_argument("--epsilon",  type=float, default=0.20, help="Agent noise rate (0=perfect)")
+    parser.add_argument("--epsilon",      type=float, default=0.20, help="Agent noise rate (0=perfect)")
+    parser.add_argument("--switch-delay", type=float, default=3.0,  help="Channel switch delay in seconds (0=instant)")
     # Manual overrides (take precedence over --complexity)
     parser.add_argument("--robots",   type=int,   default=None, help="Number of drones")
     parser.add_argument("--v-min",    type=float, default=None, help="Min drone speed (px/s)")
@@ -37,6 +38,7 @@ def main() -> None:
         v_max=v_max,
         epsilon=args.epsilon,
         complexity=complexity_label,
+        switch_duration=args.switch_delay,
     )
 
 

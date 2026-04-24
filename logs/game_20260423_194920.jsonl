@@ -1,0 +1,4 @@
+{"ts": 1776970160.8492713, "event": "game_start", "seed": 42, "n_drones": 12, "complexity": "medium", "duration": 90.0, "v_min": 10.0, "v_max": 22.0}
+{"ts": 1776970169.3959029, "event": "clash_start", "elapsed": 3.7189999999999945, "pairs": [[5, 9]]}
+{"ts": 1776970171.6557984, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "blue", "elapsed": 5.96200000000001, "mode": "M1"}
+{"ts": 1776970172.8060577, "event": "quit", "elapsed": 7.113000000000021, "clash_seconds": 3.409999999999996}

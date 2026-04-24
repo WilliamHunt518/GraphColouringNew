@@ -1,0 +1,23 @@
+{"ts": 1776970538.1155381, "event": "game_start", "seed": 42, "n_drones": 16, "complexity": "hard", "duration": 90.0, "v_min": 15.0, "v_max": 30.0}
+{"ts": 1776970547.3794525, "event": "play_started", "elapsed": 0.0}
+{"ts": 1776970549.2389836, "event": "clash_start", "elapsed": 1.8759999999999992, "pairs": [[11, 15]]}
+{"ts": 1776970551.6075253, "event": "switch_requested", "drone_id": 15, "from_channel": "blue", "to_channel": "green", "elapsed": 4.227999999999996, "mode": "M1"}
+{"ts": 1776970556.487957, "event": "switch_requested", "drone_id": 14, "from_channel": "blue", "to_channel": "green", "elapsed": 9.108000000000017, "mode": "M1"}
+{"ts": 1776970559.3706315, "event": "group_selected", "drone_ids": [1, 2, 3, 6, 10], "method": "box", "elapsed": 11.99099999999998}
+{"ts": 1776970560.4407845, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 6, 10], "proposed_channels": {"6": "red", "1": "green", "2": "red", "3": "green", "10": "green"}, "infeasible": false, "elapsed": 13.060999999999966}
+{"ts": 1776970560.440833, "event": "switch_requested", "drone_id": 6, "from_channel": "green", "to_channel": "red", "elapsed": 13.060999999999966, "mode": "M3"}
+{"ts": 1776970560.4408448, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "green", "elapsed": 13.060999999999966, "mode": "M3"}
+{"ts": 1776970560.4408536, "event": "switch_requested", "drone_id": 2, "from_channel": "green", "to_channel": "red", "elapsed": 13.060999999999966, "mode": "M3"}
+{"ts": 1776970560.4408607, "event": "switch_requested", "drone_id": 3, "from_channel": "red", "to_channel": "green", "elapsed": 13.060999999999966, "mode": "M3"}
+{"ts": 1776970560.4408677, "event": "switch_requested", "drone_id": 10, "from_channel": "blue", "to_channel": "green", "elapsed": 13.060999999999966, "mode": "M3"}
+{"ts": 1776970561.476385, "event": "clash_end", "elapsed": 14.112999999999953, "clash_seconds_so_far": 12.236999999999979}
+{"ts": 1776970565.4384704, "event": "clash_start", "elapsed": 18.074999999999783, "pairs": [[1, 10]]}
+{"ts": 1776970568.5319345, "event": "switch_requested", "drone_id": 10, "from_channel": "green", "to_channel": "blue", "elapsed": 21.151999999999546, "mode": "M1"}
+{"ts": 1776970569.9504545, "event": "switch_requested", "drone_id": 7, "from_channel": "red", "to_channel": "blue", "elapsed": 22.570999999999447, "mode": "M1"}
+{"ts": 1776970575.9685974, "event": "group_selected", "drone_ids": [8, 13, 4, 5], "method": "box", "elapsed": 28.58899999999898}
+{"ts": 1776970576.9312394, "event": "suggestion_requested", "drone_ids": [8, 13, 4, 5], "current_channels": {"0": "green", "1": "green", "2": "red", "3": "green", "4": "blue", "5": "green", "6": "red", "7": "blue", "8": "green", "9": "red", "10": "blue", "11": "blue", "12": "blue", "13": "blue", "14": "green", "15": "green"}, "elapsed": 29.55199999999892}
+{"ts": 1776970576.9312851, "event": "suggestion_shown", "drone_ids": [8, 13, 4, 5], "proposed_channels": {"4": "red", "8": "green", "13": "blue", "5": "blue"}, "infeasible": false, "elapsed": 29.55199999999892}
+{"ts": 1776970578.281628, "event": "suggestion_applied", "final_channels": {"4": "red", "8": "green", "13": "blue", "5": "blue"}, "n_overrides": 0, "elapsed": 30.90199999999882}
+{"ts": 1776970578.281677, "event": "switch_requested", "drone_id": 4, "from_channel": "blue", "to_channel": "red", "elapsed": 30.90199999999882, "mode": "M2"}
+{"ts": 1776970578.2816887, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "blue", "elapsed": 30.90199999999882, "mode": "M2"}
+{"ts": 1776970581.4833977, "event": "quit", "elapsed": 34.10299999999873, "clash_seconds": 28.280999999999004}

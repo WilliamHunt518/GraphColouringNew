@@ -36,6 +36,7 @@ class ChannelAdvisor:
         selected_ids: List[int],
         current_channels: Dict[int, str],
         edges: List[Tuple[int, int]],
+        near_pairs: Optional[List[Tuple[int, int]]] = None,
     ) -> Tuple[Dict[int, str], bool]:
         """
         Propose a channel assignment for the selected drones.
@@ -49,6 +50,9 @@ class ChannelAdvisor:
             Drones that are switching may have a stale channel here.
         edges:
             All active interference edges as (id_i, id_j) pairs.
+        near_pairs:
+            Pairs of drones in approach range (not yet in comm range) that
+            the agent treats as likely future edges when planning assignments.
 
         Returns
         -------
@@ -63,12 +67,17 @@ class ChannelAdvisor:
 
         selected_set: Set[int] = set(selected_ids)
 
+        # Combine confirmed edges with anticipated near-range links
+        all_edges = list(edges)
+        if near_pairs:
+            all_edges.extend(near_pairs)
+
         # Within-group adjacency
         adj: Dict[int, Set[int]] = {i: set() for i in selected_ids}
         # Channels blocked by already-fixed (non-selected) neighbours
         fixed_blocked: Dict[int, Set[str]] = {i: set() for i in selected_ids}
 
-        for u, v in edges:
+        for u, v in all_edges:
             u_in = u in selected_set
             v_in = v in selected_set
             if u_in and v_in:
