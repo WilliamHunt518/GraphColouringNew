@@ -49,6 +49,7 @@ class TutorialDirector:
         self._pulse        = 0.0
         self._entered      = False
         self._step_elapsed = 0.0
+        self._step_unlocked = False  # True once completion_check passes on an advance_on_space step
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -75,6 +76,11 @@ class TutorialDirector:
                 hint_override = f"Free play  —  {remaining:.0f}s before you can continue"
             else:
                 hint_override = "SPACE to continue when ready"
+        elif s.advance_on_space and s.completion_check is not None:
+            if self._step_unlocked:
+                hint_override = "SPACE to continue"
+            else:
+                hint_override = "Fix all clashes first, then press SPACE"
 
         return TutorialCallout(
             heading=f"Step {s.number} of {s.total} — {s.heading}",
@@ -108,7 +114,10 @@ class TutorialDirector:
 
         step = self._steps[self._index]
         if step.completion_check and step.completion_check(game_state):
-            self._advance(game_state)
+            if step.advance_on_space:
+                self._step_unlocked = True   # unlock space; user must press it to advance
+            else:
+                self._advance(game_state)
         return self.is_done
 
     def on_space(self, game_state: dict) -> None:
@@ -116,7 +125,8 @@ class TutorialDirector:
             return
         s = self._steps[self._index]
         if s.advance_on_space and self._step_elapsed >= s.min_time:
-            self._advance(game_state)
+            if s.completion_check is None or self._step_unlocked:
+                self._advance(game_state)
 
     # ── Internal ─────────────────────────────────────────────────────────────
 
@@ -125,6 +135,7 @@ class TutorialDirector:
         self._entered       = False
         self._pulse         = 0.0
         self._step_elapsed  = 0.0
+        self._step_unlocked = False
         game_state["last_action"]  = None
         game_state["selected_ids"].clear()
         game_state["popup_drone_id"] = None
@@ -168,14 +179,16 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
         ])
 
     # ── Step 2: Clash demo ───────────────────────────────────────────────────
+    # D0/D1/D2 form a tight K3 triangle so they all connect at any resolution
+    # (max separation ≈ 154px at 2560px wide, well under CONNECT_RADIUS=364px).
     def setup_2(w: RobotWorld, gs: dict) -> None:
         _place(w, [
-            (0, 0.38, 0.50, "red",   0, 0),
-            (1, 0.56, 0.50, "red",   0, 0),
-            (2, 0.85, 0.18, "blue",  0, 0),
+            (0, 0.44, 0.47, "red",   0, 0),
+            (1, 0.50, 0.47, "red",   0, 0),
+            (2, 0.47, 0.53, "red",   0, 0),
             (3, 0.10, 0.80, "green", 0, 0),
             (4, 0.72, 0.82, "blue",  0, 0),
-            (5, 0.88, 0.72, "green", 0, 0),
+            (5, 0.88, 0.22, "green", 0, 0),
         ])
 
     # ── Step 3: M1 fix ───────────────────────────────────────────────────────
@@ -200,26 +213,29 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
         return gs["selected_ids"] >= {0, 1, 2, 3}
 
     # ── Step 5: M2 suggest + apply (agent is correct) ───────────────────────
+    # Inherits positions from setup_4. At typical study screen widths the
+    # D0–D3 cluster forms K4-minus-one-edge (D2–D3 are just out of range),
+    # so the forced suggestion below is always clash-free in the mini-graph.
     def setup_5(w: RobotWorld, gs: dict) -> None:
-        gs["selected_ids"].update({0, 1, 2, 3})   # pre-select
+        gs["selected_ids"].update({0, 1, 2, 3})          # pre-select
+        gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "blue", 3: "blue"}
 
     def check_5(gs: dict) -> bool:
         return gs["last_action"] == "suggestion_applied"
 
     # ── Step 6a: Select & suggest to get to the review screen ───────────────
-    # Same layout as steps 2/3. User must pick the two clashing drones and
-    # click Suggest themselves before we reveal the bad suggestion.
+    # Same tight K3 cluster as steps 2/3. Bad suggestion assigns all 3 green.
     def setup_6a(w: RobotWorld, gs: dict) -> None:
         _place(w, [
-            (0, 0.38, 0.50, "red",   0, 0),
-            (1, 0.56, 0.50, "red",   0, 0),
-            (2, 0.85, 0.18, "blue",  0, 0),
+            (0, 0.44, 0.47, "red",   0, 0),
+            (1, 0.50, 0.47, "red",   0, 0),
+            (2, 0.47, 0.53, "red",   0, 0),
             (3, 0.10, 0.80, "green", 0, 0),
             (4, 0.72, 0.82, "blue",  0, 0),
-            (5, 0.88, 0.72, "green", 0, 0),
+            (5, 0.88, 0.22, "green", 0, 0),
         ])
         # Pre-arm the bad suggestion so it fires when Suggest is clicked
-        gs["tutorial_forced_suggestion"] = {0: "green", 1: "green"}
+        gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "green"}
 
     def check_6a(gs: dict) -> bool:
         # Advance once the user has clicked Suggest and seen the proposal
@@ -236,12 +252,13 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
                 and not gs["world"].clashing_pairs)
 
     # ── Step 7: M3 auto-assign ───────────────────────────────────────────────
+    # Same K3 cluster positions, now on blue.
     def setup_7(w: RobotWorld, gs: dict) -> None:
         _place(w, [
-            (0, 0.38, 0.50, "blue",  0, 0),
-            (1, 0.56, 0.50, "blue",  0, 0),
-            (2, 0.15, 0.25, "red",   0, 0),
-            (3, 0.15, 0.75, "green", 0, 0),
+            (0, 0.44, 0.47, "blue",  0, 0),
+            (1, 0.50, 0.47, "blue",  0, 0),
+            (2, 0.47, 0.53, "blue",  0, 0),
+            (3, 0.15, 0.25, "red",   0, 0),
             (4, 0.82, 0.25, "red",   0, 0),
             (5, 0.82, 0.75, "green", 0, 0),
         ])
@@ -250,16 +267,15 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
         return gs["last_action"] == "auto_assign_applied"
 
     # ── Step 8: Unsolvable K4 cluster ────────────────────────────────────────
-    # Four drones placed within CONNECT_RADIUS (~420 px) of each other.
-    # With only 3 channels, at least one pair MUST share a channel (pigeonhole).
-    # All six pairs are within range → K4 subgraph → chromatic number = 4 > 3.
-    # The user tries their best; the tutorial explains the situation.
+    # Four drones in a tight 0.06-fractional square so all 6 pairs connect at
+    # any resolution (max pair distance ≈ 264px at 2560×1440 < CONNECT_RADIUS).
+    # With only 3 channels, at least one pair MUST share (pigeonhole principle).
     def setup_8(w: RobotWorld, gs: dict) -> None:
         _place(w, [
-            (0, 0.28, 0.40, "red",   0, 0),
-            (1, 0.44, 0.36, "green", 0, 0),
-            (2, 0.44, 0.56, "blue",  0, 0),
-            (3, 0.28, 0.60, "red",   0, 0),   # matches D0 → immediate clash
+            (0, 0.40, 0.44, "red",   0, 0),
+            (1, 0.46, 0.44, "green", 0, 0),
+            (2, 0.40, 0.50, "blue",  0, 0),
+            (3, 0.46, 0.50, "red",   0, 0),   # matches D0 → immediate clash
             (4, 0.78, 0.28, "blue",  0, 0),
             (5, 0.78, 0.72, "green", 0, 0),
         ])
@@ -287,31 +303,33 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             heading="Welcome",
             body="Your task: manage radio channels for a drone swarm. "
                  "SCORING — every second that two drones on the SAME channel are within range, "
-                 "the clash timer ticks up. Each simultaneous clash pair counts separately — "
-                 "two clashes at once score twice as fast. Lower clash time = better. "
+                 "the clash timer ticks up. This is worse when multiple clashes happen simultaneously. "
+                 "Lower clash time = better. "
                  "Press SPACE to continue.",
             highlight_ids=[], advance_on_space=True, freeze=True,
             disabled_buttons=DB_ALL, setup_fn=setup_1),
 
         TutorialStep(2, N,
             heading="Channel Clashes",
-            body="D0 and D1 are both on RED and close enough to interfere — shown by the red line. "
-                 "To stop the clash you must move one of them onto a different channel. Press SPACE.",
-            highlight_ids=[0, 1], highlight_color=(230, 60, 60),
+            body="D0, D1, and D2 are all on RED and close enough to interfere — shown by the red lines. "
+                 "To stop the clashes you must move at least two of them onto different channels. Press SPACE.",
+            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
             advance_on_space=True, freeze=True,
             disabled_buttons=DB_ALL, setup_fn=setup_2),
 
         TutorialStep(3, N,
             heading="Fix a Clash — Mode 1 (click a drone)",
-            body="Click the highlighted drone D0 to open its channel menu, "
-                 "then pick GREEN or BLUE. The red clash line will disappear.",
-            highlight_ids=[0], highlight_color=(255, 240, 60),
-            advance_on_space=False, freeze=True,
+            body="Click each highlighted drone to open its channel menu and pick a different channel. "
+                 "No two touching drones can share a channel — "
+                 "the red clash lines will disappear when all three have unique channels.",
+            highlight_ids=[0, 1, 2], highlight_color=(255, 240, 60),
+            advance_on_space=True, freeze=True,
             completion_check=check_3, disabled_buttons=DB_ALL, setup_fn=setup_3),
 
         TutorialStep(4, N,
             heading="Group Select",
-            body="When several drones need reassigning, drag a selection box around them "
+            body="Instead of assigning manually, you use the AI assistant "
+                 "To do this, drag a selection box around them "
                  "(or hold Ctrl and click to build up the group one by one). "
                  "Drag a box over the 4 highlighted drones D0–D3 now.",
             highlight_ids=[0, 1, 2, 3], highlight_color=(90, 200, 255),
@@ -320,45 +338,47 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
 
         TutorialStep(5, N,
             heading="Suggest & Review — Mode 2",
-            body="D0–D3 are already selected and all clashing on the same channel. "
-                 "Click 'Suggest' in the side panel — the assistant will recommend new channels. "
+            body="Well done. D0–D3 are selected and all clashing on the same channel. "
+                 "Click 'Suggest' on the agent panel — the assistant will recommend new channels. "
                  "Review the mini-graph preview, then click Apply.",
             highlight_ids=[0, 1, 2, 3], highlight_color=(90, 200, 255),
             advance_on_space=False, freeze=True,
             completion_check=check_5, disabled_buttons=DB_AUTO, setup_fn=setup_5),
 
         TutorialStep(6, N,
-            heading="Let's Try Again — Suggest for D0 & D1",
-            body="D0 and D1 are clashing on RED again. Select them (drag or Ctrl+click), "
+            heading="That worked correctly. Now do it again — Suggest for D0, D1 & D2",
+            body="D0, D1, and D2 are clashing on RED again. Select all three (drag or Ctrl+click), "
                  "then click Suggest. We'll check what the assistant recommends.",
-            highlight_ids=[0, 1], highlight_color=(230, 60, 60),
+            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
             advance_on_space=False, freeze=True,
             completion_check=check_6a, disabled_buttons=DB_AUTO, setup_fn=setup_6a),
 
         TutorialStep(7, N,
             heading="Spot the Mistake — Override a Bad Suggestion",
-            body="The assistant put D0 and D1 both on GREEN — they will STILL clash "
-                 "(red line in the mini-graph). Click D0 or D1 in the mini-graph, "
-                 "pick a different channel for one of them, then click Apply.",
-            highlight_ids=[0, 1], highlight_color=(230, 60, 60),
+            body="The assistant is not perfect and sometimes makes mistakes "
+                 "Here, the assistant put D1 and D2 both on GREEN — they will STILL clash "
+                 "(red line in the mini-graph). On the agent panel, manually fix this suggested configuration, "
+                 "then click Apply.",
+            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
             advance_on_space=False, freeze=True,
             completion_check=check_6b, disabled_buttons=DB_AUTO, setup_fn=setup_6b,
             preserve_suggestion=True),
 
         TutorialStep(8, N,
             heading="Auto-Assign — Mode 3",
-            body="D0 and D1 are clashing again. Select them (drag or Ctrl+click), "
+            body="If you want to, you can skip the review process of the suggestion mode and auto assign, "
+                 "this is the same, but accepts the agent's suggestion without presenting it to you first. "
+                 "D0, D1, and D2 are clashing again. Select all three (drag or Ctrl+click), "
                  "then click 'Auto-assign' — channels are applied instantly without a review step.",
-            highlight_ids=[0, 1], highlight_color=(255, 160, 40),
+            highlight_ids=[0, 1, 2], highlight_color=(255, 160, 40),
             advance_on_space=False, freeze=True,
             completion_check=check_7, disabled_buttons=DB_SUG, setup_fn=setup_7),
 
         TutorialStep(9, N,
             heading="When There's No Perfect Solution",
-            body="D0–D3 are all within range of each other — a complete group of 4. "
-                 "With only 3 channels, at least one pair MUST share — it's a mathematical "
-                 "certainty (pigeonhole principle). Try to find the assignment with the "
-                 "fewest clashes: the best you can do here is 1 clashing pair. "
+            body="Sometimes the problem can't be solved."
+                 "D0–D3 are all within range of each other — a complete group of 4. "
+                 "With only 3 channels, the best you can do is 1 clashing pair. Try to find the best solution. "
                  "Use any mode to experiment, then press SPACE to continue.",
             highlight_ids=[0, 1, 2, 3], highlight_color=(230, 60, 60),
             advance_on_space=True, freeze=True,
@@ -368,7 +388,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             heading="Free Practice",
             body="All modes covered — including handling the unavoidable! "
                  "The drones are now moving. Use M1 (click), M2 (Suggest), or M3 (Auto-assign) "
-                 "freely. Try to keep clash time low. "
+                 "freely. Try to keep clash time low. Get used to using all modes and think about when you prefer each. "
                  "Press SPACE when you're ready to start the real trial.",
             highlight_ids=[], advance_on_space=True, freeze=False,
             min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_9),
@@ -390,6 +410,7 @@ def run_tutorial(
         if _ab:
             os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
         os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
+        os.environ.setdefault('SDL_MOUSE_FOCUS_CLICKTHROUGH', '1')
         pygame.init()
         os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
 

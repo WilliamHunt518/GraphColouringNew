@@ -14,8 +14,14 @@ STEER_RATE        = math.pi / 2   # max heading correction, radians/second
 ROBOT_RADIUS = 18
 
 WARN_RADIUS     = 182.0
-CONNECT_RADIUS  = WARN_RADIUS * 2        # = 420 px
-APPROACH_RADIUS = CONNECT_RADIUS * 1.25  # = 525 px
+CONNECT_RADIUS  = WARN_RADIUS * 2
+APPROACH_RADIUS = CONNECT_RADIUS * 1.25
+
+# Arena width at which the pixel radii above were calibrated
+# (1920-px-wide monitor minus the 310-px side panel).
+# At runtime, RobotWorld scales all radii to the actual arena_w so that
+# gameplay topology is identical across different monitor resolutions.
+_REFERENCE_ARENA_W = 1610.0
 
 _DEFAULT_ARENA_W = 750
 _DEFAULT_ARENA_H = 700
@@ -65,6 +71,12 @@ class RobotWorld:
         self.elapsed = 0.0
         self.clash_seconds = 0.0
 
+        _scale = arena_w / _REFERENCE_ARENA_W
+        self.warn_radius     = WARN_RADIUS     * _scale
+        self.connect_radius  = CONNECT_RADIUS  * _scale
+        self.approach_radius = APPROACH_RADIUS * _scale
+        self.robot_radius    = max(6, round(ROBOT_RADIUS * _scale))
+
         self.robots: list[Robot] = []
         self._init_robots(n_robots)
 
@@ -80,12 +92,13 @@ class RobotWorld:
         grid = [(c * self.arena_w, r * self.arena_h) for r in row_pos for c in col_pos]
         jitter = min(self.arena_w, self.arena_h) * 0.04
 
+        rr = self.robot_radius
         for i in range(n):
             bx, by = grid[i % len(grid)]
-            x = max(ROBOT_RADIUS, min(self.arena_w - ROBOT_RADIUS,
-                                      bx + self.rng.uniform(-jitter, jitter)))
-            y = max(ROBOT_RADIUS, min(self.arena_h - ROBOT_RADIUS,
-                                      by + self.rng.uniform(-jitter, jitter)))
+            x = max(rr, min(self.arena_w - rr,
+                            bx + self.rng.uniform(-jitter, jitter)))
+            y = max(rr, min(self.arena_h - rr,
+                            by + self.rng.uniform(-jitter, jitter)))
             angle = self.rng.uniform(0, 2 * math.pi)
             speed = self.rng.uniform(self.v_min, self.v_max)
             self.robots.append(Robot(
@@ -95,6 +108,7 @@ class RobotWorld:
                 channel=None,
                 next_turn_in=self.rng.uniform(0, TURN_INTERVAL_MAX),
                 heading=angle,
+                radius=rr,
             ))
 
     def request_switch(self, robot_id: int, new_channel: str) -> bool:
@@ -161,7 +175,7 @@ class RobotWorld:
     def _avoid_collisions(self) -> None:
         robots = self.robots
         n = len(robots)
-        min_dist = ROBOT_RADIUS * 2 + 2
+        min_dist = self.robot_radius * 2 + 2
 
         for i in range(n):
             for j in range(i + 1, n):
@@ -204,11 +218,11 @@ class RobotWorld:
                 dx = robots[i].x - robots[j].x
                 dy = robots[i].y - robots[j].y
                 dist = math.sqrt(dx * dx + dy * dy)
-                if dist <= CONNECT_RADIUS:
+                if dist <= self.connect_radius:
                     self.edges.append((i, j))
                     if robots[i].channel is not None and robots[i].channel == robots[j].channel:
                         self.clashing_pairs.add((i, j))
-                elif dist <= APPROACH_RADIUS:
+                elif dist <= self.approach_radius:
                     self.warning_pairs.add((i, j))
 
     def _accumulate_clashes(self, dt: float) -> None:

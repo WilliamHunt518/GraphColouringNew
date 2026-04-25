@@ -99,7 +99,7 @@ class DetachedPanelWindow:
         from pygame._sdl2.video import Renderer as _SDLRenderer
 
         self._win = _SDLWindow(
-            "Drone Assistant Panel",
+            "Agent Panel",
             size=(width, height),
             position=(pos_x, pos_y),
         )

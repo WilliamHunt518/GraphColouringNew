@@ -1,0 +1,32 @@
+{"ts": 1777134981.8006809, "event": "game_start", "seed": 42, "n_drones": 12, "complexity": "medium", "duration": 120, "v_min": 7.0, "v_max": 15.0}
+{"ts": 1777134981.9354997, "event": "panel_opened", "monitor": 2, "elapsed": 0.0}
+{"ts": 1777134982.8097649, "event": "click_ignored", "x": 1491, "y": 915, "state": "PAUSED", "elapsed": 0.0}
+{"ts": 1777134983.1264834, "event": "key_down", "key": 32, "key_name": "space", "state": "PAUSED", "elapsed": 0.0}
+{"ts": 1777134985.1856027, "event": "group_selected", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "method": "box", "elapsed": 0.0}
+{"ts": 1777134986.3202806, "event": "auto_assign_applied", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "proposed_channels": {"1": "green", "4": "green", "5": "red", "6": "red", "7": "red", "8": "red", "10": "green", "11": "blue", "0": "blue", "2": "red", "3": "red", "9": "green"}, "infeasible": false, "elapsed": 0.0}
+{"ts": 1777134986.3208025, "event": "switch_requested", "drone_id": 1, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208294, "event": "switch_requested", "drone_id": 4, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208418, "event": "switch_requested", "drone_id": 5, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208506, "event": "switch_requested", "drone_id": 6, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208597, "event": "switch_requested", "drone_id": 7, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208673, "event": "switch_requested", "drone_id": 8, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.320875, "event": "switch_requested", "drone_id": 10, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208823, "event": "switch_requested", "drone_id": 11, "from_channel": null, "to_channel": "blue", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208904, "event": "switch_requested", "drone_id": 0, "from_channel": null, "to_channel": "blue", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3208978, "event": "switch_requested", "drone_id": 2, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3209052, "event": "switch_requested", "drone_id": 3, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3209124, "event": "switch_requested", "drone_id": 9, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M3"}
+{"ts": 1777134986.3209426, "event": "group_deselected", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "elapsed": 0.0}
+{"ts": 1777134987.8720129, "event": "arena_click_miss", "x": 1836, "y": 572, "elapsed": 0.0}
+{"ts": 1777134988.203607, "event": "key_down", "key": 32, "key_name": "space", "state": "SETUP", "elapsed": 0.0}
+{"ts": 1777134988.2036884, "event": "play_started", "elapsed": 0.0}
+{"ts": 1777134999.1648774, "event": "arena_click_miss", "x": 1538, "y": 712, "elapsed": 10.960999999999988}
+{"ts": 1777134999.4303806, "event": "popup_opened", "drone_id": 6, "elapsed": 11.225999999999985}
+{"ts": 1777134999.9949126, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "blue", "elapsed": 11.790999999999976, "mode": "M1"}
+{"ts": 1777134999.9949682, "event": "popup_dismissed", "drone_id": 6, "elapsed": 11.790999999999976}
+{"ts": 1777135000.4800568, "event": "arena_click_miss", "x": 1716, "y": 827, "elapsed": 12.274999999999965}
+{"ts": 1777135005.8546808, "event": "popup_opened", "drone_id": 2, "elapsed": 17.649999999999807}
+{"ts": 1777135008.1891527, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "green", "elapsed": 19.984999999999676, "mode": "M1"}
+{"ts": 1777135008.1892037, "event": "popup_dismissed", "drone_id": 2, "elapsed": 19.984999999999676}
+{"ts": 1777135015.1991456, "event": "key_down", "key": 27, "key_name": "escape", "state": "PLAYING", "elapsed": 26.994999999999248}
+{"ts": 1777135015.199267, "event": "quit", "elapsed": 26.994999999999248, "clash_seconds": 0.0}

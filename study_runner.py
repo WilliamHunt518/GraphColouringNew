@@ -34,6 +34,9 @@ class TrialConfig:
     v_min: Optional[float] = None
     v_max: Optional[float] = None
     is_tutorial: bool = False
+    show_tlx: bool = True
+    show_trust: bool = True
+    show_tam: bool = True
 
 
 @dataclass
@@ -43,6 +46,8 @@ class StudyConfig:
     output_root: str = "results/participants"
     arena_monitor: int = 0
     panel_monitor: int = 1
+    show_demographics: bool = True
+    show_summary_survey: bool = True
 
 
 # ── Presets ───────────────────────────────────────────────────────────────────
@@ -154,8 +159,17 @@ class StudySetupWindow:
 
         self._trial_rows: List[_TrialRow] = []
         defaults = self._saved.get("trials", _DEFAULT_TRIALS)
-        for preset_name in defaults:
-            self._add_trial_row(preset_name)
+        for t in defaults:
+            if isinstance(t, dict):
+                self._add_trial_row(
+                    t.get("preset", "Medium — perfect"),
+                    t.get("enabled", True),
+                    t.get("show_tlx", True),
+                    t.get("show_trust", True),
+                    t.get("show_tam", True),
+                )
+            else:
+                self._add_trial_row(t)
 
         # ── Add / Remove buttons ──────────────────────────────────────────────
         btn_frame = ttk.Frame(root)
@@ -168,15 +182,40 @@ class StudySetupWindow:
             row=row, column=0, columnspan=3, sticky="ew", pady=6)
         row += 1
 
+        # ── Survey options ────────────────────────────────────────────────────
+        survey_frame = ttk.LabelFrame(root, text="Surveys")
+        survey_frame.grid(row=row, column=0, columnspan=3,
+                          sticky="ew", padx=10, pady=(0, 4))
+        self._demo_var = tk.BooleanVar(
+            value=self._saved.get("show_demographics", True))
+        ttk.Checkbutton(survey_frame,
+                        text="Pre-study demographics questionnaire",
+                        variable=self._demo_var).grid(
+            row=0, column=0, sticky="w", padx=8, pady=2)
+        self._summary_var = tk.BooleanVar(
+            value=self._saved.get("show_summary_survey", True))
+        ttk.Checkbutton(survey_frame,
+                        text="Post-study summary questionnaire",
+                        variable=self._summary_var).grid(
+            row=1, column=0, sticky="w", padx=8, pady=2)
+        row += 1
+
+        ttk.Separator(root, orient=tk.HORIZONTAL).grid(
+            row=row, column=0, columnspan=3, sticky="ew", pady=4)
+        row += 1
+
         # ── Start button ──────────────────────────────────────────────────────
         ttk.Button(root, text="▶  Start Study", command=self._start, width=18).grid(
             row=row, column=0, columnspan=3, pady=8)
 
-    def _add_trial_row(self, preset_name: str = "Medium — perfect") -> None:
+    def _add_trial_row(self, preset_name: str = "Medium — perfect",
+                       enabled: bool = True, show_tlx: bool = True,
+                       show_trust: bool = True, show_tam: bool = True) -> None:
         if len(self._trial_rows) >= 6:
             return
         idx = len(self._trial_rows)
-        row = _TrialRow(self._trials_frame, idx, preset_name)
+        row = _TrialRow(self._trials_frame, idx, preset_name,
+                        enabled, show_tlx, show_trust, show_tam)
         self._trial_rows.append(row)
 
     def _remove_last_row(self) -> None:
@@ -197,6 +236,8 @@ class StudySetupWindow:
 
         trials: List[TrialConfig] = []
         for tr in self._trial_rows:
+            if not tr.enabled:
+                continue
             cfg = tr.build_config()
             if cfg is None:
                 return   # validation error already shown
@@ -206,9 +247,16 @@ class StudySetupWindow:
         panel_monitor = self._panel_mon_var.get()
 
         self._save_config({
-            "trials": [tr.preset_name for tr in self._trial_rows],
-            "arena_monitor": arena_monitor,
-            "panel_monitor": panel_monitor,
+            "trials": [
+                {"preset": tr.preset_name, "enabled": tr.enabled,
+                 "show_tlx": tr.show_tlx, "show_trust": tr.show_trust,
+                 "show_tam": tr.show_tam}
+                for tr in self._trial_rows
+            ],
+            "arena_monitor":       arena_monitor,
+            "panel_monitor":       panel_monitor,
+            "show_demographics":   self._demo_var.get(),
+            "show_summary_survey": self._summary_var.get(),
         })
 
         self.config = StudyConfig(
@@ -216,6 +264,8 @@ class StudySetupWindow:
             trials=trials,
             arena_monitor=arena_monitor,
             panel_monitor=panel_monitor,
+            show_demographics=self._demo_var.get(),
+            show_summary_survey=self._summary_var.get(),
         )
         self._root.destroy()
 
@@ -223,7 +273,10 @@ class StudySetupWindow:
 class _TrialRow:
     """One row in the trial list."""
 
-    def __init__(self, parent: ttk.Frame, idx: int, preset_name: str) -> None:
+    def __init__(self, parent: ttk.Frame, idx: int,
+                 preset_name: str, enabled: bool = True,
+                 show_tlx: bool = True, show_trust: bool = True,
+                 show_tam: bool = True) -> None:
         self._parent = parent
         self._idx    = idx
         self.preset_name = preset_name
@@ -231,20 +284,35 @@ class _TrialRow:
         self._frame = ttk.Frame(parent)
         self._frame.grid(row=idx, column=0, sticky="ew", pady=2)
 
+        self._enabled_var = tk.BooleanVar(value=enabled)
+        ttk.Checkbutton(self._frame, variable=self._enabled_var).grid(
+            row=0, column=0, padx=(0, 2))
+
         ttk.Label(self._frame, text=f"Trial {idx + 1}:", width=8).grid(
-            row=0, column=0, sticky="e", padx=(0, 4))
+            row=0, column=1, sticky="e", padx=(0, 4))
 
         self._preset_var = tk.StringVar(value=preset_name)
         self._cb = ttk.Combobox(
             self._frame, textvariable=self._preset_var,
             values=_PRESET_NAMES, state="readonly", width=20,
         )
-        self._cb.grid(row=0, column=1, sticky="w", padx=(0, 8))
+        self._cb.grid(row=0, column=2, sticky="w", padx=(0, 8))
         self._preset_var.trace_add("write", self._on_preset_change)
+
+        # Per-trial survey element checkboxes
+        self._tlx_var   = tk.BooleanVar(value=show_tlx)
+        self._trust_var = tk.BooleanVar(value=show_trust)
+        self._tam_var   = tk.BooleanVar(value=show_tam)
+        _survey_row = ttk.Frame(self._frame)
+        _survey_row.grid(row=1, column=1, columnspan=5, sticky="w", pady=(0, 1))
+        ttk.Label(_survey_row, text="Post-task:", foreground="#666").pack(side="left", padx=(0, 4))
+        ttk.Checkbutton(_survey_row, text="TLX",    variable=self._tlx_var).pack(side="left", padx=2)
+        ttk.Checkbutton(_survey_row, text="Trust",  variable=self._trust_var).pack(side="left", padx=2)
+        ttk.Checkbutton(_survey_row, text="Accept.", variable=self._tam_var).pack(side="left", padx=2)
 
         # Custom fields (hidden unless "Custom…" selected)
         self._custom_frame = ttk.Frame(self._frame)
-        self._custom_frame.grid(row=1, column=0, columnspan=6, sticky="w", padx=20, pady=(0, 2))
+        self._custom_frame.grid(row=2, column=0, columnspan=6, sticky="w", padx=20, pady=(0, 2))
 
         def _spinbox(label: str, col: int, default, frm, to, inc, fmt=None, width=7) -> tk.Variable:
             ttk.Label(self._custom_frame, text=label).grid(row=0, column=col * 2, sticky="e", padx=4)
@@ -273,6 +341,22 @@ class _TrialRow:
         self._on_preset_change()
 
     @property
+    def enabled(self) -> bool:
+        return self._enabled_var.get()
+
+    @property
+    def show_tlx(self) -> bool:
+        return self._tlx_var.get()
+
+    @property
+    def show_trust(self) -> bool:
+        return self._trust_var.get()
+
+    @property
+    def show_tam(self) -> bool:
+        return self._tam_var.get()
+
+    @property
     def preset_name(self) -> str:
         return getattr(self, "_preset_var", None) and self._preset_var.get() or self.__dict__.get("_init_preset", "")
 
@@ -290,9 +374,11 @@ class _TrialRow:
 
     def build_config(self) -> Optional[TrialConfig]:
         name = self._preset_var.get()
+        survey_kw = dict(show_tlx=self.show_tlx,
+                         show_trust=self.show_trust,
+                         show_tam=self.show_tam)
         if name != "Custom…":
             preset = STUDY_PRESETS[name]
-            # Return a copy so mutations don't affect the shared template
             return TrialConfig(
                 label=preset.label,
                 complexity=preset.complexity,
@@ -304,13 +390,14 @@ class _TrialRow:
                 v_min=preset.v_min,
                 v_max=preset.v_max,
                 is_tutorial=preset.is_tutorial,
+                **survey_kw,
             )
 
         # Custom — validate
         try:
-            dur = float(self._dur_var.get())
-            eps = float(self._eps_var.get())
-            sw  = float(self._sw_var.get())
+            dur  = float(self._dur_var.get())
+            eps  = float(self._eps_var.get())
+            sw   = float(self._sw_var.get())
             seed = int(self._seed_var.get())
         except (ValueError, tk.TclError):
             messagebox.showwarning("Bad input", f"Trial {self._idx + 1}: invalid numeric value.")
@@ -328,6 +415,7 @@ class _TrialRow:
             n_robots=n_default,
             v_min=vmin_default,
             v_max=vmax_default,
+            **survey_kw,
         )
 
     def destroy(self) -> None:
@@ -396,7 +484,7 @@ def _show_inter_trial_screen(
         s = font_small.render(f"Next: {next_label}", True, (140, 180, 220))
         screen.blit(s, s.get_rect(centerx=cx, centery=card_y + card_h - 70))
 
-        hint = font_small.render("Press SPACE to begin", True, (100, 220, 140))
+        hint = font_small.render("Press SPACE to continue", True, (100, 220, 140))
         screen.blit(hint, hint.get_rect(centerx=cx, centery=card_y + card_h - 38))
 
         pygame.display.flip()
@@ -451,13 +539,29 @@ def _show_completion_screen(screen: pygame.Surface, results: List[dict]) -> None
 # ── Study orchestrator ────────────────────────────────────────────────────────
 
 def run_study(config: StudyConfig) -> None:
+    import surveys as _surveys
+
     _ab = monitor_rect(config.arena_monitor)
     if _ab:
         os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
     os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
+    os.environ.setdefault('SDL_MOUSE_FOCUS_CLICKTHROUGH', '1')
     pygame.init()
     os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
 
+    # Build output directory early so surveys can write into it
+    ts       = time.strftime("%Y%m%d_%H%M%S")
+    pid      = config.participant_id
+    out_root = Path(config.output_root) / f"{pid}_{ts}"
+    out_root.mkdir(parents=True, exist_ok=True)
+
+    # ── Pre-study demographics (before fullscreen window opens) ───────────────
+    if config.show_demographics:
+        demo = _surveys.run_demographic_survey(_ab)
+        if demo:
+            (out_root / "demographics.json").write_text(json.dumps(demo, indent=2))
+
+    # ── Open fullscreen arena window ──────────────────────────────────────────
     if _ab:
         screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
     else:
@@ -467,16 +571,12 @@ def run_study(config: StudyConfig) -> None:
         )
     pygame.display.set_caption("Drone Channel Assignment — Study")
 
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    pid = config.participant_id
-    out_root = Path(config.output_root) / f"{pid}_{ts}"
-    out_root.mkdir(parents=True, exist_ok=True)
-
-    # Write metadata before first trial
     meta = {
         "participant_id": pid,
         "start_time": ts,
         "n_trials": len(config.trials),
+        "show_demographics":   config.show_demographics,
+        "show_summary_survey": config.show_summary_survey,
         "trials": [
             {
                 "label": t.label,
@@ -496,14 +596,11 @@ def run_study(config: StudyConfig) -> None:
     from tutorial import run_tutorial
 
     results: List[dict] = []
-    total = len(config.trials)
+    total        = len(config.trials)
+    scenario_num = 0   # counts non-tutorial trials; used as survey "Scenario N" label
 
     try:
         for i, trial in enumerate(config.trials):
-            # Inter-trial screen (skip before first trial)
-            if i > 0:
-                _show_inter_trial_screen(screen, i, total, results[-1] if results else None)
-
             trial_dir = out_root / f"trial_{i + 1:02d}_{trial.label}"
             trial_dir.mkdir(parents=True, exist_ok=True)
 
@@ -516,7 +613,6 @@ def run_study(config: StudyConfig) -> None:
                     panel_monitor=config.panel_monitor,
                 )
             else:
-                # Resolve n_robots / v_min / v_max from complexity preset if not overridden
                 n_default, vmin_default, vmax_default = COMPLEXITY_PRESETS[trial.complexity]
                 result = run_game(
                     seed=trial.seed,
@@ -537,10 +633,39 @@ def run_study(config: StudyConfig) -> None:
             result = result or {}
             results.append(result)
 
+            # Inter-trial screen shown AFTER each trial except the last,
+            # giving the participant a moment to see their score before the survey.
+            if i < total - 1:
+                _show_inter_trial_screen(screen, i + 1, total, result)
+
+            # Post-trial survey (skip tutorials; only show if at least one element enabled)
+            if not trial.is_tutorial:
+                scenario_num += 1
+                if trial.show_tlx or trial.show_trust or trial.show_tam:
+                    survey = _surveys.run_trial_survey(
+                        scenario_num, trial.label, _ab,
+                        show_tlx=trial.show_tlx,
+                        show_trust=trial.show_trust,
+                        show_tam=trial.show_tam,
+                    )
+                    if survey:
+                        (out_root / f"trial_{i + 1:02d}_survey.json").write_text(
+                            json.dumps(survey, indent=2))
+
+        # ── Final summary survey ──────────────────────────────────────────────
+        if config.show_summary_survey and scenario_num >= 1:
+            non_tut = [(j, t) for j, t in enumerate(config.trials)
+                       if not t.is_tutorial]
+            scenario_infos = [{"num": k + 1, "label": t.label}
+                               for k, (_j, t) in enumerate(non_tut)]
+            summary_survey = _surveys.run_summary_survey(scenario_infos, _ab)
+            if summary_survey:
+                (out_root / "summary_survey.json").write_text(
+                    json.dumps(summary_survey, indent=2))
+
         _show_completion_screen(screen, results)
 
     finally:
-        # Write summary regardless of whether study finished cleanly
         summary = {
             "participant_id": pid,
             "end_time": time.strftime("%Y%m%d_%H%M%S"),

@@ -88,6 +88,7 @@ def run_game(
         if _ab:
             os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
         os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
+        os.environ.setdefault('SDL_MOUSE_FOCUS_CLICKTHROUGH', '1')
         pygame.init()
         os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
 

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Set, Tuple
 import pygame
 
 from robot_world import (
-    CHANNELS, WARN_RADIUS, ROBOT_RADIUS,
+    CHANNELS,
     SWITCH_DURATION, RobotWorld, Robot,
 )
 
@@ -77,9 +77,9 @@ POPUP_PAD    = 6
 POPUP_H      = POPUP_PAD + (POPUP_BTN_H + POPUP_PAD) * 3
 
 # Mini-graph node radii
-MINI_RAD     = 9    # suggestion nodes
-MINI_RAD_NBR = 5    # neighbour nodes
-MINI_PAD     = 16   # inset from mini-graph border
+MINI_RAD     = 18   # suggestion nodes
+MINI_RAD_NBR = 10   # neighbour nodes
+MINI_PAD     = 40   # inset from mini-graph border
 
 
 def _wrap_text(text: str, max_chars: int = 90) -> List[str]:
@@ -102,13 +102,16 @@ def _make_fonts() -> dict[str, pygame.font.Font]:
         f = pygame.font.SysFont(name, size, bold=bold)
         return f if f is not None else pygame.font.Font(None, size)
     return {
-        "small":  sf("segoeui", 14),
-        "medium": sf("segoeui", 17),
-        "large":  sf("segoeui", 26, bold=True),
-        "title":  sf("segoeui", 20, bold=True),
-        "huge":   sf("segoeui", 42, bold=True),
-        "popup":  sf("segoeui", 15, bold=True),
-        "tiny":   sf("segoeui", 12),
+        "small":       sf("segoeui", 16),
+        "medium":      sf("segoeui", 20),
+        "large":       sf("segoeui", 30, bold=True),
+        "title":       sf("segoeui", 23, bold=True),
+        "huge":        sf("segoeui", 48, bold=True),
+        "popup":       sf("segoeui", 18, bold=True),
+        "tiny":        sf("segoeui", 14),
+        "tut_heading": sf("segoeui", 35, bold=True),
+        "tut_body":    sf("segoeui", 24),
+        "tut_hint":    sf("segoeui", 21),
     }
 
 
@@ -121,6 +124,8 @@ class RobotRenderer:
         self.panel_x = self.arena_w
 
         self.fonts = _make_fonts()
+        self._panel_w:   int = PANEL_W
+        self._panel_pad: int = PANEL_PAD
         self._prox_surf = pygame.Surface((self.arena_w, self.arena_h), pygame.SRCALPHA)
         self._drag_surf  = pygame.Surface((self.arena_w, self.arena_h), pygame.SRCALPHA)
 
@@ -165,10 +170,14 @@ class RobotRenderer:
         if surf is None:
             self._panel_offset_x = self.panel_x
             self.arena_w = self.window_w - PANEL_W
+            self._panel_w   = PANEL_W
+            self._panel_pad = PANEL_PAD
         else:
-            # Center PANEL_W content if the panel window is wider
+            # Panel window fills its entire surface
             surf_w = surf.get_width()
-            self._panel_offset_x = max(0, (surf_w - PANEL_W) // 2)
+            self._panel_offset_x = 0
+            self._panel_w   = surf_w
+            self._panel_pad = 60
             # Arena expands to fill the full main window
             self.arena_w = self.window_w
         # Recreate compositing surfaces to match the new arena width
@@ -284,8 +293,8 @@ class RobotRenderer:
                 fill = (255, 200, 50, 14); ring = (255, 200, 50, 90)
             else:
                 fill = (90, 90, 110, 8); ring = (90, 90, 110, 35)
-            pygame.draw.circle(self._prox_surf, fill, pos, int(WARN_RADIUS))
-            pygame.draw.circle(self._prox_surf, ring, pos, int(WARN_RADIUS), 1)
+            pygame.draw.circle(self._prox_surf, fill, pos, int(world.warn_radius))
+            pygame.draw.circle(self._prox_surf, ring, pos, int(world.warn_radius), 1)
 
         self.screen.blit(self._prox_surf, (0, 0))
 
@@ -424,7 +433,7 @@ class RobotRenderer:
     # ── Normal HUD panel ──────────────────────────────────────────────────────
 
     def _panel_sep(self, y: int) -> None:
-        pw = self._px + PANEL_W
+        pw = self._px + self._panel_w
         pygame.draw.line(self._ps, COL_PANEL_BORDER,
                          (self._px + 4, y), (pw - 4, y), 1)
 
@@ -435,19 +444,19 @@ class RobotRenderer:
         state: str = "PLAYING",
         n_assigned: int = 0,
     ) -> None:
-        px = self._px + PANEL_PAD
+        px = self._px + self._panel_pad
         f  = self.fonts
 
         if state == "SETUP":
             self._ps.blit(f["title"].render("SETUP", True, COL_TITLE), (px, 12))
-            self._panel_sep(40)
+            self._panel_sep(46)
 
             n_total  = len(world.robots)
             all_done = n_assigned == n_total
             count_col = COL_CLASH_OK if all_done else COL_WARN_TEXT
-            self._ps.blit(f["large"].render(f"{n_assigned} / {n_total}", True, count_col), (px, 52))
-            self._ps.blit(f["small"].render("drones assigned", True, COL_DIM_TEXT), (px, 86))
-            self._panel_sep(108)
+            self._ps.blit(f["large"].render(f"{n_assigned} / {n_total}", True, count_col), (px, 54))
+            self._ps.blit(f["small"].render("drones assigned", True, COL_DIM_TEXT), (px, 94))
+            self._panel_sep(118)
 
             hints: list[tuple[str, tuple[int, int, int]]] = [
                 ("Click drone → pick channel (M1)", COL_DIM_TEXT),
@@ -462,43 +471,43 @@ class RobotRenderer:
                 hints += [(f"⚠  {n_total - n_assigned} drone(s) unassigned", COL_WARN_TEXT)]
             hints += [("", COL_DIM_TEXT), ("ESC — quit", COL_DIM_TEXT)]
 
-            y = 118
+            y = 128
             for text, col in hints:
                 s = f["tiny"].render(text, True, col)
                 self._ps.blit(s, (px, y))
-                y += 17
+                y += 20
 
             if selected_ids:
                 self._panel_sep(y + 4)
                 self._draw_group_buttons(selected_ids, start_y=y + 12)
             return
 
-        self._ps.blit(f["title"].render("DRONE CHANNELS", True, COL_TITLE), (px, 12))
-        self._panel_sep(40)
+        self._ps.blit(f["title"].render("AGENT PANEL", True, COL_TITLE), (px, 12))
+        self._panel_sep(46)
 
         remaining = max(0.0, world.duration - world.elapsed)
         mins, secs = int(remaining) // 60, int(remaining) % 60
         timer_col = COL_TIMER_LOW if remaining < 20 else COL_TIMER_OK
-        self._ps.blit(f["large"].render(f"{mins}:{secs:02d}", True, timer_col), (px, 50))
-        self._ps.blit(f["small"].render("remaining", True, COL_DIM_TEXT), (px, 84))
+        self._ps.blit(f["large"].render(f"{mins}:{secs:02d}", True, timer_col), (px, 54))
+        self._ps.blit(f["small"].render("remaining", True, COL_DIM_TEXT), (px, 92))
 
         clash_col = COL_CLASH_BAD if world.clash_seconds > 0 else COL_CLASH_OK
-        self._ps.blit(f["large"].render(f"{world.clash_seconds:.1f}s", True, clash_col), (px, 110))
+        self._ps.blit(f["large"].render(f"{world.clash_seconds:.1f}s", True, clash_col), (px, 120))
         self._ps.blit(
             f["small"].render("clash time  (lower is better)", True, COL_DIM_TEXT),
-            (px, 144),
+            (px, 158),
         )
 
-        self._panel_sep(162)
+        self._panel_sep(178)
 
         if selected_ids:
-            self._draw_group_buttons(selected_ids, start_y=170)
+            self._draw_group_buttons(selected_ids, start_y=188)
         else:
-            self._draw_instructions(start_y=170)
+            self._draw_instructions(start_y=188)
 
     def _draw_group_buttons(self, selected_ids: Set[int], start_y: int) -> None:
-        px  = self._px + PANEL_PAD
-        pw  = PANEL_W - PANEL_PAD * 2
+        px  = self._px + self._panel_pad
+        pw  = self._panel_w - self._panel_pad * 2
         f   = self.fonts
         k   = len(selected_ids)
 
@@ -507,10 +516,10 @@ class RobotRenderer:
             (px, start_y),
         )
 
-        btn_h = 32
-        gap   = 10
+        btn_h = 36
+        gap   = 12
 
-        sug_rect = pygame.Rect(px, start_y + 22, pw, btn_h)
+        sug_rect = pygame.Rect(px, start_y + 26, pw, btn_h)
         if "suggest" in self._tutorial_disabled:
             pygame.draw.rect(self._ps, (42, 52, 48), sug_rect, border_radius=6)
             pygame.draw.rect(self._ps, (68, 78, 72), sug_rect, 1, border_radius=6)
@@ -522,7 +531,7 @@ class RobotRenderer:
             self.hud_button_rects["suggest"] = sug_rect
         self._ps.blit(s, s.get_rect(center=sug_rect.center))
 
-        auto_rect = pygame.Rect(px, start_y + 22 + btn_h + gap, pw, btn_h)
+        auto_rect = pygame.Rect(px, start_y + 26 + btn_h + gap, pw, btn_h)
         if "auto_assign" in self._tutorial_disabled:
             pygame.draw.rect(self._ps, (38, 44, 58), auto_rect, border_radius=6)
             pygame.draw.rect(self._ps, (62, 68, 86), auto_rect, 1, border_radius=6)
@@ -534,11 +543,11 @@ class RobotRenderer:
             self.hud_button_rects["auto_assign"] = auto_rect
         self._ps.blit(s, s.get_rect(center=auto_rect.center))
 
-        self._panel_sep(start_y + 22 + btn_h * 2 + gap + 14)
-        self._draw_instructions(start_y=start_y + 22 + btn_h * 2 + gap + 22)
+        self._panel_sep(start_y + 26 + btn_h * 2 + gap + 16)
+        self._draw_instructions(start_y=start_y + 26 + btn_h * 2 + gap + 26)
 
     def _draw_instructions(self, start_y: int) -> None:
-        px = self._px + PANEL_PAD
+        px = self._px + self._panel_pad
         sw = self._switch_duration
         delay_text = "instant" if sw == 0 else f"{sw:.0f} s"
         hints = [
@@ -559,7 +568,7 @@ class RobotRenderer:
         for h in hints:
             s = self.fonts["tiny"].render(h, True, COL_DIM_TEXT)
             self._ps.blit(s, (px, y))
-            y += 17
+            y += 20
 
     # ── Suggestion panel with live mini-graph ─────────────────────────────────
 
@@ -571,37 +580,37 @@ class RobotRenderer:
         infeasible: bool,
         selected_node: Optional[int] = None,
     ) -> None:
-        px = self._px + PANEL_PAD
-        pw = PANEL_W - PANEL_PAD * 2
+        px = self._px + self._panel_pad
+        pw = self._panel_w - self._panel_pad * 2
         f  = self.fonts
         ps = self._ps
 
         # Header
-        ps.blit(f["title"].render("SUGGESTED CHANNELS", True, COL_TITLE), (px, 12))
-        self._panel_sep(38)
+        ps.blit(f["title"].render("AGENT SUGGESTION", True, COL_TITLE), (px, 12))
+        self._panel_sep(46)
 
         remaining = max(0.0, world.duration - world.elapsed)
         mins, secs_r = int(remaining) // 60, int(remaining) % 60
         timer_col = COL_TIMER_LOW if remaining < 20 else COL_TIMER_OK
-        ps.blit(f["small"].render(f"⏱ {mins}:{secs_r:02d}", True, timer_col), (px, 44))
+        ps.blit(f["small"].render(f"⏱ {mins}:{secs_r:02d}", True, timer_col), (px, 52))
         ps.blit(
             f["small"].render(
                 f"Clash: {world.clash_seconds:.1f}s", True,
                 COL_CLASH_BAD if world.clash_seconds > 0 else COL_CLASH_OK,
             ),
-            (px + pw // 2, 44),
+            (px + pw // 2, 52),
         )
-        self._panel_sep(64)
+        self._panel_sep(76)
 
         # ── Mini live graph ───────────────────────────────────────────────────
-        mg_y = 72
+        mg_y = 86
         mg_w = pw
         panel_h = ps.get_height()
         mg_aspect = world.arena_h / world.arena_w if world.arena_w > 0 else 1.0
         mg_h_ideal = int(mg_w * mg_aspect)
-        bottom_reserve = 140
-        mg_h = max(80, min(mg_h_ideal, panel_h - mg_y - bottom_reserve))
-        mg_x = self._px + PANEL_PAD
+        bottom_reserve = 230
+        mg_h = max(120, min(mg_h_ideal, panel_h - mg_y - bottom_reserve))
+        mg_x = self._px + self._panel_pad
 
         pygame.draw.rect(ps, COL_MINIGRAPH_BG,
                          (mg_x - 1, mg_y - 1, mg_w + 2, mg_h + 2), border_radius=4)
@@ -668,64 +677,64 @@ class RobotRenderer:
                 pos[0] - hit_r, pos[1] - hit_r, hit_r * 2, hit_r * 2,
             )
 
-        y = mg_y + mg_h + 10
+        y = mg_y + mg_h + 14
 
         # ── Channel buttons for selected node ─────────────────────────────────
         if selected_node is not None and selected_node in suggestion_ids:
             self._panel_sep(y)
-            y += 8
+            y += 10
             lbl = f["small"].render(f"D{selected_node}: pick channel", True, COL_HUD_TEXT)
             ps.blit(lbl, (px, y))
-            y += 20
+            y += 24
 
-            btn_w   = (pw - 8) // 3
+            btn_w   = (pw - 16) // 3
             cur_ch  = overrides.get(selected_node)
             for idx, ch in enumerate(CHANNELS):
-                bx       = px + idx * (btn_w + 4)
-                btn_rect = pygame.Rect(bx, y, btn_w, 28)
+                bx       = px + idx * (btn_w + 8)
+                btn_rect = pygame.Rect(bx, y, btn_w, 40)
                 is_cur   = (cur_ch == ch)
                 fill     = CHANNEL_DIM[ch]   if is_cur else CHANNEL_FILL[ch]
                 border   = (60, 60, 75)      if is_cur else (200, 200, 210)
                 tcol     = (80, 80, 95)      if is_cur else (240, 240, 255)
                 label    = CHANNEL_LABEL[ch] + (" ✓" if is_cur else "")
-                pygame.draw.rect(ps, fill,   btn_rect, border_radius=5)
-                pygame.draw.rect(ps, border, btn_rect, 2 if is_cur else 1, border_radius=5)
+                pygame.draw.rect(ps, fill,   btn_rect, border_radius=6)
+                pygame.draw.rect(ps, border, btn_rect, 2 if is_cur else 1, border_radius=6)
                 s = f["popup"].render(label, True, tcol)
                 ps.blit(s, s.get_rect(center=btn_rect.center))
                 self.suggestion_channel_btn_rects[ch] = btn_rect
-            y += 36
+            y += 50
         else:
             self._panel_sep(y)
-            y += 8
+            y += 10
             for hint in ("Click a node to select it,", "then pick a channel below."):
-                ps.blit(f["tiny"].render(hint, True, COL_DIM_TEXT), (px, y))
-                y += 16
-            y += 4
+                ps.blit(f["small"].render(hint, True, COL_DIM_TEXT), (px, y))
+                y += 22
+            y += 6
 
         # Infeasible warning
         if infeasible:
             self._panel_sep(y)
-            y += 6
+            y += 8
             ps.blit(
-                f["tiny"].render("⚠ Cannot fully resolve — minimised", True, COL_WARN_TEXT),
+                f["small"].render("⚠ Cannot fully resolve — minimised", True, COL_WARN_TEXT),
                 (px, y),
             )
-            y += 18
+            y += 24
 
         # ── Apply / Cancel pinned to bottom ───────────────────────────────────
-        by = panel_h - 60
+        by = panel_h - 80
         if by < y + 16:
             by = y + 16
-        self._panel_sep(by - 10)
+        self._panel_sep(by - 14)
 
-        half        = (pw - 6) // 2
-        apply_rect  = pygame.Rect(px,            by, half, 32)
-        cancel_rect = pygame.Rect(px + half + 6, by, half, 32)
+        half        = (pw - 10) // 2
+        apply_rect  = pygame.Rect(px,             by, half, 44)
+        cancel_rect = pygame.Rect(px + half + 10, by, half, 44)
 
-        pygame.draw.rect(ps, COL_BTN_APPLY,  apply_rect,  border_radius=6)
-        pygame.draw.rect(ps, COL_BTN_BORDER, apply_rect,  1, border_radius=6)
-        pygame.draw.rect(ps, COL_BTN_CANCEL, cancel_rect, border_radius=6)
-        pygame.draw.rect(ps, COL_BTN_BORDER, cancel_rect, 1, border_radius=6)
+        pygame.draw.rect(ps, COL_BTN_APPLY,  apply_rect,  border_radius=8)
+        pygame.draw.rect(ps, COL_BTN_BORDER, apply_rect,  1, border_radius=8)
+        pygame.draw.rect(ps, COL_BTN_CANCEL, cancel_rect, border_radius=8)
+        pygame.draw.rect(ps, COL_BTN_BORDER, cancel_rect, 1, border_radius=8)
 
         s = f["popup"].render("Apply", True, (220, 255, 220))
         ps.blit(s, s.get_rect(center=apply_rect.center))
@@ -761,27 +770,27 @@ class RobotRenderer:
                 self.screen.blit(rs, (cx - ring_r - 2, cy - ring_r - 2))
 
         # Instruction banner across top of arena
-        STRIP_H = 118
+        STRIP_H = 200
         strip = pygame.Surface((self.arena_w, STRIP_H), pygame.SRCALPHA)
         strip.fill(COL_CALLOUT_BG)
         self.screen.blit(strip, (0, 0))
         pygame.draw.line(self.screen, COL_CALLOUT_BDR, (0, STRIP_H), (self.arena_w, STRIP_H), 2)
 
         f   = self.fonts
-        pad = 14
+        pad = 20
         cx  = self.arena_w // 2
 
         # Heading
-        head_surf = f["title"].render(callout.heading, True, (200, 230, 255))
-        self.screen.blit(head_surf, head_surf.get_rect(centerx=cx, y=10))
+        head_surf = f["tut_heading"].render(callout.heading, True, (200, 230, 255))
+        self.screen.blit(head_surf, head_surf.get_rect(centerx=cx, y=12))
 
-        # Body (word-wrap at ~90 chars per line)
-        body_lines = _wrap_text(callout.body, max_chars=90)
-        y = 38
+        # Body (word-wrap at ~80 chars per line)
+        body_lines = _wrap_text(callout.body, max_chars=80)
+        y = 64
         for line in body_lines:
-            s = f["small"].render(line, True, (210, 210, 230))
+            s = f["tut_body"].render(line, True, (210, 210, 230))
             self.screen.blit(s, s.get_rect(centerx=cx, y=y))
-            y += 20
+            y += 30
 
         # Hint at bottom-right of strip
         if callout.hint_override is not None:
@@ -793,8 +802,8 @@ class RobotRenderer:
         else:
             hint = "Complete the action above"
             hint_col = (220, 180, 80)
-        hs = f["tiny"].render(hint, True, hint_col)
-        self.screen.blit(hs, (self.arena_w - hs.get_width() - pad, STRIP_H - hs.get_height() - 6))
+        hs = f["tut_hint"].render(hint, True, hint_col)
+        self.screen.blit(hs, (self.arena_w - hs.get_width() - pad, STRIP_H - hs.get_height() - 8))
 
     # ── State overlays ────────────────────────────────────────────────────────
 
