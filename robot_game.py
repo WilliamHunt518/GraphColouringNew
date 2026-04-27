@@ -254,7 +254,8 @@ def run_game(
                     agent_log.pop(0)
                 logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
 
-            elif "suggest" in modes_in_comp and pending_suggestion is None:
+            elif "suggest" in modes_in_comp and pending_suggestion is None \
+                    and not any(d in _auto_cooldown for d in comp):
                 proposed, infeasible = advisor.suggest(
                     list(comp), current_channels, list(world.edges),
                     near_pairs=list(world.warning_pairs),
@@ -331,6 +332,9 @@ def run_game(
                 logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
                 _apply_suggestion(world, suggestion_overrides, logger,
                                   mode="M2", instant=instant)
+                if agent_mode == "flexible":
+                    for did in suggestion_overrides:
+                        _auto_cooldown[did] = world.switch_duration + 0.5
                 pending_suggestion   = None
                 suggestion_overrides = {}
                 selected_ids         = set()
@@ -521,6 +525,7 @@ def run_game(
                         for ch, rect in renderer.popup_rects.items():
                             if rect.collidepoint(mx, my):
                                 robot = world.robots[popup_drone_id]
+                                _m1_changed = False
                                 if instant:
                                     if ch != robot.channel:
                                         logger.log_switch_requested(
@@ -529,15 +534,21 @@ def run_game(
                                         robot.channel      = ch
                                         robot.switching_to = None
                                         world._detect_edges()
+                                        _m1_changed = True
                                 elif robot.switching_to is None and ch != robot.channel:
                                     world.request_switch(popup_drone_id, ch)
                                     logger.log_switch_requested(
                                         popup_drone_id, robot.channel, ch, world.elapsed, mode="M1"
                                     )
+                                    _m1_changed = True
                                 elif ch == robot.channel:
                                     logger.log("m1_same_channel_clicked",
                                                drone_id=popup_drone_id, channel=ch,
                                                elapsed=world.elapsed)
+                                if _m1_changed and pending_suggestion is not None:
+                                    pending_suggestion   = None
+                                    suggestion_overrides = {}
+                                    pending_infeasible   = False
                                 old_popup      = popup_drone_id
                                 last_action    = "M1_switch"
                                 popup_drone_id = None

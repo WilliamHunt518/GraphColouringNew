@@ -365,7 +365,6 @@ class RobotRenderer:
             watch_mode = self._drone_modes.get(r.id)
             if watch_mode == "suggest":
                 pygame.draw.circle(self.screen, (255, 160, 20), (cx, cy), rad + 14, 5)
-                pygame.draw.circle(self.screen, (255, 230, 140), (cx, cy), rad + 22, 2)
             elif watch_mode == "auto":
                 pygame.draw.circle(self.screen, (40, 220, 175), (cx, cy), rad + 14, 5)
 
