@@ -27,7 +27,7 @@ _DEFAULT_ARENA_W = 750
 _DEFAULT_ARENA_H = 700
 
 COMPLEXITY_PRESETS = {
-    "easy":   (8,   6.0, 10.0),
+    "easy":   (8,   7.0, 15.0),
     "medium": (12,  7.0, 15.0),
     "hard":   (16, 10.0, 20.0),
 }

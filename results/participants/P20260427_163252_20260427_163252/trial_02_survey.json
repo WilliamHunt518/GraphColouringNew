@@ -1,0 +1,22 @@
+{
+  "scenario_num": 1,
+  "scenario_label": "Easy-perfect",
+  "tlx_mental": 14,
+  "tlx_physical": 14,
+  "tlx_temporal": 14,
+  "tlx_performance": 15,
+  "tlx_effort": 17,
+  "tlx_frustration": 12,
+  "trust_suspicious": 6,
+  "trust_wary": 6,
+  "trust_confident": 5,
+  "trust_reliable": 7,
+  "trust_overall": 6,
+  "trust_accepted": 7,
+  "tam_improved": 5,
+  "tam_easy": 6,
+  "tam_useful": 7,
+  "tam_would_use": 6,
+  "comments": "scenario 1 feedback here",
+  "timestamp": "2026-04-27T16:36:09.986198"
+}

@@ -176,10 +176,12 @@ def run_game(
 
     # ── Flexible-agent state ──────────────────────────────────────────────────
     _MONITOR_INTERVAL = 0.5
+    _SUGGEST_REFIRE_DELAY = 3.0            # seconds after apply before re-suggesting
     drone_modes:    Dict[int, str]           = {}   # drone_id → "suggest" | "auto"
     agent_log:      List[Tuple[float, str]]  = []   # (elapsed, message) newest-last
     _monitor_timer: List[float]              = [0.0]
     _auto_cooldown: Dict[int, float]         = {}
+    _flex_apply_ts: Dict[int, float]         = {}   # elapsed when suggestion last applied per drone
 
     # ── Flexible-agent monitoring tick ───────────────────────────────────────
     def _flex_tick(dt: float) -> None:
@@ -255,7 +257,11 @@ def run_game(
                 logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
 
             elif "suggest" in modes_in_comp and pending_suggestion is None \
-                    and not any(d in _auto_cooldown for d in comp):
+                    and not any(d in _auto_cooldown for d in comp) \
+                    and not any(
+                        world.elapsed - _flex_apply_ts.get(d, -9999) < _SUGGEST_REFIRE_DELAY
+                        for d in comp
+                    ):
                 proposed, infeasible = advisor.suggest(
                     list(comp), current_channels, list(world.edges),
                     near_pairs=list(world.warning_pairs),
@@ -335,6 +341,7 @@ def run_game(
                 if agent_mode == "flexible":
                     for did in suggestion_overrides:
                         _auto_cooldown[did] = world.switch_duration + 0.5
+                        _flex_apply_ts[did] = world.elapsed
                 pending_suggestion   = None
                 suggestion_overrides = {}
                 selected_ids         = set()
@@ -584,6 +591,7 @@ def run_game(
                     if pending_suggestion is not None:
                         if mouse_down_pos is not None and not is_dragging:
                             mx, my = event.pos
+                            panel_node_hit = False
                             for did, rect in renderer.suggestion_node_rects.items():
                                 if rect.collidepoint(mx, my):
                                     prev_popup = popup_drone_id
@@ -592,11 +600,22 @@ def run_game(
                                         logger.log_suggestion_node_selected(did, world.elapsed)
                                     elif prev_popup is not None:
                                         logger.log_suggestion_node_deselected(prev_popup, world.elapsed)
+                                    panel_node_hit = True
                                     break
-                            else:
-                                logger.log("suggestion_panel_click_miss",
-                                           x=event.pos[0], y=event.pos[1],
-                                           elapsed=world.elapsed)
+                            if not panel_node_hit and mx < renderer.arena_w:
+                                # Arena click while suggestion pending — cancel suggestion
+                                # and open M1 popup if a drone was clicked.
+                                logger.log_suggestion_cancelled(world.elapsed)
+                                pending_suggestion   = None
+                                suggestion_overrides = {}
+                                pending_infeasible   = False
+                                clicked = _drone_at((mx, my), world, renderer.arena_w)
+                                if clicked is not None:
+                                    popup_drone_id = clicked if clicked != popup_drone_id else None
+                                    if popup_drone_id is not None:
+                                        logger.log_popup_opened(popup_drone_id, world.elapsed)
+                                    else:
+                                        logger.log_popup_dismissed(clicked, world.elapsed)
                         mouse_down_pos = None; drag_pos = None; is_dragging = False
                         continue
 

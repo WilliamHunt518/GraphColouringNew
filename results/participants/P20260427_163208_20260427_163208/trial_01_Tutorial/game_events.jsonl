@@ -1,0 +1,12 @@
+{"ts": 1777303942.0174751, "event": "tutorial_start"}
+{"ts": 1777303942.4329836, "event": "tutorial_panel_opened", "monitor": 1}
+{"ts": 1777303946.1338599, "event": "tutorial_mouse_down", "x": 1103, "y": 341, "step": 1, "elapsed": 0.0}
+{"ts": 1777303946.2503133, "event": "arena_click_miss", "x": 1103, "y": 341, "elapsed": 0.0}
+{"ts": 1777303946.3863719, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 1, "elapsed": 0.0}
+{"ts": 1777303946.3863719, "event": "tutorial_step_completed", "step": 1, "duration_s": 3.95}
+{"ts": 1777303948.3520484, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 2, "elapsed": 0.0}
+{"ts": 1777303948.352561, "event": "tutorial_step_completed", "step": 2, "duration_s": 1.97}
+{"ts": 1777303953.9994938, "event": "tutorial_mouse_down", "x": 1271, "y": 434, "step": 3, "elapsed": 0.0}
+{"ts": 1777303953.9994938, "event": "tutorial_panel_click_miss", "x": 1271, "y": 434, "step": 3, "elapsed": 0.0}
+{"ts": 1777303954.5778828, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 3, "elapsed": 0.0}
+{"ts": 1777303961.511876, "event": "tutorial_complete", "steps_completed": 2}

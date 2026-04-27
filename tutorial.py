@@ -217,7 +217,14 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
     # D0–D3 cluster forms K4-minus-one-edge (D2–D3 are just out of range),
     # so the forced suggestion below is always clash-free in the mini-graph.
     def setup_5(w: RobotWorld, gs: dict) -> None:
-        gs["selected_ids"].update({0, 1, 2, 3})          # pre-select
+        # Reposition D2 and D3 so their fractional separation (~0.316) is well above
+        # the fractional CONNECT_RADIUS (~0.226), guaranteeing the forced suggestion
+        # {D2:blue, D3:blue} is always clash-free at every monitor width.
+        _place(w, [
+            (2, 0.22, 0.50, "green", 0, 0),
+            (3, 0.48, 0.32, "green", 0, 0),
+        ])
+        gs["selected_ids"].update({0, 1, 2, 3})
         gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "blue", 3: "blue"}
 
     def check_5(gs: dict) -> bool:
@@ -286,13 +293,13 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
     def setup_9(w: RobotWorld, gs: dict) -> None:
         import random as _rng
         rng  = _rng.Random(99)
-        spd  = (w.v_min + w.v_max) / 2
         cfgs = []
         for i, (fx, fy, ch) in enumerate([
             (0.20, 0.35, "red"),   (0.50, 0.25, "green"), (0.80, 0.35, "blue"),
             (0.20, 0.65, "green"), (0.50, 0.75, "blue"),  (0.80, 0.65, "red"),
         ]):
             ang = rng.uniform(0, 2 * math.pi)
+            spd = rng.uniform(w.v_min, w.v_max)
             cfgs.append((i, fx, fy, ch, math.cos(ang) * spd, math.sin(ang) * spd))
         _place(w, cfgs)
         for r in w.robots:
@@ -355,7 +362,8 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
 
         TutorialStep(7, N,
             heading="Spot the Mistake — Override a Bad Suggestion",
-            body="The assistant is not perfect and sometimes makes mistakes "
+            body="The assistant is not perfect and sometimes makes mistakes — this applies to "
+                 "both Suggest and Auto-assign modes. "
                  "Here, the assistant put D1 and D2 both on GREEN — they will STILL clash "
                  "(red line in the mini-graph). On the agent panel, manually fix this suggested configuration, "
                  "then click Apply.",
