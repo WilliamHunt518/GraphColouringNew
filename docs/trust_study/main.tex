@@ -36,14 +36,15 @@ colours.  Two drones on the same channel within radio range of each other experi
 interference --- a colour clash in graph-theoretic terms.  Because the drones move
 continuously, the interference graph changes in real time.  The key manipulation is
 \emph{swarm complexity}, controlled by varying drone count and movement speed across
-scenarios.  Operators manage channel assignments using one of three interaction modalities:
-\emph{manual} individual reassignment; \emph{batch suggestion}, in which the operator
-selects a group of drones and requests a channel assignment from an imperfect advisory agent,
-then reviews and optionally modifies the proposal before applying it; and \emph{batch
-auto-assign}, in which the agent's proposal is applied immediately without review.
-The central question is how operators distribute effort across these three modalities as
-swarm complexity increases, and whether this distribution reflects appropriate calibration of
-trust to the agent's known imperfection.
+scenarios.  Operators manage channel assignments using one of five interaction modalities:
+\emph{manual} individual reassignment (M1); \emph{batch suggestion} with human review
+(M2); \emph{batch auto-assign} without review (M3); and two \emph{persistent-watch} modes
+in which selected drones are continuously monitored by the agent --- either surfacing a
+suggestion for human review (M4) or applying fixes autonomously (M5).  A second independent
+variable, \emph{agent mode} (reactive vs.\ proactive), determines whether M4/M5 are
+available.  The central question is how operators distribute effort across these modalities
+as swarm complexity and agent proactivity increase, and whether this distribution reflects
+appropriate calibration of trust to the agent's known imperfection.
 \end{abstract}
 
 %% ============================================================
@@ -68,19 +69,24 @@ demand of manual management grows and the case for AI assistance strengthens.
 The question we study is not simply \emph{whether} AI assistance helps, but \emph{how
 operators use it} and \emph{whether their reliance is well-calibrated}.  We provide
 operators with an imperfect advisory agent --- one that produces valid, clash-free assignments
-roughly 80\% of the time but occasionally makes random recommendations --- and observe how they
-distribute usage across three interaction modalities of increasing automation: manual individual
-reassignment, batch suggestion with human review, and batch auto-assignment without review.
+roughly 80\% of the time but occasionally makes random recommendations --- and observe how
+they distribute usage across interaction modalities of increasing automation.
+
+Under the \emph{reactive} agent mode, operators retain full initiative: they select drones
+and request assistance on demand (M1--M3).  Under the \emph{proactive} (flexible) agent
+mode, operators additionally designate individual drones as persistent monitors; the agent
+then autonomously detects clashes within each monitored group and either surfaces a
+suggestion (M4) or applies a fix directly (M5), without operator initiation.
 
 Our contributions are:
 \begin{enumerate}
   \item A formal model of the dynamic channel assignment task as online graph colouring,
         including a precise characterisation of geometrically infeasible configurations.
-  \item An interface design with three interaction modalities spanning a spectrum from full
-        human control to delegated automation.
-  \item An imperfect advisory agent model for batch channel suggestion.
-  \item A study design in which swarm complexity is the primary independent variable and
-        modality distribution is the primary dependent variable.
+  \item An interface design with five interaction modalities spanning a spectrum from full
+        human control to fully delegated automation.
+  \item An imperfect advisory agent model for both on-demand and persistent clash monitoring.
+  \item A $3 \times 2$ study design in which swarm complexity and agent mode are the
+        independent variables and modality distribution is the primary dependent variable.
 \end{enumerate}
 
 %% ============================================================
@@ -185,9 +191,9 @@ speed at each heading change.}
 \toprule
 \textbf{Level} & \textbf{Label} & \textbf{Drones} ($n$) & \textbf{Speed (px/s)} \\
 \midrule
-Low    & \textsc{Easy}   &  8 &  8--15 \\
-Medium & \textsc{Medium} & 12 & 10--22 \\
-High   & \textsc{Hard}   & 16 & 15--30 \\
+Low    & \textsc{Easy}   &  8 &  6--10 \\
+Medium & \textsc{Medium} & 12 &  7--15 \\
+High   & \textsc{Hard}   & 16 & 10--20 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -204,10 +210,12 @@ Each drone follows a \emph{bounded random walk}:
 
 \paragraph{Heading updates.}
 Drone $d_i$ selects a new heading at random intervals
-$\Delta t_i \sim \mathrm{Uniform}(t_{\min}, t_{\max})$.
+$\Delta t_i \sim \mathrm{Uniform}(4, 9)$\,s.
 At each update, the heading is perturbed by
-$\delta \sim \mathrm{Uniform}(-\pi/2, +\pi/2)$
+$\delta \sim \mathrm{Uniform}(-\pi/3, +\pi/3)$
 and speed is resampled from $\mathrm{Uniform}(v_{\min}, v_{\max})$.
+Between updates, the drone gradually steers toward the committed heading at a maximum rate
+of $\pi/2$\,rad/s, producing smooth curved trajectories rather than abrupt turns.
 
 \paragraph{Boundary reflection.}
 Drones reflect off arena walls with axis-appropriate velocity reversal.
@@ -226,8 +234,9 @@ is fully reproducible given its seed.
 \label{sec:modalities}
 %% ============================================================
 
-The operator may interact with the swarm using three modalities, each representing a different
-point on the control--automation trade-off.
+The operator may interact with the swarm using up to five modalities.  Modalities M1--M3 are
+always available (\emph{reactive} mode).  Modalities M4--M5 are additionally available when
+the agent mode is set to \emph{proactive} (Section~\ref{sec:flexible}).
 
 \subsection{M1: Manual Individual Reassignment}
 
@@ -255,7 +264,8 @@ each with its current channel and the agent's proposed channel.  The operator ma
 (a) accept the proposal for each drone individually, (b) override the proposal for specific
 drones by selecting a different channel, or (c) cancel the entire suggestion.  Clicking
 ``Apply'' queues a $\tau$-second switch for each drone whose proposed (or manually overridden)
-channel differs from its current one.
+channel differs from its current one.  If the operator manually reassigns a drone (M1) while
+a suggestion is pending, the suggestion is immediately discarded.
 
 \subsection{M3: Batch Auto-Assign}
 
@@ -271,9 +281,62 @@ approximately 20\% of the time on any given drone --- M3 will apply those errors
 M2 allows the operator to catch and correct agent errors before they take effect, but at the
 cost of a review step.  M1 bypasses the agent entirely.
 
-The three modalities are always available simultaneously; the operator chooses freely among
-them at any moment during the trial.  This within-trial choice is the primary behavioural
-variable of interest.
+The three modalities M1--M3 are always available simultaneously; the operator chooses freely
+among them at any moment during the trial.
+
+%% ============================================================
+\section{Proactive (Flexible) Agent Mode}
+\label{sec:flexible}
+%% ============================================================
+
+In \emph{proactive} agent mode, operators can designate individual drones as persistent
+\emph{watch targets}.  Once designated, the advisory agent continuously monitors the
+interference graph and acts autonomously when a clash involving any watched drone is detected,
+without the operator needing to select drones or press a button.
+
+\subsection{Designation}
+
+The operator selects a group of drones (same mechanism as M2/M3) and then clicks one of two
+new buttons in the control panel:
+\begin{itemize}
+  \item \textbf{Watch: Suggest} --- assigns the selected drones to M4 mode, displayed with
+        an amber ring.
+  \item \textbf{Watch: Auto} --- assigns the selected drones to M5 mode, displayed with a
+        teal ring.
+\end{itemize}
+Clicking the same button a second time for already-watched drones removes their designation.
+A drone can only be in one watch mode at a time; designating it to the other mode replaces
+the previous assignment.
+
+\subsection{M4: Persistent Watch with Suggestion}
+
+Every 500\,ms the agent scans the interference graph.  If a clash is detected involving any
+M4-watched drone, and no suggestion is currently pending, the agent:
+\begin{enumerate}
+  \item Identifies the connected component of watched drones containing the clash.
+  \item Runs the batch suggestion algorithm (Algorithm~\ref{alg:agent}) on that component.
+  \item Surfaces the result in the review panel, as in M2.
+\end{enumerate}
+The operator reviews and applies or cancels as normal.  To prevent re-triggering while a
+switch is in progress, all drones in the accepted suggestion are placed on a cooldown of
+$\tau + 0.5$\,s after the operator clicks ``Apply''.
+
+\subsection{M5: Persistent Watch with Auto-Fix}
+
+When a clash involving an M5-watched drone is detected, the agent applies the channel fix
+immediately (as in M3) without operator intervention.  Only drones not currently on cooldown
+and not already mid-switch are eligible for auto-fixing.  Each fixed drone receives the same
+$\tau + 0.5$\,s cooldown.  All autonomous actions are recorded in an \emph{agent log} panel
+displayed at the bottom of the control panel, timestamped and colour-coded (teal for M5).
+
+\subsection{Design Rationale}
+
+M4 and M5 shift the locus of initiative from the operator to the agent.  Under M4, the agent
+\emph{monitors} and \emph{alerts}; human oversight is preserved.  Under M5, the agent acts
+autonomously; the operator's role degrades to configuration and exception handling.  This
+delegation spectrum --- from purely reactive (M1--M3, operator-initiated) to proactive
+(M4, agent-alerted) to autonomous (M5, agent-acting) --- allows the study to examine how
+willingness to delegate surveillance correlates with trust calibration and performance.
 
 %% ============================================================
 \section{Advisory Agent}
@@ -321,29 +384,40 @@ The noise parameter $\varepsilon = 0.20$ means each drone in the selected set ha
 independent 20\% probability of receiving a randomly chosen channel rather than the
 greedy-optimal one.  For a selection of $k$ drones, the probability that the entire
 proposal is error-free is $(1-\varepsilon)^k$; for $k=5$ this is approximately 33\%.
-This makes the agent useful but unreliable enough that uncritical M3 usage imposes a
-measurable performance cost.
+This makes the agent useful but unreliable enough that uncritical M3/M5 usage imposes a
+measurable performance cost.  The same algorithm is used for all five modalities; the
+difference lies in who initiates it and how the result is handled.
 
 \subsection{Infeasibility Detection}
 
 Before returning the proposal, the agent checks whether the selected subgraph (plus its
 fixed neighbours) contains a clique of size $> |\mathcal{C}| = 3$.  If so, it annotates
 the proposal with an infeasibility flag and a count of unavoidable remaining clashes.  This
-information is displayed in the M2 review panel and is logged regardless of whether M2 or
-M3 was used.
+information is displayed in the M2 review panel and is logged regardless of which modality
+triggered the suggestion.
 
 %% ============================================================
 \section{Interface Design}
 \label{sec:interface}
 %% ============================================================
 
+\subsection{Display Layout}
+
+The interface runs across two windows.  The \emph{arena window} occupies the operator's
+primary display and shows the live drone simulation.  The \emph{control panel window} is
+positioned on a secondary display (or side-by-side in single-monitor mode) and shows all
+interaction controls, the suggestion panel, and --- in proactive mode --- the agent log.
+Both windows are resizable; all radii and drone positions scale proportionally to maintain
+topology-identical gameplay across display configurations.
+
 \subsection{Arena}
 
-The arena occupies the left portion of the screen.  Each drone is rendered as a filled circle
-coloured by its current channel (Red/Green/Blue), dimmed during switching.  A
-semi-transparent radio-range halo of radius $d_{\mathrm{link}}/2$ surrounds each drone.
-Overlapping halos indicate an active link; links whose endpoints share a channel are drawn as
-red edges.  Approaching pairs within the warning zone are flagged with amber rings.
+Each drone is rendered as a filled circle coloured by its current channel (Red/Green/Blue),
+dimmed during switching.  A semi-transparent radio-range halo of radius $d_{\mathrm{link}}/2$
+surrounds each drone.  Overlapping halos indicate an active link; links whose endpoints share
+a channel are drawn as red edges.  Approaching pairs within the warning zone are flagged with
+amber rings.  In proactive mode, watch-target drones carry an additional coloured ring:
+amber (thick) for M4 (Watch: Suggest) and teal (thick) for M5 (Watch: Auto).
 
 \begin{figure}[t]
 \centering
@@ -362,10 +436,12 @@ red edges.  Approaching pairs within the warning zone are flagged with amber rin
   \node[font=\tiny] at (2.8,3.56) {D2};
   \node[font=\tiny] at (4.3,3.56) {D5};
 
-  % --- Isolated drone (Green) ---
+  % --- Isolated drone (Green) with teal watch ring ---
   \fill[green!18, opacity=0.55] (1.1,1.5) circle (1.4);
   \fill[green!65] (1.1,1.5) circle (0.2);
+  \draw[teal, line width=2pt] (1.1,1.5) circle (0.38);
   \node[font=\tiny] at (1.1,1.86) {D0};
+  \node[font=\tiny, teal] at (0.1,1.5) {\textit{M5}};
 
   % --- Approaching pair (Blue, warning zone) ---
   \draw[orange!65, dashed, thick] (6.6,1.4) circle (1.75);
@@ -398,53 +474,55 @@ red edges.  Approaching pairs within the warning zone are flagged with amber rin
   \node[font=\tiny\bfseries] at (10.8,3.60) {Suggest (2 drones)};
   \fill[blue!20!gray] (9.4,3.05) rectangle (12.2,3.35);
   \node[font=\tiny\bfseries] at (10.8,3.20) {Auto-assign (2 drones)};
-  \draw[gray!45] (9.2,2.80) -- (12.4,2.80);
-  \node[font=\tiny, gray!40!black, align=left] at (10.8,2.35)
-      {Click drone → popup (M1)};
-  \node[font=\tiny, gray!40!black, align=left] at (10.8,1.95)
-      {Drag → select group};
-  \node[font=\tiny, gray!40!black, align=left] at (10.8,1.55)
-      {Ctrl+click → add/remove};
-  \node[font=\tiny, gray!40!black, align=left] at (10.8,1.15)
-      {Switch delay: 5 s};
+  % Watch buttons (proactive mode only)
+  \fill[orange!18!gray] (9.4,2.65) rectangle (12.2,2.95);
+  \node[font=\tiny\bfseries] at (10.8,2.80) {Watch: Suggest (M4)};
+  \fill[teal!20!gray] (9.4,2.25) rectangle (12.2,2.55);
+  \node[font=\tiny\bfseries] at (10.8,2.40) {Watch: Auto (M5)};
+  \draw[gray!45] (9.2,2.05) -- (12.4,2.05);
+  % Agent log
+  \node[font=\tiny, gray!50!black] at (10.8,1.82) {Agent log};
+  \node[font=\tiny, teal!60!black] at (10.8,1.52) {12.3s  D0,D2: auto-fixed};
+  \node[font=\tiny, teal!60!black] at (10.8,1.22) {8.1s\phantom{0}  D5: auto-fixed};
 \end{tikzpicture}
-\caption{Schematic interface layout.  Left: arena showing a clashing pair (red edge), an
-isolated drone (green halo), an approaching pair in the warning zone (amber dashed rings),
-and a bounding-box selection in progress.  Right: the HUD panel, showing the timer, running
-clash time, and context-sensitive ``Suggest'' and ``Auto-assign'' buttons that appear when a
-group is selected.}
+\caption{Schematic interface layout.  Left: arena showing a clashing pair (red edge),
+a drone with an M5 watch ring (teal), an approaching pair in the warning zone (amber dashed
+rings), and a bounding-box selection in progress.  Right: the control panel, showing
+context-sensitive M2/M3 buttons, M4/M5 watch-designation buttons (proactive mode only),
+and the agent action log at the bottom.}
 \label{fig:interface}
 \end{figure}
 
 \subsection{Selection and Group Actions}
 
 When multiple drones are selected (Figure~\ref{fig:interface}), each is highlighted with a
-yellow outline.  The HUD panel displays two context-sensitive buttons: ``Suggest ($k$ drones)''
-and ``Auto-assign ($k$ drones)'', where $k$ is the selection size.  Single-drone selection
-shows the existing popup-style channel buttons (M1).
+cyan outline.  The HUD panel displays context-sensitive buttons: ``Suggest ($k$ drones)'',
+``Auto-assign ($k$ drones)'', and, in proactive mode, ``Watch: Suggest'' and ``Watch: Auto''.
+Single-drone selection shows the existing popup-style channel buttons (M1).
 
-\subsection{Suggestion Panel (M2)}
+\subsection{Suggestion Panel (M2 / M4)}
 
-On clicking ``Suggest'', a panel replaces the HUD instructions area (or slides in as an
-overlay) showing:
+On clicking ``Suggest'' (M2) or when M4 triggers autonomously, a panel shows:
 \begin{itemize}
   \item Each selected drone's ID, current channel, and proposed channel (colour-coded).
   \item For each drone, per-channel override buttons to replace the proposed channel.
   \item An infeasibility warning if the subgraph cannot be 3-coloured.
   \item ``Apply'' and ``Cancel'' buttons.
 \end{itemize}
-Channels that would create a new clash (given the current non-selected assignment) are
-optionally flagged in red to help the operator spot agent errors.
+Channels that would create a new clash are flagged in red.  Manual M1 reassignment of any
+drone while a suggestion is pending immediately discards the suggestion.
 
 \subsection{HUD Panel}
 
-The right panel always shows:
+The control panel always shows:
 \begin{itemize}
   \item \textbf{Timer}: time remaining, highlighted red below 20\,s.
   \item \textbf{Clash time}: cumulative seconds (the running score).
   \item \textbf{Context buttons}: Suggest / Auto-assign when a group is selected;
-        nothing when no selection exists.
+        Watch: Suggest / Watch: Auto additionally in proactive mode.
   \item \textbf{Instruction summary}: brief one-line reminders of each mode.
+  \item \textbf{Agent log} (proactive mode): timestamped list of the eight most recent
+        autonomous actions, colour-coded by mode (amber for M4, teal for M5).
 \end{itemize}
 
 %% ============================================================
@@ -452,30 +530,32 @@ The right panel always shows:
 \label{sec:logging}
 %% ============================================================
 
-All events are written as JSON objects to a timestamped JSONL file in \texttt{logs/}.
+All events are written as JSON objects to a timestamped JSONL file.
 Each record contains a Unix wall-clock timestamp (\texttt{ts}) and the simulation time
 (\texttt{elapsed}).  Table~\ref{tab:events} lists the event types.
 
 \begin{table}[h]
 \centering
-\caption{Logged event types.  M1/M2/M3 column indicates which modality generates the event.}
+\caption{Logged event types.  Mode column indicates which modality or system component
+generates the event.}
 \label{tab:events}
-\begin{tabular}{llp{6cm}}
+\begin{tabular}{llp{5.8cm}}
 \toprule
 \textbf{Event} & \textbf{Mode} & \textbf{Key payload fields} \\
 \midrule
-\texttt{game\_start}           & --  & seed, n\_drones, complexity, duration \\
-\texttt{switch\_requested}     & M1  & drone\_id, from, to, elapsed \\
+\texttt{game\_start}           & --    & seed, n\_drones, complexity, duration, agent\_mode \\
+\texttt{switch\_requested}     & M1    & drone\_id, from, to, elapsed \\
 \texttt{group\_selected}       & M2/M3 & drone\_ids, method (box/ctrl), elapsed \\
-\texttt{suggestion\_requested} & M2  & drone\_ids, current\_channels, elapsed \\
-\texttt{suggestion\_shown}     & M2  & drone\_ids, proposed\_channels, infeasible \\
-\texttt{suggestion\_modified}  & M2  & drone\_id, proposed, overridden\_to \\
-\texttt{suggestion\_applied}   & M2  & final\_channels (proposed or overridden per drone) \\
-\texttt{suggestion\_cancelled} & M2  & elapsed \\
-\texttt{auto\_assign\_applied} & M3  & drone\_ids, proposed\_channels, elapsed \\
-\texttt{clash\_start}          & --  & elapsed, clashing\_pairs \\
-\texttt{clash\_end}            & --  & elapsed, clash\_seconds\_so\_far \\
-\texttt{game\_end}             & --  & elapsed, clash\_seconds, clash\_pct \\
+\texttt{suggestion\_requested} & M2    & drone\_ids, current\_channels, elapsed \\
+\texttt{suggestion\_shown}     & M2/M4 & drone\_ids, proposed\_channels, infeasible \\
+\texttt{suggestion\_modified}  & M2/M4 & drone\_id, proposed, overridden\_to \\
+\texttt{suggestion\_applied}   & M2/M4 & final\_channels (proposed or overridden per drone) \\
+\texttt{suggestion\_cancelled} & M2/M4 & elapsed \\
+\texttt{auto\_assign\_applied} & M3/M5 & drone\_ids, proposed\_channels, infeasible, elapsed \\
+\texttt{watch\_mode\_set}      & M4/M5 & drone\_ids, mode (suggest/auto), elapsed \\
+\texttt{clash\_start}          & --    & elapsed, clashing\_pairs \\
+\texttt{clash\_end}            & --    & elapsed, clash\_seconds\_so\_far \\
+\texttt{game\_end}             & --    & elapsed, clash\_seconds, clash\_pct \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -483,11 +563,13 @@ Each record contains a Unix wall-clock timestamp (\texttt{ts}) and the simulatio
 This event structure supports, among other analyses:
 \begin{itemize}
   \item \textbf{Modality distribution}: the proportion of channel switches initiated via
-        M1, M2, or M3 over the trial.
-  \item \textbf{Agent override rate}: in M2 sessions, how often the operator changed the
+        each of M1--M5 over the trial.
+  \item \textbf{Agent override rate}: in M2/M4 sessions, how often the operator changed the
         agent's proposal for at least one drone.
   \item \textbf{Error detection}: comparison of \texttt{suggestion\_shown} and
         \texttt{suggestion\_applied} events reveals whether the operator caught agent errors.
+  \item \textbf{Delegation depth}: the fraction of switches executed via autonomous M5
+        relative to supervised M4, as a function of complexity and elapsed time.
   \item \textbf{Reaction latency}: time from \texttt{clash\_start} to the first relevant
         switch event.
 \end{itemize}
@@ -497,35 +579,48 @@ This event structure supports, among other analyses:
 \label{sec:study}
 %% ============================================================
 
+\subsection{Design}
+
+The study uses a $3 \times 2$ within-subjects design.  The two independent variables are:
+\begin{description}[leftmargin=2em]
+  \item[Swarm complexity] Three levels: \textsc{Easy}, \textsc{Medium}, \textsc{Hard}
+        (Table~\ref{tab:complexity}).
+  \item[Agent mode] Two levels: \emph{reactive} (M1--M3 only) and \emph{proactive}
+        (M1--M5 available).
+\end{description}
+Trial ordering across the six conditions is counterbalanced.
+
 \subsection{Procedure}
 
-Each participant completes multiple 90-second trials across the three complexity levels
-(\textsc{Easy}, \textsc{Medium}, \textsc{Hard}).  The ordering of complexity levels is
-counterbalanced.  Participants are told that the advisory agent is helpful but imperfect and
-that they should use their judgement about when to rely on it.  They are not told the exact
-noise rate $\varepsilon$.
+Each participant completes six 90-second trials, one per condition.  Participants are told
+that the advisory agent is helpful but imperfect and that they should use their judgement
+about when to rely on it.  They are not told the exact noise rate $\varepsilon$.
 
 Prior to the main trials, a practice trial at \textsc{Easy} complexity familiarises
-participants with all three modalities.  On-screen labels explain each modality during
-practice.
+participants with all applicable modalities.  In proactive-mode practice, an on-screen
+tutorial explains M4/M5 designation.
+
+Post-trial questionnaires collect NASA-TLX workload ratings, a trust scale adapted
+from~\citep{jian2000foundations}, and a free-text strategy report.
 
 \subsection{Hypotheses}
 
 \begin{description}[leftmargin=2em]
   \item[H1 \emph{(Performance vs.\ Complexity)}]
-    $T_{\mathrm{clash}}$ will increase monotonically with complexity level, reflecting the
-    greater difficulty of the task.
-  \item[H2 \emph{(Modality Shift)}]
-    The fraction of switches made via M3 (auto-assign) will increase with complexity, as
-    operators trade review thoroughness for throughput under higher cognitive load.
+    $T_{\mathrm{clash}}$ will increase monotonically with complexity level.
+  \item[H2 \emph{(Modality Shift with Complexity)}]
+    The fraction of switches made via high-automation modes (M3, M5) will increase with
+    complexity, as operators trade review thoroughness for throughput under cognitive load.
   \item[H3 \emph{(Over-reliance)}]
-    The increase in M3 usage at \textsc{Hard} complexity will be accompanied by a
-    disproportionate increase in agent-induced errors (measured as the proportion of applied
-    suggestions that contain a clash not present in the current assignment), indicating
-    over-reliance on the agent.
-  \item[H4 \emph{(M2 as a trust probe)}]
-    The operator override rate in M2 will correlate negatively with trial clash time: operators
-    who check the agent more carefully will perform better, controlling for complexity.
+    The increase in M3/M5 usage at \textsc{Hard} complexity will be accompanied by a
+    disproportionate increase in agent-induced errors, indicating over-reliance.
+  \item[H4 \emph{(M2/M4 as a trust probe)}]
+    The operator override rate in M2/M4 will correlate negatively with trial clash time,
+    controlling for complexity.
+  \item[H5 \emph{(Proactive mode and delegation)}]
+    In proactive mode, operators who assign more drones to M5 (Watch: Auto) will show higher
+    $T_{\mathrm{clash}}$ at \textsc{Hard} complexity than operators who prefer M4 (Watch:
+    Suggest), due to undetected agent errors compounding under high topology change rates.
 \end{description}
 
 \subsection{Measures}
@@ -535,8 +630,9 @@ $T_{\mathrm{clash}}$: cumulative clash time (lower is better).
 
 \paragraph{Behavioural.}
 \begin{itemize}
-  \item M1/M2/M3 usage fractions (proportion of drone switches via each modality).
-  \item M2 override rate: proportion of M2 suggestions with at least one override.
+  \item M1--M5 usage fractions (proportion of drone switches via each modality).
+  \item M4/M5 designation rate: number of drones assigned as watch targets per trial.
+  \item M2/M4 override rate: proportion of suggestions with at least one override.
   \item Selection size distribution in M2/M3.
   \item Reaction latency (clash onset to first switch action).
   \item Anticipatory rate: fraction of switches issued before a link forms (in warning zone).
@@ -549,27 +645,37 @@ free-text strategy report.
 %% ============================================================
 \section{Implementation}
 \label{sec:impl}
+\label{sec:params}
 %% ============================================================
 
 \begin{table}[h]
 \centering
-\caption{Source modules (current and planned).}
+\caption{Source modules.}
 \label{tab:components}
 \begin{tabular}{lp{8.5cm}}
 \toprule
 \textbf{Module} & \textbf{Responsibility} \\
 \midrule
-\texttt{robot\_world.py}    & Physics: movement (speed range parameterised per complexity),
-                               collision separation, edge/clash detection, switch queue. \\
-\texttt{robot\_renderer.py} & All drawing: halos, edges, drone bodies, selection highlights,
-                               bounding-box rubberband, suggestion panel, HUD, overlays. \\
-\texttt{robot\_game.py}     & Event loop: M1/M2/M3 interaction, multi-select state,
-                               suggestion request/apply/cancel, agent calls, logger calls. \\
+\texttt{robot\_world.py}    & Physics: movement, collision separation, edge/clash detection,
+                               switch queue, scaled instance radii. \\
+\texttt{robot\_renderer.py} & All drawing: halos, edges, drone bodies, watch-mode rings,
+                               selection highlights, suggestion panel, HUD, agent log,
+                               overlays. \\
+\texttt{robot\_game.py}     & Event loop: M1--M5 interaction, multi-select state,
+                               suggestion request/apply/cancel, flexible-agent monitoring
+                               tick, agent calls, logger calls. \\
+\texttt{panel\_window.py}   & Separate OS window for the control panel using SDL2
+                               hardware renderer; supports independent resizing. \\
 \texttt{agents/channel\_agent.py} & Advisory agent: greedy colouring with $\varepsilon$-noise,
-                               infeasibility detection and annotation. \\
+                               infeasibility detection. \\
 \texttt{game\_logger.py}    & JSONL event logger. \\
-\texttt{main.py}            & CLI: \texttt{--complexity} (easy/medium/hard), \texttt{--seed},
-                               \texttt{--duration}; maps complexity to drone count and speed range. \\
+\texttt{study\_runner.py}   & Study orchestrator: per-trial configuration (complexity,
+                               agent mode, seed, duration), survey integration, output
+                               directory management. \\
+\texttt{launch\_menu.py}    & Standalone launcher GUI for single-session use outside the
+                               formal study. \\
+\texttt{tutorial.py}        & Scripted tutorial sequence shown before the first trial. \\
+\texttt{surveys.py}         & Post-trial questionnaire windows (NASA-TLX, trust scale). \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -577,18 +683,21 @@ free-text strategy report.
 The simulation runs at 60\,Hz; frame delta time is capped at 50\,ms.  All randomness (drone
 movement and agent noise) is isolated in seeded \texttt{random.Random} instances for
 reproducibility.  The agent runs synchronously in the game loop: for selections of up to
-$\sim$20 drones the greedy algorithm completes in well under one frame.
+$\sim$20 drones the greedy algorithm completes in well under one frame.  All radii
+($d_{\mathrm{link}}$, $d_{\mathrm{warn}}$, drone body radius) are computed at initialisation
+as multiples of a reference arena width, so that topology is identical across display
+resolutions.
 
 \paragraph{Named complexity parameters.}
 
 \begin{center}
-\begin{tabular}{lccccr}
+\begin{tabular}{lccccc}
 \toprule
 \textbf{Level} & $n$ & $v_{\min}$ & $v_{\max}$ & $\Delta t_{\mathrm{turn}}$ & $\tau$ \\
 \midrule
-\textsc{Easy}   &  8 &  8 px/s & 15 px/s & 1.0--3.5 s & 5 s \\
-\textsc{Medium} & 12 & 10 px/s & 22 px/s & 1.0--3.5 s & 5 s \\
-\textsc{Hard}   & 16 & 15 px/s & 30 px/s & 1.0--3.5 s & 5 s \\
+\textsc{Easy}   &  8 &  6 px/s & 10 px/s & 4--9 s & 3 s \\
+\textsc{Medium} & 12 &  7 px/s & 15 px/s & 4--9 s & 3 s \\
+\textsc{Hard}   & 16 & 10 px/s & 20 px/s & 4--9 s & 3 s \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -601,11 +710,14 @@ $\sim$20 drones the greedy algorithm completes in well under one frame.
 We have described a platform for studying human--agent interaction in a real-time dynamic
 channel assignment task.  The task is grounded in graph colouring, operationally motivated
 by drone swarm spectrum management, and parameterised to span a range of operator cognitive
-demands.  The three interaction modalities --- manual, batch-suggest-and-review,
-batch-auto-assign --- constitute a delegation spectrum that participants can navigate freely
-during each trial.  The central scientific question is whether participants modulate their
-use of the high-automation mode (M3) in a way that is sensitive to agent reliability, and
-whether this calibration degrades under high swarm complexity.
+demands.  Five interaction modalities --- manual (M1), supervised batch suggestion (M2),
+automated batch assignment (M3), persistent-watch suggestion (M4), and persistent-watch
+auto-fix (M5) --- constitute a delegation spectrum that participants can navigate freely
+during each trial.  A $3 \times 2$ design crossing swarm complexity with agent mode
+(reactive vs.\ proactive) allows us to examine not only whether participants modulate their
+use of high-automation modes in response to complexity, but also whether proactive agent
+availability induces over-delegation, particularly when the agent's errors can compound
+silently across multiple autonomous actions.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}

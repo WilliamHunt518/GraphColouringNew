@@ -56,7 +56,9 @@
       "Bash(rm -rf \"G:/Files/Code/GraphColouringNew/logs/old\" \"G:/Files/Code/GraphColouringNew/logs/old_debug\" \"G:/Files/Code/GraphColouringNew/logs/\"*.txt \"G:/Files/Code/GraphColouringNew/logs/\"*.log)",
       "Bash(kill %1)",
       "Bash(git *)",
-      "Bash(echo \"exit $?\")"
+      "Bash(echo \"exit $?\")",
+      "Bash(find \"G:\\\\Files\\\\Code\\\\GraphColouringNew\" -type f -name \"*.py\" -not -path \"*/old_files/*\" -not -path \"*/tests/*\")",
+      "Read(//tmp/**)"
     ]
   }
 }
