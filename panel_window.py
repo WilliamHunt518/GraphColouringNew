@@ -103,7 +103,7 @@ class DetachedPanelWindow:
             size=(width, height),
             position=(pos_x, pos_y),
         )
-        self._win.resizable = False
+        self._win.resizable = True
         try:
             self._win.focus()
         except Exception:
@@ -139,6 +139,12 @@ class DetachedPanelWindow:
         self._renderer.clear()
         self._renderer.blit(tex, pygame.Rect(0, 0, self._width, self._height))
         self._renderer.present()
+
+    def handle_resize(self, new_w: int, new_h: int) -> None:
+        """Recreate the CPU surface after the panel window is resized."""
+        self._width    = new_w
+        self._height   = new_h
+        self._cpu_surf = pygame.Surface((new_w, new_h))
 
     def close(self) -> None:
         try:

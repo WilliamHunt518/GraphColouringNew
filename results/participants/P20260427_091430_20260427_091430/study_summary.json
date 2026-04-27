@@ -1,0 +1,17 @@
+{
+  "participant_id": "P20260427_091430",
+  "end_time": "20260427_091436",
+  "n_completed": 1,
+  "n_total": 2,
+  "trials": [
+    {
+      "seed": 42,
+      "complexity": "easy",
+      "duration": 90,
+      "elapsed": 0.0,
+      "clash_seconds": 0.0,
+      "clash_pct": 0.0,
+      "completed": false
+    }
+  ]
+}

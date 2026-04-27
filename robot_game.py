@@ -7,7 +7,10 @@ import pygame
 
 import os
 
-from robot_world import RobotWorld, SPEED_MIN, SPEED_MAX, SWITCH_DURATION
+from robot_world import (
+    RobotWorld, SPEED_MIN, SPEED_MAX, SWITCH_DURATION,
+    WARN_RADIUS, CONNECT_RADIUS, APPROACH_RADIUS, ROBOT_RADIUS, _REFERENCE_ARENA_W,
+)
 from robot_renderer import RobotRenderer, PANEL_W
 from game_logger import GameLogger
 from agents.channel_agent import ChannelAdvisor
@@ -16,6 +19,16 @@ from panel_window import DetachedPanelWindow, is_supported as panel_detach_suppo
 
 class _StudyExit(Exception):
     """Raised instead of sys.exit() when study_mode=True."""
+
+
+# ── Windowed (single-monitor) layout constants ────────────────────────────────
+WINDOWED_ARENA_W = 1200
+WINDOWED_ARENA_H = 760
+WINDOWED_ARENA_X = 60
+WINDOWED_ARENA_Y = 60
+WINDOWED_PANEL_W = 380
+WINDOWED_PANEL_X = WINDOWED_ARENA_X + WINDOWED_ARENA_W + 8
+WINDOWED_PANEL_Y = WINDOWED_ARENA_Y
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -77,29 +90,38 @@ def run_game(
     screen: Optional[pygame.Surface] = None,
     arena_monitor: int = 0,
     panel_monitor: int = 1,
+    agent_mode: str = "standard",
+    windowed: bool = False,
+    debug_mode: bool = False,
 ) -> Optional[Dict]:
     _owns_display = screen is None
     if _owns_display:
-        # Resolve monitor bounds BEFORE pygame.init() so SDL2 positions the
-        # window correctly at creation — avoids Windows DX fullscreen
-        # optimisations that trigger when a borderless window is repositioned
-        # after creation to cover a monitor exactly.
-        _ab = monitor_rect(arena_monitor)
-        if _ab:
-            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
         os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
         os.environ.setdefault('SDL_MOUSE_FOCUS_CLICKTHROUGH', '1')
-        pygame.init()
-        os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
-
-        if _ab:
-            screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
+        if windowed:
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{WINDOWED_ARENA_X},{WINDOWED_ARENA_Y}'
+            pygame.init()
+            os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+            screen = pygame.display.set_mode((WINDOWED_ARENA_W, WINDOWED_ARENA_H), pygame.RESIZABLE)
+            pygame.display.set_caption("Drone Channel Assignment — Arena")
         else:
-            info = pygame.display.Info()
-            screen = pygame.display.set_mode(
-                (info.current_w, info.current_h), pygame.NOFRAME
-            )
-        pygame.display.set_caption("Drone Channel Assignment")
+            # Resolve monitor bounds BEFORE pygame.init() so SDL2 positions the
+            # window correctly at creation — avoids Windows DX fullscreen
+            # optimisations that trigger when a borderless window is repositioned
+            # after creation to cover a monitor exactly.
+            _ab = monitor_rect(arena_monitor)
+            if _ab:
+                os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
+            pygame.init()
+            os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+            if _ab:
+                screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
+            else:
+                info = pygame.display.Info()
+                screen = pygame.display.set_mode(
+                    (info.current_w, info.current_h), pygame.NOFRAME
+                )
+            pygame.display.set_caption("Drone Channel Assignment")
 
     clock = pygame.time.Clock()
     window_w, window_h = screen.get_size()
@@ -150,20 +172,122 @@ def run_game(
     result:       Optional[Dict] = None
     study_advance = False   # set True when user presses SPACE on ENDED in study_mode
 
+    _debug_paused: bool = False
+
+    # ── Flexible-agent state ──────────────────────────────────────────────────
+    _MONITOR_INTERVAL = 0.5
+    drone_modes:    Dict[int, str]           = {}   # drone_id → "suggest" | "auto"
+    agent_log:      List[Tuple[float, str]]  = []   # (elapsed, message) newest-last
+    _monitor_timer: List[float]              = [0.0]
+    _auto_cooldown: Dict[int, float]         = {}
+
+    # ── Flexible-agent monitoring tick ───────────────────────────────────────
+    def _flex_tick(dt: float) -> None:
+        nonlocal pending_suggestion, suggestion_overrides, pending_infeasible
+
+        for did in list(_auto_cooldown):
+            _auto_cooldown[did] -= dt
+            if _auto_cooldown[did] <= 0:
+                del _auto_cooldown[did]
+
+        _monitor_timer[0] += dt
+        if _monitor_timer[0] < _MONITOR_INTERVAL:
+            return
+        _monitor_timer[0] = 0.0
+
+        if not drone_modes:
+            return
+
+        clashing_ids = {i for pair in world.clashing_pairs for i in pair}
+        monitored_clashing = {did for did in drone_modes if did in clashing_ids}
+        if not monitored_clashing:
+            return
+
+        # Connected components among all monitored drones via active edges
+        monitored_set = set(drone_modes)
+        adj: Dict[int, Set[int]] = {d: set() for d in monitored_set}
+        for i, j in world.edges:
+            if i in monitored_set and j in monitored_set:
+                adj[i].add(j)
+                adj[j].add(i)
+
+        visited: Set[int] = set()
+        components: List[Set[int]] = []
+        for start in monitored_set:
+            if start in visited:
+                continue
+            comp: Set[int] = set()
+            stack = [start]
+            while stack:
+                n = stack.pop()
+                if n in visited:
+                    continue
+                visited.add(n)
+                comp.add(n)
+                stack.extend(adj[n] - visited)
+            components.append(comp)
+
+        current_channels = {r.id: r.channel for r in world.robots if r.channel}
+
+        for comp in components:
+            if not (comp & monitored_clashing):
+                continue
+
+            modes_in_comp = {drone_modes[d] for d in comp}
+
+            if "auto" in modes_in_comp:
+                eligible = [d for d in comp
+                            if d not in _auto_cooldown
+                            and world.robots[d].switching_to is None]
+                if not eligible:
+                    continue
+                proposed, _ = advisor.suggest(
+                    eligible, current_channels, list(world.edges),
+                    near_pairs=list(world.warning_pairs),
+                )
+                _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=False)
+                for did in eligible:
+                    _auto_cooldown[did] = world.switch_duration + 0.5
+                ids_str = ",".join(f"D{d}" for d in sorted(eligible))
+                agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed"))
+                if len(agent_log) > 50:
+                    agent_log.pop(0)
+                logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
+
+            elif "suggest" in modes_in_comp and pending_suggestion is None:
+                proposed, infeasible = advisor.suggest(
+                    list(comp), current_channels, list(world.edges),
+                    near_pairs=list(world.warning_pairs),
+                )
+                pending_suggestion   = proposed
+                suggestion_overrides = dict(proposed)
+                pending_infeasible   = infeasible
+                agent_log.append((world.elapsed,
+                                   f"{world.elapsed:.1f}s  group: suggestion shown"))
+                if len(agent_log) > 50:
+                    agent_log.pop(0)
+                logger.log_suggestion_shown(list(comp), proposed, infeasible, world.elapsed)
+
     # ── Open the panel window immediately on the chosen monitor ───────────────
     panel_detached = False
     _panel_win: Optional[DetachedPanelWindow] = None
 
     if panel_detach_supported():
         try:
-            _pb = monitor_rect(panel_monitor)
-            if _pb is None:
-                # pygame already init'd — fall back to its query
-                n_mon = pygame.display.get_num_displays()
-                pmon  = min(panel_monitor, n_mon - 1)
-                _raw  = pygame.display.get_display_bounds(pmon)
-                _pb   = (_raw[0], _raw[1], _raw[2], _raw[3])
-            _panel_win = DetachedPanelWindow(_pb[2], _pb[3], pos_x=_pb[0], pos_y=_pb[1])
+            if windowed:
+                _ph = screen.get_height()
+                _panel_win = DetachedPanelWindow(
+                    WINDOWED_PANEL_W, _ph,
+                    pos_x=WINDOWED_PANEL_X, pos_y=WINDOWED_PANEL_Y,
+                )
+            else:
+                _pb = monitor_rect(panel_monitor)
+                if _pb is None:
+                    n_mon = pygame.display.get_num_displays()
+                    pmon  = min(panel_monitor, n_mon - 1)
+                    _raw  = pygame.display.get_display_bounds(pmon)
+                    _pb   = (_raw[0], _raw[1], _raw[2], _raw[3])
+                _panel_win = DetachedPanelWindow(_pb[2], _pb[3], pos_x=_pb[0], pos_y=_pb[1])
             renderer.set_panel_surface(_panel_win.get_fresh_surface())
             panel_detached = True
             logger.log("panel_opened", monitor=panel_monitor, elapsed=0.0)
@@ -258,7 +382,32 @@ def run_game(
                 logger.log_group_deselected(old_sel, world.elapsed)
                 return True
 
+            if agent_mode == "flexible":
+                if "watch_suggest" in renderer.hud_button_rects \
+                        and renderer.hud_button_rects["watch_suggest"].collidepoint(mx, my):
+                    for did in list(selected_ids):
+                        if drone_modes.get(did) == "suggest":
+                            del drone_modes[did]
+                        else:
+                            drone_modes[did] = "suggest"
+                    logger.log("watch_mode_set", drones=list(selected_ids),
+                               mode="suggest", elapsed=world.elapsed)
+                    return True
+
+                if "watch_auto" in renderer.hud_button_rects \
+                        and renderer.hud_button_rects["watch_auto"].collidepoint(mx, my):
+                    for did in list(selected_ids):
+                        if drone_modes.get(did) == "auto":
+                            del drone_modes[did]
+                        else:
+                            drone_modes[did] = "auto"
+                    logger.log("watch_mode_set", drones=list(selected_ids),
+                               mode="auto", elapsed=world.elapsed)
+                    return True
+
         return False
+
+    _WINDOWRESIZED = getattr(pygame, 'WINDOWRESIZED', None)
 
     try:
         while True:
@@ -294,6 +443,11 @@ def run_game(
                             state = "PLAYING"
                             logger.log("play_started", elapsed=world.elapsed)
 
+                    elif event.key == pygame.K_p and state == "PLAYING" and debug_mode:
+                        _debug_paused = not _debug_paused
+                        logger.log("debug_pause_toggled", paused=_debug_paused,
+                                   elapsed=world.elapsed)
+
                     elif state == "ENDED":
                         if study_mode and event.key == pygame.K_SPACE:
                             study_advance = True
@@ -313,9 +467,45 @@ def run_game(
                                 prev_clashing        = False
                                 last_action          = None
                                 result               = None
+                                drone_modes.clear()
+                                agent_log.clear()
+                                _monitor_timer[0]  = 0.0
+                                _auto_cooldown.clear()
+                                _debug_paused      = False
                                 logger.log_game_start(seed, n_robots, complexity, duration, v_min, v_max)
                             elif event.key == pygame.K_q:
                                 _handle_quit()
+
+                # ── Arena window resize (windowed mode only) ──────────────────
+                elif windowed and (
+                    event.type == pygame.VIDEORESIZE or
+                    (_WINDOWRESIZED is not None and event.type == _WINDOWRESIZED)
+                ):
+                    # Use get_surface() rather than event dimensions — avoids
+                    # false triggers when SDL2 fires resize events for the
+                    # panel window and they bleed into the arena event queue.
+                    screen = pygame.display.get_surface()
+                    new_w, new_h = screen.get_size()
+                    old_w, old_h = arena_w, window_h
+                    if new_w != old_w or new_h != old_h:
+                        scale_x, scale_y = new_w / old_w, new_h / old_h
+                        new_scale = new_w / _REFERENCE_ARENA_W
+                        world.robot_radius    = max(6, round(ROBOT_RADIUS    * new_scale))
+                        world.warn_radius     = WARN_RADIUS     * new_scale
+                        world.connect_radius  = CONNECT_RADIUS  * new_scale
+                        world.approach_radius = APPROACH_RADIUS * new_scale
+                        world.arena_w         = new_w
+                        world.arena_h         = new_h
+                        for r in world.robots:
+                            r.x      = max(world.robot_radius,
+                                           min(new_w - world.robot_radius, r.x * scale_x))
+                            r.y      = max(world.robot_radius,
+                                           min(new_h - world.robot_radius, r.y * scale_y))
+                            r.radius = world.robot_radius
+                        arena_w  = new_w
+                        window_w = new_w
+                        window_h = new_h
+                        renderer.handle_resize(screen)
 
                 # ── Mouse button DOWN ─────────────────────────────────────────
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -467,7 +657,11 @@ def run_game(
 
             # ── Events from detached panel window ─────────────────────────────
             for event in panel_events:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if _WINDOWRESIZED and event.type == _WINDOWRESIZED \
+                        and windowed and _panel_win is not None:
+                    _panel_win.handle_resize(event.x, event.y)
+                    renderer.set_panel_surface(_panel_win.get_fresh_surface())
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if state not in ("PLAYING", "SETUP"):
                         continue
                     mx, my = event.pos
@@ -491,8 +685,10 @@ def run_game(
                 break
 
             # ── Simulation tick ───────────────────────────────────────────────
-            if state == "PLAYING":
+            if state == "PLAYING" and not _debug_paused:
                 world.update(dt)
+                if agent_mode == "flexible":
+                    _flex_tick(dt)
 
                 now_clashing = world.is_clashing
                 if now_clashing and not prev_clashing:
@@ -532,10 +728,15 @@ def run_game(
                 suggestion_overrides=suggestion_overrides,
                 pending_infeasible=pending_infeasible,
                 panel_detached=panel_detached,
+                drone_modes=drone_modes if agent_mode == "flexible" else None,
+                agent_log=agent_log[-8:] if agent_mode == "flexible" else None,
             )
 
             if state == "ENDED" and study_mode:
                 _draw_study_continue_hint(screen, renderer)
+
+            if _debug_paused:
+                _draw_debug_paused_overlay(screen, renderer)
 
             pygame.display.flip()
             if panel_detached and _panel_win is not None:
@@ -562,3 +763,12 @@ def _draw_study_continue_hint(screen: pygame.Surface, renderer: RobotRenderer) -
     s = renderer.fonts["medium"].render("SPACE — continue to next trial", True, (180, 255, 180))
     screen.blit(s, s.get_rect(centerx=screen.get_width() // 2,
                                centery=screen.get_height() // 2 + 175))
+
+
+def _draw_debug_paused_overlay(screen: pygame.Surface, renderer: RobotRenderer) -> None:
+    w = screen.get_width()
+    banner = pygame.Surface((w, 38), pygame.SRCALPHA)
+    banner.fill((190, 30, 30, 210))
+    screen.blit(banner, (0, 0))
+    s = renderer.fonts["medium"].render("⏸  DEBUG PAUSED — P to resume", True, (255, 210, 210))
+    screen.blit(s, s.get_rect(centerx=w // 2, centery=19))

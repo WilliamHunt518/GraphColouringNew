@@ -37,6 +37,7 @@ class TrialConfig:
     show_tlx: bool = True
     show_trust: bool = True
     show_tam: bool = True
+    agent_mode: str = "standard"
 
 
 @dataclass
@@ -48,6 +49,8 @@ class StudyConfig:
     panel_monitor: int = 1
     show_demographics: bool = True
     show_summary_survey: bool = True
+    windowed: bool = False
+    debug_mode: bool = False
 
 
 # ── Presets ───────────────────────────────────────────────────────────────────
@@ -143,6 +146,22 @@ class StudySetupWindow:
             row=row, column=1, sticky="w", **pad)
         row += 1
 
+        self._windowed_var = tk.BooleanVar(
+            value=self._saved.get("windowed", False))
+        ttk.Checkbutton(root,
+                        text="Single monitor (windowed — two side-by-side windows)",
+                        variable=self._windowed_var).grid(
+            row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 2))
+        row += 1
+
+        self._debug_var = tk.BooleanVar(
+            value=self._saved.get("debug_mode", False))
+        ttk.Checkbutton(root,
+                        text="Debug mode (P key pauses / resumes during play)",
+                        variable=self._debug_var).grid(
+            row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 4))
+        row += 1
+
         ttk.Separator(root, orient=tk.HORIZONTAL).grid(
             row=row, column=0, columnspan=3, sticky="ew", pady=4)
         row += 1
@@ -167,6 +186,7 @@ class StudySetupWindow:
                     t.get("show_tlx", True),
                     t.get("show_trust", True),
                     t.get("show_tam", True),
+                    t.get("agent_mode", "standard"),
                 )
             else:
                 self._add_trial_row(t)
@@ -210,12 +230,13 @@ class StudySetupWindow:
 
     def _add_trial_row(self, preset_name: str = "Medium — perfect",
                        enabled: bool = True, show_tlx: bool = True,
-                       show_trust: bool = True, show_tam: bool = True) -> None:
+                       show_trust: bool = True, show_tam: bool = True,
+                       agent_mode: str = "standard") -> None:
         if len(self._trial_rows) >= 6:
             return
         idx = len(self._trial_rows)
         row = _TrialRow(self._trials_frame, idx, preset_name,
-                        enabled, show_tlx, show_trust, show_tam)
+                        enabled, show_tlx, show_trust, show_tam, agent_mode)
         self._trial_rows.append(row)
 
     def _remove_last_row(self) -> None:
@@ -250,13 +271,15 @@ class StudySetupWindow:
             "trials": [
                 {"preset": tr.preset_name, "enabled": tr.enabled,
                  "show_tlx": tr.show_tlx, "show_trust": tr.show_trust,
-                 "show_tam": tr.show_tam}
+                 "show_tam": tr.show_tam, "agent_mode": tr.agent_mode}
                 for tr in self._trial_rows
             ],
             "arena_monitor":       arena_monitor,
             "panel_monitor":       panel_monitor,
             "show_demographics":   self._demo_var.get(),
             "show_summary_survey": self._summary_var.get(),
+            "windowed":            self._windowed_var.get(),
+            "debug_mode":          self._debug_var.get(),
         })
 
         self.config = StudyConfig(
@@ -266,6 +289,8 @@ class StudySetupWindow:
             panel_monitor=panel_monitor,
             show_demographics=self._demo_var.get(),
             show_summary_survey=self._summary_var.get(),
+            windowed=self._windowed_var.get(),
+            debug_mode=self._debug_var.get(),
         )
         self._root.destroy()
 
@@ -276,7 +301,7 @@ class _TrialRow:
     def __init__(self, parent: ttk.Frame, idx: int,
                  preset_name: str, enabled: bool = True,
                  show_tlx: bool = True, show_trust: bool = True,
-                 show_tam: bool = True) -> None:
+                 show_tam: bool = True, agent_mode: str = "standard") -> None:
         self._parent = parent
         self._idx    = idx
         self.preset_name = preset_name
@@ -298,6 +323,14 @@ class _TrialRow:
         )
         self._cb.grid(row=0, column=2, sticky="w", padx=(0, 8))
         self._preset_var.trace_add("write", self._on_preset_change)
+
+        ttk.Label(self._frame, text="Agent:", foreground="#555").grid(
+            row=0, column=3, sticky="e", padx=(6, 2))
+        self._agent_mode_var = tk.StringVar(value=agent_mode)
+        ttk.Combobox(
+            self._frame, textvariable=self._agent_mode_var,
+            values=["standard", "flexible"], state="readonly", width=9,
+        ).grid(row=0, column=4, sticky="w")
 
         # Per-trial survey element checkboxes
         self._tlx_var   = tk.BooleanVar(value=show_tlx)
@@ -357,6 +390,10 @@ class _TrialRow:
         return self._tam_var.get()
 
     @property
+    def agent_mode(self) -> str:
+        return self._agent_mode_var.get()
+
+    @property
     def preset_name(self) -> str:
         return getattr(self, "_preset_var", None) and self._preset_var.get() or self.__dict__.get("_init_preset", "")
 
@@ -374,9 +411,8 @@ class _TrialRow:
 
     def build_config(self) -> Optional[TrialConfig]:
         name = self._preset_var.get()
-        survey_kw = dict(show_tlx=self.show_tlx,
-                         show_trust=self.show_trust,
-                         show_tam=self.show_tam)
+        extra_kw = dict(show_tlx=self.show_tlx, show_trust=self.show_trust,
+                        show_tam=self.show_tam, agent_mode=self.agent_mode)
         if name != "Custom…":
             preset = STUDY_PRESETS[name]
             return TrialConfig(
@@ -390,7 +426,7 @@ class _TrialRow:
                 v_min=preset.v_min,
                 v_max=preset.v_max,
                 is_tutorial=preset.is_tutorial,
-                **survey_kw,
+                **extra_kw,
             )
 
         # Custom — validate
@@ -415,7 +451,7 @@ class _TrialRow:
             n_robots=n_default,
             v_min=vmin_default,
             v_max=vmax_default,
-            **survey_kw,
+            **extra_kw,
         )
 
     def destroy(self) -> None:
@@ -540,14 +576,34 @@ def _show_completion_screen(screen: pygame.Surface, results: List[dict]) -> None
 
 def run_study(config: StudyConfig) -> None:
     import surveys as _surveys
+    from robot_game import (run_game as _run_game,
+                            WINDOWED_ARENA_W, WINDOWED_ARENA_H,
+                            WINDOWED_ARENA_X, WINDOWED_ARENA_Y)
 
-    _ab = monitor_rect(config.arena_monitor)
-    if _ab:
-        os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
     os.environ.setdefault('SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS', '0')
     os.environ.setdefault('SDL_MOUSE_FOCUS_CLICKTHROUGH', '1')
-    pygame.init()
-    os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+
+    if config.windowed:
+        os.environ['SDL_VIDEO_WINDOW_POS'] = f'{WINDOWED_ARENA_X},{WINDOWED_ARENA_Y}'
+        pygame.init()
+        os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+        screen = pygame.display.set_mode((WINDOWED_ARENA_W, WINDOWED_ARENA_H), pygame.RESIZABLE)
+        pygame.display.set_caption("Drone Channel Assignment — Study")
+        _ab = None
+    else:
+        _ab = monitor_rect(config.arena_monitor)
+        if _ab:
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{_ab[0]},{_ab[1]}'
+        pygame.init()
+        os.environ.pop('SDL_VIDEO_WINDOW_POS', None)
+        if _ab:
+            screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
+        else:
+            info = pygame.display.Info()
+            screen = pygame.display.set_mode(
+                (info.current_w, info.current_h), pygame.NOFRAME
+            )
+        pygame.display.set_caption("Drone Channel Assignment — Study")
 
     # Build output directory early so surveys can write into it
     ts       = time.strftime("%Y%m%d_%H%M%S")
@@ -555,21 +611,11 @@ def run_study(config: StudyConfig) -> None:
     out_root = Path(config.output_root) / f"{pid}_{ts}"
     out_root.mkdir(parents=True, exist_ok=True)
 
-    # ── Pre-study demographics (before fullscreen window opens) ───────────────
+    # ── Pre-study demographics (before game windows open) ─────────────────────
     if config.show_demographics:
         demo = _surveys.run_demographic_survey(_ab)
         if demo:
             (out_root / "demographics.json").write_text(json.dumps(demo, indent=2))
-
-    # ── Open fullscreen arena window ──────────────────────────────────────────
-    if _ab:
-        screen = pygame.display.set_mode((_ab[2], _ab[3]), pygame.NOFRAME)
-    else:
-        info = pygame.display.Info()
-        screen = pygame.display.set_mode(
-            (info.current_w, info.current_h), pygame.NOFRAME
-        )
-    pygame.display.set_caption("Drone Channel Assignment — Study")
 
     meta = {
         "participant_id": pid,
@@ -592,7 +638,6 @@ def run_study(config: StudyConfig) -> None:
     }
     (out_root / "study_metadata.json").write_text(json.dumps(meta, indent=2))
 
-    from robot_game import run_game
     from tutorial import run_tutorial
 
     results: List[dict] = []
@@ -614,7 +659,7 @@ def run_study(config: StudyConfig) -> None:
                 )
             else:
                 n_default, vmin_default, vmax_default = COMPLEXITY_PRESETS[trial.complexity]
-                result = run_game(
+                result = _run_game(
                     seed=trial.seed,
                     n_robots=trial.n_robots or n_default,
                     duration=trial.duration,
@@ -628,6 +673,9 @@ def run_study(config: StudyConfig) -> None:
                     screen=screen,
                     arena_monitor=config.arena_monitor,
                     panel_monitor=config.panel_monitor,
+                    agent_mode=trial.agent_mode,
+                    windowed=config.windowed,
+                    debug_mode=config.debug_mode,
                 )
 
             result = result or {}

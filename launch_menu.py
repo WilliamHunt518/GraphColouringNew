@@ -67,6 +67,17 @@ def main() -> None:
     ).grid(row=row, column=1, sticky="w", **pad)
     row += 1
 
+    # ── Agent mode ────────────────────────────────────────────────────────────
+    ttk.Label(root, text="Agent mode:").grid(row=row, column=0, sticky="e", **pad)
+    agent_mode_var = tk.StringVar(value="standard")
+    ttk.Combobox(
+        root, textvariable=agent_mode_var,
+        values=["standard", "flexible"], state="readonly", width=10,
+    ).grid(row=row, column=1, sticky="w", **pad)
+    ttk.Label(root, text="(watch nodes in flexible)", foreground="gray").grid(
+        row=row, column=1, sticky="e", padx=(0, 12))
+    row += 1
+
     # ── Seed ──────────────────────────────────────────────────────────────────
     ttk.Label(root, text="Seed:").grid(row=row, column=0, sticky="e", **pad)
     seed_var = tk.IntVar(value=42)
@@ -105,6 +116,19 @@ def main() -> None:
         row=row, column=0, columnspan=2, sticky="ew", pady=4)
     row += 1
 
+    # ── Display / debug options ───────────────────────────────────────────────
+    windowed_var = tk.BooleanVar(value=False)
+    ttk.Checkbutton(root, text="Single monitor (windowed — two side-by-side windows)",
+                    variable=windowed_var).grid(
+        row=row, column=0, columnspan=2, sticky="w", padx=14, pady=(0, 2))
+    row += 1
+
+    debug_var = tk.BooleanVar(value=False)
+    ttk.Checkbutton(root, text="Debug mode (P key pauses / resumes during play)",
+                    variable=debug_var).grid(
+        row=row, column=0, columnspan=2, sticky="w", padx=14, pady=(0, 4))
+    row += 1
+
     # ── Advanced overrides ────────────────────────────────────────────────────
     adv_frame = ttk.LabelFrame(root, text="Override (leave blank for preset defaults)")
     adv_frame.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=4)
@@ -137,6 +161,9 @@ def main() -> None:
         switch_delay  = switch_delay_var.get()
         arena_monitor = arena_monitor_var.get()
         panel_monitor = panel_monitor_var.get()
+        agent_mode    = agent_mode_var.get()
+        windowed      = windowed_var.get()
+        debug_mode    = debug_var.get()
 
         n_robots = int(robots_var.get()) if robots_var.get().strip() else n_default
         v_min    = float(vmin_var.get()) if vmin_var.get().strip()   else vmin_default
@@ -156,6 +183,9 @@ def main() -> None:
             switch_duration=switch_delay,
             arena_monitor=arena_monitor,
             panel_monitor=panel_monitor,
+            agent_mode=agent_mode,
+            windowed=windowed,
+            debug_mode=debug_mode,
         )
 
     ttk.Button(root, text="Start Game", command=start, width=16).grid(

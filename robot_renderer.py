@@ -140,6 +140,9 @@ class RobotRenderer:
         # Updated each frame from world
         self._switch_duration: float = SWITCH_DURATION
         self._tutorial_disabled: frozenset = frozenset()
+        self._drone_modes: Dict[int, str] = {}
+        self._agent_log: List[Tuple[float, str]] = []
+        self._flex_mode: bool = False
 
         # Detached panel support
         self._panel_surface: Optional[pygame.Surface] = None  # set when detached
@@ -157,6 +160,19 @@ class RobotRenderer:
         self._ps    = new_screen          # reset active panel target too
         self.window_w, self.window_h = new_screen.get_size()
         # Recreate alpha compositing surfaces at the correct size
+        self._prox_surf = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
+        self._drag_surf  = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
+
+    def handle_resize(self, new_screen: pygame.Surface) -> None:
+        """Update renderer layout after the arena window is resized."""
+        self.screen = new_screen
+        self._ps    = new_screen
+        self.window_w, self.window_h = new_screen.get_size()
+        if self._panel_surface is not None:
+            self.arena_w = self.window_w
+        else:
+            self.arena_w = max(1, self.window_w - PANEL_W)
+        self.panel_x = self.arena_w
         self._prox_surf = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
         self._drag_surf  = pygame.Surface((self.arena_w, self.window_h), pygame.SRCALPHA)
 
@@ -203,6 +219,8 @@ class RobotRenderer:
         pending_infeasible: bool = False,
         tutorial_callout: Optional[TutorialCallout] = None,
         panel_detached: bool = False,
+        drone_modes: Optional[Dict[int, str]] = None,
+        agent_log: Optional[List[Tuple[float, str]]] = None,
     ) -> None:
         selected_ids       = selected_ids or set()
         suggestion_overrides = suggestion_overrides or {}
@@ -210,6 +228,9 @@ class RobotRenderer:
         # Per-frame world state
         self._switch_duration = world.switch_duration
         self._tutorial_disabled = frozenset(tutorial_callout.disabled_buttons) if tutorial_callout else frozenset()
+        self._flex_mode   = drone_modes is not None
+        self._drone_modes = drone_modes if drone_modes is not None else {}
+        self._agent_log   = agent_log   if agent_log   is not None else []
 
         # Clear hit-test state
         self.popup_rects.clear()
@@ -340,6 +361,13 @@ class RobotRenderer:
             else:
                 body_col = CHANNEL_DIM[r.channel] if r.switching_to else CHANNEL_FILL[r.channel]
             pygame.draw.circle(self.screen, body_col, (cx, cy), rad)
+
+            watch_mode = self._drone_modes.get(r.id)
+            if watch_mode == "suggest":
+                pygame.draw.circle(self.screen, (255, 160, 20), (cx, cy), rad + 14, 5)
+                pygame.draw.circle(self.screen, (255, 230, 140), (cx, cy), rad + 22, 2)
+            elif watch_mode == "auto":
+                pygame.draw.circle(self.screen, (40, 220, 175), (cx, cy), rad + 14, 5)
 
             if r.id in clashing:
                 pygame.draw.circle(self.screen, (255, 60, 60), (cx, cy), rad, 2)
@@ -505,6 +533,9 @@ class RobotRenderer:
         else:
             self._draw_instructions(start_y=188)
 
+        if self._agent_log:
+            self._draw_agent_log()
+
     def _draw_group_buttons(self, selected_ids: Set[int], start_y: int) -> None:
         px  = self._px + self._panel_pad
         pw  = self._panel_w - self._panel_pad * 2
@@ -543,8 +574,41 @@ class RobotRenderer:
             self.hud_button_rects["auto_assign"] = auto_rect
         self._ps.blit(s, s.get_rect(center=auto_rect.center))
 
-        self._panel_sep(start_y + 26 + btn_h * 2 + gap + 16)
-        self._draw_instructions(start_y=start_y + 26 + btn_h * 2 + gap + 26)
+        extra_buttons = 0
+        if self._flex_mode:
+            all_suggest = bool(selected_ids) and all(
+                self._drone_modes.get(d) == "suggest" for d in selected_ids)
+            all_auto = bool(selected_ids) and all(
+                self._drone_modes.get(d) == "auto" for d in selected_ids)
+
+            ws_y    = start_y + 26 + btn_h * 2 + gap * 2
+            ws_rect = pygame.Rect(px, ws_y, pw, btn_h)
+            if all_suggest:
+                ws_fill, ws_bdr, ws_col = (90, 65, 10), (200, 160, 40), (220, 200, 100)
+            else:
+                ws_fill, ws_bdr, ws_col = (60, 48, 8), (255, 200, 50), (255, 225, 120)
+            pygame.draw.rect(self._ps, ws_fill, ws_rect, border_radius=6)
+            pygame.draw.rect(self._ps, ws_bdr,  ws_rect, 2, border_radius=6)
+            s = self.fonts["popup"].render("Watch: Suggest", True, ws_col)
+            self._ps.blit(s, s.get_rect(center=ws_rect.center))
+            self.hud_button_rects["watch_suggest"] = ws_rect
+
+            wa_y    = ws_y + btn_h + gap
+            wa_rect = pygame.Rect(px, wa_y, pw, btn_h)
+            if all_auto:
+                wa_fill, wa_bdr, wa_col = (10, 65, 55), (40, 180, 140), (100, 220, 190)
+            else:
+                wa_fill, wa_bdr, wa_col = (8, 50, 45), (50, 220, 175), (120, 255, 210)
+            pygame.draw.rect(self._ps, wa_fill, wa_rect, border_radius=6)
+            pygame.draw.rect(self._ps, wa_bdr,  wa_rect, 2, border_radius=6)
+            s = self.fonts["popup"].render("Watch: Auto", True, wa_col)
+            self._ps.blit(s, s.get_rect(center=wa_rect.center))
+            self.hud_button_rects["watch_auto"] = wa_rect
+
+            extra_buttons = 2
+
+        self._panel_sep(start_y + 26 + btn_h * (2 + extra_buttons) + gap * (1 + extra_buttons) + 16)
+        self._draw_instructions(start_y=start_y + 26 + btn_h * (2 + extra_buttons) + gap * (1 + extra_buttons) + 26)
 
     def _draw_instructions(self, start_y: int) -> None:
         px = self._px + self._panel_pad
@@ -569,6 +633,29 @@ class RobotRenderer:
             s = self.fonts["tiny"].render(h, True, COL_DIM_TEXT)
             self._ps.blit(s, (px, y))
             y += 20
+
+    # ── Agent log panel ───────────────────────────────────────────────────────
+
+    def _draw_agent_log(self) -> None:
+        ps      = self._ps
+        px      = self._px + self._panel_pad
+        f       = self.fonts
+        entries = self._agent_log  # newest-last, already trimmed to ≤8
+        n       = len(entries)
+        row_h   = 17
+        hdr_h   = 18
+        panel_h = ps.get_height()
+
+        block_h   = hdr_h + n * row_h + 6
+        block_top = panel_h - block_h - 10
+
+        self._panel_sep(block_top - 6)
+        ps.blit(f["tiny"].render("Agent log", True, COL_DIM_TEXT), (px, block_top))
+
+        for i, (_, msg) in enumerate(entries):
+            col = (50, 220, 175) if "auto" in msg else (200, 180, 80)
+            s = f["tiny"].render(msg, True, col)
+            ps.blit(s, (px, block_top + hdr_h + i * row_h))
 
     # ── Suggestion panel with live mini-graph ─────────────────────────────────
 
