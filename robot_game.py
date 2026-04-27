@@ -403,6 +403,20 @@ def run_game(
                             drone_modes[did] = "suggest"
                     logger.log("watch_mode_set", drones=list(selected_ids),
                                mode="suggest", elapsed=world.elapsed)
+                    active_watch = [d for d in selected_ids if drone_modes.get(d) == "suggest"]
+                    if active_watch:
+                        current_channels = {r.id: r.channel for r in world.robots}
+                        proposed, infeasible = advisor.suggest(
+                            active_watch, current_channels, world.edges,
+                            near_pairs=list(world.warning_pairs),
+                        )
+                        logger.log_suggestion_requested(active_watch, current_channels, world.elapsed)
+                        logger.log_suggestion_shown(active_watch, proposed, infeasible, world.elapsed)
+                        pending_suggestion   = proposed
+                        suggestion_overrides = dict(proposed)
+                        pending_infeasible   = infeasible
+                        popup_drone_id       = None
+                        last_action          = "suggestion_shown"
                     return True
 
                 if "watch_auto" in renderer.hud_button_rects \
@@ -414,6 +428,22 @@ def run_game(
                             drone_modes[did] = "auto"
                     logger.log("watch_mode_set", drones=list(selected_ids),
                                mode="auto", elapsed=world.elapsed)
+                    active_watch = [d for d in selected_ids if drone_modes.get(d) == "auto"]
+                    if active_watch:
+                        current_channels = {r.id: r.channel for r in world.robots}
+                        proposed, infeasible = advisor.suggest(
+                            active_watch, current_channels, world.edges,
+                            near_pairs=list(world.warning_pairs),
+                        )
+                        logger.log_auto_assign_applied(active_watch, proposed, infeasible, world.elapsed)
+                        _apply_suggestion(world, proposed, logger, mode="flex_watch_setup", instant=True)
+                        for did in active_watch:
+                            _auto_cooldown[did] = world.switch_duration + 0.5
+                        old_sel = list(selected_ids)
+                        selected_ids   = set()
+                        popup_drone_id = None
+                        last_action    = "auto_assign_applied"
+                        logger.log_group_deselected(old_sel, world.elapsed)
                     return True
 
         return False

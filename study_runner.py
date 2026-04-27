@@ -34,6 +34,7 @@ class TrialConfig:
     v_min: Optional[float] = None
     v_max: Optional[float] = None
     is_tutorial: bool = False
+    tutorial_type: str = "standard"   # "standard" or "flexible"
     show_tlx: bool = True
     show_trust: bool = True
     show_tam: bool = True
@@ -56,7 +57,8 @@ class StudyConfig:
 # ── Presets ───────────────────────────────────────────────────────────────────
 
 STUDY_PRESETS: Dict[str, TrialConfig] = {
-    "Tutorial":         TrialConfig("Tutorial",  is_tutorial=True, epsilon=0.0, duration=0),
+    "Tutorial":          TrialConfig("Tutorial",          is_tutorial=True, epsilon=0.0, duration=0),
+    "Flexible Tutorial": TrialConfig("Flexible-Tutorial", is_tutorial=True, tutorial_type="flexible", epsilon=0.0, duration=0),
     "Easy — perfect":   TrialConfig("Easy-perfect",   complexity="easy",   epsilon=0.0,  duration=90),
     "Easy — noisy":     TrialConfig("Easy-noisy",     complexity="easy",   epsilon=0.4,  duration=90),
     "Medium — perfect": TrialConfig("Medium-perfect", complexity="medium", epsilon=0.0,  duration=120),
@@ -632,6 +634,7 @@ def run_study(config: StudyConfig) -> None:
                 "epsilon": t.epsilon,
                 "switch_duration": t.switch_duration,
                 "is_tutorial": t.is_tutorial,
+                "tutorial_type": t.tutorial_type,
             }
             for t in config.trials
         ],
@@ -656,6 +659,7 @@ def run_study(config: StudyConfig) -> None:
                     output_dir=str(trial_dir),
                     arena_monitor=config.arena_monitor,
                     panel_monitor=config.panel_monitor,
+                    flex_mode=(trial.tutorial_type == "flexible"),
                 )
             else:
                 n_default, vmin_default, vmax_default = COMPLEXITY_PRESETS[trial.complexity]

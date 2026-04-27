@@ -549,65 +549,69 @@ class RobotRenderer:
         btn_h = 36
         gap   = 12
 
-        sug_rect = pygame.Rect(px, start_y + 26, pw, btn_h)
-        if "suggest" in self._tutorial_disabled:
-            pygame.draw.rect(self._ps, (42, 52, 48), sug_rect, border_radius=6)
-            pygame.draw.rect(self._ps, (68, 78, 72), sug_rect, 1, border_radius=6)
-            s = f["popup"].render(f"Suggest  ({k})", True, (80, 100, 90))
-        else:
-            pygame.draw.rect(self._ps, COL_BTN_SUGGEST, sug_rect, border_radius=6)
-            pygame.draw.rect(self._ps, COL_BTN_BORDER,  sug_rect, 1, border_radius=6)
-            s = f["popup"].render(f"Suggest  ({k})", True, (220, 255, 220))
-            self.hud_button_rects["suggest"] = sug_rect
-        self._ps.blit(s, s.get_rect(center=sug_rect.center))
-
-        auto_rect = pygame.Rect(px, start_y + 26 + btn_h + gap, pw, btn_h)
-        if "auto_assign" in self._tutorial_disabled:
-            pygame.draw.rect(self._ps, (38, 44, 58), auto_rect, border_radius=6)
-            pygame.draw.rect(self._ps, (62, 68, 86), auto_rect, 1, border_radius=6)
-            s = f["popup"].render(f"Auto-assign  ({k})", True, (70, 80, 110))
-        else:
-            pygame.draw.rect(self._ps, COL_BTN_AUTO, auto_rect, border_radius=6)
-            pygame.draw.rect(self._ps, COL_BTN_BORDER, auto_rect, 1, border_radius=6)
-            s = f["popup"].render(f"Auto-assign  ({k})", True, (200, 220, 255))
-            self.hud_button_rects["auto_assign"] = auto_rect
-        self._ps.blit(s, s.get_rect(center=auto_rect.center))
-
-        extra_buttons = 0
         if self._flex_mode:
             all_suggest = bool(selected_ids) and all(
                 self._drone_modes.get(d) == "suggest" for d in selected_ids)
             all_auto = bool(selected_ids) and all(
                 self._drone_modes.get(d) == "auto" for d in selected_ids)
 
-            ws_y    = start_y + 26 + btn_h * 2 + gap * 2
-            ws_rect = pygame.Rect(px, ws_y, pw, btn_h)
-            if all_suggest:
-                ws_fill, ws_bdr, ws_col = (90, 65, 10), (200, 160, 40), (220, 200, 100)
+            ws_rect = pygame.Rect(px, start_y + 26, pw, btn_h)
+            if "watch_suggest" in self._tutorial_disabled:
+                pygame.draw.rect(self._ps, (55, 45, 10), ws_rect, border_radius=6)
+                pygame.draw.rect(self._ps, (100, 90, 40), ws_rect, 2, border_radius=6)
+                s = self.fonts["popup"].render("Watch: Suggest", True, (110, 100, 60))
             else:
-                ws_fill, ws_bdr, ws_col = (60, 48, 8), (255, 200, 50), (255, 225, 120)
-            pygame.draw.rect(self._ps, ws_fill, ws_rect, border_radius=6)
-            pygame.draw.rect(self._ps, ws_bdr,  ws_rect, 2, border_radius=6)
-            s = self.fonts["popup"].render("Watch: Suggest", True, ws_col)
+                ws_fill = (90, 65, 10) if all_suggest else (60, 48, 8)
+                ws_bdr  = (200, 160, 40) if all_suggest else (255, 200, 50)
+                ws_col  = (220, 200, 100) if all_suggest else (255, 225, 120)
+                pygame.draw.rect(self._ps, ws_fill, ws_rect, border_radius=6)
+                pygame.draw.rect(self._ps, ws_bdr,  ws_rect, 2, border_radius=6)
+                s = self.fonts["popup"].render("Watch: Suggest", True, ws_col)
+                self.hud_button_rects["watch_suggest"] = ws_rect
             self._ps.blit(s, s.get_rect(center=ws_rect.center))
-            self.hud_button_rects["watch_suggest"] = ws_rect
 
-            wa_y    = ws_y + btn_h + gap
-            wa_rect = pygame.Rect(px, wa_y, pw, btn_h)
-            if all_auto:
-                wa_fill, wa_bdr, wa_col = (10, 65, 55), (40, 180, 140), (100, 220, 190)
+            wa_rect = pygame.Rect(px, start_y + 26 + btn_h + gap, pw, btn_h)
+            if "watch_auto" in self._tutorial_disabled:
+                pygame.draw.rect(self._ps, (8, 40, 35), wa_rect, border_radius=6)
+                pygame.draw.rect(self._ps, (30, 90, 75), wa_rect, 2, border_radius=6)
+                s = self.fonts["popup"].render("Watch: Auto", True, (50, 110, 95))
             else:
-                wa_fill, wa_bdr, wa_col = (8, 50, 45), (50, 220, 175), (120, 255, 210)
-            pygame.draw.rect(self._ps, wa_fill, wa_rect, border_radius=6)
-            pygame.draw.rect(self._ps, wa_bdr,  wa_rect, 2, border_radius=6)
-            s = self.fonts["popup"].render("Watch: Auto", True, wa_col)
+                wa_fill = (10, 65, 55) if all_auto else (8, 50, 45)
+                wa_bdr  = (40, 180, 140) if all_auto else (50, 220, 175)
+                wa_col  = (100, 220, 190) if all_auto else (120, 255, 210)
+                pygame.draw.rect(self._ps, wa_fill, wa_rect, border_radius=6)
+                pygame.draw.rect(self._ps, wa_bdr,  wa_rect, 2, border_radius=6)
+                s = self.fonts["popup"].render("Watch: Auto", True, wa_col)
+                self.hud_button_rects["watch_auto"] = wa_rect
             self._ps.blit(s, s.get_rect(center=wa_rect.center))
-            self.hud_button_rects["watch_auto"] = wa_rect
 
-            extra_buttons = 2
+        else:
+            sug_rect = pygame.Rect(px, start_y + 26, pw, btn_h)
+            if "suggest" in self._tutorial_disabled:
+                pygame.draw.rect(self._ps, (42, 52, 48), sug_rect, border_radius=6)
+                pygame.draw.rect(self._ps, (68, 78, 72), sug_rect, 1, border_radius=6)
+                s = f["popup"].render(f"Suggest  ({k})", True, (80, 100, 90))
+            else:
+                pygame.draw.rect(self._ps, COL_BTN_SUGGEST, sug_rect, border_radius=6)
+                pygame.draw.rect(self._ps, COL_BTN_BORDER,  sug_rect, 1, border_radius=6)
+                s = f["popup"].render(f"Suggest  ({k})", True, (220, 255, 220))
+                self.hud_button_rects["suggest"] = sug_rect
+            self._ps.blit(s, s.get_rect(center=sug_rect.center))
 
-        self._panel_sep(start_y + 26 + btn_h * (2 + extra_buttons) + gap * (1 + extra_buttons) + 16)
-        self._draw_instructions(start_y=start_y + 26 + btn_h * (2 + extra_buttons) + gap * (1 + extra_buttons) + 26)
+            auto_rect = pygame.Rect(px, start_y + 26 + btn_h + gap, pw, btn_h)
+            if "auto_assign" in self._tutorial_disabled:
+                pygame.draw.rect(self._ps, (38, 44, 58), auto_rect, border_radius=6)
+                pygame.draw.rect(self._ps, (62, 68, 86), auto_rect, 1, border_radius=6)
+                s = f["popup"].render(f"Auto-assign  ({k})", True, (70, 80, 110))
+            else:
+                pygame.draw.rect(self._ps, COL_BTN_AUTO, auto_rect, border_radius=6)
+                pygame.draw.rect(self._ps, COL_BTN_BORDER, auto_rect, 1, border_radius=6)
+                s = f["popup"].render(f"Auto-assign  ({k})", True, (200, 220, 255))
+                self.hud_button_rects["auto_assign"] = auto_rect
+            self._ps.blit(s, s.get_rect(center=auto_rect.center))
+
+        self._panel_sep(start_y + 26 + btn_h * 2 + gap + 16)
+        self._draw_instructions(start_y=start_y + 26 + btn_h * 2 + gap + 26)
 
     def _draw_instructions(self, start_y: int) -> None:
         px = self._px + self._panel_pad
