@@ -38,6 +38,7 @@ class TutorialStep:
     setup_fn: Optional[Callable[[RobotWorld, dict], None]] = None
     preserve_suggestion: bool            = False  # keep pending_suggestion across step transition
     run_flex_monitor: bool               = False  # run lightweight flex-tick each frame (flex tutorial only)
+    hint_locked: Optional[str]          = None   # overrides "Fix all clashes" hint when step is locked
 
 
 # ── Tutorial director ─────────────────────────────────────────────────────────
@@ -81,7 +82,7 @@ class TutorialDirector:
             if self._step_unlocked:
                 hint_override = "SPACE to continue"
             else:
-                hint_override = "Fix all clashes first, then press SPACE"
+                hint_override = s.hint_locked if s.hint_locked is not None else "Fix all clashes first, then press SPACE"
 
         return TutorialCallout(
             heading=f"Step {s.number} of {s.total} — {s.heading}",
@@ -404,132 +405,191 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
     ]
 
 
-# ── Flexible tutorial steps ───────────────────────────────────────────────────
+# ── Flexible tutorial steps ──────────────────────────────────────────────────
+# Position convention: y ≥ 0.38 for all static drone placements so they stay
+# below the 200 px tutorial callout strip at the top of the arena.
+#
+# Phase 1 (steps 1–3):  Clash basics — penalty, manual fix, K4 limit
+# Phase 2 (steps 4–6):  Pre-flight setup — manual, Watch:Suggest, Watch:Auto
+# Phase 3 (steps 7–10): Live demos — setup (frozen) then launch (live) for each mode
+# Phase 4 (step 11):    Free practice
 
 def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
-    N       = 12
+    N       = 11
     DB_ALL  = frozenset({"watch_suggest", "watch_auto"})
-    DB_AUTO = frozenset({"watch_auto"})    # only Watch: Suggest enabled
-    DB_SUG  = frozenset({"watch_suggest"}) # only Watch: Auto enabled
+    DB_AUTO = frozenset({"watch_auto"})
+    DB_SUG  = frozenset({"watch_suggest"})
 
-    # ── Step 1–4 setup helpers (identical positions to standard tutorial) ────
+    # ────────────── PHASE 1: Clash basics ──────────────────────────────────────
+    # Layout: K3 clashing group (D0–D2) + connected pair on different channels
+    # (D3–D4, no clash) + isolated singleton (D5) → component sizes [3, 2, 1].
+
     def setup_1(w: RobotWorld, gs: dict) -> None:
         _place(w, [
-            (0, 0.18, 0.30, "red",   0, 0), (1, 0.50, 0.30, "green", 0, 0),
-            (2, 0.82, 0.30, "blue",  0, 0), (3, 0.18, 0.70, "green", 0, 0),
-            (4, 0.50, 0.70, "blue",  0, 0), (5, 0.82, 0.70, "red",   0, 0),
+            (0, 0.44, 0.55, "red",   0, 0),
+            (1, 0.50, 0.55, "red",   0, 0),
+            (2, 0.47, 0.62, "red",   0, 0),
+            (3, 0.18, 0.65, "green", 0, 0),  # connected to D4 (within range)
+            (4, 0.26, 0.65, "blue",  0, 0),  # connected to D3, different channel
+            (5, 0.82, 0.72, "green", 0, 0),  # isolated singleton
         ])
+        dm = gs.get("drone_modes")
+        if dm is not None:
+            dm.clear()
 
     def setup_2(w: RobotWorld, gs: dict) -> None:
-        _place(w, [
-            (0, 0.44, 0.47, "red",   0, 0), (1, 0.50, 0.47, "red",   0, 0),
-            (2, 0.47, 0.53, "red",   0, 0), (3, 0.10, 0.80, "green", 0, 0),
-            (4, 0.72, 0.82, "blue",  0, 0), (5, 0.88, 0.22, "green", 0, 0),
-        ])
+        setup_1(w, gs)
 
-    def setup_3(w: RobotWorld, gs: dict) -> None:
-        setup_2(w, gs)
-
-    def check_3(gs: dict) -> bool:
+    def check_2(gs: dict) -> bool:
         return not gs["world"].clashing_pairs
 
-    def setup_4(w: RobotWorld, gs: dict) -> None:
+    def setup_3(w: RobotWorld, gs: dict) -> None:
         _place(w, [
-            (0, 0.30, 0.38, "green", 0, 0), (1, 0.42, 0.48, "green", 0, 0),
-            (2, 0.30, 0.58, "green", 0, 0), (3, 0.42, 0.38, "green", 0, 0),
-            (4, 0.80, 0.28, "blue",  0, 0), (5, 0.80, 0.72, "red",   0, 0),
+            (0, 0.40, 0.47, "red",   0, 0), (1, 0.46, 0.47, "green", 0, 0),
+            (2, 0.40, 0.53, "blue",  0, 0), (3, 0.46, 0.53, "red",   0, 0),
+            (4, 0.78, 0.42, "blue",  0, 0), (5, 0.78, 0.75, "green", 0, 0),
         ])
+        dm = gs.get("drone_modes")
+        if dm is not None:
+            dm.clear()
+
+    # ────────────── PHASE 2: Pre-flight setup ──────────────────────────────────
+    # Two K3 clusters (left: D0–D2, right: D3–D5), all uncoloured.
+    # Each K3 needs all 3 channels — the advisor's suggestion is visibly meaningful.
+    # Cluster edge lengths ~0.12×arena_w, well within CONNECT_RADIUS ~0.226×arena_w.
+    # Cross-cluster gap ~0.40×arena_w, so the clusters are independent.
+
+    _PREFLIGHT = [
+        (0, 0.20, 0.50, None, 0, 0),
+        (1, 0.30, 0.44, None, 0, 0),
+        (2, 0.30, 0.56, None, 0, 0),
+        (3, 0.70, 0.44, None, 0, 0),
+        (4, 0.80, 0.50, None, 0, 0),
+        (5, 0.70, 0.56, None, 0, 0),
+    ]
+
+    def setup_4(w: RobotWorld, gs: dict) -> None:
+        _place(w, _PREFLIGHT)
+        dm = gs.get("drone_modes")
+        if dm is not None:
+            dm.clear()
 
     def check_4(gs: dict) -> bool:
-        return gs["selected_ids"] >= {0, 1, 2, 3}
+        return all(r.channel is not None for r in gs["world"].robots)
 
-    # ── Steps 5–7: Suggest + bad-suggestion override (same forced suggestions) ─
     def setup_5(w: RobotWorld, gs: dict) -> None:
-        _place(w, [(2, 0.22, 0.50, "green", 0, 0), (3, 0.48, 0.32, "green", 0, 0)])
-        gs["selected_ids"].update({0, 1, 2, 3})
-        gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "blue", 3: "blue"}
+        _place(w, _PREFLIGHT)
+        dm = gs.get("drone_modes")
+        if dm is not None:
+            dm.clear()
+        gs["tutorial_forced_suggestion"] = {
+            0: "red", 1: "green", 2: "blue",
+            3: "red", 4: "green", 5: "blue",
+        }
 
     def check_5(gs: dict) -> bool:
         return gs["last_action"] == "suggestion_applied"
 
-    def setup_6a(w: RobotWorld, gs: dict) -> None:
-        _place(w, [
-            (0, 0.44, 0.47, "red",   0, 0), (1, 0.50, 0.47, "red",   0, 0),
-            (2, 0.47, 0.53, "red",   0, 0), (3, 0.10, 0.80, "green", 0, 0),
-            (4, 0.72, 0.82, "blue",  0, 0), (5, 0.88, 0.22, "green", 0, 0),
-        ])
-        gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "green"}
+    def setup_6(w: RobotWorld, gs: dict) -> None:
+        _place(w, _PREFLIGHT)
+        dm = gs.get("drone_modes")
+        if dm is not None:
+            dm.clear()
 
-    def check_6a(gs: dict) -> bool:
-        return gs["last_action"] == "suggestion_shown"
-
-    def setup_6b(w: RobotWorld, gs: dict) -> None:
-        pass
-
-    def check_6b(gs: dict) -> bool:
-        return (gs["last_action"] == "suggestion_applied"
-                and not gs["world"].clashing_pairs)
-
-    # ── Step 8: Watch: Auto (K3 clash, instant fix) ──────────────────────────
-    def setup_wa(w: RobotWorld, gs: dict) -> None:
-        _place(w, [
-            (0, 0.44, 0.47, "blue",  0, 0), (1, 0.50, 0.47, "blue",  0, 0),
-            (2, 0.47, 0.53, "blue",  0, 0), (3, 0.15, 0.25, "red",   0, 0),
-            (4, 0.82, 0.25, "red",   0, 0), (5, 0.82, 0.75, "green", 0, 0),
-        ])
-
-    def check_wa(gs: dict) -> bool:
+    def check_6(gs: dict) -> bool:
         return gs["last_action"] == "auto_assign_applied"
 
-    # ── Step 9: K4 unsolvable cluster ────────────────────────────────────────
-    def setup_k4(w: RobotWorld, gs: dict) -> None:
-        _place(w, [
-            (0, 0.40, 0.44, "red",   0, 0), (1, 0.46, 0.44, "green", 0, 0),
-            (2, 0.40, 0.50, "blue",  0, 0), (3, 0.46, 0.50, "red",   0, 0),
-            (4, 0.78, 0.28, "blue",  0, 0), (5, 0.78, 0.72, "green", 0, 0),
-        ])
+    # ────────────── PHASE 3: Live moving demos ──────────────────────────────────
+    # Each mode has two steps: (a) frozen setup where user selects + assigns the
+    # watch mode, then (b) live demo where the mode takes automatic action.
+    #
+    # _place_triangle_static: positions D0–D2 statically (no velocity), modes cleared.
+    # _launch_triangle: resets D0–D2 positions + channels to red, gives velocities,
+    #                   intentionally does NOT touch drone_modes so the watch set in
+    #                   the preceding setup step carries into the live step.
 
-    # ── Step 10: Preplanning ─────────────────────────────────────────────────
-    def setup_preplan(w: RobotWorld, gs: dict) -> None:
+    def _place_triangle_static(w: RobotWorld, gs: dict) -> None:
+        aw, ah = w.arena_w, w.arena_h
+        for did, fx, fy in [(0, 0.22, 0.38), (1, 0.78, 0.38), (2, 0.50, 0.86)]:
+            r = w.robots[did]
+            r.x, r.y   = fx * aw, fy * ah
+            r.vx, r.vy = 0.0, 0.0
+            r.channel  = "red"
+            r.switching_to = None
+            r.switch_elapsed = 0.0
         _place(w, [
-            (0, 0.20, 0.25, "red",   0, 0), (1, 0.50, 0.20, "green", 0, 0),
-            (2, 0.80, 0.25, "blue",  0, 0), (3, 0.20, 0.75, "blue",  0, 0),
-            (4, 0.50, 0.80, "red",   0, 0), (5, 0.80, 0.75, "green", 0, 0),
+            (3, 0.10, 0.80, "blue",  0, 0),
+            (4, 0.90, 0.80, "green", 0, 0),
+            (5, 0.92, 0.40, "blue",  0, 0),
         ])
         dm = gs.get("drone_modes")
         if dm is not None:
             dm.clear()
 
-    def check_preplan(gs: dict) -> bool:
+    def _launch_triangle(w: RobotWorld, gs: dict) -> None:
+        spd  = w.arena_w * 0.025
+        aw, ah = w.arena_w, w.arena_h
+        cx, cy = aw * 0.50, ah * 0.50
+        for did, fx, fy in [(0, 0.22, 0.38), (1, 0.78, 0.38), (2, 0.50, 0.86)]:
+            px, py = fx * aw, fy * ah
+            dx, dy = cx - px, cy - py
+            dist   = math.sqrt(dx * dx + dy * dy)
+            r = w.robots[did]
+            r.x, r.y   = px, py
+            r.vx, r.vy = dx / dist * spd, dy / dist * spd
+            r.heading  = math.atan2(r.vy, r.vx)
+            r.channel  = "red"  # reset so clash is guaranteed on convergence
+            r.switching_to = None
+            r.switch_elapsed = 0.0
+            r.next_turn_in = 20.0  # prevent physics from resetting speed/heading mid-approach
+        _place(w, [
+            (3, 0.10, 0.80, "blue",  0, 0),
+            (4, 0.90, 0.80, "green", 0, 0),
+            (5, 0.92, 0.40, "blue",  0, 0),
+        ])
+        # drone_modes intentionally NOT cleared — watch carry over from setup step
+
+    # Step 7: Watch:Suggest setup (frozen) — user selects + clicks Watch:Suggest
+    def setup_7(w: RobotWorld, gs: dict) -> None:
+        _place_triangle_static(w, gs)
+        # Forced suggestion gives a visually sensible proposal for the static drones
+        gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "blue"}
+
+    def check_7(gs: dict) -> bool:
+        dm = gs.get("drone_modes", {})
+        return dm.get(0) == "suggest" and dm.get(1) == "suggest" and dm.get(2) == "suggest"
+
+    # Step 8: Watch:Suggest live — drones fly, suggestion auto-fires
+    def setup_8(w: RobotWorld, gs: dict) -> None:
+        _launch_triangle(w, gs)
+
+    def check_8(gs: dict) -> bool:
         return gs["last_action"] == "suggestion_applied"
 
-    # ── Step 11: Live demo ───────────────────────────────────────────────────
-    def setup_live(w: RobotWorld, gs: dict) -> None:
-        spd = max(w.v_min, w.v_max * 0.6)
-        _place(w, [
-            (0, 0.28, 0.42, "red",    spd,  0),
-            (1, 0.62, 0.42, "red",   -spd,  0),
-            (2, 0.50, 0.72, "green",  0,    0),
-            (3, 0.18, 0.72, "blue",   0,    0),
-            (4, 0.82, 0.72, "green",  0,    0),
-            (5, 0.50, 0.22, "blue",   0,    0),
-        ])
-        for r in w.robots:
-            r.heading = math.atan2(r.vy, r.vx) if (r.vx or r.vy) else r.heading
-        dm = gs.get("drone_modes")
-        if dm is not None:
-            dm.clear()
-            for r in w.robots:
-                dm[r.id] = "suggest"
+    # Step 9: Watch:Auto setup (frozen) — user selects + clicks Watch:Auto
+    def setup_9(w: RobotWorld, gs: dict) -> None:
+        _place_triangle_static(w, gs)
 
-    # ── Step 12: Free practice ───────────────────────────────────────────────
-    def setup_free(w: RobotWorld, gs: dict) -> None:
+    def check_9(gs: dict) -> bool:
+        dm = gs.get("drone_modes", {})
+        return dm.get(0) == "auto" and dm.get(1) == "auto" and dm.get(2) == "auto"
+
+    # Step 10: Watch:Auto live — drones fly, fix auto-fires
+    def setup_10(w: RobotWorld, gs: dict) -> None:
+        _launch_triangle(w, gs)
+
+    def check_10(gs: dict) -> bool:
+        return gs["last_action"] == "auto_assign_applied"
+
+    # ────────────── PHASE 4: Free practice ──────────────────────────────────────
+
+    def setup_11(w: RobotWorld, gs: dict) -> None:
         import random as _rng
         rng = _rng.Random(99)
         cfgs = []
         for i, (fx, fy, ch) in enumerate([
-            (0.20, 0.35, "red"),   (0.50, 0.25, "green"), (0.80, 0.35, "blue"),
-            (0.20, 0.65, "green"), (0.50, 0.75, "blue"),  (0.80, 0.65, "red"),
+            (0.20, 0.40, "red"),   (0.50, 0.38, "green"), (0.80, 0.40, "blue"),
+            (0.20, 0.70, "green"), (0.50, 0.75, "blue"),  (0.80, 0.70, "red"),
         ]):
             ang = rng.uniform(0, 2 * math.pi)
             spd = rng.uniform(w.v_min, w.v_max)
@@ -537,116 +597,128 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         _place(w, cfgs)
         for r in w.robots:
             r.heading = math.atan2(r.vy, r.vx)
+        dm = gs.get("drone_modes")
+        if dm is not None:
+            dm.clear()
 
     return [
+        # ── Phase 1 ──────────────────────────────────────────────────────────
         TutorialStep(1, N,
-            heading="Welcome",
-            body="Your task: manage radio channels for a drone swarm. "
-                 "SCORING — every second that two drones on the SAME channel are within range, "
-                 "the clash timer ticks up. This is worse when multiple clashes happen simultaneously. "
-                 "Lower clash time = better. "
+            heading="Channel Clashes",
+            body="SCORING — every second two nearby drones share the same channel, "
+                 "the clash timer ticks up. Lower is better. "
+                 "D0, D1, D2 are all on RED and in range — red lines show active clashes. "
+                 "D3 and D4 are also in range of each other but on different channels — no clash there. "
                  "Press SPACE to continue.",
-            highlight_ids=[], advance_on_space=True, freeze=True,
+            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
+            advance_on_space=True, freeze=True,
             disabled_buttons=DB_ALL, setup_fn=setup_1),
 
         TutorialStep(2, N,
-            heading="Channel Clashes",
-            body="D0, D1, and D2 are all on RED and close enough to interfere — shown by the red lines. "
-                 "To stop the clashes you must move at least two of them onto different channels. Press SPACE.",
-            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
-            advance_on_space=True, freeze=True,
-            disabled_buttons=DB_ALL, setup_fn=setup_2),
-
-        TutorialStep(3, N,
-            heading="Fix a Clash — Mode 1 (click a drone)",
-            body="Click each highlighted drone to open its channel menu and pick a different channel. "
-                 "No two touching drones can share a channel — "
-                 "the red clash lines will disappear when all three have unique channels.",
+            heading="Fix a Clash — Click a Drone",
+            body="Click each highlighted drone to open its channel menu and assign a different channel. "
+                 "No two drones in range can share a channel — "
+                 "the clash lines disappear when all three have unique channels. "
+                 "Press SPACE once fixed.",
             highlight_ids=[0, 1, 2], highlight_color=(255, 240, 60),
             advance_on_space=True, freeze=True,
-            completion_check=check_3, disabled_buttons=DB_ALL, setup_fn=setup_3),
+            completion_check=check_2, disabled_buttons=DB_ALL, setup_fn=setup_2),
 
+        TutorialStep(3, N,
+            heading="Some Problems Can't Be Fully Solved",
+            body="D0–D3 are all within range of each other — a complete group of 4. "
+                 "With only 3 channels, at least one pair must always clash. "
+                 "The best you can do is minimise the number of clashing pairs. "
+                 "Try any mode to experiment, then press SPACE.",
+            highlight_ids=[0, 1, 2, 3], highlight_color=(230, 60, 60),
+            advance_on_space=True, freeze=True,
+            disabled_buttons=frozenset(), setup_fn=setup_3),
+
+        # ── Phase 2 ──────────────────────────────────────────────────────────
         TutorialStep(4, N,
-            heading="Group Select",
-            body="Instead of assigning manually, you can use the AI assistant for groups. "
-                 "Drag a selection box around them "
-                 "(or hold Ctrl and click to build up the group one by one). "
-                 "Drag a box over the 4 highlighted drones D0–D3 now.",
-            highlight_ids=[0, 1, 2, 3], highlight_color=(90, 200, 255),
-            advance_on_space=False, freeze=True,
-            completion_check=check_4, disabled_buttons=DB_ALL, setup_fn=setup_4),
+            heading="Pre-Flight Setup — Manual Assignment",
+            body="Before launch, all drones are unassigned (shown white). "
+                 "The edges between drones show which pairs are in range. "
+                 "Click each drone and assign a channel — connected drones need different channels "
+                 "to avoid clashes at launch. Press SPACE when all are assigned.",
+            highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(200, 200, 200),
+            advance_on_space=True, freeze=True,
+            completion_check=check_4, disabled_buttons=DB_ALL, setup_fn=setup_4,
+            hint_locked="Assign a channel to every drone first"),
 
         TutorialStep(5, N,
-            heading="Watch: Suggest — Guided Fix",
-            body="D0–D3 are selected and clashing. In this mode you assign a watch role instead of "
-                 "clicking Suggest directly. Click 'Watch: Suggest' on the agent panel — "
-                 "the assistant will immediately propose channels for you to review. Then click Apply.",
-            highlight_ids=[0, 1, 2, 3], highlight_color=(90, 200, 255),
+            heading="Pre-Flight Setup — Watch: Suggest",
+            body="All 6 drones are unassigned again. "
+                 "Drag a selection box over all of them, then click 'Watch: Suggest'. "
+                 "This proposes an initial channel assignment AND sets a watch — "
+                 "if any watched drones clash later, a fix is suggested automatically. "
+                 "Review the mini-graph, then click Apply.",
+            highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(90, 200, 255),
             advance_on_space=False, freeze=True,
             completion_check=check_5, disabled_buttons=DB_AUTO, setup_fn=setup_5),
 
         TutorialStep(6, N,
-            heading="That worked. Now Watch: Suggest for D0, D1 & D2",
-            body="D0, D1, and D2 are clashing on RED again. Select all three (drag or Ctrl+click), "
-                 "then click Watch: Suggest. We'll check what the assistant recommends.",
-            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
+            heading="Pre-Flight Setup — Watch: Auto",
+            body="All 6 drones are unassigned again. "
+                 "Drag a selection box over all of them, then click 'Watch: Auto'. "
+                 "Channels are assigned instantly with no review AND an automatic watch is set — "
+                 "clashes are fixed the moment they form, no input needed.",
+            highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(40, 220, 175),
             advance_on_space=False, freeze=True,
-            completion_check=check_6a, disabled_buttons=DB_AUTO, setup_fn=setup_6a),
+            completion_check=check_6, disabled_buttons=DB_SUG, setup_fn=setup_6),
 
+        # ── Phase 3 ──────────────────────────────────────────────────────────
         TutorialStep(7, N,
-            heading="Spot the Mistake — Override a Bad Suggestion",
-            body="The assistant is not perfect. Here it put D1 and D2 both on GREEN — they will STILL clash "
-                 "(red line in the mini-graph). On the agent panel, manually fix this suggested "
-                 "configuration, then click Apply.",
-            highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
-            advance_on_space=False, freeze=True,
-            completion_check=check_6b, disabled_buttons=DB_AUTO, setup_fn=setup_6b,
-            preserve_suggestion=True),
+            heading="Watch: Suggest — Set the Watch",
+            body="D0, D1, D2 are on RED and about to fly toward each other. "
+                 "Select all three (drag a box or Ctrl+click) and click 'Watch: Suggest'. "
+                 "A suggestion appears — review and apply or dismiss it. "
+                 "Press SPACE to launch the demo.",
+            highlight_ids=[0, 1, 2], highlight_color=(90, 200, 255),
+            advance_on_space=True, freeze=True,
+            completion_check=check_7, disabled_buttons=DB_AUTO, setup_fn=setup_7,
+            hint_locked="Select D0–D2 and click 'Watch: Suggest' first"),
 
         TutorialStep(8, N,
-            heading="Watch: Auto — Instant Fix",
-            body="If you don't need to review, use Watch: Auto. Fixes are applied instantly "
-                 "without a review step. "
-                 "D0–D2 are clashing. Select all three (drag or Ctrl+click), then click 'Watch: Auto'.",
-            highlight_ids=[0, 1, 2], highlight_color=(255, 160, 40),
-            advance_on_space=False, freeze=True,
-            completion_check=check_wa, disabled_buttons=DB_SUG, setup_fn=setup_wa),
-
-        TutorialStep(9, N,
-            heading="When There's No Perfect Solution",
-            body="Sometimes the problem can't be solved. "
-                 "D0–D3 are all within range of each other — a complete group of 4. "
-                 "With only 3 channels, the best you can do is 1 clashing pair. Try to find the best solution. "
-                 "Use any mode to experiment, then press SPACE to continue.",
-            highlight_ids=[0, 1, 2, 3], highlight_color=(230, 60, 60),
-            advance_on_space=True, freeze=True,
-            disabled_buttons=frozenset(), setup_fn=setup_k4),
-
-        TutorialStep(10, N,
-            heading="Preplanning — Configure Your Whole Swarm",
-            body="Before a trial starts you can set watch modes on ALL drones at once. "
-                 "Drag a box over all 6, then click Watch: Suggest — the assistant provides an "
-                 "immediate starting configuration AND will keep watching for future clashes.",
-            highlight_ids=[], advance_on_space=False, freeze=True,
-            completion_check=check_preplan, disabled_buttons=DB_AUTO, setup_fn=setup_preplan),
-
-        TutorialStep(11, N,
-            heading="Live Demo — Watch Mode Running",
-            body="Your drones are now moving with watch modes active. "
-                 "When clashes form, Watch: Suggest will automatically show a suggestion — apply it "
-                 "when it appears. Press SPACE once you have seen the watch system trigger.",
-            highlight_ids=[], advance_on_space=True, freeze=False,
-            min_time=20.0, disabled_buttons=frozenset(), setup_fn=setup_live,
+            heading="Watch: Suggest — Live Automatic Trigger",
+            body="The drones are flying toward the centre with Watch: Suggest active (orange rings). "
+                 "When they converge and clash, the suggestion fires automatically — no button press needed. "
+                 "Apply it when it appears, then press SPACE.",
+            highlight_ids=[0, 1, 2], highlight_color=(255, 160, 20),
+            advance_on_space=True, freeze=False,
+            completion_check=check_8, disabled_buttons=DB_AUTO, setup_fn=setup_8,
             run_flex_monitor=True),
 
-        TutorialStep(12, N,
+        TutorialStep(9, N,
+            heading="Watch: Auto — Set the Watch",
+            body="Same scenario. Select D0, D1, D2 and click 'Watch: Auto'. "
+                 "Channels are assigned instantly. "
+                 "Press SPACE to launch the demo.",
+            highlight_ids=[0, 1, 2], highlight_color=(40, 220, 175),
+            advance_on_space=True, freeze=True,
+            completion_check=check_9, disabled_buttons=DB_SUG, setup_fn=setup_9,
+            hint_locked="Select D0–D2 and click 'Watch: Auto' first"),
+
+        TutorialStep(10, N,
+            heading="Watch: Auto — Live Automatic Fix",
+            body="The drones are flying with Watch: Auto active (teal rings). "
+                 "When they clash, the fix fires instantly — you don't need to do anything. "
+                 "Watch it happen, then press SPACE.",
+            highlight_ids=[0, 1, 2], highlight_color=(40, 220, 175),
+            advance_on_space=True, freeze=False,
+            completion_check=check_10, disabled_buttons=DB_SUG, setup_fn=setup_10,
+            run_flex_monitor=True),
+
+        # ── Phase 4 ──────────────────────────────────────────────────────────
+        TutorialStep(11, N,
             heading="Free Practice",
             body="All modes covered! The drones are now moving. "
-                 "Use M1 (click drone) to assign manually, Watch: Suggest to get reviewed "
-                 "recommendations, or Watch: Auto for automatic fixes. "
-                 "Press SPACE when you're ready to start the real trial.",
+                 "Click a drone to assign manually, Watch: Suggest for reviewed fixes, "
+                 "or Watch: Auto for instant automatic fixes. "
+                 "Before a trial, select all drones and use a watch mode to stay ahead of clashes. "
+                 "Press SPACE when you're ready to begin.",
             highlight_ids=[], advance_on_space=True, freeze=False,
-            min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_free),
+            min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_11),
     ]
 
 
@@ -813,24 +885,61 @@ def run_tutorial(
             game_state["last_action"]    = "auto_assign_applied"
             logger.log_group_deselected(old_sel, world.elapsed)
 
+    _tut_sug_ts = [-999.0]  # elapsed time of last auto-triggered suggestion
+
     def _tut_flex_monitor() -> None:
         nonlocal pending_suggestion, suggestion_overrides, pending_infeasible
+
+        # Keep D0–D2 aimed at the arena centre until they're nearly there.
+        # Runs every frame AFTER world.update(), overriding any heading/speed
+        # perturbations from the physics so convergence is guaranteed.
+        aw, ah = world.arena_w, world.arena_h
+        cx, cy = aw * 0.50, ah * 0.50
+        aim_spd   = aw * 0.025
+        threshold = aw * 0.04  # stop correcting once within ~4% of arena width
+        for did in (0, 1, 2):
+            r = world.robots[did]
+            dx, dy = cx - r.x, cy - r.y
+            dist_sq = dx * dx + dy * dy
+            if dist_sq > threshold * threshold:
+                dist = math.sqrt(dist_sq)
+                r.vx = dx / dist * aim_spd
+                r.vy = dy / dist * aim_spd
+                r.heading = math.atan2(r.vy, r.vx)
+
         if not flex_drone_modes or pending_suggestion is not None:
             return
         clashing = {i for pair in world.clashing_pairs for i in pair}
-        watched = [d for d in flex_drone_modes
-                   if d in clashing and flex_drone_modes[d] == "suggest"]
-        if not watched:
+
+        # Auto-mode drones: apply fix instantly, no review
+        auto_watched = [d for d in flex_drone_modes
+                        if d in clashing and flex_drone_modes[d] == "auto"]
+        if auto_watched:
+            cur = {r.id: r.channel for r in world.robots}
+            proposed, infeas = advisor.suggest(
+                auto_watched, cur, world.edges, near_pairs=list(world.warning_pairs))
+            logger.log_auto_assign_applied(auto_watched, proposed, infeas, world.elapsed)
+            _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=True)
+            game_state["last_action"] = "auto_assign_applied"
+            return
+
+        # Suggest-mode drones: show proposal (3-second refire guard)
+        if world.elapsed - _tut_sug_ts[0] < 3.0:
+            return
+        sug_watched = [d for d in flex_drone_modes
+                       if d in clashing and flex_drone_modes[d] == "suggest"]
+        if not sug_watched:
             return
         cur = {r.id: r.channel for r in world.robots}
         proposed, infeas = advisor.suggest(
-            watched, cur, world.edges, near_pairs=list(world.warning_pairs))
+            sug_watched, cur, world.edges, near_pairs=list(world.warning_pairs))
         pending_suggestion   = proposed
         suggestion_overrides = dict(proposed)
         pending_infeasible   = infeas
         game_state["pending_suggestion"] = pending_suggestion
         game_state["last_action"]        = "suggestion_shown"
-        logger.log_suggestion_shown(watched, proposed, infeas, world.elapsed)
+        _tut_sug_ts[0] = world.elapsed
+        logger.log_suggestion_shown(sug_watched, proposed, infeas, world.elapsed)
 
     try:
         while True:

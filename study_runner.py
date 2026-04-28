@@ -428,6 +428,7 @@ class _TrialRow:
                 v_min=preset.v_min,
                 v_max=preset.v_max,
                 is_tutorial=preset.is_tutorial,
+                tutorial_type=preset.tutorial_type,
                 **extra_kw,
             )
 
