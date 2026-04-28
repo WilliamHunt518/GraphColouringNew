@@ -21,6 +21,30 @@ class _StudyExit(Exception):
     """Raised instead of sys.exit() when study_mode=True."""
 
 
+def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict) -> list:
+    """Return log snapshot: list of (id, norm_x, norm_y, channel_after).
+    Positions are normalised relative to the bounding box of the involved drones
+    so they spread out even when clustered near the arena centre.
+    """
+    robots = [world.robots[did] for did in ids if did < len(world.robots)]
+    if not robots:
+        return []
+    xs = [r.x for r in robots]
+    ys = [r.y for r in robots]
+    cx = sum(xs) / len(xs)
+    cy = sum(ys) / len(ys)
+    half_w = max((max(xs) - min(xs)) / 2 + world.arena_w * 0.04, world.arena_w * 0.12)
+    half_h = max((max(ys) - min(ys)) / 2 + world.arena_h * 0.04, world.arena_h * 0.12)
+    x_lo, y_lo = cx - half_w, cy - half_h
+    return [
+        (r.id,
+         (r.x - x_lo) / (2 * half_w),
+         (r.y - y_lo) / (2 * half_h),
+         proposed.get(r.id, r.channel))
+        for r in robots
+    ]
+
+
 # ── Windowed (single-monitor) layout constants ────────────────────────────────
 WINDOWED_ARENA_W = 1200
 WINDOWED_ARENA_H = 760
@@ -178,7 +202,7 @@ def run_game(
     _MONITOR_INTERVAL = 0.5
     _SUGGEST_REFIRE_DELAY = 3.0            # seconds after apply before re-suggesting
     drone_modes:    Dict[int, str]           = {}   # drone_id → "suggest" | "auto"
-    agent_log:      List[Tuple[float, str]]  = []   # (elapsed, message) newest-last
+    agent_log:      list                     = []   # (elapsed, msg[, snapshot]) newest-last
     _monitor_timer: List[float]              = [0.0]
     _auto_cooldown: Dict[int, float]         = {}
     _flex_apply_ts: Dict[int, float]         = {}   # elapsed when suggestion last applied per drone
@@ -251,7 +275,8 @@ def run_game(
                 for did in eligible:
                     _auto_cooldown[did] = world.switch_duration + 0.5
                 ids_str = ",".join(f"D{d}" for d in sorted(eligible))
-                agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed"))
+                snap = _make_log_snapshot(world, eligible, proposed)
+                agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
                 if len(agent_log) > 50:
                     agent_log.pop(0)
                 logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
@@ -789,7 +814,7 @@ def run_game(
                 pending_infeasible=pending_infeasible,
                 panel_detached=panel_detached,
                 drone_modes=drone_modes if agent_mode == "flexible" else None,
-                agent_log=agent_log[-8:] if agent_mode == "flexible" else None,
+                agent_log=agent_log[-6:] if agent_mode == "flexible" else None,
             )
 
             if state == "ENDED" and study_mode:

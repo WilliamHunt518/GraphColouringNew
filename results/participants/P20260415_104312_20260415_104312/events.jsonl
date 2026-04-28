@@ -1,9 +1,0 @@
-{"ts": 1776246192.8406584, "event": "session_start", "participant_id": "P20260415_104312", "mode": "mode1", "graph": "s9_3c_xab", "colours": ["red", "blue", "green"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 4, "blue": 1, "green": 2}, "AgentA": {"red": 1, "blue": 4, "green": 2}, "AgentB": {"red": 2, "blue": 2, "green": 4}}}
-{"ts": 1776246192.8875885, "event": "attempt_start", "attempt": 1}
-{"ts": 1776246192.992505, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
-{"ts": 1776246192.9989917, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "red"}]}
-{"ts": 1776246199.0146718, "event": "colour_chosen", "attempt": 1, "node": "H1", "colour": "red", "source": "human", "decision_time_s": 6.022, "agents_agreed": false}
-{"ts": 1776246199.2171218, "event": "node_ready", "attempt": 1, "node": "H2", "node_index": 1}
-{"ts": 1776246199.22127, "event": "proposals_shown", "attempt": 1, "node": "H2", "proposals": [{"agent": "AgentA", "colour": "blue"}]}
-{"ts": 1776246201.4841614, "event": "abandonment", "attempt": 1, "node_index": 1, "reason": "window_closed"}
-{"ts": 1776246201.5017314, "event": "session_end", "total_attempts": 0, "score_trajectory": [], "session_elapsed_s": 8.66}

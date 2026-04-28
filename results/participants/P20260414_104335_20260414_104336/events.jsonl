@@ -1,7 +1,0 @@
-{"ts": 1776159816.0409791, "event": "session_start", "participant_id": "P20260414_104335", "mode": "mode1", "graph": "study_12", "colours": ["red", "blue"], "seed": 42, "max_attempts": 3, "points_config": {"Human": {"red": 3, "blue": 1}, "AgentA": {"red": 1, "blue": 4}, "AgentB": {"red": 2, "blue": 2}}}
-{"ts": 1776159816.0874696, "event": "attempt_start", "attempt": 1}
-{"ts": 1776159816.087538, "event": "node_ready", "attempt": 1, "node": "H1", "node_index": 0}
-{"ts": 1776159816.2005603, "event": "proposals_shown", "attempt": 1, "node": "H1", "proposals": [{"agent": "AgentA", "colour": "blue"}, {"agent": "AgentB", "colour": "blue"}]}
-{"ts": 1776159926.6305797, "event": "explanation_click", "attempt": 1, "node": "H1", "agent": "AgentA"}
-{"ts": 1776160420.312613, "event": "abandonment", "attempt": 1, "node_index": 0, "reason": "window_closed"}
-{"ts": 1776160420.3313208, "event": "session_end", "total_attempts": 0, "score_trajectory": [], "session_elapsed_s": 604.31}

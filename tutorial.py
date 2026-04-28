@@ -14,6 +14,31 @@ import pygame
 
 from robot_world import RobotWorld, SPEED_MIN, SPEED_MAX, SWITCH_DURATION
 from robot_renderer import RobotRenderer, TutorialCallout, PANEL_W
+
+
+def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict) -> list:
+    """Return a log snapshot: list of (id, norm_x, norm_y, channel_after).
+    Positions are normalized relative to the bounding box of involved drones
+    so they spread out in the mini-graph even when clustered.
+    """
+    robots = [world.robots[did] for did in ids if did < len(world.robots)]
+    if not robots:
+        return []
+    xs = [r.x for r in robots]
+    ys = [r.y for r in robots]
+    cx = sum(xs) / len(xs)
+    cy = sum(ys) / len(ys)
+    # Ensure a minimum view radius so drones don't all stack at the same pixel
+    half_w = max((max(xs) - min(xs)) / 2 + world.arena_w * 0.04, world.arena_w * 0.12)
+    half_h = max((max(ys) - min(ys)) / 2 + world.arena_h * 0.04, world.arena_h * 0.12)
+    x_lo, y_lo = cx - half_w, cy - half_h
+    return [
+        (r.id,
+         (r.x - x_lo) / (2 * half_w),
+         (r.y - y_lo) / (2 * half_h),
+         proposed.get(r.id, r.channel))
+        for r in robots
+    ]
 from game_logger import GameLogger
 from agents.channel_agent import ChannelAdvisor
 from robot_game import _StudyExit, _apply_suggestion
@@ -527,7 +552,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             dm.clear()
 
     def _launch_triangle(w: RobotWorld, gs: dict) -> None:
-        spd  = w.arena_w * 0.025
+        spd  = w.arena_w * 0.015  # ~40% slower than original 0.025
         aw, ah = w.arena_w, w.arena_h
         cx, cy = aw * 0.50, ah * 0.50
         for did, fx, fy in [(0, 0.22, 0.38), (1, 0.78, 0.38), (2, 0.50, 0.86)]:
@@ -576,6 +601,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
 
     # Step 10: Watch:Auto live — drones fly, fix auto-fires
     def setup_10(w: RobotWorld, gs: dict) -> None:
+        gs["last_action"] = None  # clear auto_assign_applied set in step 9 so check_10 waits for the live event
         _launch_triangle(w, gs)
 
     def check_10(gs: dict) -> bool:
@@ -771,6 +797,7 @@ def run_tutorial(
     director = TutorialDirector(world, flex_mode=flex_mode)
 
     flex_drone_modes: Dict[int, str] = {}
+    tut_agent_log: list = []  # (elapsed, msg, snapshot) entries for flex tutorial panel
 
     game_state: Dict = {
         "selected_ids":     set(),
@@ -876,6 +903,9 @@ def run_tutorial(
             proposed, infeas = advisor.suggest(
                 active, cur, world.edges, near_pairs=list(world.warning_pairs))
             logger.log_auto_assign_applied(active, proposed, infeas, world.elapsed)
+            snap = _make_log_snapshot(world, active, proposed)
+            ids_str = ",".join(f"D{d}" for d in sorted(active))
+            tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
             _apply_suggestion(world, proposed, logger, mode="M3", instant=True)
             old_sel = list(selected_ids)
             selected_ids.clear()
@@ -895,7 +925,7 @@ def run_tutorial(
         # perturbations from the physics so convergence is guaranteed.
         aw, ah = world.arena_w, world.arena_h
         cx, cy = aw * 0.50, ah * 0.50
-        aim_spd   = aw * 0.025
+        aim_spd   = aw * 0.015  # ~40% slower than original 0.025
         threshold = aw * 0.04  # stop correcting once within ~4% of arena width
         for did in (0, 1, 2):
             r = world.robots[did]
@@ -919,6 +949,9 @@ def run_tutorial(
             proposed, infeas = advisor.suggest(
                 auto_watched, cur, world.edges, near_pairs=list(world.warning_pairs))
             logger.log_auto_assign_applied(auto_watched, proposed, infeas, world.elapsed)
+            snap = _make_log_snapshot(world, auto_watched, proposed)
+            ids_str = ",".join(f"D{d}" for d in sorted(auto_watched))
+            tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
             _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=True)
             game_state["last_action"] = "auto_assign_applied"
             return
@@ -1352,6 +1385,7 @@ def run_tutorial(
                 tutorial_callout=director.current_callout,
                 panel_detached=panel_detached,
                 drone_modes=flex_drone_modes if flex_mode else None,
+                agent_log=tut_agent_log[-6:] if flex_mode else None,
             )
             pygame.display.flip()
             if panel_detached and _panel_win is not None:

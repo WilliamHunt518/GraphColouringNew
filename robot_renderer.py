@@ -639,26 +639,72 @@ class RobotRenderer:
 
     # ── Agent log panel ───────────────────────────────────────────────────────
 
+    _LOG_MAX_ENTRIES = 3   # only show the 3 most recent changes
+    _LOG_SNAP_H      = 100 # height of each full-width snapshot
+    _LOG_TEXT_H      = 20  # height of the text label above each snapshot
+    _LOG_GAP         = 8   # vertical gap between entries
+    _LOG_HDR_H       = 22  # "Agent log" header height
+
     def _draw_agent_log(self) -> None:
         ps      = self._ps
         px      = self._px + self._panel_pad
+        pw      = self._panel_w - self._panel_pad * 2
         f       = self.fonts
-        entries = self._agent_log  # newest-last, already trimmed to ≤8
-        n       = len(entries)
-        row_h   = 17
-        hdr_h   = 18
         panel_h = ps.get_height()
 
-        block_h   = hdr_h + n * row_h + 6
+        # Only keep the last N entries that have snapshot data; fall back to any entry
+        entries = [e for e in self._agent_log if len(e) > 2 and e[2]]
+        if not entries:
+            entries = self._agent_log
+        entries = entries[-self._LOG_MAX_ENTRIES:]
+
+        # Compute total block height
+        block_h = self._LOG_HDR_H + 4
+        for entry in entries:
+            has_snap = len(entry) > 2 and entry[2]
+            block_h += self._LOG_TEXT_H + (self._LOG_SNAP_H + self._LOG_GAP if has_snap
+                                           else self._LOG_GAP)
+
         block_top = panel_h - block_h - 10
 
         self._panel_sep(block_top - 6)
-        ps.blit(f["tiny"].render("Agent log", True, COL_DIM_TEXT), (px, block_top))
+        ps.blit(f["small"].render("Agent log", True, COL_DIM_TEXT), (px, block_top))
 
-        for i, (_, msg) in enumerate(entries):
+        y = block_top + self._LOG_HDR_H + 4
+        for entry in entries:
+            msg  = entry[1]
+            snap = entry[2] if len(entry) > 2 else None
+
             col = (50, 220, 175) if "auto" in msg else (200, 180, 80)
-            s = f["tiny"].render(msg, True, col)
-            ps.blit(s, (px, block_top + hdr_h + i * row_h))
+            ps.blit(f["small"].render(msg, True, col), (px, y))
+            y += self._LOG_TEXT_H
+
+            if snap:
+                self._draw_log_snapshot(ps, px, y, pw, self._LOG_SNAP_H, snap)
+                y += self._LOG_SNAP_H + self._LOG_GAP
+            else:
+                y += self._LOG_GAP
+
+    def _draw_log_snapshot(self, ps, sx: int, sy: int, sw: int, sh: int, snap: list) -> None:
+        """Render a full-width frozen mini-graph for one agent-log entry."""
+        pygame.draw.rect(ps, COL_MINIGRAPH_BG, (sx, sy, sw, sh), border_radius=5)
+        pygame.draw.rect(ps, (60, 60, 85),     (sx, sy, sw, sh), 1, border_radius=5)
+
+        pad   = 14
+        r_dot = 10
+        f     = self.fonts
+
+        for item in snap:
+            did, nx, ny, ch = item
+            x = int(sx + pad + nx * (sw - 2 * pad))
+            y = int(sy + pad + ny * (sh - 2 * pad))
+            x = max(sx + r_dot + 2, min(sx + sw - r_dot - 2, x))
+            y = max(sy + r_dot + 2, min(sy + sh - r_dot - 2, y))
+            col = CHANNEL_FILL.get(ch, COL_UNCOLOURED)
+            pygame.draw.circle(ps, col,           (x, y), r_dot)
+            pygame.draw.circle(ps, (200, 200, 220), (x, y), r_dot, 1)
+            lbl = f["tiny"].render(str(did), True, (240, 240, 255))
+            ps.blit(lbl, lbl.get_rect(center=(x, y)))
 
     # ── Suggestion panel with live mini-graph ─────────────────────────────────
 

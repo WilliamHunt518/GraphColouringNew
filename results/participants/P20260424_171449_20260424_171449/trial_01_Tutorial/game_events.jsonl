@@ -1,8 +1,0 @@
-{"ts": 1777047289.9251983, "event": "tutorial_start"}
-{"ts": 1777047290.2430947, "event": "tutorial_panel_opened", "monitor": 0}
-{"ts": 1777047298.0596485, "event": "tutorial_mouse_down", "x": 1964, "y": 425, "step": 1, "elapsed": 0.0}
-{"ts": 1777047298.4954293, "event": "tutorial_mouse_down", "x": 2083, "y": 423, "step": 1, "elapsed": 0.0}
-{"ts": 1777047298.6809168, "event": "popup_opened", "drone_id": 2, "elapsed": 0.0}
-{"ts": 1777047298.9414241, "event": "tutorial_key_down", "key": 27, "key_name": "escape", "step": 1, "elapsed": 0.0}
-{"ts": 1777047298.9414241, "event": "tutorial_quit", "elapsed": 0.0, "step": 1}
-{"ts": 1777047298.9444394, "event": "tutorial_complete", "steps_completed": 0}

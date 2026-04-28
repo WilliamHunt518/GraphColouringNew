@@ -56,22 +56,29 @@ class StudyConfig:
 
 # ── Presets ───────────────────────────────────────────────────────────────────
 
+# Complexity presets: (n_drones, v_min, v_max)
+# easy:   8 drones, 7–15 px/s (slow)
+# medium: 12 drones, 7–15 px/s (moderate)
+# hard:   16 drones, 10–20 px/s (fast)
+
 STUDY_PRESETS: Dict[str, TrialConfig] = {
     "Tutorial":          TrialConfig("Tutorial",          is_tutorial=True, epsilon=0.0, duration=0),
     "Flexible Tutorial": TrialConfig("Flexible-Tutorial", is_tutorial=True, tutorial_type="flexible", epsilon=0.0, duration=0),
-    "Easy — perfect":   TrialConfig("Easy-perfect",   complexity="easy",   epsilon=0.0,  duration=90),
-    "Easy — noisy":     TrialConfig("Easy-noisy",     complexity="easy",   epsilon=0.4,  duration=90),
-    "Medium — perfect": TrialConfig("Medium-perfect", complexity="medium", epsilon=0.0,  duration=120),
-    "Medium — noisy":   TrialConfig("Medium-noisy",   complexity="medium", epsilon=0.4,  duration=120),
-    "Hard — perfect":   TrialConfig("Hard-perfect",   complexity="hard",   epsilon=0.0,  duration=150),
-    "Hard — noisy":     TrialConfig("Hard-noisy",     complexity="hard",   epsilon=0.4,  duration=150),
-    "Custom…":          TrialConfig("Custom"),
+    # ── Study conditions: agent accuracy fixed at 70% (ε=0.30); vary drones & speed ──
+    "Easy (8dr, slow, 70%)":     TrialConfig("Easy-70pct",   complexity="easy",   epsilon=0.30, duration=90),
+    "Medium (12dr, slow, 70%)":  TrialConfig("Medium-70pct", complexity="medium", epsilon=0.30, duration=120),
+    "Hard (16dr, fast, 70%)":    TrialConfig("Hard-70pct",   complexity="hard",   epsilon=0.30, duration=150),
+    # ── Debug / baseline conditions ──────────────────────────────────────────────────
+    "Easy (8dr, slow, perfect)":    TrialConfig("Easy-perfect",   complexity="easy",   epsilon=0.0, duration=90),
+    "Medium (12dr, slow, perfect)": TrialConfig("Medium-perfect", complexity="medium", epsilon=0.0, duration=120),
+    "Hard (16dr, fast, perfect)":   TrialConfig("Hard-perfect",   complexity="hard",   epsilon=0.0, duration=150),
+    "Custom…":                       TrialConfig("Custom"),
 }
 
 _PRESET_NAMES = list(STUDY_PRESETS)
 _CONFIG_PATH  = Path.home() / ".drone_study_config.json"
 
-_DEFAULT_TRIALS = ["Tutorial", "Easy — perfect", "Medium — noisy"]
+_DEFAULT_TRIALS = ["Tutorial", "Easy (8dr, slow, 70%)", "Medium (12dr, slow, 70%)"]
 
 
 def _detect_num_displays() -> int:
@@ -183,7 +190,7 @@ class StudySetupWindow:
         for t in defaults:
             if isinstance(t, dict):
                 self._add_trial_row(
-                    t.get("preset", "Medium — perfect"),
+                    t.get("preset", "Medium (12dr, slow, 70%)"),
                     t.get("enabled", True),
                     t.get("show_tlx", True),
                     t.get("show_trust", True),
@@ -230,7 +237,7 @@ class StudySetupWindow:
         ttk.Button(root, text="▶  Start Study", command=self._start, width=18).grid(
             row=row, column=0, columnspan=3, pady=8)
 
-    def _add_trial_row(self, preset_name: str = "Medium — perfect",
+    def _add_trial_row(self, preset_name: str = "Medium (12dr, slow, 70%)",
                        enabled: bool = True, show_tlx: bool = True,
                        show_trust: bool = True, show_tam: bool = True,
                        agent_mode: str = "standard") -> None:
@@ -321,7 +328,7 @@ class _TrialRow:
         self._preset_var = tk.StringVar(value=preset_name)
         self._cb = ttk.Combobox(
             self._frame, textvariable=self._preset_var,
-            values=_PRESET_NAMES, state="readonly", width=20,
+            values=_PRESET_NAMES, state="readonly", width=28,
         )
         self._cb.grid(row=0, column=2, sticky="w", padx=(0, 8))
         self._preset_var.trace_add("write", self._on_preset_change)

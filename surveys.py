@@ -18,7 +18,12 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List, Optional, Tuple
 
-WINDOW_W = 720
+WINDOW_W = 920
+
+_F_BODY   = ("Segoe UI", 12)
+_F_LABEL  = ("Segoe UI", 11, "bold")
+_F_ASIDE  = ("Segoe UI", 11)
+_F_SMALL  = ("Segoe UI", 11)
 
 
 # ── Shared layout helpers ─────────────────────────────────────────────────────
@@ -48,19 +53,19 @@ def _scrollable_form(root: tk.Tk) -> tk.Frame:
 
 
 def _heading(parent: tk.Frame, text: str, row: int) -> int:
-    tk.Label(parent, text=text, font=("Segoe UI", 12, "bold"),
+    tk.Label(parent, text=text, font=("Segoe UI", 14, "bold"),
              anchor="w").grid(row=row, column=0, columnspan=12,
-                              sticky="ew", padx=12, pady=(14, 0))
+                              sticky="ew", padx=12, pady=(16, 0))
     ttk.Separator(parent, orient="horizontal").grid(
-        row=row + 1, column=0, columnspan=12, sticky="ew", padx=12, pady=(2, 4))
+        row=row + 1, column=0, columnspan=12, sticky="ew", padx=12, pady=(3, 6))
     return row + 2
 
 
 def _qlabel(parent: tk.Frame, text: str, row: int) -> int:
-    tk.Label(parent, text=text, wraplength=WINDOW_W - 50,
+    tk.Label(parent, text=text, wraplength=WINDOW_W - 60, font=_F_BODY,
              justify="left", anchor="w").grid(
         row=row, column=0, columnspan=12,
-        sticky="w", padx=22, pady=(8, 1))
+        sticky="w", padx=22, pady=(10, 2))
     return row + 1
 
 
@@ -68,14 +73,14 @@ def _likert(parent: tk.Frame, text: str, row: int, var: tk.IntVar,
             lo: str = "Not at all", hi: str = "Extremely", n: int = 7) -> int:
     row = _qlabel(parent, text, row)
     f = tk.Frame(parent)
-    f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 4))
-    tk.Label(f, text=lo, foreground="#666",
-             font=("Segoe UI", 9)).grid(row=0, column=0, padx=(0, 6))
+    f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 6))
+    tk.Label(f, text=lo, foreground="#555",
+             font=_F_SMALL).grid(row=0, column=0, padx=(0, 8))
     for i in range(1, n + 1):
         tk.Radiobutton(f, text=str(i), variable=var, value=i,
-                       indicatoron=True).grid(row=0, column=i, padx=2)
-    tk.Label(f, text=hi, foreground="#666",
-             font=("Segoe UI", 9)).grid(row=0, column=n + 1, padx=(6, 0))
+                       font=_F_SMALL, indicatoron=True).grid(row=0, column=i, padx=3)
+    tk.Label(f, text=hi, foreground="#555",
+             font=_F_SMALL).grid(row=0, column=n + 1, padx=(8, 0))
     return row + 1
 
 
@@ -83,14 +88,14 @@ def _tlx_item(parent: tk.Frame, text: str, row: int,
               var: tk.IntVar, lo: str = "Very Low", hi: str = "Very High") -> int:
     row = _qlabel(parent, text, row)
     f = tk.Frame(parent)
-    f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 4))
-    tk.Label(f, text=lo, foreground="#666",
-             font=("Segoe UI", 9)).grid(row=0, column=0, padx=(0, 6))
+    f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 6))
+    tk.Label(f, text=lo, foreground="#555",
+             font=_F_SMALL).grid(row=0, column=0, padx=(0, 8))
     tk.Scale(f, variable=var, from_=1, to=20, orient="horizontal",
-             length=320, resolution=1, showvalue=True,
-             font=("Segoe UI", 9)).grid(row=0, column=1)
-    tk.Label(f, text=hi, foreground="#666",
-             font=("Segoe UI", 9)).grid(row=0, column=2, padx=(6, 0))
+             length=420, resolution=1, showvalue=True,
+             font=_F_SMALL).grid(row=0, column=1)
+    tk.Label(f, text=hi, foreground="#555",
+             font=_F_SMALL).grid(row=0, column=2, padx=(8, 0))
     return row + 1
 
 
@@ -98,17 +103,17 @@ def _radio(parent: tk.Frame, text: str, row: int, var: tk.StringVar,
            choices: List[str]) -> int:
     row = _qlabel(parent, text, row)
     f = tk.Frame(parent)
-    f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 4))
+    f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 6))
     for i, c in enumerate(choices):
-        tk.Radiobutton(f, text=c, variable=var, value=c).grid(
-            row=i, column=0, sticky="w", pady=1)
+        tk.Radiobutton(f, text=c, variable=var, value=c,
+                       font=_F_BODY).grid(row=i, column=0, sticky="w", pady=2)
     return row + 1
 
 
 def _entry(parent: tk.Frame, text: str, row: int, var: tk.StringVar) -> int:
     row = _qlabel(parent, text, row)
-    ttk.Entry(parent, textvariable=var, width=14).grid(
-        row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 4))
+    ttk.Entry(parent, textvariable=var, width=16, font=_F_BODY).grid(
+        row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 6))
     return row + 1
 
 
@@ -116,9 +121,9 @@ def _textbox(parent: tk.Frame, text: str, row: int,
              var: tk.StringVar, height: int = 4) -> int:
     row = _qlabel(parent, text, row)
     box = tk.Text(parent, height=height, wrap="word",
-                  relief="solid", borderwidth=1, font=("Segoe UI", 10))
+                  relief="solid", borderwidth=1, font=("Segoe UI", 12))
     box.grid(row=row, column=0, columnspan=12,
-             sticky="ew", padx=30, pady=(0, 6))
+             sticky="ew", padx=30, pady=(0, 8))
     box.bind("<KeyRelease>", lambda _: var.set(box.get("1.0", "end-1c")))
     return row + 1
 
@@ -137,8 +142,8 @@ def _center(win: tk.Tk, mon: Optional[Tuple[int, int, int, int]]) -> None:
 
 def _submit_btn(parent: tk.Frame, row: int, text: str, cmd) -> None:
     f = tk.Frame(parent)
-    f.grid(row=row, column=0, columnspan=12, pady=20)
-    ttk.Button(f, text=text, command=cmd, width=18).pack()
+    f.grid(row=row, column=0, columnspan=12, pady=24)
+    ttk.Button(f, text=text, command=cmd, width=22).pack()
 
 
 # ── Pre-study demographics ────────────────────────────────────────────────────
@@ -151,19 +156,19 @@ def run_demographic_survey(
 
     root = tk.Tk()
     root.title("Pre-Study Survey")
-    root.geometry(f"{WINDOW_W}x620")
+    root.geometry(f"{WINDOW_W}x740")
     root.resizable(False, True)
 
     inner = _scrollable_form(root)
     r = 0
 
     tk.Label(inner, text="Pre-Study Questionnaire",
-             font=("Segoe UI", 15, "bold")).grid(
-        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(16, 2))
+             font=("Segoe UI", 18, "bold")).grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(18, 2))
     r += 1
     tk.Label(inner, text="Please answer the following before we begin.",
-             foreground="#555").grid(row=r, column=0, columnspan=12,
-                                     sticky="w", padx=12, pady=(0, 8))
+             font=_F_ASIDE, foreground="#555").grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(0, 10))
     r += 1
 
     r = _heading(inner, "About you", r)
@@ -278,21 +283,21 @@ def run_trial_survey(
 
     root = tk.Tk()
     root.title(f"Scenario {scenario_num} — Feedback")
-    root.geometry(f"{WINDOW_W}x680")
+    root.geometry(f"{WINDOW_W}x800")
     root.resizable(False, True)
 
     inner = _scrollable_form(root)
     r = 0
 
     tk.Label(inner, text=f"Scenario {scenario_num} — Feedback",
-             font=("Segoe UI", 15, "bold")).grid(
-        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(16, 2))
+             font=("Segoe UI", 18, "bold")).grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(18, 2))
     r += 1
     tk.Label(inner,
              text="Please rate the scenario you just completed. "
                   "There are no right or wrong answers.",
-             foreground="#555").grid(row=r, column=0, columnspan=12,
-                                     sticky="w", padx=12, pady=(0, 8))
+             font=_F_ASIDE, foreground="#555").grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(0, 10))
     r += 1
 
     tlx_vars: Dict[str, tk.IntVar] = {}
@@ -363,21 +368,22 @@ def run_summary_survey(
 
     root = tk.Tk()
     root.title("Summary Questionnaire")
-    root.geometry(f"{WINDOW_W}x740")
+    root.geometry(f"{WINDOW_W}x860")
     root.resizable(False, True)
 
     inner = _scrollable_form(root)
     r = 0
 
     tk.Label(inner, text="Summary Questionnaire",
-             font=("Segoe UI", 15, "bold")).grid(
-        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(16, 2))
+             font=("Segoe UI", 18, "bold")).grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(18, 2))
     r += 1
     tk.Label(inner,
              text="Now that you've completed all scenarios, please reflect on "
                   "your experience overall.",
-             foreground="#555", wraplength=WINDOW_W - 40, justify="left").grid(
-        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(0, 8))
+             font=_F_ASIDE, foreground="#555",
+             wraplength=WINDOW_W - 40, justify="left").grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=12, pady=(0, 10))
     r += 1
 
     # ── Per-scenario ratings ──────────────────────────────────────────────────
@@ -386,8 +392,9 @@ def run_summary_survey(
     tk.Label(inner,
              text='"Scenario 1" is the first scenario you completed, '
                   '"Scenario 2" the second, and so on.',
-             foreground="#555", wraplength=WINDOW_W - 40, justify="left").grid(
-        row=r, column=0, columnspan=12, sticky="w", padx=22, pady=(0, 8))
+             font=_F_ASIDE, foreground="#555",
+             wraplength=WINDOW_W - 40, justify="left").grid(
+        row=r, column=0, columnspan=12, sticky="w", padx=22, pady=(0, 10))
     r += 1
 
     per_vars: Dict[int, Dict[str, tk.IntVar]] = {}
@@ -396,7 +403,7 @@ def run_summary_survey(
         per_vars[num] = {}
 
         tk.Label(inner, text=f"Scenario {num}",
-                 font=("Segoe UI", 11, "bold"), anchor="w").grid(
+                 font=("Segoe UI", 13, "bold"), anchor="w").grid(
             row=r, column=0, columnspan=12,
             sticky="w", padx=22, pady=(10, 2))
         r += 1

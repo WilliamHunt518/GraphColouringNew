@@ -1,0 +1,24 @@
+{
+  "scenario_map": {
+    "1": "Easy-70pct",
+    "2": "Medium-70pct",
+    "3": "Hard-70pct"
+  },
+  "timestamp": "2026-04-28T16:15:08.604777",
+  "scenario_1_difficulty": 1,
+  "scenario_1_tool_usefulness": 2,
+  "scenario_1_manual_frequency": 7,
+  "scenario_1_confidence": 6,
+  "scenario_2_difficulty": 5,
+  "scenario_2_tool_usefulness": 2,
+  "scenario_2_manual_frequency": 7,
+  "scenario_2_confidence": 4,
+  "scenario_3_difficulty": 7,
+  "scenario_3_tool_usefulness": 2,
+  "scenario_3_manual_frequency": 2,
+  "scenario_3_confidence": 2,
+  "factors_influencing_manual": "",
+  "differences_noticed": "",
+  "preferred_scenario_reason": "",
+  "other_comments": ""
+}
