@@ -1,0 +1,14 @@
+{
+  "P1": {
+    "participant_id": "Xudong Wu",
+    "session_start": "20260428_155457",
+    "git_short": "4e4b5c2",
+    "git_message": "Mostly fixed new tutorial"
+  },
+  "P2": {
+    "participant_id": "Andrei",
+    "session_start": "20260429_141018",
+    "git_short": "cbdb200",
+    "git_message": "Many small tutorial fixes and de-agent button"
+  }
+}

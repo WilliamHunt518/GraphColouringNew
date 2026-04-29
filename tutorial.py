@@ -556,7 +556,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
     # drone_modes set in setup steps carry into live steps (not cleared by _launch).
 
     def _place_triangle_static(w: RobotWorld, gs: dict) -> None:
-        w.switch_duration = 0.0  # restore instant switches for live demo steps
+        w.switch_duration = SWITCH_DURATION
         aw, ah = w.arena_w, w.arena_h
         for did, fx, fy in [(0, 0.22, 0.38), (1, 0.78, 0.38), (2, 0.50, 0.86)]:
             r = w.robots[did]
@@ -783,7 +783,6 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
                  f"its old channel while switching, so the clash continues until the switch "
                  f"completes. The arc and countdown on D0 show this. "
                  f"Amber rings appear before drones enter range — act then, not after. "
-                 f"In this tutorial the watch-mode fixes are instant; the real trial uses the delay. "
                  f"Press SPACE.",
             highlight_ids=[0, 1], highlight_color=(255, 200, 50),
             advance_on_space=True, freeze=True,
@@ -1066,7 +1065,7 @@ def run_tutorial(
             return
         clashing = {i for pair in world.clashing_pairs for i in pair}
 
-        # Auto-mode drones: apply fix instantly, no review
+        # Auto-mode drones: request switch (respects switch_duration, same as live game)
         auto_watched = [d for d in flex_drone_modes
                         if d in clashing and flex_drone_modes[d] == "auto"]
         if auto_watched:
@@ -1077,7 +1076,7 @@ def run_tutorial(
             snap = _make_log_snapshot(world, auto_watched, proposed)
             ids_str = ",".join(f"D{d}" for d in sorted(auto_watched))
             tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
-            _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=True)
+            _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=False)
             game_state["last_action"] = "auto_assign_applied"
             return
 
@@ -1161,7 +1160,7 @@ def run_tutorial(
                                 )
                                 logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
                                 _apply_suggestion(world, suggestion_overrides, logger,
-                                                  mode="M2", instant=True)
+                                                  mode="M2", instant=director.is_frozen)
                                 pending_suggestion    = None
                                 suggestion_overrides  = {}
                                 selected_ids          = set()
@@ -1213,7 +1212,7 @@ def run_tutorial(
                                 list(selected_ids), cur, world.edges,
                                 near_pairs=list(world.warning_pairs))
                             logger.log_auto_assign_applied(list(selected_ids), proposed, infeas, world.elapsed)
-                            _apply_suggestion(world, proposed, logger, mode="M3", instant=True)
+                            _apply_suggestion(world, proposed, logger, mode="M3", instant=director.is_frozen)
                             old_sel = list(selected_ids)
                             selected_ids  = set()
                             popup_drone_id = None
@@ -1394,7 +1393,7 @@ def run_tutorial(
                             )
                             logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
                             _apply_suggestion(world, suggestion_overrides, logger,
-                                              mode="M2", instant=True)
+                                              mode="M2", instant=director.is_frozen)
                             pending_suggestion    = None
                             suggestion_overrides  = {}
                             selected_ids          = set()
@@ -1439,7 +1438,7 @@ def run_tutorial(
                                 list(selected_ids), cur, world.edges,
                                 near_pairs=list(world.warning_pairs))
                             logger.log_auto_assign_applied(list(selected_ids), proposed, infeas, world.elapsed)
-                            _apply_suggestion(world, proposed, logger, mode="M3", instant=True)
+                            _apply_suggestion(world, proposed, logger, mode="M3", instant=director.is_frozen)
                             old_sel = list(selected_ids)
                             selected_ids  = set()
                             popup_drone_id = None

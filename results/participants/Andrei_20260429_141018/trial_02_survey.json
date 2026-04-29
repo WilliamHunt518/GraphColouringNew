@@ -1,0 +1,22 @@
+{
+  "scenario_num": 1,
+  "scenario_label": "Medium-70pct",
+  "tlx_mental": 14,
+  "tlx_physical": 3,
+  "tlx_temporal": 4,
+  "tlx_performance": 4,
+  "tlx_effort": 2,
+  "tlx_frustration": 12,
+  "trust_suspicious": 3,
+  "trust_wary": 2,
+  "trust_confident": 3,
+  "trust_reliable": 4,
+  "trust_overall": 2,
+  "trust_accepted": 6,
+  "tam_improved": 5,
+  "tam_easy": 6,
+  "tam_useful": 5,
+  "tam_would_use": 5,
+  "comments": "",
+  "timestamp": "2026-04-29T14:27:17.400462"
+}

@@ -1,0 +1,324 @@
+{"ts": 1777468896.4649096, "event": "game_start", "seed": 42, "n_drones": 12, "complexity": "medium", "duration": 120, "v_min": 7.0, "v_max": 15.0}
+{"ts": 1777468896.6961534, "event": "panel_opened", "monitor": 1, "elapsed": 0.0}
+{"ts": 1777468906.4508193, "event": "click_ignored", "x": 947, "y": 656, "state": "PAUSED", "elapsed": 0.0}
+{"ts": 1777468907.4104476, "event": "key_down", "key": 32, "key_name": "space", "state": "PAUSED", "elapsed": 0.0}
+{"ts": 1777468911.4265203, "event": "group_selected", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "method": "box", "elapsed": 0.0}
+{"ts": 1777468912.8619654, "event": "watch_mode_set", "drones": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "mode": "auto", "elapsed": 0.0}
+{"ts": 1777468912.8619654, "event": "auto_assign_applied", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "proposed_channels": {"5": "green", "6": "green", "1": "red", "2": "blue", "4": "red", "7": "red", "9": "red", "10": "blue", "0": "blue", "3": "green", "8": "red", "11": "green"}, "infeasible": false, "elapsed": 0.0}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 5, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 6, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 1, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 2, "from_channel": null, "to_channel": "blue", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 4, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 7, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 9, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 10, "from_channel": null, "to_channel": "blue", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 0, "from_channel": null, "to_channel": "blue", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 3, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 8, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "switch_requested", "drone_id": 11, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "flex_watch_setup"}
+{"ts": 1777468912.8619654, "event": "group_deselected", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "elapsed": 0.0}
+{"ts": 1777468917.8658757, "event": "popup_opened", "drone_id": 4, "elapsed": 0.0}
+{"ts": 1777468919.8331323, "event": "switch_requested", "drone_id": 4, "from_channel": "red", "to_channel": "green", "elapsed": 0.0, "mode": "M1"}
+{"ts": 1777468919.8331323, "event": "popup_dismissed", "drone_id": 4, "elapsed": 0.0}
+{"ts": 1777468989.8596728, "event": "group_selected", "drone_ids": [3], "method": "box", "elapsed": 0.0}
+{"ts": 1777468990.7598236, "event": "watch_cleared", "drones": [3], "elapsed": 0.0}
+{"ts": 1777468991.5185196, "event": "group_deselected", "drone_ids": [3], "elapsed": 0.0}
+{"ts": 1777468991.5185196, "event": "arena_click_miss", "x": 1579, "y": 325, "elapsed": 0.0}
+{"ts": 1777468992.8458939, "event": "group_selected", "drone_ids": [3], "method": "box", "elapsed": 0.0}
+{"ts": 1777468994.6558423, "event": "watch_mode_set", "drones": [3], "mode": "suggest", "elapsed": 0.0}
+{"ts": 1777468994.6558423, "event": "suggestion_requested", "drone_ids": [3], "current_channels": {"0": "blue", "1": "red", "2": "blue", "3": "green", "4": "green", "5": "green", "6": "green", "7": "red", "8": "red", "9": "red", "10": "blue", "11": "green"}, "elapsed": 0.0}
+{"ts": 1777468994.6558423, "event": "suggestion_shown", "drone_ids": [3], "proposed_channels": {"3": "green"}, "infeasible": false, "elapsed": 0.0}
+{"ts": 1777468995.4414139, "event": "suggestion_cancelled", "elapsed": 0.0}
+{"ts": 1777468996.1136281, "event": "group_deselected", "drone_ids": [3], "elapsed": 0.0}
+{"ts": 1777468996.1136281, "event": "arena_click_miss", "x": 1727, "y": 241, "elapsed": 0.0}
+{"ts": 1777468997.1388578, "event": "popup_opened", "drone_id": 3, "elapsed": 0.0}
+{"ts": 1777468998.2208948, "event": "popup_dismissed", "drone_id": 3, "elapsed": 0.0}
+{"ts": 1777468998.2208948, "event": "arena_click_miss", "x": 1693, "y": 282, "elapsed": 0.0}
+{"ts": 1777468998.9027812, "event": "group_selected", "drone_ids": [3], "method": "box", "elapsed": 0.0}
+{"ts": 1777469000.080971, "event": "watch_mode_set", "drones": [3], "mode": "auto", "elapsed": 0.0}
+{"ts": 1777469000.0819736, "event": "auto_assign_applied", "drone_ids": [3], "proposed_channels": {"3": "green"}, "infeasible": false, "elapsed": 0.0}
+{"ts": 1777469000.0819736, "event": "group_deselected", "drone_ids": [3], "elapsed": 0.0}
+{"ts": 1777469000.8047643, "event": "arena_click_miss", "x": 1595, "y": 356, "elapsed": 0.0}
+{"ts": 1777469004.2458205, "event": "arena_click_miss", "x": 919, "y": 1063, "elapsed": 0.0}
+{"ts": 1777469012.5433757, "event": "key_down", "key": 32, "key_name": "space", "state": "SETUP", "elapsed": 0.0}
+{"ts": 1777469012.5433757, "event": "play_started", "elapsed": 0.0}
+{"ts": 1777469012.7252042, "event": "clash_start", "elapsed": 0.19800000000000006, "pairs": [[8, 9]]}
+{"ts": 1777469016.059286, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 3.5329999999999915, "mode": "flex_auto"}
+{"ts": 1777469016.059286, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "green", "elapsed": 3.5329999999999915, "mode": "flex_auto"}
+{"ts": 1777469016.059286, "event": "auto_assign_applied", "drone_ids": [1, 4, 5, 8, 9], "proposed_channels": {"5": "red", "1": "red", "4": "green", "9": "green", "8": "red"}, "infeasible": false, "elapsed": 3.5329999999999915}
+{"ts": 1777469016.5752573, "event": "auto_assign_applied", "drone_ids": [2, 6, 10], "proposed_channels": {"6": "green", "2": "blue", "10": "blue"}, "infeasible": false, "elapsed": 4.048999999999991}
+{"ts": 1777469019.652589, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 7.126000000000032, "mode": "flex_auto"}
+{"ts": 1777469019.652589, "event": "auto_assign_applied", "drone_ids": [1, 5], "proposed_channels": {"1": "red", "5": "green"}, "infeasible": false, "elapsed": 7.126000000000032}
+{"ts": 1777469020.1671853, "event": "auto_assign_applied", "drone_ids": [2, 6], "proposed_channels": {"2": "blue", "6": "green"}, "infeasible": false, "elapsed": 7.640000000000039}
+{"ts": 1777469023.227339, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "blue", "elapsed": 10.701000000000004, "mode": "flex_auto"}
+{"ts": 1777469023.227339, "event": "auto_assign_applied", "drone_ids": [1, 5], "proposed_channels": {"1": "red", "5": "blue"}, "infeasible": false, "elapsed": 10.701000000000004}
+{"ts": 1777469023.7417657, "event": "switch_requested", "drone_id": 6, "from_channel": "green", "to_channel": "red", "elapsed": 11.214999999999995, "mode": "flex_auto"}
+{"ts": 1777469023.7417657, "event": "auto_assign_applied", "drone_ids": [2, 6], "proposed_channels": {"2": "blue", "6": "red"}, "infeasible": false, "elapsed": 11.214999999999995}
+{"ts": 1777469025.7710955, "event": "switch_requested", "drone_id": 11, "from_channel": "green", "to_channel": "red", "elapsed": 13.243999999999964, "mode": "flex_auto"}
+{"ts": 1777469025.7710955, "event": "auto_assign_applied", "drone_ids": [7, 11], "proposed_channels": {"7": "red", "11": "red"}, "infeasible": false, "elapsed": 13.243999999999964}
+{"ts": 1777469026.2406213, "event": "clash_end", "elapsed": 13.71399999999996, "clash_seconds_so_far": 16.443999999999864}
+{"ts": 1777469026.7574675, "event": "clash_start", "elapsed": 14.230999999999954, "pairs": [[1, 6]]}
+{"ts": 1777469026.7744167, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 14.247999999999953, "mode": "flex_auto"}
+{"ts": 1777469026.7744167, "event": "auto_assign_applied", "drone_ids": [1, 5], "proposed_channels": {"1": "blue", "5": "blue"}, "infeasible": false, "elapsed": 14.247999999999953}
+{"ts": 1777469027.2819924, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "blue", "elapsed": 14.754999999999947, "mode": "flex_auto"}
+{"ts": 1777469027.2819924, "event": "auto_assign_applied", "drone_ids": [2, 6], "proposed_channels": {"2": "blue", "6": "blue"}, "infeasible": false, "elapsed": 14.754999999999947}
+{"ts": 1777469029.3409162, "event": "auto_assign_applied", "drone_ids": [7, 11], "proposed_channels": {"7": "red", "11": "red"}, "infeasible": false, "elapsed": 16.813999999999876}
+{"ts": 1777469030.3685026, "event": "switch_requested", "drone_id": 1, "from_channel": "blue", "to_channel": "red", "elapsed": 17.84199999999981, "mode": "flex_auto"}
+{"ts": 1777469030.3685026, "event": "switch_requested", "drone_id": 5, "from_channel": "blue", "to_channel": "green", "elapsed": 17.84199999999981, "mode": "flex_auto"}
+{"ts": 1777469030.3685026, "event": "auto_assign_applied", "drone_ids": [1, 5], "proposed_channels": {"1": "red", "5": "green"}, "infeasible": false, "elapsed": 17.84199999999981}
+{"ts": 1777469030.8689914, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "green", "elapsed": 18.341999999999782, "mode": "flex_auto"}
+{"ts": 1777469030.8689914, "event": "auto_assign_applied", "drone_ids": [2, 6], "proposed_channels": {"2": "blue", "6": "green"}, "infeasible": false, "elapsed": 18.341999999999782}
+{"ts": 1777469031.2021286, "event": "popup_opened", "drone_id": 11, "elapsed": 18.658999999999764}
+{"ts": 1777469032.8954546, "event": "auto_assign_applied", "drone_ids": [7, 11], "proposed_channels": {"7": "red", "11": "red"}, "infeasible": false, "elapsed": 20.36899999999966}
+{"ts": 1777469033.443471, "event": "switch_requested", "drone_id": 11, "from_channel": "red", "to_channel": "green", "elapsed": 20.899999999999626, "mode": "M1"}
+{"ts": 1777469033.443471, "event": "popup_dismissed", "drone_id": 11, "elapsed": 20.899999999999626}
+{"ts": 1777469033.9247925, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "blue", "elapsed": 21.397999999999595, "mode": "flex_auto"}
+{"ts": 1777469033.9247925, "event": "auto_assign_applied", "drone_ids": [1, 5], "proposed_channels": {"1": "red", "5": "blue"}, "infeasible": false, "elapsed": 21.397999999999595}
+{"ts": 1777469034.4246175, "event": "switch_requested", "drone_id": 6, "from_channel": "green", "to_channel": "red", "elapsed": 21.897999999999566, "mode": "flex_auto"}
+{"ts": 1777469034.4246175, "event": "auto_assign_applied", "drone_ids": [6], "proposed_channels": {"6": "red"}, "infeasible": false, "elapsed": 21.897999999999566}
+{"ts": 1777469034.4246175, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "green", "elapsed": 21.897999999999566, "mode": "flex_auto"}
+{"ts": 1777469034.4246175, "event": "auto_assign_applied", "drone_ids": [2], "proposed_channels": {"2": "green"}, "infeasible": false, "elapsed": 21.897999999999566}
+{"ts": 1777469036.9320085, "event": "clash_end", "elapsed": 24.40499999999941, "clash_seconds_so_far": 42.93199999999937}
+{"ts": 1777469037.4301996, "event": "clash_start", "elapsed": 24.90299999999938, "pairs": [[1, 6]]}
+{"ts": 1777469037.4801822, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "green", "elapsed": 24.952999999999378, "mode": "flex_auto"}
+{"ts": 1777469037.4801822, "event": "auto_assign_applied", "drone_ids": [1, 5], "proposed_channels": {"1": "green", "5": "blue"}, "infeasible": false, "elapsed": 24.952999999999378}
+{"ts": 1777469037.9933023, "event": "auto_assign_applied", "drone_ids": [6], "proposed_channels": {"6": "red"}, "infeasible": false, "elapsed": 25.466999999999345}
+{"ts": 1777469040.4888654, "event": "clash_end", "elapsed": 27.961999999999197, "clash_seconds_so_far": 45.99099999999955}
+{"ts": 1777469042.0377462, "event": "clash_start", "elapsed": 29.510999999999108, "pairs": [[2, 3]]}
+{"ts": 1777469042.0707843, "event": "switch_requested", "drone_id": 3, "from_channel": "green", "to_channel": "blue", "elapsed": 29.543999999999105, "mode": "flex_auto"}
+{"ts": 1777469042.0712879, "event": "switch_requested", "drone_id": 11, "from_channel": "green", "to_channel": "blue", "elapsed": 29.543999999999105, "mode": "flex_auto"}
+{"ts": 1777469042.0712879, "event": "auto_assign_applied", "drone_ids": [3, 2, 11, 7], "proposed_channels": {"2": "green", "7": "red", "3": "blue", "11": "blue"}, "infeasible": false, "elapsed": 29.543999999999105}
+{"ts": 1777469045.0785868, "event": "clash_end", "elapsed": 32.55199999999898, "clash_seconds_so_far": 49.03199999999976}
+{"ts": 1777469049.074574, "event": "clash_start", "elapsed": 36.54799999999924, "pairs": [[4, 9]]}
+{"ts": 1777469049.1895854, "event": "switch_requested", "drone_id": 9, "from_channel": "green", "to_channel": "blue", "elapsed": 36.66299999999924, "mode": "flex_auto"}
+{"ts": 1777469049.1895854, "event": "switch_requested", "drone_id": 10, "from_channel": "blue", "to_channel": "red", "elapsed": 36.66299999999924, "mode": "flex_auto"}
+{"ts": 1777469049.1895854, "event": "auto_assign_applied", "drone_ids": [8, 9, 10, 4], "proposed_channels": {"8": "red", "9": "blue", "10": "red", "4": "green"}, "infeasible": false, "elapsed": 36.66299999999924}
+{"ts": 1777469049.421925, "event": "popup_opened", "drone_id": 9, "elapsed": 36.877999999999254}
+{"ts": 1777469052.251918, "event": "switch_requested", "drone_id": 5, "from_channel": "blue", "to_channel": "red", "elapsed": 39.724999999999376, "mode": "flex_auto"}
+{"ts": 1777469052.251918, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "blue", "elapsed": 39.724999999999376, "mode": "flex_auto"}
+{"ts": 1777469052.251918, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"1": "green", "5": "red", "2": "green", "7": "red", "11": "blue", "3": "blue", "6": "blue"}, "infeasible": false, "elapsed": 39.724999999999376}
+{"ts": 1777469052.765159, "event": "auto_assign_applied", "drone_ids": [4, 8, 9, 10], "proposed_channels": {"8": "red", "9": "blue", "10": "red", "4": "green"}, "infeasible": false, "elapsed": 40.237999999999396}
+{"ts": 1777469055.818254, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "blue", "elapsed": 43.291999999999554, "mode": "flex_auto"}
+{"ts": 1777469055.818254, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 43.291999999999554, "mode": "flex_auto"}
+{"ts": 1777469055.818254, "event": "switch_requested", "drone_id": 2, "from_channel": "green", "to_channel": "red", "elapsed": 43.291999999999554, "mode": "flex_auto"}
+{"ts": 1777469055.818254, "event": "switch_requested", "drone_id": 7, "from_channel": "red", "to_channel": "green", "elapsed": 43.291999999999554, "mode": "flex_auto"}
+{"ts": 1777469055.818254, "event": "switch_requested", "drone_id": 11, "from_channel": "blue", "to_channel": "red", "elapsed": 43.291999999999554, "mode": "flex_auto"}
+{"ts": 1777469055.818254, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"1": "blue", "5": "green", "2": "red", "7": "green", "11": "red", "3": "blue", "6": "blue"}, "infeasible": false, "elapsed": 43.291999999999554}
+{"ts": 1777469056.3311362, "event": "switch_requested", "drone_id": 10, "from_channel": "red", "to_channel": "green", "elapsed": 43.803999999999576, "mode": "flex_auto"}
+{"ts": 1777469056.3311362, "event": "auto_assign_applied", "drone_ids": [4, 8, 9, 10], "proposed_channels": {"8": "red", "9": "blue", "10": "green", "4": "green"}, "infeasible": false, "elapsed": 43.803999999999576}
+{"ts": 1777469059.4000654, "event": "switch_requested", "drone_id": 1, "from_channel": "blue", "to_channel": "green", "elapsed": 46.87299999999975, "mode": "flex_auto"}
+{"ts": 1777469059.4000654, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "green", "elapsed": 46.87299999999975, "mode": "flex_auto"}
+{"ts": 1777469059.4000654, "event": "switch_requested", "drone_id": 7, "from_channel": "green", "to_channel": "blue", "elapsed": 46.87299999999975, "mode": "flex_auto"}
+{"ts": 1777469059.4000654, "event": "switch_requested", "drone_id": 3, "from_channel": "blue", "to_channel": "red", "elapsed": 46.87299999999975, "mode": "flex_auto"}
+{"ts": 1777469059.4000654, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "red", "elapsed": 46.87299999999975, "mode": "flex_auto"}
+{"ts": 1777469059.4000654, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"1": "green", "5": "green", "11": "red", "2": "green", "7": "blue", "3": "red", "6": "red"}, "infeasible": false, "elapsed": 46.87299999999975}
+{"ts": 1777469059.9001997, "event": "switch_requested", "drone_id": 10, "from_channel": "green", "to_channel": "red", "elapsed": 47.37399999999978, "mode": "flex_auto"}
+{"ts": 1777469059.9001997, "event": "switch_requested", "drone_id": 9, "from_channel": "blue", "to_channel": "green", "elapsed": 47.37399999999978, "mode": "flex_auto"}
+{"ts": 1777469059.9001997, "event": "switch_requested", "drone_id": 8, "from_channel": "red", "to_channel": "green", "elapsed": 47.37399999999978, "mode": "flex_auto"}
+{"ts": 1777469059.9001997, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "red", "elapsed": 47.37399999999978, "mode": "flex_auto"}
+{"ts": 1777469059.9001997, "event": "auto_assign_applied", "drone_ids": [4, 8, 9, 10], "proposed_channels": {"10": "red", "9": "green", "8": "green", "4": "red"}, "infeasible": false, "elapsed": 47.37399999999978}
+{"ts": 1777469062.9663599, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "red", "elapsed": 50.43999999999995, "mode": "flex_auto"}
+{"ts": 1777469062.9663599, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "blue", "elapsed": 50.43999999999995, "mode": "flex_auto"}
+{"ts": 1777469062.9663599, "event": "auto_assign_applied", "drone_ids": [1, 5, 6, 11], "proposed_channels": {"1": "red", "5": "green", "11": "red", "6": "blue"}, "infeasible": false, "elapsed": 50.43999999999995}
+{"ts": 1777469063.481064, "event": "switch_requested", "drone_id": 9, "from_channel": "green", "to_channel": "red", "elapsed": 50.95399999999998, "mode": "flex_auto"}
+{"ts": 1777469063.481064, "event": "switch_requested", "drone_id": 8, "from_channel": "green", "to_channel": "blue", "elapsed": 50.95399999999998, "mode": "flex_auto"}
+{"ts": 1777469063.481064, "event": "switch_requested", "drone_id": 4, "from_channel": "red", "to_channel": "green", "elapsed": 50.95399999999998, "mode": "flex_auto"}
+{"ts": 1777469063.481064, "event": "auto_assign_applied", "drone_ids": [4, 8, 9, 10], "proposed_channels": {"9": "red", "8": "blue", "10": "red", "4": "green"}, "infeasible": false, "elapsed": 50.95399999999998}
+{"ts": 1777469066.0414917, "event": "switch_requested", "drone_id": 0, "from_channel": "blue", "to_channel": "red", "elapsed": 53.51500000000013, "mode": "flex_auto"}
+{"ts": 1777469066.0414917, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 53.51500000000013}
+{"ts": 1777469066.556607, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "red", "elapsed": 54.03000000000016, "mode": "flex_auto"}
+{"ts": 1777469066.556607, "event": "auto_assign_applied", "drone_ids": [1, 5, 6, 11], "proposed_channels": {"11": "red", "5": "green", "1": "red", "6": "red"}, "infeasible": false, "elapsed": 54.03000000000016}
+{"ts": 1777469067.0592375, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "green", "elapsed": 54.532000000000195, "mode": "flex_auto"}
+{"ts": 1777469067.0592375, "event": "switch_requested", "drone_id": 10, "from_channel": "red", "to_channel": "blue", "elapsed": 54.532000000000195, "mode": "flex_auto"}
+{"ts": 1777469067.0592375, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "red", "elapsed": 54.532000000000195, "mode": "flex_auto"}
+{"ts": 1777469067.0592375, "event": "auto_assign_applied", "drone_ids": [4, 8, 9, 10], "proposed_channels": {"9": "green", "8": "blue", "10": "blue", "4": "red"}, "infeasible": false, "elapsed": 54.532000000000195}
+{"ts": 1777469069.6069915, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "blue", "elapsed": 57.080000000000375, "mode": "flex_auto"}
+{"ts": 1777469069.6069915, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "blue"}, "infeasible": false, "elapsed": 57.080000000000375}
+{"ts": 1777469070.1084623, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 57.58200000000041, "mode": "flex_auto"}
+{"ts": 1777469070.1084623, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "green", "elapsed": 57.58200000000041, "mode": "flex_auto"}
+{"ts": 1777469070.1084623, "event": "auto_assign_applied", "drone_ids": [1, 5, 6, 11], "proposed_channels": {"11": "red", "1": "red", "5": "red", "6": "green"}, "infeasible": false, "elapsed": 57.58200000000041}
+{"ts": 1777469070.620112, "event": "switch_requested", "drone_id": 8, "from_channel": "blue", "to_channel": "green", "elapsed": 58.09300000000043, "mode": "flex_auto"}
+{"ts": 1777469070.620112, "event": "switch_requested", "drone_id": 9, "from_channel": "green", "to_channel": "blue", "elapsed": 58.09300000000043, "mode": "flex_auto"}
+{"ts": 1777469070.620112, "event": "auto_assign_applied", "drone_ids": [8, 9, 10], "proposed_channels": {"8": "green", "10": "blue", "9": "blue"}, "infeasible": false, "elapsed": 58.09300000000043}
+{"ts": 1777469071.1291232, "event": "switch_requested", "drone_id": 4, "from_channel": "red", "to_channel": "blue", "elapsed": 58.60200000000044, "mode": "flex_auto"}
+{"ts": 1777469071.1291232, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "blue"}, "infeasible": false, "elapsed": 58.60200000000044}
+{"ts": 1777469072.616932, "event": "clash_end", "elapsed": 60.0900000000005, "clash_seconds_so_far": 98.14200000000045}
+{"ts": 1777469072.6505785, "event": "clash_start", "elapsed": 60.12400000000051, "pairs": [[6, 11]]}
+{"ts": 1777469073.1650481, "event": "switch_requested", "drone_id": 0, "from_channel": "blue", "to_channel": "red", "elapsed": 60.63800000000052, "mode": "flex_auto"}
+{"ts": 1777469073.1650481, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 60.63800000000052}
+{"ts": 1777469073.679884, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 61.153000000000546, "mode": "flex_auto"}
+{"ts": 1777469073.679884, "event": "switch_requested", "drone_id": 6, "from_channel": "green", "to_channel": "red", "elapsed": 61.153000000000546, "mode": "flex_auto"}
+{"ts": 1777469073.679884, "event": "auto_assign_applied", "drone_ids": [1, 5, 6, 11], "proposed_channels": {"11": "red", "5": "green", "6": "red", "1": "red"}, "infeasible": false, "elapsed": 61.153000000000546}
+{"ts": 1777469074.1932805, "event": "switch_requested", "drone_id": 9, "from_channel": "blue", "to_channel": "red", "elapsed": 61.66700000000058, "mode": "flex_auto"}
+{"ts": 1777469074.1932805, "event": "auto_assign_applied", "drone_ids": [8, 9, 10], "proposed_channels": {"8": "green", "9": "red", "10": "blue"}, "infeasible": false, "elapsed": 61.66700000000058}
+{"ts": 1777469074.7088234, "event": "switch_requested", "drone_id": 4, "from_channel": "blue", "to_channel": "red", "elapsed": 62.182000000000606, "mode": "flex_auto"}
+{"ts": 1777469074.7088234, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "red"}, "infeasible": false, "elapsed": 62.182000000000606}
+{"ts": 1777469076.7419264, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 64.2150000000007}
+{"ts": 1777469077.2508206, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 64.72400000000074, "mode": "flex_auto"}
+{"ts": 1777469077.2508206, "event": "auto_assign_applied", "drone_ids": [1, 5, 6, 11], "proposed_channels": {"5": "red", "11": "red", "1": "red", "6": "red"}, "infeasible": false, "elapsed": 64.72400000000074}
+{"ts": 1777469077.7648005, "event": "switch_requested", "drone_id": 8, "from_channel": "green", "to_channel": "red", "elapsed": 65.23800000000074, "mode": "flex_auto"}
+{"ts": 1777469077.7648005, "event": "switch_requested", "drone_id": 10, "from_channel": "blue", "to_channel": "red", "elapsed": 65.23800000000074, "mode": "flex_auto"}
+{"ts": 1777469077.7648005, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "green", "elapsed": 65.23800000000074, "mode": "flex_auto"}
+{"ts": 1777469077.7648005, "event": "auto_assign_applied", "drone_ids": [8, 9, 10], "proposed_channels": {"8": "red", "10": "red", "9": "green"}, "infeasible": false, "elapsed": 65.23800000000074}
+{"ts": 1777469078.266041, "event": "switch_requested", "drone_id": 4, "from_channel": "red", "to_channel": "green", "elapsed": 65.7390000000007, "mode": "flex_auto"}
+{"ts": 1777469078.266041, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "green"}, "infeasible": false, "elapsed": 65.7390000000007}
+{"ts": 1777469080.3092918, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "blue", "elapsed": 67.78300000000083, "mode": "flex_auto"}
+{"ts": 1777469080.3092918, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "blue"}, "infeasible": false, "elapsed": 67.78300000000083}
+{"ts": 1777469080.8260243, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 68.29900000000086, "mode": "flex_auto"}
+{"ts": 1777469080.8260243, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "blue", "elapsed": 68.29900000000086, "mode": "flex_auto"}
+{"ts": 1777469080.8260243, "event": "switch_requested", "drone_id": 2, "from_channel": "green", "to_channel": "red", "elapsed": 68.29900000000086, "mode": "flex_auto"}
+{"ts": 1777469080.8260243, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 68.29900000000086, "mode": "flex_auto"}
+{"ts": 1777469080.8260243, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "green", "7": "blue", "6": "blue", "11": "red", "2": "red", "3": "red", "1": "blue"}, "infeasible": false, "elapsed": 68.29900000000086}
+{"ts": 1777469081.3371258, "event": "switch_requested", "drone_id": 8, "from_channel": "red", "to_channel": "green", "elapsed": 68.81000000000088, "mode": "flex_auto"}
+{"ts": 1777469081.3371258, "event": "switch_requested", "drone_id": 9, "from_channel": "green", "to_channel": "blue", "elapsed": 68.81000000000088, "mode": "flex_auto"}
+{"ts": 1777469081.3371258, "event": "switch_requested", "drone_id": 10, "from_channel": "red", "to_channel": "green", "elapsed": 68.81000000000088, "mode": "flex_auto"}
+{"ts": 1777469081.3371258, "event": "auto_assign_applied", "drone_ids": [8, 9, 10], "proposed_channels": {"8": "green", "9": "blue", "10": "green"}, "infeasible": false, "elapsed": 68.81000000000088}
+{"ts": 1777469081.8504336, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "green"}, "infeasible": false, "elapsed": 69.3240000000009}
+{"ts": 1777469083.198249, "event": "popup_opened", "drone_id": 4, "elapsed": 70.65400000000088}
+{"ts": 1777469083.666286, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "blue", "elapsed": 71.12300000000086, "mode": "M1"}
+{"ts": 1777469083.666286, "event": "popup_dismissed", "drone_id": 4, "elapsed": 71.12300000000086}
+{"ts": 1777469083.8781726, "event": "switch_requested", "drone_id": 0, "from_channel": "blue", "to_channel": "red", "elapsed": 71.3510000000009, "mode": "flex_auto"}
+{"ts": 1777469083.8781726, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 71.3510000000009}
+{"ts": 1777469084.3798242, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 71.85300000000086, "mode": "flex_auto"}
+{"ts": 1777469084.3798242, "event": "switch_requested", "drone_id": 7, "from_channel": "blue", "to_channel": "green", "elapsed": 71.85300000000086, "mode": "flex_auto"}
+{"ts": 1777469084.3798242, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "blue", "elapsed": 71.85300000000086, "mode": "flex_auto"}
+{"ts": 1777469084.3798242, "event": "switch_requested", "drone_id": 1, "from_channel": "blue", "to_channel": "red", "elapsed": 71.85300000000086, "mode": "flex_auto"}
+{"ts": 1777469084.3798242, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "red", "7": "green", "6": "blue", "11": "red", "2": "blue", "3": "red", "1": "red"}, "infeasible": false, "elapsed": 71.85300000000086}
+{"ts": 1777469084.882344, "event": "switch_requested", "drone_id": 9, "from_channel": "blue", "to_channel": "red", "elapsed": 72.35600000000089, "mode": "flex_auto"}
+{"ts": 1777469084.882344, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "red"}, "infeasible": false, "elapsed": 72.35600000000089}
+{"ts": 1777469084.882344, "event": "switch_requested", "drone_id": 10, "from_channel": "green", "to_channel": "red", "elapsed": 72.35600000000089, "mode": "flex_auto"}
+{"ts": 1777469084.882344, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "red", "8": "green"}, "infeasible": false, "elapsed": 72.35600000000089}
+{"ts": 1777469086.9411693, "event": "switch_requested", "drone_id": 4, "from_channel": "blue", "to_channel": "green", "elapsed": 74.41400000000093, "mode": "flex_auto"}
+{"ts": 1777469086.9411693, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "green"}, "infeasible": false, "elapsed": 74.41400000000093}
+{"ts": 1777469087.042226, "event": "popup_opened", "drone_id": 9, "elapsed": 74.4990000000009}
+{"ts": 1777469087.453296, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 74.92700000000093}
+{"ts": 1777469087.9691875, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 75.44200000000093, "mode": "flex_auto"}
+{"ts": 1777469087.9691875, "event": "switch_requested", "drone_id": 7, "from_channel": "green", "to_channel": "blue", "elapsed": 75.44200000000093, "mode": "flex_auto"}
+{"ts": 1777469087.9691875, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "green", "elapsed": 75.44200000000093, "mode": "flex_auto"}
+{"ts": 1777469087.9691875, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "red", "elapsed": 75.44200000000093, "mode": "flex_auto"}
+{"ts": 1777469087.9691875, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 75.44200000000093, "mode": "flex_auto"}
+{"ts": 1777469087.9691875, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "green", "7": "blue", "6": "green", "11": "red", "2": "red", "3": "red", "1": "blue"}, "infeasible": false, "elapsed": 75.44200000000093}
+{"ts": 1777469088.3521483, "event": "popup_dismissed", "drone_id": 9, "elapsed": 75.8090000000009}
+{"ts": 1777469088.4841218, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "green", "elapsed": 75.95700000000092, "mode": "flex_auto"}
+{"ts": 1777469088.4841218, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "green"}, "infeasible": false, "elapsed": 75.95700000000092}
+{"ts": 1777469088.4841218, "event": "switch_requested", "drone_id": 10, "from_channel": "red", "to_channel": "green", "elapsed": 75.95700000000092, "mode": "flex_auto"}
+{"ts": 1777469088.4841218, "event": "switch_requested", "drone_id": 8, "from_channel": "green", "to_channel": "blue", "elapsed": 75.95700000000092, "mode": "flex_auto"}
+{"ts": 1777469088.4841218, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "green", "8": "blue"}, "infeasible": false, "elapsed": 75.95700000000092}
+{"ts": 1777469088.9598987, "event": "popup_opened", "drone_id": 9, "elapsed": 76.41600000000086}
+{"ts": 1777469090.1275673, "event": "popup_dismissed", "drone_id": 9, "elapsed": 77.58500000000079}
+{"ts": 1777469090.1275673, "event": "arena_click_miss", "x": 332, "y": 1053, "elapsed": 77.58500000000079}
+{"ts": 1777469090.5272162, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "green"}, "infeasible": false, "elapsed": 78.0000000000008}
+{"ts": 1777469091.0411184, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 78.5140000000008}
+{"ts": 1777469091.5566056, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 79.03000000000078, "mode": "flex_auto"}
+{"ts": 1777469091.5566056, "event": "switch_requested", "drone_id": 6, "from_channel": "green", "to_channel": "red", "elapsed": 79.03000000000078, "mode": "flex_auto"}
+{"ts": 1777469091.5566056, "event": "switch_requested", "drone_id": 11, "from_channel": "red", "to_channel": "green", "elapsed": 79.03000000000078, "mode": "flex_auto"}
+{"ts": 1777469091.5566056, "event": "switch_requested", "drone_id": 1, "from_channel": "blue", "to_channel": "red", "elapsed": 79.03000000000078, "mode": "flex_auto"}
+{"ts": 1777469091.5566056, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "blue", "elapsed": 79.03000000000078, "mode": "flex_auto"}
+{"ts": 1777469091.5566056, "event": "switch_requested", "drone_id": 3, "from_channel": "red", "to_channel": "green", "elapsed": 79.03000000000078, "mode": "flex_auto"}
+{"ts": 1777469091.5566056, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "red", "7": "blue", "6": "red", "11": "green", "1": "red", "2": "blue", "3": "green"}, "infeasible": false, "elapsed": 79.03000000000078}
+{"ts": 1777469092.0659702, "event": "switch_requested", "drone_id": 9, "from_channel": "green", "to_channel": "blue", "elapsed": 79.53900000000083, "mode": "flex_auto"}
+{"ts": 1777469092.0659702, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "blue"}, "infeasible": false, "elapsed": 79.53900000000083}
+{"ts": 1777469092.0659702, "event": "switch_requested", "drone_id": 10, "from_channel": "green", "to_channel": "red", "elapsed": 79.53900000000083, "mode": "flex_auto"}
+{"ts": 1777469092.0659702, "event": "switch_requested", "drone_id": 8, "from_channel": "blue", "to_channel": "green", "elapsed": 79.53900000000083, "mode": "flex_auto"}
+{"ts": 1777469092.0659702, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "red", "8": "green"}, "infeasible": false, "elapsed": 79.53900000000083}
+{"ts": 1777469092.114689, "event": "popup_opened", "drone_id": 4, "elapsed": 79.57200000000083}
+{"ts": 1777469094.1071103, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "blue", "elapsed": 81.58000000000085, "mode": "flex_auto"}
+{"ts": 1777469094.1071103, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "blue"}, "infeasible": false, "elapsed": 81.58000000000085}
+{"ts": 1777469094.6086304, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 82.08200000000085}
+{"ts": 1777469095.0924647, "event": "popup_dismissed", "drone_id": 4, "elapsed": 82.54900000000083}
+{"ts": 1777469095.0924647, "event": "arena_click_miss", "x": 511, "y": 542, "elapsed": 82.54900000000083}
+{"ts": 1777469095.1089294, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 82.58200000000083, "mode": "flex_auto"}
+{"ts": 1777469095.1089294, "event": "switch_requested", "drone_id": 11, "from_channel": "green", "to_channel": "blue", "elapsed": 82.58200000000083, "mode": "flex_auto"}
+{"ts": 1777469095.1089294, "event": "switch_requested", "drone_id": 3, "from_channel": "green", "to_channel": "red", "elapsed": 82.58200000000083, "mode": "flex_auto"}
+{"ts": 1777469095.1089294, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "green", "11": "blue", "6": "red", "7": "blue", "1": "red", "3": "red", "2": "blue"}, "infeasible": false, "elapsed": 82.58200000000083}
+{"ts": 1777469095.609172, "event": "switch_requested", "drone_id": 10, "from_channel": "red", "to_channel": "blue", "elapsed": 83.08200000000083, "mode": "flex_auto"}
+{"ts": 1777469095.609172, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "blue", "8": "green"}, "infeasible": false, "elapsed": 83.08200000000083}
+{"ts": 1777469095.9380004, "event": "popup_opened", "drone_id": 4, "elapsed": 83.39500000000085}
+{"ts": 1777469097.1426113, "event": "switch_requested", "drone_id": 9, "from_channel": "blue", "to_channel": "red", "elapsed": 84.61600000000081, "mode": "flex_auto"}
+{"ts": 1777469097.1426113, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "red"}, "infeasible": false, "elapsed": 84.61600000000081}
+{"ts": 1777469097.3756597, "event": "popup_dismissed", "drone_id": 4, "elapsed": 84.83200000000082}
+{"ts": 1777469097.3756597, "event": "arena_click_miss", "x": 451, "y": 401, "elapsed": 84.83200000000082}
+{"ts": 1777469097.6567202, "event": "switch_requested", "drone_id": 4, "from_channel": "blue", "to_channel": "green", "elapsed": 85.13000000000082, "mode": "flex_auto"}
+{"ts": 1777469097.6567202, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "green"}, "infeasible": false, "elapsed": 85.13000000000082}
+{"ts": 1777469098.1569016, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 85.63000000000079}
+{"ts": 1777469098.6726878, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 86.14600000000077, "mode": "flex_auto"}
+{"ts": 1777469098.6726878, "event": "switch_requested", "drone_id": 7, "from_channel": "blue", "to_channel": "green", "elapsed": 86.14600000000077, "mode": "flex_auto"}
+{"ts": 1777469098.6726878, "event": "switch_requested", "drone_id": 3, "from_channel": "red", "to_channel": "blue", "elapsed": 86.14600000000077, "mode": "flex_auto"}
+{"ts": 1777469098.6726878, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "green", "elapsed": 86.14600000000077, "mode": "flex_auto"}
+{"ts": 1777469098.6726878, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "red", "11": "blue", "7": "green", "6": "red", "1": "red", "3": "blue", "2": "green"}, "infeasible": false, "elapsed": 86.14600000000077}
+{"ts": 1777469099.1857166, "event": "switch_requested", "drone_id": 10, "from_channel": "blue", "to_channel": "red", "elapsed": 86.65900000000079, "mode": "flex_auto"}
+{"ts": 1777469099.1857166, "event": "switch_requested", "drone_id": 8, "from_channel": "green", "to_channel": "red", "elapsed": 86.65900000000079, "mode": "flex_auto"}
+{"ts": 1777469099.1857166, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "red", "8": "red"}, "infeasible": false, "elapsed": 86.65900000000079}
+{"ts": 1777469099.3419254, "event": "popup_opened", "drone_id": 4, "elapsed": 86.79600000000077}
+{"ts": 1777469099.9057584, "event": "popup_dismissed", "drone_id": 4, "elapsed": 87.36300000000078}
+{"ts": 1777469099.9057584, "event": "arena_click_miss", "x": 196, "y": 709, "elapsed": 87.36300000000078}
+{"ts": 1777469100.713066, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "blue", "elapsed": 88.18600000000083, "mode": "flex_auto"}
+{"ts": 1777469100.713066, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "blue"}, "infeasible": false, "elapsed": 88.18600000000083}
+{"ts": 1777469101.1145613, "event": "group_selected", "drone_ids": [4], "method": "box", "elapsed": 88.5710000000008}
+{"ts": 1777469101.215137, "event": "auto_assign_applied", "drone_ids": [4], "proposed_channels": {"4": "green"}, "infeasible": false, "elapsed": 88.68800000000078}
+{"ts": 1777469101.7272098, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "blue", "elapsed": 89.2000000000008, "mode": "flex_auto"}
+{"ts": 1777469101.7272098, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "blue"}, "infeasible": false, "elapsed": 89.2000000000008}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 7, "from_channel": "green", "to_channel": "blue", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 11, "from_channel": "blue", "to_channel": "red", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "green", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 3, "from_channel": "blue", "to_channel": "red", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "green", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "switch_requested", "drone_id": 2, "from_channel": "green", "to_channel": "blue", "elapsed": 89.71100000000082, "mode": "flex_auto"}
+{"ts": 1777469102.2378285, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "green", "7": "blue", "11": "red", "6": "green", "3": "red", "1": "green", "2": "blue"}, "infeasible": false, "elapsed": 89.71100000000082}
+{"ts": 1777469102.6080647, "event": "watch_cleared", "drones": [4], "elapsed": 90.06000000000081}
+{"ts": 1777469102.7394829, "event": "switch_requested", "drone_id": 8, "from_channel": "red", "to_channel": "green", "elapsed": 90.2130000000008, "mode": "flex_auto"}
+{"ts": 1777469102.7394829, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "red", "8": "green"}, "infeasible": false, "elapsed": 90.2130000000008}
+{"ts": 1777469104.7770143, "event": "switch_requested", "drone_id": 9, "from_channel": "blue", "to_channel": "red", "elapsed": 92.25000000000087, "mode": "flex_auto"}
+{"ts": 1777469104.7770143, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "red"}, "infeasible": false, "elapsed": 92.25000000000087}
+{"ts": 1777469104.7933042, "event": "group_deselected", "drone_ids": [4], "elapsed": 92.25000000000087}
+{"ts": 1777469104.7933042, "event": "popup_opened", "drone_id": 4, "elapsed": 92.25000000000087}
+{"ts": 1777469105.2871907, "event": "switch_requested", "drone_id": 0, "from_channel": "blue", "to_channel": "red", "elapsed": 92.76100000000089, "mode": "flex_auto"}
+{"ts": 1777469105.2871907, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "red"}, "infeasible": false, "elapsed": 92.76100000000089}
+{"ts": 1777469105.6218808, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "red", "elapsed": 93.07800000000088, "mode": "M1"}
+{"ts": 1777469105.6218808, "event": "popup_dismissed", "drone_id": 4, "elapsed": 93.07800000000088}
+{"ts": 1777469105.794947, "event": "switch_requested", "drone_id": 7, "from_channel": "blue", "to_channel": "green", "elapsed": 93.26800000000088, "mode": "flex_auto"}
+{"ts": 1777469105.794947, "event": "switch_requested", "drone_id": 6, "from_channel": "green", "to_channel": "blue", "elapsed": 93.26800000000088, "mode": "flex_auto"}
+{"ts": 1777469105.794947, "event": "switch_requested", "drone_id": 3, "from_channel": "red", "to_channel": "green", "elapsed": 93.26800000000088, "mode": "flex_auto"}
+{"ts": 1777469105.794947, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "red", "elapsed": 93.26800000000088, "mode": "flex_auto"}
+{"ts": 1777469105.794947, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "green", "7": "green", "6": "blue", "11": "red", "3": "green", "1": "green", "2": "red"}, "infeasible": false, "elapsed": 93.26800000000088}
+{"ts": 1777469106.3075306, "event": "switch_requested", "drone_id": 8, "from_channel": "green", "to_channel": "blue", "elapsed": 93.78100000000092, "mode": "flex_auto"}
+{"ts": 1777469106.3075306, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "red", "8": "blue"}, "infeasible": false, "elapsed": 93.78100000000092}
+{"ts": 1777469106.5228279, "event": "popup_opened", "drone_id": 4, "elapsed": 93.98000000000091}
+{"ts": 1777469108.3644645, "event": "switch_requested", "drone_id": 9, "from_channel": "red", "to_channel": "blue", "elapsed": 95.83800000000096, "mode": "flex_auto"}
+{"ts": 1777469108.3644645, "event": "auto_assign_applied", "drone_ids": [9], "proposed_channels": {"9": "blue"}, "infeasible": false, "elapsed": 95.83800000000096}
+{"ts": 1777469108.87778, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "green", "elapsed": 96.35100000000098, "mode": "flex_auto"}
+{"ts": 1777469108.87778, "event": "auto_assign_applied", "drone_ids": [0], "proposed_channels": {"0": "green"}, "infeasible": false, "elapsed": 96.35100000000098}
+{"ts": 1777469109.3932512, "event": "switch_requested", "drone_id": 7, "from_channel": "green", "to_channel": "blue", "elapsed": 96.86700000000098, "mode": "flex_auto"}
+{"ts": 1777469109.3932512, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "red", "elapsed": 96.86700000000098, "mode": "flex_auto"}
+{"ts": 1777469109.3932512, "event": "switch_requested", "drone_id": 11, "from_channel": "red", "to_channel": "green", "elapsed": 96.86700000000098, "mode": "flex_auto"}
+{"ts": 1777469109.3932512, "event": "switch_requested", "drone_id": 3, "from_channel": "green", "to_channel": "red", "elapsed": 96.86700000000098, "mode": "flex_auto"}
+{"ts": 1777469109.3932512, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "red", "elapsed": 96.86700000000098, "mode": "flex_auto"}
+{"ts": 1777469109.3932512, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "blue", "elapsed": 96.86700000000098, "mode": "flex_auto"}
+{"ts": 1777469109.3932512, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 11], "proposed_channels": {"5": "green", "7": "blue", "6": "red", "11": "green", "3": "red", "1": "red", "2": "blue"}, "infeasible": false, "elapsed": 96.86700000000098}
+{"ts": 1777469109.906024, "event": "auto_assign_applied", "drone_ids": [8, 10], "proposed_channels": {"10": "red", "8": "blue"}, "infeasible": false, "elapsed": 97.379000000001}
+{"ts": 1777469111.155392, "event": "popup_dismissed", "drone_id": 4, "elapsed": 98.61200000000095}
+{"ts": 1777469111.155392, "event": "arena_click_miss", "x": 484, "y": 766, "elapsed": 98.61200000000095}
+{"ts": 1777469112.4009867, "event": "clash_end", "elapsed": 99.87400000000096, "clash_seconds_so_far": 285.9430000000031}
+{"ts": 1777469121.7935753, "event": "clash_start", "elapsed": 109.26700000000072, "pairs": [[2, 7]]}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 7, "from_channel": "blue", "to_channel": "red", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 10, "from_channel": "red", "to_channel": "green", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "green", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 3, "from_channel": "red", "to_channel": "blue", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 5, "from_channel": "green", "to_channel": "red", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 6, "from_channel": "red", "to_channel": "blue", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "switch_requested", "drone_id": 11, "from_channel": "green", "to_channel": "red", "elapsed": 109.5350000000007, "mode": "flex_auto"}
+{"ts": 1777469122.0617774, "event": "auto_assign_applied", "drone_ids": [1, 2, 3, 5, 6, 7, 8, 10, 11], "proposed_channels": {"7": "red", "10": "green", "2": "green", "3": "blue", "5": "red", "1": "red", "6": "blue", "8": "blue", "11": "red"}, "infeasible": false, "elapsed": 109.5350000000007}
+{"ts": 1777469125.6046824, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "green", "elapsed": 113.07800000000069, "mode": "flex_auto"}
+{"ts": 1777469125.6046824, "event": "switch_requested", "drone_id": 2, "from_channel": "green", "to_channel": "blue", "elapsed": 113.07800000000069, "mode": "flex_auto"}
+{"ts": 1777469125.6046824, "event": "switch_requested", "drone_id": 3, "from_channel": "blue", "to_channel": "red", "elapsed": 113.07800000000069, "mode": "flex_auto"}
+{"ts": 1777469125.6046824, "event": "auto_assign_applied", "drone_ids": [2, 3, 5, 6, 7], "proposed_channels": {"7": "red", "5": "green", "2": "blue", "3": "red", "6": "blue"}, "infeasible": false, "elapsed": 113.07800000000069}
+{"ts": 1777469129.1898797, "event": "switch_requested", "drone_id": 7, "from_channel": "red", "to_channel": "blue", "elapsed": 116.6630000000007, "mode": "flex_auto"}
+{"ts": 1777469129.1898797, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "green", "elapsed": 116.6630000000007, "mode": "flex_auto"}
+{"ts": 1777469129.1898797, "event": "auto_assign_applied", "drone_ids": [2, 3, 5, 6, 7], "proposed_channels": {"5": "green", "7": "blue", "2": "blue", "3": "red", "6": "green"}, "infeasible": false, "elapsed": 116.6630000000007}
+{"ts": 1777469131.214724, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 118.68800000000071, "mode": "flex_auto"}
+{"ts": 1777469131.214724, "event": "switch_requested", "drone_id": 8, "from_channel": "blue", "to_channel": "red", "elapsed": 118.68800000000071, "mode": "flex_auto"}
+{"ts": 1777469131.214724, "event": "auto_assign_applied", "drone_ids": [1, 8], "proposed_channels": {"1": "blue", "8": "red"}, "infeasible": false, "elapsed": 118.68800000000071}
+{"ts": 1777469132.5365636, "event": "game_end", "elapsed": 120.01000000000066, "clash_seconds": 296.70400000000626, "clash_pct": 247.23273060578668}
+{"ts": 1777469146.2364814, "event": "key_down", "key": 32, "key_name": "space", "state": "ENDED", "elapsed": 120.01000000000066}

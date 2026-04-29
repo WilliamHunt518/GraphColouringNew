@@ -1,0 +1,7 @@
+participant_id,session_start,label,difficulty,tool_usefulness,manual_frequency,confidence
+Xudong Wu,20260428_155457,Easy-70pct,1,2,7,6
+Xudong Wu,20260428_155457,Medium-70pct,5,2,7,4
+Xudong Wu,20260428_155457,Hard-70pct,7,2,2,2
+Andrei,20260429_141018,Medium-70pct,5,4,3,4
+Andrei,20260429_141018,Easy-70pct,1,7,2,7
+Andrei,20260429_141018,Hard-70pct,6,4,5,3
