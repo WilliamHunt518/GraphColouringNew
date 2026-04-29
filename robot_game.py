@@ -261,7 +261,51 @@ def run_game(
 
             modes_in_comp = {drone_modes[d] for d in comp}
 
-            if "auto" in modes_in_comp:
+            if "auto" in modes_in_comp and "suggest" in modes_in_comp:
+                # Mixed component: randomly pick auto or suggest, then hold
+                if any(d in _auto_cooldown for d in comp):
+                    continue  # still in hold period after last decision
+                if world.rng.random() < 0.6:
+                    # Auto path
+                    eligible = [d for d in comp
+                                if world.robots[d].switching_to is None]
+                    if not eligible:
+                        continue
+                    proposed, _ = advisor.suggest(
+                        eligible, current_channels, list(world.edges),
+                        near_pairs=list(world.warning_pairs),
+                    )
+                    _apply_suggestion(world, proposed, logger, mode="flex_auto_mixed", instant=False)
+                    hold = world.switch_duration + 4.0
+                    for did in comp:
+                        _auto_cooldown[did] = hold
+                    ids_str = ",".join(f"D{d}" for d in sorted(eligible))
+                    snap = _make_log_snapshot(world, eligible, proposed)
+                    agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
+                    if len(agent_log) > 50:
+                        agent_log.pop(0)
+                    logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
+                else:
+                    # Suggest path
+                    if pending_suggestion is not None:
+                        continue
+                    if any(world.elapsed - _flex_apply_ts.get(d, -9999) < _SUGGEST_REFIRE_DELAY for d in comp):
+                        continue
+                    proposed, infeasible = advisor.suggest(
+                        list(comp), current_channels, list(world.edges),
+                        near_pairs=list(world.warning_pairs),
+                    )
+                    pending_suggestion   = proposed
+                    suggestion_overrides = dict(proposed)
+                    pending_infeasible   = infeasible
+                    for did in comp:
+                        _auto_cooldown[did] = 3.0
+                    agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  group: suggestion shown"))
+                    if len(agent_log) > 50:
+                        agent_log.pop(0)
+                    logger.log_suggestion_shown(list(comp), proposed, infeasible, world.elapsed)
+
+            elif "auto" in modes_in_comp:
                 eligible = [d for d in comp
                             if d not in _auto_cooldown
                             and world.robots[d].switching_to is None]
@@ -469,6 +513,14 @@ def run_game(
                         popup_drone_id = None
                         last_action    = "auto_assign_applied"
                         logger.log_group_deselected(old_sel, world.elapsed)
+                    return True
+
+                if "unwatch" in renderer.hud_button_rects \
+                        and renderer.hud_button_rects["unwatch"].collidepoint(mx, my):
+                    cleared = [d for d in selected_ids if d in drone_modes]
+                    for did in cleared:
+                        del drone_modes[did]
+                    logger.log("watch_cleared", drones=cleared, elapsed=world.elapsed)
                     return True
 
         return False

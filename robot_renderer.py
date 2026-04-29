@@ -585,6 +585,22 @@ class RobotRenderer:
                 self.hud_button_rects["watch_auto"] = wa_rect
             self._ps.blit(s, s.get_rect(center=wa_rect.center))
 
+            um_rect = pygame.Rect(px, start_y + 26 + (btn_h + gap) * 2, pw, btn_h)
+            any_watched = any(self._drone_modes.get(d) for d in selected_ids)
+            if "unwatch" in self._tutorial_disabled:
+                pygame.draw.rect(self._ps, (35, 30, 42), um_rect, border_radius=6)
+                pygame.draw.rect(self._ps, (70, 65, 85), um_rect, 2, border_radius=6)
+                s = self.fonts["popup"].render("Set: Manual", True, (85, 80, 105))
+            else:
+                um_fill = (55, 30, 10) if any_watched else (32, 30, 38)
+                um_bdr  = (210, 130, 50) if any_watched else (110, 100, 125)
+                um_col  = (240, 180, 110) if any_watched else (160, 150, 180)
+                pygame.draw.rect(self._ps, um_fill, um_rect, border_radius=6)
+                pygame.draw.rect(self._ps, um_bdr,  um_rect, 2, border_radius=6)
+                s = self.fonts["popup"].render("Set: Manual", True, um_col)
+                self.hud_button_rects["unwatch"] = um_rect
+            self._ps.blit(s, s.get_rect(center=um_rect.center))
+
         else:
             sug_rect = pygame.Rect(px, start_y + 26, pw, btn_h)
             if "suggest" in self._tutorial_disabled:
@@ -610,8 +626,12 @@ class RobotRenderer:
                 self.hud_button_rects["auto_assign"] = auto_rect
             self._ps.blit(s, s.get_rect(center=auto_rect.center))
 
-        self._panel_sep(start_y + 26 + btn_h * 2 + gap + 16)
-        self._draw_instructions(start_y=start_y + 26 + btn_h * 2 + gap + 26)
+        if self._flex_mode:
+            sep_y = start_y + 26 + (btn_h + gap) * 3 + 4
+        else:
+            sep_y = start_y + 26 + btn_h * 2 + gap + 16
+        self._panel_sep(sep_y)
+        self._draw_instructions(start_y=sep_y + 10)
 
     def _draw_instructions(self, start_y: int) -> None:
         px = self._px + self._panel_pad
