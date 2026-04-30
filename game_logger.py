@@ -78,10 +78,30 @@ class GameLogger:
                  infeasible=infeasible, elapsed=elapsed)
 
     def log_clash_start(self, elapsed: float, pairs: list) -> None:
-        self.log("clash_start", elapsed=elapsed, pairs=pairs)
+        self.log("clash_start", elapsed=elapsed, pairs=pairs, n_pairs=len(pairs))
+
+    def log_clash_update(
+        self, elapsed: float, pairs: list, added: list, removed: list,
+        clash_seconds_so_far: float,
+    ) -> None:
+        self.log("clash_update", elapsed=elapsed, pairs=pairs, n_pairs=len(pairs),
+                 added=added, removed=removed,
+                 clash_seconds_so_far=clash_seconds_so_far)
 
     def log_clash_end(self, elapsed: float, clash_seconds_so_far: float) -> None:
         self.log("clash_end", elapsed=elapsed, clash_seconds_so_far=clash_seconds_so_far)
+
+    def log_warning_start(self, elapsed: float, pairs: list) -> None:
+        self.log("warning_start", elapsed=elapsed, pairs=pairs, n_pairs=len(pairs))
+
+    def log_warning_update(
+        self, elapsed: float, pairs: list, added: list, removed: list,
+    ) -> None:
+        self.log("warning_update", elapsed=elapsed, pairs=pairs, n_pairs=len(pairs),
+                 added=added, removed=removed)
+
+    def log_warning_end(self, elapsed: float) -> None:
+        self.log("warning_end", elapsed=elapsed)
 
     def log_game_end(self, elapsed: float, clash_seconds: float) -> None:
         pct = clash_seconds / elapsed * 100 if elapsed else 0

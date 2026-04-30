@@ -191,7 +191,8 @@ def run_game(
     suggestion_overrides: Dict[int, str]           = {}
     pending_infeasible:   bool = False
 
-    prev_clashing = False
+    prev_clash_pairs:   frozenset = frozenset()
+    prev_warning_pairs: frozenset = frozenset()
     last_action:  Optional[str] = None
     result:       Optional[Dict] = None
     study_advance = False   # set True when user presses SPACE on ENDED in study_mode
@@ -582,8 +583,9 @@ def run_game(
                                 mouse_down_pos       = None
                                 drag_pos             = None
                                 is_dragging          = False
-                                prev_clashing        = False
-                                last_action          = None
+                                prev_clash_pairs      = frozenset()
+                                prev_warning_pairs    = frozenset()
+                                last_action           = None
                                 result               = None
                                 drone_modes.clear()
                                 agent_log.clear()
@@ -827,12 +829,35 @@ def run_game(
                 if agent_mode == "flexible":
                     _flex_tick(dt)
 
-                now_clashing = world.is_clashing
-                if now_clashing and not prev_clashing:
-                    logger.log_clash_start(world.elapsed, list(world.clashing_pairs))
-                elif not now_clashing and prev_clashing:
-                    logger.log_clash_end(world.elapsed, world.clash_seconds)
-                prev_clashing = now_clashing
+                now_clash_pairs = frozenset(world.clashing_pairs)
+                if now_clash_pairs != prev_clash_pairs:
+                    if not prev_clash_pairs and now_clash_pairs:
+                        logger.log_clash_start(world.elapsed, list(now_clash_pairs))
+                    elif prev_clash_pairs and not now_clash_pairs:
+                        logger.log_clash_end(world.elapsed, world.clash_seconds)
+                    else:
+                        added   = [list(p) for p in now_clash_pairs - prev_clash_pairs]
+                        removed = [list(p) for p in prev_clash_pairs - now_clash_pairs]
+                        logger.log_clash_update(
+                            world.elapsed, [list(p) for p in now_clash_pairs],
+                            added, removed, world.clash_seconds,
+                        )
+                    prev_clash_pairs = now_clash_pairs
+
+                now_warning_pairs = frozenset(world.warning_pairs)
+                if now_warning_pairs != prev_warning_pairs:
+                    if not prev_warning_pairs and now_warning_pairs:
+                        logger.log_warning_start(world.elapsed, [list(p) for p in now_warning_pairs])
+                    elif prev_warning_pairs and not now_warning_pairs:
+                        logger.log_warning_end(world.elapsed)
+                    else:
+                        added_w   = [list(p) for p in now_warning_pairs - prev_warning_pairs]
+                        removed_w = [list(p) for p in prev_warning_pairs - now_warning_pairs]
+                        logger.log_warning_update(
+                            world.elapsed, [list(p) for p in now_warning_pairs],
+                            added_w, removed_w,
+                        )
+                    prev_warning_pairs = now_warning_pairs
 
                 if world.is_over():
                     state = "ENDED"

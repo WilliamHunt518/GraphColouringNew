@@ -242,8 +242,8 @@ def reconstruct_clash_series(
     pair_counts[i] is the number of simultaneously clashing pairs between
     times[i] and times[i+1].
 
-    clash_start events carry ALL currently active pairs, not just new ones.
-    clash_end events signal zero active pairs.
+    clash_start / clash_update carry n_pairs (or len(pairs) as fallback).
+    clash_end signals zero active pairs.
     """
     times:  List[float] = [0.0]
     counts: List[int]   = [0]
@@ -253,9 +253,9 @@ def reconstruct_clash_series(
         t  = e.get("elapsed", 0.0)
         if t < 0:
             continue
-        if ev == "clash_start":
+        if ev in ("clash_start", "clash_update"):
             times.append(t)
-            counts.append(len(e.get("pairs", [])))
+            counts.append(e.get("n_pairs", len(e.get("pairs", []))))
         elif ev == "clash_end":
             times.append(t)
             counts.append(0)

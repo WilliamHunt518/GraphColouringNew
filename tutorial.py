@@ -957,7 +957,8 @@ def run_tutorial(
     drag_pos:           Optional[Tuple[int,int]] = None
     is_dragging         = False
     DRAG_THRESHOLD      = 5
-    prev_clashing       = False
+    prev_clash_pairs:   frozenset = frozenset()
+    prev_warning_pairs: frozenset = frozenset()
     step_start_ts       = time.time()
 
     def _sync_from_gs() -> None:
@@ -1482,12 +1483,35 @@ def run_tutorial(
             # ── Physics ───────────────────────────────────────────────────────
             if not director.is_frozen:
                 world.update(dt)
-                now_clashing = world.is_clashing
-                if now_clashing and not prev_clashing:
-                    logger.log_clash_start(world.elapsed, list(world.clashing_pairs))
-                elif not now_clashing and prev_clashing:
-                    logger.log_clash_end(world.elapsed, world.clash_seconds)
-                prev_clashing = now_clashing
+                now_clash_pairs = frozenset(world.clashing_pairs)
+                if now_clash_pairs != prev_clash_pairs:
+                    if not prev_clash_pairs and now_clash_pairs:
+                        logger.log_clash_start(world.elapsed, list(now_clash_pairs))
+                    elif prev_clash_pairs and not now_clash_pairs:
+                        logger.log_clash_end(world.elapsed, world.clash_seconds)
+                    else:
+                        added   = [list(p) for p in now_clash_pairs - prev_clash_pairs]
+                        removed = [list(p) for p in prev_clash_pairs - now_clash_pairs]
+                        logger.log_clash_update(
+                            world.elapsed, [list(p) for p in now_clash_pairs],
+                            added, removed, world.clash_seconds,
+                        )
+                    prev_clash_pairs = now_clash_pairs
+
+                now_warning_pairs = frozenset(world.warning_pairs)
+                if now_warning_pairs != prev_warning_pairs:
+                    if not prev_warning_pairs and now_warning_pairs:
+                        logger.log_warning_start(world.elapsed, [list(p) for p in now_warning_pairs])
+                    elif prev_warning_pairs and not now_warning_pairs:
+                        logger.log_warning_end(world.elapsed)
+                    else:
+                        added_w   = [list(p) for p in now_warning_pairs - prev_warning_pairs]
+                        removed_w = [list(p) for p in prev_warning_pairs - now_warning_pairs]
+                        logger.log_warning_update(
+                            world.elapsed, [list(p) for p in now_warning_pairs],
+                            added_w, removed_w,
+                        )
+                    prev_warning_pairs = now_warning_pairs
                 # Flex monitor: fires suggestion when watched drones clash
                 if flex_mode and not director.is_done:
                     step = director._steps[director._index]

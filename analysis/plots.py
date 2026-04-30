@@ -165,15 +165,41 @@ def plot_clash_area(p: ParticipantData, out_dir: Path) -> Path:
             ax.plot(sample_t, ma, color="black", linewidth=1.8,
                     linestyle="--", alpha=0.7, label="15s moving avg")
 
-        # Mark switch events
-        for e in trial.events:
-            if e["event"] == "switch_requested" and e.get("elapsed", 0) > 0:
-                col = MODE_COLORS.get(e.get("mode",""), "#555")
-                ax.axvline(e["elapsed"], color=col, alpha=0.3, linewidth=0.7)
+        # Mark switch events — group by mode to build shaded regions
+        switch_events = [
+            (e["elapsed"], e.get("mode", ""))
+            for e in trial.events
+            if e["event"] == "switch_requested" and e.get("elapsed", 0) > 0
+        ]
 
         max_c = max(c_arr) if len(c_arr) else 1
+        y_top = max(max_c + 0.5, 1.5)
+
+        # Shade inter-switch regions by the mode used in that segment
+        if switch_events:
+            region_boundaries = [0.0] + [t for t, _ in switch_events] + [duration]
+            region_modes      = [""] + [m for _, m in switch_events]
+            for k in range(len(switch_events)):
+                t0, t1 = region_boundaries[k], region_boundaries[k + 1]
+                m = region_modes[k + 1]
+                col = MODE_COLORS.get(m, "#888")
+                ax.axvspan(t0, t1, alpha=0.06, color=col, linewidth=0)
+
+        # Vertical lines + short mode labels at each switch
+        prev_t_label: Dict[str, float] = {}
+        for t_sw, mode in switch_events:
+            col = MODE_COLORS.get(mode, "#555")
+            ax.axvline(t_sw, color=col, alpha=0.7, linewidth=1.4, zorder=3)
+            short = mode.split("_")[0] if mode.startswith("flex") else mode
+            last  = prev_t_label.get(mode, -999)
+            if t_sw - last > duration * 0.04:
+                ax.text(t_sw + duration * 0.005, y_top * 0.92, short,
+                        color=col, fontsize=6, va="top", rotation=90,
+                        clip_on=True, zorder=4)
+                prev_t_label[mode] = t_sw
+
         ax.set_xlim(0, duration)
-        ax.set_ylim(-0.1, max(max_c + 0.5, 1.5))
+        ax.set_ylim(-0.1, y_top)
         ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
         ax.set_xlabel("Elapsed (s)")
         ax.set_ylabel("Clashing pairs")
@@ -182,9 +208,8 @@ def plot_clash_area(p: ParticipantData, out_dir: Path) -> Path:
             f"clash-pair-time  ({trial.summary.get('clash_pct',0):.0f}%)",
             fontsize=9
         )
-        ax.legend(fontsize=7, loc="upper right")
 
-    # Legend for switch modes
+    # Legend for switch modes (first subplot only)
     patches = [mpatches.Patch(color=c, alpha=0.7, label=MODE_LABELS.get(m, m))
                for m, c in MODE_COLORS.items() if m != "flex_auto_mixed"]
     axes[0][0].legend(handles=patches + [
@@ -565,7 +590,28 @@ def plot_group_clash_area(participants: List[ParticipantData], out_dir: Path) ->
                 ax.plot(st, np.convolve(sc, np.ones(win)/win, mode="same"),
                         color="black", linewidth=1.5, linestyle="--", alpha=0.6)
 
+            # Mode switch markers
+            max_c = max(c_arr) if len(c_arr) else 1
+            y_top = max(max_c + 0.5, 1.5)
+            switch_events = [
+                (e["elapsed"], e.get("mode", ""))
+                for e in trial.events
+                if e["event"] == "switch_requested" and e.get("elapsed", 0) > 0
+            ]
+            prev_t_label: Dict[str, float] = {}
+            for t_sw, mode in switch_events:
+                mcol = MODE_COLORS.get(mode, "#555")
+                ax.axvline(t_sw, color=mcol, alpha=0.65, linewidth=1.2, zorder=3)
+                short = mode.split("_")[0] if mode.startswith("flex") else mode
+                last  = prev_t_label.get(mode, -999)
+                if t_sw - last > duration * 0.05:
+                    ax.text(t_sw + duration * 0.005, y_top * 0.92, short,
+                            color=mcol, fontsize=5, va="top", rotation=90,
+                            clip_on=True, zorder=4)
+                    prev_t_label[mode] = t_sw
+
             ax.set_xlim(0, duration)
+            ax.set_ylim(-0.1, y_top)
             ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
             if ci == 0:
                 ax.set_ylabel(f"{_pid(p)}\n# clashing pairs", fontsize=8)
