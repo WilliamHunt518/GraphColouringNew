@@ -34,6 +34,10 @@ AGENT_MODES  = {"flex_auto", "flex_auto_mixed"}
 SETUP_MODES  = {"M3", "flex_watch_setup"}
 COMPLEXITY_ORDER = ["easy", "medium", "hard"]
 
+_MODES      = ["manual", "suggest", "auto"]
+_MODE_ITEMS = ["helpful", "trusted", "focus", "alongside"]
+_SUMM_QUANT = ["overall", "drone_count_helpfulness", "overload_preference"]
+
 # Window after suggestion_applied in which a clash_start involving the same
 # drones is treated as evidence the proposal was bad (epsilon noise hit)
 BAD_SUGGESTION_WINDOW = 5.0   # seconds (covers 3s switch + buffer)
@@ -330,11 +334,46 @@ def _extract_survey(sv: Dict) -> Dict[str, Any]:
         if k in sv: out[k] = sv[k]
     out["tam_mean"] = _safe_mean([sv[k] for k in tam_keys if k in sv])
 
+    # Per-mode ratings (helpful/trusted/focus/alongside for manual/suggest/auto)
+    for mode in _MODES:
+        vals = []
+        for item in _MODE_ITEMS:
+            k = f"mode_{mode}_{item}"
+            v = sv.get(k)
+            if v is not None and v != 0:
+                out[k] = v
+                vals.append(v)
+        if vals:
+            out[f"mode_{mode}_mean"] = _safe_mean(vals)
+
     return out
 
 
 def extract_summary_survey(participant) -> List[Dict[str, Any]]:
     ss = participant.summary_survey
+    if not ss:
+        return []
+
+    # New format: per-mode ratings with overall/drone_count_helpfulness/overload_preference
+    if any(k.startswith("mode_") for k in ss):
+        rows = []
+        for mode in _MODES:
+            row: Dict[str, Any] = {
+                "participant_id": participant.participant_id,
+                "pid_label":      participant.pid_label,
+                "mode":           mode,
+            }
+            for q in _SUMM_QUANT:
+                k = f"mode_{mode}_{q}"
+                if k in ss:
+                    row[q] = ss[k]
+            qual_k = f"mode_{mode}_qualitative"
+            if qual_k in ss:
+                row["qualitative"] = ss[qual_k]
+            rows.append(row)
+        return rows
+
+    # Legacy format: scenario-based ratings
     scenario_map = ss.get("scenario_map", {})
     rows = []
     for num_str, label in scenario_map.items():

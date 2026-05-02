@@ -26,7 +26,8 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from analysis.data_loader import load_all_participants, save_participant_map, ParticipantData, TrialData
-from analysis.metrics     import compute_trial_metrics, extract_summary_survey, COMPLEXITY_ORDER
+from analysis.metrics     import (compute_trial_metrics, extract_summary_survey,
+                                   COMPLEXITY_ORDER, _MODES, _MODE_ITEMS, _SUMM_QUANT)
 from analysis.plots       import (
     plot_performance_bars,
     plot_clash_area,
@@ -96,18 +97,30 @@ def _participant_text_block(p: ParticipantData) -> str:
             w(f"      TLX (mean)  : {_fmt(m.get('tlx_mean'))}/20   "
               f"Trust composite: {_fmt(m.get('trust_composite'))}/7   "
               f"TAM mean: {_fmt(m.get('tam_mean'))}/7")
+            mode_parts = [f"{md}={_fmt(m.get(f'mode_{md}_mean'), '.1f')}"
+                          for md in _MODES if m.get(f"mode_{md}_mean") is not None]
+            if mode_parts:
+                w(f"      Mode ratings: " + "  ".join(mode_parts) + " /7")
         w()
 
     # Post-session summary survey
     ss_rows = extract_summary_survey(p)
     if ss_rows:
         w("  Post-session summary survey:")
-        for row in ss_rows:
-            w(f"    {row.get('label','?'):25s}  "
-              f"difficulty={row.get('difficulty','?')}  "
-              f"tool_usefulness={row.get('tool_usefulness','?')}  "
-              f"manual_freq={row.get('manual_frequency','?')}  "
-              f"confidence={row.get('confidence','?')}")
+        if ss_rows and "mode" in ss_rows[0]:
+            for row in ss_rows:
+                quals = [f"{q}={row.get(q,'?')}" for q in _SUMM_QUANT]
+                w(f"    {row.get('mode','?'):8s}  " + "  ".join(quals))
+                qual = row.get("qualitative", "").strip()
+                if qual:
+                    w(f"             \"{qual[:100]}\"")
+        else:
+            for row in ss_rows:
+                w(f"    {row.get('label','?'):25s}  "
+                  f"difficulty={row.get('difficulty','?')}  "
+                  f"tool_usefulness={row.get('tool_usefulness','?')}  "
+                  f"manual_freq={row.get('manual_frequency','?')}  "
+                  f"confidence={row.get('confidence','?')}")
     w()
     return buf.getvalue()
 
@@ -164,6 +177,9 @@ def _write_trial_csv(participants: List[ParticipantData], out_path: Path) -> Non
         "trust_composite","trust_suspicious","trust_wary","trust_confident",
         "trust_reliable","trust_overall","trust_accepted",
         "tam_mean","tam_improved","tam_easy","tam_useful","tam_would_use",
+        # Per-mode trial ratings (manual/suggest/auto × helpful/trusted/focus/alongside)
+        *[f"mode_{mode}_{item}" for mode in _MODES for item in _MODE_ITEMS],
+        *[f"mode_{mode}_mean"   for mode in _MODES],
     ]
     demo_keys = ["age","gender","education","tech_comfort","ai_experience","drone_experience"]
 
@@ -197,9 +213,17 @@ def _write_trial_csv(participants: List[ParticipantData], out_path: Path) -> Non
 
 
 def _write_summary_survey_csv(participants: List[ParticipantData], out_path: Path) -> None:
-    """One row per (participant × scenario) for post-session ratings."""
-    header = ["participant_id","session_start","label",
-              "difficulty","tool_usefulness","manual_frequency","confidence"]
+    """One row per (participant × mode or scenario) for post-session ratings."""
+    is_new = any(
+        any(k.startswith("mode_") for k in p.summary_survey)
+        for p in participants if p.summary_survey
+    )
+    if is_new:
+        header = (["participant_id", "session_start", "mode"]
+                  + list(_SUMM_QUANT) + ["qualitative"])
+    else:
+        header = ["participant_id","session_start","label",
+                  "difficulty","tool_usefulness","manual_frequency","confidence"]
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=header, extrasaction="ignore")
         writer.writeheader()
@@ -296,6 +320,18 @@ def run(pid_filter: Optional[str] = None) -> None:
     ss_csv = out_root / "summary_survey.csv"
     _write_summary_survey_csv(analysis_set, ss_csv)
     print(f"  Wrote {ss_csv.name}")
+
+    # ── ANOVA ─────────────────────────────────────────────────────────────────
+    try:
+        from analysis.stats import run_anova
+        anova_dir = out_root / "anova"
+        anova_dir.mkdir(exist_ok=True)
+        run_anova(csv_path, anova_dir, ss_csv)
+        print(f"  Wrote ANOVA results to {anova_dir.name}/")
+    except ImportError as exc:
+        print(f"  [!] ANOVA skipped (missing library): {exc}")
+    except Exception as exc:
+        print(f"  [!] ANOVA failed: {exc}")
 
     # ── Text report ───────────────────────────────────────────────────────────
     report_text = report_buf.getvalue()

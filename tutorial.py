@@ -16,29 +16,34 @@ from robot_world import RobotWorld, SPEED_MIN, SPEED_MAX, SWITCH_DURATION
 from robot_renderer import RobotRenderer, TutorialCallout, PANEL_W
 
 
-def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict) -> list:
-    """Return a log snapshot: list of (id, norm_x, norm_y, channel_after).
-    Positions are normalized relative to the bounding box of involved drones
-    so they spread out in the mini-graph even when clustered.
+def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict):
+    """Return log snapshot as (nodes, edges).
+    nodes: list of (id, norm_x, norm_y, ch_before, ch_after)
+    edges: list of (i, j) robot-ID pairs that are currently connected
+    Positions are normalised relative to the bounding box of the involved drones.
+    Returns None if ids is empty.
     """
     robots = [world.robots[did] for did in ids if did < len(world.robots)]
     if not robots:
-        return []
+        return None
     xs = [r.x for r in robots]
     ys = [r.y for r in robots]
     cx = sum(xs) / len(xs)
     cy = sum(ys) / len(ys)
-    # Ensure a minimum view radius so drones don't all stack at the same pixel
     half_w = max((max(xs) - min(xs)) / 2 + world.arena_w * 0.04, world.arena_w * 0.12)
     half_h = max((max(ys) - min(ys)) / 2 + world.arena_h * 0.04, world.arena_h * 0.12)
     x_lo, y_lo = cx - half_w, cy - half_h
-    return [
+    id_set = {r.id for r in robots}
+    nodes = [
         (r.id,
          (r.x - x_lo) / (2 * half_w),
          (r.y - y_lo) / (2 * half_h),
+         r.channel,
          proposed.get(r.id, r.channel))
         for r in robots
     ]
+    edges = [(i, j) for (i, j) in world.edges if i in id_set and j in id_set]
+    return (nodes, edges)
 from game_logger import GameLogger
 from agents.channel_agent import ChannelAdvisor
 from robot_game import _StudyExit, _apply_suggestion
@@ -194,6 +199,8 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
     DB_AUTO = frozenset({"auto_assign"})              # must use Suggest
     DB_SUG  = frozenset({"suggest"})                  # must use Auto-assign
 
+    _STD_PARKED = [(6, 0.04, 0.90, "blue", 0, 0), (7, 0.96, 0.90, "red", 0, 0)]
+
     # ── Step 1: Welcome + scoring ────────────────────────────────────────────
     def setup_1(w: RobotWorld, gs: dict) -> None:
         _place(w, [
@@ -203,7 +210,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.18, 0.70, "green", 0, 0),
             (4, 0.50, 0.70, "blue",  0, 0),
             (5, 0.82, 0.70, "red",   0, 0),
-        ])
+        ] + _STD_PARKED)
 
     # ── Step 2: Clash demo ───────────────────────────────────────────────────
     # D0/D1/D2 form a tight K3 triangle so they all connect at any resolution
@@ -216,7 +223,23 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.10, 0.80, "green", 0, 0),
             (4, 0.72, 0.82, "blue",  0, 0),
             (5, 0.88, 0.22, "green", 0, 0),
-        ])
+        ] + _STD_PARKED)
+        slow = w.v_min * 0.4
+        cx = (w.robots[0].x + w.robots[1].x + w.robots[2].x) / 3
+        cy = (w.robots[0].y + w.robots[1].y + w.robots[2].y) / 3
+        for did in (0, 1, 2):
+            r = w.robots[did]
+            dx, dy = r.x - cx, r.y - cy
+            dist = math.sqrt(dx * dx + dy * dy) or 1.0
+            r.vx = -dy / dist * slow
+            r.vy =  dx / dist * slow
+            r.heading = math.atan2(r.vy, r.vx)
+        for did in (3, 4, 5):
+            r = w.robots[did]
+            ang = w.rng.uniform(0, 2 * math.pi)
+            r.vx = math.cos(ang) * slow
+            r.vy = math.sin(ang) * slow
+            r.heading = ang
 
     # ── Step 3: M1 fix ───────────────────────────────────────────────────────
     def setup_3(w: RobotWorld, gs: dict) -> None:
@@ -234,7 +257,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.42, 0.38, "green", 0, 0),
             (4, 0.80, 0.28, "blue",  0, 0),
             (5, 0.80, 0.72, "red",   0, 0),
-        ])
+        ] + _STD_PARKED)
 
     def check_4(gs: dict) -> bool:
         return gs["selected_ids"] >= {0, 1, 2, 3}
@@ -267,7 +290,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.10, 0.80, "green", 0, 0),
             (4, 0.72, 0.82, "blue",  0, 0),
             (5, 0.88, 0.22, "green", 0, 0),
-        ])
+        ] + _STD_PARKED)
         # Pre-arm the bad suggestion so it fires when Suggest is clicked
         gs["tutorial_forced_suggestion"] = {0: "red", 1: "green", 2: "green"}
 
@@ -295,7 +318,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.15, 0.25, "red",   0, 0),
             (4, 0.82, 0.25, "red",   0, 0),
             (5, 0.82, 0.75, "green", 0, 0),
-        ])
+        ] + _STD_PARKED)
 
     def check_7(gs: dict) -> bool:
         return gs["last_action"] == "auto_assign_applied"
@@ -312,7 +335,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.46, 0.50, "red",   0, 0),   # matches D0 → immediate clash
             (4, 0.78, 0.28, "blue",  0, 0),
             (5, 0.78, 0.72, "green", 0, 0),
-        ])
+        ] + _STD_PARKED)
 
     # Step 8 advances on SPACE (no automatic completion); user explores then moves on.
 
@@ -322,8 +345,9 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
         rng  = _rng.Random(99)
         cfgs = []
         for i, (fx, fy, ch) in enumerate([
-            (0.20, 0.35, "red"),   (0.50, 0.25, "green"), (0.80, 0.35, "blue"),
-            (0.20, 0.65, "green"), (0.50, 0.75, "blue"),  (0.80, 0.65, "red"),
+            (0.15, 0.35, "red"),   (0.50, 0.22, "green"), (0.85, 0.35, "blue"),
+            (0.15, 0.65, "green"), (0.50, 0.78, "blue"),  (0.85, 0.65, "red"),
+            (0.35, 0.50, "red"),   (0.65, 0.50, "green"),
         ]):
             ang = rng.uniform(0, 2 * math.pi)
             spd = rng.uniform(w.v_min, w.v_max)
@@ -348,7 +372,7 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
             body="D0, D1, and D2 are all on RED and close enough to interfere — shown by the red lines. "
                  "To stop the clashes you must move at least two of them onto different channels. Press SPACE.",
             highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
-            advance_on_space=True, freeze=True,
+            advance_on_space=True, freeze=False,
             disabled_buttons=DB_ALL, setup_fn=setup_2),
 
         TutorialStep(3, N,
@@ -422,8 +446,8 @@ def _make_steps(world: RobotWorld) -> List[TutorialStep]:
         TutorialStep(10, N,
             heading="Free Practice",
             body="All modes covered — including handling the unavoidable! "
-                 "The drones are now moving. Use M1 (click), M2 (Suggest), or M3 (Auto-assign) "
-                 "freely. Try to keep clash time low. Get used to using all modes and think about when you prefer each. "
+                 "The drones are now moving. Use click (manual), Suggest, or Auto-assign "
+                 "freely. Try to keep clash time low. Get used to all modes and think about when you prefer each. "
                  "Press SPACE when you're ready to start the real trial.",
             highlight_ids=[], advance_on_space=True, freeze=False,
             min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_9),
@@ -457,7 +481,25 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.18, 0.65, "green", 0, 0),
             (4, 0.26, 0.65, "blue",  0, 0),
             (5, 0.82, 0.72, "green", 0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0),
+            (7, 0.96, 0.90, "red",   0, 0),
         ])
+        slow = w.v_min * 0.4
+        cx = (w.robots[0].x + w.robots[1].x + w.robots[2].x) / 3
+        cy = (w.robots[0].y + w.robots[1].y + w.robots[2].y) / 3
+        for did in (0, 1, 2):
+            r = w.robots[did]
+            dx, dy = r.x - cx, r.y - cy
+            dist = math.sqrt(dx * dx + dy * dy) or 1.0
+            r.vx = -dy / dist * slow
+            r.vy =  dx / dist * slow
+            r.heading = math.atan2(r.vy, r.vx)
+        for did in (3, 4, 5):
+            r = w.robots[did]
+            ang = w.rng.uniform(0, 2 * math.pi)
+            r.vx = math.cos(ang) * slow
+            r.vy = math.sin(ang) * slow
+            r.heading = ang
         dm = gs.get("drone_modes")
         if dm is not None:
             dm.clear()
@@ -470,6 +512,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (0, 0.40, 0.47, "red",   0, 0), (1, 0.46, 0.47, "green", 0, 0),
             (2, 0.40, 0.53, "blue",  0, 0), (3, 0.46, 0.53, "red",   0, 0),
             (4, 0.78, 0.42, "blue",  0, 0), (5, 0.78, 0.75, "green", 0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0), (7, 0.96, 0.90, "red",   0, 0),
         ])
         dm = gs.get("drone_modes")
         if dm is not None:
@@ -485,17 +528,20 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         (5, 0.70, 0.56, None, 0, 0),
     ]
 
+    _PARKED = [(6, 0.04, 0.90, "blue", 0, 0), (7, 0.96, 0.90, "red", 0, 0)]
+
     def setup_5(w: RobotWorld, gs: dict) -> None:
-        _place(w, _PREFLIGHT)
+        _place(w, _PREFLIGHT + _PARKED)
         dm = gs.get("drone_modes")
         if dm is not None:
             dm.clear()
 
     def check_5(gs: dict) -> bool:
-        return all(r.channel is not None for r in gs["world"].robots)
+        # Only require the 6 active drones (0-5) to be assigned
+        return all(r.channel is not None for r in gs["world"].robots[:6])
 
     def setup_6(w: RobotWorld, gs: dict) -> None:
-        _place(w, _PREFLIGHT)
+        _place(w, _PREFLIGHT + _PARKED)
         dm = gs.get("drone_modes")
         if dm is not None:
             dm.clear()
@@ -508,7 +554,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         return gs["last_action"] == "suggestion_applied"
 
     def setup_7(w: RobotWorld, gs: dict) -> None:
-        _place(w, _PREFLIGHT)
+        _place(w, _PREFLIGHT + _PARKED)
         dm = gs.get("drone_modes")
         if dm is not None:
             dm.clear()
@@ -527,6 +573,8 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.70, 0.44, "red",   0, 0),
             (4, 0.80, 0.50, "green", 0, 0),
             (5, 0.70, 0.56, "blue",  0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0),
+            (7, 0.96, 0.90, "red",   0, 0),
         ])
         dm = gs.get("drone_modes")
         if dm is not None:
@@ -542,6 +590,8 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.80, 0.45, "blue",  0, 0),
             (4, 0.20, 0.75, "blue",  0, 0),
             (5, 0.80, 0.75, "green", 0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0),
+            (7, 0.96, 0.90, "red",   0, 0),
         ])
         # Manually place D0 mid-switch so the countdown arc is visible
         r0 = w.robots[0]
@@ -569,6 +619,8 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.10, 0.80, "blue",  0, 0),
             (4, 0.90, 0.80, "green", 0, 0),
             (5, 0.92, 0.40, "blue",  0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0),
+            (7, 0.96, 0.90, "red",   0, 0),
         ])
         dm = gs.get("drone_modes")
         if dm is not None:
@@ -614,7 +666,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
     def check_11(gs: dict) -> bool:
         return gs["last_action"] == "suggestion_applied"
 
-    # Step 12: Watch:Suggest mistake — forced bad suggestion with D1 and D2 both green
+    # Step 12: Suggest mode mistake — forced bad suggestion with D1 and D2 both green
     def setup_12(w: RobotWorld, gs: dict) -> None:
         _place(w, [
             (0, 0.44, 0.47, "red",   0, 0),
@@ -623,6 +675,8 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.10, 0.80, "green", 0, 0),
             (4, 0.72, 0.82, "blue",  0, 0),
             (5, 0.88, 0.22, "green", 0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0),
+            (7, 0.96, 0.90, "red",   0, 0),
         ])
         dm = gs.get("drone_modes")
         if dm is not None:
@@ -650,7 +704,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
     def check_14(gs: dict) -> bool:
         return gs["last_action"] == "auto_assign_applied"
 
-    # Step 15: Watch:Auto limitation — K4 cluster, infeasible assignment
+    # Step 15: Auto mode limitation — K4 cluster, infeasible assignment
     def setup_15(w: RobotWorld, gs: dict) -> None:
         _place(w, [
             (0, 0.40, 0.44, "red",   0, 0),
@@ -659,6 +713,8 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             (3, 0.46, 0.50, "red",   0, 0),  # matches D0 → immediate clash
             (4, 0.78, 0.28, "blue",  0, 0),
             (5, 0.78, 0.72, "green", 0, 0),
+            (6, 0.04, 0.90, "blue",  0, 0),
+            (7, 0.96, 0.90, "red",   0, 0),
         ])
         dm = gs.get("drone_modes")
         if dm is not None:
@@ -674,8 +730,9 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         rng = _rng.Random(99)
         cfgs = []
         for i, (fx, fy, ch) in enumerate([
-            (0.20, 0.40, "red"),   (0.50, 0.38, "green"), (0.80, 0.40, "blue"),
-            (0.20, 0.70, "green"), (0.50, 0.75, "blue"),  (0.80, 0.70, "red"),
+            (0.15, 0.40, "red"),   (0.50, 0.38, "green"), (0.85, 0.40, "blue"),
+            (0.15, 0.70, "green"), (0.50, 0.75, "blue"),  (0.85, 0.70, "red"),
+            (0.35, 0.55, "red"),   (0.65, 0.55, "green"),
         ]):
             ang = rng.uniform(0, 2 * math.pi)
             spd = rng.uniform(w.v_min, w.v_max)
@@ -707,7 +764,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
                  "the timer runs 3× faster. More simultaneous clashes = faster penalty. "
                  "Your goal: keep clash time as low as possible. Press SPACE.",
             highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
-            advance_on_space=True, freeze=True,
+            advance_on_space=True, freeze=False,
             disabled_buttons=DB_ALL, setup_fn=setup_clash),
 
         TutorialStep(3, N,
@@ -745,10 +802,10 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             hint_locked="Assign a channel to every drone first"),
 
         TutorialStep(6, N,
-            heading="Pre-Flight Setup — Watch: Suggest",
+            heading="Pre-Flight Setup — Suggest mode",
             body="All 6 drones are unassigned again. "
-                 "Drag a selection box over all of them, then click 'Watch: Suggest'. "
-                 "The agent proposes an initial assignment AND starts watching those drones — "
+                 "Drag a selection box over all of them, then click 'Suggest'. "
+                 "The agent proposes an initial assignment AND monitors those drones — "
                  "if they clash later during flight, a fix suggestion fires automatically. "
                  "Review the mini-graph, then click Apply.",
             highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(90, 200, 255),
@@ -756,10 +813,10 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             completion_check=check_6, disabled_buttons=DB_AUTO, setup_fn=setup_6),
 
         TutorialStep(7, N,
-            heading="Pre-Flight Setup — Watch: Auto",
+            heading="Pre-Flight Setup — Auto mode",
             body="All 6 drones are unassigned again. "
-                 "Drag a selection box over all of them, then click 'Watch: Auto'. "
-                 "Channels are assigned instantly without a review step, AND a watch is set — "
+                 "Drag a selection box over all of them, then click 'Auto'. "
+                 "Channels are assigned instantly without a review step, AND monitoring is set — "
                  "any future clashes among these drones are fixed automatically the moment they form.",
             highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(40, 220, 175),
             advance_on_space=False, freeze=True,
@@ -791,19 +848,19 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         # ── Phase 4: Live demos ───────────────────────────────────────────────
 
         TutorialStep(10, N,
-            heading="Watch: Suggest — Set the Watch",
+            heading="Suggest mode — Set up monitoring",
             body="D0, D1, D2 are on RED, static for now. "
-                 "Select all three (drag a box or Ctrl+click) and click 'Watch: Suggest'. "
-                 "The drones will be set to watched — orange rings confirm. "
+                 "Select all three (drag a box or Ctrl+click) and click 'Suggest'. "
+                 "The drones will be set to monitored — orange rings confirm. "
                  "Press SPACE to launch.",
             highlight_ids=[0, 1, 2], highlight_color=(90, 200, 255),
             advance_on_space=True, freeze=True,
             completion_check=check_10, disabled_buttons=DB_AUTO, setup_fn=setup_10,
-            hint_locked="Select D0–D2 and click 'Watch: Suggest' first"),
+            hint_locked="Select D0–D2 and click 'Suggest' first"),
 
         TutorialStep(11, N,
-            heading="Watch: Suggest — Automatic Trigger",
-            body="D0–D2 are flying toward the centre, all on RED (orange rings = Watch: Suggest active). "
+            heading="Suggest mode — Automatic trigger",
+            body="D0–D2 are flying toward the centre, all on RED (orange rings = Suggest mode active). "
                  "When they converge and clash, the suggestion fires automatically. "
                  "Apply the suggestion when it appears, then press SPACE.",
             highlight_ids=[0, 1, 2], highlight_color=(255, 160, 20),
@@ -812,9 +869,9 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             run_flex_monitor=True),
 
         TutorialStep(12, N,
-            heading="Watch: Suggest — Spot the Mistake",
+            heading="Suggest mode — Spot the mistake",
             body="The agent isn't always right. D0–D2 are clashing again. "
-                 "Select them and click 'Watch: Suggest'. Look at the mini-graph carefully: "
+                 "Select them and click 'Suggest'. Look at the mini-graph carefully: "
                  "can you spot the mistake? The agent put two drones on the same channel. "
                  "Click the affected drone in the mini-graph, pick a different channel, then Apply.",
             highlight_ids=[0, 1, 2], highlight_color=(230, 60, 60),
@@ -822,18 +879,18 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             completion_check=check_12, disabled_buttons=DB_AUTO, setup_fn=setup_12),
 
         TutorialStep(13, N,
-            heading="Watch: Auto — Set the Watch",
-            body="Same triangle scenario. Select D0, D1, D2 and click 'Watch: Auto'. "
-                 "Channels are assigned instantly — teal rings confirm the watch is set. "
+            heading="Auto mode — Set up monitoring",
+            body="Same triangle scenario. Select D0, D1, D2 and click 'Auto'. "
+                 "Channels are assigned instantly — teal rings confirm monitoring is set. "
                  "Press SPACE to launch.",
             highlight_ids=[0, 1, 2], highlight_color=(40, 220, 175),
             advance_on_space=True, freeze=True,
             completion_check=check_13, disabled_buttons=DB_SUG, setup_fn=setup_13,
-            hint_locked="Select D0–D2 and click 'Watch: Auto' first"),
+            hint_locked="Select D0–D2 and click 'Auto' first"),
 
         TutorialStep(14, N,
-            heading="Watch: Auto — Automatic Fix",
-            body="D0–D2 are flying toward the centre with Watch: Auto active (teal rings). "
+            heading="Auto mode — Automatic fix",
+            body="D0–D2 are flying toward the centre with Auto mode active (teal rings). "
                  "When they clash, the fix fires instantly — you don't need to do anything. "
                  "Watch it happen, then press SPACE.",
             highlight_ids=[0, 1, 2], highlight_color=(40, 220, 175),
@@ -842,24 +899,24 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             run_flex_monitor=True),
 
         TutorialStep(15, N,
-            heading="Watch: Auto — Has Limits Too",
-            body="Watch: Auto also cannot solve the impossible. "
-                 "D0–D3 are all in range of each other. Select all four and click 'Watch: Auto'. "
+            heading="Auto mode — Has limits too",
+            body="Auto mode also cannot solve the impossible. "
+                 "D0–D3 are all in range of each other. Select all four and click 'Auto'. "
                  "The agent assigns channels instantly, but with a group of 4 and only 3 channels, "
-                 "one clash will always remain — even Watch: Auto has limits. Press SPACE when done.",
+                 "one clash will always remain — even Auto mode has limits. Press SPACE when done.",
             highlight_ids=[0, 1, 2, 3], highlight_color=(230, 60, 60),
             advance_on_space=True, freeze=True,
             completion_check=check_15, disabled_buttons=DB_SUG, setup_fn=setup_15,
-            hint_locked="Select D0–D3 and click 'Watch: Auto' first"),
+            hint_locked="Select D0–D3 and click 'Auto' first"),
 
         # ── Phase 5: Free practice ────────────────────────────────────────────
 
         TutorialStep(16, N,
             heading="Free Practice",
             body="All modes covered! Drones are now moving. "
-                 "Click a drone to assign manually, 'Watch: Suggest' for reviewed fixes, "
-                 "'Watch: Auto' for instant automatic fixes, or 'Set: Manual' to remove a watch "
-                 "from drones you want to control yourself. "
+                 "Click a drone to assign manually, 'Suggest' for reviewed fixes, "
+                 "'Auto' for instant automatic fixes, or 'Manual' to return drones "
+                 "to direct control. "
                  "Press SPACE when you're ready to begin the real trial.",
             highlight_ids=[], advance_on_space=True, freeze=False,
             min_time=30.0, disabled_buttons=frozenset(), setup_fn=setup_16),
@@ -900,7 +957,7 @@ def run_tutorial(
     # Panel is always in a separate window; arena uses the full screen width
     arena_w  = window_w
 
-    world    = RobotWorld(n_robots=6, seed=seed, duration=99999,
+    world    = RobotWorld(n_robots=8, seed=seed, duration=99999,
                           arena_w=arena_w, arena_h=window_h,
                           v_min=SPEED_MIN, v_max=SPEED_MAX,
                           switch_duration=0.0)
@@ -1022,9 +1079,11 @@ def run_tutorial(
             proposed, infeas = advisor.suggest(
                 active, cur, world.edges, near_pairs=list(world.warning_pairs))
             logger.log_auto_assign_applied(active, proposed, infeas, world.elapsed)
-            snap = _make_log_snapshot(world, active, proposed)
+            id_set_a  = set(active)
+            n_before_a = sum(1 for p in world.clashing_pairs if p[0] in id_set_a or p[1] in id_set_a)
+            snap = _make_log_snapshot(world, active, {})
             ids_str = ",".join(f"D{d}" for d in sorted(active))
-            tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
+            tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap, list(active), -n_before_a))
             _apply_suggestion(world, proposed, logger, mode="M3", instant=True)
             old_sel = list(selected_ids)
             selected_ids.clear()
@@ -1040,10 +1099,17 @@ def run_tutorial(
             del flex_drone_modes[did]
         logger.log("watch_cleared", drones=cleared, elapsed=world.elapsed)
 
-    _tut_sug_ts = [-999.0]  # elapsed time of last auto-triggered suggestion
+    _tut_sug_ts = [-999.0]        # elapsed time when suggest was last APPLIED
+    _tut_auto_cooldown: Dict[int, float] = {}  # drone_id → cooldown remaining (seconds)
 
     def _tut_flex_monitor() -> None:
         nonlocal pending_suggestion, suggestion_overrides, pending_infeasible
+
+        # Tick down per-drone cooldowns (mirrors _auto_cooldown in robot_game.py)
+        for did in list(_tut_auto_cooldown):
+            _tut_auto_cooldown[did] -= dt
+            if _tut_auto_cooldown[did] <= 0:
+                del _tut_auto_cooldown[did]
 
         # Keep D0–D2 aimed at the arena centre until they're nearly there.
         # Runs every frame AFTER world.update(), overriding any heading/speed
@@ -1066,23 +1132,33 @@ def run_tutorial(
             return
         clashing = {i for pair in world.clashing_pairs for i in pair}
 
-        # Auto-mode drones: request switch (respects switch_duration, same as live game)
+        # Auto-mode drones: only fire for drones not already switching and not in cooldown.
+        # Mirrors the eligible-drone logic in robot_game._flex_tick so behaviour is consistent.
         auto_watched = [d for d in flex_drone_modes
-                        if d in clashing and flex_drone_modes[d] == "auto"]
+                        if d in clashing
+                        and flex_drone_modes[d] == "auto"
+                        and d not in _tut_auto_cooldown
+                        and world.robots[d].switching_to is None]
         if auto_watched:
             cur = {r.id: r.channel for r in world.robots}
             proposed, infeas = advisor.suggest(
                 auto_watched, cur, world.edges, near_pairs=list(world.warning_pairs))
             logger.log_auto_assign_applied(auto_watched, proposed, infeas, world.elapsed)
-            snap = _make_log_snapshot(world, auto_watched, proposed)
+            id_set_m   = set(auto_watched)
+            n_before_m = sum(1 for p in world.clashing_pairs if p[0] in id_set_m or p[1] in id_set_m)
+            snap = _make_log_snapshot(world, auto_watched, {})
             ids_str = ",".join(f"D{d}" for d in sorted(auto_watched))
-            tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
+            tut_agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap, list(auto_watched), -n_before_m))
             _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=False)
+            for did in auto_watched:
+                _tut_auto_cooldown[did] = world.switch_duration + 0.5
             game_state["last_action"] = "auto_assign_applied"
             return
 
-        # Suggest-mode drones: show proposal (3-second refire guard)
-        if world.elapsed - _tut_sug_ts[0] < 3.0:
+        # Suggest-mode drones: show proposal.
+        # Guard uses the apply timestamp so the suggestion won't refire while a
+        # switch triggered by the previous suggestion is still in progress.
+        if world.elapsed - _tut_sug_ts[0] < max(3.0, world.switch_duration):
             return
         sug_watched = [d for d in flex_drone_modes
                        if d in clashing and flex_drone_modes[d] == "suggest"]
@@ -1096,7 +1172,6 @@ def run_tutorial(
         pending_infeasible   = infeas
         game_state["pending_suggestion"] = pending_suggestion
         game_state["last_action"]        = "suggestion_shown"
-        _tut_sug_ts[0] = world.elapsed
         logger.log_suggestion_shown(sug_watched, proposed, infeas, world.elapsed)
 
     try:
@@ -1162,6 +1237,7 @@ def run_tutorial(
                                 logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
                                 _apply_suggestion(world, suggestion_overrides, logger,
                                                   mode="M2", instant=director.is_frozen)
+                                _tut_sug_ts[0] = world.elapsed  # refire guard from apply time
                                 pending_suggestion    = None
                                 suggestion_overrides  = {}
                                 selected_ids          = set()
@@ -1247,6 +1323,11 @@ def run_tutorial(
                                     robot.channel      = ch
                                     robot.switching_to = None
                                     world._detect_edges()
+                                    if pending_suggestion is not None:
+                                        pending_suggestion   = None
+                                        suggestion_overrides = {}
+                                        pending_infeasible   = False
+                                        game_state["pending_suggestion"] = None
                                     logger.log_switch_requested(
                                         popup_drone_id, robot.channel, ch, world.elapsed, mode="M1")
                                 else:
@@ -1293,9 +1374,25 @@ def run_tutorial(
                                         logger.log_suggestion_node_deselected(prev_popup, world.elapsed)
                                     break
                             else:
-                                logger.log("tutorial_suggestion_panel_miss",
-                                           x=event.pos[0], y=event.pos[1],
-                                           step=director._index + 1, elapsed=world.elapsed)
+                                if mx < renderer.arena_w and flex_mode:
+                                    # Flex mode: drone click opens M1 popup without cancelling suggestion
+                                    clicked = _drone_at((mx, my), world, renderer.arena_w)
+                                    if clicked is not None:
+                                        new_popup = clicked if clicked != popup_drone_id else None
+                                        if popup_drone_id is not None and new_popup is None:
+                                            logger.log_popup_dismissed(popup_drone_id, world.elapsed)
+                                        elif new_popup is not None:
+                                            logger.log_popup_opened(new_popup, world.elapsed)
+                                        popup_drone_id = new_popup
+                                        game_state["popup_drone_id"] = popup_drone_id
+                                    else:
+                                        logger.log("tutorial_suggestion_panel_miss",
+                                                   x=mx, y=my, step=director._index + 1,
+                                                   elapsed=world.elapsed)
+                                else:
+                                    logger.log("tutorial_suggestion_panel_miss",
+                                               x=event.pos[0], y=event.pos[1],
+                                               step=director._index + 1, elapsed=world.elapsed)
                         mouse_down_pos = None; drag_pos = None; is_dragging = False
                         continue
 
@@ -1395,6 +1492,7 @@ def run_tutorial(
                             logger.log_suggestion_applied(suggestion_overrides, n_overrides, world.elapsed)
                             _apply_suggestion(world, suggestion_overrides, logger,
                                               mode="M2", instant=director.is_frozen)
+                            _tut_sug_ts[0] = world.elapsed  # refire guard from apply time
                             pending_suggestion    = None
                             suggestion_overrides  = {}
                             selected_ids          = set()
@@ -1411,6 +1509,7 @@ def run_tutorial(
                             popup_drone_id       = None
                             game_state["pending_suggestion"] = None
                             game_state["popup_drone_id"]     = None
+                            _tut_sug_ts[0] = world.elapsed  # refire guard from cancel time
 
                     # HUD group-action buttons
                     elif selected_ids:

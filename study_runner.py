@@ -39,19 +39,21 @@ class TrialConfig:
     show_trust: bool = True
     show_tam: bool = True
     agent_mode: str = "standard"
+    record: bool = False
 
 
 @dataclass
 class StudyConfig:
     participant_id: str
     trials: List[TrialConfig] = field(default_factory=list)
-    output_root: str = "results/participants"
+    output_root: str = "results/participants_study"
     arena_monitor: int = 0
     panel_monitor: int = 1
     show_demographics: bool = True
     show_summary_survey: bool = True
     windowed: bool = False
     debug_mode: bool = False
+    test_mode: bool = False
 
 
 # ── Presets ───────────────────────────────────────────────────────────────────
@@ -171,6 +173,14 @@ class StudySetupWindow:
             row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 4))
         row += 1
 
+        self._test_mode_var = tk.BooleanVar(value=self._saved.get("test_mode", False))
+        tk.Checkbutton(root,
+                       text="Test mode  (saves to results/participants_test/, keeps last 5 runs)",
+                       variable=self._test_mode_var,
+                       foreground="orange").grid(
+            row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 4))
+        row += 1
+
         ttk.Separator(root, orient=tk.HORIZONTAL).grid(
             row=row, column=0, columnspan=3, sticky="ew", pady=4)
         row += 1
@@ -196,6 +206,8 @@ class StudySetupWindow:
                     t.get("show_trust", True),
                     t.get("show_tam", True),
                     t.get("agent_mode", "standard"),
+                    t.get("record", False),
+                    t.get("seed", None),
                 )
             else:
                 self._add_trial_row(t)
@@ -240,12 +252,13 @@ class StudySetupWindow:
     def _add_trial_row(self, preset_name: str = "Medium (12dr, slow, 70%)",
                        enabled: bool = True, show_tlx: bool = True,
                        show_trust: bool = True, show_tam: bool = True,
-                       agent_mode: str = "standard") -> None:
+                       agent_mode: str = "standard", record: bool = False,
+                       seed: Optional[int] = None) -> None:
         if len(self._trial_rows) >= 6:
             return
         idx = len(self._trial_rows)
         row = _TrialRow(self._trials_frame, idx, preset_name,
-                        enabled, show_tlx, show_trust, show_tam, agent_mode)
+                        enabled, show_tlx, show_trust, show_tam, agent_mode, record, seed)
         self._trial_rows.append(row)
 
     def _remove_last_row(self) -> None:
@@ -280,7 +293,8 @@ class StudySetupWindow:
             "trials": [
                 {"preset": tr.preset_name, "enabled": tr.enabled,
                  "show_tlx": tr.show_tlx, "show_trust": tr.show_trust,
-                 "show_tam": tr.show_tam, "agent_mode": tr.agent_mode}
+                 "show_tam": tr.show_tam, "agent_mode": tr.agent_mode,
+                 "record": tr.record, "seed": tr.seed}
                 for tr in self._trial_rows
             ],
             "arena_monitor":       arena_monitor,
@@ -289,6 +303,7 @@ class StudySetupWindow:
             "show_summary_survey": self._summary_var.get(),
             "windowed":            self._windowed_var.get(),
             "debug_mode":          self._debug_var.get(),
+            "test_mode":           self._test_mode_var.get(),
         })
 
         self.config = StudyConfig(
@@ -300,6 +315,7 @@ class StudySetupWindow:
             show_summary_survey=self._summary_var.get(),
             windowed=self._windowed_var.get(),
             debug_mode=self._debug_var.get(),
+            test_mode=self._test_mode_var.get(),
         )
         self._root.destroy()
 
@@ -310,7 +326,8 @@ class _TrialRow:
     def __init__(self, parent: ttk.Frame, idx: int,
                  preset_name: str, enabled: bool = True,
                  show_tlx: bool = True, show_trust: bool = True,
-                 show_tam: bool = True, agent_mode: str = "standard") -> None:
+                 show_tam: bool = True, agent_mode: str = "standard",
+                 record: bool = False, seed: Optional[int] = None) -> None:
         self._parent = parent
         self._idx    = idx
         self.preset_name = preset_name
@@ -341,16 +358,26 @@ class _TrialRow:
             values=["standard", "flexible"], state="readonly", width=9,
         ).grid(row=0, column=4, sticky="w")
 
-        # Per-trial survey element checkboxes
-        self._tlx_var   = tk.BooleanVar(value=show_tlx)
-        self._trust_var = tk.BooleanVar(value=show_trust)
-        self._tam_var   = tk.BooleanVar(value=show_tam)
+        # Per-trial survey element checkboxes + always-visible seed
+        _preset = STUDY_PRESETS.get(preset_name)
+        _init_seed = seed if seed is not None else (_preset.seed if _preset else 42)
+        self._seed_var   = tk.IntVar(value=_init_seed)
+        self._tlx_var    = tk.BooleanVar(value=show_tlx)
+        self._trust_var  = tk.BooleanVar(value=show_trust)
+        self._tam_var    = tk.BooleanVar(value=show_tam)
+        self._record_var = tk.BooleanVar(value=record)
         _survey_row = ttk.Frame(self._frame)
         _survey_row.grid(row=1, column=1, columnspan=5, sticky="w", pady=(0, 1))
         ttk.Label(_survey_row, text="Post-task:", foreground="#666").pack(side="left", padx=(0, 4))
         ttk.Checkbutton(_survey_row, text="TLX",    variable=self._tlx_var).pack(side="left", padx=2)
         ttk.Checkbutton(_survey_row, text="Trust",  variable=self._trust_var).pack(side="left", padx=2)
         ttk.Checkbutton(_survey_row, text="Accept.", variable=self._tam_var).pack(side="left", padx=2)
+        ttk.Label(_survey_row, text=" |", foreground="#aaa").pack(side="left")
+        ttk.Checkbutton(_survey_row, text="Record", variable=self._record_var).pack(side="left", padx=2)
+        ttk.Label(_survey_row, text=" |", foreground="#aaa").pack(side="left")
+        ttk.Label(_survey_row, text="Seed:", foreground="#666").pack(side="left", padx=(4, 2))
+        ttk.Spinbox(_survey_row, from_=0, to=99999, increment=1,
+                    textvariable=self._seed_var, width=6).pack(side="left")
 
         # Custom fields (hidden unless "Custom…" selected)
         self._custom_frame = ttk.Frame(self._frame)
@@ -368,16 +395,15 @@ class _TrialRow:
             ttk.Spinbox(self._custom_frame, **kw).grid(row=0, column=col * 2 + 1, sticky="w")
             return var
 
-        self._seed_var     = _spinbox("Seed:",       0, 42,   0,   99999, 1)
-        self._dur_var      = _spinbox("Duration(s):", 1, 90.0, 30,  300,  10, "%.0f")
-        self._eps_var      = _spinbox("Noise(ε):",   2, 0.20, 0.0, 1.0,  0.05, "%.2f")
-        self._sw_var       = _spinbox("SwitchDly:",  3, 3.0,  0.0, 10.0, 0.5, "%.1f")
-        self._cpx_var      = tk.StringVar(value="medium")
-        ttk.Label(self._custom_frame, text="Complexity:").grid(row=0, column=8, sticky="e", padx=4)
+        self._dur_var = _spinbox("Duration(s):", 0, 90.0, 30,  300,  10, "%.0f")
+        self._eps_var = _spinbox("Noise(ε):",   1, 0.20, 0.0, 1.0,  0.05, "%.2f")
+        self._sw_var  = _spinbox("SwitchDly:",  2, 3.0,  0.0, 10.0, 0.5, "%.1f")
+        self._cpx_var = tk.StringVar(value="medium")
+        ttk.Label(self._custom_frame, text="Complexity:").grid(row=0, column=6, sticky="e", padx=4)
         ttk.Combobox(
             self._custom_frame, textvariable=self._cpx_var,
             values=list(COMPLEXITY_PRESETS), state="readonly", width=8,
-        ).grid(row=0, column=9, sticky="w")
+        ).grid(row=0, column=7, sticky="w")
 
         self._custom_frame.grid_remove()   # hidden by default
         self._on_preset_change()
@@ -397,6 +423,14 @@ class _TrialRow:
     @property
     def show_tam(self) -> bool:
         return self._tam_var.get()
+
+    @property
+    def record(self) -> bool:
+        return self._record_var.get()
+
+    @property
+    def seed(self) -> int:
+        return int(self._seed_var.get())
 
     @property
     def agent_mode(self) -> str:
@@ -421,13 +455,14 @@ class _TrialRow:
     def build_config(self) -> Optional[TrialConfig]:
         name = self._preset_var.get()
         extra_kw = dict(show_tlx=self.show_tlx, show_trust=self.show_trust,
-                        show_tam=self.show_tam, agent_mode=self.agent_mode)
+                        show_tam=self.show_tam, agent_mode=self.agent_mode,
+                        record=self.record)
         if name != "Custom…":
             preset = STUDY_PRESETS[name]
             return TrialConfig(
                 label=preset.label,
                 complexity=preset.complexity,
-                seed=preset.seed,
+                seed=self.seed,
                 duration=preset.duration,
                 epsilon=preset.epsilon,
                 switch_duration=preset.switch_duration,
@@ -444,7 +479,6 @@ class _TrialRow:
             dur  = float(self._dur_var.get())
             eps  = float(self._eps_var.get())
             sw   = float(self._sw_var.get())
-            seed = int(self._seed_var.get())
         except (ValueError, tk.TclError):
             messagebox.showwarning("Bad input", f"Trial {self._idx + 1}: invalid numeric value.")
             return None
@@ -454,7 +488,7 @@ class _TrialRow:
         return TrialConfig(
             label=f"Custom-{self._idx + 1}",
             complexity=cpx,
-            seed=seed,
+            seed=self.seed,
             duration=dur,
             epsilon=eps,
             switch_duration=sw,
@@ -616,9 +650,18 @@ def run_study(config: StudyConfig) -> None:
         pygame.display.set_caption("Drone Channel Assignment — Study")
 
     # Build output directory early so surveys can write into it
-    ts       = time.strftime("%Y%m%d_%H%M%S")
-    pid      = config.participant_id
-    out_root = Path(config.output_root) / f"{pid}_{ts}"
+    ts  = time.strftime("%Y%m%d_%H%M%S")
+    pid = config.participant_id
+    if config.test_mode:
+        import shutil
+        test_root = Path("results/participants_test")
+        test_root.mkdir(parents=True, exist_ok=True)
+        old_runs = sorted(d for d in test_root.iterdir() if d.is_dir())
+        for old in old_runs[:-4]:   # leave room for the new run (becomes 5th)
+            shutil.rmtree(old, ignore_errors=True)
+        out_root = test_root / f"{pid}_{ts}"
+    else:
+        out_root = Path(config.output_root) / f"{pid}_{ts}"
     out_root.mkdir(parents=True, exist_ok=True)
 
     # ── Pre-study demographics (before game windows open) ─────────────────────
@@ -688,6 +731,7 @@ def run_study(config: StudyConfig) -> None:
                     agent_mode=trial.agent_mode,
                     windowed=config.windowed,
                     debug_mode=config.debug_mode,
+                    record=trial.record,
                 )
 
             result = result or {}

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import datetime
 import math
 import sys
 from typing import Dict, List, Optional, Set, Tuple
@@ -6,6 +7,7 @@ from typing import Dict, List, Optional, Set, Tuple
 import pygame
 
 import os
+from screen_recorder import ScreenRecorder
 
 from robot_world import (
     RobotWorld, SPEED_MIN, SPEED_MAX, SWITCH_DURATION,
@@ -21,14 +23,16 @@ class _StudyExit(Exception):
     """Raised instead of sys.exit() when study_mode=True."""
 
 
-def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict) -> list:
-    """Return log snapshot: list of (id, norm_x, norm_y, channel_after).
-    Positions are normalised relative to the bounding box of the involved drones
-    so they spread out even when clustered near the arena centre.
+def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict):
+    """Return log snapshot as (nodes, edges).
+    nodes: list of (id, norm_x, norm_y, ch_before, ch_after)
+    edges: list of (i, j) robot-ID pairs that are currently connected
+    Positions are normalised relative to the bounding box of the involved drones.
+    Returns None if ids is empty.
     """
     robots = [world.robots[did] for did in ids if did < len(world.robots)]
     if not robots:
-        return []
+        return None
     xs = [r.x for r in robots]
     ys = [r.y for r in robots]
     cx = sum(xs) / len(xs)
@@ -36,13 +40,17 @@ def _make_log_snapshot(world: RobotWorld, ids: list, proposed: dict) -> list:
     half_w = max((max(xs) - min(xs)) / 2 + world.arena_w * 0.04, world.arena_w * 0.12)
     half_h = max((max(ys) - min(ys)) / 2 + world.arena_h * 0.04, world.arena_h * 0.12)
     x_lo, y_lo = cx - half_w, cy - half_h
-    return [
+    id_set = {r.id for r in robots}
+    nodes = [
         (r.id,
          (r.x - x_lo) / (2 * half_w),
          (r.y - y_lo) / (2 * half_h),
+         r.channel,
          proposed.get(r.id, r.channel))
         for r in robots
     ]
+    edges = [(i, j) for (i, j) in world.edges if i in id_set and j in id_set]
+    return (nodes, edges)
 
 
 # ── Windowed (single-monitor) layout constants ────────────────────────────────
@@ -117,6 +125,7 @@ def run_game(
     agent_mode: str = "standard",
     windowed: bool = False,
     debug_mode: bool = False,
+    record: bool = False,
 ) -> Optional[Dict]:
     _owns_display = screen is None
     if _owns_display:
@@ -182,10 +191,11 @@ def run_game(
     popup_drone_id:  Optional[int] = None
     selected_ids:    Set[int]      = set()
 
-    mouse_down_pos:  Optional[Tuple[int, int]] = None
-    drag_pos:        Optional[Tuple[int, int]] = None
-    is_dragging:     bool = False
-    DRAG_THRESHOLD = 5
+    mouse_down_pos:   Optional[Tuple[int, int]] = None
+    drag_pos:         Optional[Tuple[int, int]] = None
+    is_dragging:      bool = False
+    DRAG_THRESHOLD  = 5
+    panel_hover_pos:  Optional[Tuple[int, int]] = None
 
     pending_suggestion:   Optional[Dict[int, str]] = None
     suggestion_overrides: Dict[int, str]           = {}
@@ -198,6 +208,15 @@ def run_game(
     study_advance = False   # set True when user presses SPACE on ENDED in study_mode
 
     _debug_paused: bool = False
+
+    # ── Recording state ───────────────────────────────────────────────────────
+    _recorder:              ScreenRecorder = ScreenRecorder()
+    _recording_frame_timer: float         = 0.0
+    _RECORD_FPS = 30
+
+    # Fixed physics timestep — decouples simulation from frame rate so that
+    # identical seeds produce identical robot trajectories on any hardware.
+    _SIM_DT = 1.0 / 60.0
 
     # ── Flexible-agent state ──────────────────────────────────────────────────
     _MONITOR_INTERVAL = 0.5
@@ -263,48 +282,51 @@ def run_game(
             modes_in_comp = {drone_modes[d] for d in comp}
 
             if "auto" in modes_in_comp and "suggest" in modes_in_comp:
-                # Mixed component: randomly pick auto or suggest, then hold
-                if any(d in _auto_cooldown for d in comp):
-                    continue  # still in hold period after last decision
-                if world.rng.random() < 0.6:
-                    # Auto path
-                    eligible = [d for d in comp
-                                if world.robots[d].switching_to is None]
-                    if not eligible:
-                        continue
+                # Mixed component: handle each subgroup independently.
+                # The other subgroup's channels are treated as fixed neighbours
+                # by advisor.suggest() because they are not in selected_ids.
+
+                # Auto subgroup — apply immediately
+                auto_sub = [d for d in comp
+                            if drone_modes.get(d) == "auto"
+                            and d not in _auto_cooldown
+                            and world.robots[d].switching_to is None]
+                if auto_sub:
                     proposed, _ = advisor.suggest(
-                        eligible, current_channels, list(world.edges),
+                        auto_sub, current_channels, list(world.edges),
                         near_pairs=list(world.warning_pairs),
                     )
                     _apply_suggestion(world, proposed, logger, mode="flex_auto_mixed", instant=False)
-                    hold = world.switch_duration + 4.0
-                    for did in comp:
-                        _auto_cooldown[did] = hold
-                    ids_str = ",".join(f"D{d}" for d in sorted(eligible))
-                    snap = _make_log_snapshot(world, eligible, proposed)
-                    agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
+                    for did in auto_sub:
+                        _auto_cooldown[did] = world.switch_duration + 0.5
+                    ids_str = ",".join(f"D{d}" for d in sorted(auto_sub))
+                    id_set  = set(auto_sub)
+                    n_before = sum(1 for p in world.clashing_pairs if p[0] in id_set or p[1] in id_set)
+                    snap    = _make_log_snapshot(world, auto_sub, {})
+                    agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap, list(auto_sub), -n_before))
                     if len(agent_log) > 50:
                         agent_log.pop(0)
-                    logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
-                else:
-                    # Suggest path
-                    if pending_suggestion is not None:
-                        continue
-                    if any(world.elapsed - _flex_apply_ts.get(d, -9999) < _SUGGEST_REFIRE_DELAY for d in comp):
-                        continue
+                    logger.log_auto_assign_applied(auto_sub, proposed, False, world.elapsed)
+
+                # Suggest subgroup — surface suggestion if none is already pending
+                suggest_sub = [d for d in comp if drone_modes.get(d) == "suggest"]
+                if suggest_sub and pending_suggestion is None \
+                        and not any(d in _auto_cooldown for d in suggest_sub) \
+                        and not any(
+                            world.elapsed - _flex_apply_ts.get(d, -9999) < _SUGGEST_REFIRE_DELAY
+                            for d in suggest_sub
+                        ):
                     proposed, infeasible = advisor.suggest(
-                        list(comp), current_channels, list(world.edges),
+                        suggest_sub, current_channels, list(world.edges),
                         near_pairs=list(world.warning_pairs),
                     )
                     pending_suggestion   = proposed
                     suggestion_overrides = dict(proposed)
                     pending_infeasible   = infeasible
-                    for did in comp:
-                        _auto_cooldown[did] = 3.0
                     agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  group: suggestion shown"))
                     if len(agent_log) > 50:
                         agent_log.pop(0)
-                    logger.log_suggestion_shown(list(comp), proposed, infeasible, world.elapsed)
+                    logger.log_suggestion_shown(suggest_sub, proposed, infeasible, world.elapsed)
 
             elif "auto" in modes_in_comp:
                 eligible = [d for d in comp
@@ -319,9 +341,11 @@ def run_game(
                 _apply_suggestion(world, proposed, logger, mode="flex_auto", instant=False)
                 for did in eligible:
                     _auto_cooldown[did] = world.switch_duration + 0.5
-                ids_str = ",".join(f"D{d}" for d in sorted(eligible))
-                snap = _make_log_snapshot(world, eligible, proposed)
-                agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap))
+                ids_str  = ",".join(f"D{d}" for d in sorted(eligible))
+                id_set   = set(eligible)
+                n_before = sum(1 for p in world.clashing_pairs if p[0] in id_set or p[1] in id_set)
+                snap     = _make_log_snapshot(world, eligible, {})
+                agent_log.append((world.elapsed, f"{world.elapsed:.1f}s  {ids_str}: auto-fixed", snap, list(eligible), -n_before))
                 if len(agent_log) > 50:
                     agent_log.pop(0)
                 logger.log_auto_assign_applied(eligible, proposed, False, world.elapsed)
@@ -425,12 +449,96 @@ def run_game(
                 pending_suggestion   = None
                 suggestion_overrides = {}
                 popup_drone_id       = None
+                if agent_mode == "flexible":
+                    for _ds, _dm in drone_modes.items():
+                        if _dm == "suggest":
+                            _flex_apply_ts[_ds] = world.elapsed
                 return True
 
-            return False  # click inside panel area but not on a button
+            # No suggestion button hit — fall through so mode buttons still work.
 
         # ── HUD group-action buttons ───────────────────────────────────────
-        if selected_ids:
+        if agent_mode == "flexible":
+            # Mode buttons apply to the selected drones; if none are selected they
+            # fall back to the suggestion drones so the user can change autonomy
+            # level even while a suggestion is being shown.
+            flex_target = selected_ids if selected_ids else (
+                set(pending_suggestion.keys()) if pending_suggestion else set()
+            )
+            if flex_target:
+                if "watch_suggest" in renderer.hud_button_rects \
+                        and renderer.hud_button_rects["watch_suggest"].collidepoint(mx, my):
+                    for did in list(flex_target):
+                        if drone_modes.get(did) == "suggest":
+                            del drone_modes[did]
+                        else:
+                            drone_modes[did] = "suggest"
+                    logger.log("watch_mode_set", drones=list(flex_target),
+                               mode="suggest", elapsed=world.elapsed)
+                    active_watch = [d for d in flex_target if drone_modes.get(d) == "suggest"]
+                    if active_watch:
+                        current_channels = {r.id: r.channel for r in world.robots}
+                        proposed, infeasible = advisor.suggest(
+                            active_watch, current_channels, world.edges,
+                            near_pairs=list(world.warning_pairs),
+                        )
+                        logger.log_suggestion_requested(active_watch, current_channels, world.elapsed)
+                        logger.log_suggestion_shown(active_watch, proposed, infeasible, world.elapsed)
+                        pending_suggestion   = proposed
+                        suggestion_overrides = dict(proposed)
+                        pending_infeasible   = infeasible
+                        popup_drone_id       = None
+                        last_action          = "suggestion_shown"
+                    return True
+
+                if "watch_auto" in renderer.hud_button_rects \
+                        and renderer.hud_button_rects["watch_auto"].collidepoint(mx, my):
+                    for did in list(flex_target):
+                        if drone_modes.get(did) == "auto":
+                            del drone_modes[did]
+                        else:
+                            drone_modes[did] = "auto"
+                    logger.log("watch_mode_set", drones=list(flex_target),
+                               mode="auto", elapsed=world.elapsed)
+                    active_watch = [d for d in flex_target if drone_modes.get(d) == "auto"]
+                    if active_watch:
+                        current_channels = {r.id: r.channel for r in world.robots}
+                        proposed, infeasible = advisor.suggest(
+                            active_watch, current_channels, world.edges,
+                            near_pairs=list(world.warning_pairs),
+                        )
+                        logger.log_auto_assign_applied(active_watch, proposed, infeasible, world.elapsed)
+                        _apply_suggestion(world, proposed, logger, mode="flex_watch_setup", instant=(state == "SETUP"))
+                        for did in active_watch:
+                            _auto_cooldown[did] = world.switch_duration + 0.5
+                        old_sel = list(flex_target)
+                        selected_ids   = set()
+                        popup_drone_id = None
+                        last_action    = "auto_assign_applied"
+                        logger.log_group_deselected(old_sel, world.elapsed)
+                    return True
+
+                if "unwatch" in renderer.hud_button_rects \
+                        and renderer.hud_button_rects["unwatch"].collidepoint(mx, my):
+                    cleared = [d for d in flex_target if d in drone_modes]
+                    for did in cleared:
+                        del drone_modes[did]
+                    # Switching to manual dismisses any suggestion for those drones
+                    if pending_suggestion is not None and \
+                            set(pending_suggestion.keys()) <= set(cleared):
+                        pending_suggestion   = None
+                        suggestion_overrides = {}
+                        pending_infeasible   = False
+                    old_sel = list(selected_ids)
+                    selected_ids   = set()
+                    popup_drone_id = None
+                    if old_sel:
+                        logger.log_group_deselected(old_sel, world.elapsed)
+                    logger.log("watch_cleared", drones=cleared, elapsed=world.elapsed)
+                    return True
+
+        elif selected_ids:
+            # Non-flex mode: Suggest and Auto-assign require an explicit selection.
             if "suggest" in renderer.hud_button_rects \
                     and renderer.hud_button_rects["suggest"].collidepoint(mx, my):
                 current_channels = {r.id: r.channel for r in world.robots}
@@ -462,67 +570,6 @@ def run_game(
                 last_action    = "auto_assign_applied"
                 logger.log_group_deselected(old_sel, world.elapsed)
                 return True
-
-            if agent_mode == "flexible":
-                if "watch_suggest" in renderer.hud_button_rects \
-                        and renderer.hud_button_rects["watch_suggest"].collidepoint(mx, my):
-                    for did in list(selected_ids):
-                        if drone_modes.get(did) == "suggest":
-                            del drone_modes[did]
-                        else:
-                            drone_modes[did] = "suggest"
-                    logger.log("watch_mode_set", drones=list(selected_ids),
-                               mode="suggest", elapsed=world.elapsed)
-                    active_watch = [d for d in selected_ids if drone_modes.get(d) == "suggest"]
-                    if active_watch:
-                        current_channels = {r.id: r.channel for r in world.robots}
-                        proposed, infeasible = advisor.suggest(
-                            active_watch, current_channels, world.edges,
-                            near_pairs=list(world.warning_pairs),
-                        )
-                        logger.log_suggestion_requested(active_watch, current_channels, world.elapsed)
-                        logger.log_suggestion_shown(active_watch, proposed, infeasible, world.elapsed)
-                        pending_suggestion   = proposed
-                        suggestion_overrides = dict(proposed)
-                        pending_infeasible   = infeasible
-                        popup_drone_id       = None
-                        last_action          = "suggestion_shown"
-                    return True
-
-                if "watch_auto" in renderer.hud_button_rects \
-                        and renderer.hud_button_rects["watch_auto"].collidepoint(mx, my):
-                    for did in list(selected_ids):
-                        if drone_modes.get(did) == "auto":
-                            del drone_modes[did]
-                        else:
-                            drone_modes[did] = "auto"
-                    logger.log("watch_mode_set", drones=list(selected_ids),
-                               mode="auto", elapsed=world.elapsed)
-                    active_watch = [d for d in selected_ids if drone_modes.get(d) == "auto"]
-                    if active_watch:
-                        current_channels = {r.id: r.channel for r in world.robots}
-                        proposed, infeasible = advisor.suggest(
-                            active_watch, current_channels, world.edges,
-                            near_pairs=list(world.warning_pairs),
-                        )
-                        logger.log_auto_assign_applied(active_watch, proposed, infeasible, world.elapsed)
-                        _apply_suggestion(world, proposed, logger, mode="flex_watch_setup", instant=True)
-                        for did in active_watch:
-                            _auto_cooldown[did] = world.switch_duration + 0.5
-                        old_sel = list(selected_ids)
-                        selected_ids   = set()
-                        popup_drone_id = None
-                        last_action    = "auto_assign_applied"
-                        logger.log_group_deselected(old_sel, world.elapsed)
-                    return True
-
-                if "unwatch" in renderer.hud_button_rects \
-                        and renderer.hud_button_rects["unwatch"].collidepoint(mx, my):
-                    cleared = [d for d in selected_ids if d in drone_modes]
-                    for did in cleared:
-                        del drone_modes[did]
-                    logger.log("watch_cleared", drones=cleared, elapsed=world.elapsed)
-                    return True
 
         return False
 
@@ -561,6 +608,20 @@ def run_game(
                         if all(r.channel is not None for r in world.robots):
                             state = "PLAYING"
                             logger.log("play_started", elapsed=world.elapsed)
+                            if record and not _recorder.active:
+                                _aw, _ah = screen.get_size()
+                                _rw, _rh = _aw, _ah
+                                if panel_detached and _panel_win is not None:
+                                    _rps = _panel_win.get_fresh_surface()
+                                    _rw += _rps.get_width()
+                                    _rh  = max(_rh, _rps.get_height())
+                                _ts     = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                                _recdir = os.path.join(log_dir, "recordings")
+                                os.makedirs(_recdir, exist_ok=True)
+                                _recpath = os.path.join(_recdir, f"recording_{_ts}.mp4")
+                                _ok      = _recorder.start(_recpath, _rw, _rh, fps=_RECORD_FPS)
+                                logger.log("recording_started" if _ok else "recording_failed",
+                                           path=_recpath, elapsed=world.elapsed)
 
                     elif event.key == pygame.K_p and state == "PLAYING" and debug_mode:
                         _debug_paused = not _debug_paused
@@ -572,6 +633,9 @@ def run_game(
                             study_advance = True
                         elif not study_mode:
                             if event.key == pygame.K_r:
+                                if _recorder.active:
+                                    _recorder.stop()
+                                _recording_frame_timer = 0.0
                                 world   = make_world()
                                 advisor = ChannelAdvisor(epsilon=epsilon, seed=seed + 1000)
                                 state                = "PAUSED"
@@ -683,6 +747,7 @@ def run_game(
 
                 # ── Mouse MOTION ──────────────────────────────────────────────
                 elif event.type == pygame.MOUSEMOTION:
+                    panel_hover_pos = None   # mouse in arena — clear panel highlight
                     if mouse_down_pos is not None and pygame.mouse.get_pressed()[0]:
                         mx, my = event.pos
                         drag_pos = (mx, my)
@@ -712,19 +777,45 @@ def run_game(
                                     panel_node_hit = True
                                     break
                             if not panel_node_hit and mx < renderer.arena_w:
-                                # Arena click while suggestion pending — cancel suggestion
-                                # and open M1 popup if a drone was clicked.
-                                logger.log_suggestion_cancelled(world.elapsed)
-                                pending_suggestion   = None
-                                suggestion_overrides = {}
-                                pending_infeasible   = False
                                 clicked = _drone_at((mx, my), world, renderer.arena_w)
-                                if clicked is not None:
-                                    popup_drone_id = clicked if clicked != popup_drone_id else None
-                                    if popup_drone_id is not None:
-                                        logger.log_popup_opened(popup_drone_id, world.elapsed)
+                                ctrl = bool(pygame.key.get_mods() & pygame.KMOD_CTRL)
+                                if agent_mode == "flexible":
+                                    if clicked is not None:
+                                        # Select the drone and open its popup; keep suggestion alive
+                                        if ctrl:
+                                            if clicked in selected_ids:
+                                                selected_ids.discard(clicked)
+                                            else:
+                                                selected_ids.add(clicked)
+                                            popup_drone_id = None
+                                        else:
+                                            selected_ids = {clicked}
+                                            new_popup = clicked if clicked != popup_drone_id else None
+                                            if popup_drone_id is not None and new_popup is None:
+                                                logger.log_popup_dismissed(popup_drone_id, world.elapsed)
+                                            elif new_popup is not None:
+                                                logger.log_popup_opened(new_popup, world.elapsed)
+                                            popup_drone_id = new_popup
                                     else:
-                                        logger.log_popup_dismissed(clicked, world.elapsed)
+                                        # Empty area: deselect but keep suggestion alive
+                                        if selected_ids:
+                                            logger.log_group_deselected(list(selected_ids), world.elapsed)
+                                            selected_ids = set()
+                                        if popup_drone_id is not None:
+                                            logger.log_popup_dismissed(popup_drone_id, world.elapsed)
+                                            popup_drone_id = None
+                                else:
+                                    # Non-flex: any arena click cancels the suggestion
+                                    logger.log_suggestion_cancelled(world.elapsed)
+                                    pending_suggestion   = None
+                                    suggestion_overrides = {}
+                                    pending_infeasible   = False
+                                    if clicked is not None:
+                                        popup_drone_id = clicked if clicked != popup_drone_id else None
+                                        if popup_drone_id is not None:
+                                            logger.log_popup_opened(popup_drone_id, world.elapsed)
+                                        else:
+                                            logger.log_popup_dismissed(clicked, world.elapsed)
                         mouse_down_pos = None; drag_pos = None; is_dragging = False
                         continue
 
@@ -800,6 +891,8 @@ def run_game(
                         and windowed and _panel_win is not None:
                     _panel_win.handle_resize(event.x, event.y)
                     renderer.set_panel_surface(_panel_win.get_fresh_surface())
+                elif event.type == pygame.MOUSEMOTION:
+                    panel_hover_pos = event.pos
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if state not in ("PLAYING", "SETUP"):
                         continue
@@ -825,9 +918,29 @@ def run_game(
 
             # ── Simulation tick ───────────────────────────────────────────────
             if state == "PLAYING" and not _debug_paused:
-                world.update(dt)
+                world.update(_SIM_DT)
                 if agent_mode == "flexible":
-                    _flex_tick(dt)
+                    _flex_tick(_SIM_DT)
+                    # Auto-dismiss a pending suggestion when its clash is gone.
+                    # Use effective channels (switching_to if in-flight, else current)
+                    # so the panel dismisses as soon as a fix is underway, not after it completes.
+                    if pending_suggestion is not None:
+                        sugg_ids = set(pending_suggestion.keys())
+                        eff = {r.id: (r.switching_to if r.switching_to is not None else r.channel)
+                               for r in world.robots}
+                        future_clash_ids = set()
+                        for i, j in world.edges:
+                            ec_i = eff.get(i)
+                            ec_j = eff.get(j)
+                            if ec_i is not None and ec_j is not None and ec_i == ec_j:
+                                future_clash_ids.add(i)
+                                future_clash_ids.add(j)
+                        if not any(d in future_clash_ids for d in sugg_ids):
+                            logger.log("suggestion_auto_dismissed",
+                                       reason="clash_resolved", elapsed=world.elapsed)
+                            pending_suggestion   = None
+                            suggestion_overrides = {}
+                            pending_infeasible   = False
 
                 now_clash_pairs = frozenset(world.clashing_pairs)
                 if now_clash_pairs != prev_clash_pairs:
@@ -862,6 +975,9 @@ def run_game(
                 if world.is_over():
                     state = "ENDED"
                     logger.log_game_end(world.elapsed, world.clash_seconds)
+                    if _recorder.active:
+                        _recorder.stop()
+                        logger.log("recording_stopped", elapsed=world.elapsed)
                     pct    = world.clash_seconds / world.duration * 100 if world.duration else 0.0
                     result = {
                         "seed": seed, "complexity": complexity,
@@ -892,6 +1008,7 @@ def run_game(
                 panel_detached=panel_detached,
                 drone_modes=drone_modes if agent_mode == "flexible" else None,
                 agent_log=agent_log[-6:] if agent_mode == "flexible" else None,
+                panel_hover_pos=panel_hover_pos,
             )
 
             if state == "ENDED" and study_mode:
@@ -904,6 +1021,28 @@ def run_game(
             if panel_detached and _panel_win is not None:
                 _panel_win.flip()
 
+            # ── Recording frame capture ───────────────────────────────────────
+            if _recorder.active:
+                _recording_frame_timer += dt
+                if _recording_frame_timer >= 1.0 / _RECORD_FPS:
+                    _recording_frame_timer -= 1.0 / _RECORD_FPS
+                    _aw, _ah = screen.get_size()
+                    comp = pygame.Surface((_recorder._w, _recorder._h))
+                    comp.blit(screen, (0, 0))
+                    if panel_detached and _panel_win is not None:
+                        comp.blit(_panel_win.get_fresh_surface(), (_aw, 0))
+                    # Arena cursor ring
+                    _acx, _acy = pygame.mouse.get_pos()
+                    pygame.draw.circle(comp, (255, 255, 255), (_acx, _acy), 9, 2)
+                    pygame.draw.circle(comp, (0, 0, 0),       (_acx, _acy), 5, 1)
+                    # Panel cursor ring
+                    if panel_hover_pos is not None and panel_detached:
+                        _pcx = panel_hover_pos[0] + _aw
+                        _pcy = panel_hover_pos[1]
+                        pygame.draw.circle(comp, (255, 230, 160), (_pcx, _pcy), 9, 2)
+                        pygame.draw.circle(comp, (0, 0, 0),       (_pcx, _pcy), 5, 1)
+                    _recorder.add_frame(comp)
+
     except _StudyExit:
         result = result or {
             "seed": seed, "complexity": complexity,
@@ -912,6 +1051,8 @@ def run_game(
             "clash_pct": 0.0, "completed": False,
         }
     finally:
+        if _recorder.active:
+            _recorder.stop()
         if _panel_win is not None:
             _panel_win.close()
         logger.close()
