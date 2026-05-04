@@ -26,7 +26,7 @@
 \maketitle
 
 \begin{abstract}
-
+TODO
 \end{abstract}
 
 % ─────────────────────────────────────────────────────────────────
@@ -35,14 +35,51 @@ Human-swarm interaction generally
 
 Autonomous assistants
 
+\subsection{Hypotheses}
+\begin{itemize}
+    \item \textbf{H1}: Operators' preferred level autonomy scales with swarm complexity; simpler swarms are controlled manually, complex ones under full autonomy, and suggestion taking a middle position. \textcolor{red}{Preliminary result suggest the \textit{opposite} may be the case}
+    \item \textbf{H2}: Operators will choose, and benefit from, a hybrid approach in some cases with sub-swarms being autonomous or anticipatory changes being manually made.
+    \item \textbf{H3}: After understanding the above dynamics, a \textit{meta-agent} can be developed which recommends an autonomy level to the user based on swarm dynamics and operator state.
+    \item \textbf{H4}: The meta-agent is an accepted and effective tool; users follow its guidance, trust it, and the human-swarm team performs better with its inclusion.
+\end{itemize}
+
+
 % ─────────────────────────────────────────────────────────────────
 \section{Related Work}\label{sec:relatedwork}
-Human--swarm interaction
-trust calibration and automation bias;
+%Introduction to trust and why it matters
+Essential to any autonomous system is the notion of trust. Trust in this context is defined by Lee and See as ``the attitude that an agent will help achieve an individual’s goals in a situation characterized by uncertainty and vulnerability''~\cite{lee2004trust}. Such qualities are abundant in swarm contexts, where the positions, motions, and goals of the robots are rife with uncertainty, and there is a significant risk of failure and inadequacy stemming from the attritable nature of many such assets~\cite{SOMETHING ABOUT AN EXAMPLE OF A SWARM?}. It is an important consideration, as a system which is not trusted will likely not be used by the operator, and a system which is trusted too much will be relied on without appropriate checking and oversight. A system which balanced under- and over-trust is said to be well calibrated~\cite{mcdermott2019practical}. 
 
-adjustable autonomy
+%This para is trying to point out issues with under and over trust, and motivates both suggest and auto modes to an extent
+It has been observed that once a user falls into the trap of under- or over-trust, they have tendency to remain there unless actively coaxed back into a well-calibrated relationship~\cite{okamura_adaptive_2020}. The standard tool for this is explanations, however these are not always given due attention~\cite{naiseh_explainable_2021, wagner_explanation_2021}, and often-times users are biased in favour of action over inaction so accept suggestions readily~\cite{mosier_automation_1999}. In the domain of HSI the notion of neglect benevolence describes the observed advantage from leaving the swarm to resolve its own behaviour instead of intervening overly often~\cite{nagavalli2014neglect}, additionally supporting the notion of autonomy which manages itself under human supervision instead of constant interaction with the recommender. Equally important to explanations, then, may be a design pattern where users work in tandem with autonomous tools and can elect to deploy them selectively, with varying levels of autonomy on varying scales of a swarm or sub-swarm.
 
-graph colouring as a channel-assignment model. Dynamic graph colouring?
+Traditionally swarm robotic systems are characterised by autonomy, however with the importance of human oversight a question arises as to what level of autonomy should be given, and how the human's actions interface with some level of autonomy. Traditional scales such as Sheridan and Verplanks LOA's are a common metric~\cite{sheridan1978human}, as well as more swarm-focussed scales of a similar form~\cite{hocraffer_meta-analysis_2017}. An important note in more developed robotic systems is that the degree of autonomy can vary at different parts of the robot's role (for example information acquisition may be more autonomous than decision-making)~\cite{onnasch_taxonomy_2021}.
+
+An important note is that the terms ``automation'' and ``autonomy'' are often used interchangeably but are in fact different things, with the former describing well-defined processes of tasks deferred to an \textit{automated system}, and the latter describing \textit{autonomous systems} which can make ``decisions independent of human control''~\cite{lyons_humanautonomy_2021}. As we are referring to swarm robots in this work, the terms are somewhat more interchangeable, as to automate a swarm on a particular task requires the granting of some degree of autonomy (for example performing decentralised allocation, where an automated algorithm runs across robots who then autonomously resolve their tasks~\cite{Probably a maxsum ramchurn}). We tend to prefer the term autonomy as it is more relevant to classical swarm paradigms, but remind the reader that there can be some distinction dependant on use case.
+
+Similar to calibrating trust, it is important that any assistive autonomous system is sufficiently performant to merit use. Human performance in the presence of such an agent is highly sensitive to the reliability and performance of that agent~\cite{rovira_effects_2007}. Some degree of imperfection is an expectation (otherwise there would be no need for a human), and humans are typically willing to tolerate occasional failure if it represents an adequate time- and effort-save~\cite{NNED SOMETHING HERE}.
+
+
+Another important factor is the level of workload. Prior works have found that under high task load, more reliable automation increases operator performance, however under low task load, more reliable automated actually \textit{decreases} operator performance. This is likely due to the over-trust issue discussed above, and presents a difficult challenge to designers, as users may defer to the agent even when not overloaded~\cite{parasuraman_adaptive_2009}.
+
+
+The level of chosen autonomy will necessarily represent a trade-off between different desirable qualities as alluded to above, and no single solution is likely to best suit every scenario~\cite{miller_delegation_nodate}. This motivates a flexible approach where the level of autonomy is not fixed, rather it can be chosen by the operator...
+
+Such flexible approaches have been explored to the extent where agents can be granted autonomy where desirable~\cite{hardin_using_nodate}, or else autonomous agents can be overridden at any level while they attempt to perform autonomously~\cite{alero-gomez_impact_2011}. So called mixed-initiative approaches to swarm control allow a human to switch the entire swarm between manual and autonomous modes~\cite{nam_trust_2018}. To our knowledge, however, no prior work has explored the behaviour of an operator when given the choice to dynamically alter the level of autonomy (i.e. change it during runtime) whilst being able to override, and to do so per-agent and sub-section of the swarm. Such an approach would allow the user to choose the level and scale of autonomy as needed, and maintain a constantly preferred level of autonomy across the swarm.
+
+We term this the \textbf{Depth of autonomy} and \textbf{Breadth of autonomy}. \textbf{Depth} refers to how autonomous some agent is, and pertains directly to Sheridan and Verplank's LOA's~\cite{sheridan1978human}. \textbf{Breadth} refers to the scale of autonomy, whether that be an individual agent, the entire swarm, or a subgroup. Our approach seeks to equip the user with the ability to select a subgroup (their chosen breadth) and place them under the desired level of autonomy (their chosen depth). This allows the appropriate level of autonomy to each part of the greater whole, instead of switching the entire policy across all agents where it may not always be best suited.
+
+
+\textcolor{red}{Next bit is probably only for study 2}
+We additionally intend to automate the process of this depth/breadth selection. We discuss later the notion of the ``meta-agent'' to do this, but a key aspect is the inputs to the system which determine when more or less autonomy is required, and crucially where in the swarm. Metrics exist to assess the difficulty of tasks in the context of swarms, such as efficiency and effectiveness, and it has been suggested that autonomy should vary depending on these~\cite{hussein_characterization_2022}. As well as the complexity of the task, a more direct assessment of cognitive complexity via operator state metrics such as EEG has been employed~\cite{abbass_augmented_2014}.
+\textcolor{red}{/end}
+
+We choose a simple problem for our experiments: dynamic graph colouring. Graph colouring is a standard NP problem that is well-established and applicable to number of real world problems including task allocation~\cite{macarthur2011distributed}. The specifics of the problem are described in Section \ref{sec:problem}. The dynamic variant includes consideration of new edges appearing and disappearing, and requires a further set of consideration when compared with a static problem~\cite{barba_dynamic_2018}. We motivate this by analogising the movement of a swarm of robots divided over different communication channels; the channel switching problem is a common version of graph colouring, where each node colours itself based on one of $N$ channels, and no two neighbouring nodes should share the same channel~\cite{tushir_graph_2016}. Our variant concerns moving robots, and while some prior work has established a more realistic version of this problem interference levels that scale with proximity~\cite{mishra2005weighted, mostofi_characterization_2009}, adapt the fixed-weight version to simplify the problem for the human thus allowing them an ability more in line with what is expected in a human-swarm team.
+
+
+\section*{Study 1 (H1, H2) - Selective-Autonomy Assistive Agent for Human-Swarm Teaming}
+\begin{center}
+    \textit{This study aims to build our scenario and environment, and design an assistive agent that can be delegated some or or all of the swarm by the human operator. We test this with participants on a variety of swarm complexities in order to understand the advantages and disadvantages of each mode in this context, and how this depends on swarm properties.}
+\end{center}
 
 
 % ─────────────────────────────────────────────────────────────────
@@ -64,6 +101,13 @@ where $r_{\mathrm{link}}$ is the radio link radius. We define $\mathcal{K}(t)$ a
 \end{equation}
 Because only three channels are available, any clique of size $\omega(G(t)) > 3$ cannot be properly coloured: at least one clash persists regardless of assignment. These infeasible configurations arise transiently as agents cluster and are an intentional feature of the task as they require the operator to minimise rather than eliminate clashes for that period.
 
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{placeholderStudyScreenshot.png}
+    \caption{Placeholder study screenshot. TODO make this more modular. For now, \textbf{LEFT (usually monitor 1)} - Arena panel shows agents moving around establishing and losing connections dynamically. Agents can be selected, then on the Agent panel set to one of the 3 modes (not shown). \textbf{RIGHT (usually monitor 2)} - In this example we are on suggestion mode for all agents. A suggestion is proposed to the user who can modify it and/or accept it.}
+    \label{fig:placeholder}
+\end{figure}
+
 \subsubsection{Performance Metric}
 
 The primary performance measure is the total clash cost over the trial of duration $T$:
@@ -75,30 +119,20 @@ Each simultaneously clashing pair contributes independently, so two concurrent c
 
 \subsubsection{Channel Switching}
 
-An operator action queues a channel switch for agent $a_i$ to channel $c'$.
-The switch completes after a fixed propagation delay $\tau = 3\,\mathrm{s}$:
+An operator action queues a channel switch for agent $a_i$ to channel $c'$. The switch completes after a fixed propagation delay $\tau = 3\,\mathrm{s}$:
 \[
   c_i(t + \tau) \leftarrow c'
 \]
-Only one pending switch per agent is permitted at a time; during a switch,
-$c_i(t) = \bot$ and the agent contributes no clashes.
-The delay rewards anticipatory action: a switch initiated before two agents
-come within $r_{\mathrm{link}}$ can resolve a would-be clash before it begins.
+Only one pending switch per agent is permitted at a time; during a switch, $c_i(t) = \bot$ and the agent contributes no clashes. The delay rewards anticipatory action: a switch initiated before two agents come within $r_{\mathrm{link}}$ can resolve a would-be clash before it begins.
 
 \subsubsection{Warning Zone}
 
-A secondary radius $r_{\mathrm{warn}} > r_{\mathrm{link}}$ defines an
-\emph{approach zone}.
-Pairs within $r_{\mathrm{warn}}$ but not yet within $r_{\mathrm{link}}$ are
-visually flagged in the arena, giving the operator (and the assistive agent)
-advance notice.
-The approach zone affords an anticipation window of approximately:
+A secondary radius $r_{\mathrm{warn}} > r_{\mathrm{link}}$ defines an approach zone. Pairs within $r_{\mathrm{warn}}$ but not yet within $r_{\mathrm{link}}$ are visually flagged in the arena, giving the operator (and the assistive agent) advance notice. The approach zone affords an anticipation window of approximately:
 \[
   \Delta t_{\mathrm{warn}} \approx
     \frac{r_{\mathrm{warn}} - r_{\mathrm{link}}}{2\,v_{\max}}
 \]
-during which a switch initiated at the moment of entering the warning zone can
-complete before the link forms.
+during which a switch initiated at the moment of entering the warning zone can complete before the link forms.
 
 \subsection{User Interface}\label{sec:ui}
 
@@ -108,8 +142,11 @@ The \emph{arena} monitor shows the live simulation: agents are rendered as label
 Each trial has a \emph{setup phase} before the timer starts. In this phase, the operator assigns initial channels to all agents; switches applied during setup are instantaneous. Once the operator confirms the initial assignment, the trial begins and the timer counts to $T$.
 
 % ─────────────────────────────────────────────────────────────────
-\section{Interaction Modes}\label{sec:modes}
+\subsection{Assistive Agent}\label{sec:agent}
 
+The assistant applies a standard greedy graph colouring to the target set of agents. It treats both confirmed edges $E(t)$ and approach-zone pairs as interference constraints (enabling anticipatory planning), orders agents by descending constraint degree, and assigns each the first clash-free channel; where no clash-free assignment exists it selects the channel that minimises local clashes. Each per-agent assignment is then independently randomised with probability $\varepsilon$, replacing the optimal channel with one drawn uniformly from $\mathcal{C}$.
+
+\subection{Autonomy Levels}\label{sec:modes}
 Each agent is at all times under one of three oversight levels, which the operator can change at any time by selecting a group (box-drag or Ctrl+click) and choosing an action. Custody assignments persist across the trial.
 
 \paragraph{Direct.}
@@ -121,77 +158,50 @@ Agents under supervised custody are monitored by the assistant. When a clash inv
 \paragraph{Autonomous.}
 Agents under autonomous custody are managed by the assistant without operator review. When a clash is detected the assistant applies a fix immediately. Operators can also apply a one-time autonomous fix to any selected group.
 
-\medskip
 When a clash arises in a connected cluster containing agents under both supervised and autonomous custody, the two subgroups are handled independently: supervised agents receive a suggestion (treating autonomous agents' current channels as fixed neighbours), and autonomous agents are assigned immediately (treating supervised agents' channels as fixed). Custody levels are not altered. A refire suppression delay of $3\,\mathrm{s}$ prevents re-suggesting for the same agents immediately after a suggestion is applied.
 
 % ─────────────────────────────────────────────────────────────────
-\section{Assistive Agent}\label{sec:agent}
-
-The assistant applies a standard greedy graph colouring to the target set of agents. It treats both confirmed edges $E(t)$ and approach-zone pairs as interference constraints (enabling anticipatory planning), orders agents by descending constraint degree, and assigns each the first clash-free channel; where no clash-free assignment exists it selects the channel that minimises local clashes. Each per-agent assignment is then independently randomised with probability $\varepsilon$, replacing the optimal channel with one drawn uniformly from $\mathcal{C}$.
-
+\subsection{Agent Reliability}
 The noise parameter $\varepsilon$ controls assistant accuracy: at $\varepsilon = 0$ it is always correct; at $\varepsilon = 1$ it assigns uniformly at random. All study trials use $\varepsilon = 0.30$, yielding approximately 70\% per-agent accuracy. The assistant detects infeasibility (cliques of size $> 3$) and flags this in the suggestion display so operators know when a clash-free assignment is structurally impossible. The assistant is entirely rule-based and deterministic given the RNG seed.
 
 % ─────────────────────────────────────────────────────────────────
-\section{Study Design}\label{sec:study}
+\section{Experiment Design}\label{sec:study}
+[Placeholder: $N =$ \textit{XX} participants recruited from \ldots; inclusion/exclusion criteria; mean age; compensation.]
 
-\subsection{Participants}
-
-[Placeholder: $N =$ \textit{XX} participants recruited from \ldots;
-inclusion/exclusion criteria; mean age; compensation.]
-
-\subsection{Design}
-
-The study uses a [\textit{within/between}]-subjects design. The independent variable is \textbf{task complexity} (\textit{3 levels}): \textit{Easy} ($n=8$ agents, $v \in [7, 15]$\,px/s), \textit{Medium} ($n=12$, $v \in [7, 15]$\,px/s), and \textit{Hard} ($n=16$, $v \in [10, 20]$\,px/s). All trials share duration $T = 120\,\mathrm{s}$ and agent accuracy $\varepsilon = 0.30$. Trial order is [\textit{counterbalanced/fixed}]; the simulation seed is fixed per participant to ensure reproducibility.
+The study uses a within-subjects design. The independent variable is task complexity (\textit{3 levels}): \textit{Easy} ($n=8$ agents, $v \in [7, 15]$\,px/s), \textit{Medium} ($n=12$, $v \in [7, 15]$\,px/s), and \textit{Hard} ($n=16$, $v \in [10, 20]$\,px/s). All trials share duration $T = 120\,\mathrm{s}$ and mistake rate $\varepsilon = 0.30$. Trial order is counterbalanced by Latin square; the simulation seed is fixed per participant to ensure reproducibility.
 
 \subsection{Procedure}
 
 Each session follows a fixed sequence:
 \begin{enumerate}[noitemsep]
-  \item \textbf{Pre-study questionnaire.} Participants complete a demographics
-        survey (age, gender, education, technology comfort, prior AI and drone
-        experience).
-  \item \textbf{Tutorial.} A scripted, step-by-step tutorial introduces the arena, the interference mechanic, channel switching, and all interaction tools including Watch:Suggest and Watch:Auto.
-  \item \textbf{Trials.} Participants complete [\textit{N}] timed trials in
-        sequence, separated by brief inter-trial summary screens.
-        Each trial starts with a setup phase (initial channel assignment,
-        instant switches) followed by the timed task.
-  \item \textbf{Post-trial survey.} After each non-tutorial trial the
-        participant completes a questionnaire battery (Section~\ref{sec:measures}).
-  \item \textbf{Post-study summary survey.} After all trials, participants rate
-        each scenario and reflect on their strategy in an open-ended questionnaire.
+  \item \textbf{Pre-study questionnaire.} Participants complete a demographics survey (age, gender, education, technology comfort, prior AI and drone experience).
+  \item \textbf{Tutorial.} A scripted, step-by-step tutorial introduces the arena, the interference mechanic, channel switching, and each interaction modality. It finishes with some free time to test out each mode
+  \item \textbf{Trials.} Participants complete 3 timed trials in sequence, separated by brief inter-trial summary screens. Each trial starts with a setup phase (initial channel assignment, instant switches) followed by the timed task.
+  \item \textbf{Post-trial survey.} After each non-tutorial trial the participant completes short series of questionnaires (Section~\ref{sec:metrics}).
+  \item \textbf{Post-study summary survey.} After all trials, participants rate each scenario and reflect on their strategy in an open-ended questionnaire.
 \end{enumerate}
 
-The session lasts approximately [\textit{XX}] minutes.
+The session lasts approximately 30 minutes.
 
-\subsection{Measures}\label{sec:measures}
+\subsection{Metrics}\label{sec:metrics}
 
 \subsubsection{Objective Performance}
 
-The primary measure is $C$ (Equation~\ref{eq:metric}).
-Secondary measures include:
+The primary performance measure is the sum of clashes $C$ (Equation~\ref{eq:metric}). Secondary measures include:
 \begin{itemize}[noitemsep]
   \item Number of distinct clash episodes ($N_{\mathrm{clash}}$);
   \item Mean and maximum clash-episode duration;
-  \item Operator reaction time (elapsed time from clash onset to first switch
-        action targeting the clashing agents).
+  \item Operator reaction time (elapsed time from clash onset to first switch action targeting the clashing agents).
 \end{itemize}
 
 \subsubsection{Interaction Behaviour}
 
-Switch counts are disaggregated by custody level (direct, supervised, autonomous) and by trial phase (setup vs.\ in-game).
-M2 suggestions are classified into quality categories based on whether the
-suggestion was accepted without modification, modified before application,
-cancelled, or applied to agents that subsequently clashed within
-$\tau + 2\,\mathrm{s}$ (indicating the $\varepsilon$-noise had degraded the
-recommendation):
+Switch counts are disaggregated by custody level (direct, supervised, autonomous) and by trial phase (setup vs.\ in-game). M2 suggestions are classified into quality categories based on whether the suggestion was accepted without modification, modified before application, cancelled, or applied to agents that subsequently clashed within $\tau + 2\,\mathrm{s}$ (indicating the $\varepsilon$-noise had degraded the recommendation):
 \begin{itemize}[noitemsep]
   \item \textit{clean\_accepted}: feasible, applied without modification;
-  \item \textit{clean\_modified}: feasible, operator changed $\geq 1$ channel
-        before applying;
-  \item \textit{clean\_bad\_applied}: feasible but a clash involving the same
-        agents followed within the bad-suggestion window;
-  \item \textit{unavoidable\_accepted/modified}: suggestion under an infeasible
-        clique (clash is unavoidable), applied with or without modification;
+  \item \textit{clean\_modified}: feasible, operator changed the configuration before applying;
+  \item \textit{clean\_bad\_applied}: feasible but a clash involving the same agents followed within the bad-suggestion window;
+  \item \textit{unavoidable\_accepted/modified}: suggestion under an infeasible clique (clash is unavoidable), applied with or without modification;
   \item \textit{cancelled}: dismissed without action.
 \end{itemize}
 
@@ -199,29 +209,18 @@ recommendation):
 
 After each non-tutorial trial participants complete:
 \begin{itemize}[noitemsep]
-  \item \textbf{NASA Task Load Index (TLX)}~\cite{hart1988nasa}: six
-        subscales (mental, physical, and temporal demand; performance; effort;
-        frustration) on a 20-point scale; we report the unweighted mean
-        (TLX$_\mu$).
-  \item \textbf{Trust in the assistant}~\cite{jian2000foundations}: six items
-        adapted from Jian, Bisantz \& Drury (2000) on a 7-point Likert scale.
-        Two items (\textit{suspicious}, \textit{wary}) are reverse-scored; a
-        composite trust score is computed as
-        $\frac{\bar{x}_{\mathrm{pos}} - \bar{x}_{\mathrm{neg}} + 6}{12}\times 7$.
-  \item \textbf{Technology acceptance (TAM)}~\cite{davis1989perceived}: four
-        items assessing perceived usefulness, ease of use, and intention to use
-        on a 7-point Likert scale; we report the mean (TAM$_\mu$).
+  \item \textbf{NASA Task Load Index (TLX)}~\cite{hart1988nasa}: six subscales (mental, physical, and temporal demand; performance; effort; frustration) on a 20-point scale; we report the unweighted mean (TLX$_\mu$).
+  \item \textbf{Trust in the assistant}~\cite{jian2000foundations}: six items adapted from Jian, Bisantz \& Drury (2000) on a 7-point Likert scale. Two items (\textit{suspicious}, \textit{wary}) are reverse-scored; a composite trust score is computed as $\frac{\bar{x}_{\mathrm{pos}} - \bar{x}_{\mathrm{neg}} + 6}{12}\times 7$.
+  \item \textbf{Technology acceptance (TAM)}~\cite{davis1989perceived}: four items assessing perceived usefulness, ease of use, and intention to use on a 7-point Likert scale; we report the mean (TAM$_\mu$).
 \end{itemize}
 
-The post-study summary questionnaire elicits per-scenario ratings of difficulty,
-tool usefulness, frequency of manual intervention, and decision confidence, plus
-open-ended reflections on strategy and scenario preferences.
+The post-study summary questionnaire elicits per-scenario ratings of difficulty, tool usefulness, frequency of manual intervention, and decision confidence, plus open-ended reflections on strategy and scenario preferences.
 
 % ─────────────────────────────────────────────────────────────────
 \section{Results}\label{sec:results}
-
 [Full results pending; pilot data only ($n = 2$).]
 
+\textcolor{red}{First show how the scenarios get harder, and reaction time, number of clicks etc nods to users finding it more challenging}
 \begin{table}[ht]
 \centering
 \caption{Mean performance by complexity condition (placeholder).}
@@ -238,6 +237,14 @@ Hard   & -- & -- & -- & -- & -- \\
 \end{tabular}
 \end{table}
 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/group_performance.png}
+    \caption{PLACEHOLDER pilot ($n=2$) - Performance in each scenario}
+    \label{fig:placeholder}
+\end{figure}
+
+\textcolor{red}{Basic workload etc for each mode}
 \begin{table}[ht]
 \centering
 \caption{Mean subjective scores by complexity condition (placeholder).}
@@ -253,20 +260,100 @@ Hard   & -- & -- & -- \\
 \end{tabular}
 \end{table}
 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/group_survey.png}
+    \caption{PLACEHOLDER pilot ($n=2$) - survey results}
+    \label{fig:placeholder}
+\end{figure}
+
 [Placeholder: add figures for clash time-series, suggestion quality breakdown by condition, and watch-mode adoption timeline once full data are collected.]
+
+\textcolor{red}{Figures for how they used each mode and how things changed over time}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/group_behaviour_heatmap.png}
+    \caption{PLACEHOLDER pilot ($n=2$) - Heatmap of when they chose each. Should be collated across users and more meaningfully named}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/group_suggestion_quality.png}
+    \caption{PLACEHOLDER pilot ($n=2$) - Alternative presentation of above heatmap}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\linewidth]{figs/group_clash_area.png}
+    \caption{PLACEHOLDER pilot ($n=2$) - Analysis over time across all users (or possibly example users paired with quotes from open responses). May show them giving up etc. NOTE this graph has an error where it caps at 1 due to a logging bug at collection stage. Now resolved.}
+    \label{fig:placeholder}
+\end{figure}
+
+
 
 % ─────────────────────────────────────────────────────────────────
 \section{Discussion}\label{sec:discussion}
 
-[To be written. Key themes: effect of complexity on performance and trust
-calibration; adoption patterns for Watch:Suggest vs.\ Watch:Auto; automation
-bias and bad-suggestion acceptance rates; implications for adjustable-autonomy
-interface design.]
+[To be written. Key themes: effect of complexity on performance and trust calibration; adoption patterns for Watch:Suggest vs.\ Watch:Auto; automation bias and bad-suggestion acceptance rates; implications for adjustable-autonomy interface design.]
 
-% ─────────────────────────────────────────────────────────────────
+
+\section*{Study 2 (H3, H4) - A Meta-Agent for Suggesting Autonomy to Operators}
+\begin{center}
+    \textit{This study extends Study 1 by designing a simple model which considers certain scenario and human factors to make recommendations to the operator about the appropriate level of autonomy on the entire swarm or a sub-swarm thereof. We test this on [more normal people / a small cohort of more expert users]}
+\end{center}
+
+\section{Methodology}
+\textcolor{red}{This will have to be informed by learning from study 1 imo. Currently this is the vague layout (hence f(x) but no specifics)}
+
+We propose a lightweight meta-agent that recommends an appropriate autonomy level based on both swarm properties and inferred operator state. The model operates on two inputs: a measure of swarm complexity and an estimate of operator capacity.
+
+\paragraph{Swarm Complexity.}
+We define swarm complexity $\chi(t)$ as a function of the current swarm configuration:
+\[
+\chi(t) = f\bigl(|\mathcal{A}|,\; \kappa(G(t))\bigr)
+\]
+where $|\mathcal{A}|$ is the number of agents and $\kappa(G(t))$ captures structural properties of the interference graph, such as mean degree, density, or size of the largest connected component. This reflects both scale and interaction difficulty. A consideration of rate of change may also be prudent, as rapid switching is probably the key issue (although this is correlated with swarm size)
+
+\paragraph{Operator State.}
+Operator state $\sigma(t)$ is estimated from behavioural (and optionally physiological) signals:
+\[
+\sigma(t) = f\bigl(\text{reaction time},\; \text{interaction rate},\; \text{biometrics}\bigr)
+\]
+where longer reaction times and reduced interaction rates may indicate overload, while higher activity may reflect either engagement or compensatory behaviour. In this work, $\sigma(t)$ is treated as a proxy for operator workload and responsiveness.
+
+\paragraph{Autonomy Recommendation.}
+The meta-agent maps $(\chi(t), \sigma(t))$ to an estimated advantage for each autonomy level:
+\[
+(\chi(t), \sigma(t)) \;\longrightarrow\; \{\Delta M_1,\; \Delta M_2,\; \Delta M_3\}
+\]
+corresponding to Direct, Supervised, and Autonomous modes respectively. These values represent the predicted performance benefit of switching to each mode under current conditions.
+
+Recommendations are generated when the expected advantage of an alternative mode exceeds a threshold $\theta$, to avoid excessive or low-confidence interventions.
+
+\paragraph{Granularity and Timing.}
+The model operates at both the global swarm level and over dynamically identified sub-swarms (e.g., connected components of $G(t)$), allowing localised autonomy recommendations. The meta-agent is evaluated periodically at fixed intervals $\Delta t$, producing updated recommendations throughout the trial.
+
+\vspace{0.5em}
+\noindent
+This formulation is intentionally abstract; specific feature definitions and mapping functions will be informed by findings from Study~1 and relevant literature on workload estimation and adaptive automation.
+
+
+\section{Experiment Design}
+\textcolor{red}{We will test in a similar way, although this time the meta agent makes suggestions. Scenarios where the complexity increases and decreases may be apropos (changing swarm size - this also links to AHFE). Ideally we could do this part on a more relevant cohort}
+
+\section{Results}
+
+
+\section{Discussion}
+
+
+
 \section{Conclusion}\label{sec:conclusion}
 
-[To be written.]
+
 
 \bibliographystyle{plainnat}
 \bibliography{refs}

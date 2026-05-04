@@ -68,9 +68,9 @@ STUDY_PRESETS: Dict[str, TrialConfig] = {
     "Tutorial":          TrialConfig("Tutorial",          is_tutorial=True, epsilon=0.0, duration=0),
     "Flexible Tutorial": TrialConfig("Flexible-Tutorial", is_tutorial=True, tutorial_type="flexible", epsilon=0.0, duration=0),
     # ── Study conditions: agent accuracy fixed at 70% (ε=0.30); vary drones & speed ──
-    "Easy (8dr, slow, 70%)":     TrialConfig("Easy-70pct",   complexity="easy",   epsilon=0.30, duration=90),
+    "Easy (8dr, slow, 70%)":     TrialConfig("Easy-70pct",   complexity="easy",   epsilon=0.30, duration=120),
     "Medium (12dr, slow, 70%)":  TrialConfig("Medium-70pct", complexity="medium", epsilon=0.30, duration=120),
-    "Hard (16dr, fast, 70%)":    TrialConfig("Hard-70pct",   complexity="hard",   epsilon=0.30, duration=150),
+    "Hard (16dr, fast, 70%)":    TrialConfig("Hard-70pct",   complexity="hard",   epsilon=0.30, duration=120),
     # ── Debug / baseline conditions ──────────────────────────────────────────────────
     "Easy (8dr, slow, perfect)":    TrialConfig("Easy-perfect",   complexity="easy",   epsilon=0.0, duration=90),
     "Medium (12dr, slow, perfect)": TrialConfig("Medium-perfect", complexity="medium", epsilon=0.0, duration=120),
