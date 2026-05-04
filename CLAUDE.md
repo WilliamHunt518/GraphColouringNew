@@ -4,31 +4,34 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-This is a **research-grade prototype** for studying **trust and collaboration with autonomous AI agents** via a graph-colouring task. The application is used in a human-subjects study with a **2×2 within-subjects design**.
+This is a **research-grade prototype** for a human-subjects study on **trust in autonomous AI agents**, using a **drone radio-channel assignment task**. Participants manage interference between drones by assigning them channels (red/green/blue). The study measures trust calibration and workload across three interaction modes and three difficulty levels.
+
+**The repo name "GraphColouringNew" is a legacy artefact — the actual task is drone channel assignment, not graph colouring.**
 
 ## Running the Code
 
-### Standard Entry Point
+### Full study (researcher entry point)
+
+```bash
+python study_runner.py
+```
+
+Opens a Tkinter setup window. Configure participant ID, monitors, trials, and surveys, then click Start. Config is auto-saved to `~/.drone_study_config.json` and restored on the next launch.
+
+### Quick single-game launcher (developer / testing)
 
 ```bash
 python launch_menu.py
 ```
 
-This opens a simple launcher to configure participant ID, mode, graph preset, and seed, then spawns the experiment window.
+Runs a single game session with configurable seed, complexity, epsilon, and monitor layout. No surveys.
 
-### Direct Entry Point (for testing)
+### Python environment
 
-```bash
-python run_experiment.py --participant P01 --mode mode1 --graph study_12
-python run_experiment.py --participant P01 --mode mode2a --graph study_12
-python run_experiment.py --participant P01 --mode mode2b --graph study_12
-```
-
-### Python Environment
-
-The project uses system Python. Ensure Tkinter is available.
+Requires **pygame** (and optionally `pygame._sdl2` for the detached panel window). Tkinter is used for surveys and setup UIs and is bundled with standard Python.
 
 ```bash
+pip install pygame
 python -m tkinter   # should open a test window
 ```
 
@@ -36,114 +39,136 @@ python -m tkinter   # should open a test window
 
 ### Study Design
 
-- **Mode 1 — Manual Collaborative**: At each node (in fixed sequential order), AI agents propose a colour with rationale. The human makes the final choice.
-- **Mode 2A — Autonomous (High Quality)**: A multi-agent deliberation pre-plans a full solution (~80% optimal choices). The human reviews and accepts/modifies each step.
-- **Mode 2B — Autonomous (Low Quality)**: Same as 2A but with ~30% optimal choices. Visually identical to 2A.
+Participants see a 2D arena of moving drones. Two drones on the same channel that come within range of each other cause a **clash** — the penalty metric accumulates clash-seconds in real time. The goal is to minimise total clash time over a timed trial.
 
-### Sequential Colouring
+There are three interaction modes available simultaneously:
 
-Nodes are coloured **one at a time in a fixed order** (no skipping or reordering). This forces path dependency and suboptimal local decisions — the study variable.
+| Mode | Label | Description |
+|---|---|---|
+| M1 | Manual | Click a drone → pick channel from popup |
+| M2 | Suggest & Review | Select group → Suggest → review/edit proposal in panel → Apply |
+| M3 | Auto-assign | Select group → Auto-assign (apply instantly without review) |
 
-### Scoring
+In **flexible agent mode** (`agent_mode="flexible"`), each drone can additionally be "watched":
+- **Watch:Suggest** — agent monitors that drone; surfaces a suggestion panel when a clash involves it
+- **Watch:Auto** — agent monitors and applies fixes automatically without user involvement
+- The autonomous monitor fires every 0.5 s; drones in cooldown (`switch_duration + 0.5 s`) are skipped
 
-- Each participant (Human, AgentA, AgentB) earns points when a node is coloured with their assigned colour
-- All colourings are valid — no adjacency penalty
-- **Shared score** = sum of all individual scores
-- Defaults: Human earns 3/1 pts for Red/Blue; AgentA earns 1/4 for Red/Blue; AgentB earns 2/2
-- Blue is globally optimal (7 pts/node) but Human individually prefers Red (3 pts personal)
+### Agent
 
-### Key Components
+`agents/channel_agent.py` — `ChannelAdvisor`. Greedy graph-colouring with epsilon-random noise per drone.
+- `epsilon=0.0` → perfect agent; `epsilon=0.30` → ~70% optimal (study condition)
+- Uses effective channels (`switching_to` if in-flight, else `channel`) to avoid planning against stale state
+
+### Game States
+
+`PAUSED` → `SETUP` (user assigns starting channels) → `PLAYING` (timer runs) → `ENDED`
+
+### Key Files
 
 ```
-launch_menu.py         # GUI launcher
-run_experiment.py      # CLI entry point
-simulation.py          # ColourSession orchestrator (attempt loop)
+study_runner.py        # Full study orchestrator + Tkinter setup UI (researcher entry point)
+launch_menu.py         # Single-game dev launcher
 
-study/
-  config.py            # StudyConfig + dataclasses
-  graphs.py            # Graph presets (study_12, study_15)
-  session.py           # SessionManager — tracks in-progress attempt
-  logger.py            # StudyLogger — writes JSONL events
-
-problems/
-  graph_coloring.py    # GraphColoring (topology only — KEEP UNCHANGED)
-  scoring.py           # PointsScorer, ScoringResult
-
+robot_game.py          # Main pygame game loop (~1100 lines)
+robot_renderer.py      # All pygame rendering (arena + side panel)
+robot_world.py         # Physics: drone movement, channel switching, clash/edge detection
 agents/
-  proposal_agent.py    # Mode 1: per-node proposals with template rationales
-  planning_agent.py    # Mode 2: full-plan deliberation with quality bias
+  channel_agent.py     # ChannelAdvisor — greedy colouring + epsilon noise
 
-ui/
-  graph_canvas.py      # GraphCanvas widget (pan/zoom graph display)
-  scoring_hud.py       # ScoringHUD widget (shared + individual scores)
-  colouring_ui.py      # ColourStudyWindow (main experiment window)
-  results_panel.py     # AttemptResultsWindow (end-of-attempt summary)
-  node_layouts.json    # Fractional node positions per preset
+tutorial.py            # Guided tutorial (standard 10-step + flexible 16-step variants)
+surveys.py             # Tkinter questionnaire windows (demographics, post-trial, summary)
+game_logger.py         # JSONL event logger
+panel_window.py        # SDL2 detached side-panel window (separate physical monitor)
+screen_recorder.py     # mp4 frame capture via pygame
+
+analysis/
+  run_analysis.py      # Entry point for post-study analysis
+  metrics.py           # Per-trial metric extraction
+  data_loader.py       # JSONL → structured data
+  plots.py             # Matplotlib visualisations
+  stats.py             # Statistical tests
+
+scenario_preview.py    # Standalone tool: preview drone layout for a given seed
+auxil/                 # Miscellaneous helper scripts
 ```
 
-### Data Logging
+### Data Output
 
-All events written to `results/participants/<pid>_<timestamp>/events.jsonl`.
+Study data written to:
+- **Real runs**: `results/participants_study/<pid>_<timestamp>/`
+- **Test runs**: `results/participants_test/<pid>_<timestamp>/` (auto-purges to last 5)
 
-Key logged events:
-- `colour_chosen` — node, colour, source (`human`/`accepted_plan`/`modified_plan`), `decision_time_s`, `agents_agreed`
-- `explanation_click` — tracks when user expands agent rationale
-- `plan_modified` — tracks overrides in Mode 2 (plan_colour vs chosen_colour)
-- `attempt_complete` — final assignment, score breakdown, elapsed time
-- `session_end` — score trajectory across all attempts
+Per-session layout:
+```
+study_metadata.json          # Config snapshot at start
+demographics.json            # Pre-study survey
+trial_01_<label>/
+  game_events.jsonl          # All in-game events (timestamped)
+  recordings/recording_*.mp4 # Optional screen recording
+trial_01_<label>_survey.json # Post-trial survey
+...
+summary_survey.json          # Post-study summary questionnaire
+study_summary.json           # Final results (clash_pct per trial)
+```
+
+Key JSONL event types:
+- `game_start` / `game_end` — trial bookends
+- `switch_requested` — drone_id, from_channel, to_channel, mode (M1/M2/M3/flex_auto)
+- `suggestion_requested` / `suggestion_shown` / `suggestion_applied` / `suggestion_cancelled`
+- `auto_assign_applied` — flex auto mode
+- `clash_start` / `clash_end` / `clash_update` — clash pair transitions
+- `play_started` — moment SETUP → PLAYING (timer begins)
+
+### Study Configuration (default as of May 2026)
+
+Saved in `~/.drone_study_config.json`. Default on first run:
+
+| # | Trial | Agent mode | Surveys | Record | Seed |
+|---|---|---|---|---|---|
+| 1 | Flexible Tutorial | flexible | none | yes | 42 |
+| 2 | Easy (8dr, slow, 70%) | flexible | TLX + Trust + Accept | yes | 52 |
+| 3 | Medium (12dr, slow, 70%) | flexible | TLX + Trust + Accept | yes | 72 |
+| 4 | Hard (16dr, fast, 70%) | flexible | TLX + Trust + Accept | yes | 42 |
+
+Arena monitor: 0, Panel monitor: 2 (last available). Both survey types enabled.
 
 ## Development Guidelines
 
-### Adding a New Graph Preset
+### Adding a complexity preset
 
-1. Add a `GraphDef` entry to `study/graphs.py`
-2. Add node coordinates to `ui/node_layouts.json` (fractional 0–1 range, keyed by preset name)
-3. Add to `GRAPH_CONFIGS` and `NODE_REGIONS` dicts in `study/graphs.py`
+Add an entry to `COMPLEXITY_PRESETS` in `robot_world.py` and a matching `TrialConfig` in `STUDY_PRESETS` in `study_runner.py`.
 
-### Changing Scoring Weights
+### Changing agent accuracy
 
-Edit `DEFAULT_POINTS` in `study/config.py`. All values are per-node, per-colour.
+Edit the `epsilon` field on the relevant `TrialConfig` in `STUDY_PRESETS`. `epsilon=0` = perfect, `epsilon=0.30` = 70% optimal.
 
-### Modifying Agent Logic
+### Modifying agent logic
 
-- **Mode 1 proposals**: `agents/proposal_agent.py` — `propose_for_node()` method
-- **Mode 2 plan**: `agents/planning_agent.py` — `_deliberate_node()` method; quality bias is in `generate_plan()`
+`agents/channel_agent.py` — `ChannelAdvisor.suggest()`. Greedy ordering is by most-constrained-first within the selected subgroup.
 
-### Never Modify
+### Flexible monitor behaviour
 
-- `problems/graph_coloring.py` — used as-is for graph topology; do not change
-- `ui/node_layouts.json` node positions for existing presets (break existing studies)
+`_flex_tick()` inside `run_game()` in `robot_game.py`. Controls monitor interval (`_MONITOR_INTERVAL`), cooldown (`switch_duration + 0.5`), and re-fire delay for suggest mode (`_SUGGEST_REFIRE_DELAY`).
+
+### Tutorial steps
+
+`tutorial.py` — `_make_steps()` for standard (10 steps) and `_make_flex_steps()` for flexible (16 steps). Each `TutorialStep` has a `setup_fn`, optional `completion_check`, and `disabled_buttons`.
 
 ## Critical Constraints
 
 1. **No LLMs** — all agent logic is deterministic and rule-based
-2. **Determinism** — seeded `random.Random` ensures reproducibility across sessions
-3. **No auto-termination** — user always explicitly finishes via the results window
-4. **Logging fidelity** — all decisions must be logged with timestamps
+2. **Determinism** — `RobotWorld` uses a seeded `random.Random`; same seed → same drone trajectories
+3. **Effective channels in planning** — always pass `switching_to or channel` to the advisor, never just `channel`, to avoid planning against stale mid-switch state
+4. **Logging fidelity** — every decision must be logged with `world.elapsed` timestamp
 5. **UI language** — use "agent" or "assistant", never "AI" or "LLM"
+6. **Arena never pre-colours** — the arena always shows actual drone channels; suggestions are displayed only in the panel mini-graph
 
-## Legacy Files
+## Legacy / Unused
 
-The following files are from the previous implementation and are **not imported** by the new code. They are kept for reference but should be ignored:
+The following exist in the repo but are not used by the current study:
 
-- `cluster_simulation.py` — old orchestration layer
-- `study_launcher.py` — old multi-condition launcher
-- `agents/cluster_agent.py` and variants
-- `comm/` — LLM communication layers
-- `docs/` — old architecture docs
-
-## Project Structure
-
-```
-.
-├── agents/                # Agent implementations (new: proposal_agent, planning_agent)
-├── comm/                  # Legacy (unused)
-├── docs/                  # Legacy docs (unused)
-├── problems/              # Problem definitions
-├── study/                 # Study management (config, session, logger, graphs)
-├── ui/                    # Tkinter UI components
-├── results/               # Experimental outputs (gitignored)
-├── launch_menu.py         # Main launcher
-├── run_experiment.py      # CLI entry point
-└── simulation.py          # Session orchestrator
-```
+- `docs/` — old architecture documents from a previous iteration
+- `tests/` — tests written for an earlier LLM-based agent system
+- `old_files/` — previous main/simulation scripts
+- `auxil/` — miscellaneous helper scripts, not part of the study pipeline

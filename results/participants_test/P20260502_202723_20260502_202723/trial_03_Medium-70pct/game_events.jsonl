@@ -1,5 +1,0 @@
-{"ts": 1777750634.8593829, "event": "game_start", "seed": 42, "n_drones": 12, "complexity": "medium", "duration": 120, "v_min": 7.0, "v_max": 15.0}
-{"ts": 1777750634.9761639, "event": "panel_opened", "monitor": 2, "elapsed": 0.0}
-{"ts": 1777750636.2400093, "event": "click_ignored", "x": 1566, "y": 638, "state": "PAUSED", "elapsed": 0.0}
-{"ts": 1777750636.3857355, "event": "key_down", "key": 27, "key_name": "escape", "state": "PAUSED", "elapsed": 0.0}
-{"ts": 1777750636.385817, "event": "quit", "elapsed": 0.0, "clash_seconds": 0.0}

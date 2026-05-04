@@ -1,60 +1,83 @@
-# Graph Colouring Trust Study
+# Drone Channel Assignment — Trust Study
 
-An interactive graph-colouring application for a human-subjects study on **trust and collaboration with autonomous AI agents**.
+A human-subjects study prototype examining **trust calibration and workload** when working alongside autonomous AI agents on a real-time interference-management task.
+
+> **Note:** The repository is named `GraphColouringNew` for historical reasons. The actual task is drone radio-channel assignment, not graph colouring.
 
 ## Quick Start
+
+### Full study session (researcher)
+
+```bash
+python study_runner.py
+```
+
+Presents a setup window to configure participant ID, monitor layout, trial list, and surveys. Config is saved and restored between launches.
+
+### Single game (developer / testing)
 
 ```bash
 python launch_menu.py
 ```
 
-## Overview
+## Task Overview
 
-Participants colour a graph node-by-node (in a fixed sequential order) in collaboration with AI agents. The goal is to maximise a shared score — each participant earns points when nodes are assigned their preferred colour.
+Participants manage a swarm of moving drones in a 2D arena. Each drone is assigned a radio channel (red, green, or blue). When two drones on the **same channel** come within interference range, a **clash** occurs — accumulating penalty time for as long as they remain in range. The goal is to minimise total clash time over a fixed-duration trial.
 
-The study uses a **2×2 within-subjects design**:
+### Interaction Modes
 
-| Condition | Session 1 | Session 2 |
-|---|---|---|
-| A | Mode 1 | Mode 2A |
-| B | Mode 2A | Mode 1 |
-| C | Mode 1 | Mode 2B |
-| D | Mode 2B | Mode 1 |
+Three modes are available simultaneously:
 
-### Mode 1 — Manual Collaborative
+| Mode | How it works |
+|---|---|
+| **M1 — Manual** | Click a drone → pick a channel from a popup menu |
+| **M2 — Suggest & Review** | Select a group, request a suggestion, review and optionally edit the proposal in the side panel, then apply |
+| **M3 — Auto-assign** | Select a group and apply the agent's recommendation instantly without review |
 
-At each node, agents each propose a colour with a brief rationale. The human makes the final choice. Proposals can be expanded for fuller reasoning (tracked for analysis).
+In **flexible agent mode**, individual drones can be placed under autonomous monitoring:
+- **Watch:Suggest** — agent raises a suggestion panel when that drone's cluster clashes
+- **Watch:Auto** — agent applies fixes automatically without user input
 
-### Mode 2A — Autonomous Planning (High Quality)
+### Agent
 
-Before colouring begins, the autonomous agent system runs a multi-agent deliberation to produce a complete proposed solution. The plan is presented step-by-step — the human can accept, request an explanation, or modify each step. Mode 2A produces near-optimal plans (~80% of the time).
+The AI assistant uses a greedy graph-colouring algorithm with configurable noise (`epsilon`). At `epsilon=0.30` the agent is correct ~70% of the time per drone — good but imperfect, requiring human oversight.
 
-### Mode 2B — Autonomous Planning (Low Quality)
+## Study Conditions
 
-Identical UI to Mode 2A, but the underlying plan is frequently suboptimal (~30% optimal choices). Designed to measure overtrust.
+Default trial sequence (configurable in the setup window):
 
-## Scoring
+| Trial | Scenario | Drones | Duration | Agent accuracy |
+|---|---|---|---|---|
+| 1 | Flexible Tutorial | — | until complete | perfect |
+| 2 | Easy | 8, slow | 90 s | 70% |
+| 3 | Medium | 12, slow | 120 s | 70% |
+| 4 | Hard | 16, fast | 150 s | 70% |
 
-- **Human**: earns 3 pts per Red node, 1 pt per Blue node
-- **AgentA**: earns 1 pt per Red node, 4 pts per Blue node
-- **AgentB**: earns 2 pts per Red or Blue node
-- **Shared score** (displayed prominently): sum of all individual scores
-- Blue gives 7 pts/node total; Red gives 6 pts/node — but Human individually prefers Red
-
-Participants can attempt the same graph up to 3 times, with the expectation of improving over iterations.
+All non-tutorial trials use **flexible agent mode** and include post-trial surveys (NASA-TLX workload, trust items, technology acceptance items) and screen recording.
 
 ## Data Collected
 
-All events are logged to `results/participants/<pid>_<timestamp>/events.jsonl`:
+All in-game events are written to `results/participants_study/<pid>_<timestamp>/`:
 
-- Per-node decision time
-- Explanation click-throughs
-- Override rate (Mode 2: how often human modifies the agent's plan)
-- Score trajectory across 3 attempts
-- Agent agreement patterns
+- **JSONL event log** per trial — every channel switch, suggestion request/apply/cancel, clash start/end, and mode interaction with millisecond timestamps
+- **Surveys** — pre-study demographics, post-trial workload/trust/TAM, post-study summary
+- **Screen recordings** (mp4) — one per trial when recording is enabled
 
-## Configuration
+## Analysis
 
-All parameters (graph topology, score weights, quality ratios, number of attempts) are configurable in `study/config.py` and `study/graphs.py`.
+```bash
+python analysis/run_analysis.py
+```
 
-See `CLAUDE.md` for developer documentation.
+Produces per-participant and aggregate metrics, plots, and statistical test outputs from the collected JSONL logs.
+
+## Requirements
+
+- Python 3.10+
+- `pygame` (`pip install pygame`)
+- Tkinter (bundled with standard Python)
+- `pygame._sdl2` for detached panel window on a second monitor (included in modern pygame)
+
+## Developer Notes
+
+See `CLAUDE.md` for full architecture documentation, file map, and development guidelines.

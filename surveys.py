@@ -105,7 +105,10 @@ def _radio(parent: tk.Frame, text: str, row: int, var: tk.StringVar,
     f = tk.Frame(parent)
     f.grid(row=row, column=0, columnspan=12, sticky="w", padx=30, pady=(0, 8))
     for i, c in enumerate(choices):
+        # tristatevalue prevents Tkinter from rendering all buttons as "filled"
+        # when the StringVar default ("") matches the default tristatevalue ("").
         tk.Radiobutton(f, text=c, variable=var, value=c,
+                       tristatevalue="__none__",
                        font=_F_BODY).grid(row=i, column=0, sticky="w", pady=3)
     return row + 1
 

@@ -1,0 +1,35 @@
+{
+  "participant_id": "P20260504_085711",
+  "end_time": "20260504_085919",
+  "n_completed": 3,
+  "n_total": 3,
+  "trials": [
+    {
+      "seed": 50,
+      "complexity": "easy",
+      "duration": 90,
+      "elapsed": 46.999999999998614,
+      "clash_seconds": 3.0666666666666607,
+      "clash_pct": 0.0,
+      "completed": false
+    },
+    {
+      "seed": 76,
+      "complexity": "medium",
+      "duration": 120,
+      "elapsed": 120.01666666666114,
+      "clash_seconds": 278.7000000000227,
+      "clash_pct": 232.3,
+      "completed": true
+    },
+    {
+      "seed": 42,
+      "complexity": "hard",
+      "duration": 150,
+      "elapsed": 24.14999999999991,
+      "clash_seconds": 95.91666666666569,
+      "clash_pct": 0.0,
+      "completed": false
+    }
+  ]
+}

@@ -54,6 +54,7 @@ class StudyConfig:
     windowed: bool = False
     debug_mode: bool = False
     test_mode: bool = False
+    speed: int = 1
 
 
 # ── Presets ───────────────────────────────────────────────────────────────────
@@ -80,7 +81,20 @@ STUDY_PRESETS: Dict[str, TrialConfig] = {
 _PRESET_NAMES = list(STUDY_PRESETS)
 _CONFIG_PATH  = Path.home() / ".drone_study_config.json"
 
-_DEFAULT_TRIALS = ["Tutorial", "Easy (8dr, slow, 70%)", "Medium (12dr, slow, 70%)"]
+_DEFAULT_TRIALS = [
+    {"preset": "Flexible Tutorial",        "enabled": True,
+     "show_tlx": False, "show_trust": False, "show_tam": False,
+     "agent_mode": "flexible", "record": True,  "seed": 42},
+    {"preset": "Easy (8dr, slow, 70%)",    "enabled": True,
+     "show_tlx": True,  "show_trust": True,  "show_tam": True,
+     "agent_mode": "flexible", "record": True,  "seed": 52},
+    {"preset": "Medium (12dr, slow, 70%)", "enabled": True,
+     "show_tlx": True,  "show_trust": True,  "show_tam": True,
+     "agent_mode": "flexible", "record": True,  "seed": 72},
+    {"preset": "Hard (16dr, fast, 70%)",   "enabled": True,
+     "show_tlx": True,  "show_trust": True,  "show_tam": True,
+     "agent_mode": "flexible", "record": True,  "seed": 42},
+]
 
 
 def _detect_num_displays() -> int:
@@ -151,7 +165,7 @@ class StudySetupWindow:
         row += 1
 
         ttk.Label(root, text="Panel monitor:").grid(row=row, column=0, sticky="e", **pad)
-        self._panel_mon_var = tk.IntVar(value=self._saved.get("panel_monitor", min(1, n - 1)))
+        self._panel_mon_var = tk.IntVar(value=self._saved.get("panel_monitor", n - 1))
         ttk.Combobox(root, textvariable=self._panel_mon_var,
                      values=mon_values, state="readonly", width=4).grid(
             row=row, column=1, sticky="w", **pad)
@@ -173,12 +187,18 @@ class StudySetupWindow:
             row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 4))
         row += 1
 
+        _test_row = ttk.Frame(root)
+        _test_row.grid(row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 4))
         self._test_mode_var = tk.BooleanVar(value=self._saved.get("test_mode", False))
-        tk.Checkbutton(root,
+        tk.Checkbutton(_test_row,
                        text="Test mode  (saves to results/participants_test/, keeps last 5 runs)",
                        variable=self._test_mode_var,
-                       foreground="orange").grid(
-            row=row, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 4))
+                       foreground="orange").pack(side="left")
+        ttk.Label(_test_row, text="   Speed:").pack(side="left")
+        self._speed_var = tk.IntVar(value=self._saved.get("speed", 1))
+        ttk.Spinbox(_test_row, from_=1, to=20, increment=1,
+                    textvariable=self._speed_var, width=4).pack(side="left", padx=(2, 0))
+        ttk.Label(_test_row, text="x", foreground="gray").pack(side="left")
         row += 1
 
         ttk.Separator(root, orient=tk.HORIZONTAL).grid(
@@ -304,6 +324,7 @@ class StudySetupWindow:
             "windowed":            self._windowed_var.get(),
             "debug_mode":          self._debug_var.get(),
             "test_mode":           self._test_mode_var.get(),
+            "speed":               int(self._speed_var.get()),
         })
 
         self.config = StudyConfig(
@@ -316,6 +337,7 @@ class StudySetupWindow:
             windowed=self._windowed_var.get(),
             debug_mode=self._debug_var.get(),
             test_mode=self._test_mode_var.get(),
+            speed=int(self._speed_var.get()),
         )
         self._root.destroy()
 
@@ -732,6 +754,7 @@ def run_study(config: StudyConfig) -> None:
                     windowed=config.windowed,
                     debug_mode=config.debug_mode,
                     record=trial.record,
+                    speed=config.speed,
                 )
 
             result = result or {}

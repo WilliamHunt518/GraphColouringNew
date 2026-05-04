@@ -271,12 +271,9 @@ class RobotRenderer:
         self._draw_proximity_circles(world)
         self._draw_edges(world)
 
-        # Show proposed channels on arena drones only while playing — not in SETUP,
-        # where drones should stay visually unassigned until the user accepts.
-        suggestion_channels = (suggestion_overrides
-                               if suggestion is not None and state != "SETUP"
-                               else None)
-        self._draw_robots(world, popup_drone_id, selected_ids, suggestion_channels)
+        # Arena always shows actual drone channels — the suggestion is displayed
+        # only in the panel mini-graph and is never pre-applied visually here.
+        self._draw_robots(world, popup_drone_id, selected_ids, None)
 
         if drag_rect is not None:
             self._draw_drag_box(drag_rect)
@@ -790,7 +787,7 @@ class RobotRenderer:
             remaining = max(0.0, world.duration - world.elapsed)
             mins, secs_r = int(remaining) // 60, int(remaining) % 60
             timer_col = COL_TIMER_LOW if remaining < 20 else COL_TIMER_OK
-            timer_s   = f["medium"].render(f"⏱ {mins}:{secs_r:02d}", True, timer_col)
+            timer_s   = f["medium"].render(f"{mins}:{secs_r:02d}", True, timer_col)
             ps.blit(timer_s, (px, y))
             clash_s = f["medium"].render(
                 f"Clash: {world.clash_seconds:.1f}s", True,
@@ -1369,8 +1366,8 @@ class RobotRenderer:
         head_surf = f["tut_heading"].render(callout.heading, True, (200, 230, 255))
         self.screen.blit(head_surf, head_surf.get_rect(centerx=cx, y=12))
 
-        # Body (word-wrap at ~80 chars per line)
-        body_lines = _wrap_text(callout.body, max_chars=80)
+        # Body (word-wrap at ~110 chars per line to use the full arena width)
+        body_lines = _wrap_text(callout.body, max_chars=110)
         y = 64
         for line in body_lines:
             s = f["tut_body"].render(line, True, (210, 210, 230))

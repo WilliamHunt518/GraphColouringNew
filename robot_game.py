@@ -126,6 +126,7 @@ def run_game(
     windowed: bool = False,
     debug_mode: bool = False,
     record: bool = False,
+    speed: int = 1,
 ) -> Optional[Dict]:
     _owns_display = screen is None
     if _owns_display:
@@ -273,7 +274,10 @@ def run_game(
                 stack.extend(adj[n] - visited)
             components.append(comp)
 
-        current_channels = {r.id: r.channel for r in world.robots if r.channel}
+        current_channels = {
+            r.id: (r.switching_to if r.switching_to is not None else r.channel)
+            for r in world.robots if r.channel is not None
+        }
 
         for comp in components:
             if not (comp & monitored_clashing):
@@ -477,7 +481,7 @@ def run_game(
                                mode="suggest", elapsed=world.elapsed)
                     active_watch = [d for d in flex_target if drone_modes.get(d) == "suggest"]
                     if active_watch:
-                        current_channels = {r.id: r.channel for r in world.robots}
+                        current_channels = {r.id: (r.switching_to if r.switching_to is not None else r.channel) for r in world.robots if r.channel is not None}
                         proposed, infeasible = advisor.suggest(
                             active_watch, current_channels, world.edges,
                             near_pairs=list(world.warning_pairs),
@@ -502,7 +506,7 @@ def run_game(
                                mode="auto", elapsed=world.elapsed)
                     active_watch = [d for d in flex_target if drone_modes.get(d) == "auto"]
                     if active_watch:
-                        current_channels = {r.id: r.channel for r in world.robots}
+                        current_channels = {r.id: (r.switching_to if r.switching_to is not None else r.channel) for r in world.robots if r.channel is not None}
                         proposed, infeasible = advisor.suggest(
                             active_watch, current_channels, world.edges,
                             near_pairs=list(world.warning_pairs),
@@ -541,7 +545,7 @@ def run_game(
             # Non-flex mode: Suggest and Auto-assign require an explicit selection.
             if "suggest" in renderer.hud_button_rects \
                     and renderer.hud_button_rects["suggest"].collidepoint(mx, my):
-                current_channels = {r.id: r.channel for r in world.robots}
+                current_channels = {r.id: (r.switching_to if r.switching_to is not None else r.channel) for r in world.robots if r.channel is not None}
                 proposed, infeasible = advisor.suggest(
                     list(selected_ids), current_channels, world.edges,
                     near_pairs=list(world.warning_pairs),
@@ -557,7 +561,7 @@ def run_game(
 
             if "auto_assign" in renderer.hud_button_rects \
                     and renderer.hud_button_rects["auto_assign"].collidepoint(mx, my):
-                current_channels = {r.id: r.channel for r in world.robots}
+                current_channels = {r.id: (r.switching_to if r.switching_to is not None else r.channel) for r in world.robots if r.channel is not None}
                 proposed, infeasible = advisor.suggest(
                     list(selected_ids), current_channels, world.edges,
                     near_pairs=list(world.warning_pairs),
@@ -918,29 +922,32 @@ def run_game(
 
             # ── Simulation tick ───────────────────────────────────────────────
             if state == "PLAYING" and not _debug_paused:
-                world.update(_SIM_DT)
-                if agent_mode == "flexible":
-                    _flex_tick(_SIM_DT)
-                    # Auto-dismiss a pending suggestion when its clash is gone.
-                    # Use effective channels (switching_to if in-flight, else current)
-                    # so the panel dismisses as soon as a fix is underway, not after it completes.
-                    if pending_suggestion is not None:
-                        sugg_ids = set(pending_suggestion.keys())
-                        eff = {r.id: (r.switching_to if r.switching_to is not None else r.channel)
-                               for r in world.robots}
-                        future_clash_ids = set()
-                        for i, j in world.edges:
-                            ec_i = eff.get(i)
-                            ec_j = eff.get(j)
-                            if ec_i is not None and ec_j is not None and ec_i == ec_j:
-                                future_clash_ids.add(i)
-                                future_clash_ids.add(j)
-                        if not any(d in future_clash_ids for d in sugg_ids):
-                            logger.log("suggestion_auto_dismissed",
-                                       reason="clash_resolved", elapsed=world.elapsed)
-                            pending_suggestion   = None
-                            suggestion_overrides = {}
-                            pending_infeasible   = False
+                for _tick in range(max(1, speed)):
+                    world.update(_SIM_DT)
+                    if agent_mode == "flexible":
+                        _flex_tick(_SIM_DT)
+                        # Auto-dismiss a pending suggestion when its clash is gone.
+                        # Use effective channels (switching_to if in-flight, else current)
+                        # so the panel dismisses as soon as a fix is underway, not after it completes.
+                        if pending_suggestion is not None:
+                            sugg_ids = set(pending_suggestion.keys())
+                            eff = {r.id: (r.switching_to if r.switching_to is not None else r.channel)
+                                   for r in world.robots}
+                            future_clash_ids = set()
+                            for i, j in world.edges:
+                                ec_i = eff.get(i)
+                                ec_j = eff.get(j)
+                                if ec_i is not None and ec_j is not None and ec_i == ec_j:
+                                    future_clash_ids.add(i)
+                                    future_clash_ids.add(j)
+                            if not any(d in future_clash_ids for d in sugg_ids):
+                                logger.log("suggestion_auto_dismissed",
+                                           reason="clash_resolved", elapsed=world.elapsed)
+                                pending_suggestion   = None
+                                suggestion_overrides = {}
+                                pending_infeasible   = False
+                    if world.is_over():
+                        break  # stop sub-ticks early; end detection below handles the rest
 
                 now_clash_pairs = frozenset(world.clashing_pairs)
                 if now_clash_pairs != prev_clash_pairs:

@@ -1,6 +1,0 @@
-{"ts": 1777750868.4669363, "event": "game_start", "seed": 42, "n_drones": 16, "complexity": "hard", "duration": 150, "v_min": 10.0, "v_max": 20.0}
-{"ts": 1777750868.5784676, "event": "panel_opened", "monitor": 2, "elapsed": 0.0}
-{"ts": 1777750870.1041238, "event": "click_ignored", "x": 1566, "y": 988, "state": "PAUSED", "elapsed": 0.0}
-{"ts": 1777750870.3623767, "event": "key_down", "key": 32, "key_name": "space", "state": "PAUSED", "elapsed": 0.0}
-{"ts": 1777750870.8710346, "event": "key_down", "key": 27, "key_name": "escape", "state": "SETUP", "elapsed": 0.0}
-{"ts": 1777750870.8711245, "event": "quit", "elapsed": 0.0, "clash_seconds": 0.0}

@@ -1,0 +1,45 @@
+{
+  "participant_id": "P20260504_085036",
+  "end_time": "20260504_085244",
+  "n_completed": 4,
+  "n_total": 4,
+  "trials": [
+    {
+      "is_tutorial": true,
+      "completed": false,
+      "elapsed": 1.1230000000000002,
+      "clash_seconds": 3.369000000000003,
+      "clash_pct": 0.0,
+      "seed": 42,
+      "complexity": "tutorial",
+      "duration": 0.0
+    },
+    {
+      "seed": 42,
+      "complexity": "easy",
+      "duration": 90,
+      "elapsed": 56.416666666664746,
+      "clash_seconds": 10.866666666666786,
+      "clash_pct": 0.0,
+      "completed": false
+    },
+    {
+      "seed": 76,
+      "complexity": "medium",
+      "duration": 120,
+      "elapsed": 0.0,
+      "clash_seconds": 0.0,
+      "clash_pct": 0.0,
+      "completed": false
+    },
+    {
+      "seed": 42,
+      "complexity": "hard",
+      "duration": 150,
+      "elapsed": 0.0,
+      "clash_seconds": 0.0,
+      "clash_pct": 0.0,
+      "completed": false
+    }
+  ]
+}

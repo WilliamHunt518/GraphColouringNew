@@ -1,0 +1,11 @@
+{"ts": 1777881028.0067813, "event": "tutorial_start"}
+{"ts": 1777881028.1580503, "event": "tutorial_panel_opened", "monitor": 1}
+{"ts": 1777881028.974089, "event": "tutorial_mouse_down", "x": 1641, "y": 417, "step": 1, "elapsed": 0.0}
+{"ts": 1777881029.0542374, "event": "arena_click_miss", "x": 1644, "y": 416, "elapsed": 0.0}
+{"ts": 1777881029.6366954, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 1, "elapsed": 0.0}
+{"ts": 1777881029.636793, "event": "tutorial_step_completed", "step": 1, "duration_s": 1.48}
+{"ts": 1777881029.6368818, "event": "clash_start", "elapsed": 0.017, "pairs": [[0, 1], [0, 2], [1, 2]], "n_pairs": 3}
+{"ts": 1777881029.6369019, "event": "warning_start", "elapsed": 0.017, "pairs": [[4, 6], [0, 3], [1, 4]], "n_pairs": 3}
+{"ts": 1777881031.9303987, "event": "tutorial_key_down", "key": 27, "key_name": "escape", "step": 2, "elapsed": 2.293999999999998}
+{"ts": 1777881031.930449, "event": "tutorial_quit", "elapsed": 2.293999999999998, "step": 2}
+{"ts": 1777881031.9390657, "event": "tutorial_complete", "steps_completed": 1}
