@@ -726,6 +726,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
     # ────────────── PHASE 5: Free practice (step 16) ───────────────────────────
 
     def setup_16(w: RobotWorld, gs: dict) -> None:
+        w.switch_duration = SWITCH_DURATION  # restore real delay for free practice
         import random as _rng
         rng = _rng.Random(99)
         cfgs = []

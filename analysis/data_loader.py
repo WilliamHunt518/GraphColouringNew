@@ -18,8 +18,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-REPO_ROOT   = Path(__file__).parent.parent
-RESULTS_ROOT = REPO_ROOT / "results" / "participants"
+REPO_ROOT    = Path(__file__).parent.parent
+RESULTS_ROOT = REPO_ROOT / "results" / "participants"   # legacy; kept for compatibility
+
+def _participant_roots() -> List[Path]:
+    """Return all results/participants* directories that exist."""
+    results = REPO_ROOT / "results"
+    if not results.exists():
+        return []
+    return sorted(d for d in results.iterdir()
+                  if d.is_dir() and d.name.startswith("participants"))
 
 
 # ── Data classes ────────────────────────────────────────────────────────────
@@ -163,19 +171,21 @@ def load_participant(folder: Path) -> ParticipantData:
 
 
 def load_all_participants() -> List[ParticipantData]:
-    """Discover and load every participant folder under results/participants/."""
-    if not RESULTS_ROOT.exists():
-        print(f"Results directory not found: {RESULTS_ROOT}")
+    """Discover and load every participant folder under all results/participants* dirs."""
+    roots = _participant_roots()
+    if not roots:
+        print(f"No results/participants* directories found under {REPO_ROOT / 'results'}")
         return []
 
     participants = []
-    for folder in sorted(RESULTS_ROOT.iterdir()):
-        if folder.is_dir() and (folder / "study_metadata.json").exists():
-            try:
-                p = load_participant(folder)
-                participants.append(p)
-            except Exception as exc:
-                print(f"  Warning — failed to load {folder.name}: {exc}")
+    for root in roots:
+        for folder in sorted(root.iterdir()):
+            if folder.is_dir() and (folder / "study_metadata.json").exists():
+                try:
+                    p = load_participant(folder)
+                    participants.append(p)
+                except Exception as exc:
+                    print(f"  Warning — failed to load {folder.name}: {exc}")
 
     # Sort chronologically and assign P1, P2, … labels
     participants.sort(key=lambda p: p.start_time)

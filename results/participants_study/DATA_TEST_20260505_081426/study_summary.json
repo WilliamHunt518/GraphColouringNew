@@ -1,0 +1,45 @@
+{
+  "participant_id": "DATA_TEST",
+  "end_time": "20260505_084520",
+  "n_completed": 4,
+  "n_total": 4,
+  "trials": [
+    {
+      "is_tutorial": true,
+      "completed": true,
+      "elapsed": 72.57999999999988,
+      "clash_seconds": 90.47799999999984,
+      "clash_pct": 0.0,
+      "seed": 42,
+      "complexity": "tutorial",
+      "duration": 0.0
+    },
+    {
+      "seed": 52,
+      "complexity": "easy",
+      "duration": 120,
+      "elapsed": 120.01666666666114,
+      "clash_seconds": 34.35000000000032,
+      "clash_pct": 28.6,
+      "completed": true
+    },
+    {
+      "seed": 72,
+      "complexity": "medium",
+      "duration": 120,
+      "elapsed": 120.01666666666114,
+      "clash_seconds": 219.63333333334535,
+      "clash_pct": 183.0,
+      "completed": true
+    },
+    {
+      "seed": 42,
+      "complexity": "hard",
+      "duration": 120,
+      "elapsed": 120.01666666666114,
+      "clash_seconds": 648.4166666666791,
+      "clash_pct": 540.3,
+      "completed": true
+    }
+  ]
+}

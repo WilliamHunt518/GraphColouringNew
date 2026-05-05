@@ -313,13 +313,6 @@ _MODES = [
      "Selecting drones and having channels applied instantly without review."),
 ]
 
-_MODE_ITEMS = [
-    ("helpful",     "This mode was helpful to me."),
-    ("trusted",     "I trusted this mode."),
-    ("focus",       "This mode helped me better use my attention and focus on the task."),
-    ("alongside",   "I worked well alongside / with this mode."),
-]
-
 
 def run_trial_survey(
     scenario_num: int,
@@ -379,16 +372,16 @@ def run_trial_survey(
     # ── Per-mode ratings ──────────────────────────────────────────────────────
     r = _heading(inner, "Interaction Modes", r)
     tk.Label(inner,
-             text='Rate how well each interaction mode worked for you in this scenario.',
+             text='For each mode, rate how well suited it was to this scenario, '
+                  'then briefly explain your rating.',
              font=_F_ASIDE, foreground="#555",
              wraplength=WINDOW_W - 40, justify="left").grid(
         row=r, column=0, columnspan=12, sticky="w", padx=22, pady=(0, 12))
     r += 1
 
-    mode_vars: Dict[str, Dict[str, tk.IntVar]] = {}
+    mode_suit_vars: Dict[str, tk.IntVar] = {}
+    mode_comment_vars: Dict[str, tk.StringVar] = {}
     for mode_key, mode_name, mode_desc in _MODES:
-        mode_vars[mode_key] = {}
-
         tk.Label(inner, text=mode_name,
                  font=("Segoe UI", 19, "bold"), anchor="w").grid(
             row=r, column=0, columnspan=12,
@@ -400,11 +393,17 @@ def run_trial_survey(
             sticky="w", padx=30, pady=(0, 4))
         r += 1
 
-        for item_key, item_text in _MODE_ITEMS:
-            v = tk.IntVar(value=0)
-            mode_vars[mode_key][item_key] = v
-            r = _likert(inner, item_text, r, v,
-                        lo="Strongly disagree", hi="Strongly agree")
+        suit_var = tk.IntVar(value=0)
+        mode_suit_vars[mode_key] = suit_var
+        r = _likert(inner,
+                    f"How well suited was {mode_name} to this scenario?",
+                    r, suit_var, lo="Not at all suited", hi="Perfectly suited")
+
+        comment_var = tk.StringVar()
+        mode_comment_vars[mode_key] = comment_var
+        r = _textbox(inner,
+                     f"Why did you give that rating? (optional)",
+                     r, comment_var, height=3)
 
     # ── Open-ended ────────────────────────────────────────────────────────────
     r = _heading(inner, "Open-ended", r)
@@ -418,7 +417,7 @@ def run_trial_survey(
         required_ints: List[tk.IntVar] = (
             list(trust_vars.values()) +
             list(tam_vars.values()) +
-            [v for mv in mode_vars.values() for v in mv.values()]
+            list(mode_suit_vars.values())
         )
         if not _all_answered(required_ints, []):
             messagebox.showwarning(
@@ -433,9 +432,9 @@ def run_trial_survey(
             **{k: v.get() for k, v in trust_vars.items()},
             **{k: v.get() for k, v in tam_vars.items()},
         }
-        for mode_key, mv in mode_vars.items():
-            for item_key, v in mv.items():
-                result[f"mode_{mode_key}_{item_key}"] = v.get()
+        for mode_key, v in mode_suit_vars.items():
+            result[f"mode_{mode_key}_suited"] = v.get()
+            result[f"mode_{mode_key}_comment"] = mode_comment_vars[mode_key].get().strip()
         result["comments"]   = comments_var.get().strip()
         result["timestamp"]  = datetime.datetime.now().isoformat()
         root.destroy()

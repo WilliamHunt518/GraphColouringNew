@@ -1,0 +1,154 @@
+{"ts": 1777965647.3594952, "event": "game_start", "seed": 72, "n_drones": 12, "complexity": "medium", "duration": 120, "v_min": 7.0, "v_max": 15.0}
+{"ts": 1777965647.5063396, "event": "panel_opened", "monitor": 2, "elapsed": 0.0}
+{"ts": 1777965648.319514, "event": "click_ignored", "x": 1035, "y": 910, "state": "PAUSED", "elapsed": 0.0}
+{"ts": 1777965649.2617326, "event": "key_down", "key": 32, "key_name": "space", "state": "PAUSED", "elapsed": 0.0}
+{"ts": 1777965651.6148036, "event": "group_selected", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "method": "box", "elapsed": 0.0}
+{"ts": 1777965652.7074912, "event": "watch_mode_set", "drones": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "mode": "suggest", "elapsed": 0.0}
+{"ts": 1777965652.708033, "event": "suggestion_requested", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "current_channels": {}, "elapsed": 0.0}
+{"ts": 1777965652.7080798, "event": "suggestion_shown", "drone_ids": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "proposed_channels": {"5": "red", "1": "green", "2": "red", "4": "green", "6": "green", "8": "red", "9": "green", "10": "red", "0": "red", "3": "green", "7": "red", "11": "green"}, "infeasible": false, "elapsed": 0.0}
+{"ts": 1777965653.8606963, "event": "suggestion_applied", "final_channels": {"5": "red", "1": "green", "2": "red", "4": "green", "6": "green", "8": "red", "9": "green", "10": "red", "0": "red", "3": "green", "7": "red", "11": "green"}, "n_overrides": 0, "elapsed": 0.0}
+{"ts": 1777965653.8607626, "event": "switch_requested", "drone_id": 5, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8607798, "event": "switch_requested", "drone_id": 1, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.860791, "event": "switch_requested", "drone_id": 2, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.860801, "event": "switch_requested", "drone_id": 4, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608105, "event": "switch_requested", "drone_id": 6, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.860819, "event": "switch_requested", "drone_id": 8, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608282, "event": "switch_requested", "drone_id": 9, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608372, "event": "switch_requested", "drone_id": 10, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608458, "event": "switch_requested", "drone_id": 0, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608549, "event": "switch_requested", "drone_id": 3, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608632, "event": "switch_requested", "drone_id": 7, "from_channel": null, "to_channel": "red", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965653.8608725, "event": "switch_requested", "drone_id": 11, "from_channel": null, "to_channel": "green", "elapsed": 0.0, "mode": "M2"}
+{"ts": 1777965654.6661363, "event": "arena_click_miss", "x": 592, "y": 911, "elapsed": 0.0}
+{"ts": 1777965654.7313662, "event": "key_down", "key": 32, "key_name": "space", "state": "SETUP", "elapsed": 0.0}
+{"ts": 1777965654.7314322, "event": "play_started", "elapsed": 0.0}
+{"ts": 1777965654.735838, "event": "recording_started", "path": "results\\participants_study\\DATA_TEST_20260505_081426\\trial_03_Medium-70pct\\recordings\\recording_20260505_082054.mp4", "elapsed": 0.0}
+{"ts": 1777965654.7359324, "event": "warning_start", "elapsed": 0.016666666666666666, "pairs": [[0, 1], [9, 10], [1, 2], [10, 11], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6]], "n_pairs": 9}
+{"ts": 1777965655.250987, "event": "warning_update", "elapsed": 0.41666666666666663, "pairs": [[0, 1], [9, 10], [1, 2], [10, 11], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [6, 9]], "n_pairs": 10, "added": [[6, 9]], "removed": []}
+{"ts": 1777965655.2946384, "event": "key_down", "key": 1073742050, "key_name": "left alt", "state": "PLAYING", "elapsed": 0.4333333333333333}
+{"ts": 1777965660.0055134, "event": "warning_update", "elapsed": 3.599999999999992, "pairs": [[0, 1], [9, 10], [1, 2], [10, 11], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [3, 6], [6, 9]], "n_pairs": 11, "added": [[3, 6]], "removed": []}
+{"ts": 1777965660.6861277, "event": "warning_update", "elapsed": 4.0666666666666575, "pairs": [[0, 1], [9, 10], [1, 2], [10, 11], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [3, 6]], "n_pairs": 10, "added": [], "removed": [[6, 9]]}
+{"ts": 1777965663.2322364, "event": "warning_update", "elapsed": 5.833333333333318, "pairs": [[0, 1], [9, 10], [1, 2], [10, 11], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [0, 5], [3, 6]], "n_pairs": 11, "added": [[0, 5]], "removed": []}
+{"ts": 1777965663.9615343, "event": "warning_update", "elapsed": 6.333333333333316, "pairs": [[0, 1], [9, 10], [1, 2], [10, 11], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [0, 5], [3, 6], [6, 9]], "n_pairs": 12, "added": [[6, 9]], "removed": []}
+{"ts": 1777965664.0305214, "event": "warning_update", "elapsed": 6.383333333333316, "pairs": [[0, 1], [9, 10], [1, 2], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [0, 5], [3, 6], [6, 9]], "n_pairs": 11, "added": [], "removed": [[10, 11]]}
+{"ts": 1777965664.2281542, "event": "warning_update", "elapsed": 6.516666666666649, "pairs": [[9, 10], [1, 2], [5, 8], [2, 3], [4, 5], [8, 9], [5, 6], [0, 5], [3, 6], [6, 9]], "n_pairs": 10, "added": [], "removed": [[0, 1]]}
+{"ts": 1777965665.386324, "event": "warning_update", "elapsed": 7.283333333333313, "pairs": [[9, 10], [1, 2], [5, 8], [2, 3], [4, 5], [8, 9], [0, 5], [3, 6], [6, 9]], "n_pairs": 9, "added": [], "removed": [[5, 6]]}
+{"ts": 1777965667.6724088, "event": "warning_update", "elapsed": 8.85000000000002, "pairs": [[9, 10], [1, 2], [5, 8], [4, 5], [8, 9], [0, 5], [3, 6], [6, 9]], "n_pairs": 8, "added": [], "removed": [[2, 3]]}
+{"ts": 1777965670.0923202, "event": "warning_update", "elapsed": 10.483333333333434, "pairs": [[9, 10], [1, 2], [5, 8], [4, 5], [8, 9], [6, 10], [0, 5], [3, 6], [6, 9]], "n_pairs": 9, "added": [[6, 10]], "removed": []}
+{"ts": 1777965671.5224342, "event": "clash_start", "elapsed": 11.483333333333483, "pairs": [[0, 5]], "n_pairs": 1}
+{"ts": 1777965671.5225399, "event": "warning_update", "elapsed": 11.483333333333483, "pairs": [[9, 10], [1, 2], [5, 8], [4, 5], [8, 9], [6, 10], [3, 6], [6, 9]], "n_pairs": 8, "added": [], "removed": [[0, 5]]}
+{"ts": 1777965672.1282158, "event": "warning_update", "elapsed": 11.866666666666836, "pairs": [[9, 10], [4, 5], [1, 2], [6, 10], [3, 6], [5, 8], [6, 9]], "n_pairs": 7, "added": [], "removed": [[8, 9]]}
+{"ts": 1777965672.156504, "event": "suggestion_shown", "drone_ids": [0, 1, 4, 5, 8, 9], "proposed_channels": {"5": "red", "0": "green", "1": "blue", "4": "blue", "9": "blue", "8": "green"}, "infeasible": false, "elapsed": 11.883333333333503}
+{"ts": 1777965672.3562171, "event": "warning_update", "elapsed": 12.016666666666843, "pairs": [[9, 10], [1, 2], [5, 8], [4, 5], [6, 10], [3, 6], [7, 11], [6, 9]], "n_pairs": 8, "added": [[7, 11]], "removed": []}
+{"ts": 1777965673.3947666, "event": "warning_update", "elapsed": 12.716666666666878, "pairs": [[9, 10], [4, 5], [1, 2], [6, 10], [3, 6], [7, 11], [6, 9]], "n_pairs": 7, "added": [], "removed": [[5, 8]]}
+{"ts": 1777965673.7984073, "event": "suggestion_applied", "final_channels": {"5": "red", "0": "green", "1": "blue", "4": "blue", "9": "blue", "8": "green"}, "n_overrides": 0, "elapsed": 12.96666666666689}
+{"ts": 1777965673.7984812, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "green", "elapsed": 12.96666666666689, "mode": "M2"}
+{"ts": 1777965673.798493, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "blue", "elapsed": 12.96666666666689, "mode": "M2"}
+{"ts": 1777965673.7985008, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "blue", "elapsed": 12.96666666666689, "mode": "M2"}
+{"ts": 1777965673.7985528, "event": "switch_requested", "drone_id": 9, "from_channel": "green", "to_channel": "blue", "elapsed": 12.96666666666689, "mode": "M2"}
+{"ts": 1777965673.798564, "event": "switch_requested", "drone_id": 8, "from_channel": "red", "to_channel": "green", "elapsed": 12.96666666666689, "mode": "M2"}
+{"ts": 1777965674.6194925, "event": "warning_update", "elapsed": 13.550000000000253, "pairs": [[9, 10], [4, 5], [6, 10], [3, 6], [7, 11], [6, 9]], "n_pairs": 6, "added": [], "removed": [[1, 2]]}
+{"ts": 1777965676.2710605, "event": "clash_update", "elapsed": 14.716666666666978, "pairs": [[0, 5], [3, 6]], "n_pairs": 2, "added": [[3, 6]], "removed": [], "clash_seconds_so_far": 3.26666666666666}
+{"ts": 1777965676.2711248, "event": "warning_update", "elapsed": 14.716666666666978, "pairs": [[9, 10], [4, 5], [6, 10], [7, 11], [6, 9]], "n_pairs": 5, "added": [], "removed": [[3, 6]]}
+{"ts": 1777965676.657508, "event": "suggestion_shown", "drone_ids": [2, 3, 6, 7], "proposed_channels": {"6": "green", "3": "red", "2": "blue", "7": "blue"}, "infeasible": false, "elapsed": 14.983333333333658}
+{"ts": 1777965678.1194465, "event": "clash_update", "elapsed": 15.983333333333707, "pairs": [[3, 6]], "n_pairs": 1, "added": [], "removed": [[0, 5]], "clash_seconds_so_far": 5.783333333333318}
+{"ts": 1777965682.5949764, "event": "warning_update", "elapsed": 19.033333333333534, "pairs": [[9, 10], [4, 5], [0, 4], [6, 10], [7, 11], [6, 9]], "n_pairs": 6, "added": [[0, 4]], "removed": []}
+{"ts": 1777965684.0640259, "event": "warning_update", "elapsed": 20.033333333333477, "pairs": [[4, 5], [0, 4], [6, 10], [7, 11], [6, 9]], "n_pairs": 5, "added": [], "removed": [[9, 10]]}
+{"ts": 1777965685.424965, "event": "warning_update", "elapsed": 20.966666666666757, "pairs": [[4, 5], [0, 4], [6, 10], [4, 8], [7, 11], [6, 9]], "n_pairs": 6, "added": [[4, 8]], "removed": []}
+{"ts": 1777965685.4525783, "event": "warning_update", "elapsed": 20.983333333333423, "pairs": [[4, 5], [0, 4], [6, 10], [4, 8], [6, 9]], "n_pairs": 5, "added": [], "removed": [[7, 11]]}
+{"ts": 1777965686.6648483, "event": "suggestion_applied", "final_channels": {"6": "green", "3": "red", "2": "blue", "7": "blue"}, "n_overrides": 0, "elapsed": 21.800000000000043}
+{"ts": 1777965686.664944, "event": "switch_requested", "drone_id": 3, "from_channel": "green", "to_channel": "red", "elapsed": 21.800000000000043, "mode": "M2"}
+{"ts": 1777965686.6649563, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "blue", "elapsed": 21.800000000000043, "mode": "M2"}
+{"ts": 1777965686.6649654, "event": "switch_requested", "drone_id": 7, "from_channel": "red", "to_channel": "blue", "elapsed": 21.800000000000043, "mode": "M2"}
+{"ts": 1777965687.1005492, "event": "warning_update", "elapsed": 22.08333333333336, "pairs": [[4, 5], [0, 4], [6, 10], [4, 8], [5, 9], [6, 9]], "n_pairs": 6, "added": [[5, 9]], "removed": []}
+{"ts": 1777965687.2035654, "event": "warning_update", "elapsed": 22.150000000000023, "pairs": [[4, 5], [0, 4], [4, 8], [5, 9], [6, 9]], "n_pairs": 5, "added": [], "removed": [[6, 10]]}
+{"ts": 1777965688.95392, "event": "arena_click_miss", "x": 1636, "y": 993, "elapsed": 23.36666666666662}
+{"ts": 1777965690.2958503, "event": "warning_update", "elapsed": 24.333333333333233, "pairs": [[5, 9], [4, 5], [0, 4], [6, 9]], "n_pairs": 4, "added": [], "removed": [[4, 8]]}
+{"ts": 1777965690.9526606, "event": "warning_update", "elapsed": 24.799999999999873, "pairs": [[5, 9], [4, 5], [0, 4]], "n_pairs": 3, "added": [], "removed": [[6, 9]]}
+{"ts": 1777965690.9699528, "event": "clash_end", "elapsed": 24.81666666666654, "clash_seconds_so_far": 14.600000000000305}
+{"ts": 1777965691.698215, "event": "warning_update", "elapsed": 25.333333333333176, "pairs": [[4, 5], [0, 4]], "n_pairs": 2, "added": [], "removed": [[5, 9]]}
+{"ts": 1777965694.694058, "event": "warning_update", "elapsed": 27.466666666666388, "pairs": [[4, 5], [0, 4], [3, 10]], "n_pairs": 3, "added": [[3, 10]], "removed": []}
+{"ts": 1777965695.0219553, "event": "warning_update", "elapsed": 27.699999999999708, "pairs": [[0, 4], [3, 10]], "n_pairs": 2, "added": [], "removed": [[4, 5]]}
+{"ts": 1777965701.4355385, "event": "warning_update", "elapsed": 32.29999999999945, "pairs": [[2, 3], [0, 4], [3, 10]], "n_pairs": 3, "added": [[2, 3]], "removed": []}
+{"ts": 1777965702.2731438, "event": "warning_update", "elapsed": 32.83333333333275, "pairs": [[2, 3], [3, 10]], "n_pairs": 2, "added": [], "removed": [[0, 4]]}
+{"ts": 1777965702.5601494, "event": "warning_update", "elapsed": 33.03333333333274, "pairs": [[2, 3], [7, 10], [3, 10]], "n_pairs": 3, "added": [[7, 10]], "removed": []}
+{"ts": 1777965703.3961382, "event": "warning_update", "elapsed": 33.63333333333271, "pairs": [[2, 3], [6, 7], [3, 10], [7, 10]], "n_pairs": 4, "added": [[6, 7]], "removed": []}
+{"ts": 1777965703.972353, "event": "warning_update", "elapsed": 34.04999999999935, "pairs": [[2, 3], [6, 7], [7, 10], [0, 9], [3, 10]], "n_pairs": 5, "added": [[0, 9]], "removed": []}
+{"ts": 1777965709.6037269, "event": "warning_update", "elapsed": 38.06666666666579, "pairs": [[2, 3], [6, 7], [7, 10], [0, 8], [0, 9], [3, 10]], "n_pairs": 6, "added": [[0, 8]], "removed": []}
+{"ts": 1777965712.4876566, "event": "warning_update", "elapsed": 40.11666666666567, "pairs": [[2, 3], [6, 7], [7, 10], [0, 8], [7, 11], [0, 9], [3, 10]], "n_pairs": 7, "added": [[7, 11]], "removed": []}
+{"ts": 1777965712.653003, "event": "warning_update", "elapsed": 40.23333333333233, "pairs": [[2, 3], [6, 7], [0, 8], [7, 11], [0, 9], [3, 10]], "n_pairs": 6, "added": [], "removed": [[7, 10]]}
+{"ts": 1777965713.294849, "event": "warning_update", "elapsed": 40.69999999999897, "pairs": [[2, 3], [6, 7], [2, 10], [7, 11], [0, 9], [3, 10], [0, 8]], "n_pairs": 7, "added": [[2, 10]], "removed": []}
+{"ts": 1777965713.418079, "event": "warning_update", "elapsed": 40.7833333333323, "pairs": [[2, 7], [2, 10], [0, 9], [3, 10], [2, 3], [6, 7], [0, 8], [7, 11]], "n_pairs": 8, "added": [[2, 7]], "removed": []}
+{"ts": 1777965716.5615911, "event": "warning_update", "elapsed": 43.03333333333217, "pairs": [[2, 3], [2, 7], [2, 10], [7, 11], [0, 9], [3, 10], [0, 8]], "n_pairs": 7, "added": [], "removed": [[6, 7]]}
+{"ts": 1777965718.2949543, "event": "warning_update", "elapsed": 44.21666666666544, "pairs": [[2, 7], [2, 10], [0, 9], [3, 10], [2, 3], [5, 9], [0, 8], [7, 11]], "n_pairs": 8, "added": [[5, 9]], "removed": []}
+{"ts": 1777965720.9940472, "event": "warning_update", "elapsed": 46.133333333332, "pairs": [[2, 7], [2, 10], [0, 9], [3, 10], [2, 3], [6, 10], [5, 9], [0, 8], [7, 11]], "n_pairs": 9, "added": [[6, 10]], "removed": []}
+{"ts": 1777965721.3626509, "event": "warning_update", "elapsed": 46.39999999999865, "pairs": [[2, 7], [2, 10], [0, 9], [3, 10], [2, 3], [4, 5], [6, 10], [5, 9], [0, 8], [7, 11]], "n_pairs": 10, "added": [[4, 5]], "removed": []}
+{"ts": 1777965721.7644823, "event": "warning_update", "elapsed": 46.683333333331966, "pairs": [[2, 7], [2, 10], [0, 9], [3, 10], [2, 3], [4, 5], [6, 10], [5, 9], [0, 8], [7, 11], [2, 11]], "n_pairs": 11, "added": [[2, 11]], "removed": []}
+{"ts": 1777965722.6056428, "event": "warning_update", "elapsed": 47.28333333333193, "pairs": [[2, 7], [2, 10], [0, 9], [3, 10], [2, 3], [4, 5], [6, 10], [5, 9], [0, 8], [2, 11]], "n_pairs": 10, "added": [], "removed": [[7, 11]]}
+{"ts": 1777965723.571011, "event": "warning_update", "elapsed": 47.966666666665226, "pairs": [[2, 7], [4, 9], [2, 10], [0, 9], [3, 10], [2, 3], [4, 5], [6, 10], [5, 9], [0, 8], [2, 11]], "n_pairs": 11, "added": [[4, 9]], "removed": []}
+{"ts": 1777965724.9891145, "event": "warning_update", "elapsed": 48.96666666666517, "pairs": [[2, 7], [4, 9], [2, 10], [3, 10], [2, 3], [4, 5], [6, 10], [5, 9], [0, 8], [2, 11]], "n_pairs": 10, "added": [], "removed": [[0, 9]]}
+{"ts": 1777965728.1602852, "event": "warning_update", "elapsed": 51.23333333333171, "pairs": [[2, 7], [4, 9], [2, 10], [3, 10], [1, 4], [2, 3], [4, 5], [6, 10], [5, 9], [0, 8], [2, 11]], "n_pairs": 11, "added": [[1, 4]], "removed": []}
+{"ts": 1777965730.1902006, "event": "warning_update", "elapsed": 52.683333333331625, "pairs": [[2, 7], [4, 9], [2, 10], [3, 10], [1, 4], [4, 5], [6, 10], [5, 9], [0, 8], [2, 11]], "n_pairs": 10, "added": [], "removed": [[2, 3]]}
+{"ts": 1777965730.2860422, "event": "warning_update", "elapsed": 52.74999999999829, "pairs": [[2, 7], [4, 9], [2, 10], [3, 10], [1, 4], [4, 5], [6, 10], [0, 8], [2, 11]], "n_pairs": 9, "added": [], "removed": [[5, 9]]}
+{"ts": 1777965730.5611758, "event": "warning_update", "elapsed": 52.949999999998276, "pairs": [[2, 7], [6, 11], [4, 9], [2, 10], [3, 10], [1, 4], [4, 5], [6, 10], [0, 8], [2, 11]], "n_pairs": 10, "added": [[6, 11]], "removed": []}
+{"ts": 1777965732.358668, "event": "warning_update", "elapsed": 54.18333333333154, "pairs": [[2, 7], [6, 11], [4, 9], [2, 10], [3, 10], [1, 4], [4, 5], [6, 10], [0, 5], [0, 8], [2, 11]], "n_pairs": 11, "added": [[0, 5]], "removed": []}
+{"ts": 1777965732.401969, "event": "clash_start", "elapsed": 54.21666666666487, "pairs": [[2, 7]], "n_pairs": 1}
+{"ts": 1777965732.4020488, "event": "warning_update", "elapsed": 54.21666666666487, "pairs": [[6, 11], [4, 9], [2, 10], [3, 10], [1, 4], [4, 5], [6, 10], [0, 5], [0, 8], [2, 11]], "n_pairs": 10, "added": [], "removed": [[2, 7]]}
+{"ts": 1777965732.4560676, "event": "suggestion_shown", "drone_ids": [2, 3, 6, 7, 10, 11], "proposed_channels": {"6": "red", "7": "green", "10": "green", "2": "blue", "11": "blue", "3": "blue"}, "infeasible": true, "elapsed": 54.2499999999982}
+{"ts": 1777965732.7225912, "event": "warning_update", "elapsed": 54.433333333331525, "pairs": [[6, 11], [4, 9], [2, 10], [3, 10], [1, 4], [6, 10], [0, 5], [0, 8]], "n_pairs": 8, "added": [], "removed": [[4, 5], [2, 11]]}
+{"ts": 1777965737.8293092, "event": "warning_update", "elapsed": 57.96666666666466, "pairs": [[6, 10], [0, 5], [6, 11], [4, 9], [2, 10], [3, 10], [1, 4]], "n_pairs": 7, "added": [], "removed": [[0, 8]]}
+{"ts": 1777965738.4035723, "event": "warning_update", "elapsed": 58.366666666664635, "pairs": [[6, 10], [0, 5], [6, 11], [4, 9], [2, 10], [1, 4]], "n_pairs": 6, "added": [], "removed": [[3, 10]]}
+{"ts": 1777965741.1524749, "event": "clash_update", "elapsed": 60.24999999999786, "pairs": [[2, 7], [6, 11]], "n_pairs": 2, "added": [[6, 11]], "removed": [], "clash_seconds_so_far": 20.666666666666778}
+{"ts": 1777965741.1525674, "event": "warning_update", "elapsed": 60.24999999999786, "pairs": [[6, 10], [0, 5], [4, 9], [2, 10], [1, 4]], "n_pairs": 5, "added": [], "removed": [[6, 11]]}
+{"ts": 1777965744.4226742, "event": "warning_update", "elapsed": 62.49999999999773, "pairs": [[4, 9], [1, 4], [2, 10], [0, 5]], "n_pairs": 4, "added": [], "removed": [[6, 10]]}
+{"ts": 1777965745.0543146, "event": "clash_update", "elapsed": 62.93333333333104, "pairs": [[4, 9], [2, 7], [6, 11]], "n_pairs": 3, "added": [[4, 9]], "removed": [], "clash_seconds_so_far": 26.050000000000377}
+{"ts": 1777965745.0544074, "event": "warning_update", "elapsed": 62.93333333333104, "pairs": [[1, 4], [2, 10], [0, 5]], "n_pairs": 3, "added": [], "removed": [[4, 9]]}
+{"ts": 1777965745.3399954, "event": "clash_update", "elapsed": 63.13333333333103, "pairs": [[4, 9], [2, 7], [1, 4], [6, 11]], "n_pairs": 4, "added": [[1, 4]], "removed": [], "clash_seconds_so_far": 26.66666666666705}
+{"ts": 1777965745.3400683, "event": "warning_update", "elapsed": 63.13333333333103, "pairs": [[2, 10], [0, 5]], "n_pairs": 2, "added": [], "removed": [[1, 4]]}
+{"ts": 1777965746.5948246, "event": "warning_update", "elapsed": 63.99999999999765, "pairs": [[0, 5]], "n_pairs": 1, "added": [], "removed": [[2, 10]]}
+{"ts": 1777965748.7261167, "event": "warning_update", "elapsed": 65.38333333333091, "pairs": [[1, 9], [0, 5]], "n_pairs": 2, "added": [[1, 9]], "removed": []}
+{"ts": 1777965751.631215, "event": "warning_update", "elapsed": 67.3833333333308, "pairs": [[2, 10], [1, 9], [0, 5]], "n_pairs": 3, "added": [[2, 10]], "removed": []}
+{"ts": 1777965753.5399985, "event": "warning_update", "elapsed": 68.69999999999739, "pairs": [[4, 8], [2, 10], [1, 9], [0, 5]], "n_pairs": 4, "added": [[4, 8]], "removed": []}
+{"ts": 1777965753.861666, "event": "warning_update", "elapsed": 68.91666666666404, "pairs": [[8, 9], [4, 8], [0, 5], [2, 10], [1, 9]], "n_pairs": 5, "added": [[8, 9]], "removed": []}
+{"ts": 1777965756.2628438, "event": "warning_update", "elapsed": 70.56666666666395, "pairs": [[1, 9], [8, 9], [4, 8], [0, 5], [2, 10], [3, 10]], "n_pairs": 6, "added": [[3, 10]], "removed": []}
+{"ts": 1777965764.2886047, "event": "warning_update", "elapsed": 76.06666666666364, "pairs": [[1, 9], [10, 11], [8, 9], [4, 8], [0, 5], [2, 10], [3, 10]], "n_pairs": 7, "added": [[10, 11]], "removed": []}
+{"ts": 1777965767.6229386, "event": "warning_update", "elapsed": 78.38333333333017, "pairs": [[1, 9], [10, 11], [4, 8], [0, 5], [2, 10], [3, 10]], "n_pairs": 6, "added": [], "removed": [[8, 9]]}
+{"ts": 1777965767.6935124, "event": "warning_update", "elapsed": 78.43333333333017, "pairs": [[10, 11], [4, 8], [0, 5], [2, 10], [1, 9]], "n_pairs": 5, "added": [], "removed": [[3, 10]]}
+{"ts": 1777965772.238663, "event": "warning_update", "elapsed": 81.58333333332999, "pairs": [[10, 11], [4, 8], [1, 5], [0, 5], [2, 10], [1, 9]], "n_pairs": 6, "added": [[1, 5]], "removed": []}
+{"ts": 1777965778.2236867, "event": "warning_update", "elapsed": 85.66666666666309, "pairs": [[4, 8], [1, 5], [0, 5], [2, 10], [1, 9]], "n_pairs": 5, "added": [], "removed": [[10, 11]]}
+{"ts": 1777965778.9583633, "event": "warning_update", "elapsed": 86.18333333332973, "pairs": [[2, 10], [1, 9], [0, 5], [1, 5]], "n_pairs": 4, "added": [], "removed": [[4, 8]]}
+{"ts": 1777965779.789395, "event": "warning_update", "elapsed": 86.76666666666303, "pairs": [[0, 5], [1, 5], [7, 10], [2, 10], [1, 9]], "n_pairs": 5, "added": [[7, 10]], "removed": []}
+{"ts": 1777965780.7966557, "event": "warning_update", "elapsed": 87.46666666666299, "pairs": [[7, 10], [2, 10], [1, 9], [1, 5]], "n_pairs": 4, "added": [], "removed": [[0, 5]]}
+{"ts": 1777965781.5688589, "event": "warning_update", "elapsed": 87.99999999999629, "pairs": [[7, 10], [1, 9], [1, 5]], "n_pairs": 3, "added": [], "removed": [[2, 10]]}
+{"ts": 1777965782.2288733, "event": "warning_update", "elapsed": 88.44999999999627, "pairs": [[7, 10], [1, 9]], "n_pairs": 2, "added": [], "removed": [[1, 5]]}
+{"ts": 1777965786.9042428, "event": "clash_update", "elapsed": 91.66666666666275, "pairs": [[4, 9], [2, 7], [1, 4]], "n_pairs": 3, "added": [], "removed": [[6, 11]], "clash_seconds_so_far": 140.78333333333094}
+{"ts": 1777965786.9043233, "event": "warning_update", "elapsed": 91.66666666666275, "pairs": [[7, 10], [1, 9], [6, 11]], "n_pairs": 3, "added": [[6, 11]], "removed": []}
+{"ts": 1777965789.091941, "event": "warning_update", "elapsed": 93.18333333332933, "pairs": [[7, 10], [2, 10], [1, 9], [6, 11]], "n_pairs": 4, "added": [[2, 10]], "removed": []}
+{"ts": 1777965791.163536, "event": "warning_update", "elapsed": 94.61666666666258, "pairs": [[4, 8], [6, 11], [7, 10], [2, 10], [1, 9]], "n_pairs": 5, "added": [[4, 8]], "removed": []}
+{"ts": 1777965792.3050978, "event": "warning_update", "elapsed": 95.36666666666254, "pairs": [[3, 6], [4, 8], [6, 11], [7, 10], [2, 10], [1, 9]], "n_pairs": 6, "added": [[3, 6]], "removed": []}
+{"ts": 1777965794.391607, "event": "warning_update", "elapsed": 96.79999999999579, "pairs": [[3, 6], [4, 8], [6, 11], [7, 10], [2, 10], [0, 9], [1, 9]], "n_pairs": 7, "added": [[0, 9]], "removed": []}
+{"ts": 1777965801.7316637, "event": "warning_update", "elapsed": 101.86666666666217, "pairs": [[4, 8], [3, 6], [7, 10], [2, 10], [0, 9], [1, 9]], "n_pairs": 6, "added": [], "removed": [[6, 11]]}
+{"ts": 1777965802.2383597, "event": "warning_update", "elapsed": 102.21666666666215, "pairs": [[4, 8], [3, 6], [3, 7], [2, 10], [0, 9], [1, 9], [7, 10]], "n_pairs": 7, "added": [[3, 7]], "removed": []}
+{"ts": 1777965802.5305135, "event": "warning_update", "elapsed": 102.41666666666214, "pairs": [[3, 7], [2, 10], [7, 10], [0, 9], [4, 8], [3, 6], [1, 9], [3, 5]], "n_pairs": 8, "added": [[3, 5]], "removed": []}
+{"ts": 1777965802.726837, "event": "warning_update", "elapsed": 102.54999999999546, "pairs": [[4, 8], [3, 6], [3, 7], [2, 10], [0, 9], [1, 9], [3, 5]], "n_pairs": 7, "added": [], "removed": [[7, 10]]}
+{"ts": 1777965805.5246303, "event": "warning_update", "elapsed": 104.48333333332869, "pairs": [[4, 8], [3, 6], [3, 7], [0, 9], [1, 9], [3, 5]], "n_pairs": 6, "added": [], "removed": [[2, 10]]}
+{"ts": 1777965805.6935296, "event": "warning_update", "elapsed": 104.59999999999535, "pairs": [[3, 5], [4, 8], [3, 6], [3, 7], [0, 9], [1, 9], [5, 7]], "n_pairs": 7, "added": [[5, 7]], "removed": []}
+{"ts": 1777965806.8611665, "event": "warning_update", "elapsed": 105.3999999999953, "pairs": [[3, 5], [4, 8], [3, 6], [3, 7], [1, 9], [5, 7]], "n_pairs": 6, "added": [], "removed": [[0, 9]]}
+{"ts": 1777965808.1223876, "event": "warning_update", "elapsed": 106.19999999999526, "pairs": [[4, 8], [3, 6], [3, 7], [1, 9], [3, 5]], "n_pairs": 5, "added": [], "removed": [[5, 7]]}
+{"ts": 1777965808.655335, "event": "warning_update", "elapsed": 106.5666666666619, "pairs": [[4, 8], [3, 6], [3, 7], [1, 9], [3, 5], [7, 10]], "n_pairs": 6, "added": [[7, 10]], "removed": []}
+{"ts": 1777965809.887238, "event": "warning_update", "elapsed": 107.41666666666185, "pairs": [[4, 8], [3, 7], [1, 9], [3, 5], [7, 10]], "n_pairs": 5, "added": [], "removed": [[3, 6]]}
+{"ts": 1777965812.3731716, "event": "clash_update", "elapsed": 109.13333333332842, "pairs": [[4, 9], [2, 7]], "n_pairs": 2, "added": [], "removed": [[1, 4]], "clash_seconds_so_far": 193.16666666667618}
+{"ts": 1777965812.3732398, "event": "warning_update", "elapsed": 109.13333333332842, "pairs": [[3, 5], [4, 8], [3, 7], [1, 9], [1, 4], [7, 10]], "n_pairs": 6, "added": [[1, 4]], "removed": []}
+{"ts": 1777965812.7634666, "event": "warning_update", "elapsed": 109.39999999999507, "pairs": [[6, 7], [3, 5], [4, 8], [3, 7], [1, 9], [1, 4], [7, 10]], "n_pairs": 7, "added": [[6, 7]], "removed": []}
+{"ts": 1777965815.2717848, "event": "warning_update", "elapsed": 111.13333333332831, "pairs": [[3, 7], [7, 10], [1, 4], [6, 7], [4, 8], [0, 8], [1, 9], [3, 5]], "n_pairs": 8, "added": [[0, 8]], "removed": []}
+{"ts": 1777965816.0258162, "event": "warning_update", "elapsed": 111.64999999999495, "pairs": [[3, 7], [7, 10], [1, 4], [6, 7], [4, 8], [0, 8], [7, 11], [1, 9], [3, 5]], "n_pairs": 9, "added": [[7, 11]], "removed": []}
+{"ts": 1777965821.3576477, "event": "clash_update", "elapsed": 115.33333333332807, "pairs": [[4, 9], [3, 5], [2, 7]], "n_pairs": 3, "added": [[3, 5]], "removed": [], "clash_seconds_so_far": 205.58333333334215}
+{"ts": 1777965821.3577354, "event": "warning_update", "elapsed": 115.33333333332807, "pairs": [[3, 7], [7, 10], [1, 4], [6, 7], [4, 8], [0, 8], [7, 11], [1, 9]], "n_pairs": 8, "added": [], "removed": [[3, 5]]}
+{"ts": 1777965824.7029638, "event": "warning_update", "elapsed": 117.58333333332794, "pairs": [[3, 7], [7, 10], [1, 4], [6, 7], [2, 6], [4, 8], [0, 8], [7, 11], [1, 9]], "n_pairs": 9, "added": [[2, 6]], "removed": []}
+{"ts": 1777965825.4363735, "event": "warning_update", "elapsed": 118.08333333332791, "pairs": [[3, 7], [7, 10], [1, 4], [2, 6], [4, 8], [0, 8], [7, 11], [1, 9]], "n_pairs": 8, "added": [], "removed": [[6, 7]]}
+{"ts": 1777965825.6051345, "event": "warning_update", "elapsed": 118.19999999999457, "pairs": [[2, 6], [4, 8], [7, 10], [0, 8], [7, 11], [1, 9], [1, 4]], "n_pairs": 7, "added": [], "removed": [[3, 7]]}
+{"ts": 1777965827.866161, "event": "warning_update", "elapsed": 119.74999999999449, "pairs": [[2, 6], [4, 8], [7, 10], [0, 8], [7, 11], [1, 9]], "n_pairs": 6, "added": [], "removed": [[1, 4]]}
+{"ts": 1777965828.2594264, "event": "game_end", "elapsed": 120.01666666666114, "clash_seconds": 219.63333333334535, "clash_pct": 183.00236078324298}
+{"ts": 1777965828.4885576, "event": "recording_stopped", "elapsed": 120.01666666666114}
+{"ts": 1777966865.0680227, "event": "click_ignored", "x": 1965, "y": 808, "state": "ENDED", "elapsed": 120.01666666666114}
+{"ts": 1777966865.244929, "event": "key_down", "key": 32, "key_name": "space", "state": "ENDED", "elapsed": 120.01666666666114}

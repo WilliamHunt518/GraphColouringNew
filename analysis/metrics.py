@@ -35,7 +35,7 @@ SETUP_MODES  = {"M3", "flex_watch_setup"}
 COMPLEXITY_ORDER = ["easy", "medium", "hard"]
 
 _MODES      = ["manual", "suggest", "auto"]
-_MODE_ITEMS = ["helpful", "trusted", "focus", "alongside"]
+_MODE_ITEMS = ["suited"]
 _SUMM_QUANT = ["overall", "drone_count_helpfulness", "overload_preference"]
 
 # Window after suggestion_applied in which a clash_start involving the same
@@ -334,17 +334,16 @@ def _extract_survey(sv: Dict) -> Dict[str, Any]:
         if k in sv: out[k] = sv[k]
     out["tam_mean"] = _safe_mean([sv[k] for k in tam_keys if k in sv])
 
-    # Per-mode ratings (helpful/trusted/focus/alongside for manual/suggest/auto)
+    # Per-mode ratings (suited rating + optional comment for manual/suggest/auto)
     for mode in _MODES:
-        vals = []
-        for item in _MODE_ITEMS:
-            k = f"mode_{mode}_{item}"
-            v = sv.get(k)
-            if v is not None and v != 0:
-                out[k] = v
-                vals.append(v)
-        if vals:
-            out[f"mode_{mode}_mean"] = _safe_mean(vals)
+        k = f"mode_{mode}_suited"
+        v = sv.get(k)
+        if v is not None and v != 0:
+            out[k] = v
+        comment_k = f"mode_{mode}_comment"
+        if comment_k in sv:
+            out[comment_k] = sv[comment_k]
+        out[f"mode_{mode}_mean"] = out.get(k)
 
     return out
 

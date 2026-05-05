@@ -1,0 +1,4 @@
+participant_id,session_start,mode,overall,drone_count_helpfulness,overload_preference,qualitative
+DATA_TEST,20260505_081426,manual,7,4,6,
+DATA_TEST,20260505_081426,suggest,4,5,4,
+DATA_TEST,20260505_081426,auto,4,6,5,

@@ -177,9 +177,10 @@ def _write_trial_csv(participants: List[ParticipantData], out_path: Path) -> Non
         "trust_composite","trust_suspicious","trust_wary","trust_confident",
         "trust_reliable","trust_overall","trust_accepted",
         "tam_mean","tam_improved","tam_easy","tam_useful","tam_would_use",
-        # Per-mode trial ratings (manual/suggest/auto × helpful/trusted/focus/alongside)
-        *[f"mode_{mode}_{item}" for mode in _MODES for item in _MODE_ITEMS],
-        *[f"mode_{mode}_mean"   for mode in _MODES],
+        # Per-mode trial ratings (suited rating for manual/suggest/auto)
+        *[f"mode_{mode}_suited"  for mode in _MODES],
+        *[f"mode_{mode}_comment" for mode in _MODES],
+        *[f"mode_{mode}_mean"    for mode in _MODES],
     ]
     demo_keys = ["age","gender","education","tech_comfort","ai_experience","drone_experience"]
 
