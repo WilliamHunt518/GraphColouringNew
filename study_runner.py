@@ -670,6 +670,25 @@ def run_study(config: StudyConfig) -> None:
                 (info.current_w, info.current_h), pygame.NOFRAME
             )
         pygame.display.set_caption("Drone Channel Assignment — Study")
+        # SDL2 may not enumerate all OS monitors, causing SDL_VIDEO_WINDOW_POS
+        # to be silently ignored.  Win32 SetWindowPos always covers the full
+        # virtual desktop, so use it as a hard override after window creation.
+        if _ab is not None:
+            import sys, ctypes
+            if sys.platform == "win32":
+                try:
+                    hwnd = ctypes.windll.user32.FindWindowW(
+                        None, "Drone Channel Assignment — Study")
+                    if hwnd:
+                        ctypes.windll.user32.SetWindowPos(
+                            hwnd, None,
+                            _ab[0], _ab[1], _ab[2], _ab[3],
+                            0x0050)  # SWP_SHOWWINDOW | SWP_NOACTIVATE
+                        print(f"[arena] Win32 moved to {_ab}, hwnd={hwnd:#x}")
+                    else:
+                        print("[arena] Win32: HWND not found for arena window")
+                except Exception as _e:
+                    print(f"[arena] Win32 SetWindowPos failed: {_e}")
 
     # Build output directory early so surveys can write into it
     ts  = time.strftime("%Y%m%d_%H%M%S")

@@ -386,17 +386,29 @@ def run_game(
                     pos_x=WINDOWED_PANEL_X, pos_y=WINDOWED_PANEL_Y,
                 )
             else:
+                # Resolve panel bounds — prefer ctypes (same space as Win32
+                # SetWindowPos used as fallback inside DetachedPanelWindow),
+                # fall back to SDL2 display bounds if ctypes returns nothing.
                 _pb = monitor_rect(panel_monitor)
                 if _pb is None:
-                    n_mon = pygame.display.get_num_displays()
-                    pmon  = min(panel_monitor, n_mon - 1)
-                    _raw  = pygame.display.get_display_bounds(pmon)
-                    _pb   = (_raw[0], _raw[1], _raw[2], _raw[3])
+                    try:
+                        n_mon = pygame.display.get_num_displays()
+                        pmon  = min(panel_monitor, n_mon - 1)
+                        _raw  = pygame.display.get_display_bounds(pmon)
+                        _pb   = (_raw[0], _raw[1], _raw[2], _raw[3])
+                    except Exception as _be:
+                        print(f"[display] get_display_bounds failed: {_be}")
+                print(f"[display] panel rect used: {_pb}  (panel_monitor={panel_monitor})")
+                if _pb is None:
+                    raise RuntimeError("Could not determine panel monitor bounds")
                 _panel_win = DetachedPanelWindow(_pb[2], _pb[3], pos_x=_pb[0], pos_y=_pb[1])
             renderer.set_panel_surface(_panel_win.get_fresh_surface())
             panel_detached = True
             logger.log("panel_opened", monitor=panel_monitor, elapsed=0.0)
         except Exception as exc:
+            import traceback
+            print(f"[display] panel window FAILED: {exc}")
+            traceback.print_exc()
             logger.log("panel_open_failed", reason=str(exc), elapsed=0.0)
 
     # ── Event loop ────────────────────────────────────────────────────────────

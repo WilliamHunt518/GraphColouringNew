@@ -1,0 +1,258 @@
+{"ts": 1777997903.7912338, "event": "tutorial_start"}
+{"ts": 1777997904.260828, "event": "tutorial_panel_opened", "monitor": 0}
+{"ts": 1777997904.9496763, "event": "tutorial_mouse_down", "x": 1815, "y": 338, "step": 1, "elapsed": 0.0}
+{"ts": 1777997905.036711, "event": "arena_click_miss", "x": 1815, "y": 338, "elapsed": 0.0}
+{"ts": 1777997906.4950666, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 1, "elapsed": 0.0}
+{"ts": 1777997906.4950666, "event": "tutorial_step_completed", "step": 1, "duration_s": 2.23}
+{"ts": 1777997906.4950666, "event": "clash_start", "elapsed": 0.022, "pairs": [[0, 1], [0, 2], [1, 2]], "n_pairs": 3}
+{"ts": 1777997906.496073, "event": "warning_start", "elapsed": 0.022, "pairs": [[4, 6], [0, 3], [1, 4]], "n_pairs": 3}
+{"ts": 1777997906.9731622, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997906.9731622, "event": "tutorial_step_completed", "step": 2, "duration_s": 0.48}
+{"ts": 1777997907.209183, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997907.4232666, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997908.2235117, "event": "tutorial_mouse_down", "x": 1286, "y": 788, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997908.30867, "event": "popup_opened", "drone_id": 1, "elapsed": 0.47700000000000015}
+{"ts": 1777997908.8973012, "event": "tutorial_mouse_down", "x": 1292, "y": 685, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997908.8973012, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997908.8973012, "event": "popup_dismissed", "drone_id": 1, "elapsed": 0.47700000000000015}
+{"ts": 1777997909.234568, "event": "tutorial_mouse_down", "x": 1197, "y": 902, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997909.324423, "event": "popup_opened", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997909.7424674, "event": "tutorial_mouse_down", "x": 1203, "y": 830, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997909.7424674, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997909.7424674, "event": "popup_dismissed", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997909.9197567, "event": "tutorial_mouse_down", "x": 1367, "y": 882, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997910.0852554, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997910.4755464, "event": "tutorial_mouse_down", "x": 1208, "y": 888, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997910.56091, "event": "popup_opened", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997910.934599, "event": "tutorial_mouse_down", "x": 1203, "y": 760, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997910.934599, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997910.934599, "event": "popup_dismissed", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997911.388567, "event": "tutorial_mouse_down", "x": 1191, "y": 908, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997911.4760218, "event": "popup_opened", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997911.8854735, "event": "tutorial_mouse_down", "x": 1207, "y": 785, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997911.8854735, "event": "switch_requested", "drone_id": 2, "from_channel": "green", "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997911.8854735, "event": "popup_dismissed", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.0950701, "event": "tutorial_mouse_down", "x": 1272, "y": 797, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.1799672, "event": "popup_opened", "drone_id": 1, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.5747876, "event": "tutorial_mouse_down", "x": 1289, "y": 725, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.5747876, "event": "switch_requested", "drone_id": 1, "from_channel": "blue", "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997912.5747876, "event": "popup_dismissed", "drone_id": 1, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.753537, "event": "tutorial_mouse_down", "x": 1388, "y": 793, "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.8549085, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997912.8549085, "event": "tutorial_step_completed", "step": 3, "duration_s": 5.88}
+{"ts": 1777997913.4388556, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 4, "elapsed": 0.47700000000000015}
+{"ts": 1777997913.4388556, "event": "tutorial_step_completed", "step": 4, "duration_s": 0.58}
+{"ts": 1777997914.7742193, "event": "tutorial_mouse_down", "x": 774, "y": 838, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997914.8629568, "event": "popup_opened", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.024412, "event": "tutorial_mouse_down", "x": 761, "y": 801, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.072725, "event": "popup_dismissed", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.4264243, "event": "tutorial_mouse_down", "x": 765, "y": 807, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.4918926, "event": "popup_opened", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.6911714, "event": "tutorial_mouse_down", "x": 777, "y": 741, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.6911714, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997915.6911714, "event": "popup_dismissed", "drone_id": 2, "elapsed": 0.47700000000000015}
+{"ts": 1777997915.9056466, "event": "tutorial_mouse_down", "x": 776, "y": 662, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997916.251797, "event": "tutorial_mouse_down", "x": 783, "y": 581, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997916.6304364, "event": "tutorial_mouse_down", "x": 781, "y": 618, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997916.7208047, "event": "popup_opened", "drone_id": 1, "elapsed": 0.47700000000000015}
+{"ts": 1777997917.1222923, "event": "tutorial_mouse_down", "x": 780, "y": 528, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997917.1222923, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997917.1222923, "event": "popup_dismissed", "drone_id": 1, "elapsed": 0.47700000000000015}
+{"ts": 1777997917.5118668, "event": "tutorial_mouse_down", "x": 552, "y": 719, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997917.5780523, "event": "arena_click_miss", "x": 548, "y": 721, "elapsed": 0.47700000000000015}
+{"ts": 1777997917.7123814, "event": "tutorial_mouse_down", "x": 522, "y": 723, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997917.7800791, "event": "popup_opened", "drone_id": 0, "elapsed": 0.47700000000000015}
+{"ts": 1777997918.1813042, "event": "tutorial_mouse_down", "x": 543, "y": 585, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997918.1813042, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997918.1813042, "event": "popup_dismissed", "drone_id": 0, "elapsed": 0.47700000000000015}
+{"ts": 1777997918.867057, "event": "tutorial_mouse_down", "x": 1786, "y": 636, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997918.980428, "event": "popup_opened", "drone_id": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997919.537031, "event": "tutorial_mouse_down", "x": 1804, "y": 495, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997919.537031, "event": "switch_requested", "drone_id": 3, "from_channel": "red", "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997919.537031, "event": "popup_dismissed", "drone_id": 3, "elapsed": 0.47700000000000015}
+{"ts": 1777997920.0266328, "event": "tutorial_mouse_down", "x": 2053, "y": 717, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997920.114495, "event": "popup_opened", "drone_id": 4, "elapsed": 0.47700000000000015}
+{"ts": 1777997920.5691547, "event": "tutorial_mouse_down", "x": 2027, "y": 616, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997920.570261, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997920.570261, "event": "popup_dismissed", "drone_id": 4, "elapsed": 0.47700000000000015}
+{"ts": 1777997920.9977257, "event": "tutorial_mouse_down", "x": 1790, "y": 814, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997921.1070433, "event": "popup_opened", "drone_id": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997921.4883277, "event": "tutorial_mouse_down", "x": 1810, "y": 738, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997921.4883277, "event": "switch_requested", "drone_id": 5, "from_channel": "blue", "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M1"}
+{"ts": 1777997921.4883277, "event": "popup_dismissed", "drone_id": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997921.7091312, "event": "tutorial_mouse_down", "x": 1598, "y": 763, "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997922.8632152, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 5, "elapsed": 0.47700000000000015}
+{"ts": 1777997922.8632152, "event": "tutorial_step_completed", "step": 5, "duration_s": 9.42}
+{"ts": 1777997932.1876588, "event": "tutorial_mouse_down", "x": 2139, "y": 941, "step": 6, "elapsed": 0.47700000000000015}
+{"ts": 1777997932.8212326, "event": "group_selected", "drone_ids": [0, 1, 2, 3, 4, 5], "method": "box", "elapsed": 0.47700000000000015}
+{"ts": 1777997934.094813, "event": "watch_mode_set", "drones": [0, 1, 2, 3, 4, 5], "mode": "suggest", "elapsed": 0.47700000000000015}
+{"ts": 1777997934.094813, "event": "suggestion_requested", "drone_ids": [0, 1, 2, 3, 4, 5], "current_channels": {"0": null, "1": null, "2": null, "3": null, "4": null, "5": null, "6": "blue", "7": "red"}, "elapsed": 0.47700000000000015}
+{"ts": 1777997934.094813, "event": "suggestion_shown", "drone_ids": [0, 1, 2, 3, 4, 5], "proposed_channels": {"0": "red", "1": "green", "2": "blue", "3": "red", "4": "green", "5": "blue"}, "infeasible": false, "elapsed": 0.47700000000000015}
+{"ts": 1777997935.35932, "event": "suggestion_applied", "final_channels": {"0": "red", "1": "green", "2": "blue", "3": "red", "4": "green", "5": "blue"}, "n_overrides": 0, "elapsed": 0.47700000000000015}
+{"ts": 1777997935.35932, "event": "switch_requested", "drone_id": 0, "from_channel": null, "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M2"}
+{"ts": 1777997935.35932, "event": "switch_requested", "drone_id": 1, "from_channel": null, "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M2"}
+{"ts": 1777997935.35932, "event": "switch_requested", "drone_id": 2, "from_channel": null, "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M2"}
+{"ts": 1777997935.35932, "event": "switch_requested", "drone_id": 3, "from_channel": null, "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M2"}
+{"ts": 1777997935.35932, "event": "switch_requested", "drone_id": 4, "from_channel": null, "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M2"}
+{"ts": 1777997935.35932, "event": "switch_requested", "drone_id": 5, "from_channel": null, "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M2"}
+{"ts": 1777997935.35932, "event": "tutorial_step_completed", "step": 6, "duration_s": 12.5}
+{"ts": 1777997935.9212475, "event": "tutorial_mouse_down", "x": 507, "y": 703, "step": 7, "elapsed": 0.47700000000000015}
+{"ts": 1777997935.949242, "event": "tutorial_mouse_down", "x": 522, "y": 710, "step": 7, "elapsed": 0.47700000000000015}
+{"ts": 1777997936.166681, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 7, "elapsed": 0.47700000000000015}
+{"ts": 1777997936.3464465, "event": "tutorial_mouse_down", "x": 236, "y": 518, "step": 7, "elapsed": 0.47700000000000015}
+{"ts": 1777997937.0199435, "event": "group_selected", "drone_ids": [0, 1, 2, 3, 4, 5], "method": "box", "elapsed": 0.47700000000000015}
+{"ts": 1777997938.0582485, "event": "watch_mode_set", "drones": [0, 1, 2, 3, 4, 5], "mode": "auto", "elapsed": 0.47700000000000015}
+{"ts": 1777997938.0582485, "event": "auto_assign_applied", "drone_ids": [0, 1, 2, 3, 4, 5], "proposed_channels": {"0": "red", "4": "green", "1": "green", "2": "blue", "3": "red", "5": "blue"}, "infeasible": false, "elapsed": 0.47700000000000015}
+{"ts": 1777997938.0582485, "event": "switch_requested", "drone_id": 0, "from_channel": null, "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M3"}
+{"ts": 1777997938.0582485, "event": "switch_requested", "drone_id": 4, "from_channel": null, "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M3"}
+{"ts": 1777997938.0582485, "event": "switch_requested", "drone_id": 1, "from_channel": null, "to_channel": "green", "elapsed": 0.47700000000000015, "mode": "M3"}
+{"ts": 1777997938.0582485, "event": "switch_requested", "drone_id": 2, "from_channel": null, "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M3"}
+{"ts": 1777997938.0582485, "event": "switch_requested", "drone_id": 3, "from_channel": null, "to_channel": "red", "elapsed": 0.47700000000000015, "mode": "M3"}
+{"ts": 1777997938.0582485, "event": "switch_requested", "drone_id": 5, "from_channel": null, "to_channel": "blue", "elapsed": 0.47700000000000015, "mode": "M3"}
+{"ts": 1777997938.0582485, "event": "group_deselected", "drone_ids": [0, 1, 2, 3, 4, 5], "elapsed": 0.47700000000000015}
+{"ts": 1777997938.0582485, "event": "tutorial_step_completed", "step": 7, "duration_s": 2.7}
+{"ts": 1777997939.1479542, "event": "tutorial_mouse_down", "x": 597, "y": 545, "step": 8, "elapsed": 0.47700000000000015}
+{"ts": 1777997939.2621913, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 8, "elapsed": 0.47700000000000015}
+{"ts": 1777997939.2621913, "event": "tutorial_step_completed", "step": 8, "duration_s": 1.2}
+{"ts": 1777997939.3810396, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 9, "elapsed": 0.47700000000000015}
+{"ts": 1777997939.3810396, "event": "tutorial_step_completed", "step": 9, "duration_s": 0.12}
+{"ts": 1777997940.4902656, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 10, "elapsed": 0.47700000000000015}
+{"ts": 1777997941.2018564, "event": "tutorial_mouse_down", "x": 2213, "y": 1377, "step": 10, "elapsed": 0.47700000000000015}
+{"ts": 1777997941.8990839, "event": "group_selected", "drone_ids": [0, 1, 2], "method": "box", "elapsed": 0.47700000000000015}
+{"ts": 1777997942.8334956, "event": "watch_mode_set", "drones": [0, 1, 2], "mode": "suggest", "elapsed": 0.47700000000000015}
+{"ts": 1777997942.8334956, "event": "suggestion_requested", "drone_ids": [0, 1, 2], "current_channels": {"0": "red", "1": "red", "2": "red", "3": "blue", "4": "green", "5": "blue", "6": "blue", "7": "red"}, "elapsed": 0.47700000000000015}
+{"ts": 1777997942.8334956, "event": "suggestion_shown", "drone_ids": [0, 1, 2], "proposed_channels": {"1": "red", "0": "red", "2": "red"}, "infeasible": false, "elapsed": 0.47700000000000015}
+{"ts": 1777997943.1116836, "event": "tutorial_mouse_down", "x": 481, "y": 89, "step": 10, "elapsed": 0.47700000000000015}
+{"ts": 1777997943.1654134, "event": "tutorial_mouse_down", "x": 628, "y": 93, "step": 10, "elapsed": 0.47700000000000015}
+{"ts": 1777997943.857586, "event": "suggestion_applied", "final_channels": {"1": "red", "0": "red", "2": "red"}, "n_overrides": 0, "elapsed": 0.47700000000000015}
+{"ts": 1777997944.223914, "event": "tutorial_mouse_down", "x": 310, "y": 289, "step": 10, "elapsed": 0.47700000000000015}
+{"ts": 1777997944.401827, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 10, "elapsed": 0.47700000000000015}
+{"ts": 1777997944.401827, "event": "tutorial_step_completed", "step": 10, "duration_s": 5.02}
+{"ts": 1777997944.401827, "event": "clash_update", "elapsed": 0.49900000000000017, "pairs": [[3, 6]], "n_pairs": 1, "added": [[3, 6]], "removed": [[0, 1], [0, 2], [1, 2]], "clash_seconds_so_far": 1.4530000000000003}
+{"ts": 1777997944.401827, "event": "warning_update", "elapsed": 0.49900000000000017, "pairs": [[0, 3], [1, 4]], "n_pairs": 2, "added": [], "removed": [[4, 6]]}
+{"ts": 1777997948.0364037, "event": "warning_end", "elapsed": 4.136}
+{"ts": 1777997948.9718199, "event": "warning_start", "elapsed": 5.070999999999999, "pairs": [[0, 2], [1, 2]], "n_pairs": 2}
+{"ts": 1777997950.2849374, "event": "warning_update", "elapsed": 6.382999999999994, "pairs": [[0, 2], [1, 2], [1, 5]], "n_pairs": 3, "added": [[1, 5]], "removed": []}
+{"ts": 1777997951.4232643, "event": "clash_update", "elapsed": 7.5219999999999905, "pairs": [[0, 2], [1, 2], [3, 6]], "n_pairs": 3, "added": [[0, 2], [1, 2]], "removed": [], "clash_seconds_so_far": 8.523999999999987}
+{"ts": 1777997951.4232643, "event": "warning_update", "elapsed": 7.5219999999999905, "pairs": [[1, 5]], "n_pairs": 1, "added": [], "removed": [[0, 2], [1, 2]]}
+{"ts": 1777997951.4232643, "event": "suggestion_shown", "drone_ids": [0, 1, 2], "proposed_channels": {"1": "red", "2": "green", "0": "red"}, "infeasible": false, "elapsed": 7.5219999999999905}
+{"ts": 1777997953.5861957, "event": "suggestion_applied", "final_channels": {"1": "red", "2": "green", "0": "red"}, "n_overrides": 0, "elapsed": 9.660999999999962}
+{"ts": 1777997953.5861957, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "green", "elapsed": 9.660999999999962, "mode": "M2"}
+{"ts": 1777997953.8917062, "event": "warning_update", "elapsed": 9.990999999999957, "pairs": [[0, 1], [1, 5]], "n_pairs": 2, "added": [[0, 1]], "removed": []}
+{"ts": 1777997954.0998325, "event": "warning_update", "elapsed": 10.198999999999954, "pairs": [[0, 1]], "n_pairs": 1, "added": [], "removed": [[1, 5]]}
+{"ts": 1777997955.8377569, "event": "clash_update", "elapsed": 11.93599999999991, "pairs": [[0, 1], [0, 2], [1, 2], [3, 6]], "n_pairs": 4, "added": [[0, 1]], "removed": [], "clash_seconds_so_far": 21.788999999999895}
+{"ts": 1777997955.8377569, "event": "warning_end", "elapsed": 11.93599999999991}
+{"ts": 1777997956.5797462, "event": "clash_update", "elapsed": 12.678999999999892, "pairs": [[0, 1], [3, 6]], "n_pairs": 2, "added": [], "removed": [[0, 2], [1, 2]], "clash_seconds_so_far": 24.71299999999989}
+{"ts": 1777997956.5807552, "event": "suggestion_shown", "drone_ids": [0, 1], "proposed_channels": {"0": "red", "1": "blue"}, "infeasible": false, "elapsed": 12.678999999999892}
+{"ts": 1777997957.0167112, "event": "suggestion_applied", "final_channels": {"0": "red", "1": "blue"}, "n_overrides": 0, "elapsed": 13.091999999999882}
+{"ts": 1777997957.0167112, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 13.091999999999882, "mode": "M2"}
+{"ts": 1777997960.0121896, "event": "clash_update", "elapsed": 16.110999999999812, "pairs": [[3, 6]], "n_pairs": 1, "added": [], "removed": [[0, 1]], "clash_seconds_so_far": 31.552999999999724}
+{"ts": 1777997961.4098244, "event": "tutorial_mouse_down", "x": 616, "y": 240, "step": 11, "elapsed": 17.47599999999981}
+{"ts": 1777997961.560103, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 11, "elapsed": 17.63399999999981}
+{"ts": 1777997961.560103, "event": "tutorial_step_completed", "step": 11, "duration_s": 17.16}
+{"ts": 1777997962.4803102, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 12, "elapsed": 17.63399999999981}
+{"ts": 1777997962.7471547, "event": "tutorial_mouse_down", "x": 682, "y": 413, "step": 12, "elapsed": 17.63399999999981}
+{"ts": 1777997962.9813921, "event": "group_selected", "drone_ids": [0, 1, 2], "method": "box", "elapsed": 17.63399999999981}
+{"ts": 1777997964.000023, "event": "watch_mode_set", "drones": [0, 1, 2], "mode": "suggest", "elapsed": 17.63399999999981}
+{"ts": 1777997964.000023, "event": "suggestion_requested", "drone_ids": [0, 1, 2], "current_channels": {"0": "red", "1": "red", "2": "red", "3": "green", "4": "blue", "5": "green", "6": "blue", "7": "red"}, "elapsed": 17.63399999999981}
+{"ts": 1777997964.000023, "event": "suggestion_shown", "drone_ids": [0, 1, 2], "proposed_channels": {"0": "red", "1": "green", "2": "green"}, "infeasible": false, "elapsed": 17.63399999999981}
+{"ts": 1777997964.8118386, "event": "suggestion_node_selected", "drone_id": 1, "elapsed": 17.63399999999981}
+{"ts": 1777997965.5299723, "event": "tutorial_suggestion_channel_picked", "drone_id": 1, "channel": "blue", "step": 12, "elapsed": 17.63399999999981}
+{"ts": 1777997965.8552377, "event": "suggestion_applied", "final_channels": {"0": "red", "1": "blue", "2": "green"}, "n_overrides": 1, "elapsed": 17.63399999999981}
+{"ts": 1777997965.8552377, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 17.63399999999981, "mode": "M2"}
+{"ts": 1777997965.8552377, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "green", "elapsed": 17.63399999999981, "mode": "M2"}
+{"ts": 1777997965.8552377, "event": "tutorial_step_completed", "step": 12, "duration_s": 4.3}
+{"ts": 1777997966.4116347, "event": "tutorial_mouse_down", "x": 767, "y": 365, "step": 13, "elapsed": 17.63399999999981}
+{"ts": 1777997966.6172154, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 13, "elapsed": 17.63399999999981}
+{"ts": 1777997966.9282334, "event": "tutorial_mouse_down", "x": 460, "y": 309, "step": 13, "elapsed": 17.63399999999981}
+{"ts": 1777997968.1558652, "event": "group_selected", "drone_ids": [0, 1, 2], "method": "box", "elapsed": 17.63399999999981}
+{"ts": 1777997969.1076813, "event": "watch_mode_set", "drones": [0, 1, 2], "mode": "auto", "elapsed": 17.63399999999981}
+{"ts": 1777997969.1076813, "event": "auto_assign_applied", "drone_ids": [0, 1, 2], "proposed_channels": {"1": "red", "0": "red", "2": "red"}, "infeasible": false, "elapsed": 17.63399999999981}
+{"ts": 1777997969.1076813, "event": "group_deselected", "drone_ids": [0, 1, 2], "elapsed": 17.63399999999981}
+{"ts": 1777997970.8004498, "event": "tutorial_mouse_down", "x": 967, "y": 474, "step": 13, "elapsed": 17.63399999999981}
+{"ts": 1777997970.9018624, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 13, "elapsed": 17.63399999999981}
+{"ts": 1777997970.9029062, "event": "tutorial_step_completed", "step": 13, "duration_s": 5.05}
+{"ts": 1777997970.9029062, "event": "warning_start", "elapsed": 17.658999999999807, "pairs": [[0, 3], [1, 4]], "n_pairs": 2}
+{"ts": 1777997974.530399, "event": "warning_end", "elapsed": 21.28699999999985}
+{"ts": 1777997975.4715102, "event": "warning_start", "elapsed": 22.227999999999835, "pairs": [[0, 2], [1, 2]], "n_pairs": 2}
+{"ts": 1777997976.7682147, "event": "warning_update", "elapsed": 23.523999999999813, "pairs": [[0, 2], [1, 2], [1, 5]], "n_pairs": 3, "added": [[1, 5]], "removed": []}
+{"ts": 1777997977.9050055, "event": "clash_update", "elapsed": 24.661999999999775, "pairs": [[0, 2], [1, 2], [3, 6]], "n_pairs": 3, "added": [[0, 2], [1, 2]], "removed": [], "clash_seconds_so_far": 40.15399999999994}
+{"ts": 1777997977.9050055, "event": "warning_update", "elapsed": 24.661999999999775, "pairs": [[1, 5]], "n_pairs": 1, "added": [], "removed": [[0, 2], [1, 2]]}
+{"ts": 1777997977.9050055, "event": "auto_assign_applied", "drone_ids": [0, 1, 2], "proposed_channels": {"1": "red", "2": "green", "0": "red"}, "infeasible": false, "elapsed": 24.661999999999775}
+{"ts": 1777997977.9050055, "event": "switch_requested", "drone_id": 2, "from_channel": "red", "to_channel": "green", "elapsed": 24.661999999999775, "mode": "flex_auto"}
+{"ts": 1777997980.3909316, "event": "warning_update", "elapsed": 27.147999999999783, "pairs": [[0, 1], [1, 5]], "n_pairs": 2, "added": [[0, 1]], "removed": []}
+{"ts": 1777997980.6072266, "event": "warning_update", "elapsed": 27.36399999999978, "pairs": [[0, 1]], "n_pairs": 1, "added": [], "removed": [[1, 5]]}
+{"ts": 1777997980.923196, "event": "clash_update", "elapsed": 27.67899999999978, "pairs": [[3, 6]], "n_pairs": 1, "added": [], "removed": [[0, 2], [1, 2]], "clash_seconds_so_far": 49.15300000000028}
+{"ts": 1777997982.3494408, "event": "clash_update", "elapsed": 29.106999999999758, "pairs": [[0, 1], [3, 6]], "n_pairs": 2, "added": [[0, 1]], "removed": [], "clash_seconds_so_far": 50.60800000000038}
+{"ts": 1777997982.3494408, "event": "warning_end", "elapsed": 29.106999999999758}
+{"ts": 1777997982.3494408, "event": "auto_assign_applied", "drone_ids": [0, 1], "proposed_channels": {"0": "red", "1": "blue"}, "infeasible": false, "elapsed": 29.106999999999758}
+{"ts": 1777997982.3494408, "event": "switch_requested", "drone_id": 1, "from_channel": "red", "to_channel": "blue", "elapsed": 29.106999999999758, "mode": "flex_auto"}
+{"ts": 1777997985.355072, "event": "clash_update", "elapsed": 32.11199999999978, "pairs": [[3, 6]], "n_pairs": 1, "added": [], "removed": [[0, 1]], "clash_seconds_so_far": 56.58700000000042}
+{"ts": 1777997986.9975243, "event": "tutorial_mouse_down", "x": 671, "y": 737, "step": 14, "elapsed": 33.72699999999982}
+{"ts": 1777997987.3336346, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 14, "elapsed": 34.06399999999983}
+{"ts": 1777997987.3336346, "event": "tutorial_step_completed", "step": 14, "duration_s": 16.43}
+{"ts": 1777997988.2030537, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 15, "elapsed": 34.06399999999983}
+{"ts": 1777997988.493616, "event": "tutorial_mouse_down", "x": 717, "y": 499, "step": 15, "elapsed": 34.06399999999983}
+{"ts": 1777997988.8085456, "event": "group_selected", "drone_ids": [0, 1, 2, 3], "method": "box", "elapsed": 34.06399999999983}
+{"ts": 1777997990.1583664, "event": "watch_mode_set", "drones": [0, 1, 2, 3], "mode": "auto", "elapsed": 34.06399999999983}
+{"ts": 1777997990.1583664, "event": "auto_assign_applied", "drone_ids": [0, 1, 2, 3], "proposed_channels": {"0": "red", "1": "green", "2": "blue", "3": "red"}, "infeasible": true, "elapsed": 34.06399999999983}
+{"ts": 1777997990.1583664, "event": "group_deselected", "drone_ids": [0, 1, 2, 3], "elapsed": 34.06399999999983}
+{"ts": 1777997991.0042012, "event": "tutorial_mouse_down", "x": 713, "y": 534, "step": 15, "elapsed": 34.06399999999983}
+{"ts": 1777997991.0843945, "event": "arena_click_miss", "x": 713, "y": 534, "elapsed": 34.06399999999983}
+{"ts": 1777997991.1103091, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 15, "elapsed": 34.06399999999983}
+{"ts": 1777997991.1113076, "event": "tutorial_step_completed", "step": 15, "duration_s": 3.78}
+{"ts": 1777997991.1113076, "event": "clash_update", "elapsed": 34.08999999999983, "pairs": [[1, 7], [0, 6]], "n_pairs": 2, "added": [[1, 7], [0, 6]], "removed": [[3, 6]], "clash_seconds_so_far": 58.59100000000047}
+{"ts": 1777997992.9255493, "event": "tutorial_mouse_down", "x": 330, "y": 477, "step": 16, "elapsed": 35.87699999999996}
+{"ts": 1777997993.9073217, "event": "warning_start", "elapsed": 36.8869999999999, "pairs": [[3, 6]], "n_pairs": 1}
+{"ts": 1777997994.5699306, "event": "group_selected", "drone_ids": [0, 1, 3, 4, 6], "method": "box", "elapsed": 37.517999999999866}
+{"ts": 1777997995.7254703, "event": "watch_mode_set", "drones": [0, 1, 3, 4, 6], "mode": "suggest", "elapsed": 38.66899999999988}
+{"ts": 1777997995.7254703, "event": "suggestion_requested", "drone_ids": [0, 1, 3, 4, 6], "current_channels": {"0": "red", "1": "green", "2": "blue", "3": "green", "4": "blue", "5": "red", "6": "red", "7": "green"}, "elapsed": 38.66899999999988}
+{"ts": 1777997995.7264686, "event": "suggestion_shown", "drone_ids": [0, 1, 3, 4, 6], "proposed_channels": {"6": "red", "1": "blue", "4": "red", "0": "green", "3": "blue"}, "infeasible": true, "elapsed": 38.66899999999988}
+{"ts": 1777997996.0567675, "event": "warning_update", "elapsed": 39.03599999999987, "pairs": [[4, 7], [3, 6]], "n_pairs": 2, "added": [[4, 7]], "removed": []}
+{"ts": 1777997996.647558, "event": "warning_update", "elapsed": 39.62699999999988, "pairs": [[4, 7]], "n_pairs": 1, "added": [], "removed": [[3, 6]]}
+{"ts": 1777997997.3473446, "event": "suggestion_applied", "final_channels": {"6": "red", "1": "blue", "4": "red", "0": "green", "3": "blue"}, "n_overrides": 0, "elapsed": 40.29999999999991}
+{"ts": 1777997997.3473446, "event": "switch_requested", "drone_id": 1, "from_channel": "green", "to_channel": "blue", "elapsed": 40.29999999999991, "mode": "M2"}
+{"ts": 1777997997.3473446, "event": "switch_requested", "drone_id": 4, "from_channel": "blue", "to_channel": "red", "elapsed": 40.29999999999991, "mode": "M2"}
+{"ts": 1777997997.3473446, "event": "switch_requested", "drone_id": 0, "from_channel": "red", "to_channel": "green", "elapsed": 40.29999999999991, "mode": "M2"}
+{"ts": 1777997997.3473446, "event": "switch_requested", "drone_id": 3, "from_channel": "green", "to_channel": "blue", "elapsed": 40.29999999999991, "mode": "M2"}
+{"ts": 1777997998.8647182, "event": "tutorial_mouse_down", "x": 2237, "y": 1230, "step": 16, "elapsed": 41.80800000000002}
+{"ts": 1777997999.6213417, "event": "group_selected", "drone_ids": [2, 5, 7], "method": "box", "elapsed": 42.571000000000005}
+{"ts": 1777997999.8980346, "event": "warning_update", "elapsed": 42.878000000000014, "pairs": [[1, 6], [4, 7]], "n_pairs": 2, "added": [[1, 6]], "removed": []}
+{"ts": 1777998000.3358445, "event": "clash_update", "elapsed": 43.31500000000002, "pairs": [[4, 6]], "n_pairs": 1, "added": [[4, 6]], "removed": [[1, 7], [0, 6]], "clash_seconds_so_far": 77.0130000000007}
+{"ts": 1777998000.7543924, "event": "watch_mode_set", "drones": [2, 5, 7], "mode": "auto", "elapsed": 43.69800000000003}
+{"ts": 1777998000.7543924, "event": "auto_assign_applied", "drone_ids": [2, 5, 7], "proposed_channels": {"7": "green", "2": "red", "5": "blue"}, "infeasible": false, "elapsed": 43.69800000000003}
+{"ts": 1777998000.7543924, "event": "switch_requested", "drone_id": 2, "from_channel": "blue", "to_channel": "red", "elapsed": 43.69800000000003, "mode": "M3"}
+{"ts": 1777998000.7543924, "event": "switch_requested", "drone_id": 5, "from_channel": "red", "to_channel": "blue", "elapsed": 43.69800000000003, "mode": "M3"}
+{"ts": 1777998000.7543924, "event": "group_deselected", "drone_ids": [2, 5, 7], "elapsed": 43.69800000000003}
+{"ts": 1777998002.3228366, "event": "warning_update", "elapsed": 45.303000000000104, "pairs": [[1, 6], [2, 5], [4, 7]], "n_pairs": 3, "added": [[2, 5]], "removed": []}
+{"ts": 1777998003.2596018, "event": "warning_update", "elapsed": 46.23900000000014, "pairs": [[1, 6], [2, 5]], "n_pairs": 2, "added": [], "removed": [[4, 7]]}
+{"ts": 1777998005.182052, "event": "warning_update", "elapsed": 48.16100000000025, "pairs": [[1, 6], [1, 2], [2, 5]], "n_pairs": 3, "added": [[1, 2]], "removed": []}
+{"ts": 1777998005.691815, "event": "warning_update", "elapsed": 48.672000000000274, "pairs": [[1, 6], [1, 2], [2, 5], [3, 6]], "n_pairs": 4, "added": [[3, 6]], "removed": []}
+{"ts": 1777998010.0582888, "event": "warning_update", "elapsed": 53.03800000000046, "pairs": [[1, 2], [2, 5], [3, 6]], "n_pairs": 3, "added": [], "removed": [[1, 6]]}
+{"ts": 1777998010.0858107, "event": "warning_update", "elapsed": 53.06600000000046, "pairs": [[1, 2], [3, 6]], "n_pairs": 2, "added": [], "removed": [[2, 5]]}
+{"ts": 1777998010.9203227, "event": "warning_update", "elapsed": 53.89900000000051, "pairs": [[1, 2], [3, 4], [3, 6]], "n_pairs": 3, "added": [[3, 4]], "removed": []}
+{"ts": 1777998013.4408, "event": "warning_update", "elapsed": 56.42000000000062, "pairs": [[1, 2], [0, 3], [3, 4], [3, 6]], "n_pairs": 4, "added": [[0, 3]], "removed": []}
+{"ts": 1777998014.1633618, "event": "tutorial_mouse_down", "x": 1020, "y": 1142, "step": 16, "elapsed": 57.11000000000066}
+{"ts": 1777998014.24152, "event": "popup_opened", "drone_id": 4, "elapsed": 57.19400000000066}
+{"ts": 1777998014.8942134, "event": "tutorial_mouse_down", "x": 1031, "y": 1042, "step": 16, "elapsed": 57.84800000000072}
+{"ts": 1777998014.8942134, "event": "switch_requested", "drone_id": 4, "from_channel": "green", "to_channel": "green", "elapsed": 57.84800000000072, "mode": "M1"}
+{"ts": 1777998014.8942134, "event": "popup_dismissed", "drone_id": 4, "elapsed": 57.84800000000072}
+{"ts": 1777998014.8952146, "event": "clash_end", "elapsed": 57.87400000000072, "clash_seconds_so_far": 91.54600000000087}
+{"ts": 1777998014.9255152, "event": "warning_update", "elapsed": 57.90500000000072, "pairs": [[1, 2], [3, 4], [3, 6], [1, 5], [0, 3]], "n_pairs": 5, "added": [[1, 5]], "removed": []}
+{"ts": 1777998014.9790003, "event": "warning_update", "elapsed": 57.95900000000072, "pairs": [[1, 2], [3, 4], [3, 6], [1, 5], [0, 3], [1, 4]], "n_pairs": 6, "added": [[1, 4]], "removed": []}
+{"ts": 1777998015.1948292, "event": "tutorial_mouse_down", "x": 828, "y": 963, "step": 16, "elapsed": 58.14900000000073}
+{"ts": 1777998015.3082767, "event": "arena_click_miss", "x": 828, "y": 963, "elapsed": 58.26000000000074}
+{"ts": 1777998016.6691422, "event": "warning_update", "elapsed": 59.6480000000008, "pairs": [[4, 6], [1, 2], [3, 4], [3, 6], [1, 5], [0, 3], [1, 4]], "n_pairs": 7, "added": [[4, 6]], "removed": []}
+{"ts": 1777998017.0565422, "event": "tutorial_mouse_down", "x": 621, "y": 724, "step": 16, "elapsed": 60.009000000000825}
+{"ts": 1777998017.1649332, "event": "popup_opened", "drone_id": 6, "elapsed": 60.11800000000083}
+{"ts": 1777998017.7867825, "event": "tutorial_mouse_down", "x": 637, "y": 661, "step": 16, "elapsed": 60.73600000000085}
+{"ts": 1777998017.7867825, "event": "switch_requested", "drone_id": 6, "from_channel": "blue", "to_channel": "blue", "elapsed": 60.73600000000085, "mode": "M1"}
+{"ts": 1777998017.7877884, "event": "popup_dismissed", "drone_id": 6, "elapsed": 60.73600000000085}
+{"ts": 1777998018.1536527, "event": "tutorial_mouse_down", "x": 804, "y": 692, "step": 16, "elapsed": 61.10700000000086}
+{"ts": 1777998018.2347567, "event": "arena_click_miss", "x": 795, "y": 696, "elapsed": 61.187000000000864}
+{"ts": 1777998018.8469768, "event": "warning_update", "elapsed": 61.82700000000089, "pairs": [[4, 6], [3, 4], [3, 6], [1, 5], [0, 3], [1, 4]], "n_pairs": 6, "added": [], "removed": [[1, 2]]}
+{"ts": 1777998018.928027, "event": "tutorial_key_down", "key": 32, "key_name": "space", "step": 16, "elapsed": 61.8800000000009}
+{"ts": 1777998019.3057876, "event": "tutorial_mouse_down", "x": 827, "y": 717, "step": 16, "elapsed": 62.25800000000091}
+{"ts": 1777998020.4486907, "event": "tutorial_key_down", "key": 27, "key_name": "escape", "step": 16, "elapsed": 63.40300000000095}
+{"ts": 1777998020.4486907, "event": "tutorial_quit", "elapsed": 63.40300000000095, "step": 16}
+{"ts": 1777998020.4496808, "event": "tutorial_complete", "steps_completed": 15}

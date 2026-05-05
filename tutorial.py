@@ -1320,17 +1320,25 @@ def run_tutorial(
                         for ch, rect in renderer.popup_rects.items():
                             if rect.collidepoint(mx, my):
                                 robot = world.robots[popup_drone_id]
-                                if ch != robot.channel:
-                                    robot.channel      = ch
-                                    robot.switching_to = None
-                                    world._detect_edges()
+                                old_ch = robot.channel
+                                if ch != old_ch:
+                                    if director.is_frozen:
+                                        # Frozen steps: instant switch (no cooldown)
+                                        robot.channel      = ch
+                                        robot.switching_to = None
+                                        world._detect_edges()
+                                    elif robot.switching_to is None:
+                                        # Live steps: normal switch duration applies
+                                        world.request_switch(popup_drone_id, ch)
+                                    else:
+                                        break  # already switching — ignore
+                                    logger.log_switch_requested(
+                                        popup_drone_id, old_ch, ch, world.elapsed, mode="M1")
                                     if pending_suggestion is not None:
                                         pending_suggestion   = None
                                         suggestion_overrides = {}
                                         pending_infeasible   = False
                                         game_state["pending_suggestion"] = None
-                                    logger.log_switch_requested(
-                                        popup_drone_id, robot.channel, ch, world.elapsed, mode="M1")
                                 else:
                                     logger.log("tutorial_m1_same_channel",
                                                drone_id=popup_drone_id, channel=ch,

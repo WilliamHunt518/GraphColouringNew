@@ -135,7 +135,6 @@ def run_test(mode: str, trial: int, output_dir: Path) -> Dict[str, Any]:
             max_iterations=50,
             interactive=False,
             manual_mode=True,  # Don't use LLM API in automated tests
-            human_owners=[],  # No human participants
             use_ui=False,
             output_dir=str(trial_dir),
             convergence_k=3,

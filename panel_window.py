@@ -72,9 +72,15 @@ def monitor_rect(index: int) -> Optional[Tuple[int, int, int, int]]:
         ctypes.windll.user32.EnumDisplayMonitors(
             None, None, MONITORENUMPROC(_cb), 0
         )
+        # Sort left-to-right (then top-to-bottom) so monitor index 0 is always
+        # the leftmost physical screen — EnumDisplayMonitors order is not guaranteed.
+        rects.sort(key=lambda r: (r[0], r[1]))
         if 0 <= index < len(rects):
             return rects[index]
-        return rects[0] if rects else None
+        # Out of range: return None so callers can apply their own fallback
+        # (e.g. clamp to last available monitor) rather than silently reusing
+        # monitor 0.
+        return None
     except Exception:
         return None
 
@@ -104,6 +110,12 @@ class DetachedPanelWindow:
             position=(pos_x, pos_y),
         )
         self._win.resizable = True
+        # Re-apply position via SDL_SetWindowPosition in case the constructor
+        # placement was ignored (observed on some Windows/driver combinations).
+        try:
+            self._win.position = (pos_x, pos_y)
+        except Exception:
+            pass
         try:
             self._win.focus()
         except Exception:
@@ -112,6 +124,25 @@ class DetachedPanelWindow:
             self._win.show()
         except Exception:
             pass
+        # Win32 hard override: use SetWindowPos so the window definitely lands
+        # on the correct monitor regardless of SDL2 coordinate interpretation.
+        if sys.platform == "win32" and (pos_x != 0 or pos_y != 0):
+            try:
+                import ctypes
+                hwnd = ctypes.windll.user32.FindWindowW(None, "Agent Panel")
+                if hwnd:
+                    SWP_NOACTIVATE = 0x0010
+                    SWP_SHOWWINDOW  = 0x0040
+                    ctypes.windll.user32.SetWindowPos(
+                        hwnd, None,
+                        pos_x, pos_y, width, height,
+                        SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                    )
+                    print(f"[display] Win32 SetWindowPos → ({pos_x},{pos_y}) hwnd={hwnd:#x}")
+                else:
+                    print("[display] Win32 SetWindowPos: HWND not found for 'Agent Panel'")
+            except Exception as _we:
+                print(f"[display] Win32 SetWindowPos failed: {_we}")
 
         # Hardware renderer for the panel window
         self._renderer = _SDLRenderer(self._win)

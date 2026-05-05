@@ -1,0 +1,18 @@
+{
+  "participant_id": "P20260505_171819",
+  "end_time": "20260505_172021",
+  "n_completed": 1,
+  "n_total": 4,
+  "trials": [
+    {
+      "is_tutorial": true,
+      "completed": false,
+      "elapsed": 63.40300000000095,
+      "clash_seconds": 91.54600000000087,
+      "clash_pct": 0.0,
+      "seed": 42,
+      "complexity": "tutorial",
+      "duration": 0.0
+    }
+  ]
+}
