@@ -58,7 +58,8 @@
       "Bash(git *)",
       "Bash(echo \"exit $?\")",
       "Bash(find \"G:\\\\Files\\\\Code\\\\GraphColouringNew\" -type f -name \"*.py\" -not -path \"*/old_files/*\" -not -path \"*/tests/*\")",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }

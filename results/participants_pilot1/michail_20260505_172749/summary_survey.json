@@ -1,0 +1,21 @@
+{
+  "scenario_map": {
+    "1": "Medium-70pct",
+    "2": "Easy-70pct",
+    "3": "Hard-70pct"
+  },
+  "timestamp": "2026-05-05T17:55:53.056216",
+  "mode_manual_overall": 5,
+  "mode_manual_drone_count_helpfulness": 1,
+  "mode_manual_overload_preference": 1,
+  "mode_manual_qualitative": "",
+  "mode_suggest_overall": 2,
+  "mode_suggest_drone_count_helpfulness": 1,
+  "mode_suggest_overload_preference": 1,
+  "mode_suggest_qualitative": "",
+  "mode_auto_overall": 5,
+  "mode_auto_drone_count_helpfulness": 6,
+  "mode_auto_overload_preference": 7,
+  "mode_auto_qualitative": "",
+  "other_comments": ""
+}

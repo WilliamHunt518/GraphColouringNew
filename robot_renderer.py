@@ -69,6 +69,8 @@ class TutorialCallout:
     advance_on_space: bool            = True
     disabled_buttons: frozenset       = field(default_factory=frozenset)
     hint_override: Optional[str]      = None
+    # List of (label, is_done) pairs; None means no checklist for this step
+    checklist: Optional[List[Tuple[str, bool]]] = None
 
 # M1 popup geometry
 POPUP_W      = 108
@@ -346,8 +348,8 @@ class RobotRenderer:
         robots = world.robots
         for i, j in world.edges:
             clashing = (i, j) in world.clashing_pairs
-            col = COL_CLASH_EDGE if clashing else COL_NORMAL_EDGE
-            w   = 3 if clashing else 2
+            col = (255, 65, 65) if clashing else COL_NORMAL_EDGE
+            w   = 4 if clashing else 2
             pygame.draw.line(
                 self.screen, col,
                 (int(robots[i].x), int(robots[i].y)),
@@ -396,7 +398,13 @@ class RobotRenderer:
                 pygame.draw.circle(self.screen, (40, 220, 175), (cx, cy), rad + 14, 5)
 
             if r.id in clashing:
-                pygame.draw.circle(self.screen, (255, 60, 60), (cx, cy), rad, 2)
+                # Pulsing outer ring to draw attention to clashing drones
+                _t = pygame.time.get_ticks() / 1000.0
+                _pulse = (math.sin(_t * math.pi * 3.0) + 1) / 2  # 0→1→0 at 1.5 Hz
+                _prad = int(rad + 22 + _pulse * 6)
+                _rg = int(60 + _pulse * 160)
+                pygame.draw.circle(self.screen, (255, _rg, 30), (cx, cy), _prad, 2)
+                pygame.draw.circle(self.screen, (255, 70, 70), (cx, cy), rad, 3)
 
             if r.switching_to is not None and not in_suggestion:
                 self._draw_switch_countdown(r)
@@ -882,9 +890,22 @@ class RobotRenderer:
         """Draw instructions in the middle zone when no suggestion is active."""
         ps  = self._ps
         px  = self._px + self._panel_pad
+        pw  = self._panel_w - self._panel_pad * 2
         f   = self.fonts
         sw  = self._switch_duration
         delay_text = "instant" if sw == 0 else f"{sw:.0f} s"
+
+        # Select All button
+        BTN_H = 32
+        sel_rect = pygame.Rect(px, start_y + 6, pw, BTN_H)
+        hover  = self._panel_hover_pos
+        is_hov = hover is not None and sel_rect.collidepoint(hover)
+        pygame.draw.rect(ps, (60, 60, 82) if is_hov else (40, 40, 58), sel_rect, border_radius=5)
+        pygame.draw.rect(ps, (150, 150, 195) if is_hov else (90, 90, 125), sel_rect, 1, border_radius=5)
+        s = f["small"].render("Select All  (Ctrl+A)", True, (185, 185, 220))
+        ps.blit(s, s.get_rect(center=sel_rect.center))
+        self.hud_button_rects["select_all"] = sel_rect
+        start_y = start_y + 6 + BTN_H + 6
 
         if state == "SETUP":
             hints = [
@@ -1352,7 +1373,8 @@ class RobotRenderer:
                 self.screen.blit(rs, (cx - ring_r - 2, cy - ring_r - 2))
 
         # Instruction banner across top of arena
-        STRIP_H = 200
+        n_check  = len(callout.checklist) if callout.checklist else 0
+        STRIP_H  = (max(200, 92 + n_check * 30 + 24)) if n_check else 200
         strip = pygame.Surface((self.arena_w, STRIP_H), pygame.SRCALPHA)
         strip.fill(COL_CALLOUT_BG)
         self.screen.blit(strip, (0, 0))
@@ -1366,18 +1388,56 @@ class RobotRenderer:
         head_surf = f["tut_heading"].render(callout.heading, True, (200, 230, 255))
         self.screen.blit(head_surf, head_surf.get_rect(centerx=cx, y=12))
 
-        # Body (word-wrap at ~110 chars per line to use the full arena width)
-        body_lines = _wrap_text(callout.body, max_chars=110)
-        y = 64
-        for line in body_lines:
-            s = f["tut_body"].render(line, True, (210, 210, 230))
-            self.screen.blit(s, s.get_rect(centerx=cx, y=y))
-            y += 30
+        if callout.checklist:
+            # Compact single-line body, then 2-column checklist
+            body_s = f["medium"].render(callout.body, True, (180, 180, 210))
+            self.screen.blit(body_s, body_s.get_rect(centerx=cx, y=60))
+
+            items   = callout.checklist
+            row_h   = 30
+            box_sz  = 16
+            y_start = 92
+
+            for i, (desc, done) in enumerate(items):
+                x_c = pad
+                y_c = y_start + i * row_h
+
+                box_rect = pygame.Rect(x_c, y_c + 1, box_sz, box_sz)
+                if done:
+                    pygame.draw.rect(self.screen, (35, 140, 55), box_rect, border_radius=3)
+                    pygame.draw.rect(self.screen, (80, 210, 100), box_rect, 1, border_radius=3)
+                    # Checkmark lines
+                    bx, by = box_rect.x, box_rect.y
+                    pygame.draw.line(self.screen, (160, 255, 160),
+                                     (bx + 3, by + 8), (bx + 6, by + 12), 2)
+                    pygame.draw.line(self.screen, (160, 255, 160),
+                                     (bx + 6, by + 12), (bx + 13, by + 4), 2)
+                    text_col = (160, 245, 160)
+                else:
+                    pygame.draw.rect(self.screen, (30, 30, 50), box_rect, border_radius=3)
+                    pygame.draw.rect(self.screen, (80, 80, 115), box_rect, 1, border_radius=3)
+                    text_col = (160, 160, 195)
+
+                ts = f["small"].render(desc, True, text_col)
+                self.screen.blit(ts, (x_c + box_sz + 6, y_c + 1))
+
+        else:
+            # Standard body text (word-wrap at ~110 chars per line)
+            body_lines = _wrap_text(callout.body, max_chars=110)
+            y = 64
+            for line in body_lines:
+                s = f["tut_body"].render(line, True, (210, 210, 230))
+                self.screen.blit(s, s.get_rect(centerx=cx, y=y))
+                y += 30
 
         # Hint at bottom-right of strip
         if callout.hint_override is not None:
             hint = callout.hint_override
-            hint_col = (210, 200, 90)
+            if callout.checklist:
+                all_done = all(done for _, done in callout.checklist)
+                hint_col = (140, 220, 140) if all_done else (220, 190, 80)
+            else:
+                hint_col = (210, 200, 90)
         elif callout.advance_on_space:
             hint = "SPACE to continue"
             hint_col = (140, 220, 140)

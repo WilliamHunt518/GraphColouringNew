@@ -1,6 +1,0 @@
-{"ts": 1777998296.8233757, "event": "tutorial_start"}
-{"ts": 1777998297.4011786, "event": "tutorial_panel_opened", "monitor": 0}
-{"ts": 1777998302.380197, "event": "tutorial_mouse_down", "x": 157, "y": 636, "step": 1, "elapsed": 0.0}
-{"ts": 1777998302.5090969, "event": "tutorial_key_down", "key": 27, "key_name": "escape", "step": 1, "elapsed": 0.0}
-{"ts": 1777998302.5090969, "event": "tutorial_quit", "elapsed": 0.0, "step": 1}
-{"ts": 1777998302.5137546, "event": "tutorial_complete", "steps_completed": 0}

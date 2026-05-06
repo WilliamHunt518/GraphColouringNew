@@ -67,16 +67,7 @@ def main() -> None:
     ).grid(row=row, column=1, sticky="w", **pad)
     row += 1
 
-    # ── Agent mode ────────────────────────────────────────────────────────────
-    ttk.Label(root, text="Agent mode:").grid(row=row, column=0, sticky="e", **pad)
-    agent_mode_var = tk.StringVar(value="standard")
-    ttk.Combobox(
-        root, textvariable=agent_mode_var,
-        values=["standard", "flexible"], state="readonly", width=10,
-    ).grid(row=row, column=1, sticky="w", **pad)
-    ttk.Label(root, text="(watch nodes in flexible)", foreground="gray").grid(
-        row=row, column=1, sticky="e", padx=(0, 12))
-    row += 1
+    agent_mode_var = tk.StringVar(value="flexible")
 
     # ── Seed ──────────────────────────────────────────────────────────────────
     ttk.Label(root, text="Seed:").grid(row=row, column=0, sticky="e", **pad)

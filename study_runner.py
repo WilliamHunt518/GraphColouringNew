@@ -34,11 +34,10 @@ class TrialConfig:
     v_min: Optional[float] = None
     v_max: Optional[float] = None
     is_tutorial: bool = False
-    tutorial_type: str = "standard"   # "standard" or "flexible"
     show_tlx: bool = True
     show_trust: bool = True
     show_tam: bool = True
-    agent_mode: str = "standard"
+    agent_mode: str = "flexible"
     record: bool = False
 
 
@@ -65,8 +64,7 @@ class StudyConfig:
 # hard:   16 drones, 10–20 px/s (fast)
 
 STUDY_PRESETS: Dict[str, TrialConfig] = {
-    "Tutorial":          TrialConfig("Tutorial",          is_tutorial=True, epsilon=0.0, duration=0),
-    "Flexible Tutorial": TrialConfig("Flexible-Tutorial", is_tutorial=True, tutorial_type="flexible", epsilon=0.0, duration=0),
+    "Flexible Tutorial": TrialConfig("Flexible-Tutorial", is_tutorial=True, epsilon=0.0, duration=0),
     # ── Study conditions: agent accuracy fixed at 70% (ε=0.30); vary drones & speed ──
     "Easy (8dr, slow, 70%)":     TrialConfig("Easy-70pct",   complexity="easy",   epsilon=0.30, duration=90),
     "Medium (12dr, slow, 70%)":  TrialConfig("Medium-70pct", complexity="medium", epsilon=0.30, duration=90),
@@ -225,7 +223,7 @@ class StudySetupWindow:
                     t.get("show_tlx", True),
                     t.get("show_trust", True),
                     t.get("show_tam", True),
-                    t.get("agent_mode", "standard"),
+                    t.get("agent_mode", "flexible"),
                     t.get("record", False),
                     t.get("seed", None),
                 )
@@ -272,7 +270,7 @@ class StudySetupWindow:
     def _add_trial_row(self, preset_name: str = "Medium (12dr, slow, 70%)",
                        enabled: bool = True, show_tlx: bool = True,
                        show_trust: bool = True, show_tam: bool = True,
-                       agent_mode: str = "standard", record: bool = False,
+                       agent_mode: str = "flexible", record: bool = False,
                        seed: Optional[int] = None) -> None:
         if len(self._trial_rows) >= 6:
             return
@@ -348,7 +346,7 @@ class _TrialRow:
     def __init__(self, parent: ttk.Frame, idx: int,
                  preset_name: str, enabled: bool = True,
                  show_tlx: bool = True, show_trust: bool = True,
-                 show_tam: bool = True, agent_mode: str = "standard",
+                 show_tam: bool = True, agent_mode: str = "flexible",
                  record: bool = False, seed: Optional[int] = None) -> None:
         self._parent = parent
         self._idx    = idx
@@ -372,13 +370,7 @@ class _TrialRow:
         self._cb.grid(row=0, column=2, sticky="w", padx=(0, 8))
         self._preset_var.trace_add("write", self._on_preset_change)
 
-        ttk.Label(self._frame, text="Agent:", foreground="#555").grid(
-            row=0, column=3, sticky="e", padx=(6, 2))
-        self._agent_mode_var = tk.StringVar(value=agent_mode)
-        ttk.Combobox(
-            self._frame, textvariable=self._agent_mode_var,
-            values=["standard", "flexible"], state="readonly", width=9,
-        ).grid(row=0, column=4, sticky="w")
+        self._agent_mode_var = tk.StringVar(value="flexible")
 
         # Per-trial survey element checkboxes + always-visible seed
         _preset = STUDY_PRESETS.get(preset_name)
@@ -492,7 +484,6 @@ class _TrialRow:
                 v_min=preset.v_min,
                 v_max=preset.v_max,
                 is_tutorial=preset.is_tutorial,
-                tutorial_type=preset.tutorial_type,
                 **extra_kw,
             )
 
@@ -726,7 +717,6 @@ def run_study(config: StudyConfig) -> None:
                 "epsilon": t.epsilon,
                 "switch_duration": t.switch_duration,
                 "is_tutorial": t.is_tutorial,
-                "tutorial_type": t.tutorial_type,
             }
             for t in config.trials
         ],
@@ -751,7 +741,7 @@ def run_study(config: StudyConfig) -> None:
                     output_dir=str(trial_dir),
                     arena_monitor=config.arena_monitor,
                     panel_monitor=config.panel_monitor,
-                    flex_mode=(trial.tutorial_type == "flexible"),
+                    record=trial.record,
                 )
             else:
                 n_default, vmin_default, vmax_default = COMPLEXITY_PRESETS[trial.complexity]

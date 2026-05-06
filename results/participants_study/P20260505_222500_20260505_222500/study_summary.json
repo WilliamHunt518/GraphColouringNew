@@ -1,0 +1,26 @@
+{
+  "participant_id": "P20260505_222500",
+  "end_time": "20260505_222740",
+  "n_completed": 2,
+  "n_total": 3,
+  "trials": [
+    {
+      "seed": 52,
+      "complexity": "easy",
+      "duration": 90,
+      "elapsed": 90.01666666666284,
+      "clash_seconds": 37.9666666666661,
+      "clash_pct": 42.2,
+      "completed": true
+    },
+    {
+      "seed": 72,
+      "complexity": "medium",
+      "duration": 90,
+      "elapsed": 0.0,
+      "clash_seconds": 0.0,
+      "clash_pct": 0.0,
+      "completed": false
+    }
+  ]
+}

@@ -1,7 +1,0 @@
-{"ts": 1777994487.6336174, "event": "tutorial_start"}
-{"ts": 1777994488.2003076, "event": "tutorial_panel_opened", "monitor": 1}
-{"ts": 1777994488.2134395, "event": "tutorial_mouse_down", "x": 1340, "y": 328, "step": 1, "elapsed": 0.0}
-{"ts": 1777994488.2134395, "event": "arena_click_miss", "x": 1394, "y": 306, "elapsed": 0.0}
-{"ts": 1777994488.7033517, "event": "tutorial_key_down", "key": 27, "key_name": "escape", "step": 1, "elapsed": 0.0}
-{"ts": 1777994488.7033517, "event": "tutorial_quit", "elapsed": 0.0, "step": 1}
-{"ts": 1777994488.7078927, "event": "tutorial_complete", "steps_completed": 0}

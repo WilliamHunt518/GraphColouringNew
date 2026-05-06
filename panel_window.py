@@ -109,15 +109,16 @@ class DetachedPanelWindow:
             size=(width, height),
             position=(pos_x, pos_y),
         )
-        self._win.resizable = True
+        # Borderless: no title bar or window borders — client area == window size,
+        # so the panel surface always fills the exact monitor dimensions.
+        try:
+            self._win.borderless = True
+        except Exception:
+            pass
         # Re-apply position via SDL_SetWindowPosition in case the constructor
         # placement was ignored (observed on some Windows/driver combinations).
         try:
             self._win.position = (pos_x, pos_y)
-        except Exception:
-            pass
-        try:
-            self._win.focus()
         except Exception:
             pass
         try:
@@ -126,17 +127,19 @@ class DetachedPanelWindow:
             pass
         # Win32 hard override: use SetWindowPos so the window definitely lands
         # on the correct monitor regardless of SDL2 coordinate interpretation.
-        if sys.platform == "win32" and (pos_x != 0 or pos_y != 0):
+        # Only repositions — SWP_NOSIZE leaves the SDL2 client size untouched.
+        if sys.platform == "win32":
             try:
                 import ctypes
                 hwnd = ctypes.windll.user32.FindWindowW(None, "Agent Panel")
                 if hwnd:
+                    SWP_NOSIZE     = 0x0001
                     SWP_NOACTIVATE = 0x0010
-                    SWP_SHOWWINDOW  = 0x0040
+                    SWP_SHOWWINDOW = 0x0040
                     ctypes.windll.user32.SetWindowPos(
                         hwnd, None,
-                        pos_x, pos_y, width, height,
-                        SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                        pos_x, pos_y, 0, 0,
+                        SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
                     )
                     print(f"[display] Win32 SetWindowPos → ({pos_x},{pos_y}) hwnd={hwnd:#x}")
                 else:
