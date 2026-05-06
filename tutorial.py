@@ -322,13 +322,10 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         dm = gs.get("drone_modes")
         if dm is not None:
             dm.clear()
-        gs["tutorial_forced_suggestion"] = {
-            0: "red", 1: "green", 2: "blue",
-            3: "red", 4: "green", 5: "blue",
-        }
+        gs.pop("tutorial_forced_suggestion", None)
 
     def check_6(gs: dict) -> bool:
-        return gs["last_action"] == "suggestion_applied"
+        return all(r.channel is not None for r in gs["world"].robots[:6])
 
     def setup_7(w: RobotWorld, gs: dict) -> None:
         _place(w, _PREFLIGHT + _PARKED)
@@ -337,7 +334,7 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
             dm.clear()
 
     def check_7(gs: dict) -> bool:
-        return gs["last_action"] == "auto_assign_applied"
+        return all(r.channel is not None for r in gs["world"].robots[:6])
 
     # ────────────── PHASE 3: Algorithm + delay explanation (steps 8–9) ──────────
 
@@ -599,23 +596,28 @@ def _make_flex_steps(world: RobotWorld) -> List[TutorialStep]:
         TutorialStep(6, N,
             heading="Pre-Flight Setup — Suggest mode",
             body="All 6 drones are unassigned again. "
-                 "Drag a selection box over all of them, then click 'Suggest'. "
-                 "The agent proposes an initial assignment AND monitors those drones — "
-                 "if they clash later during flight, a fix suggestion fires automatically. "
-                 "Review the mini-graph, then click Apply.",
+                 "Select some or all of them (try a drag box), then click 'Suggest'. "
+                 "The agent proposes an assignment for your selection and sets up monitoring — "
+                 "if those drones clash later, a fix suggestion fires automatically. "
+                 "Review the proposal in the panel, then click Apply. "
+                 "Assign all 6 drones, then press SPACE.",
             highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(90, 200, 255),
-            advance_on_space=False, freeze=True,
-            completion_check=check_6, disabled_buttons=DB_AUTO, setup_fn=setup_6),
+            advance_on_space=True, freeze=True,
+            completion_check=check_6, disabled_buttons=DB_AUTO, setup_fn=setup_6,
+            hint_locked="Assign all 6 highlighted drones first"),
 
         TutorialStep(7, N,
             heading="Pre-Flight Setup — Auto mode",
             body="All 6 drones are unassigned again. "
-                 "Drag a selection box over all of them, then click 'Auto'. "
-                 "Channels are assigned instantly without a review step, AND monitoring is set — "
-                 "any future clashes among these drones are fixed automatically the moment they form.",
+                 "Select some or all of them, then click 'Auto'. "
+                 "Channels are assigned instantly and monitoring is set — "
+                 "future clashes among those drones are fixed automatically without any review. "
+                 "Try selecting a different subset to see how the assignment changes. "
+                 "Assign all 6 drones, then press SPACE.",
             highlight_ids=[0, 1, 2, 3, 4, 5], highlight_color=(40, 220, 175),
-            advance_on_space=False, freeze=True,
-            completion_check=check_7, disabled_buttons=DB_SUG, setup_fn=setup_7),
+            advance_on_space=True, freeze=True,
+            completion_check=check_7, disabled_buttons=DB_SUG, setup_fn=setup_7,
+            hint_locked="Assign all 6 highlighted drones first"),
 
         # ── Phase 3: Algorithm and delay ─────────────────────────────────────
 

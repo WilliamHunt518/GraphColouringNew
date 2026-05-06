@@ -1,0 +1,45 @@
+{
+  "participant_id": "P20260506_171037",
+  "start_time": "20260506_171037",
+  "n_trials": 4,
+  "show_demographics": true,
+  "show_summary_survey": true,
+  "trials": [
+    {
+      "label": "Flexible-Tutorial",
+      "complexity": "medium",
+      "seed": 42,
+      "duration": 0,
+      "epsilon": 0.0,
+      "switch_duration": 3.0,
+      "is_tutorial": true
+    },
+    {
+      "label": "Medium-70pct",
+      "complexity": "medium",
+      "seed": 52,
+      "duration": 90,
+      "epsilon": 0.3,
+      "switch_duration": 3.0,
+      "is_tutorial": false
+    },
+    {
+      "label": "Easy-70pct",
+      "complexity": "easy",
+      "seed": 72,
+      "duration": 90,
+      "epsilon": 0.3,
+      "switch_duration": 3.0,
+      "is_tutorial": false
+    },
+    {
+      "label": "Hard-70pct",
+      "complexity": "hard",
+      "seed": 42,
+      "duration": 90,
+      "epsilon": 0.3,
+      "switch_duration": 3.0,
+      "is_tutorial": false
+    }
+  ]
+}
