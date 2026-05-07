@@ -143,10 +143,9 @@ Each trial has a \emph{setup phase} before the timer starts. In this phase, the 
 
 % ─────────────────────────────────────────────────────────────────
 \subsection{Assistive Agent}\label{sec:agent}
+The assistive agent colours the selected subgroup of agents using a greedy heuristic, considering both current interference edges and those in the approach-zone as constraints. Agents are processed in order of descending constraint degree and each is assigned the first clash-free channel; where no clash-free assignment exists, the channel minimising local clashes is chosen instead. This most-constrained-first ordering follows the DSATUR algorithm~\cite{brelaz1979new}, which has been shown to reliably produce near-optimal colourings across diverse graph families~\cite{ouerfelli2011greedy}; a per-drone randomisation with probability $\epsilon$ then models agent imperfection by independently substituting the optimal assignment with a uniformly random channel.
 
-The assistant applies a standard greedy graph colouring to the target set of agents. It treats both confirmed edges $E(t)$ and approach-zone pairs as interference constraints (enabling anticipatory planning), orders agents by descending constraint degree, and assigns each the first clash-free channel; where no clash-free assignment exists it selects the channel that minimises local clashes. Each per-agent assignment is then independently randomised with probability $\varepsilon$, replacing the optimal channel with one drawn uniformly from $\mathcal{C}$.
-
-\subection{Autonomy Levels}\label{sec:modes}
+\subsection{Autonomy Levels}\label{sec:modes}
 Each agent is at all times under one of three oversight levels, which the operator can change at any time by selecting a group (box-drag or Ctrl+click) and choosing an action. Custody assignments persist across the trial.
 
 \paragraph{Direct.}
