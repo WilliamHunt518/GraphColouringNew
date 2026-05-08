@@ -1,2 +1,0 @@
-{"ts": 1776969943.2853734, "event": "game_start", "seed": 42, "n_drones": 12, "complexity": "custom", "duration": 90.0, "v_min": 10.0, "v_max": 22.0}
-{"ts": 1776969947.5744464, "event": "quit", "elapsed": 3.000999999999997, "clash_seconds": 0.0}

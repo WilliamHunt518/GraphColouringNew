@@ -1,5 +1,0 @@
-{"ts": 1778017789.6573327, "event": "tutorial_start"}
-{"ts": 1778017789.8022094, "event": "tutorial_panel_opened", "monitor": 2}
-{"ts": 1778017789.807003, "event": "recording_started", "path": "results\\participants_study\\TutorialRecord_20260505_224948\\trial_01_Flexible-Tutorial\\recordings\\recording_20260505_224949.mp4"}
-{"ts": 1778017789.846212, "event": "recording_stopped"}
-{"ts": 1778017789.8567514, "event": "tutorial_complete", "steps_completed": 0}

@@ -59,7 +59,11 @@
       "Bash(echo \"exit $?\")",
       "Bash(find \"G:\\\\Files\\\\Code\\\\GraphColouringNew\" -type f -name \"*.py\" -not -path \"*/old_files/*\" -not -path \"*/tests/*\")",
       "Read(//tmp/**)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(rmdir /s /q dist_check)"
     ]
   }
 }

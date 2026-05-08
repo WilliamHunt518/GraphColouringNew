@@ -4,171 +4,128 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-This is a **research-grade prototype** for a human-subjects study on **trust in autonomous AI agents**, using a **drone radio-channel assignment task**. Participants manage interference between drones by assigning them channels (red/green/blue). The study measures trust calibration and workload across three interaction modes and three difficulty levels.
+A **web-based human-subjects study platform** for research on trust in hierarchical autonomous AI systems. Operators manage a reserve of heterogeneous drone assets and allocate them to incoming search-and-rescue missions. Two AI assistants operate at different decision tiers:
 
-**The repo name "GraphColouringNew" is a legacy artefact — the actual task is drone channel assignment, not graph colouring.**
+- **Co-Pilot** — tactical tier; triggered when allocating a mission; proposes three strategies
+- **Meta-Co-Pilot** — strategic tier; always-visible widget; recommends reserve posture
 
-## Running the Code
+Study uses a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL).
 
-### Full study (researcher entry point)
+## Tech Stack
 
-```bash
-python study_runner.py
-```
+- **React 18 + Vite 5 + TypeScript** — SPA, no backend
+- **Tailwind CSS v3** — layout and styling
+- **SVG** — operational map (asset animation, mission zones, routes)
+- **BroadcastChannel API** — two-window state sync for dual-monitor setup
+- All randomness seeded via Mulberry32 PRNG (`src/utils/prng.ts`) — same seed → same session
 
-Opens a Tkinter setup window. Configure participant ID, monitors, trials, and surveys, then click Start. Config is auto-saved to `~/.drone_study_config.json` and restored on the next launch.
-
-### Quick single-game launcher (developer / testing)
-
-```bash
-python launch_menu.py
-```
-
-Runs a single game session with configurable seed, complexity, epsilon, and monitor layout. No surveys.
-
-### Python environment
-
-Requires **pygame** (and optionally `pygame._sdl2` for the detached panel window). Tkinter is used for surveys and setup UIs and is bundled with standard Python.
+## Running the App
 
 ```bash
-pip install pygame
-python -m tkinter   # should open a test window
+npm install       # once
+npm run dev       # dev server at http://localhost:5173
 ```
+
+**URL parameters** pre-fill the start screen (useful for researcher setup):
+```
+http://localhost:5173/?pid=P001&condition=HH&complexity=medium&seed=42
+```
+
+**Two-monitor setup:**
+- Primary window: `http://localhost:5173/` (default view)
+- Map window: `http://localhost:5173/?view=map` — receives state via BroadcastChannel
 
 ## Architecture
 
 ### Study Design
 
-Participants see a 2D arena of moving drones. Two drones on the same channel that come within range of each other cause a **clash** — the penalty metric accumulates clash-seconds in real time. The goal is to minimise total clash time over a timed trial.
+Three 10-minute sessions separated by 30-second between-session screens. Asset pool: 18 Blue, 9 Red, 3 Green (30 total).
 
-There are three interaction modes available simultaneously:
-
-| Mode | Label | Description |
-|---|---|---|
-| M1 | Manual | Click a drone → pick channel from popup |
-| M2 | Suggest & Review | Select group → Suggest → review/edit proposal in panel → Apply |
-| M3 | Auto-assign | Select group → Auto-assign (apply instantly without review) |
-
-In **flexible agent mode** (`agent_mode="flexible"`), each drone can additionally be "watched":
-- **Watch:Suggest** — agent monitors that drone; surfaces a suggestion panel when a clash involves it
-- **Watch:Auto** — agent monitors and applies fixes automatically without user involvement
-- The autonomous monitor fires every 0.5 s; drones in cooldown (`switch_duration + 0.5 s`) are skipped
-
-### Agent
-
-`agents/channel_agent.py` — `ChannelAdvisor`. Greedy graph-colouring with epsilon-random noise per drone.
-- `epsilon=0.0` → perfect agent; `epsilon=0.30` → ~70% optimal (study condition)
-- Uses effective channels (`switching_to` if in-flight, else `channel`) to avoid planning against stale state
-
-### Game States
-
-`PAUSED` → `SETUP` (user assigns starting channels) → `PLAYING` (timer runs) → `ENDED`
+| Condition | ε_Co-Pilot | ε_Meta-Co-Pilot |
+|-----------|-----------|----------------|
+| HH        | 0.10      | 0.10           |
+| LH        | 0.40      | 0.10           |
+| HL        | 0.10      | 0.40           |
+| LL        | 0.40      | 0.40           |
 
 ### Key Files
 
 ```
-study_runner.py        # Full study orchestrator + Tkinter setup UI (researcher entry point)
-launch_menu.py         # Single-game dev launcher
-
-robot_game.py          # Main pygame game loop (~1100 lines)
-robot_renderer.py      # All pygame rendering (arena + side panel)
-robot_world.py         # Physics: drone movement, channel switching, clash/edge detection
-agents/
-  channel_agent.py     # ChannelAdvisor — greedy colouring + epsilon noise
-
-tutorial.py            # Guided tutorial (standard 10-step + flexible 16-step variants)
-surveys.py             # Tkinter questionnaire windows (demographics, post-trial, summary)
-game_logger.py         # JSONL event logger
-panel_window.py        # SDL2 detached side-panel window (separate physical monitor)
-screen_recorder.py     # mp4 frame capture via pygame
-
-analysis/
-  run_analysis.py      # Entry point for post-study analysis
-  metrics.py           # Per-trial metric extraction
-  data_loader.py       # JSONL → structured data
-  plots.py             # Matplotlib visualisations
-  stats.py             # Statistical tests
-
-scenario_preview.py    # Standalone tool: preview drone layout for a given seed
-auxil/                 # Miscellaneous helper scripts
+index.html               # Vite entry
+src/
+  main.tsx               # React root mount
+  App.tsx                # Top-level: StartScreen → GameShell
+  index.css              # Tailwind directives + base styles
+  types/
+    index.ts             # All TypeScript types (Asset, Task, Mission, GameState, events)
+  utils/
+    prng.ts              # SeededRNG class (Mulberry32)
+    config.ts            # URL param parsing, condition → epsilon mapping
+    missionGen.ts        # Seeded mission generator (Poisson arrivals, zone placement)
+    copilot.ts           # Co-Pilot strategy generator with ε noise
+    metacopilot.ts       # Meta-Co-Pilot posture evaluator with ε noise
+    scoring.ts           # Score, green efficiency, follow-rate calculation
+  store/
+    gameReducer.ts       # useReducer state machine
+    actions.ts           # Action type union
+  components/
+    StartScreen.tsx      # Researcher setup: participantId, condition, complexity, seed
+    GameShell.tsx        # Session wrapper, clock, broadcast sync
+    PrimaryDisplay.tsx   # Reserve panel + mission queue + Co-Pilot modal + MCP widget
+    MapDisplay.tsx       # SVG operational map
+    SurveyModal.tsx      # NASA-TLX, trust, TAM surveys
+    TrustProbe.tsx       # Periodic 2-question trust/workload probe (every 90s)
+    BetweenSession.tsx   # 30s inter-session screen
 ```
 
 ### Data Output
 
-Study data written to:
-- **Real runs**: `results/participants_study/<pid>_<timestamp>/`
-- **Test runs**: `results/participants_test/<pid>_<timestamp>/` (auto-purges to last 5)
-
-Per-session layout:
-```
-study_metadata.json          # Config snapshot at start
-demographics.json            # Pre-study survey
-trial_01_<label>/
-  game_events.jsonl          # All in-game events (timestamped)
-  recordings/recording_*.mp4 # Optional screen recording
-trial_01_<label>_survey.json # Post-trial survey
-...
-summary_survey.json          # Post-study summary questionnaire
-study_summary.json           # Final results (clash_pct per trial)
+All events logged in-memory. At session end, "Download Data" button exports:
+```json
+{
+  "participantId": "P001",
+  "condition": "HH",
+  "seed": 42,
+  "sessions": [{ ...events }]
+}
 ```
 
-Key JSONL event types:
-- `game_start` / `game_end` — trial bookends
-- `switch_requested` — drone_id, from_channel, to_channel, mode (M1/M2/M3/flex_auto)
-- `suggestion_requested` / `suggestion_shown` / `suggestion_applied` / `suggestion_cancelled`
-- `auto_assign_applied` — flex auto mode
-- `clash_start` / `clash_end` / `clash_update` — clash pair transitions
-- `play_started` — moment SETUP → PLAYING (timer begins)
+### Mission Generation
 
-### Study Configuration (default as of May 2026)
+Poisson inter-arrivals: Easy λ=120s, Medium λ=75s, Hard λ=45s.
+Zone: circle r=80, ≥150 units from hub (500,400), ≥200 units from other active zones.
+Tasks execute greedily (T5 first → most constrained).
 
-Saved in `~/.drone_study_config.json`. Default on first run:
+### Asset Speeds (units/second)
 
-| # | Trial | Agent mode | Surveys | Record | Seed |
-|---|---|---|---|---|---|
-| 1 | Flexible Tutorial | flexible | none | yes | 42 |
-| 2 | Easy (8dr, slow, 70%) | flexible | TLX + Trust + Accept | yes | 52 |
-| 3 | Medium (12dr, slow, 70%) | flexible | TLX + Trust + Accept | yes | 72 |
-| 4 | Hard (16dr, fast, 70%) | flexible | TLX + Trust + Accept | yes | 42 |
+| Type  | Speed | Notes |
+|-------|-------|-------|
+| Blue  | 3.0   | Fast, recce-only |
+| Red   | 2.0   | Standard, supply + extract |
+| Green | 1.4   | Slow, required for T4/T5 |
 
-Arena monitor: 0, Panel monitor: 2 (last available). Both survey types enabled.
+### Trust Probe
+
+A 2-question modal (trust 1–10, workload 1–10) appears every 90 seconds during play. Non-blocking — operator can dismiss immediately.
 
 ## Development Guidelines
 
-### Adding a complexity preset
+### Adding task types or asset types
+Edit `src/types/index.ts` first, then update `missionGen.ts` and `copilot.ts`.
 
-Add an entry to `COMPLEXITY_PRESETS` in `robot_world.py` and a matching `TrialConfig` in `STUDY_PRESETS` in `study_runner.py`.
+### Changing accuracy
+Edit `conditionToEpsilons()` in `src/utils/config.ts`.
 
-### Changing agent accuracy
+### Modifying Co-Pilot strategies
+`src/utils/copilot.ts` — `generateStrategies()`. Noise is applied to objective weights before ranking.
 
-Edit the `epsilon` field on the relevant `TrialConfig` in `STUDY_PRESETS`. `epsilon=0` = perfect, `epsilon=0.30` = 70% optimal.
-
-### Modifying agent logic
-
-`agents/channel_agent.py` — `ChannelAdvisor.suggest()`. Greedy ordering is by most-constrained-first within the selected subgroup.
-
-### Flexible monitor behaviour
-
-`_flex_tick()` inside `run_game()` in `robot_game.py`. Controls monitor interval (`_MONITOR_INTERVAL`), cooldown (`switch_duration + 0.5`), and re-fire delay for suggest mode (`_SUGGEST_REFIRE_DELAY`).
-
-### Tutorial steps
-
-`tutorial.py` — `_make_steps()` for standard (10 steps) and `_make_flex_steps()` for flexible (16 steps). Each `TutorialStep` has a `setup_fn`, optional `completion_check`, and `disabled_buttons`.
+### Modifying Meta-Co-Pilot
+`src/utils/metacopilot.ts` — `evaluatePosture()`. Noise perturbs the category forecast before EV calculation.
 
 ## Critical Constraints
 
-1. **No LLMs** — all agent logic is deterministic and rule-based
-2. **Determinism** — `RobotWorld` uses a seeded `random.Random`; same seed → same drone trajectories
-3. **Effective channels in planning** — always pass `switching_to or channel` to the advisor, never just `channel`, to avoid planning against stale mid-switch state
-4. **Logging fidelity** — every decision must be logged with `world.elapsed` timestamp
-5. **UI language** — use "agent" or "assistant", never "AI" or "LLM"
-6. **Arena never pre-colours** — the arena always shows actual drone channels; suggestions are displayed only in the panel mini-graph
-
-## Legacy / Unused
-
-The following exist in the repo but are not used by the current study:
-
-- `docs/` — old architecture documents from a previous iteration
-- `tests/` — tests written for an earlier LLM-based agent system
-- `old_files/` — previous main/simulation scripts
-- `auxil/` — miscellaneous helper scripts, not part of the study pipeline
+1. **All randomness seeded** — pass `SeededRNG` instances everywhere, never call `Math.random()` in game logic
+2. **No backend** — all state in-memory; export is a client-side JSON download
+3. **UI language** — use "assistant" or "Co-Pilot" / "Meta-Co-Pilot", never "AI" or "algorithm"
+4. **Events logged immediately** — every operator action and agent recommendation must be logged with ms timestamp
+5. **BroadcastChannel host/client** — primary window is host; map window subscribes only; never let client mutate state

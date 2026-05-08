@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/RESTART_FRESH.bat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/agents/channel_agent.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis/data_loader.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis/metrics.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis/plots.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis/run_analysis.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/analysis/stats.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/demo_study2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/DEVELOPER_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/INSTALLATION_AND_TESTING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/TROUBLESHOOTING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/AGENT_DECISION_PROCESS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/AGENT_FLOW_DIAGRAM.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/ARCHITECTURE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/IMPOSSIBLE_CONDITIONS_DIAGRAM.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/IMPOSSIBLE_CONDITIONS_USER_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/ITERATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/MULTI_LAYER_LLM_ARCHITECTURE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/README_IMPOSSIBLE_CONDITIONS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/SYSTEM_OVERVIEW.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/TRANSLATION_LAYER_REDESIGN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/AGENT2_DEADLOCK_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/ALL_12_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/ALL_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/ANNOUNCEMENT_FLOW_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/BEFORE_AFTER_COMPARISON.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/COMPLETE_EXHAUSTIVE_SEARCH_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/COMPLETE_RB_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/CRITICAL_BUGS_FIXED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/CRITICAL_MISSING_STEP.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/CRITICAL_SOLVABILITY_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FEASIBILITY_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FINAL_COMPLETE_SOLUTION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIXES_APPLIED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_12_ANNOUNCE_AFTER_ACCEPT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_13_INITIALIZE_ADJACENCY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_14_DISABLE_AGGRESSIVE_EXPIRY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_15_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_15_RACE_CONDITION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_15_TEST_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_16_FEASIBILITY_OFFER_SPAM.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_17_18_IMPLEMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_17_FEASIBILITY_ACCEPTANCE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_19_FEASIBILITY_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_20_CACHE_INVALIDATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_21_OFFER_VALIDATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_22_EXHAUSTIVE_SEARCH.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_23_OFFER_GENERATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_AGENTS_CANT_FIND_ANSWERS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_AGENT_NODE_CONFUSION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_AGENT_PLAN_COMMITMENT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_ANNOUNCEMENT_THEN_FIRST_MESSAGE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_ASSIGNMENT_MISMATCH_AND_VAGUE_MESSAGES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_CHECK_ACCEPTANCE_FIRST.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_CONFIG_IN_MESSAGES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_EXHAUSTIVE_ALGORITHM.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_FIRST_MESSAGE_AFTER_ANNOUNCEMENT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_HISTORY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_INTERNAL_VS_BOUNDARY_NODES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_LLM_AGENT_NEGOTIATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_MESSAGE_VALIDATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_PARTIAL_OBSERVABILITY_LLM_MODES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_REACT_ACTION_PARSING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_SUMMARY_2026_02_17.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_VALID_PROPOSALS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/FIX_VISUAL_SUMMARY.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/IMPLEMENTATION_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/IMPLEMENTATION_COMPLETE_ALL_PHASES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/IMPOSSIBLE_CONDITIONS_IMPLEMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/LLM_API_ANNOUNCEMENT_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/LLM_PATH_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/LLM_TOOL_MODE_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/PERSPECTIVE_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/PHASE_1_2_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/QUESTION_HANDLING_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/QUESTION_HANDLING_IMPROVED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/RB_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/RB_MODE_STATUS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/RB_MODE_USER_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/RB_TEST_RESULTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/REACT_PARSING_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/SESSION_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/SESSION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/SILENT_ANNOUNCEMENT_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/TEMPLATE_FALLBACK_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/VERIFY_FIXES_17_18.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/fixes/WHAT_WAS_FIXED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/LLM_ONLY_POLICY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/LLM_RB_ARCHITECTURE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/LLM_RB_RENDERING_ENHANCEMENTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/LLM_RB_RICH_OFFERS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/LLM_RB_TRANSLATION_IMPROVEMENTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MESSAGE_SPECIFICITY_IMPROVEMENTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MODES_COMPARISON.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MODE_LLM_RB.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MODE_LLM_REACT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MODE_LLM_TOOL.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MULTI_LAYER_LLM_IMPLEMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/MULTI_LAYER_LLM_QUICKSTART.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/modes/QUICK_START_LLM_MODES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/ACTION_ORIENTED_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/AGENT_CONDITIONAL_COUNTERFACTUAL_REASONING.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/AGENT_CONDITIONAL_OFFERS_IMPLEMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/BUGS_FIXED_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/COMPLETE_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_BUILDER_ALWAYS_VISIBLE_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_BUILDER_DEBUG_AND_CLARITY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_BUILDER_GUIDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_BUILDER_LAYOUT_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_BUILDER_PER_AGENT_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_OFFERS_FIXED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_OFFER_ACCEPT_LOOP_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_OFFER_UI_DISPLAY_FIX.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_ONLY_PROTOCOL.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CONDITIONAL_PROPOSAL_IMPLEMENTATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/COUNTERPROPOSAL_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/CRITICAL_ISSUES_FOUND.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/DEBUG_CONDITIONAL_BUILDER.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FINAL_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FINAL_SUMMARY_FOR_USER.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FINAL_TEST_ANALYSIS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FIXES_APPLIED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FIXES_IMPLEMENTED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/FIX_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/HOW_TO_RESPOND_TO_COUNTERPROPOSALS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/INTERACTIVE_MODE_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/NEGOTIATION_PROTOCOL_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/PASS_BUTTON_FIXED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/PRESET_COMPARISON.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/PRESET_EASY_1_FIXED_NODE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/PRESET_MEDIUM_2_FIXED_NODES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/QUICK_START.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/REJECTION_LEARNING_FIXED.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/SCROLLBAR_AND_CONDITIONALS_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/SIMPLIFIED_FIXES_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TESTING_RESULTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TEST_CONDITIONAL_BUILDER.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TEST_CONVERSATION_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TEST_FINDINGS_AND_RECOMMENDATIONS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TEST_RESULTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TEST_RESULTS_INTERACTIVE_FIXES.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/TWO_PHASE_WORKFLOW.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/UI_SIMPLIFICATION_AND_GRANULARITY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/VALIDATION_AND_FIX_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/session-notes/VERIFICATION_COMPLETE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/study/study_questions.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/study/study_questions.xlsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/trust_study/GC_Apr.pdf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/trust_study/main(2).tex" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/trust_study/refs(1).bib" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/game_logger.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/launch_menu.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260417_123431.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260417_124504.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260417_132649.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_144706.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_194543.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_194835.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_194920.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_195352.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_195538.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_200612.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_202725.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_203135.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260423_203907.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260424_101453.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260424_101655.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260424_165226.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260424_165240.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260424_165858.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/game_20260424_170916.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/SUCCESSFUL_TEST_AGENT2_LOG.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/SUCCESSFUL_TEST_COMMUNICATION_LOG.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/analyze_agent_behavior.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/check_human_state.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/cluster_agent.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/cluster_agent_fixed.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/diagnose_convergence.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/multi_node_human_agent.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/run_simulation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/old_files/simple_test_runner.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/panel_window.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/group_behaviour_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/group_clash_area.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/group_interventions.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/group_performance.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/group_suggestion_quality.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/group_survey.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/group/version_timeline.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P1/clash_area.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P1/intervention_detail.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P1/performance_bars.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P1/suggestion_quality.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P1/summary_survey.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P1/survey_responses.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P2/clash_area.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P2/intervention_detail.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P2/performance_bars.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P2/suggestion_quality.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P2/summary_survey.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/individual/P2/survey_responses.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/participant_map.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/summary_report.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/summary_survey.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260429_170723/trial_metrics.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/group/version_timeline.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/individual/P3/clash_area.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/individual/P3/intervention_detail.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/individual/P3/performance_bars.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/individual/P3/suggestion_quality.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/individual/P3/summary_survey.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/individual/P3/survey_responses.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/participant_map.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/summary_report.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/summary_survey.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/analysis/20260505_085939/trial_metrics.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/demographics.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/summary_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_02_Medium-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_02_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_03_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_03_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_04_Hard-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Andrei_20260429_141018/trial_04_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/demographics.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/summary_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_02_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_02_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_03_Medium-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_03_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_04_Hard-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/Xudong_20260428_155457/trial_04_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/demographics.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/summary_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_02_Medium-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_02_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_03_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_03_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_04_Hard-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_pilot1/michail_20260505_172749/trial_04_survey.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/trial_02_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/trial_02_Easy-70pct/recordings/recording_20260505_223244.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/trial_03_Medium-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Demo1_20260505_222910/trial_03_Medium-70pct/recordings/recording_20260505_223409.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260505_222500_20260505_222500/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260505_222500_20260505_222500/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260505_222500_20260505_222500/trial_01_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260505_222500_20260505_222500/trial_01_Easy-70pct/recordings/recording_20260505_222509.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260505_222500_20260505_222500/trial_02_Medium-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_082409_20260506_082409/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_082409_20260506_082409/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_082409_20260506_082409/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_082409_20260506_082409/trial_01_Flexible-Tutorial/recordings/recording_20260506_082410.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_082409_20260506_082409/trial_02_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_082409_20260506_082409/trial_02_Easy-70pct/recordings/recording_20260506_082643.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_165251_20260506_165251/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_165251_20260506_165251/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_165251_20260506_165251/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_171037_20260506_171037/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_171037_20260506_171037/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_171037_20260506_171037/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_171826_20260506_171826/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_171826_20260506_171826/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/P20260506_171826_20260506_171826/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT1_20260505_225125/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT1_20260505_225125/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT1_20260505_225125/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT1_20260505_225125/trial_01_Flexible-Tutorial/recordings/recording_20260505_225125.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT2_20260505_225451/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT2_20260505_225451/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT2_20260505_225451/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT2_20260505_225451/trial_01_Flexible-Tutorial/recordings/recording_20260505_225452.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TT2_20260505_225451/trial_02_Easy-70pct/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Tut_20260505_225047/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Tut_20260505_225047/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Tut_20260505_225047/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/Tut_20260505_225047/trial_01_Flexible-Tutorial/recordings/recording_20260505_225050.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TutorialRecord_20260505_224948/study_metadata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TutorialRecord_20260505_224948/study_summary.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TutorialRecord_20260505_224948/trial_01_Flexible-Tutorial/game_events.jsonl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/participants_study/TutorialRecord_20260505_224948/trial_01_Flexible-Tutorial/recordings/recording_20260505_224949.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/robot_game.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/robot_renderer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/robot_world.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scenario_preview.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/screen_recorder.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/study_runner.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/surveys.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/comprehensive_agent_test.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/human_emulator_agent.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_accept_satisfaction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_accept_with_announce.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_agent_accepts_valid_config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_agent_color_stability.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_agent_conversation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_agent_modes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_agent_plan_commitment.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_all_fixes_2026_02_17.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announce_config_double_message.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announcement_flow_final.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announcement_format.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announcement_nl_format.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announcement_no_spam.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announcement_respects_neighbors.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_announcement_with_llm_layer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_api_direct.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_api_neighbor_constraints.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_automatic_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_boundary_detection.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_color_change_propagation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_complete_neighbor_simulation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_complete_workflow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_conditional_offers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_conditional_protocol.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_constraint_extraction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_contradiction_fix.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_correct_flow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_debug_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_debug_iterations.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_debug_step.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_default_algorithm.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_exhaustive_algorithm_fix.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_exhaustive_enumeration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_final_check.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_first_message_after_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_format_direct.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_full_flow_with_step.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_full_rb_workflow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_full_simulation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_full_ui_flow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_greedy_bug.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_h1_red_query.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_h1_red_validation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_impossible_conditions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_integration_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_integration_new_modes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_internal_vs_boundary_nodes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_api_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_c_interactive.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_incomplete_neighbor_fix.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_modes_complete_flow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_rb_console.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_rb_perspective.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_rb_rendering.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_rb_rich_offers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_rb_translation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_tool_debug.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_tool_e2e.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_tool_full_flow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_llm_tool_sends_messages.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_message_handling.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_message_specificity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_message_validation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_multi_layer_llm.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_no_conflict_proposals.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_node_value_query.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_offer_expiry.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_offer_generation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_openai_api.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_partial_observability_llm_modes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_pass_button.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_phase3_uses_simulations.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_question_handling.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_rb_complete.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_rb_dialogue.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_rb_fixes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_rb_negotiation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_rb_negotiation_debug.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_react_action_execution.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_react_action_parsing.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_react_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_real_alternatives_bug.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_report_extraction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_reproduce_alternatives_bug.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_silent_announcement.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_specificity_detailed.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_template_fallback.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_translation_layer_architecture.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_ui_color_extraction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_user_workflow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_valid_proposals.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tutorial.py" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="39tGMuX39YHHzfGQt53JlkBcyty" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/wh1g17/GraphColouringNew&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\wh1g17\GraphColouringNew\docs\trust_study" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.study_runner">
+    <configuration name="demo_study2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/demo_study2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="launch_menu" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/launch_menu.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="run_analysis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/analysis" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/analysis/run_analysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="study_launcher" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_launcher.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="study_runner" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_runner.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.study_runner" />
+        <item itemvalue="Python.demo_study2" />
+        <item itemvalue="Python.run_analysis" />
+        <item itemvalue="Python.launch_menu" />
+        <item itemvalue="Python.study_launcher" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="" />
+      <created>1771507909317</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1771507909317</updated>
+      <workItem from="1771507910566" duration="2340000" />
+      <workItem from="1772111246406" duration="360000" />
+      <workItem from="1772111841087" duration="1565000" />
+      <workItem from="1772114727078" duration="110000" />
+      <workItem from="1772718513285" duration="2934000" />
+      <workItem from="1773758567983" duration="7013000" />
+      <workItem from="1773923126647" duration="6245000" />
+      <workItem from="1774526423224" duration="2672000" />
+      <workItem from="1774538105962" duration="75000" />
+      <workItem from="1774968390019" duration="593000" />
+      <workItem from="1775744245958" duration="33000" />
+      <workItem from="1775744504408" duration="1324000" />
+      <workItem from="1775812386264" duration="699000" />
+      <workItem from="1775820681206" duration="12000" />
+      <workItem from="1775822522266" duration="2483000" />
+      <workItem from="1776786136380" duration="17000" />
+      <workItem from="1776786262358" duration="908000" />
+      <workItem from="1776942186285" duration="828000" />
+      <workItem from="1777035061808" duration="7005000" />
+      <workItem from="1777294016974" duration="257000" />
+      <workItem from="1777303636262" duration="3330000" />
+      <workItem from="1777366750605" duration="5277000" />
+      <workItem from="1777378412943" duration="4046000" />
+      <workItem from="1777465970752" duration="6482000" />
+      <workItem from="1777970218883" duration="410000" />
+      <workItem from="1777994349667" duration="508000" />
+      <workItem from="1777994877018" duration="2873000" />
+      <workItem from="1777998414129" duration="646000" />
+      <workItem from="1778082674180" duration="2328000" />
+      <workItem from="1778168999949" duration="3991000" />
+      <workItem from="1778240883139" duration="1750000" />
+      <workItem from="1778250774722" duration="2749000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/GraphColouringNew$demo_study2.coverage" NAME="demo_study2 Coverage Results" MODIFIED="1778173300678" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$run_experiment.coverage" NAME="run_experiment Coverage Results" MODIFIED="1777035121428" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$layout_editor.coverage" NAME="layout_editor Coverage Results" MODIFIED="1773764780332" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$study_runner.coverage" NAME="study_runner Coverage Results" MODIFIED="1778241404496" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$study_launcher.coverage" NAME="study_launcher Coverage Results" MODIFIED="1777035127240" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$launch_menu.coverage" NAME="launch_menu Coverage Results" MODIFIED="1777046953934" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$run_analysis.coverage" NAME="run_analysis Coverage Results" MODIFIED="1777478841059" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/analysis" />
+  </component>
+</project>

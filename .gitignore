@@ -1,33 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+*.local
 
-__pycache__/
+# Study data exports
+study_data_*.json
 
-.idea/
-
-tmp_multi/
-
-api_key.txt
-
-# Log files in root directory (should be in logs/)
-/*.log
-
-# Debug log files in logs directory
-logs/conditional_builder_debug_*.log
-
-log_1B_2A
-
-outputs/
-
-outputs_1A_1B/
-
-outputs_1A_2A/
-
-outputs_1A_1C/
-llm_c_output
-results.zip
-code.zip
-test_output
-llm_u_output
-llm_f_output
-quick_test
-test_results
-logs/debug
+# OS
+.DS_Store
+Thumbs.db
