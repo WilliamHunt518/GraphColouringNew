@@ -1,6 +1,6 @@
 // ─── Study configuration ───────────────────────────────────────────────────
 
-export type Condition = 'HH' | 'LH' | 'HL' | 'LL'
+export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'PP'
 export type Complexity = 'easy' | 'medium' | 'hard'
 
 export interface StudyConfig {
@@ -63,7 +63,7 @@ export interface Mission {
   category: MissionCategory
   status: MissionStatus
   zoneCenter: { x: number; y: number }
-  zoneRadius: 80
+  zoneRadius: number
   tasks: Task[]
   arrivalTime: number       // elapsed (s) when mission appeared
   allocationTime: number | null
@@ -80,14 +80,19 @@ export interface AssetRequirement {
   Green: number
 }
 
+export interface TaskComp {
+  Blue: number; Red: number; Green: number; baseTime: number; useSubstitute: boolean
+}
+
 export interface Strategy {
-  name: 'Fastest' | 'Specialist-Conserving' | 'Balanced'
+  name: 'Fastest Possible' | 'Complete in Time' | 'Asset-Preserving' | 'Balanced'
   description: string
   assets: AssetRequirement
   expectedCompletionTime: number  // seconds
   reserveAfter: AssetRequirement
   speedScore: number    // 0–1
   reserveScore: number  // 0–1
+  taskComps: Record<string, TaskComp>  // keyed by task.id — drives greedyAssign
 }
 
 export interface CopilotModal {

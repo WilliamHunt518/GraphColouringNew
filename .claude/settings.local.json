@@ -63,7 +63,9 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(npx vite *)",
-      "Bash(rmdir /s /q dist_check)"
+      "Bash(rmdir /s /q dist_check)",
+      "Bash(npm run *)",
+      "PowerShell(& \"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"G:\\\\Files\\\\Code\\\\GraphColouringNew\\\\node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit --project \"G:\\\\Files\\\\Code\\\\GraphColouringNew\\\\tsconfig.json\" 2>&1)"
     ]
   }
 }

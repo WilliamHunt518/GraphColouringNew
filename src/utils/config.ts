@@ -1,11 +1,11 @@
 import type { Condition, StudyConfig } from '../types'
 
-const EPSILON: Record<string, number> = { H: 0.10, L: 0.40 }
+const EPSILON: Record<string, number> = { H: 0.10, L: 0.40, P: 0.00 }
 
 export function conditionToEpsilons(condition: Condition) {
   return {
-    epsilonCopilot: EPSILON[condition[0]],
-    epsilonMeta: EPSILON[condition[1]],
+    epsilonCopilot: EPSILON[condition[0]] ?? 0,
+    epsilonMeta:    EPSILON[condition[1]] ?? 0,
   }
 }
 
@@ -19,7 +19,7 @@ export function parseURLConfig(): StudyConfig | null {
 
   if (!participantId || !condition || !complexity || !seedStr) return null
 
-  const validConditions: Condition[] = ['HH', 'LH', 'HL', 'LL']
+  const validConditions: Condition[] = ['HH', 'LH', 'HL', 'LL', 'PP']
   const validComplexities = ['easy', 'medium', 'hard']
   if (!validConditions.includes(condition)) return null
   if (!validComplexities.includes(complexity)) return null

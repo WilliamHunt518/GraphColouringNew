@@ -1,16 +1,17 @@
 import type {
   GameState, GameEvent, Asset, Mission, Task,
   AssetType, TaskType, AssetRequirement,
-  MissionCategory,
+  MissionCategory, TaskComp,
 } from '../types'
 import type { GameAction } from './actions'
 import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
-  TASK_SUB_BASE_TIME, generateSessionPlan, createInitialAssets, travelTime,
+  TASK_SUB_BASE_TIME, ZONE_RADIUS, generateSessionPlan, createInitialAssets, travelTime,
 } from '../utils/missionGen'
 import { generateStrategies } from '../utils/copilot'
 import { evaluatePosture } from '../utils/metacopilot'
 import { SeededRNG } from '../utils/prng'
+import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
 // ─── Constants ────────────────────────────────────────────────────────────
@@ -84,71 +85,130 @@ export function reserveCount(assets: Asset[]): AssetRequirement {
   }
 }
 
-// ─── Helper: greedy asset assignment ─────────────────────────────────────
+// ─── Helper: greedy asset assignment with sequential reuse ────────────────
 
 interface TaskAssignment {
   taskId: string
   assetIds: string[]
-  travelTime: number
+  startTime: number      // absolute elapsed time when execution begins
+  travelTime: number     // effective wait from allocation moment (for task record)
   baseTime: number
   useSubstitute: boolean
 }
 
+/**
+ * Assigns assets to tasks using a virtual-timeline scheduler.
+ *
+ * Each committed asset is tracked as a virtual token with a `freeAt` time and
+ * `position`.  Tasks are processed T5→T1 (most-constrained first).  For each
+ * task the scheduler picks the n tokens with the earliest freeAt, computes the
+ * actual startTime (when all required assets arrive), then advances each token's
+ * freeAt to the task's completionTime and its position to the task's waypoint.
+ *
+ * This means a single Green token can be scheduled for T5 then T4 sequentially —
+ * satisfying both even though only 1 Green was committed.
+ *
+ * Tasks that cannot be covered (not enough tokens) are skipped rather than
+ * causing a complete failure, so a partial commitment still executes whatever
+ * tasks it can.
+ *
+ * When `plan` is provided (from a Co-Pilot strategy), the exact per-task
+ * compositions are used.  Without a plan (manual), the scheduler tries the
+ * primary composition first, then the substitute.
+ */
 function greedyAssign(
   tasks: Task[],
   availableAssets: Asset[],
   committed: AssetRequirement,
-): TaskAssignment[] | null {
-  // Build pool from committed subset of available assets
-  const pool: Record<AssetType, Asset[]> = {
-    Blue: availableAssets.filter(a => a.type === 'Blue').slice(0, committed.Blue),
-    Red: availableAssets.filter(a => a.type === 'Red').slice(0, committed.Red),
-    Green: availableAssets.filter(a => a.type === 'Green').slice(0, committed.Green),
-  }
+  now: number,
+  plan?: Record<string, TaskComp>,
+): TaskAssignment[] {
+  interface VAsset { id: string; type: AssetType; freeAt: number; pos: { x: number; y: number } }
 
-  const sorted = [...tasks].sort((a, b) => b.type - a.type)  // T5 first
+  const vPool: VAsset[] = [
+    ...availableAssets.filter(a => a.type === 'Blue').slice(0, committed.Blue)
+      .map(a => ({ id: a.id, type: 'Blue' as AssetType, freeAt: now, pos: { ...HUB } })),
+    ...availableAssets.filter(a => a.type === 'Red').slice(0, committed.Red)
+      .map(a => ({ id: a.id, type: 'Red' as AssetType, freeAt: now, pos: { ...HUB } })),
+    ...availableAssets.filter(a => a.type === 'Green').slice(0, committed.Green)
+      .map(a => ({ id: a.id, type: 'Green' as AssetType, freeAt: now, pos: { ...HUB } })),
+  ]
+
+  const sorted = [...tasks].sort((a, b) => b.type - a.type)
   const assignments: TaskAssignment[] = []
 
+  const pickEarliest = (type: AssetType, n: number): VAsset[] =>
+    vPool.filter(v => v.type === type)
+         .sort((a, b) => a.freeAt - b.freeAt)
+         .slice(0, n)
+
   for (const task of sorted) {
-    const primary = TASK_PRIMARY[task.type as TaskType]
-    const substitute = TASK_SUBSTITUTE[task.type as TaskType]
+    // ── Determine composition ───────────────────────────────────────────────
+    let reqBlue: number, reqRed: number, reqGreen: number
+    let baseTime: number, useSubstitute: boolean
 
-    const tryPick = (comp: { Blue: number; Red: number; Green: number }) => {
-      if (
-        pool.Blue.length >= comp.Blue &&
-        pool.Red.length >= comp.Red &&
-        pool.Green.length >= comp.Green
-      ) {
-        const picked: Asset[] = []
-        for (let i = 0; i < comp.Blue; i++) picked.push(pool.Blue.shift()!)
-        for (let i = 0; i < comp.Red; i++) picked.push(pool.Red.shift()!)
-        for (let i = 0; i < comp.Green; i++) picked.push(pool.Green.shift()!)
-        return picked
+    const planned = plan?.[task.id]
+    if (planned) {
+      reqBlue = planned.Blue; reqRed = planned.Red; reqGreen = planned.Green
+      baseTime = planned.baseTime; useSubstitute = planned.useSubstitute
+    } else {
+      // Manual: primary → substitute
+      const prim = TASK_PRIMARY[task.type as TaskType]
+      const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+      const avB = vPool.filter(v => v.type === 'Blue').length
+      const avR = vPool.filter(v => v.type === 'Red').length
+      const avG = vPool.filter(v => v.type === 'Green').length
+      if (avB >= prim.Blue && avR >= prim.Red && avG >= prim.Green) {
+        reqBlue = prim.Blue; reqRed = prim.Red; reqGreen = prim.Green
+        baseTime = TASK_BASE_TIME[task.type as TaskType]; useSubstitute = false
+      } else if (sub && avB >= sub.Blue && avR >= sub.Red && avG >= sub.Green) {
+        reqBlue = sub.Blue; reqRed = sub.Red; reqGreen = sub.Green
+        baseTime = TASK_SUB_BASE_TIME[task.type as TaskType]; useSubstitute = true
+      } else {
+        debugLog('greedyAssign: skip task (no comp fits)', { taskId: task.id, type: task.type, avB, avR, avG })
+        continue
       }
-      return null
     }
 
-    let picked = tryPick(primary)
-    let useSub = false
-    if (!picked && substitute) {
-      picked = tryPick(substitute)
-      useSub = true
-    }
-    if (!picked) return null  // allocation infeasible
+    // ── Pick earliest-available tokens ─────────────────────────────────────
+    const blueV  = pickEarliest('Blue',  reqBlue)
+    const redV   = pickEarliest('Red',   reqRed)
+    const greenV = pickEarliest('Green', reqGreen)
 
-    // Travel time = slowest asset in this group, hub → waypoint
-    const slowestSpeed = Math.min(...picked.map(a => ASSET_SPEED[a.type]))
-    const tt = travelTime(HUB, task.waypoint, slowestSpeed)
-    const bt = useSub ? TASK_SUB_BASE_TIME[task.type as TaskType] : TASK_BASE_TIME[task.type as TaskType]
+    if (blueV.length < reqBlue || redV.length < reqRed || greenV.length < reqGreen) {
+      debugLog('greedyAssign: skip task (pool exhausted)', { taskId: task.id, reqBlue, reqRed, reqGreen })
+      continue
+    }
+
+    const picked = [...blueV, ...redV, ...greenV]
+
+    // ── Compute startTime: when the last required asset arrives ─────────────
+    const startTime = Math.max(
+      now,
+      ...picked.map(v => v.freeAt + travelTime(v.pos, task.waypoint, ASSET_SPEED[v.type])),
+    )
+    const completionTime = startTime + baseTime
+
+    // ── Advance virtual tokens (sequential reuse) ───────────────────────────
+    for (const v of picked) {
+      v.freeAt = completionTime
+      v.pos = { ...task.waypoint }
+    }
 
     assignments.push({
       taskId: task.id,
-      assetIds: picked.map(a => a.id),
-      travelTime: tt,
-      baseTime: bt,
-      useSubstitute: useSub,
+      assetIds: picked.map(v => v.id),
+      startTime,
+      travelTime: startTime - now,
+      baseTime,
+      useSubstitute,
     })
   }
+
+  debugLog('greedyAssign result', {
+    committed, taskCount: tasks.length, assigned: assignments.length,
+    tasks: assignments.map(a => ({ taskId: a.taskId, assetIds: a.assetIds, startTime: Math.round(a.startTime) })),
+  })
 
   return assignments
 }
@@ -176,7 +236,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     category: bp.category,
     status: 'queued',
     zoneCenter: bp.zoneCenter,
-    zoneRadius: 80,
+    zoneRadius: ZONE_RADIUS,
     tasks,
     arrivalTime: bp.arrivalTime,
     allocationTime: null,
@@ -343,20 +403,46 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           newStatus = 'available'
         }
 
-        // When task completes, redirect asset back to hub
+        // When task completes: redirect to next sequential task, or return to hub
         if (asset.status === 'deployed' && asset.currentTaskId) {
-          const task = s.missions
-            .flatMap(m => m.tasks)
-            .find(t => t.id === asset.currentTaskId)
+          const currentMission = s.missions.find(m => m.id === asset.currentMissionId)
+          const task = currentMission?.tasks.find(t => t.id === asset.currentTaskId)
 
           if (task?.status === 'completed') {
+            // Look for a next task in the same mission this asset is scheduled for
+            const nextTask = currentMission?.tasks.find(t =>
+              t.id !== asset.currentTaskId &&
+              t.assignedAssetIds.includes(asset.id) &&
+              t.status !== 'completed' &&
+              t.status !== 'failed',
+            )
+
+            if (nextTask) {
+              // Sequential reuse: redirect directly to the next task's waypoint
+              const tt = travelTime(task.waypoint, nextTask.waypoint, ASSET_SPEED[asset.type])
+              debugLog('TICK: asset sequential redirect', {
+                assetId: asset.id, from: asset.currentTaskId, to: nextTask.id,
+                elapsed: Math.round(elapsed), tt: Math.round(tt),
+              })
+              return {
+                ...asset,
+                currentTaskId: nextTask.id,
+                travelFrom: { ...task.waypoint },
+                targetPosition: { ...nextTask.waypoint },
+                travelStartElapsed: elapsed,
+                travelEndElapsed: elapsed + tt,
+                position: newPos,
+              }
+            }
+
+            // No next task — return to hub
             const returnTime = travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type])
             return {
               ...asset,
               status: 'returning' as const,
               currentMissionId: null,
               currentTaskId: null,
-              travelFrom: task.waypoint,
+              travelFrom: { ...task.waypoint },
               targetPosition: { ...HUB },
               travelStartElapsed: elapsed,
               travelEndElapsed: elapsed + returnTime,
@@ -422,6 +508,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         reserve,
         state.config.epsilonCopilot,
         copilotRng,
+        state.elapsed,
       )
 
       let s = logEvent(state, { type: 'allocation_started', missionId: mission.id, triggeredBy: 'operator' })
@@ -475,18 +562,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || mission.status !== 'queued') return state
 
-      const available = state.assets.filter(a => a.status === 'available')
-      const assignments = greedyAssign(mission.tasks, available, action.allocation)
-      if (!assignments) return state  // infeasible — UI should prevent this
-
-      const allAssignedIds = assignments.flatMap(a => a.assetIds)
       const now = state.elapsed
+      const available = state.assets.filter(a => a.status === 'available')
+      const selectedStrat = action.selectedIndex !== null ? action.strategies[action.selectedIndex] : null
+      const plan = action.source !== 'manual' ? selectedStrat?.taskComps : undefined
 
-      // Update tasks with assignment data
+      debugLog('APPLY_ALLOCATION attempt', {
+        missionId: action.missionId, source: action.source,
+        allocation: action.allocation, hasPlan: !!plan,
+      })
+
+      const assignments = greedyAssign(mission.tasks, available, action.allocation, now, plan)
+      if (assignments.length === 0) {
+        debugLog('APPLY_ALLOCATION: greedyAssign returned empty — aborting')
+        return state
+      }
+
+      // Unique asset IDs across all assignments (sequential reuse → same ID may appear in multiple)
+      const allAssignedIds = [...new Set(assignments.flatMap(a => a.assetIds))]
+
+      // Update tasks — unassigned tasks remain 'pending' in the active mission
       const updatedTasks: Task[] = mission.tasks.map(task => {
         const asgn = assignments.find(a => a.taskId === task.id)
         if (!asgn) return task
-        const startTime = now + asgn.travelTime
         return {
           ...task,
           status: 'traveling' as const,
@@ -495,8 +593,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           travelTime: asgn.travelTime,
           baseTime: asgn.baseTime,
           useSubstitute: asgn.useSubstitute,
-          startTime,
-          completionTime: startTime + asgn.baseTime,
+          startTime: asgn.startTime,
+          completionTime: asgn.startTime + asgn.baseTime,
         }
       })
 
@@ -513,12 +611,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             : 'dismissed',
       }
 
-      // Deploy assets
+      // Deploy each asset to its FIRST assigned task (earliest startTime).
+      // Assets scheduled for later tasks (sequential reuse) start with the first
+      // task — TICK redirects them to subsequent tasks as each completes.
       const updatedAssets = state.assets.map(asset => {
-        const asgn = assignments.find(a => a.assetIds.includes(asset.id))
-        if (!asgn) return asset
-        const task = updatedTasks.find(t => t.id === asgn.taskId)!
-        const tt = asgn.travelTime
+        const myAsgns = assignments.filter(a => a.assetIds.includes(asset.id))
+        if (myAsgns.length === 0) return asset
+
+        // First task = lowest startTime
+        const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
+        const task = updatedTasks.find(t => t.id === firstAsgn.taskId)!
+        const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
+
         return {
           ...asset,
           status: 'deployed' as const,
@@ -528,7 +632,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           targetPosition: task.waypoint,
           travelStartElapsed: now,
           travelEndElapsed: now + tt,
-          availableAt: now + tt + asgn.baseTime + travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type]),
+          // rough estimate — updated by TICK when the asset eventually returns
+          availableAt: now + tt + firstAsgn.baseTime + travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type]),
         }
       })
 
@@ -596,9 +701,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const elapsed = state.elapsed
       const returnTime = travelTime(asset.position, HUB, ASSET_SPEED[asset.type])
 
-      let s = logEvent(state, { type: 'asset_recalled', assetId: asset.id, missionId, taskId })
+      // If the task is already completed (0-cost recall / auto-recall window),
+      // just redirect the asset to hub without failing the task.
+      const currentTask = state.missions
+        .find(m => m.id === missionId)
+        ?.tasks.find(t => t.id === taskId)
+      const taskAlreadyDone = currentTask?.status === 'completed' || currentTask?.status === 'failed'
 
-      s = logEvent(s, { type: 'task_failed', missionId, taskId, reason: 'asset_recalled' })
+      let s = logEvent(state, { type: 'asset_recalled', assetId: asset.id, missionId, taskId })
 
       const updatedAssets = s.assets.map(a => {
         if (a.id !== asset.id) return a
@@ -614,6 +724,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           availableAt: elapsed + returnTime,
         }
       })
+
+      if (taskAlreadyDone) {
+        return { ...s, assets: updatedAssets }
+      }
+
+      s = logEvent(s, { type: 'task_failed', missionId, taskId, reason: 'asset_recalled' })
 
       const updatedMissions = s.missions.map(m => {
         if (m.id !== missionId) return m

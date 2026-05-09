@@ -1,0 +1,972 @@
+10:46:30.616  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.695  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.696  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.697  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:46:30.698  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:46:30.780  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.784  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.784  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.785  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:46:30.786  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:46:30.808  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.811  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.812  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:46:30.813  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:46:30.813  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:46:32.442  [poll_hit] node=h1 colour=blue
+10:46:32.443  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:32.443  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:46:32.443  [draw_hover] drew 1 line(s)
+10:46:33.303  [poll_hit] node=h1 colour=red
+10:46:33.303  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:33.304  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:46:33.304  [draw_hover] drew 2 line(s)
+10:46:33.472  [poll_hit] node=h1 colour=green
+10:46:33.472  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:33.472  [draw_hover] strengths={}
+10:46:33.473  [draw_hover] drew 0 line(s)
+10:46:33.732  [poll_hit] node=h1 colour=red
+10:46:33.732  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:33.732  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:46:33.732  [draw_hover] drew 2 line(s)
+10:46:33.824  [poll_hit] node=h1 colour=blue
+10:46:33.824  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:33.825  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:46:33.825  [draw_hover] drew 1 line(s)
+10:46:34.171  [poll_hit] node=h1 colour=red
+10:46:34.171  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:34.171  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:46:34.172  [draw_hover] drew 2 line(s)
+10:46:34.447  [poll_hit] node=h1 colour=green
+10:46:34.448  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:34.448  [draw_hover] strengths={}
+10:46:34.448  [draw_hover] drew 0 line(s)
+10:46:34.984  [poll_hit] node=h1 colour=red
+10:46:34.984  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:34.985  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:46:34.985  [draw_hover] drew 2 line(s)
+10:46:35.864  [poll_hit] node=h1 colour=blue
+10:46:35.865  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:35.865  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:46:35.865  [draw_hover] drew 1 line(s)
+10:46:36.959  [poll_hit] node=h1 colour=blue
+10:46:36.959  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:36.959  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:46:36.959  [draw_hover] drew 1 line(s)
+10:46:37.047  [poll_hit] node=h1 colour=red
+10:46:37.048  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:37.048  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:46:37.048  [draw_hover] drew 2 line(s)
+10:46:37.888  [poll_hit] node=h1 colour=green
+10:46:37.888  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:37.888  [draw_hover] strengths={}
+10:46:37.889  [draw_hover] drew 0 line(s)
+10:46:40.264  [poll_hit] node=h1 colour=green
+10:46:40.265  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:40.265  [draw_hover] strengths={}
+10:46:40.265  [draw_hover] drew 0 line(s)
+10:46:40.750  [poll_hit] node=h3 colour=green
+10:46:40.750  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:46:40.751  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0, 'h7': 0.3333333333333333}
+10:46:40.751  [draw_hover] drew 1 line(s)
+10:46:41.170  [poll_hit] node=h3 colour=blue
+10:46:41.170  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:46:41.170  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0, 'h7': 0.3333333333333333}
+10:46:41.171  [draw_hover] drew 1 line(s)
+10:46:41.261  [poll_hit] node=h3 colour=red
+10:46:41.261  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:46:41.261  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0, 'h7': 0.6666666666666666}
+10:46:41.261  [draw_hover] drew 1 line(s)
+10:46:42.056  [poll_hit] node=h3 colour=red
+10:46:42.056  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:46:42.056  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0, 'h7': 0.6666666666666666}
+10:46:42.057  [draw_hover] drew 1 line(s)
+10:46:42.509  [poll_hit] node=h3 colour=blue
+10:46:42.509  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:46:42.509  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0, 'h7': 0.3333333333333333}
+10:46:42.510  [draw_hover] drew 1 line(s)
+10:46:42.859  [poll_hit] node=h3 colour=green
+10:46:42.859  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:46:42.860  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0, 'h7': 0.3333333333333333}
+10:46:42.860  [draw_hover] drew 1 line(s)
+10:46:43.883  [poll_hit] node=h5 colour=green
+10:46:43.883  [draw_hover] source=h5 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:43.883  [draw_hover] strengths={'h1': 0.0, 'h6': 0.3333333333333333}
+10:46:43.884  [draw_hover] drew 1 line(s)
+10:46:44.306  [poll_hit] node=h5 colour=blue
+10:46:44.307  [draw_hover] source=h5 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:44.307  [draw_hover] strengths={}
+10:46:44.307  [draw_hover] drew 0 line(s)
+10:46:44.561  [poll_hit] node=h5 colour=red
+10:46:44.561  [draw_hover] source=h5 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:44.561  [draw_hover] strengths={'h1': 0.5, 'h6': 0.6666666666666666}
+10:46:44.561  [draw_hover] drew 2 line(s)
+10:46:44.975  [poll_hit] node=h6 colour=red
+10:46:44.975  [draw_hover] source=h6 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:44.976  [draw_hover] strengths={'h1': 0.0, 'h5': 0.5}
+10:46:44.976  [draw_hover] drew 1 line(s)
+10:46:45.056  [poll_hit] node=h6 colour=blue
+10:46:45.056  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:45.057  [draw_hover] strengths={'h1': 0.0, 'h5': 0.0}
+10:46:45.057  [draw_hover] drew 0 line(s)
+10:46:45.307  [poll_hit] node=h5 colour=green
+10:46:45.308  [draw_hover] source=h5 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:45.308  [draw_hover] strengths={'h1': 0.0, 'h6': 0.3333333333333333}
+10:46:45.308  [draw_hover] drew 1 line(s)
+10:46:45.643  [poll_hit] node=h5 colour=blue
+10:46:45.643  [draw_hover] source=h5 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:45.643  [draw_hover] strengths={}
+10:46:45.644  [draw_hover] drew 0 line(s)
+10:46:46.077  [poll_hit] node=h5 colour=red
+10:46:46.077  [draw_hover] source=h5 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:46.077  [draw_hover] strengths={'h1': 0.5, 'h6': 0.6666666666666666}
+10:46:46.078  [draw_hover] drew 2 line(s)
+10:46:46.350  [poll_hit] node=h5 colour=red
+10:46:46.350  [draw_hover] source=h5 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:46:46.351  [draw_hover] strengths={'h1': 0.5, 'h6': 0.6666666666666666}
+10:46:46.351  [draw_hover] drew 2 line(s)
+10:50:10.787  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.863  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.864  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.865  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:50:10.866  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:50:10.947  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.951  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.951  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.952  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:50:10.953  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:50:10.976  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.979  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.980  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:50:10.980  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:50:10.981  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:50:12.108  [poll_hit] node=h1 colour=green
+10:50:12.108  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:12.108  [draw_hover] strengths={}
+10:50:12.108  [draw_hover] drew 0 line(s)
+10:50:12.272  [poll_hit] node=h1 colour=blue
+10:50:12.272  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:12.272  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:50:12.272  [draw_hover] drew 1 line(s)
+10:50:12.709  [poll_hit] node=h1 colour=red
+10:50:12.709  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:12.709  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:50:12.710  [draw_hover] drew 2 line(s)
+10:50:13.156  [poll_hit] node=h1 colour=green
+10:50:13.156  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:13.156  [draw_hover] strengths={}
+10:50:13.156  [draw_hover] drew 0 line(s)
+10:50:13.671  [poll_hit] node=h1 colour=red
+10:50:13.671  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:13.671  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:50:13.672  [draw_hover] drew 2 line(s)
+10:50:14.221  [poll_hit] node=h1 colour=green
+10:50:14.221  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:14.221  [draw_hover] strengths={}
+10:50:14.221  [draw_hover] drew 0 line(s)
+10:50:15.159  [poll_hit] node=h7 colour=red
+10:50:15.159  [draw_hover] source=h7 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:50:15.159  [draw_hover] strengths={'h1': 0.0, 'h3': 0.3333333333333333, 'h5': 0.0}
+10:50:15.159  [draw_hover] drew 1 line(s)
+10:50:15.243  [poll_hit] node=h7 colour=blue
+10:50:15.244  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:50:15.244  [draw_hover] strengths={'h1': 0.0, 'h3': 0.3333333333333333, 'h5': 0.0}
+10:50:15.244  [draw_hover] drew 1 line(s)
+10:50:15.326  [poll_hit] node=h7 colour=green
+10:50:15.326  [draw_hover] source=h7 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:50:15.326  [draw_hover] strengths={'h1': 0.0, 'h3': 0.6666666666666666, 'h5': 0.0}
+10:50:15.327  [draw_hover] drew 1 line(s)
+10:50:16.054  [poll_hit] node=h7 colour=blue
+10:50:16.054  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:50:16.054  [draw_hover] strengths={'h1': 0.0, 'h3': 0.3333333333333333, 'h5': 0.0}
+10:50:16.055  [draw_hover] drew 1 line(s)
+10:50:17.177  [poll_hit] node=h1 colour=red
+10:50:17.177  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:17.177  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:50:17.177  [draw_hover] drew 2 line(s)
+10:50:17.810  [poll_hit] node=h1 colour=blue
+10:50:17.810  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:17.810  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:50:17.811  [draw_hover] drew 1 line(s)
+10:50:18.762  [poll_hit] node=h1 colour=blue
+10:50:18.762  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:18.762  [draw_hover] strengths={'h5': 0.0, 'h6': 0.3333333333333333}
+10:50:18.762  [draw_hover] drew 1 line(s)
+10:50:18.849  [poll_hit] node=h1 colour=red
+10:50:18.849  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:50:18.849  [draw_hover] strengths={'h5': 0.5, 'h6': 0.3333333333333333}
+10:50:18.849  [draw_hover] drew 2 line(s)
+10:54:18.872  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:18.947  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:18.948  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:18.949  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:54:18.949  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:54:19.030  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:19.033  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:19.034  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:19.035  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:54:19.036  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:54:19.058  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:19.061  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:19.062  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+10:54:19.062  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:54:19.063  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+10:54:20.027  [poll_hit] node=h1 colour=red
+10:54:20.027  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:54:20.027  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)}
+10:54:20.028  [draw_hover] drew 2 line(s)
+10:54:21.099  [poll_hit] node=h1 colour=blue
+10:54:21.099  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:54:21.099  [draw_hover] strengths={'h5': (0.0, 0, 2), 'h6': (0.3333333333333333, 1, 3)}
+10:54:21.100  [draw_hover] drew 1 line(s)
+10:54:21.894  [poll_hit] node=h1 colour=red
+10:54:21.894  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+10:54:21.894  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)}
+10:54:21.895  [draw_hover] drew 2 line(s)
+10:54:28.711  [poll_hit] node=h3 colour=red
+10:54:28.711  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:54:28.711  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.6666666666666666, 2, 3)}
+10:54:28.712  [draw_hover] drew 1 line(s)
+10:54:29.616  [poll_hit] node=h3 colour=green
+10:54:29.616  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:54:29.616  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)}
+10:54:29.617  [draw_hover] drew 1 line(s)
+10:54:30.237  [poll_hit] node=h3 colour=blue
+10:54:30.237  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:54:30.237  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)}
+10:54:30.238  [draw_hover] drew 1 line(s)
+10:54:30.944  [poll_hit] node=h3 colour=green
+10:54:30.944  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:54:30.944  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)}
+10:54:30.945  [draw_hover] drew 1 line(s)
+10:54:31.306  [poll_hit] node=h3 colour=red
+10:54:31.307  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+10:54:31.307  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.6666666666666666, 2, 3)}
+10:54:31.307  [draw_hover] drew 1 line(s)
+11:00:22.933  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.010  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.011  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.011  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:00:23.012  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:00:23.095  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.099  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.100  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.101  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:00:23.101  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:00:23.123  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.127  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.128  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:00:23.129  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:00:23.129  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:00:24.257  [poll_hit] node=h1 colour=red
+11:00:24.258  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:24.258  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:00:24.264  [draw_hover] drew 2 line(s)
+11:00:28.601  [poll_hit] node=h1 colour=blue
+11:00:28.602  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:28.602  [draw_hover] strengths={'h5': (0.0, 0, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 12/29 configs (−41%)
+11:00:28.602  [draw_hover] drew 1 line(s)
+11:00:29.431  [poll_hit] node=h1 colour=red
+11:00:29.431  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:29.431  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:00:29.432  [draw_hover] drew 2 line(s)
+11:00:30.771  [poll_hit] node=h1 colour=blue
+11:00:30.771  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:30.771  [draw_hover] strengths={'h5': (0.0, 0, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 12/29 configs (−41%)
+11:00:30.772  [draw_hover] drew 1 line(s)
+11:00:31.121  [poll_hit] node=h1 colour=red
+11:00:31.122  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:31.122  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:00:31.122  [draw_hover] drew 2 line(s)
+11:00:31.656  [poll_hit] node=h1 colour=blue
+11:00:31.656  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:31.656  [draw_hover] strengths={'h5': (0.0, 0, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 12/29 configs (−41%)
+11:00:31.657  [draw_hover] drew 1 line(s)
+11:00:32.384  [poll_hit] node=h1 colour=red
+11:00:32.384  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:32.384  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:00:32.385  [draw_hover] drew 2 line(s)
+11:00:32.738  [poll_hit] node=h1 colour=red
+11:00:32.739  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:32.739  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:00:32.739  [draw_hover] drew 2 line(s)
+11:00:33.462  [poll_hit] node=h1 colour=red
+11:00:33.462  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:33.462  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:00:33.463  [draw_hover] drew 2 line(s)
+11:00:33.891  [poll_hit] node=h1 colour=blue
+11:00:33.891  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:00:33.891  [draw_hover] strengths={'h5': (0.0, 0, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 12/29 configs (−41%)
+11:00:33.892  [draw_hover] drew 1 line(s)
+11:00:35.452  [poll_hit] node=h3 colour=green
+11:00:35.453  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:00:35.453  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 38/84 configs (−45%)
+11:00:35.453  [draw_hover] drew 1 line(s)
+11:01:32.036  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.113  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.114  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.115  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:32.115  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:32.197  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.201  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.201  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.202  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:32.203  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:32.226  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.229  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.230  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:32.231  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:32.232  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:32.751  [poll_hit] node=h3 colour=green
+11:01:32.752  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:32.752  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 38/84 configs (−45%)
+11:01:32.757  [draw_hover] drew 1 line(s)
+11:01:34.379  [poll_hit] node=h3 colour=green
+11:01:34.379  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:34.380  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 38/84 configs (−45%)
+11:01:34.380  [draw_hover] drew 1 line(s)
+11:01:34.877  [poll_hit] node=h3 colour=red
+11:01:34.878  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:34.878  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.6666666666666666, 2, 3)} label=removes 76/84 configs (−90%)
+11:01:34.879  [draw_hover] drew 1 line(s)
+11:01:35.322  [poll_hit] node=h3 colour=green
+11:01:35.322  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:35.322  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 38/84 configs (−45%)
+11:01:35.323  [draw_hover] drew 1 line(s)
+11:01:35.768  [poll_hit] node=h3 colour=blue
+11:01:35.768  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:35.768  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 54/84 configs (−64%)
+11:01:35.769  [draw_hover] drew 1 line(s)
+11:01:36.118  [poll_hit] node=h3 colour=green
+11:01:36.119  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:36.119  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 38/84 configs (−45%)
+11:01:36.120  [draw_hover] drew 1 line(s)
+11:01:36.464  [poll_hit] node=h3 colour=red
+11:01:36.464  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:36.465  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.6666666666666666, 2, 3)} label=removes 76/84 configs (−90%)
+11:01:36.465  [draw_hover] drew 1 line(s)
+11:01:39.768  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:39.772  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:39.772  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:39.773  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:39.774  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:42.344  [poll_hit] node=h7 colour=green
+11:01:42.345  [draw_hover] source=h7 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:42.345  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.0, 0, 2)} label=removes 74/84 configs (−88%)
+11:01:42.345  [draw_hover] drew 1 line(s)
+11:01:43.243  [poll_hit] node=h7 colour=blue
+11:01:43.243  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:43.243  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.0, 0, 2)} label=removes 58/84 configs (−69%)
+11:01:43.244  [draw_hover] drew 1 line(s)
+11:01:43.774  [poll_hit] node=h7 colour=green
+11:01:43.775  [draw_hover] source=h7 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:43.775  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.0, 0, 2)} label=removes 74/84 configs (−88%)
+11:01:43.776  [draw_hover] drew 1 line(s)
+11:01:44.225  [poll_hit] node=h7 colour=blue
+11:01:44.226  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:44.226  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.0, 0, 2)} label=removes 58/84 configs (−69%)
+11:01:44.227  [draw_hover] drew 1 line(s)
+11:01:44.668  [poll_hit] node=h7 colour=green
+11:01:44.669  [draw_hover] source=h7 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:01:44.669  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.0, 0, 2)} label=removes 74/84 configs (−88%)
+11:01:44.669  [draw_hover] drew 1 line(s)
+11:01:45.457  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:45.460  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:45.461  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:45.462  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:45.463  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:50.523  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:50.528  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:50.528  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:50.529  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:50.530  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:51.365  [poll_hit] node=h5 colour=red
+11:01:51.365  [draw_hover] source=h5 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:01:51.365  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h6': (0.6666666666666666, 2, 3)} label=removes 26/29 configs (−90%)
+11:01:51.366  [draw_hover] drew 2 line(s)
+11:01:52.937  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:52.940  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:52.941  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:01:52.942  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:52.942  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:01:54.674  [poll_hit] node=h6 colour=green
+11:01:54.674  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:01:54.674  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2)} label=removes 29/29 configs (−100%)
+11:01:54.675  [draw_hover] drew 2 line(s)
+11:01:54.844  [poll_hit] node=h6 colour=blue
+11:01:54.845  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:01:54.845  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2)} label=removes 12/29 configs (−41%)
+11:01:54.845  [draw_hover] drew 0 line(s)
+11:01:55.908  [poll_hit] node=h6 colour=green
+11:01:55.909  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:01:55.909  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2)} label=removes 29/29 configs (−100%)
+11:01:55.909  [draw_hover] drew 2 line(s)
+11:02:13.767  [poll_hit] node=h1 colour=green
+11:02:13.768  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:13.768  [draw_hover] strengths={} label=removes 29/29 configs (−100%)
+11:02:13.768  [draw_hover] drew 0 line(s)
+11:02:14.249  [poll_hit] node=h1 colour=red
+11:02:14.249  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:14.249  [draw_hover] strengths={'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 17/29 configs (−59%)
+11:02:14.250  [draw_hover] drew 2 line(s)
+11:02:16.709  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:16.713  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:16.714  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:16.714  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:16.715  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:17.967  [poll_hit] node=h6 colour=blue
+11:02:17.967  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:17.967  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2)} label=removes 12/29 configs (−41%)
+11:02:17.967  [draw_hover] drew 0 line(s)
+11:02:18.295  [poll_hit] node=h6 colour=green
+11:02:18.296  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:18.296  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2)} label=removes 29/29 configs (−100%)
+11:02:18.297  [draw_hover] drew 2 line(s)
+11:02:18.627  [poll_hit] node=h6 colour=red
+11:02:18.627  [draw_hover] source=h6 colour=red canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:18.627  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.5, 1, 2)} label=removes 17/29 configs (−59%)
+11:02:18.628  [draw_hover] drew 1 line(s)
+11:02:18.953  [poll_hit] node=h6 colour=green
+11:02:18.953  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:18.953  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2)} label=removes 29/29 configs (−100%)
+11:02:18.954  [draw_hover] drew 2 line(s)
+11:02:19.034  [poll_hit] node=h6 colour=blue
+11:02:19.035  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:19.035  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2)} label=removes 12/29 configs (−41%)
+11:02:19.035  [draw_hover] drew 0 line(s)
+11:02:20.128  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:20.132  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:20.132  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:20.133  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:20.134  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:28.005  [poll_hit] node=h1 colour=blue
+11:02:28.006  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=12 dom=['red', 'green', 'blue']
+11:02:28.006  [draw_hover] strengths={'h5': (0.0, 0, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 12/29 configs (−41%)
+11:02:28.007  [draw_hover] drew 1 line(s)
+11:02:30.232  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:30.235  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:30.236  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:30.237  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:30.238  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:32.727  [poll_hit] node=h7 colour=red
+11:02:32.728  [draw_hover] source=h7 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:02:32.728  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.0, 0, 2)} label=removes 36/84 configs (−43%)
+11:02:32.729  [draw_hover] drew 1 line(s)
+11:02:34.094  [poll_hit] node=h7 colour=green
+11:02:34.095  [draw_hover] source=h7 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:02:34.095  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.0, 0, 2)} label=removes 74/84 configs (−88%)
+11:02:34.095  [draw_hover] drew 1 line(s)
+11:02:34.547  [poll_hit] node=h7 colour=blue
+11:02:34.547  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:02:34.547  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.0, 0, 2)} label=removes 58/84 configs (−69%)
+11:02:34.548  [draw_hover] drew 1 line(s)
+11:02:37.706  [overlay_box] node=h1 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:37.709  [overlay_box] node=h5 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:37.710  [overlay_box] node=h6 cur=None bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:37.710  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:37.711  [overlay_box] node=h7 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:41.981  [overlay_box] node=h1 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:41.986  [overlay_box] node=h5 cur=red bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:41.993  [overlay_box] node=h6 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:41.993  [overlay_box] node=h3 cur=red bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:41.994  [overlay_box] node=h7 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:42.022  [overlay_box] node=h1 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:42.025  [overlay_box] node=h5 cur=red bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:42.026  [overlay_box] node=h6 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:42.026  [overlay_box] node=h3 cur=red bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:42.027  [overlay_box] node=h7 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:46.232  [poll_hit] node=h3 colour=blue
+11:02:46.232  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:02:46.233  [draw_hover] strengths={'h1': (0.0, 0, 2), 'h5': (0.0, 0, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 54/84 configs (−64%)
+11:02:46.233  [draw_hover] drew 1 line(s)
+11:02:46.698  [overlay_box] node=h1 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:46.700  [overlay_box] node=h5 cur=red bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:46.701  [overlay_box] node=h6 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:46.702  [overlay_box] node=h3 cur=red bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:46.702  [overlay_box] node=h7 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:48.228  [overlay_box] node=h1 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:48.231  [overlay_box] node=h5 cur=red bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:48.232  [overlay_box] node=h6 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:48.232  [overlay_box] node=h3 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:48.233  [overlay_box] node=h7 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:48.245  [overlay_box] node=h1 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:48.247  [overlay_box] node=h5 cur=red bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:48.248  [overlay_box] node=h6 cur=blue bjd_len=12 abn=['h1', 'h5', 'h6']
+11:02:48.248  [overlay_box] node=h3 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:02:48.249  [overlay_box] node=h7 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h7']
+11:03:40.092  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.167  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.168  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.168  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.169  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:03:40.170  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:03:40.186  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.189  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.190  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.191  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.192  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:03:40.192  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:03:40.209  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.212  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.212  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.213  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:03:40.214  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:03:40.214  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:03:43.179  [poll_hit] node=h4 colour=red
+11:03:43.179  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:03:43.179  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:03:43.185  [draw_hover] drew 3 line(s)
+11:03:44.162  [poll_hit] node=h4 colour=red
+11:03:44.162  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:03:44.162  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:03:44.163  [draw_hover] drew 3 line(s)
+11:04:09.018  [poll_hit] node=h1 colour=red
+11:04:09.018  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:09.018  [draw_hover] strengths={'h3': (1.0, 3, 3), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:04:09.019  [draw_hover] drew 3 line(s)
+11:04:12.810  [poll_hit] node=h1 colour=blue
+11:04:12.811  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:12.811  [draw_hover] strengths={'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:04:12.811  [draw_hover] drew 3 line(s)
+11:04:17.509  [poll_hit] node=h1 colour=red
+11:04:17.510  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:17.510  [draw_hover] strengths={'h3': (1.0, 3, 3), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:04:17.510  [draw_hover] drew 3 line(s)
+11:04:20.320  [poll_hit] node=h1 colour=blue
+11:04:20.320  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:20.320  [draw_hover] strengths={'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:04:20.321  [draw_hover] drew 3 line(s)
+11:04:21.702  [poll_hit] node=h1 colour=red
+11:04:21.702  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:21.703  [draw_hover] strengths={'h3': (1.0, 3, 3), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:04:21.703  [draw_hover] drew 3 line(s)
+11:04:22.229  [poll_hit] node=h1 colour=blue
+11:04:22.229  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:22.229  [draw_hover] strengths={'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:04:22.230  [draw_hover] drew 3 line(s)
+11:04:24.715  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:24.719  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:24.719  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:24.720  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:24.721  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:24.721  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:29.046  [poll_hit] node=h3 colour=green
+11:04:29.046  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:29.046  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:29.047  [draw_hover] drew 3 line(s)
+11:04:29.464  [poll_hit] node=h3 colour=green
+11:04:29.465  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:29.465  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:29.465  [draw_hover] drew 3 line(s)
+11:04:30.736  [poll_hit] node=h3 colour=red
+11:04:30.736  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:30.737  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:30.737  [draw_hover] drew 3 line(s)
+11:04:31.180  [poll_hit] node=h3 colour=green
+11:04:31.181  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:31.181  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:31.181  [draw_hover] drew 3 line(s)
+11:04:31.269  [poll_hit] node=h3 colour=blue
+11:04:31.269  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:31.270  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:04:31.270  [draw_hover] drew 3 line(s)
+11:04:33.677  [poll_hit] node=h3 colour=green
+11:04:33.677  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:33.678  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:33.678  [draw_hover] drew 3 line(s)
+11:04:34.401  [poll_hit] node=h3 colour=red
+11:04:34.401  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:34.402  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:34.402  [draw_hover] drew 3 line(s)
+11:04:34.930  [poll_hit] node=h3 colour=green
+11:04:34.931  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:34.931  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:34.931  [draw_hover] drew 3 line(s)
+11:04:35.193  [poll_hit] node=h3 colour=red
+11:04:35.194  [draw_hover] source=h3 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:35.194  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:35.194  [draw_hover] drew 3 line(s)
+11:04:36.943  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:36.946  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:36.947  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:36.948  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:36.948  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:36.949  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:38.458  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:38.461  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:38.462  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:38.462  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:38.463  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:38.464  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:40.704  [poll_hit] node=h4 colour=green
+11:04:40.705  [draw_hover] source=h4 colour=green canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:04:40.705  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.5, 1, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 15/22 configs (−68%)
+11:04:40.706  [draw_hover] drew 4 line(s)
+11:04:41.971  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:41.974  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:41.975  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:41.976  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:41.976  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:41.977  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:43.715  [poll_hit] node=h5 colour=green
+11:04:43.715  [draw_hover] source=h5 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:43.715  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:04:43.716  [draw_hover] drew 3 line(s)
+11:04:43.800  [poll_hit] node=h5 colour=red
+11:04:43.800  [draw_hover] source=h5 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:43.800  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h3': (1.0, 3, 3), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:04:43.801  [draw_hover] drew 3 line(s)
+11:04:46.193  [poll_hit] node=h5 colour=green
+11:04:46.193  [draw_hover] source=h5 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:46.193  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:04:46.194  [draw_hover] drew 3 line(s)
+11:04:46.569  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:46.572  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:46.572  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:46.573  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:46.574  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:46.574  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:47.511  [poll_hit] node=h4 colour=red
+11:04:47.511  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:04:47.511  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:04:47.512  [draw_hover] drew 3 line(s)
+11:04:47.649  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:47.653  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:47.653  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:47.654  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:47.654  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:47.655  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:48.630  [poll_hit] node=h3 colour=green
+11:04:48.630  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:48.630  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:04:48.631  [draw_hover] drew 3 line(s)
+11:04:48.711  [poll_hit] node=h3 colour=blue
+11:04:48.711  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:48.712  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:04:48.712  [draw_hover] drew 3 line(s)
+11:04:48.987  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:48.990  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:48.991  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:48.991  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:04:48.992  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:48.993  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:04:56.276  [poll_hit] node=h6 colour=green
+11:04:56.276  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:56.276  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h3': (1.0, 3, 3), 'h5': (1.0, 2, 2)} label=removes 16/16 configs (−100%)
+11:04:56.277  [draw_hover] drew 3 line(s)
+11:04:56.534  [poll_hit] node=h6 colour=red
+11:04:56.534  [draw_hover] source=h6 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:56.535  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2)} label=removes 10/16 configs (−62%)
+11:04:56.535  [draw_hover] drew 3 line(s)
+11:04:57.258  [poll_hit] node=h6 colour=green
+11:04:57.258  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:57.258  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h3': (1.0, 3, 3), 'h5': (1.0, 2, 2)} label=removes 16/16 configs (−100%)
+11:04:57.259  [draw_hover] drew 3 line(s)
+11:04:57.433  [poll_hit] node=h6 colour=blue
+11:04:57.433  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:57.433  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2)} label=removes 6/16 configs (−38%)
+11:04:57.434  [draw_hover] drew 3 line(s)
+11:04:58.762  [poll_hit] node=h6 colour=green
+11:04:58.762  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:58.763  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h3': (1.0, 3, 3), 'h5': (1.0, 2, 2)} label=removes 16/16 configs (−100%)
+11:04:58.763  [draw_hover] drew 3 line(s)
+11:04:58.845  [poll_hit] node=h6 colour=red
+11:04:58.846  [draw_hover] source=h6 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:58.846  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2)} label=removes 10/16 configs (−62%)
+11:04:58.847  [draw_hover] drew 3 line(s)
+11:04:59.634  [poll_hit] node=h6 colour=blue
+11:04:59.634  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:04:59.634  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2)} label=removes 6/16 configs (−38%)
+11:04:59.635  [draw_hover] drew 3 line(s)
+11:05:00.126  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:00.129  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:00.130  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:00.130  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:00.131  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:00.132  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:02.473  [poll_hit] node=h7 colour=red
+11:05:02.474  [draw_hover] source=h7 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:05:02.474  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h4': (0.0, 0, 2), 'h5': (0.0, 0, 2)} label=removes 7/22 configs (−32%)
+11:05:02.474  [draw_hover] drew 2 line(s)
+11:05:03.618  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:03.621  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:03.621  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:03.622  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:03.623  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:03.624  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:04.377  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:04.380  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:04.381  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:04.381  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:04.382  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:04.383  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:05.651  [overlay_box] node=h1 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.656  [overlay_box] node=h3 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.657  [overlay_box] node=h5 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.657  [overlay_box] node=h6 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.658  [overlay_box] node=h4 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:05.659  [overlay_box] node=h7 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:05.690  [overlay_box] node=h1 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.693  [overlay_box] node=h3 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.694  [overlay_box] node=h5 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.694  [overlay_box] node=h6 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:05.694  [overlay_box] node=h4 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:05.695  [overlay_box] node=h7 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:10.114  [poll_hit] node=h3 colour=green
+11:05:10.114  [draw_hover] source=h3 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:05:10.114  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h5': (0.5, 1, 2), 'h6': (0.3333333333333333, 1, 3)} label=removes 8/16 configs (−50%)
+11:05:10.115  [draw_hover] drew 3 line(s)
+11:05:13.102  [overlay_box] node=h1 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:13.105  [overlay_box] node=h3 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:13.106  [overlay_box] node=h5 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:13.106  [overlay_box] node=h6 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:13.107  [overlay_box] node=h4 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:13.108  [overlay_box] node=h7 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:14.134  [overlay_box] node=h1 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:14.137  [overlay_box] node=h3 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:14.138  [overlay_box] node=h5 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:14.138  [overlay_box] node=h6 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:14.138  [overlay_box] node=h4 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:14.139  [overlay_box] node=h7 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:19.474  [overlay_box] node=h1 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.477  [overlay_box] node=h3 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.478  [overlay_box] node=h5 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.479  [overlay_box] node=h6 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.479  [overlay_box] node=h4 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:19.480  [overlay_box] node=h7 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:19.530  [overlay_box] node=h1 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.533  [overlay_box] node=h3 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.534  [overlay_box] node=h5 cur=green bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.535  [overlay_box] node=h6 cur=blue bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:05:19.535  [overlay_box] node=h4 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:19.536  [overlay_box] node=h7 cur=red bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:05:41.011  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:05:41.077  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:05:41.077  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:05:41.078  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:05:42.818  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:05:42.821  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:05:42.822  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:05:42.822  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:05:42.823  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:05:42.823  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:05:57.794  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:05:57.798  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:05:57.798  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:05:57.798  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:05:57.799  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:05:57.799  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:12:08.062  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:12:08.129  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:12:08.130  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:12:08.131  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:12:09.461  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:12:09.465  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:12:09.466  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:12:09.467  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:12:09.467  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:12:09.468  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:12:17.993  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:12:17.996  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:12:17.997  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:12:17.998  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:12:17.999  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:12:18.000  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:12:18.504  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:12:18.507  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:12:18.509  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:12:18.510  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:12:18.511  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:12:18.513  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:12:18.857  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:12:18.861  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:12:18.862  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:12:18.863  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:12:18.864  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:12:18.865  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:19:27.210  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:19:27.277  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:19:27.278  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:19:27.279  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:19:28.344  [overlay_box] node=h1 cur=None bjd_len=0 abn=[]
+11:19:28.347  [overlay_box] node=h3 cur=None bjd_len=0 abn=[]
+11:19:28.348  [overlay_box] node=h5 cur=None bjd_len=0 abn=[]
+11:19:28.349  [overlay_box] node=h6 cur=None bjd_len=0 abn=[]
+11:19:28.350  [overlay_box] node=h4 cur=None bjd_len=0 abn=[]
+11:19:28.351  [overlay_box] node=h7 cur=None bjd_len=0 abn=[]
+11:35:18.944  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:19.011  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:19.013  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:19.014  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:20.017  [poll_hit] node=h3 colour=blue
+11:35:20.018  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:35:20.018  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:35:20.023  [draw_hover] drew 3 line(s)
+11:35:20.381  [poll_hit] node=h3 colour=blue
+11:35:20.382  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:35:20.382  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:35:20.382  [draw_hover] drew 3 line(s)
+11:35:21.392  [poll_hit] node=h3 colour=blue
+11:35:21.393  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:35:21.393  [draw_hover] strengths={'h1': (1.0, 2, 2), 'h5': (1.0, 2, 2), 'h6': (1.0, 3, 3)} label=removes 16/16 configs (−100%)
+11:35:21.394  [draw_hover] drew 3 line(s)
+11:35:22.427  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:22.430  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:22.431  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:22.432  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:35:22.433  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:35:22.434  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:35:22.715  [poll_hit] node=h5 colour=green
+11:35:22.715  [draw_hover] source=h5 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:35:22.715  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:35:22.716  [draw_hover] drew 3 line(s)
+11:35:23.798  [poll_hit] node=h5 colour=green
+11:35:23.798  [draw_hover] source=h5 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:35:23.799  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h6': (0.3333333333333333, 1, 3)} label=no impact (16 configs remain)
+11:35:23.799  [draw_hover] drew 3 line(s)
+11:35:24.414  [poll_hit] node=h5 colour=blue
+11:35:24.415  [draw_hover] source=h5 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:35:24.415  [draw_hover] strengths={} label=removes 16/16 configs (−100%)
+11:35:24.415  [draw_hover] drew 0 line(s)
+11:35:25.307  [poll_hit] node=h4 colour=red
+11:35:25.307  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:25.308  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:35:25.308  [draw_hover] drew 3 line(s)
+11:35:25.844  [poll_hit] node=h4 colour=green
+11:35:25.845  [draw_hover] source=h4 colour=green canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:25.845  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.5, 1, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 15/22 configs (−68%)
+11:35:25.845  [draw_hover] drew 4 line(s)
+11:35:26.269  [poll_hit] node=h4 colour=blue
+11:35:26.269  [draw_hover] source=h4 colour=blue canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:26.270  [draw_hover] strengths={} label=removes 22/22 configs (−100%)
+11:35:26.270  [draw_hover] drew 0 line(s)
+11:35:26.618  [poll_hit] node=h4 colour=red
+11:35:26.618  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:26.619  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:35:26.619  [draw_hover] drew 3 line(s)
+11:35:26.780  [poll_hit] node=h4 colour=blue
+11:35:26.780  [draw_hover] source=h4 colour=blue canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:26.781  [draw_hover] strengths={} label=removes 22/22 configs (−100%)
+11:35:26.781  [draw_hover] drew 0 line(s)
+11:35:26.948  [poll_hit] node=h4 colour=blue
+11:35:26.948  [draw_hover] source=h4 colour=blue canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:26.949  [draw_hover] strengths={} label=removes 22/22 configs (−100%)
+11:35:26.949  [draw_hover] drew 0 line(s)
+11:35:27.559  [poll_hit] node=h4 colour=red
+11:35:27.559  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:27.560  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:35:27.560  [draw_hover] drew 3 line(s)
+11:35:28.715  [poll_hit] node=h4 colour=green
+11:35:28.715  [draw_hover] source=h4 colour=green canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:28.716  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.6666666666666666, 2, 3), 'h5': (0.5, 1, 2), 'h7': (0.3333333333333333, 1, 3)} label=removes 15/22 configs (−68%)
+11:35:28.716  [draw_hover] drew 4 line(s)
+11:35:29.243  [poll_hit] node=h4 colour=red
+11:35:29.243  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:29.244  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:35:29.244  [draw_hover] drew 3 line(s)
+11:35:30.206  [poll_hit] node=h4 colour=red
+11:35:30.206  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:30.207  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:35:30.207  [draw_hover] drew 3 line(s)
+11:35:30.564  [poll_hit] node=h4 colour=red
+11:35:30.564  [draw_hover] source=h4 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:30.564  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h5': (0.5, 1, 2), 'h7': (0.0, 0, 3)} label=removes 7/22 configs (−32%)
+11:35:30.565  [draw_hover] drew 3 line(s)
+11:35:31.932  [poll_hit] node=h7 colour=red
+11:35:31.933  [draw_hover] source=h7 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:31.933  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.3333333333333333, 1, 3), 'h4': (0.0, 0, 2), 'h5': (0.0, 0, 2)} label=removes 7/22 configs (−32%)
+11:35:31.934  [draw_hover] drew 2 line(s)
+11:35:32.741  [poll_hit] node=h7 colour=blue
+11:35:32.741  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:35:32.742  [draw_hover] strengths={'h1': (0.5, 1, 2), 'h3': (0.6666666666666666, 2, 3), 'h4': (0.5, 1, 2), 'h5': (0.5, 1, 2)} label=removes 19/22 configs (−86%)
+11:35:32.742  [draw_hover] drew 4 line(s)
+11:38:05.832  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:05.898  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:05.899  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:05.900  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:07.018  [poll_hit] node=h3 colour=blue
+11:38:07.018  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:07.018  [draw_hover] strengths={'h1': (1.0, 2, 2, ['blue', 'red']), 'h5': (1.0, 2, 2, ['green', 'red']), 'h6': (1.0, 3, 3, ['red', 'green', 'blue'])}
+11:38:07.019  [draw_hover] drew 3 line(s)
+11:38:07.052  [overlay_box] node=h1 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:07.055  [overlay_box] node=h3 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:07.056  [overlay_box] node=h5 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:07.057  [overlay_box] node=h6 cur=None bjd_len=36 abn=['h1', 'h3', 'h5', 'h6']
+11:38:07.058  [overlay_box] node=h4 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:38:07.059  [overlay_box] node=h7 cur=None bjd_len=72 abn=['h1', 'h3', 'h4', 'h5', 'h7']
+11:38:11.048  [poll_hit] node=h3 colour=blue
+11:38:11.048  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:11.048  [draw_hover] strengths={'h1': (1.0, 2, 2, ['blue', 'red']), 'h5': (1.0, 2, 2, ['green', 'red']), 'h6': (1.0, 3, 3, ['red', 'green', 'blue'])}
+11:38:11.049  [draw_hover] drew 3 line(s)
+11:38:11.826  [poll_hit] node=h3 colour=blue
+11:38:11.826  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:11.826  [draw_hover] strengths={'h1': (1.0, 2, 2, ['blue', 'red']), 'h5': (1.0, 2, 2, ['green', 'red']), 'h6': (1.0, 3, 3, ['red', 'green', 'blue'])}
+11:38:11.827  [draw_hover] drew 3 line(s)
+11:38:12.700  [poll_hit] node=h3 colour=blue
+11:38:12.700  [draw_hover] source=h3 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:12.700  [draw_hover] strengths={'h1': (1.0, 2, 2, ['blue', 'red']), 'h5': (1.0, 2, 2, ['green', 'red']), 'h6': (1.0, 3, 3, ['red', 'green', 'blue'])}
+11:38:12.701  [draw_hover] drew 3 line(s)
+11:38:13.959  [poll_hit] node=h1 colour=green
+11:38:13.959  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:13.959  [draw_hover] strengths={}
+11:38:13.960  [draw_hover] drew 0 line(s)
+11:38:14.124  [poll_hit] node=h1 colour=blue
+11:38:14.124  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:14.124  [draw_hover] strengths={'h3': (0.3333333333333333, 1, 3, ['blue']), 'h5': (0.5, 1, 2, ['red']), 'h6': (0.3333333333333333, 1, 3, ['green'])}
+11:38:14.125  [draw_hover] drew 3 line(s)
+11:38:14.458  [poll_hit] node=h1 colour=blue
+11:38:14.458  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:14.458  [draw_hover] strengths={'h3': (0.3333333333333333, 1, 3, ['blue']), 'h5': (0.5, 1, 2, ['red']), 'h6': (0.3333333333333333, 1, 3, ['green'])}
+11:38:14.459  [draw_hover] drew 3 line(s)
+11:38:17.915  [poll_hit] node=h1 colour=red
+11:38:17.915  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:17.915  [draw_hover] strengths={'h3': (1.0, 3, 3, ['red', 'green', 'blue']), 'h5': (1.0, 2, 2, ['green', 'red']), 'h6': (1.0, 3, 3, ['red', 'green', 'blue'])}
+11:38:17.916  [draw_hover] drew 3 line(s)
+11:38:18.462  [poll_hit] node=h1 colour=blue
+11:38:18.463  [draw_hover] source=h1 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:18.463  [draw_hover] strengths={'h3': (0.3333333333333333, 1, 3, ['blue']), 'h5': (0.5, 1, 2, ['red']), 'h6': (0.3333333333333333, 1, 3, ['green'])}
+11:38:18.463  [draw_hover] drew 3 line(s)
+11:38:22.605  [poll_hit] node=h1 colour=red
+11:38:22.606  [draw_hover] source=h1 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:22.606  [draw_hover] strengths={'h3': (1.0, 3, 3, ['red', 'green', 'blue']), 'h5': (1.0, 2, 2, ['green', 'red']), 'h6': (1.0, 3, 3, ['red', 'green', 'blue'])}
+11:38:22.606  [draw_hover] drew 3 line(s)
+11:38:25.999  [poll_hit] node=h1 colour=green
+11:38:25.999  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:25.999  [draw_hover] strengths={}
+11:38:25.999  [draw_hover] drew 0 line(s)
+11:38:27.274  [poll_hit] node=h1 colour=green
+11:38:27.274  [draw_hover] source=h1 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:27.274  [draw_hover] strengths={}
+11:38:27.274  [draw_hover] drew 0 line(s)
+11:38:27.774  [poll_hit] node=h7 colour=blue
+11:38:27.775  [draw_hover] source=h7 colour=blue canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:38:27.775  [draw_hover] strengths={'h1': (0.5, 1, 2, ['red']), 'h3': (0.6666666666666666, 2, 3, ['red', 'blue']), 'h4': (0.5, 1, 2, ['green']), 'h5': (0.5, 1, 2, ['red'])}
+11:38:27.776  [draw_hover] drew 4 line(s)
+11:38:31.109  [poll_hit] node=h7 colour=red
+11:38:31.109  [draw_hover] source=h7 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:38:31.109  [draw_hover] strengths={'h1': (0.5, 1, 2, ['red']), 'h3': (0.3333333333333333, 1, 3, ['red']), 'h4': (0.0, 0, 2, []), 'h5': (0.0, 0, 2, [])}
+11:38:31.110  [draw_hover] drew 2 line(s)
+11:38:33.401  [poll_hit] node=h7 colour=red
+11:38:33.402  [draw_hover] source=h7 colour=red canvas=ok node_in_pos=True bjd_len=72 dom=['red', 'green', 'blue']
+11:38:33.402  [draw_hover] strengths={'h1': (0.5, 1, 2, ['red']), 'h3': (0.3333333333333333, 1, 3, ['red']), 'h4': (0.0, 0, 2, []), 'h5': (0.0, 0, 2, [])}
+11:38:33.402  [draw_hover] drew 2 line(s)
+11:38:35.404  [poll_hit] node=h6 colour=red
+11:38:35.405  [draw_hover] source=h6 colour=red canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:35.405  [draw_hover] strengths={'h1': (0.5, 1, 2, ['red']), 'h3': (0.3333333333333333, 1, 3, ['blue']), 'h5': (0.5, 1, 2, ['red'])}
+11:38:35.406  [draw_hover] drew 3 line(s)
+11:38:35.843  [poll_hit] node=h6 colour=blue
+11:38:35.844  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:35.844  [draw_hover] strengths={'h1': (0.5, 1, 2, ['red']), 'h3': (0.3333333333333333, 1, 3, ['blue']), 'h5': (0.5, 1, 2, ['red'])}
+11:38:35.845  [draw_hover] drew 3 line(s)
+11:38:36.286  [poll_hit] node=h6 colour=green
+11:38:36.287  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:36.287  [draw_hover] strengths={'h1': (1.0, 2, 2, ['blue', 'red']), 'h3': (1.0, 3, 3, ['red', 'green', 'blue']), 'h5': (1.0, 2, 2, ['green', 'red'])}
+11:38:36.287  [draw_hover] drew 3 line(s)
+11:38:36.732  [poll_hit] node=h6 colour=green
+11:38:36.733  [draw_hover] source=h6 colour=green canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:36.733  [draw_hover] strengths={'h1': (1.0, 2, 2, ['blue', 'red']), 'h3': (1.0, 3, 3, ['red', 'green', 'blue']), 'h5': (1.0, 2, 2, ['green', 'red'])}
+11:38:36.733  [draw_hover] drew 3 line(s)
+11:38:40.078  [poll_hit] node=h6 colour=blue
+11:38:40.079  [draw_hover] source=h6 colour=blue canvas=ok node_in_pos=True bjd_len=36 dom=['red', 'green', 'blue']
+11:38:40.079  [draw_hover] strengths={'h1': (0.5, 1, 2, ['red']), 'h3': (0.3333333333333333, 1, 3, ['blue']), 'h5': (0.5, 1, 2, ['red'])}
+11:38:40.079  [draw_hover] drew 3 line(s)

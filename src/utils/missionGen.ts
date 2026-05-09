@@ -6,8 +6,8 @@ import type { SeededRNG } from './prng'
 export const HUB = { x: 500, y: 400 } as const
 export const MAP_W = 1000
 export const MAP_H = 800
-const ZONE_RADIUS = 80
-const ZONE_MIN_HUB = 150    // minimum distance from hub to zone center
+export const ZONE_RADIUS = 96   // ~20% larger spread of waypoints within a zone
+const ZONE_MIN_HUB = 120        // ~20% closer to hub — makes asset choice matter more
 const ZONE_MIN_ZONE = 200   // minimum distance between zone centers
 
 // ─── Physics ──────────────────────────────────────────────────────────────
@@ -68,9 +68,9 @@ export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
 // ─── Complexity parameters ────────────────────────────────────────────────
 
 const LAMBDA: Record<Complexity, number> = {
-  easy: 120,
-  medium: 75,
-  hard: 45,
+  easy:   90,   // ~1 per 90s
+  medium: 45,   // ~1 per 45s
+  hard:   30,   // ~1 per 30s
 }
 
 const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
@@ -90,7 +90,10 @@ function buildTaskList(rng: SeededRNG, category: MissionCategory): TaskType[] {
       const t2 = rng.randInt(2, 4)  // 2 or 3
       return [...Array<TaskType>(t1).fill(1), ...Array<TaskType>(t2).fill(2), 3]
     }
-    case 'B': return [5, 4, 3, 3, 2, 2, 1, 1]
+    case 'B':
+      return rng.randFloat(0, 1) < 0.5
+        ? [5, 4, 3, 3, 2, 2, 1, 1]   // with specialist tasks (needs Green)
+        : [3, 3, 2, 2, 2, 1, 1, 1]   // logistics-only (no Green required)
     case 'C': return [5, 4, 4, 3, 3, 2, 2, 1]
     case 'D': return [5, 5, 4, 4, 3, 3, 3, 2, 2, 1]
     case 'E': return [5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 1]
@@ -151,9 +154,13 @@ export function generateSessionPlan(
   const usedCenters: Array<{ x: number; y: number }> = []
   let time = 0
   let seq = 0
+  let firstMission = true
 
   while (true) {
-    time += rng.exponential(lambda)
+    const interval = rng.exponential(lambda)
+    // Cap first mission arrival at 3 s — avoids long initial waits during testing
+    time += firstMission ? Math.min(interval, 3) : interval
+    firstMission = false
     if (time > duration) break
 
     const category = rng.weightedChoice(CATEGORIES, CATEGORY_WEIGHTS[complexity])

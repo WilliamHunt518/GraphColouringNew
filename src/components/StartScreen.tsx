@@ -7,12 +7,13 @@ const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
   { value: 'LH', label: 'LH', desc: 'Low Co-Pilot / High Meta-Co-Pilot' },
   { value: 'HL', label: 'HL', desc: 'High Co-Pilot / Low Meta-Co-Pilot' },
   { value: 'LL', label: 'LL', desc: 'Low accuracy — both assistants' },
+  { value: 'PP', label: 'PP', desc: 'Perfect — both assistants always correct (testing)' },
 ]
 
 const COMPLEXITIES: { value: StudyConfig['complexity']; label: string; desc: string }[] = [
-  { value: 'easy',   label: 'Easy',   desc: 'λ=120s, mostly Tier A–B missions' },
-  { value: 'medium', label: 'Medium', desc: 'λ=75s, mixed Tier A–D missions' },
-  { value: 'hard',   label: 'Hard',   desc: 'λ=45s, Tier C–E heavy' },
+  { value: 'easy',   label: 'Easy',   desc: 'λ=90s, mostly Routine–Moderate missions' },
+  { value: 'medium', label: 'Medium', desc: 'λ=45s, mixed Routine–Critical missions' },
+  { value: 'hard',   label: 'Hard',   desc: 'λ=30s, Significant–Mass Casualty heavy' },
 ]
 
 interface Props {
@@ -27,12 +28,11 @@ export default function StartScreen({ onStart }: Props) {
   const [error, setError] = useState('')
 
   function handleStart() {
-    const trimmed = participantId.trim()
-    if (!trimmed) { setError('Participant ID is required.'); return }
     const seedNum = parseInt(seed, 10)
     if (isNaN(seedNum) || seedNum < 1) { setError('Seed must be a positive integer.'); return }
+    const finalId = participantId.trim() || `P-${String(randomSeed() % 9000 + 1000)}`
     setError('')
-    onStart({ participantId: trimmed, condition, complexity, seed: seedNum, ...conditionToEpsilons(condition) })
+    onStart({ participantId: finalId, condition, complexity, seed: seedNum, ...conditionToEpsilons(condition) })
   }
 
   return (
@@ -48,12 +48,15 @@ export default function StartScreen({ onStart }: Props) {
 
         {/* Participant ID */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-300">Participant ID</label>
+          <label className="block text-sm font-medium text-gray-300">
+            Participant ID
+            <span className="ml-2 text-xs text-gray-500 font-normal">leave blank to auto-assign</span>
+          </label>
           <input
             type="text"
             value={participantId}
             onChange={e => setParticipantId(e.target.value)}
-            placeholder="e.g. P001"
+            placeholder="e.g. P001 (optional)"
             className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -61,7 +64,7 @@ export default function StartScreen({ onStart }: Props) {
         {/* Condition */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-300">Condition</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
             {CONDITIONS.map(c => (
               <button
                 key={c.value}

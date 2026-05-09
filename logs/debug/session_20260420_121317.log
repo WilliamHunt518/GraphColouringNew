@@ -1,0 +1,19 @@
+[12:13:17.364] debug_log initialised — writing to G:\Files\Code\GraphColouringNew\logs\debug\session_20260420_121317.log
+[12:13:17.382] ColourSession.run() start — mode=mode2a max_attempts=3 graph=hub18b
+[12:13:17.421] win_top created
+[12:13:17.421] --- ATTEMPT LOOP: attempt_num=1 of 3 ---
+[12:13:17.421]   SessionManager created, node_order len=18, first=H1
+[12:13:17.434]   ColourStudyWindow created, calling run()
+[12:13:17.434]   window.run() returned, waiting on decision_var
+[12:13:31.361]   _finish_attempt() called — attempt=1, nodes_decided=18
+[12:13:31.361]   _finish_attempt: 18 nodes, score=-57
+[12:13:31.361]   _on_complete called for attempt 1, assignment has 18 nodes
+[12:13:31.362]   _finish_attempt: _on_complete called, showing end panel
+[12:13:31.362]   _show_end_panel: attempt=1
+[12:13:34.042]   _on_session_finish called (attempt=1)
+[12:13:34.042]   _on_decision: attempt=1 decision='finish'
+[12:13:34.042]   decision_var='finish', _attempt_done keys=['assignment']
+[12:13:34.042]   score=-57, completed_attempts=1
+[12:13:34.042]   decision=finish, ending loop
+[12:13:34.042] --- LOOP ENDED: completed 1 of 3 attempts ---
+[12:13:34.051] root.destroy() called — session fully complete

@@ -1,0 +1,122 @@
+[11:43:50.263] debug_log initialised — writing to G:\Files\Code\GraphColouringNew\logs\debug\session_20260417_114350.log
+[11:43:50.283] ColourSession.run() start — mode=mode1 max_attempts=3 graph=s12_3c_xab
+[11:43:50.323] win_top created
+[11:43:50.323] --- ATTEMPT LOOP: attempt_num=1 of 3 ---
+[11:43:50.323]   SessionManager created, node_order len=12, first=H1
+[11:43:50.334]   ColourStudyWindow created, calling run()
+[11:43:50.334]   window.run() returned, waiting on decision_var
+[11:43:50.448]   _advance_to_next_human_node: attempt=1 current_node=H1 idx=0
+[11:43:50.448]   _advance_to_next_human_node: H1 is Human — enabling buttons
+[11:43:56.927]   _advance_to_next_human_node: attempt=1 current_node=H2 idx=1
+[11:43:56.927]   _advance_to_next_human_node: H2 is Human — enabling buttons
+[11:43:59.733]   _advance_to_next_human_node: attempt=1 current_node=H3 idx=2
+[11:43:59.733]   _advance_to_next_human_node: H3 is Human — enabling buttons
+[11:44:06.593]   _advance_to_next_human_node: attempt=1 current_node=H4 idx=3
+[11:44:06.593]   _advance_to_next_human_node: H4 is Human — enabling buttons
+[11:44:09.342]   _advance_to_next_human_node: attempt=1 current_node=A1 idx=4
+[11:44:09.343]   _advance_to_next_human_node: A1 is agent (AgentA) — auto-colouring
+[11:44:09.850]   _advance_to_next_human_node: attempt=1 current_node=A2 idx=5
+[11:44:09.850]   _advance_to_next_human_node: A2 is agent (AgentA) — auto-colouring
+[11:44:10.360]   _advance_to_next_human_node: attempt=1 current_node=A3 idx=6
+[11:44:10.360]   _advance_to_next_human_node: A3 is agent (AgentA) — auto-colouring
+[11:44:10.861]   _advance_to_next_human_node: attempt=1 current_node=A4 idx=7
+[11:44:10.861]   _advance_to_next_human_node: A4 is agent (AgentA) — auto-colouring
+[11:44:11.367]   _advance_to_next_human_node: attempt=1 current_node=B1 idx=8
+[11:44:11.367]   _advance_to_next_human_node: B1 is agent (AgentB) — auto-colouring
+[11:44:11.881]   _advance_to_next_human_node: attempt=1 current_node=B2 idx=9
+[11:44:11.881]   _advance_to_next_human_node: B2 is agent (AgentB) — auto-colouring
+[11:44:12.395]   _advance_to_next_human_node: attempt=1 current_node=B3 idx=10
+[11:44:12.395]   _advance_to_next_human_node: B3 is agent (AgentB) — auto-colouring
+[11:44:12.907]   _advance_to_next_human_node: attempt=1 current_node=B4 idx=11
+[11:44:12.907]   _advance_to_next_human_node: B4 is agent (AgentB) — auto-colouring
+[11:44:12.908]   _advance_to_next_human_node: session complete after B4 — scheduling _finish_attempt
+[11:44:13.221]   _finish_attempt() called — attempt=1, nodes_decided=12
+[11:44:13.221]   _finish_attempt: 12 nodes, score=78
+[11:44:13.221]   _on_complete called for attempt 1, assignment has 12 nodes
+[11:44:13.221]   _finish_attempt: _on_complete called, showing end panel
+[11:44:13.221]   _show_end_panel: attempt=1
+[11:44:14.704]   _on_session_continue clicked (attempt=1)
+[11:44:14.704]   _on_decision: attempt=1 decision='continue'
+[11:44:14.704]   decision_var='continue', _attempt_done keys=['assignment']
+[11:44:14.704]   score=78, completed_attempts=1
+[11:44:14.704]   decision=continue, looping to attempt 2
+[11:44:14.704] --- ATTEMPT LOOP: attempt_num=2 of 3 ---
+[11:44:14.709]   SessionManager created, node_order len=12, first=H1
+[11:44:14.717]   ColourStudyWindow created, calling run()
+[11:44:14.717]   window.run() returned, waiting on decision_var
+[11:44:14.818]   _advance_to_next_human_node: attempt=2 current_node=H1 idx=0
+[11:44:14.818]   _advance_to_next_human_node: H1 is Human — enabling buttons
+[11:44:17.635]   _advance_to_next_human_node: attempt=2 current_node=H2 idx=1
+[11:44:17.635]   _advance_to_next_human_node: H2 is Human — enabling buttons
+[11:44:28.311]   _advance_to_next_human_node: attempt=2 current_node=H3 idx=2
+[11:44:28.311]   _advance_to_next_human_node: H3 is Human — enabling buttons
+[11:44:30.049]   _advance_to_next_human_node: attempt=2 current_node=H4 idx=3
+[11:44:30.049]   _advance_to_next_human_node: H4 is Human — enabling buttons
+[11:44:31.736]   _advance_to_next_human_node: attempt=2 current_node=A1 idx=4
+[11:44:31.736]   _advance_to_next_human_node: A1 is agent (AgentA) — auto-colouring
+[11:44:32.248]   _advance_to_next_human_node: attempt=2 current_node=A2 idx=5
+[11:44:32.248]   _advance_to_next_human_node: A2 is agent (AgentA) — auto-colouring
+[11:44:32.762]   _advance_to_next_human_node: attempt=2 current_node=A3 idx=6
+[11:44:32.762]   _advance_to_next_human_node: A3 is agent (AgentA) — auto-colouring
+[11:44:33.274]   _advance_to_next_human_node: attempt=2 current_node=A4 idx=7
+[11:44:33.274]   _advance_to_next_human_node: A4 is agent (AgentA) — auto-colouring
+[11:44:33.786]   _advance_to_next_human_node: attempt=2 current_node=B1 idx=8
+[11:44:33.786]   _advance_to_next_human_node: B1 is agent (AgentB) — auto-colouring
+[11:44:34.299]   _advance_to_next_human_node: attempt=2 current_node=B2 idx=9
+[11:44:34.299]   _advance_to_next_human_node: B2 is agent (AgentB) — auto-colouring
+[11:44:34.815]   _advance_to_next_human_node: attempt=2 current_node=B3 idx=10
+[11:44:34.815]   _advance_to_next_human_node: B3 is agent (AgentB) — auto-colouring
+[11:44:35.326]   _advance_to_next_human_node: attempt=2 current_node=B4 idx=11
+[11:44:35.326]   _advance_to_next_human_node: B4 is agent (AgentB) — auto-colouring
+[11:44:35.328]   _advance_to_next_human_node: session complete after B4 — scheduling _finish_attempt
+[11:44:35.635]   _finish_attempt() called — attempt=2, nodes_decided=12
+[11:44:35.635]   _finish_attempt: 12 nodes, score=68
+[11:44:35.635]   _on_complete called for attempt 2, assignment has 12 nodes
+[11:44:35.635]   _finish_attempt: _on_complete called, showing end panel
+[11:44:35.635]   _show_end_panel: attempt=2
+[11:44:38.250]   _on_session_continue clicked (attempt=2)
+[11:44:38.250]   _on_decision: attempt=2 decision='continue'
+[11:44:38.250]   decision_var='continue', _attempt_done keys=['assignment']
+[11:44:38.250]   score=68, completed_attempts=2
+[11:44:38.250]   decision=continue, looping to attempt 3
+[11:44:38.250] --- ATTEMPT LOOP: attempt_num=3 of 3 ---
+[11:44:38.256]   SessionManager created, node_order len=12, first=H1
+[11:44:38.264]   ColourStudyWindow created, calling run()
+[11:44:38.264]   window.run() returned, waiting on decision_var
+[11:44:38.364]   _advance_to_next_human_node: attempt=3 current_node=H1 idx=0
+[11:44:38.364]   _advance_to_next_human_node: H1 is Human — enabling buttons
+[11:44:41.367]   _advance_to_next_human_node: attempt=3 current_node=H2 idx=1
+[11:44:41.367]   _advance_to_next_human_node: H2 is Human — enabling buttons
+[11:44:44.335]   _advance_to_next_human_node: attempt=3 current_node=H3 idx=2
+[11:44:44.335]   _advance_to_next_human_node: H3 is Human — enabling buttons
+[11:44:47.626]   _advance_to_next_human_node: attempt=3 current_node=H4 idx=3
+[11:44:47.626]   _advance_to_next_human_node: H4 is Human — enabling buttons
+[11:44:49.231]   _advance_to_next_human_node: attempt=3 current_node=A1 idx=4
+[11:44:49.231]   _advance_to_next_human_node: A1 is agent (AgentA) — auto-colouring
+[11:44:49.736]   _advance_to_next_human_node: attempt=3 current_node=A2 idx=5
+[11:44:49.736]   _advance_to_next_human_node: A2 is agent (AgentA) — auto-colouring
+[11:44:50.238]   _advance_to_next_human_node: attempt=3 current_node=A3 idx=6
+[11:44:50.238]   _advance_to_next_human_node: A3 is agent (AgentA) — auto-colouring
+[11:44:50.754]   _advance_to_next_human_node: attempt=3 current_node=A4 idx=7
+[11:44:50.754]   _advance_to_next_human_node: A4 is agent (AgentA) — auto-colouring
+[11:44:51.256]   _advance_to_next_human_node: attempt=3 current_node=B1 idx=8
+[11:44:51.256]   _advance_to_next_human_node: B1 is agent (AgentB) — auto-colouring
+[11:44:51.771]   _advance_to_next_human_node: attempt=3 current_node=B2 idx=9
+[11:44:51.771]   _advance_to_next_human_node: B2 is agent (AgentB) — auto-colouring
+[11:44:52.285]   _advance_to_next_human_node: attempt=3 current_node=B3 idx=10
+[11:44:52.285]   _advance_to_next_human_node: B3 is agent (AgentB) — auto-colouring
+[11:44:52.801]   _advance_to_next_human_node: attempt=3 current_node=B4 idx=11
+[11:44:52.801]   _advance_to_next_human_node: B4 is agent (AgentB) — auto-colouring
+[11:44:52.802]   _advance_to_next_human_node: session complete after B4 — scheduling _finish_attempt
+[11:44:53.111]   _finish_attempt() called — attempt=3, nodes_decided=12
+[11:44:53.111]   _finish_attempt: 12 nodes, score=88
+[11:44:53.111]   _on_complete called for attempt 3, assignment has 12 nodes
+[11:44:53.111]   _finish_attempt: _on_complete called, showing end panel
+[11:44:53.111]   _show_end_panel: attempt=3
+[11:45:36.713]   _on_session_finish called (attempt=3)
+[11:45:36.713]   _on_decision: attempt=3 decision='finish'
+[11:45:36.713]   decision_var='finish', _attempt_done keys=['assignment']
+[11:45:36.714]   score=88, completed_attempts=3
+[11:45:36.714]   decision=finish, ending loop
+[11:45:36.714] --- LOOP ENDED: completed 3 of 3 attempts ---
+[11:45:36.723] root.destroy() called — session fully complete

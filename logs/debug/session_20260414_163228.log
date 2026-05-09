@@ -1,0 +1,19 @@
+[16:32:28.468] debug_log initialised — writing to G:\Files\Code\GraphColouringNew\logs\debug\session_20260414_163228.log
+[16:32:28.509] ColourSession.run() start — mode=mode1 max_attempts=3 graph=study_12
+[16:32:28.551] win_top created
+[16:32:28.551] --- ATTEMPT LOOP: attempt_num=1 of 3 ---
+[16:32:28.551]   SessionManager created, node_order len=12, first=H1
+[16:32:28.560]   ColourStudyWindow created, calling run()
+[16:32:28.560]   window.run() returned, waiting on decision_var
+[16:32:28.660]   _advance_to_next_human_node: attempt=1 current_node=H1 idx=0
+[16:32:28.660]   _advance_to_next_human_node: H1 is Human — enabling buttons
+[16:32:31.250]   _advance_to_next_human_node: attempt=1 current_node=H2 idx=1
+[16:32:31.251]   _advance_to_next_human_node: H2 is Human — enabling buttons
+[16:32:34.662]   _advance_to_next_human_node: attempt=1 current_node=H3 idx=2
+[16:32:34.662]   _advance_to_next_human_node: H3 is Human — enabling buttons
+[16:32:38.162]   _on_close: attempt=1, idx=2/12 — abandonment
+[16:32:38.162]   _on_decision: attempt=1 decision='abandon'
+[16:32:38.162]   decision_var='abandon', _attempt_done keys=[]
+[16:32:38.162]   BREAK: window abandoned without finishing
+[16:32:38.162] --- LOOP ENDED: completed 0 of 3 attempts ---
+[16:32:38.185] root.destroy() called — session fully complete
