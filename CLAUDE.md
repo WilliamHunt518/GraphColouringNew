@@ -100,9 +100,9 @@ Tasks execute greedily (T5 first → most constrained).
 
 | Type  | Speed | Notes |
 |-------|-------|-------|
-| Blue  | 3.0   | Fast, recce-only |
-| Red   | 2.0   | Standard, supply + extract |
-| Green | 1.4   | Slow, required for T4/T5 |
+| Blue  | 9.0   | Fast, recce-only |
+| Red   | 6.0   | Standard, supply + extract |
+| Green | 4.2   | Slow, required for T4/T5 |
 
 ### Trust Probe
 

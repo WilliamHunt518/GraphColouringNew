@@ -20,7 +20,8 @@ export type GameAction =
 
   // ── In-mission operations ────────────────────────────────────────────────
   | { type: 'RECALL_ASSET'; assetId: string }
-  | { type: 'REPRIORITISE_TASK'; missionId: string; taskId: string; direction: 'up' | 'down' }
+  | { type: 'REPRIORITISE_TASK'; missionId: string; taskId: string; direction: 'up' | 'down' | 'top' }
+  | { type: 'TOGGLE_TASK_PRIORITY'; taskId: string }
 
   // ── Meta-Co-Pilot ────────────────────────────────────────────────────────
   | { type: 'SET_META_POSTURE'; posture: Posture }   // operator overrides MCP posture

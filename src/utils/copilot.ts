@@ -196,30 +196,13 @@ export function generateStrategies(
   const presPool = cap({ ...presMin, Green: Math.min(presMin.Green, 1) }, reserve)
   const presTime = simulatePool(sorted, presComps, presPool)
 
-  // ── Strategy 4: Balanced ─────────────────────────────────────────────────
-  // Primary on T4/T5 (specialists justified by speed), substitute on T2/T3.
-  // Up to 2 Green committed (allows T4+T5 to run in parallel when both present).
-  const balComps = new Map<string, { comp: TaskComposition; baseTime: number }>()
-  for (const task of sorted) {
-    const sub = TASK_SUBSTITUTE[task.type as TaskType]
-    if (sub && (task.type === 2 || task.type === 3)) {
-      balComps.set(task.id, { comp: sub, baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] })
-    } else {
-      balComps.set(task.id, { comp: TASK_PRIMARY[task.type as TaskType], baseTime: TASK_BASE_TIME[task.type as TaskType] })
-    }
-  }
-  const balMin = minPool(sorted, balComps)
-  // Cap Green at 2 (balanced specialist commitment)
-  const balPool = cap({ ...balMin, Green: Math.min(balMin.Green, 2) }, reserve)
-  const balTime = simulatePool(sorted, balComps, balPool)
-
   // ── Normalise display scores ──────────────────────────────────────────────
-  const times    = [fastTime, citTime, presTime, balTime]
+  const times    = [fastTime, citTime, presTime]
   const minT     = Math.min(...times)
   const spanT    = Math.max(...times) - minT || 1
 
   const specialists = (a: AssetRequirement) => a.Green * 3 + a.Red
-  const maxSpec     = Math.max(...[fastPool, citPool, presPool, balPool].map(specialists)) || 1
+  const maxSpec     = Math.max(...[fastPool, citPool, presPool].map(specialists)) || 1
 
   function reserveAfter(a: AssetRequirement): AssetRequirement {
     return {
@@ -260,16 +243,6 @@ export function generateStrategies(
       reserveScore: 1 - specialists(presPool) / maxSpec,
       taskComps: toTaskComps(sorted, presComps, primComps),
     },
-    {
-      name: 'Balanced',
-      description: 'Primary assets for Specialist Ops; substitutes on Resupply and Extraction — balanced speed and reserve.',
-      assets: balPool,
-      expectedCompletionTime: balTime,
-      reserveAfter: reserveAfter(balPool),
-      speedScore: 1 - (balTime - minT) / spanT,
-      reserveScore: 1 - specialists(balPool) / maxSpec,
-      taskComps: toTaskComps(sorted, balComps, primComps),
-    },
   ]
 
   // ── Perfect mode (ε=0): natural order, labels intact ────────────────────
@@ -287,15 +260,29 @@ export function generateStrategies(
     .map((s, i) => ({ ...s, _w: weights[i] }))
     .sort((a, b) => b._w - a._w)
 
-  const names: Strategy['name'][] = ['Fastest Possible', 'Complete in Time', 'Asset-Preserving', 'Balanced']
+  const names: Strategy['name'][] = ['Fastest Possible', 'Complete in Time', 'Asset-Preserving']
   const descs = [
     'Maximum parallel deployment — all tasks run simultaneously for minimum mission time.',
     'Minimum assets finishing before the deadline — assets cycle sequentially between tasks.',
     'Substitutes on all but Specialist Ops — commits at most 1 Green, maximises reserve.',
-    'Primary assets for Specialist Ops; substitutes on Resupply and Extraction — balanced speed and reserve.',
   ]
 
   return ranked
     .map((s, i) => ({ ...s, name: names[i], description: descs[i] }))
     .filter(s => isFeasible(s.assets, reserve))
+}
+
+/**
+ * Estimates completion time for a given asset pool and task list (primary compositions).
+ * Used by ManualAllocator to show live ETA preview as the user adjusts counts.
+ */
+export function previewAllocation(tasks: Task[], pool: AssetRequirement): number {
+  const comps = new Map<string, { comp: TaskComposition; baseTime: number }>()
+  for (const task of tasks) {
+    comps.set(task.id, {
+      comp:     TASK_PRIMARY[task.type as TaskType],
+      baseTime: TASK_BASE_TIME[task.type as TaskType],
+    })
+  }
+  return simulatePool(tasks, comps, pool)
 }

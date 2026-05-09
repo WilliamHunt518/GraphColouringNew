@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import type { GameState, Mission, Task, AssetType, MissionCategory, Posture, AssetChip, AssetRequirement, Strategy } from '../types'
+import { useState } from 'react'
+import type { GameState, Mission, Task, Asset, AssetType, MissionCategory, AssetRequirement, Strategy } from '../types'
 import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadDebugLog } from '../utils/debugLog'
+import { previewAllocation } from '../utils/copilot'
 
 interface Props {
   state: GameState
@@ -65,19 +66,14 @@ const ASSET_BAR_COLOR: Record<AssetType, string> = {
   Blue: 'bg-blue-500', Red: 'bg-red-500', Green: 'bg-green-500',
 }
 
+const ASSET_CHIP_IDLE: Record<AssetType, string> = {
+  Blue:  'bg-blue-900/40 text-blue-400',
+  Red:   'bg-red-900/40 text-red-400',
+  Green: 'bg-green-900/40 text-green-400',
+}
+
 const ASSET_TOTAL: Record<AssetType, number> = { Blue: 18, Red: 9, Green: 3 }
 
-const POSTURE_COLOR: Record<Posture, string> = {
-  Aggressive:   'bg-red-700 text-white',
-  Conservative: 'bg-blue-700 text-white',
-  Hold:         'bg-gray-600 text-white',
-}
-
-const CHIP_COLOR: Record<AssetChip, string> = {
-  'commit freely':    'bg-green-900/60 text-green-300 border-green-700',
-  'commit cautiously':'bg-amber-900/60 text-amber-300 border-amber-700',
-  'hold':             'bg-red-900/60 text-red-300 border-red-700',
-}
 
 function fmtTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -93,22 +89,6 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
   const done    = state.missions.filter(m => m.status === 'completed' || m.status === 'failed')
   const reserve = reserveCount(state.assets)
 
-  const [autoRecallZero, setAutoRecallZero] = useState(false)
-
-  // Auto-recall deployed assets whose current task has already completed (0-cost window)
-  useEffect(() => {
-    if (!autoRecallZero) return
-    const allTasks = state.missions.flatMap(m => m.tasks)
-    state.assets.forEach(asset => {
-      if (asset.status !== 'deployed') return
-      const task = allTasks.find(t => t.id === asset.currentTaskId)
-      if (task && (task.completionTime ?? Infinity) <= state.elapsed) {
-        dispatch({ type: 'RECALL_ASSET', assetId: asset.id })
-      }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.elapsed, autoRecallZero])
-
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
       {/* Header */}
@@ -122,16 +102,6 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
         <div className="flex items-center gap-6 text-sm">
           <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
           <span className="text-gray-400">Score: <span className="text-white font-bold">{state.score}</span></span>
-          <span className="text-gray-600 text-xs">{state.pendingBlueprints.length} upcoming</span>
-          <label className="flex items-center gap-1.5 cursor-pointer" title="Automatically recall assets once their task is done">
-            <input
-              type="checkbox"
-              checked={autoRecallZero}
-              onChange={e => setAutoRecallZero(e.target.checked)}
-              className="accent-green-400 w-3 h-3"
-            />
-            <span className="text-xs text-gray-500">Auto-recall 0s</span>
-          </label>
           <button
             onClick={() => window.open('/?view=map', '_blank', 'noopener')}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
@@ -189,7 +159,6 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
           <div className="overflow-y-auto flex-1 p-4 space-y-4">
             <ReservePanel state={state} reserve={reserve} />
             <ForecastPanel state={state} />
-            <MetaCopilotWidget state={state} dispatch={dispatch} />
           </div>
         </aside>
       </div>
@@ -217,8 +186,10 @@ function MissionCard({ mission, state, dispatch }: { mission: Mission; state: Ga
   const isFailed    = mission.status === 'failed'
   const isAllocating = state.copilotModal?.missionId === mission.id
 
+
   const completedTasks = mission.tasks.filter(t => t.status === 'completed').length
   const totalTasks = mission.tasks.length
+  const deployedHere = state.assets.filter(a => a.currentMissionId === mission.id && a.status === 'deployed')
 
   const borderColor = isAllocating
     ? 'border-blue-500'
@@ -262,12 +233,38 @@ function MissionCard({ mission, state, dispatch }: { mission: Mission; state: Ga
         </div>
       </div>
 
-      {/* Task strip */}
-      <div className="flex flex-wrap gap-1">
+      {/* Task badges — status strip */}
+      <div className="flex flex-wrap gap-1 mt-1">
         {mission.tasks.map(t => (
-          <TaskBadge key={t.id} task={t} state={state} dispatch={dispatch} />
+          <TaskBadge key={t.id} task={t} missionActive={isActive} />
         ))}
       </div>
+
+      {/* Co-Pilot task plan — shown after allocation */}
+      {isActive && <CopilotPlanPanel mission={mission} />}
+
+      {/* Assigned assets strip */}
+      {isActive && deployedHere.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-gray-700/40">
+          {deployedHere.map(a => {
+            const task = mission.tasks.find(t => t.id === a.currentTaskId)
+            const recallable = task?.status === 'traveling' || task?.status === 'executing'
+            const recallCostSec = task?.completionTime != null
+              ? Math.max(0, Math.round(task.completionTime - state.elapsed))
+              : null
+            return (
+              <DroneChip
+                key={a.id}
+                asset={a}
+                recallable={recallable ?? false}
+                isZeroCost={recallCostSec === 0}
+                recallCostSec={recallCostSec}
+                onRecall={() => dispatch({ type: 'RECALL_ASSET', assetId: a.id })}
+              />
+            )
+          })}
+        </div>
+      )}
 
       {/* Inline allocation panel */}
       {isAllocating && <InlineAllocator state={state} dispatch={dispatch} />}
@@ -277,59 +274,228 @@ function MissionCard({ mission, state, dispatch }: { mission: Mission; state: Ga
 
 // ─── Task badge ───────────────────────────────────────────────────────────
 
-function TaskBadge({ task, state, dispatch }: {
+function TaskBadge({ task, missionActive, isPriority, onTogglePriority }: {
   task: Task
-  state: GameState
-  dispatch: (a: GameAction) => void
+  missionActive?: boolean
+  isPriority?: boolean
+  onTogglePriority?: () => void
 }) {
-  const deployed = state.assets.filter(a => task.assignedAssetIds.includes(a.id) && a.status === 'deployed')
-  const canRecall = deployed.length > 0 && (task.status === 'executing' || task.status === 'traveling')
-
-  // Recall cost = seconds remaining on task (0 = task already done, free to recall)
-  const recallCostSec = task.completionTime != null
-    ? Math.max(0, Math.round(task.completionTime - state.elapsed))
-    : null
-  const isZeroCost = recallCostSec === 0
+  const isUnassigned = missionActive === true && task.status === 'pending' && task.assignedAssetIds.length === 0
+  const baseStyle = isUnassigned
+    ? 'bg-gray-900 border border-amber-700/60 text-amber-600 opacity-70'
+    : TASK_STATUS_STYLE[task.status]
 
   return (
-    <div className="relative group">
-      <div
-        className={`inline-flex flex-col items-center justify-center px-1.5 py-0.5 rounded cursor-default select-none ${TASK_STATUS_STYLE[task.status]} ${isZeroCost && canRecall ? 'ring-1 ring-green-400' : ''}`}
-        title={`${TASK_FULL[task.type]} (T${task.type}) — ${task.status}${recallCostSec != null ? ` | recall cost: ${recallCostSec}s` : ''}`}
-      >
-        <span className="text-xs font-bold leading-tight">{TASK_SHORT[task.type]}</span>
-        <div className="flex gap-0.5 mt-0.5">
-          {TASK_DOTS[task.type].map((t, i) => (
-            <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[t]} opacity-75`} />
-          ))}
-        </div>
+    <div
+      className={`relative inline-flex flex-col items-center justify-center px-1.5 py-0.5 rounded
+        ${baseStyle}
+        ${onTogglePriority ? 'cursor-pointer hover:brightness-125' : 'cursor-default'}
+        ${isPriority ? 'ring-1 ring-yellow-400' : ''}`}
+      title={isUnassigned
+        ? `${TASK_FULL[task.type]} (T${task.type}) — no drones assigned (insufficient reserve)`
+        : `${TASK_FULL[task.type]} (T${task.type}) — ${task.status}${onTogglePriority ? ' · click to prioritise' : ''}`}
+      onClick={onTogglePriority}
+    >
+      {isPriority && (
+        <span className="absolute -top-1 -right-1 text-yellow-400 text-xs leading-none">★</span>
+      )}
+      <span className="text-xs font-bold leading-tight">
+        {TASK_SHORT[task.type]}{isUnassigned ? '?' : ''}
+      </span>
+      <div className="flex gap-0.5 mt-0.5">
+        {TASK_DOTS[task.type].map((t, i) => (
+          <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[t]} opacity-75`} />
+        ))}
       </div>
-      {canRecall && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:flex gap-1 flex-col z-10 min-w-max">
-          {recallCostSec != null && (
-            <div className={`text-center text-xs px-2 py-0.5 rounded font-medium ${isZeroCost ? 'bg-green-900 text-green-300' : 'bg-gray-800 text-gray-400'}`}>
-              {isZeroCost ? '0s — free recall' : `+${recallCostSec}s cost`}
+    </div>
+  )
+}
+
+// ─── Drone chip with confirmation popout ──────────────────────────────────
+
+function DroneChip({ asset, recallable, isZeroCost, recallCostSec, onRecall }: {
+  asset: Asset
+  recallable: boolean
+  isZeroCost: boolean
+  recallCostSec: number | null
+  onRecall: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        disabled={!recallable}
+        onClick={() => recallable && setConfirming(c => !c)}
+        title={recallable ? `Click to recall ${asset.id}` : asset.id}
+        className={`font-mono text-xs px-1 py-0.5 rounded leading-none transition-colors ${
+          recallable
+            ? isZeroCost
+              ? 'bg-green-800/60 text-green-200 hover:bg-green-700 cursor-pointer'
+              : 'bg-orange-900/60 text-orange-300 hover:bg-orange-800 cursor-pointer'
+            : `${ASSET_CHIP_IDLE[asset.type]} cursor-default opacity-70`
+        }`}
+      >
+        {asset.id}
+      </button>
+
+      {confirming && (
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-30 bg-gray-900 border border-gray-600 rounded-lg p-2 shadow-2xl min-w-max"
+          onClick={e => e.stopPropagation()}
+        >
+          <p className="text-xs font-semibold text-white mb-0.5">Recall {asset.id}?</p>
+          <p className={`text-xs mb-2 ${isZeroCost ? 'text-green-400' : 'text-orange-400'}`}>
+            {isZeroCost ? 'Free — task complete' : `+${recallCostSec}s penalty`}
+          </p>
+          <div className="flex gap-1">
+            <button
+              onClick={() => { onRecall(); setConfirming(false) }}
+              className={`px-2 py-0.5 text-xs rounded font-semibold text-white ${
+                isZeroCost ? 'bg-green-700 hover:bg-green-600' : 'bg-red-700 hover:bg-red-600'
+              }`}
+            >
+              Recall
+            </button>
+            <button
+              onClick={() => setConfirming(false)}
+              className="px-2 py-0.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Co-Pilot task plan ───────────────────────────────────────────────────
+
+function CopilotPlanPanel({ mission }: { mission: Mission }) {
+  const [open, setOpen] = useState(false)
+
+  // Build per-asset task chains by grouping tasks by asset ID, sorted by startTime
+  const assetChains = new Map<string, Task[]>()
+  for (const task of mission.tasks) {
+    for (const assetId of task.assignedAssetIds) {
+      if (!assetChains.has(assetId)) assetChains.set(assetId, [])
+      assetChains.get(assetId)!.push(task)
+    }
+  }
+  // Sort each chain by startTime
+  for (const chain of assetChains.values()) {
+    chain.sort((a, b) => (a.startTime ?? 0) - (b.startTime ?? 0))
+  }
+
+  const unassigned = mission.tasks.filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0)
+
+  if (assetChains.size === 0 && unassigned.length === 0) return null
+
+  return (
+    <div className="mt-2 border-t border-gray-700/40 pt-2">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+      >
+        <span className="font-medium text-gray-400">Co-Pilot Plan</span>
+        <span>{open ? '▲' : '▼'}</span>
+        {unassigned.length > 0 && (
+          <span className="ml-1 text-amber-500">⚠ {unassigned.length} unassigned</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="mt-1.5 space-y-1">
+          {[...assetChains.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([assetId, chain]) => (
+            <div key={assetId} className="flex items-center gap-1 text-xs flex-wrap">
+              <span className={`font-mono font-bold ${
+                assetId.startsWith('B') ? 'text-blue-400' :
+                assetId.startsWith('R') ? 'text-red-400' : 'text-green-400'
+              }`}>{assetId}</span>
+              {chain.map((task, i) => (
+                <span key={task.id} className="flex items-center gap-1">
+                  {i > 0 && <span className="text-gray-600">→</span>}
+                  <span className={`px-1 py-0.5 rounded text-xs ${TASK_STATUS_STYLE[task.status]}`}>
+                    {TASK_SHORT[task.type]}
+                  </span>
+                </span>
+              ))}
             </div>
-          )}
-          {deployed.map(a => (
-            <button
-              key={a.id}
-              onClick={() => dispatch({ type: 'RECALL_ASSET', assetId: a.id })}
-              className={`text-xs px-2 py-0.5 rounded whitespace-nowrap text-white ${isZeroCost ? 'bg-green-700 hover:bg-green-600' : 'bg-red-800 hover:bg-red-700'}`}
-            >
-              Recall {a.id} ({DRONE_NAME[a.type]})
-            </button>
           ))}
-          {deployed.length > 1 && (
-            <button
-              onClick={() => deployed.forEach(a => dispatch({ type: 'RECALL_ASSET', assetId: a.id }))}
-              className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 px-2 py-0.5 rounded whitespace-nowrap"
-            >
-              Recall all ({deployed.length})
-            </button>
+          {unassigned.length > 0 && (
+            <div className="flex items-center gap-1 text-xs text-amber-600">
+              <span>⚠ Unassigned:</span>
+              {unassigned.map(t => (
+                <span key={t.id} className="px-1 py-0.5 rounded bg-amber-900/30 border border-amber-700/40">
+                  {TASK_SHORT[t.type]}
+                </span>
+              ))}
+              <span className="text-gray-600">(no reserve)</span>
+            </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Task priority panel ──────────────────────────────────────────────────
+
+function TaskPriorityPanel({ tasks, priorityIds, onToggle }: {
+  tasks: Task[]
+  priorityIds: string[]
+  onToggle: (taskId: string) => void
+}) {
+  const prioritised = priorityIds
+    .map(id => tasks.find(t => t.id === id))
+    .filter((t): t is Task => t !== undefined)
+  const rest = tasks.filter(t => !priorityIds.includes(t.id))
+
+  return (
+    <div className="space-y-1.5 pb-1 border-b border-gray-700/50">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500 uppercase tracking-wider">Execution Priority</p>
+        {priorityIds.length > 0 && (
+          <span className="text-xs text-gray-600">click to remove</span>
+        )}
+      </div>
+
+      {prioritised.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1">
+          {prioritised.map((task, i) => (
+            <button
+              key={task.id}
+              onClick={() => onToggle(task.id)}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-yellow-900/40 border border-yellow-600/70 text-yellow-200 text-xs font-medium hover:bg-yellow-800/50 transition-colors"
+            >
+              <span className="text-yellow-500 font-bold">{i + 1}</span>
+              {TASK_SHORT[task.type]}
+            </button>
+          ))}
+          <span className="text-xs text-gray-600">→ then plan</span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-1">
+        {prioritised.length === 0 && (
+          <span className="text-xs text-gray-600 w-full">Click to run first:</span>
+        )}
+        {rest.map(task => (
+          <button
+            key={task.id}
+            onClick={() => onToggle(task.id)}
+            className="flex flex-col items-center px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-400 text-gray-300 text-xs transition-colors"
+          >
+            <span className="font-bold leading-tight">{TASK_SHORT[task.type]}</span>
+            <div className="flex gap-0.5 mt-0.5">
+              {TASK_DOTS[task.type].map((t, i) => (
+                <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[t]}`} />
+              ))}
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -412,6 +578,13 @@ function InlineAllocator({ state, dispatch }: { state: GameState; dispatch: (a: 
         </div>
       </div>
 
+      {/* Task priority */}
+      <TaskPriorityPanel
+        tasks={state.missions.find(m => m.id === modal.missionId)?.tasks ?? []}
+        priorityIds={modal.priorityTaskIds}
+        onToggle={id => dispatch({ type: 'TOGGLE_TASK_PRIORITY', taskId: id })}
+      />
+
       {/* Mode tabs */}
       <div className="flex gap-1">
         <button
@@ -420,7 +593,7 @@ function InlineAllocator({ state, dispatch }: { state: GameState; dispatch: (a: 
             !manualMode ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'
           }`}
         >
-          Co-Pilot Strategies
+          Meta-Co-Pilot
         </button>
         <button
           onClick={() => setManualMode(true)}
@@ -445,7 +618,12 @@ function InlineAllocator({ state, dispatch }: { state: GameState; dispatch: (a: 
           onToggleEdit={i => setEditingIndex(editingIndex === i ? null : i)}
         />
       ) : (
-        <ManualAllocator reserve={reserve} allocation={manualAlloc} onChange={setManualAlloc} />
+        <ManualAllocator
+          reserve={reserve}
+          allocation={manualAlloc}
+          tasks={state.missions.find(m => m.id === modal.missionId)?.tasks ?? []}
+          onChange={setManualAlloc}
+        />
       )}
 
       {/* Footer */}
@@ -586,12 +764,16 @@ function InlineStrategyCards({
 // ─── Manual allocator ─────────────────────────────────────────────────────
 
 function ManualAllocator({
-  reserve, allocation, onChange,
+  reserve, allocation, tasks, onChange,
 }: {
   reserve: AssetRequirement
   allocation: AssetRequirement
+  tasks: Task[]
   onChange: (a: AssetRequirement) => void
 }) {
+  const hasAny = allocation.Blue + allocation.Red + allocation.Green > 0
+  const eta = hasAny ? previewAllocation(tasks, allocation) : null
+
   return (
     <div className="max-w-xs space-y-3">
       <p className="text-xs text-gray-500">Specify how many of each type to commit.</p>
@@ -604,6 +786,12 @@ function ManualAllocator({
           onChange={v => onChange({ ...allocation, [t]: v })}
         />
       ))}
+      <div className="flex items-center gap-2 pt-1 border-t border-gray-700/50">
+        <span className="text-xs text-gray-500">Est. completion:</span>
+        <span className="text-sm font-mono font-bold text-white">
+          {eta !== null ? fmtTime(eta) : '—'}
+        </span>
+      </div>
     </div>
   )
 }
@@ -691,6 +879,7 @@ function ForecastPanel({ state }: { state: GameState }) {
   const f = state.categoryForecast
   const cats = ['A', 'B', 'C', 'D', 'E'] as MissionCategory[]
   const next = state.pendingBlueprints[0]
+  const maxF = Math.max(...cats.map(c => f[c]), 0.01)
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 space-y-2">
@@ -702,12 +891,12 @@ function ForecastPanel({ state }: { state: GameState }) {
           </span>
         )}
       </div>
-      <div className="flex gap-1 items-end h-12">
+      <div className="flex gap-1 items-end" style={{ height: '68px' }}>
         {cats.map(c => (
           <div key={c} className="flex-1 flex flex-col items-center gap-0.5">
             <div
               className={`w-full rounded-t transition-all ${CAT_BADGE[c].split(' ')[0]}`}
-              style={{ height: `${Math.round(f[c] * 100)}%`, minHeight: f[c] > 0 ? 2 : 0 }}
+              style={{ height: `${Math.max(f[c] > 0 ? 2 : 0, Math.round((f[c] / maxF) * 52))}px` }}
             />
             <span className="text-xs text-gray-500" title={CAT_NAME[c]}>{c}</span>
           </div>
@@ -724,53 +913,6 @@ function ForecastPanel({ state }: { state: GameState }) {
   )
 }
 
-// ─── Meta-Co-Pilot widget ─────────────────────────────────────────────────
-
-function MetaCopilotWidget({ state, dispatch }: { state: GameState; dispatch: (a: GameAction) => void }) {
-  const rec = state.metaRec
-  const postures: Posture[] = ['Aggressive', 'Conservative', 'Hold']
-
-  return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 space-y-3">
-      <p className="text-xs text-gray-500 uppercase tracking-wider">Meta-Co-Pilot</p>
-      {rec ? (
-        <>
-          <div className={`rounded-lg px-3 py-2 text-sm font-bold ${POSTURE_COLOR[rec.posture]}`}>
-            {rec.posture}
-          </div>
-          <p className="text-xs text-gray-400 leading-snug">{rec.rationale}</p>
-          <div className="space-y-1.5">
-            {(['Blue', 'Red', 'Green'] as AssetType[]).map(t => (
-              <div key={t} className="flex items-center justify-between">
-                <span className={`text-xs ${ASSET_COLORS[t]}`}>{DRONE_NAME[t]}</span>
-                <span className={`text-xs px-2 py-0.5 rounded border font-medium ${CHIP_COLOR[rec.chips[t]]}`}>
-                  {rec.chips[t]}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-1 pt-1">
-            {postures.map(p => (
-              <button
-                key={p}
-                onClick={() => dispatch({ type: 'SET_META_POSTURE', posture: p })}
-                className={`flex-1 py-1 rounded text-xs font-medium transition-colors ${
-                  (state.metaPostureOverride ?? rec.posture) === p
-                    ? POSTURE_COLOR[p]
-                    : 'bg-gray-800 text-gray-400 hover:text-gray-200'
-                }`}
-              >
-                {p.slice(0, 4)}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : (
-        <p className="text-xs text-gray-600 py-2">Waiting for first analysis…</p>
-      )}
-    </div>
-  )
-}
 
 // ─── Utilities ────────────────────────────────────────────────────────────
 

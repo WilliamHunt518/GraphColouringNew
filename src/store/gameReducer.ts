@@ -122,6 +122,7 @@ function greedyAssign(
   committed: AssetRequirement,
   now: number,
   plan?: Record<string, TaskComp>,
+  priorityTaskIds: string[] = [],
 ): TaskAssignment[] {
   interface VAsset { id: string; type: AssetType; freeAt: number; pos: { x: number; y: number } }
 
@@ -134,7 +135,14 @@ function greedyAssign(
       .map(a => ({ id: a.id, type: 'Green' as AssetType, freeAt: now, pos: { ...HUB } })),
   ]
 
-  const sorted = [...tasks].sort((a, b) => b.type - a.type)
+  // Priority tasks first (user-specified order), then remaining T5→T1
+  const priorityTasks = priorityTaskIds
+    .map(id => tasks.find(t => t.id === id))
+    .filter((t): t is Task => t !== undefined)
+  const remaining = tasks
+    .filter(t => !priorityTaskIds.includes(t.id))
+    .sort((a, b) => b.type - a.type)
+  const sorted = [...priorityTasks, ...remaining]
   const assignments: TaskAssignment[] = []
 
   const pickEarliest = (type: AssetType, n: number): VAsset[] =>
@@ -229,6 +237,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     startTime: null,
     completionTime: null,
     useSubstitute: false,
+    recallDelay: 0,
   }))
 
   return {
@@ -408,7 +417,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const currentMission = s.missions.find(m => m.id === asset.currentMissionId)
           const task = currentMission?.tasks.find(t => t.id === asset.currentTaskId)
 
-          if (task?.status === 'completed') {
+          const recallReady = task?.status === 'completed' &&
+            elapsed >= (task.completionTime ?? 0) + task.recallDelay
+
+          if (recallReady) {
             // Look for a next task in the same mission this asset is scheduled for
             const nextTask = currentMission?.tasks.find(t =>
               t.id !== asset.currentTaskId &&
@@ -506,7 +518,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const strategies = generateStrategies(
         mission.tasks,
         reserve,
-        state.config.epsilonCopilot,
+        state.config.epsilonMeta,
         copilotRng,
         state.elapsed,
       )
@@ -520,7 +532,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missions: s.missions.map(m =>
           m.id === mission.id ? { ...m, copilotInteraction: 'shown' } : m,
         ),
-        copilotModal: { missionId: mission.id, strategies, selectedIndex: null, editedAllocation: null },
+        copilotModal: { missionId: mission.id, strategies, selectedIndex: null, editedAllocation: null, priorityTaskIds: [] },
       }
 
       return s
@@ -566,13 +578,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const available = state.assets.filter(a => a.status === 'available')
       const selectedStrat = action.selectedIndex !== null ? action.strategies[action.selectedIndex] : null
       const plan = action.source !== 'manual' ? selectedStrat?.taskComps : undefined
+      const priorityTaskIds = state.copilotModal?.priorityTaskIds ?? []
 
       debugLog('APPLY_ALLOCATION attempt', {
         missionId: action.missionId, source: action.source,
         allocation: action.allocation, hasPlan: !!plan,
       })
 
-      const assignments = greedyAssign(mission.tasks, available, action.allocation, now, plan)
+      const assignments = greedyAssign(mission.tasks, available, action.allocation, now, plan, priorityTaskIds)
+
+      // Compute Co-Pilot recall delays (ε_C noise — how long drones linger after task completion)
+      const epsilonC = state.config.epsilonCopilot
+      const recallRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(2) || 0) ^ 0xabcd)
+      const recallDelays = new Map<string, number>()
+      for (const asgn of assignments) {
+        recallDelays.set(asgn.taskId, epsilonC > 0 ? recallRng.exponential(epsilonC * 45) : 0)
+      }
       if (assignments.length === 0) {
         debugLog('APPLY_ALLOCATION: greedyAssign returned empty — aborting')
         return state
@@ -595,6 +616,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           useSubstitute: asgn.useSubstitute,
           startTime: asgn.startTime,
           completionTime: asgn.startTime + asgn.baseTime,
+          recallDelay: recallDelays.get(task.id) ?? 0,
         }
       })
 
@@ -751,7 +773,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const idx = pending.findIndex(t => t.id === action.taskId)
       if (idx < 0) return state
 
-      const newIdx = action.direction === 'up' ? Math.max(0, idx - 1) : Math.min(pending.length - 1, idx + 1)
+      const newIdx = action.direction === 'top' ? 0 : action.direction === 'up' ? Math.max(0, idx - 1) : Math.min(pending.length - 1, idx + 1)
       const reordered = [...pending]
       ;[reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]]
 
@@ -765,6 +787,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         newPosition: newIdx,
       })
       return { ...s, missions: s.missions.map(m => m.id === action.missionId ? updatedMission : m) }
+    }
+
+    // ── TOGGLE_TASK_PRIORITY ─────────────────────────────────────────────
+    case 'TOGGLE_TASK_PRIORITY': {
+      if (!state.copilotModal) return state
+      const ids = state.copilotModal.priorityTaskIds
+      const newIds = ids.includes(action.taskId)
+        ? ids.filter(id => id !== action.taskId)
+        : [...ids, action.taskId]
+      return {
+        ...state,
+        copilotModal: { ...state.copilotModal, priorityTaskIds: newIds },
+      }
     }
 
     // ── SET_META_POSTURE ─────────────────────────────────────────────────

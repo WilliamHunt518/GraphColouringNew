@@ -16,18 +16,30 @@ export default function GameShell({ config }: Props) {
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
   const lastBroadcastElapsed = useRef<number>(-1)
+  const lastCopilotModalRef = useRef<typeof state.copilotModal>(null)
 
-  // BroadcastChannel — open once, close on unmount
+  // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
-    channelRef.current = new BroadcastChannel(CHANNEL_NAME)
-    return () => { channelRef.current?.close(); channelRef.current = null }
+    const channel = new BroadcastChannel(CHANNEL_NAME)
+    channelRef.current = channel
+    channel.onmessage = (e: MessageEvent) => {
+      if (e.data?._mapAction === 'TOGGLE_TASK_PRIORITY' && typeof e.data.taskId === 'string') {
+        dispatch({ type: 'TOGGLE_TASK_PRIORITY', taskId: e.data.taskId })
+      }
+      if (e.data?._mapAction === 'REPRIORITISE_TOP' && typeof e.data.missionId === 'string' && typeof e.data.taskId === 'string') {
+        dispatch({ type: 'REPRIORITISE_TASK', missionId: e.data.missionId, taskId: e.data.taskId, direction: 'top' })
+      }
+    }
+    return () => { channel.close(); channelRef.current = null }
   }, [])
 
-  // Broadcast map state ~10fps (only when elapsed advances by ≥0.1s)
+  // Broadcast map state ~10fps, or immediately when copilot modal changes
   useEffect(() => {
     if (!channelRef.current) return
-    if (Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
+    const copilotChanged = state.copilotModal !== lastCopilotModalRef.current
+    if (!copilotChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
     lastBroadcastElapsed.current = state.elapsed
+    lastCopilotModalRef.current = state.copilotModal
     const payload: MapViewState = {
       assets: state.assets,
       missions: state.missions,
@@ -36,9 +48,11 @@ export default function GameShell({ config }: Props) {
       score: state.score,
       phase: state.phase,
       pendingBlueprints: state.pendingBlueprints,
+      copilotMissionId: state.copilotModal?.missionId ?? null,
+      priorityTaskIds:  state.copilotModal?.priorityTaskIds ?? [],
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.copilotModal])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {

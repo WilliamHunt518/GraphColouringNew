@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { MapViewState } from '../types'
 import MapDisplay from './MapDisplay'
 
@@ -6,14 +6,25 @@ const CHANNEL_NAME = 'sar-study'
 
 export default function MapWindowClient() {
   const [viewState, setViewState] = useState<MapViewState | null>(null)
+  const channelRef = useRef<BroadcastChannel | null>(null)
 
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME)
-    channel.onmessage = (e: MessageEvent<MapViewState>) => {
-      setViewState(e.data)
+    channelRef.current = channel
+    channel.onmessage = (e: MessageEvent) => {
+      // Ignore action messages (from other map windows); only accept MapViewState payloads
+      if (!e.data?._mapAction) setViewState(e.data as MapViewState)
     }
-    return () => channel.close()
+    return () => { channel.close(); channelRef.current = null }
   }, [])
+
+  function handleToggleTaskPriority(taskId: string) {
+    channelRef.current?.postMessage({ _mapAction: 'TOGGLE_TASK_PRIORITY', taskId })
+  }
+
+  function handleReprioritiseTop(missionId: string, taskId: string) {
+    channelRef.current?.postMessage({ _mapAction: 'REPRIORITISE_TOP', missionId, taskId })
+  }
 
   if (!viewState) {
     return (
@@ -26,5 +37,5 @@ export default function MapWindowClient() {
     )
   }
 
-  return <MapDisplay state={viewState} />
+  return <MapDisplay state={viewState} onToggleTaskPriority={handleToggleTaskPriority} onReprioritiseTop={handleReprioritiseTop} />
 }

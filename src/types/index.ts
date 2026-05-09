@@ -51,6 +51,7 @@ export interface Task {
   startTime: number | null            // elapsed (s) when execution begins = allocatedAt + travelTime
   completionTime: number | null       // elapsed (s) = startTime + baseTime
   useSubstitute: boolean              // false = primary composition; true = substitute composition
+  recallDelay: number                 // extra seconds Co-Pilot delays recall after task completion (ε_C noise)
 }
 
 // ─── Missions ─────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ export interface TaskComp {
 }
 
 export interface Strategy {
-  name: 'Fastest Possible' | 'Complete in Time' | 'Asset-Preserving' | 'Balanced'
+  name: 'Fastest Possible' | 'Complete in Time' | 'Asset-Preserving'
   description: string
   assets: AssetRequirement
   expectedCompletionTime: number  // seconds
@@ -100,6 +101,7 @@ export interface CopilotModal {
   strategies: Strategy[]
   selectedIndex: number | null
   editedAllocation: AssetRequirement | null
+  priorityTaskIds: string[]           // tasks user marked for priority scheduling
 }
 
 // ─── Meta-Co-Pilot ────────────────────────────────────────────────────────
@@ -124,6 +126,8 @@ export interface MapViewState {
   score: number
   phase: GamePhase
   pendingBlueprints: MissionBlueprint[]
+  copilotMissionId: string | null   // which mission's allocation modal is open
+  priorityTaskIds: string[]          // tasks currently in the priority queue
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────

@@ -10,3 +10,4 @@ study_data_*.json
 # OS
 .DS_Store
 Thumbs.db
+api_key.txt

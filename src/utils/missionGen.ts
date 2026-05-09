@@ -13,18 +13,18 @@ const ZONE_MIN_ZONE = 200   // minimum distance between zone centers
 // ─── Physics ──────────────────────────────────────────────────────────────
 
 export const ASSET_SPEED: Record<AssetType, number> = {
-  Blue: 3.0,
-  Red: 2.0,
-  Green: 1.4,
+  Blue: 9.0,
+  Red: 6.0,
+  Green: 4.2,
 }
 
 /** Base execution time (seconds) per task type, primary composition */
 export const TASK_BASE_TIME: Record<TaskType, number> = {
-  1: 30,
-  2: 60,
-  3: 90,
-  4: 120,
-  5: 150,
+  1: 15,
+  2: 30,
+  3: 45,
+  4: 30,
+  5: 45,
 }
 
 // ─── Asset requirements ───────────────────────────────────────────────────
@@ -58,11 +58,11 @@ export const TASK_SUBSTITUTE: Record<TaskType, TaskComposition | null> = {
 
 /** Base time multiplier when using substitute composition */
 export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
-  1: 30,
-  2: 90,
-  3: 120,
-  4: 240,
-  5: 150, // unused (no sub)
+  1: 15,   // unused (no sub)
+  2: 45,
+  3: 60,
+  4: 65,
+  5: 45,   // unused (no sub)
 }
 
 // ─── Complexity parameters ────────────────────────────────────────────────
@@ -95,8 +95,8 @@ function buildTaskList(rng: SeededRNG, category: MissionCategory): TaskType[] {
         ? [5, 4, 3, 3, 2, 2, 1, 1]   // with specialist tasks (needs Green)
         : [3, 3, 2, 2, 2, 1, 1, 1]   // logistics-only (no Green required)
     case 'C': return [5, 4, 4, 3, 3, 2, 2, 1]
-    case 'D': return [5, 5, 4, 4, 3, 3, 3, 2, 2, 1]
-    case 'E': return [5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 1]
+    case 'D': return [5, 5, 4, 4, 3, 3, 2, 2]
+    case 'E': return [5, 5, 5, 4, 4, 3, 3, 2, 1]
   }
 }
 
@@ -154,13 +154,13 @@ export function generateSessionPlan(
   const usedCenters: Array<{ x: number; y: number }> = []
   let time = 0
   let seq = 0
-  let firstMission = true
 
   while (true) {
     const interval = rng.exponential(lambda)
-    // Cap first mission arrival at 3 s — avoids long initial waits during testing
-    time += firstMission ? Math.min(interval, 3) : interval
-    firstMission = false
+    // Guarantee ≥3 missions in the first 2 minutes
+    const n = blueprints.length
+    const cappedInterval = n === 0 ? Math.min(interval, 3) : n <= 2 ? Math.min(interval, 60) : interval
+    time += cappedInterval
     if (time > duration) break
 
     const category = rng.weightedChoice(CATEGORIES, CATEGORY_WEIGHTS[complexity])
