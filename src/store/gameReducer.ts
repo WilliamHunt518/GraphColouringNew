@@ -8,7 +8,7 @@ import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
   TASK_SUB_BASE_TIME, ZONE_RADIUS, generateSessionPlan, createInitialAssets, travelTime,
 } from '../utils/missionGen'
-import { generateStrategies } from '../utils/copilot'
+import { generateStrategies, buildNoisyTaskOrder } from '../utils/copilot'
 import { evaluatePosture } from '../utils/metacopilot'
 import { SeededRNG } from '../utils/prng'
 import { debugLog } from '../utils/debugLog'
@@ -251,6 +251,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     allocationTime: null,
     completionTime: null,
     copilotInteraction: 'none',
+    manualPriorityIds: [],
   }
 }
 
@@ -585,9 +586,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         allocation: action.allocation, hasPlan: !!plan,
       })
 
-      const assignments = greedyAssign(mission.tasks, available, action.allocation, now, plan, priorityTaskIds)
+      // Co-Pilot task ordering: apply ε_C noise to non-priority tasks.
+      // User priority overrides go first; remaining tasks ordered stochastically.
+      const copilotOrderRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(1) || 0) ^ 0x5c0e)
+      const nonPriorityTasks = mission.tasks.filter(t => !priorityTaskIds.includes(t.id))
+      const noisyNonPriority = buildNoisyTaskOrder(nonPriorityTasks, state.config.epsilonCopilot, copilotOrderRng)
+      // Full scheduling order: user priorities first, then Co-Pilot's (possibly noisy) order
+      const fullScheduleOrder = [...priorityTaskIds, ...noisyNonPriority.map(t => t.id)]
 
-      // Compute Co-Pilot recall delays (ε_C noise — how long drones linger after task completion)
+      const assignments = greedyAssign(mission.tasks, available, action.allocation, now, plan, fullScheduleOrder)
+
+      // Co-Pilot recall delays: ε_C noise on how long assets linger before returning to hub
       const epsilonC = state.config.epsilonCopilot
       const recallRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(2) || 0) ^ 0xabcd)
       const recallDelays = new Map<string, number>()
@@ -603,10 +612,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const allAssignedIds = [...new Set(assignments.flatMap(a => a.assetIds))]
 
       // Update tasks — unassigned tasks remain 'pending' in the active mission
-      const updatedTasks: Task[] = mission.tasks.map(task => {
+      const updatedTaskMap = new Map<string, Task>()
+      for (const task of mission.tasks) {
         const asgn = assignments.find(a => a.taskId === task.id)
-        if (!asgn) return task
-        return {
+        updatedTaskMap.set(task.id, asgn ? {
           ...task,
           status: 'traveling' as const,
           assignedAssetIds: asgn.assetIds,
@@ -617,8 +626,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           startTime: asgn.startTime,
           completionTime: asgn.startTime + asgn.baseTime,
           recallDelay: recallDelays.get(task.id) ?? 0,
-        }
-      })
+        } : task)
+      }
+      // Store tasks in Co-Pilot's planned execution order so routes and
+      // reprioritisation panels reflect the actual (possibly noisy) schedule.
+      const updatedTasks: Task[] = fullScheduleOrder
+        .map(id => updatedTaskMap.get(id))
+        .filter((t): t is Task => t !== undefined)
 
       // Mark mission as active
       const updatedMission: Mission = {
@@ -631,6 +645,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           : action.source === 'copilot_modified'
             ? 'modified'
             : 'dismissed',
+        manualPriorityIds: [],
       }
 
       // Deploy each asset to its FIRST assigned task (earliest startTime).
@@ -769,17 +784,101 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission) return state
 
+      if (action.direction === 'top') {
+        // Toggle + prepend: clicking a task adds it to the front of the priority stack;
+        // clicking again removes it. Remaining movable tasks sort T5→T1 (greedy order).
+        const current = mission.manualPriorityIds
+        const alreadyIn = current.includes(action.taskId)
+        const newPriorityIds = alreadyIn
+          ? current.filter(id => id !== action.taskId)
+          : [action.taskId, ...current]
+
+        const allMovable = mission.tasks.filter(t => t.status === 'pending' || t.status === 'traveling')
+        const validPriorityIds = newPriorityIds.filter(id => allMovable.some(t => t.id === id))
+        const priorityTaskList = validPriorityIds.map(id => allMovable.find(t => t.id === id)!)
+        const restMovable = allMovable
+          .filter(t => !validPriorityIds.includes(t.id))
+          .sort((a, b) => b.type - a.type)
+        const fixed = mission.tasks.filter(t => t.status !== 'pending' && t.status !== 'traveling')
+
+        // When a task is newly added (not toggled off), redirect any of its assigned assets
+        // that are still en route to a lower-priority task, then recompute task timing.
+        let taskOverrides = new Map<string, Partial<Task>>()
+        let updatedAssets = state.assets
+
+        if (!alreadyIn) {
+          const pTask = allMovable.find(t => t.id === action.taskId)
+          if (pTask) {
+            let newStartTime = 0
+
+            updatedAssets = state.assets.map(asset => {
+              if (!pTask.assignedAssetIds.includes(asset.id)) return asset
+              if (asset.status !== 'deployed') return asset
+              if (asset.currentMissionId !== mission.id) return asset
+
+              if (asset.currentTaskId === pTask.id) {
+                // Already heading to this task — keep, record arrival
+                newStartTime = Math.max(newStartTime, asset.travelEndElapsed)
+                return asset
+              }
+
+              // Asset is still en route to a different task — redirect only if not yet executing
+              if (state.elapsed >= asset.travelEndElapsed) return asset  // already at waypoint
+
+              const currentPos = interpolateAssetPosition(asset, state.elapsed)
+              const tt = travelTime(currentPos, pTask.waypoint, ASSET_SPEED[asset.type])
+              const arrival = state.elapsed + tt
+              newStartTime = Math.max(newStartTime, arrival)
+              return {
+                ...asset,
+                currentTaskId: pTask.id,
+                travelFrom: currentPos,
+                targetPosition: { ...pTask.waypoint },
+                travelStartElapsed: state.elapsed,
+                travelEndElapsed: arrival,
+                position: currentPos,
+              }
+            })
+
+            taskOverrides.set(pTask.id, {
+              startTime: newStartTime,
+              completionTime: newStartTime + pTask.baseTime,
+            })
+          }
+        }
+
+        const applyOverride = (t: Task) => {
+          const ov = taskOverrides.get(t.id)
+          return ov ? { ...t, ...ov } : t
+        }
+
+        const updatedMission = {
+          ...mission,
+          tasks: [...fixed, ...priorityTaskList, ...restMovable].map(applyOverride),
+          manualPriorityIds: validPriorityIds,
+        }
+        let s = logEvent(state, {
+          type: 'task_reprioritised',
+          missionId: action.missionId,
+          taskId: action.taskId,
+          newPosition: alreadyIn ? -1 : 0,
+        })
+        return {
+          ...s,
+          missions: s.missions.map(m => m.id === action.missionId ? updatedMission : m),
+          assets: updatedAssets,
+        }
+      }
+
+      // 'up'/'down': reorder pending tasks only (used from primary display)
       const pending = mission.tasks.filter(t => t.status === 'pending')
       const idx = pending.findIndex(t => t.id === action.taskId)
       if (idx < 0) return state
-
-      const newIdx = action.direction === 'top' ? 0 : action.direction === 'up' ? Math.max(0, idx - 1) : Math.min(pending.length - 1, idx + 1)
+      const newIdx = action.direction === 'up' ? Math.max(0, idx - 1) : Math.min(pending.length - 1, idx + 1)
       const reordered = [...pending]
       ;[reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]]
-
       const nonPending = mission.tasks.filter(t => t.status !== 'pending')
       const updatedMission = { ...mission, tasks: [...nonPending, ...reordered] }
-
       let s = logEvent(state, {
         type: 'task_reprioritised',
         missionId: action.missionId,
@@ -796,6 +895,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const newIds = ids.includes(action.taskId)
         ? ids.filter(id => id !== action.taskId)
         : [...ids, action.taskId]
+
+      // Re-generate strategies with the new priority order so ETAs update.
+      const mission = state.missions.find(m => m.id === state.copilotModal!.missionId)
+      if (mission) {
+        const reserve = reserveCount(state.assets)
+        const copilotRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
+        const strategies = generateStrategies(
+          mission.tasks, reserve, state.config.epsilonMeta, copilotRng, state.elapsed, newIds,
+        )
+        return {
+          ...state,
+          copilotModal: { ...state.copilotModal!, priorityTaskIds: newIds, strategies },
+        }
+      }
+
       return {
         ...state,
         copilotModal: { ...state.copilotModal, priorityTaskIds: newIds },

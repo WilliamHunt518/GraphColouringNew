@@ -71,6 +71,8 @@ export interface Mission {
   completionTime: number | null
   // Track which Co-Pilot interaction occurred (for follow-rate logging)
   copilotInteraction: 'none' | 'shown' | 'followed' | 'modified' | 'dismissed'
+  // Post-allocation execution priority stack — most-recently-clicked task is index 0 (runs first)
+  manualPriorityIds: string[]
 }
 
 // ─── Co-Pilot ─────────────────────────────────────────────────────────────

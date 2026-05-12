@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { MapViewState, Asset, Mission, Task, AssetType, TaskStatus } from '../types'
-import { HUB } from '../utils/missionGen'
+import { HUB, ASSET_CALLSIGNS } from '../utils/missionGen'
 
 // ─── Colour constants ─────────────────────────────────────────────────────
 
@@ -46,6 +46,7 @@ interface Props {
 
 export default function MapDisplay({ state, onToggleTaskPriority, onReprioritiseTop }: Props) {
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null)
+  const [useCallsigns, setUseCallsigns] = useState(false)
   const selectedMission = state.missions.find(m => m.id === selectedMissionId) ?? null
 
   // Pan / zoom state
@@ -174,7 +175,7 @@ export default function MapDisplay({ state, onToggleTaskPriority, onReprioritise
           {deployedAssets.map(a => <AssetRoute key={`r-${a.id}`} asset={a} elapsed={state.elapsed} missions={state.missions} />)}
 
           {/* Asset dots */}
-          {deployedAssets.map(a => <AssetDot key={a.id} asset={a} />)}
+          {deployedAssets.map(a => <AssetDot key={a.id} asset={a} useCallsigns={useCallsigns} />)}
 
           {/* Hub */}
           <HubMarker assets={state.assets} />
@@ -193,7 +194,17 @@ export default function MapDisplay({ state, onToggleTaskPriority, onReprioritise
 
       {/* Status bar */}
       <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-1.5 flex items-center justify-between text-xs text-gray-400 border-t border-gray-800">
-        <span>Session {state.sessionNumber}/3</span>
+        <div className="flex items-center gap-2">
+          <span>Session {state.sessionNumber}/3</span>
+          <button
+            onClick={() => setUseCallsigns(c => !c)}
+            className={`px-1.5 py-0.5 rounded border transition-colors ${
+              useCallsigns ? 'bg-blue-700 text-blue-100 border-blue-500' : 'bg-gray-800 text-gray-500 border-gray-700 hover:text-gray-300'
+            }`}
+          >
+            {useCallsigns ? 'IDs' : 'Names'}
+          </button>
+        </div>
         <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
         <span>Score <span className="text-white font-bold">{state.score}</span></span>
         <span>{state.missions.filter(m => m.status === 'active').length} active · {state.missions.filter(m => m.status === 'queued').length} queued</span>
@@ -288,6 +299,11 @@ function MissionZone({
   const completedTasks = mission.tasks.filter(t => t.status === 'completed').length
   const totalTasks = mission.tasks.length
 
+  const movableTasks = isActive
+    ? mission.tasks.filter(t => t.status === 'pending' || t.status === 'traveling')
+    : []
+  const manualPriorityIds: string[] = mission.manualPriorityIds ?? []
+
   return (
     <g onClick={onClick} style={{ cursor: isDone ? 'default' : 'pointer' }}>
       {selected && (
@@ -305,12 +321,15 @@ function MissionZone({
         <ProgressArc cx={cx} cy={cy} r={r} fraction={completedTasks / totalTasks} />
       )}
       {mission.tasks.map(t => {
-        const canReprioritise = isActive && t.status === 'pending' && !!onReprioritiseTop
+        const isMovable = movableTasks.some(m => m.id === t.id)
+        const canReprioritise = isActive && isMovable && !!onReprioritiseTop
+        // Badge only for explicitly clicked tasks (post-alloc) or selected tasks (pre-alloc)
+        const postAllocIdx = isActive ? manualPriorityIds.indexOf(t.id) : -1
         return (
           <TaskWaypoint
             key={t.id}
             task={t}
-            priorityIndex={isAllocating ? priorityTaskIds.indexOf(t.id) : -1}
+            priorityIndex={isAllocating ? priorityTaskIds.indexOf(t.id) : postAllocIdx}
             onToggle={isAllocating ? () => onToggleTaskPriority?.(t.id) : undefined}
             onReprioritiseTop={canReprioritise ? () => onReprioritiseTop!(mission.id, t.id) : undefined}
           />
@@ -386,17 +405,12 @@ function TaskWaypoint({ task, priorityIndex = -1, onToggle, onReprioritiseTop }:
       {isClickable && (
         <circle cx={x} cy={y} r={10} fill="transparent" {...interactProps} />
       )}
-      {/* Dashed ring: clickable during allocation (not yet priority) */}
+      {/* Dashed ring: clickable during allocation, not yet in priority queue */}
       {canPrioritise && !isPriority && (
         <circle cx={x} cy={y} r={7} fill="none" stroke="white"
           strokeWidth={0.8} strokeOpacity={0.28} strokeDasharray="2,3" {...interactProps} />
       )}
-      {/* Dashed blue ring: clickable post-allocation pending task */}
-      {canReprioritise && (
-        <circle cx={x} cy={y} r={7} fill="none" stroke="#60a5fa"
-          strokeWidth={0.8} strokeOpacity={0.35} strokeDasharray="2,3" {...interactProps} />
-      )}
-      {/* Solid amber ring: priority during allocation */}
+      {/* Solid amber ring: priority position (both during allocation and post-allocation) */}
       {isPriority && (
         <circle cx={x} cy={y} r={7} fill="none" stroke="#fbbf24"
           strokeWidth={1.3} strokeOpacity={0.9} {...interactProps} />
@@ -430,14 +444,13 @@ function AssetRoute({ asset, elapsed, missions }: { asset: Asset; elapsed: numbe
 
   // Collect future task waypoints for this asset (sequential plan)
   const mission = missions.find(m => m.id === asset.currentMissionId)
+  // Filter preserves mission.tasks array order, which reflects any reprioritisation.
   const futureTasks = mission
-    ? mission.tasks
-        .filter(t =>
-          t.id !== asset.currentTaskId &&
-          t.assignedAssetIds.includes(asset.id) &&
-          t.status !== 'completed' && t.status !== 'failed',
-        )
-        .sort((a, b) => (a.startTime ?? 0) - (b.startTime ?? 0))
+    ? mission.tasks.filter(t =>
+        t.id !== asset.currentTaskId &&
+        t.assignedAssetIds.includes(asset.id) &&
+        t.status !== 'completed' && t.status !== 'failed',
+      )
     : []
 
   // Build predicted path: targetPosition → future waypoints → hub (if returning after last task)
@@ -488,7 +501,7 @@ function AssetRoute({ asset, elapsed, missions }: { asset: Asset; elapsed: numbe
 
 // ─── Asset dot ────────────────────────────────────────────────────────────
 
-function AssetDot({ asset }: { asset: Asset }) {
+function AssetDot({ asset, useCallsigns }: { asset: Asset; useCallsigns: boolean }) {
   const { x, y } = asset.position
   const color = ASSET_COLOR[asset.type]
   const isReturning = asset.status === 'returning'
@@ -496,6 +509,7 @@ function AssetDot({ asset }: { asset: Asset }) {
   const fo = isReturning ? 0.5 : 0.95
   const stroke = isReturning ? 'none' : 'white'
   const sw = isReturning ? 0 : 0.8
+  const label = useCallsigns ? (ASSET_CALLSIGNS[asset.id] ?? asset.id) : asset.id
 
   return (
     <g filter="url(#assetGlow)">
@@ -514,7 +528,7 @@ function AssetDot({ asset }: { asset: Asset }) {
       )}
       <AssetDirectionPip asset={asset} color={color} />
       <text x={x + 8} y={y + 3} fontSize={8} fill={color} fillOpacity={0.85} fontFamily="monospace">
-        {asset.id}
+        {label}
       </text>
     </g>
   )

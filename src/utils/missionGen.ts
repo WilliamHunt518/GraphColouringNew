@@ -193,6 +193,20 @@ const POOL: [AssetType, number][] = [
   ['Green', 3],
 ]
 
+// UK military aircraft callsigns — thematic per drone type
+export const ASSET_CALLSIGNS: Record<string, string> = {
+  // Blue — RAF fighters/strike (fast recce drones)
+  B01: 'Raptor',    B02: 'Typhoon',   B03: 'Lightning', B04: 'Tornado',   B05: 'Jaguar',
+  B06: 'Harrier',   B07: 'Hawk',      B08: 'Hunter',    B09: 'Nimrod',    B10: 'Canberra',
+  B11: 'Victor',    B12: 'Vulcan',    B13: 'Valiant',   B14: 'Buccaneer', B15: 'Phantom',
+  B16: 'Tempest',   B17: 'Spitfire',  B18: 'Hurricane',
+  // Red — military rotary-wing (standard drones)
+  R01: 'Chinook',   R02: 'Merlin',    R03: 'Wildcat',   R04: 'Lynx',      R05: 'Puma',
+  R06: 'Gazelle',   R07: 'Scout',     R08: 'Squirrel',  R09: 'Apache',
+  // Green — heavy-lift specialist drones
+  G01: 'Griffin',   G02: 'Atlas',     G03: 'Hercules',
+}
+
 export function createInitialAssets(): Asset[] {
   const assets: Asset[] = []
   for (const [type, count] of POOL) {

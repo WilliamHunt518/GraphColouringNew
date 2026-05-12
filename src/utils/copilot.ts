@@ -13,6 +13,7 @@ const SESSION_DURATION = 600
  * Tasks are scheduled T5→T1 (most-constrained first).
  * Returns elapsed time when the last task completes (0 if no tasks).
  */
+// Tasks passed in already in the desired execution order (caller is responsible for sorting).
 function simulatePool(
   tasks: Task[],
   comps: Map<string, { comp: TaskComposition; baseTime: number }>,
@@ -28,10 +29,9 @@ function simulatePool(
   const pickEarliest = (type: 'Blue' | 'Red' | 'Green', n: number): VT[] =>
     tokens.filter(v => v.type === type).sort((a, b) => a.freeAt - b.freeAt).slice(0, n)
 
-  const sorted = [...tasks].sort((a, b) => b.type - a.type)
   let maxTime = 0
 
-  for (const task of sorted) {
+  for (const task of tasks) {
     const c = comps.get(task.id)
     if (!c || c.comp.Blue + c.comp.Red + c.comp.Green === 0) continue
 
@@ -103,30 +103,58 @@ function toTaskComps(
   return result
 }
 
+// ─── Co-Pilot task ordering ───────────────────────────────────────────────
+
+/**
+ * Builds the Co-Pilot's task execution order with ε_C noise.
+ * At ε_C=0: optimal T5→T1 (most-constrained first).
+ * At ε_C>0: each scheduling step has a ε_C probability of picking a random
+ * remaining task instead of the optimal next one.
+ */
+export function buildNoisyTaskOrder(tasks: Task[], epsilonC: number, rng: SeededRNG): Task[] {
+  if (tasks.length === 0) return []
+  const remaining = [...tasks].sort((a, b) => b.type - a.type)  // T5→T1 optimal
+  if (epsilonC === 0) return remaining
+  const result: Task[] = []
+  while (remaining.length > 0) {
+    if (remaining.length > 1 && rng.randFloat(0, 1) < epsilonC) {
+      const idx = rng.randInt(0, remaining.length - 1)
+      result.push(remaining.splice(idx, 1)[0])
+    } else {
+      result.push(remaining.shift()!)
+    }
+  }
+  return result
+}
+
 // ─── Strategy generation ──────────────────────────────────────────────────
 
 /**
- * Generates four Co-Pilot strategy cards.
+ * Generates Meta-Co-Pilot strategy cards (asset allocation recommendations).
  *
- * 1. "Fastest Possible"   — all primaries, parallel pool (max parallelism)
- * 2. "Complete in Time"   — all primaries, minimum pool that finishes within
- *                           90% of remaining session time (sequential reuse)
- * 3. "Asset-Preserving"   — substitutes on T2/T3/T4 (no Green for T4!),
- *                           primary only on T1/T5; max 1 Green committed
- * 4. "Balanced"           — primaries on T4/T5, substitutes on T2/T3;
- *                           up to 2 Green committed
+ * 1. "Fastest Possible"  — all primaries, parallel pool (max parallelism)
+ * 2. "Complete in Time"  — minimum pool finishing within 90% of remaining time
+ * 3. "Asset-Preserving"  — substitutes on T2/T3/T4; max 1 Green committed
  *
- * PP condition (ε=0): strategies returned in natural order, labels intact.
- * ε>0: objective weights perturbed by noise — simulates inaccurate AI.
+ * ε_M=0: correct counts returned.
+ * ε_M>0: each strategy's pool has a ε_M probability of ±1 on a random asset
+ *        type, simulating an inaccurate Meta-Co-Pilot recommendation.
  */
 export function generateStrategies(
   tasks: Task[],
   reserve: AssetRequirement,
-  epsilonC: number,
+  epsilonM: number,
   rng: SeededRNG,
   elapsed: number,
+  priorityTaskIds?: string[],
 ): Strategy[] {
-  const sorted = [...tasks].sort((a, b) => b.type - a.type)
+  // Priority tasks run first; remaining fall back to T5→T1 (most-constrained first).
+  const prioritySet = new Set(priorityTaskIds ?? [])
+  const priorityOrder = (priorityTaskIds ?? [])
+    .map(id => tasks.find(t => t.id === id))
+    .filter((t): t is Task => t !== undefined)
+  const rest = [...tasks].filter(t => !prioritySet.has(t.id)).sort((a, b) => b.type - a.type)
+  const sorted = [...priorityOrder, ...rest]
   const remaining = Math.max(30, SESSION_DURATION - elapsed)
 
   // ─── Primary compositions (all strategies share this base) ───────────────
@@ -149,7 +177,6 @@ export function generateStrategies(
     parallelSum.Green += c.comp.Green
   }
   const fastPool = cap(parallelSum, reserve)
-  const fastTime = simulatePool(sorted, primComps, fastPool)
 
   // ── Strategy 2: Complete in Time ─────────────────────────────────────────
   // Search for the smallest pool completing within deadline (90% of remaining).
@@ -176,7 +203,6 @@ export function generateStrategies(
   }
   // Fallback: use the same pool as "Fastest" (best we can do if deadline is unreachable)
   if (!citPool) citPool = { ...fastPool }
-  const citTime = simulatePool(sorted, primComps, citPool)
 
   // ── Strategy 3: Asset-Preserving ─────────────────────────────────────────
   // Substitute on T2, T3, T4 (avoids Green on T4; reduces Red on T2/T3).
@@ -194,15 +220,37 @@ export function generateStrategies(
   const presMin = minPool(sorted, presComps)
   // Cap Green at 1 (preserve specialists)
   const presPool = cap({ ...presMin, Green: Math.min(presMin.Green, 1) }, reserve)
-  const presTime = simulatePool(sorted, presComps, presPool)
+
+  // ── Perturb pool counts with ε_M noise ───────────────────────────────────
+  // With probability ε_M, adjusts one asset type's count by ±1 (capped to
+  // [0, reserve]). Simulates the MCP over- or under-recommending assets.
+  function perturbPool(pool: AssetRequirement): AssetRequirement {
+    if (epsilonM === 0 || rng.randFloat(0, 1) > epsilonM) return { ...pool }
+    const types: Array<keyof AssetRequirement> = ['Blue', 'Red', 'Green']
+    const type = types[rng.randInt(0, 2)]
+    const delta = rng.randFloat(0, 1) < 0.5 ? -1 : 1
+    return {
+      ...pool,
+      [type]: Math.max(0, Math.min(reserve[type], pool[type] + delta)),
+    }
+  }
+
+  const noisyFastPool = perturbPool(fastPool)
+  const noisyCitPool  = perturbPool(citPool)
+  const noisyPresPool = perturbPool(presPool)
+
+  // Recompute ETAs from noisy pools (so displayed time matches displayed counts)
+  const noisyFastTime = simulatePool(sorted, primComps, noisyFastPool)
+  const noisyCitTime  = simulatePool(sorted, primComps, noisyCitPool)
+  const noisyPresTime = simulatePool(sorted, presComps, noisyPresPool)
 
   // ── Normalise display scores ──────────────────────────────────────────────
-  const times    = [fastTime, citTime, presTime]
-  const minT     = Math.min(...times)
-  const spanT    = Math.max(...times) - minT || 1
+  const times   = [noisyFastTime, noisyCitTime, noisyPresTime]
+  const minT    = Math.min(...times)
+  const spanT   = Math.max(...times) - minT || 1
 
   const specialists = (a: AssetRequirement) => a.Green * 3 + a.Red
-  const maxSpec     = Math.max(...[fastPool, citPool, presPool].map(specialists)) || 1
+  const maxSpec     = Math.max(...[noisyFastPool, noisyCitPool, noisyPresPool].map(specialists)) || 1
 
   function reserveAfter(a: AssetRequirement): AssetRequirement {
     return {
@@ -216,60 +264,36 @@ export function generateStrategies(
     {
       name: 'Fastest Possible',
       description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time.',
-      assets: fastPool,
-      expectedCompletionTime: fastTime,
-      reserveAfter: reserveAfter(fastPool),
+      assets: noisyFastPool,
+      expectedCompletionTime: noisyFastTime,
+      reserveAfter: reserveAfter(noisyFastPool),
       speedScore: 1,
-      reserveScore: 1 - specialists(fastPool) / maxSpec,
+      reserveScore: 1 - specialists(noisyFastPool) / maxSpec,
       taskComps: toTaskComps(sorted, primComps, primComps),
     },
     {
       name: 'Complete in Time',
       description: `Minimum assets finishing before the ${Math.round(deadline)}s deadline — assets cycle sequentially between tasks.`,
-      assets: citPool,
-      expectedCompletionTime: citTime,
-      reserveAfter: reserveAfter(citPool),
-      speedScore: 1 - (citTime - minT) / spanT,
-      reserveScore: 1 - specialists(citPool) / maxSpec,
+      assets: noisyCitPool,
+      expectedCompletionTime: noisyCitTime,
+      reserveAfter: reserveAfter(noisyCitPool),
+      speedScore: 1 - (noisyCitTime - minT) / spanT,
+      reserveScore: 1 - specialists(noisyCitPool) / maxSpec,
       taskComps: toTaskComps(sorted, primComps, primComps),
     },
     {
       name: 'Asset-Preserving',
       description: 'Substitutes on all but Specialist Ops — commits at most 1 Green, maximises reserve.',
-      assets: presPool,
-      expectedCompletionTime: presTime,
-      reserveAfter: reserveAfter(presPool),
-      speedScore: 1 - (presTime - minT) / spanT,
-      reserveScore: 1 - specialists(presPool) / maxSpec,
+      assets: noisyPresPool,
+      expectedCompletionTime: noisyPresTime,
+      reserveAfter: reserveAfter(noisyPresPool),
+      speedScore: 1 - (noisyPresTime - minT) / spanT,
+      reserveScore: 1 - specialists(noisyPresPool) / maxSpec,
       taskComps: toTaskComps(sorted, presComps, primComps),
     },
   ]
 
-  // ── Perfect mode (ε=0): natural order, labels intact ────────────────────
-  if (epsilonC === 0) {
-    return raw.filter(s => isFeasible(s.assets, reserve))
-  }
-
-  // ── Apply ε noise — perturbs objective weights before ranking ─────────────
-  const weights = raw.map(s => {
-    const tw = 0.5 + epsilonC * rng.noise()
-    return tw * s.speedScore + (1 - tw) * s.reserveScore
-  })
-
-  const ranked = raw
-    .map((s, i) => ({ ...s, _w: weights[i] }))
-    .sort((a, b) => b._w - a._w)
-
-  const names: Strategy['name'][] = ['Fastest Possible', 'Complete in Time', 'Asset-Preserving']
-  const descs = [
-    'Maximum parallel deployment — all tasks run simultaneously for minimum mission time.',
-    'Minimum assets finishing before the deadline — assets cycle sequentially between tasks.',
-    'Substitutes on all but Specialist Ops — commits at most 1 Green, maximises reserve.',
-  ]
-
-  return ranked
-    .map((s, i) => ({ ...s, name: names[i], description: descs[i] }))
-    .filter(s => isFeasible(s.assets, reserve))
+  return raw.filter(s => isFeasible(s.assets, reserve))
 }
 
 /**
@@ -284,5 +308,6 @@ export function previewAllocation(tasks: Task[], pool: AssetRequirement): number
       baseTime: TASK_BASE_TIME[task.type as TaskType],
     })
   }
-  return simulatePool(tasks, comps, pool)
+  const sorted = [...tasks].sort((a, b) => b.type - a.type)
+  return simulatePool(sorted, comps, pool)
 }

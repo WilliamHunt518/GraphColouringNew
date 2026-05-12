@@ -4,6 +4,7 @@ import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadDebugLog } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
+import { ASSET_CALLSIGNS } from '../utils/missionGen'
 
 interface Props {
   state: GameState
@@ -84,6 +85,7 @@ function fmtTime(seconds: number): string {
 // ─── Top-level ────────────────────────────────────────────────────────────
 
 export default function PrimaryDisplay({ state, dispatch }: Props) {
+  const [useCallsigns, setUseCallsigns] = useState(false)
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
   const done    = state.missions.filter(m => m.status === 'completed' || m.status === 'failed')
@@ -109,6 +111,16 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             Open Map
           </button>
           <button
+            onClick={() => setUseCallsigns(c => !c)}
+            className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+              useCallsigns
+                ? 'bg-blue-700 text-white border-blue-500'
+                : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
+            }`}
+          >
+            Callsigns
+          </button>
+          <button
             onClick={downloadDebugLog}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-500 border border-gray-700 transition-colors"
             title="Download debug log"
@@ -126,7 +138,7 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             <section>
               <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
               {queued.map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} />
+                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} useCallsigns={useCallsigns} />
               ))}
             </section>
           )}
@@ -134,7 +146,7 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             <section className={queued.length > 0 ? 'mt-4' : ''}>
               <SectionLabel text="Active missions" dot="bg-blue-400" />
               {active.map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} />
+                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} useCallsigns={useCallsigns} />
               ))}
             </section>
           )}
@@ -142,7 +154,7 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             <section className="mt-4 opacity-60">
               <SectionLabel text="Completed" dot="bg-gray-500" />
               {done.slice(-6).map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} />
+                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} useCallsigns={useCallsigns} />
               ))}
             </section>
           )}
@@ -179,7 +191,7 @@ function SectionLabel({ text, dot }: { text: string; dot: string }) {
 
 // ─── Mission card ─────────────────────────────────────────────────────────
 
-function MissionCard({ mission, state, dispatch }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void }) {
+function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; useCallsigns: boolean }) {
   const isQueued    = mission.status === 'queued'
   const isActive    = mission.status === 'active'
   const isCompleted = mission.status === 'completed'
@@ -241,7 +253,7 @@ function MissionCard({ mission, state, dispatch }: { mission: Mission; state: Ga
       </div>
 
       {/* Co-Pilot task plan — shown after allocation */}
-      {isActive && <CopilotPlanPanel mission={mission} />}
+      {isActive && <CopilotPlanPanel mission={mission} useCallsigns={useCallsigns} />}
 
       {/* Assigned assets strip */}
       {isActive && deployedHere.length > 0 && (
@@ -259,6 +271,7 @@ function MissionCard({ mission, state, dispatch }: { mission: Mission; state: Ga
                 recallable={recallable ?? false}
                 isZeroCost={recallCostSec === 0}
                 recallCostSec={recallCostSec}
+                callsign={useCallsigns ? ASSET_CALLSIGNS[a.id] : undefined}
                 onRecall={() => dispatch({ type: 'RECALL_ASSET', assetId: a.id })}
               />
             )
@@ -313,21 +326,23 @@ function TaskBadge({ task, missionActive, isPriority, onTogglePriority }: {
 
 // ─── Drone chip with confirmation popout ──────────────────────────────────
 
-function DroneChip({ asset, recallable, isZeroCost, recallCostSec, onRecall }: {
+function DroneChip({ asset, recallable, isZeroCost, recallCostSec, callsign, onRecall }: {
   asset: Asset
   recallable: boolean
   isZeroCost: boolean
   recallCostSec: number | null
+  callsign?: string
   onRecall: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
+  const label = callsign ?? asset.id
 
   return (
     <div className="relative">
       <button
         disabled={!recallable}
         onClick={() => recallable && setConfirming(c => !c)}
-        title={recallable ? `Click to recall ${asset.id}` : asset.id}
+        title={recallable ? `Click to recall ${label}` : label}
         className={`font-mono text-xs px-1 py-0.5 rounded leading-none transition-colors ${
           recallable
             ? isZeroCost
@@ -336,7 +351,7 @@ function DroneChip({ asset, recallable, isZeroCost, recallCostSec, onRecall }: {
             : `${ASSET_CHIP_IDLE[asset.type]} cursor-default opacity-70`
         }`}
       >
-        {asset.id}
+        {label}
       </button>
 
       {confirming && (
@@ -344,7 +359,7 @@ function DroneChip({ asset, recallable, isZeroCost, recallCostSec, onRecall }: {
           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-30 bg-gray-900 border border-gray-600 rounded-lg p-2 shadow-2xl min-w-max"
           onClick={e => e.stopPropagation()}
         >
-          <p className="text-xs font-semibold text-white mb-0.5">Recall {asset.id}?</p>
+          <p className="text-xs font-semibold text-white mb-0.5">Recall {label}?</p>
           <p className={`text-xs mb-2 ${isZeroCost ? 'text-green-400' : 'text-orange-400'}`}>
             {isZeroCost ? 'Free — task complete' : `+${recallCostSec}s penalty`}
           </p>
@@ -372,10 +387,11 @@ function DroneChip({ asset, recallable, isZeroCost, recallCostSec, onRecall }: {
 
 // ─── Co-Pilot task plan ───────────────────────────────────────────────────
 
-function CopilotPlanPanel({ mission }: { mission: Mission }) {
+function CopilotPlanPanel({ mission, useCallsigns }: { mission: Mission; useCallsigns: boolean }) {
   const [open, setOpen] = useState(false)
 
-  // Build per-asset task chains by grouping tasks by asset ID, sorted by startTime
+  // Build per-asset task chains by grouping tasks by asset ID.
+  // Sort each chain by position in mission.tasks so reprioritisation is reflected.
   const assetChains = new Map<string, Task[]>()
   for (const task of mission.tasks) {
     for (const assetId of task.assignedAssetIds) {
@@ -383,9 +399,8 @@ function CopilotPlanPanel({ mission }: { mission: Mission }) {
       assetChains.get(assetId)!.push(task)
     }
   }
-  // Sort each chain by startTime
   for (const chain of assetChains.values()) {
-    chain.sort((a, b) => (a.startTime ?? 0) - (b.startTime ?? 0))
+    chain.sort((a, b) => mission.tasks.indexOf(a) - mission.tasks.indexOf(b))
   }
 
   const unassigned = mission.tasks.filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0)
@@ -412,7 +427,7 @@ function CopilotPlanPanel({ mission }: { mission: Mission }) {
               <span className={`font-mono font-bold ${
                 assetId.startsWith('B') ? 'text-blue-400' :
                 assetId.startsWith('R') ? 'text-red-400' : 'text-green-400'
-              }`}>{assetId}</span>
+              }`}>{useCallsigns ? (ASSET_CALLSIGNS[assetId] ?? assetId) : assetId}</span>
               {chain.map((task, i) => (
                 <span key={task.id} className="flex items-center gap-1">
                   {i > 0 && <span className="text-gray-600">→</span>}
