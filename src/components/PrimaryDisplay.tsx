@@ -203,6 +203,15 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
   const totalTasks = mission.tasks.length
   const deployedHere = state.assets.filter(a => a.currentMissionId === mission.id && a.status === 'deployed')
 
+  // Which tasks currently have an agent actively traveling to / executing them
+  const activeTaskIds = new Set(
+    deployedHere.map(a => a.currentTaskId).filter((id): id is string => id !== null)
+  )
+  const doingCount = mission.tasks.filter(t => activeTaskIds.has(t.id)).length
+  const chainQueuedCount = mission.tasks.filter(t =>
+    t.status === 'traveling' && !activeTaskIds.has(t.id) && t.assignedAssetIds.length > 0
+  ).length
+
   const borderColor = isAllocating
     ? 'border-blue-500'
     : isQueued ? 'border-amber-700' : isActive ? 'border-blue-800' : 'border-gray-800'
@@ -223,7 +232,13 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
           <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${CAT_BADGE[mission.category]}`}>
             {mission.category} · {CAT_NAME[mission.category]}
           </span>
-          {isActive && <span className="text-xs text-gray-400">{completedTasks}/{totalTasks}</span>}
+          {isActive && (
+            <span className="text-xs text-gray-400">
+              {completedTasks}/{totalTasks}
+              {doingCount > 0 && <> · <span className="text-blue-400">{doingCount} active</span></>}
+              {chainQueuedCount > 0 && <> · <span className="text-gray-500">{chainQueuedCount} queued</span></>}
+            </span>
+          )}
           {isCompleted && <span className="text-xs text-green-400">✓ complete</span>}
           {isFailed && <span className="text-xs text-red-400">✗ failed</span>}
         </div>
@@ -248,7 +263,17 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
       {/* Task badges — status strip */}
       <div className="flex flex-wrap gap-1 mt-1">
         {mission.tasks.map(t => (
-          <TaskBadge key={t.id} task={t} missionActive={isActive} />
+          <TaskBadge
+            key={t.id}
+            task={t}
+            missionActive={isActive}
+            isQueuedInChain={
+              isActive &&
+              t.status === 'traveling' &&
+              !activeTaskIds.has(t.id) &&
+              t.assignedAssetIds.length > 0
+            }
+          />
         ))}
       </div>
 
@@ -287,16 +312,25 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
 
 // ─── Task badge ───────────────────────────────────────────────────────────
 
-function TaskBadge({ task, missionActive, isPriority, onTogglePriority }: {
+function TaskBadge({ task, missionActive, isQueuedInChain, isPriority, onTogglePriority }: {
   task: Task
   missionActive?: boolean
+  isQueuedInChain?: boolean
   isPriority?: boolean
   onTogglePriority?: () => void
 }) {
-  const isUnassigned = missionActive === true && task.status === 'pending' && task.assignedAssetIds.length === 0
-  const baseStyle = isUnassigned
+  const isUnschedulable = missionActive === true && task.status === 'pending' && task.assignedAssetIds.length === 0
+  const baseStyle = isUnschedulable
     ? 'bg-gray-900 border border-amber-700/60 text-amber-600 opacity-70'
+    : isQueuedInChain
+    ? 'bg-blue-950/60 text-blue-300 border border-blue-800/40'
     : TASK_STATUS_STYLE[task.status]
+
+  const title = isUnschedulable
+    ? `${TASK_FULL[task.type]} (T${task.type}) — cannot fulfill (requires asset types not committed)`
+    : isQueuedInChain
+    ? `${TASK_FULL[task.type]} (T${task.type}) — queued (agent completing a prior task first)`
+    : `${TASK_FULL[task.type]} (T${task.type}) — ${task.status}${onTogglePriority ? ' · click to prioritise' : ''}`
 
   return (
     <div
@@ -304,16 +338,14 @@ function TaskBadge({ task, missionActive, isPriority, onTogglePriority }: {
         ${baseStyle}
         ${onTogglePriority ? 'cursor-pointer hover:brightness-125' : 'cursor-default'}
         ${isPriority ? 'ring-1 ring-yellow-400' : ''}`}
-      title={isUnassigned
-        ? `${TASK_FULL[task.type]} (T${task.type}) — no drones assigned (insufficient reserve)`
-        : `${TASK_FULL[task.type]} (T${task.type}) — ${task.status}${onTogglePriority ? ' · click to prioritise' : ''}`}
+      title={title}
       onClick={onTogglePriority}
     >
       {isPriority && (
         <span className="absolute -top-1 -right-1 text-yellow-400 text-xs leading-none">★</span>
       )}
       <span className="text-xs font-bold leading-tight">
-        {TASK_SHORT[task.type]}{isUnassigned ? '?' : ''}
+        {TASK_SHORT[task.type]}{isUnschedulable ? '?' : ''}
       </span>
       <div className="flex gap-0.5 mt-0.5">
         {TASK_DOTS[task.type].map((t, i) => (
@@ -403,9 +435,9 @@ function CopilotPlanPanel({ mission, useCallsigns }: { mission: Mission; useCall
     chain.sort((a, b) => mission.tasks.indexOf(a) - mission.tasks.indexOf(b))
   }
 
-  const unassigned = mission.tasks.filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0)
+  const unschedulable = mission.tasks.filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0)
 
-  if (assetChains.size === 0 && unassigned.length === 0) return null
+  if (assetChains.size === 0 && unschedulable.length === 0) return null
 
   return (
     <div className="mt-2 border-t border-gray-700/40 pt-2">
@@ -415,8 +447,8 @@ function CopilotPlanPanel({ mission, useCallsigns }: { mission: Mission; useCall
       >
         <span className="font-medium text-gray-400">Co-Pilot Plan</span>
         <span>{open ? '▲' : '▼'}</span>
-        {unassigned.length > 0 && (
-          <span className="ml-1 text-amber-500">⚠ {unassigned.length} unassigned</span>
+        {unschedulable.length > 0 && (
+          <span className="ml-1 text-amber-500">⚠ {unschedulable.length} cannot fulfill</span>
         )}
       </button>
 
@@ -438,15 +470,16 @@ function CopilotPlanPanel({ mission, useCallsigns }: { mission: Mission; useCall
               ))}
             </div>
           ))}
-          {unassigned.length > 0 && (
+          {unschedulable.length > 0 && (
             <div className="flex items-center gap-1 text-xs text-amber-600">
-              <span>⚠ Unassigned:</span>
-              {unassigned.map(t => (
-                <span key={t.id} className="px-1 py-0.5 rounded bg-amber-900/30 border border-amber-700/40">
+              <span>⚠ Cannot fulfill:</span>
+              {unschedulable.map(t => (
+                <span key={t.id} className="px-1 py-0.5 rounded bg-amber-900/30 border border-amber-700/40"
+                  title={`${TASK_FULL[t.type]} (T${t.type}) requires asset types not in committed pool`}>
                   {TASK_SHORT[t.type]}
                 </span>
               ))}
-              <span className="text-gray-600">(no reserve)</span>
+              <span className="text-gray-600">(committed assets insufficient)</span>
             </div>
           )}
         </div>

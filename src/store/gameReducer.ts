@@ -179,6 +179,20 @@ function greedyAssign(
     }
 
     // ── Pick earliest-available tokens ─────────────────────────────────────
+    // If the planned composition can't be met, try substitute before giving up
+    {
+      const avB = vPool.filter(v => v.type === 'Blue').length
+      const avR = vPool.filter(v => v.type === 'Red').length
+      const avG = vPool.filter(v => v.type === 'Green').length
+      if ((avB < reqBlue || avR < reqRed || avG < reqGreen) && !useSubstitute) {
+        const sub = TASK_SUBSTITUTE[task.type as TaskType]
+        if (sub && avB >= sub.Blue && avR >= sub.Red && avG >= sub.Green) {
+          reqBlue = sub.Blue; reqRed = sub.Red; reqGreen = sub.Green
+          baseTime = TASK_SUB_BASE_TIME[task.type as TaskType]; useSubstitute = true
+        }
+      }
+    }
+
     const blueV  = pickEarliest('Blue',  reqBlue)
     const redV   = pickEarliest('Red',   reqRed)
     const greenV = pickEarliest('Green', reqGreen)
