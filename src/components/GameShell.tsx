@@ -46,6 +46,7 @@ export default function GameShell({ config }: Props) {
       elapsed: state.elapsed,
       sessionNumber: state.sessionNumber,
       score: state.score,
+      penaltyAccrued: state.penaltyAccrued,
       phase: state.phase,
       pendingBlueprints: state.pendingBlueprints,
       copilotMissionId: state.copilotModal?.missionId ?? null,

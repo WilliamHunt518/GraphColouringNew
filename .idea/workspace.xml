@@ -3,6 +3,15 @@
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/StartScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/StartScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/copilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/copilot.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/missionGen.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/missionGen.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +52,7 @@
       <recent name="G:\Files\Code\GraphColouringNew\logs\manualAddOnline" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\wh1g17\GraphColouringNew" />
       <recent name="G:\Files\Code\GraphColouringNew\docs\paper\figs" />
       <recent name="C:\Users\wh1g17\GraphColouringNew\docs\trust_study" />
     </key>
@@ -215,7 +225,8 @@
       <workItem from="1778168999949" duration="3991000" />
       <workItem from="1778240883139" duration="1750000" />
       <workItem from="1778250774722" duration="2749000" />
-      <workItem from="1778668683999" duration="1157000" />
+      <workItem from="1778668683999" duration="1690000" />
+      <workItem from="1778751817742" duration="8999000" />
     </task>
     <servers />
   </component>

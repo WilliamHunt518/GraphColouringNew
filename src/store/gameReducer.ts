@@ -6,7 +6,8 @@ import type {
 import type { GameAction } from './actions'
 import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
-  TASK_SUB_BASE_TIME, ZONE_RADIUS, generateSessionPlan, createInitialAssets, travelTime,
+  TASK_SUB_BASE_TIME, ZONE_RADIUS, CATEGORY_PENALTY_RATE, TASK_WEIGHT,
+  generateSessionPlan, createInitialAssets, travelTime,
 } from '../utils/missionGen'
 import { generateStrategies, buildNoisyTaskOrder } from '../utils/copilot'
 import { evaluatePosture } from '../utils/metacopilot'
@@ -28,9 +29,10 @@ export function buildInitialState(config: StudyConfig): GameState {
   const initialForecast = { ...baseCategories }
   // Default to complexity-appropriate prior
   switch (config.complexity) {
-    case 'easy':   Object.assign(initialForecast, { A: 0.50, B: 0.35, C: 0.10, D: 0.05, E: 0.00 }); break
-    case 'medium': Object.assign(initialForecast, { A: 0.15, B: 0.35, C: 0.35, D: 0.12, E: 0.03 }); break
-    case 'hard':   Object.assign(initialForecast, { A: 0.05, B: 0.15, C: 0.35, D: 0.30, E: 0.15 }); break
+    case 'standard':  Object.assign(initialForecast, { A: 0.25, B: 0.35, C: 0.25, D: 0.12, E: 0.03 }); break
+    case 'surge':     Object.assign(initialForecast, { A: 0.40, B: 0.35, C: 0.17, D: 0.07, E: 0.01 }); break
+    case 'precision': Object.assign(initialForecast, { A: 0.05, B: 0.20, C: 0.30, D: 0.30, E: 0.15 }); break
+    case 'campaign':  Object.assign(initialForecast, { A: 0.05, B: 0.20, C: 0.28, D: 0.30, E: 0.17 }); break
   }
 
   return {
@@ -39,10 +41,11 @@ export function buildInitialState(config: StudyConfig): GameState {
     sessionNumber: 1,
     elapsed: 0,
     sessionStartMs: null,
-    assets: createInitialAssets(),
+    assets: createInitialAssets(config.complexity),
     missions: [],
     pendingBlueprints: blueprints,
     score: 0,
+    penaltyAccrued: 0,
     completedSessionScores: [],
     categoryForecast: initialForecast,
     metaRec: null,
@@ -285,16 +288,41 @@ function interpolateAssetPosition(asset: Asset, elapsed: number): { x: number; y
 
 // ─── Helper: compute session score metrics ───────────────────────────────
 
-const TASK_WEIGHT: Record<TaskType, number> = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }
-
-function computeScore(missions: Mission[]): number {
-  let score = 0
+function computeCompletionPoints(missions: Mission[]): number {
+  let pts = 0
   for (const m of missions) {
     for (const t of m.tasks) {
-      if (t.status === 'completed') score += TASK_WEIGHT[t.type]
+      if (t.status === 'completed') pts += TASK_WEIGHT[t.type]
     }
   }
-  return score
+  return pts
+}
+
+/**
+ * Penalty accrues from a mission's arrivalTime until it is fully completed or
+ * the session ends (elapsed).  Once completionTime is set, the clock stops.
+ * Computed as a snapshot — no accumulation drift.
+ */
+function computePenaltyAccrued(missions: Mission[], elapsed: number): number {
+  let penalty = 0
+  for (const m of missions) {
+    const totalWeight = m.tasks.reduce((s, t) => s + TASK_WEIGHT[t.type], 0)
+    if (totalWeight === 0) continue
+    const missionRate = CATEGORY_PENALTY_RATE[m.category]
+    for (const t of m.tasks) {
+      const taskRate = missionRate * TASK_WEIGHT[t.type] / totalWeight
+      // Each task accrues penalty until it individually completes
+      const endTime = t.completionTime ?? elapsed
+      penalty += taskRate * Math.max(0, endTime - m.arrivalTime)
+    }
+  }
+  return Math.round(penalty)
+}
+
+function computeScore(missions: Mission[], elapsed: number): { score: number; penaltyAccrued: number } {
+  const completion = computeCompletionPoints(missions)
+  const penalty = computePenaltyAccrued(missions, elapsed)
+  return { score: Math.max(0, completion - penalty), penaltyAccrued: penalty }
 }
 
 function computeGreenEfficiency(missions: Mission[]): number {
@@ -484,8 +512,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       s = { ...s, assets: updatedAssets }
 
-      // 5. Recalculate score
-      s = { ...s, score: computeScore(s.missions) }
+      // 5. Recalculate score (snapshot — penalty grows continuously)
+      const { score: newScore, penaltyAccrued: newPenalty } = computeScore(s.missions, elapsed)
+      s = { ...s, score: newScore, penaltyAccrued: newPenalty }
 
       // 6. Trust probe
       if (!s.trustProbeActive && elapsed >= s.nextTrustProbeAt) {
@@ -973,10 +1002,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         sessionNumber: nextSession,
         elapsed: 0,
         sessionStartMs: null,
-        assets: createInitialAssets(),
+        assets: createInitialAssets(state.config.complexity),
         missions: [],
         pendingBlueprints: blueprints,
         score: 0,
+        penaltyAccrued: 0,
         metaRec: null,
         metaPostureOverride: null,
         copilotModal: null,
@@ -1011,15 +1041,18 @@ function endSession(s: GameState): GameState {
 
   const idx = s.sessionNumber - 1
   const evs = s.events[idx]
-  const score = computeScore(failedMissions)
+  const { score, penaltyAccrued } = computeScore(failedMissions, s.elapsed)
+  const completionPoints = computeCompletionPoints(failedMissions)
   const greenEff = computeGreenEfficiency(failedMissions)
   const meanTime = computeMeanMissionTime(failedMissions)
   const cpRate = computeCpFollowRate(evs)
   const mcpRate = computeMcpFollowRate(evs)
 
-  let s2 = logEvent({ ...s, missions: failedMissions, score }, {
+  let s2 = logEvent({ ...s, missions: failedMissions, score, penaltyAccrued }, {
     type: 'session_ended',
     score,
+    penaltyAccrued,
+    completionPoints,
     greenEfficiency: greenEff,
     meanMissionTime: meanTime,
     cpFollowRate: cpRate,

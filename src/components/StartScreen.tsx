@@ -11,9 +11,10 @@ const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
 ]
 
 const COMPLEXITIES: { value: StudyConfig['complexity']; label: string; desc: string }[] = [
-  { value: 'easy',   label: 'Easy',   desc: 'λ=90s, mostly Routine–Moderate missions' },
-  { value: 'medium', label: 'Medium', desc: 'λ=45s, mixed Routine–Critical missions' },
-  { value: 'hard',   label: 'Hard',   desc: 'λ=30s, Significant–Mass Casualty heavy' },
+  { value: 'standard',  label: 'Standard',      desc: '18 / 9 / 3 drones · balanced A–E mix' },
+  { value: 'surge',     label: 'Fleet Surge',   desc: '24 / 12 / 4 drones · frequent lighter missions' },
+  { value: 'precision', label: 'Precision Ops', desc: '12 / 6 / 2 drones · complex heavy missions' },
+  { value: 'campaign',  label: 'Campaign',      desc: '24 / 12 / 4 drones · complex heavy missions' },
 ]
 
 interface Props {
@@ -22,8 +23,8 @@ interface Props {
 
 export default function StartScreen({ onStart }: Props) {
   const [participantId, setParticipantId] = useState('')
-  const [condition, setCondition] = useState<Condition>('HH')
-  const [complexity, setComplexity] = useState<StudyConfig['complexity']>('medium')
+  const [condition, setCondition] = useState<Condition>('PP')
+  const [complexity, setComplexity] = useState<StudyConfig['complexity']>('standard')
   const [seed, setSeed] = useState(String(randomSeed()))
   const [error, setError] = useState('')
 
@@ -85,7 +86,7 @@ export default function StartScreen({ onStart }: Props) {
         {/* Complexity */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-300">Complexity</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {COMPLEXITIES.map(cx => (
               <button
                 key={cx.value}

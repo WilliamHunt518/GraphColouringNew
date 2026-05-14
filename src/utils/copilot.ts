@@ -33,14 +33,14 @@ function simulatePool(
 
   for (const task of tasks) {
     const c = comps.get(task.id)
-    if (!c || c.comp.Blue + c.comp.Red + c.comp.Green === 0) continue
+    if (!c || c.comp.Blue + c.comp.Red + c.comp.Green === 0) continue  // zero-asset tasks always skippable
 
-    // Skip if pool lacks sufficient tokens
+    // Pool permanently lacks tokens for this task — can never complete all tasks
     if (
       tokens.filter(v => v.type === 'Blue').length  < c.comp.Blue  ||
       tokens.filter(v => v.type === 'Red').length   < c.comp.Red   ||
       tokens.filter(v => v.type === 'Green').length < c.comp.Green
-    ) continue
+    ) return Infinity
 
     const picked = [
       ...pickEarliest('Blue',  c.comp.Blue),
@@ -224,20 +224,26 @@ export function generateStrategies(
   // ── Perturb pool counts with ε_M noise ───────────────────────────────────
   // With probability ε_M, adjusts one asset type's count by ±1 (capped to
   // [0, reserve]). Simulates the MCP over- or under-recommending assets.
-  function perturbPool(pool: AssetRequirement): AssetRequirement {
+  // If noise renders the pool unable to complete all tasks, the original is kept —
+  // we never suggest a plan that leaves tasks incomplete.
+  function perturbPool(
+    pool: AssetRequirement,
+    comps: Map<string, { comp: TaskComposition; baseTime: number }>,
+  ): AssetRequirement {
     if (epsilonM === 0 || rng.randFloat(0, 1) > epsilonM) return { ...pool }
     const types: Array<keyof AssetRequirement> = ['Blue', 'Red', 'Green']
     const type = types[rng.randInt(0, 2)]
     const delta = rng.randFloat(0, 1) < 0.5 ? -1 : 1
-    return {
+    const noisy = {
       ...pool,
       [type]: Math.max(0, Math.min(reserve[type], pool[type] + delta)),
     }
+    return simulatePool(sorted, comps, noisy) < Infinity ? noisy : { ...pool }
   }
 
-  const noisyFastPool = perturbPool(fastPool)
-  const noisyCitPool  = perturbPool(citPool)
-  const noisyPresPool = perturbPool(presPool)
+  const noisyFastPool = perturbPool(fastPool, primComps)
+  const noisyCitPool  = perturbPool(citPool,  primComps)
+  const noisyPresPool = perturbPool(presPool, presComps)
 
   // Recompute ETAs from noisy pools (so displayed time matches displayed counts)
   const noisyFastTime = simulatePool(sorted, primComps, noisyFastPool)
@@ -293,7 +299,7 @@ export function generateStrategies(
     },
   ]
 
-  return raw.filter(s => isFeasible(s.assets, reserve))
+  return raw.filter(s => isFeasible(s.assets, reserve) && s.expectedCompletionTime < Infinity)
 }
 
 /**

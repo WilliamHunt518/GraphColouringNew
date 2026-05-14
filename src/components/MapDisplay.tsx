@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { MapViewState, Asset, Mission, Task, AssetType, TaskStatus } from '../types'
-import { HUB, ASSET_CALLSIGNS } from '../utils/missionGen'
+import { HUB, ASSET_CALLSIGNS, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL } from '../utils/missionGen'
+import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 
 // ─── Colour constants ─────────────────────────────────────────────────────
 
@@ -162,6 +163,7 @@ export default function MapDisplay({ state, onToggleTaskPriority, onReprioritise
               <MissionZone
                 key={m.id}
                 mission={m}
+                elapsed={state.elapsed}
                 selected={m.id === selectedMissionId}
                 copilotMissionId={state.copilotMissionId}
                 priorityTaskIds={state.priorityTaskIds}
@@ -206,7 +208,10 @@ export default function MapDisplay({ state, onToggleTaskPriority, onReprioritise
           </button>
         </div>
         <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
-        <span>Score <span className="text-white font-bold">{state.score}</span></span>
+        <span>
+          Score <span className="text-white font-bold">{state.score}</span>
+          <span className="text-red-400 ml-1">−{state.penaltyAccrued}</span>
+        </span>
         <span>{state.missions.filter(m => m.status === 'active').length} active · {state.missions.filter(m => m.status === 'queued').length} queued</span>
         {isZoomed && (
           <button
@@ -278,10 +283,26 @@ function HubMarker({ assets }: { assets: Asset[] }) {
 
 // ─── Mission zone ─────────────────────────────────────────────────────────
 
+// Urgency helpers mirroring PrimaryDisplay logic
+function mapPenaltyUrgency(pts: number): 'none' | 'low' | 'med' | 'high' {
+  if (pts < 20)  return 'none'
+  if (pts < 50)  return 'low'
+  if (pts < 100) return 'med'
+  return 'high'
+}
+
+const URGENCY_STROKE: Record<'none'|'low'|'med'|'high', string | null> = {
+  none: null,
+  low:  '#ca8a04',   // yellow-600
+  med:  '#ea580c',   // orange-600
+  high: '#dc2626',   // red-600
+}
+
 function MissionZone({
-  mission, selected, copilotMissionId, priorityTaskIds, onToggleTaskPriority, onReprioritiseTop, onClick,
+  mission, elapsed, selected, copilotMissionId, priorityTaskIds, onToggleTaskPriority, onReprioritiseTop, onClick,
 }: {
   mission: Mission
+  elapsed: number
   selected: boolean
   copilotMissionId: string | null
   priorityTaskIds: string[]
@@ -295,14 +316,27 @@ function MissionZone({
   const isDone = mission.status === 'completed' || mission.status === 'failed'
   const isAllocating = mission.id === copilotMissionId
   const isActive = mission.status === 'active'
+  const isLive = mission.status === 'queued' || isActive
 
   const completedTasks = mission.tasks.filter(t => t.status === 'completed').length
   const totalTasks = mission.tasks.length
+
+  // Penalty info for live missions
+  const waitSecs = isLive ? Math.max(0, (mission.completionTime ?? elapsed) - mission.arrivalTime) : 0
+  const penaltyPts = isLive ? Math.round(CATEGORY_PENALTY_RATE[mission.category] * waitSecs) : 0
+  const missionValue = mission.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
+  const penaltyFrac = missionValue > 0 ? Math.min(1, penaltyPts / missionValue) : 0
+  const urgency = isLive ? mapPenaltyUrgency(penaltyPts) : 'none'
+  const urgencyColor = URGENCY_STROKE[urgency]
 
   const movableTasks = isActive
     ? mission.tasks.filter(t => t.status === 'pending' || t.status === 'traveling')
     : []
   const manualPriorityIds: string[] = mission.manualPriorityIds ?? []
+
+  // Task completion by VALUE (weighted progress arc)
+  const earnedValue = mission.tasks.filter(t => t.status === 'completed').reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
+  const progressFrac = missionValue > 0 ? earnedValue / missionValue : 0
 
   return (
     <g onClick={onClick} style={{ cursor: isDone ? 'default' : 'pointer' }}>
@@ -312,18 +346,22 @@ function MissionZone({
       <circle
         cx={cx} cy={cy} r={r}
         fill={ZONE_FILL[mission.status]}
-        stroke={isAllocating ? '#3b82f6' : ZONE_STROKE[mission.status]}
-        strokeWidth={isAllocating ? 2 : selected ? 2 : 1.2}
+        stroke={isAllocating ? '#3b82f6' : urgencyColor ?? ZONE_STROKE[mission.status]}
+        strokeWidth={isAllocating ? 2 : selected ? 2 : urgency !== 'none' ? 1.8 : 1.2}
         strokeDasharray={mission.status === 'queued' ? '5,4' : 'none'}
         strokeOpacity={isDone ? 0.4 : 0.9}
       />
-      {mission.status === 'active' && totalTasks > 0 && (
-        <ProgressArc cx={cx} cy={cy} r={r} fraction={completedTasks / totalTasks} />
+      {/* Task value progress arc (green, inner) */}
+      {isLive && missionValue > 0 && (
+        <ProgressArc cx={cx} cy={cy} r={r} fraction={progressFrac} />
+      )}
+      {/* Penalty arc (red/orange, outer) — grows as cost accumulates */}
+      {isLive && penaltyFrac > 0 && (
+        <PenaltyArc cx={cx} cy={cy} r={r} fraction={penaltyFrac} urgency={urgency} />
       )}
       {mission.tasks.map(t => {
         const isMovable = movableTasks.some(m => m.id === t.id)
         const canReprioritise = isActive && isMovable && !!onReprioritiseTop
-        // Badge only for explicitly clicked tasks (post-alloc) or selected tasks (pre-alloc)
         const postAllocIdx = isActive ? manualPriorityIds.indexOf(t.id) : -1
         return (
           <TaskWaypoint
@@ -341,25 +379,40 @@ function MissionZone({
       <text x={cx} y={cy - r - 16} textAnchor="middle" fontSize={8} fill={isDone ? '#4b5563' : '#64748b'}>
         Cat {mission.category} · {completedTasks}/{totalTasks}
       </text>
+      {/* Penalty cost label below the zone for live missions */}
+      {isLive && penaltyPts > 0 && (
+        <text
+          x={cx} y={cy + r + 14}
+          textAnchor="middle" fontSize={8}
+          fill={urgencyColor ?? '#6b7280'}
+          fontFamily="monospace"
+        >
+          −{penaltyPts} pts
+        </text>
+      )}
     </g>
   )
 }
 
-function ProgressArc({ cx, cy, r, fraction }: { cx: number; cy: number; r: number; fraction: number }) {
-  if (fraction <= 0) return null
-  const clipped = Math.min(1, fraction)
-  const outerR = r + 4
+function arcPath(cx: number, cy: number, r: number, fraction: number): string {
+  const clipped = Math.min(1, Math.max(0, fraction))
   const start = -Math.PI / 2
   const end = start + clipped * 2 * Math.PI
-  const x1 = cx + outerR * Math.cos(start)
-  const y1 = cy + outerR * Math.sin(start)
-  const x2 = cx + outerR * Math.cos(end)
-  const y2 = cy + outerR * Math.sin(end)
-  const large = clipped > 0.5 ? 1 : 0
-  const d = clipped >= 1
-    ? `M ${cx},${cy - outerR} A ${outerR},${outerR} 0 1 1 ${cx - 0.01},${cy - outerR} Z`
-    : `M ${x1},${y1} A ${outerR},${outerR} 0 ${large} 1 ${x2},${y2}`
-  return <path d={d} fill="none" stroke="#10b981" strokeWidth={2} strokeLinecap="round" />
+  if (clipped >= 1) return `M ${cx},${cy - r} A ${r},${r} 0 1 1 ${cx - 0.01},${cy - r} Z`
+  const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start)
+  const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end)
+  return `M ${x1},${y1} A ${r},${r} 0 ${clipped > 0.5 ? 1 : 0} 1 ${x2},${y2}`
+}
+
+function ProgressArc({ cx, cy, r, fraction }: { cx: number; cy: number; r: number; fraction: number }) {
+  if (fraction <= 0) return null
+  return <path d={arcPath(cx, cy, r + 4, fraction)} fill="none" stroke="#10b981" strokeWidth={2} strokeLinecap="round" />
+}
+
+function PenaltyArc({ cx, cy, r, fraction, urgency }: { cx: number; cy: number; r: number; fraction: number; urgency: 'none'|'low'|'med'|'high' }) {
+  if (fraction <= 0) return null
+  const color = urgency === 'high' ? '#ef4444' : urgency === 'med' ? '#f97316' : '#eab308'
+  return <path d={arcPath(cx, cy, r + 10, fraction)} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
 }
 
 function TaskWaypoint({ task, priorityIndex = -1, onToggle, onReprioritiseTop }: {
@@ -415,10 +468,20 @@ function TaskWaypoint({ task, priorityIndex = -1, onToggle, onReprioritiseTop }:
         <circle cx={x} cy={y} r={7} fill="none" stroke="#fbbf24"
           strokeWidth={1.3} strokeOpacity={0.9} {...interactProps} />
       )}
-      <circle cx={x} cy={y} r={4} fill={color} {...interactProps} />
-      <text x={x} y={y - 7} textAnchor="middle" fontSize={7} fill={color} fontFamily="monospace" {...interactProps}>
-        {TASK_SHORT_MAP[task.type]}
-      </text>
+      {/* Waypoint marker: status-coloured ring with task icon inside */}
+      <circle
+        cx={x} cy={y} r={8}
+        fill="#080f1a"
+        stroke={color} strokeWidth={1.4} strokeOpacity={task.status === 'completed' ? 0.35 : 0.85}
+        {...interactProps}
+      />
+      <image
+        href={TASK_ICON[task.type]}
+        x={x - 7} y={y - 7}
+        width={14} height={14}
+        opacity={task.status === 'completed' ? 0.25 : 0.88}
+        style={{ pointerEvents: 'none' }}
+      />
       {/* Priority number badge */}
       {isPriority && (
         <text x={x + 6} y={y - 4} fontSize={7} fill="#fbbf24" fontWeight="bold" {...interactProps}>
@@ -505,29 +568,15 @@ function AssetDot({ asset, useCallsigns }: { asset: Asset; useCallsigns: boolean
   const { x, y } = asset.position
   const color = ASSET_COLOR[asset.type]
   const isReturning = asset.status === 'returning'
-
-  const fo = isReturning ? 0.5 : 0.95
-  const stroke = isReturning ? 'none' : 'white'
-  const sw = isReturning ? 0 : 0.8
   const label = useCallsigns ? (ASSET_CALLSIGNS[asset.id] ?? asset.id) : asset.id
+  const s = 18  // icon size in SVG units
 
   return (
-    <g filter="url(#assetGlow)">
-      <circle cx={x + 1} cy={y + 1} r={5} fill="black" fillOpacity={0.4} />
-      {asset.type === 'Blue' && (
-        <circle cx={x} cy={y} r={5} fill={color} fillOpacity={fo}
-          stroke={stroke} strokeWidth={sw} strokeOpacity={0.6} />
-      )}
-      {asset.type === 'Red' && (
-        <polygon points={`${x},${y-5.5} ${x+5.5},${y} ${x},${y+5.5} ${x-5.5},${y}`}
-          fill={color} fillOpacity={fo} stroke={stroke} strokeWidth={sw} strokeOpacity={0.6} />
-      )}
-      {asset.type === 'Green' && (
-        <polygon points={`${x},${y-5.5} ${x+5},${y+4.5} ${x-5},${y+4.5}`}
-          fill={color} fillOpacity={fo} stroke={stroke} strokeWidth={sw} strokeOpacity={0.6} />
-      )}
+    <g filter="url(#assetGlow)" opacity={isReturning ? 0.55 : 1}>
+      <circle cx={x + 1} cy={y + 1} r={s / 2 + 1} fill="black" fillOpacity={0.35} />
+      <image href={DRONE_ICON[asset.type]} x={x - s / 2} y={y - s / 2} width={s} height={s} />
       <AssetDirectionPip asset={asset} color={color} />
-      <text x={x + 8} y={y + 3} fontSize={8} fill={color} fillOpacity={0.85} fontFamily="monospace">
+      <text x={x + s / 2 + 3} y={y + 3} fontSize={8} fill={color} fillOpacity={0.85} fontFamily="monospace">
         {label}
       </text>
     </g>
@@ -538,14 +587,14 @@ function AssetDirectionPip({ asset, color }: { asset: Asset; color: string }) {
   const { position, targetPosition } = asset
   const dx = targetPosition.x - position.x
   const dy = targetPosition.y - position.y
-  const dist = Math.hypot(dx, dy)
-  if (dist < 1) return null
-  const norm = 7 / dist
+  const d = Math.hypot(dx, dy)
+  if (d < 1) return null
+  const norm = 13 / d  // 13px clears the 9px icon half-radius
   return (
     <line
       x1={position.x} y1={position.y}
       x2={position.x + dx * norm} y2={position.y + dy * norm}
-      stroke={color} strokeWidth={1.5} strokeLinecap="round"
+      stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeOpacity={0.9}
     />
   )
 }
@@ -578,9 +627,58 @@ function MissionInfoOverlay({
         <button onClick={onClose} className="text-gray-500 hover:text-gray-200 text-lg leading-none">×</button>
       </div>
 
-      <div className="text-xs text-gray-400">
-        Zone center: ({Math.round(mission.zoneCenter.x)}, {Math.round(mission.zoneCenter.y)})
-      </div>
+      {/* Task value progress bar */}
+      {(() => {
+        const totalVal = mission.tasks.reduce((s, t) => s + TASK_WEIGHT[t.type], 0)
+        const earned   = mission.tasks.filter(t => t.status === 'completed').reduce((s, t) => s + TASK_WEIGHT[t.type], 0)
+        const segBg: Record<TaskStatus, string> = {
+          completed: '#16a34a', executing: '#f59e0b', traveling: '#1d4ed8',
+          pending: '#374151', failed: '#7f1d1d',
+        }
+        return totalVal > 0 ? (
+          <div className="space-y-0.5">
+            <div className="flex h-3 rounded-sm overflow-hidden gap-px">
+              {mission.tasks.map(t => (
+                <div
+                  key={t.id}
+                  style={{ width: `${(TASK_WEIGHT[t.type] / totalVal) * 100}%`, background: segBg[t.status] }}
+                  title={`+${TASK_WEIGHT[t.type]} pts · ${t.status}`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-green-500">+{earned} earned</span>
+              <span className="text-gray-500">{totalVal} max</span>
+            </div>
+          </div>
+        ) : null
+      })()}
+
+      {/* Penalty charge bars */}
+      {(() => {
+        const rate = CATEGORY_PENALTY_RATE[mission.category]
+        const penPerBar = rate * CHARGE_INTERVAL
+        const maxBarPx = 16
+        const barH = Math.max(3, Math.round((penPerBar / (0.40 * CHARGE_INTERVAL)) * maxBarPx))
+        const waitSecs = Math.max(0, (mission.completionTime ?? elapsed) - mission.arrivalTime)
+        const numBars = Math.floor(waitSecs / CHARGE_INTERVAL)
+        const totalPen = Math.round(rate * waitSecs)
+        const penColor = totalPen >= 100 ? '#ef4444' : totalPen >= 50 ? '#f97316' : totalPen >= 20 ? '#eab308' : '#6b7280'
+        return (
+          <div className="space-y-0.5">
+            <div className="flex items-end gap-px overflow-x-hidden" style={{ height: `${maxBarPx}px` }}>
+              {Array.from({ length: numBars }).map((_, i) => (
+                <div key={i} style={{ flex: 1, minWidth: 0, height: `${barH}px`, background: penColor }} />
+              ))}
+              {numBars === 0 && <span style={{ fontSize: '8px', color: '#4b5563', alignSelf: 'flex-end' }}>no charges</span>}
+            </div>
+            <div className="flex justify-between text-xs">
+              <span style={{ color: penColor }}>−{totalPen} pts {mission.completionTime ? '(final)' : ''}</span>
+              <span className="text-gray-600">−{penPerBar.toFixed(2)}/charge</span>
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="space-y-1.5">
         {mission.tasks.map(task => {

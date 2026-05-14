@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { GameState, Mission, Task, Asset, AssetType, MissionCategory, AssetRequirement, Strategy } from '../types'
+import type { GameState, Mission, Task, Asset, AssetType, MissionCategory, AssetRequirement, Strategy, TaskType } from '../types'
 import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadDebugLog } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
-import { ASSET_CALLSIGNS } from '../utils/missionGen'
+import { ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL } from '../utils/missionGen'
+import { CAT_ICON, TASK_ICON, DRONE_ICON } from '../utils/icons'
 
 interface Props {
   state: GameState
@@ -73,8 +74,6 @@ const ASSET_CHIP_IDLE: Record<AssetType, string> = {
   Green: 'bg-green-900/40 text-green-400',
 }
 
-const ASSET_TOTAL: Record<AssetType, number> = { Blue: 18, Red: 9, Green: 3 }
-
 
 function fmtTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -82,14 +81,72 @@ function fmtTime(seconds: number): string {
   return `${m}m ${s.toString().padStart(2, '0')}s`
 }
 
+// ─── Callsign mode ────────────────────────────────────────────────────────
+
+type CallsignMode = 'id' | 'arthurian' | 'nato'
+
+function resolveCallsign(assetId: string, mode: CallsignMode): string {
+  if (mode === 'arthurian') return ASSET_CALLSIGNS[assetId] ?? assetId
+  if (mode === 'nato')      return ASSET_CALLSIGNS_NATO[assetId] ?? assetId
+  return assetId
+}
+
+const CALLSIGN_LABELS: Record<CallsignMode, string> = {
+  id: 'ID',
+  arthurian: 'Arthurian',
+  nato: 'NATO',
+}
+
+function nextCallsignMode(m: CallsignMode): CallsignMode {
+  return m === 'id' ? 'arthurian' : m === 'arthurian' ? 'nato' : 'id'
+}
+
+// ─── Penalty helpers ──────────────────────────────────────────────────────
+
+function missionPenaltyAccrued(mission: Mission, elapsed: number): number {
+  const totalWeight = mission.tasks.reduce((s, t) => s + TASK_WEIGHT[t.type], 0)
+  if (totalWeight === 0) return 0
+  const rate = CATEGORY_PENALTY_RATE[mission.category]
+  let penalty = 0
+  for (const t of mission.tasks) {
+    const taskRate = rate * TASK_WEIGHT[t.type] / totalWeight
+    const endTime = t.completionTime ?? elapsed
+    penalty += taskRate * Math.max(0, endTime - mission.arrivalTime)
+  }
+  return Math.round(penalty)
+}
+
+// 'none' | 'low' | 'med' | 'high' based on pts lost so far
+type UrgencyLevel = 'none' | 'low' | 'med' | 'high'
+
+function penaltyUrgency(penaltyPts: number): UrgencyLevel {
+  if (penaltyPts < 20)  return 'none'
+  if (penaltyPts < 50)  return 'low'
+  if (penaltyPts < 100) return 'med'
+  return 'high'
+}
+
 // ─── Top-level ────────────────────────────────────────────────────────────
 
 export default function PrimaryDisplay({ state, dispatch }: Props) {
-  const [useCallsigns, setUseCallsigns] = useState(false)
+  const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
+  const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
   const done    = state.missions.filter(m => m.status === 'completed' || m.status === 'failed')
   const reserve = reserveCount(state.assets)
+
+  function sortByScore(missions: Mission[]) {
+    const totalPts = (m: Mission) => m.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
+    return [...missions].sort((a, b) => totalPts(b) - totalPts(a))
+  }
+  const sortedQueued = sortMode === 'score' ? sortByScore(queued) : queued
+  const sortedActive = sortMode === 'score' ? sortByScore(active) : active
+
+  // Score breakdown (completion points = score + penalty, modulo floor-at-0)
+  const completionPoints = state.missions.flatMap(m => m.tasks)
+    .filter(t => t.status === 'completed')
+    .reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
@@ -103,7 +160,11 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
         </div>
         <div className="flex items-center gap-6 text-sm">
           <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
-          <span className="text-gray-400">Score: <span className="text-white font-bold">{state.score}</span></span>
+          <span className="text-gray-400 flex items-baseline gap-1.5">
+            <span>Score: <span className="text-white font-bold">{state.score}</span></span>
+            <span className="text-xs text-green-500" title="Completion points earned">+{completionPoints}</span>
+            <span className="text-xs text-red-400" title="Accumulated wait penalty">−{state.penaltyAccrued} pen</span>
+          </span>
           <button
             onClick={() => window.open('/?view=map', '_blank', 'noopener')}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
@@ -111,14 +172,15 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             Open Map
           </button>
           <button
-            onClick={() => setUseCallsigns(c => !c)}
+            onClick={() => setCallsignMode(m => nextCallsignMode(m))}
             className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-              useCallsigns
+              callsignMode !== 'id'
                 ? 'bg-blue-700 text-white border-blue-500'
                 : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
             }`}
+            title="Cycle callsign display: ID → Arthurian → NATO"
           >
-            Callsigns
+            {CALLSIGN_LABELS[callsignMode]}
           </button>
           <button
             onClick={downloadDebugLog}
@@ -134,19 +196,34 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: mission queue */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 min-w-0">
+          {(queued.length > 0 || active.length > 0) && (
+            <div className="flex items-center justify-end mb-1">
+              <button
+                onClick={() => setSortMode(s => s === 'arrival' ? 'score' : 'arrival')}
+                className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                  sortMode === 'score'
+                    ? 'bg-blue-900/30 text-blue-400 border-blue-700'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+                }`}
+                title="Sort missions by arrival time or by accrued penalty"
+              >
+                Sort: {sortMode === 'arrival' ? 'Arrival ↓' : 'Score ↓'}
+              </button>
+            </div>
+          )}
           {queued.length > 0 && (
             <section>
               <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
-              {queued.map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} useCallsigns={useCallsigns} />
+              {sortedQueued.map(m => (
+                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
               ))}
             </section>
           )}
           {active.length > 0 && (
             <section className={queued.length > 0 ? 'mt-4' : ''}>
               <SectionLabel text="Active missions" dot="bg-blue-400" />
-              {active.map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} useCallsigns={useCallsigns} />
+              {sortedActive.map(m => (
+                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
               ))}
             </section>
           )}
@@ -154,7 +231,7 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             <section className="mt-4 opacity-60">
               <SectionLabel text="Completed" dot="bg-gray-500" />
               {done.slice(-6).map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} useCallsigns={useCallsigns} />
+                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
               ))}
             </section>
           )}
@@ -191,7 +268,7 @@ function SectionLabel({ text, dot }: { text: string; dot: string }) {
 
 // ─── Mission card ─────────────────────────────────────────────────────────
 
-function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; useCallsigns: boolean }) {
+function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode }) {
   const isQueued    = mission.status === 'queued'
   const isActive    = mission.status === 'active'
   const isCompleted = mission.status === 'completed'
@@ -212,12 +289,17 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
     t.status === 'traveling' && !activeTaskIds.has(t.id) && t.assignedAssetIds.length > 0
   ).length
 
-  const borderColor = isAllocating
-    ? 'border-blue-500'
-    : isQueued ? 'border-amber-700' : isActive ? 'border-blue-800' : 'border-gray-800'
-  const bgColor = isAllocating
-    ? 'bg-blue-950/20'
-    : isQueued ? 'bg-amber-950/20' : isActive ? 'bg-blue-950/10' : 'bg-gray-900/40'
+  const penaltyPts = missionPenaltyAccrued(mission, state.elapsed)
+  const urgency = (isQueued || isActive) ? penaltyUrgency(penaltyPts) : 'none'
+
+  const borderColor = isAllocating ? 'border-blue-500'
+    : isQueued  ? 'border-amber-700'
+    : isActive  ? 'border-blue-800'
+    : 'border-gray-800'
+  const bgColor = isAllocating ? 'bg-blue-950/20'
+    : isQueued  ? 'bg-amber-950/20'
+    : isActive  ? 'bg-blue-950/10'
+    : 'bg-gray-900/40'
 
   const eta = isActive
     ? Math.max(0, Math.max(...mission.tasks.map(t => t.completionTime ?? 0)) - state.elapsed)
@@ -229,6 +311,7 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-mono text-xs font-bold text-white">{mission.id}</span>
+          <img src={CAT_ICON[mission.category]} className="w-5 h-5 flex-none" alt="" />
           <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${CAT_BADGE[mission.category]}`}>
             {mission.category} · {CAT_NAME[mission.category]}
           </span>
@@ -260,25 +343,11 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
         </div>
       </div>
 
-      {/* Task badges — status strip */}
-      <div className="flex flex-wrap gap-1 mt-1">
-        {mission.tasks.map(t => (
-          <TaskBadge
-            key={t.id}
-            task={t}
-            missionActive={isActive}
-            isQueuedInChain={
-              isActive &&
-              t.status === 'traveling' &&
-              !activeTaskIds.has(t.id) &&
-              t.assignedAssetIds.length > 0
-            }
-          />
-        ))}
-      </div>
+      {/* Task progress + penalty histogram */}
+      <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
 
       {/* Co-Pilot task plan — shown after allocation */}
-      {isActive && <CopilotPlanPanel mission={mission} useCallsigns={useCallsigns} />}
+      {isActive && <CopilotPlanPanel mission={mission} callsignMode={callsignMode} />}
 
       {/* Assigned assets strip */}
       {isActive && deployedHere.length > 0 && (
@@ -296,7 +365,7 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
                 recallable={recallable ?? false}
                 isZeroCost={recallCostSec === 0}
                 recallCostSec={recallCostSec}
-                callsign={useCallsigns ? ASSET_CALLSIGNS[a.id] : undefined}
+                callsign={callsignMode !== 'id' ? resolveCallsign(a.id, callsignMode) : undefined}
                 onRecall={() => dispatch({ type: 'RECALL_ASSET', assetId: a.id })}
               />
             )
@@ -310,47 +379,190 @@ function MissionCard({ mission, state, dispatch, useCallsigns }: { mission: Miss
   )
 }
 
-// ─── Task badge ───────────────────────────────────────────────────────────
+// ─── Mission progress section ─────────────────────────────────────────────
 
-function TaskBadge({ task, missionActive, isQueuedInChain, isPriority, onTogglePriority }: {
-  task: Task
-  missionActive?: boolean
-  isQueuedInChain?: boolean
-  isPriority?: boolean
-  onTogglePriority?: () => void
+
+function MissionProgressSection({ mission, elapsed, urgency, activeTaskIds, isActive }: {
+  mission: Mission
+  elapsed: number
+  urgency: UrgencyLevel
+  activeTaskIds: Set<string>
+  isActive: boolean
 }) {
-  const isUnschedulable = missionActive === true && task.status === 'pending' && task.assignedAssetIds.length === 0
-  const baseStyle = isUnschedulable
-    ? 'bg-gray-900 border border-amber-700/60 text-amber-600 opacity-70'
-    : isQueuedInChain
-    ? 'bg-blue-950/60 text-blue-300 border border-blue-800/40'
-    : TASK_STATUS_STYLE[task.status]
+  return (
+    <div className="mt-2 pt-1.5 border-t border-gray-700/40 space-y-1.5">
+      <TaskProgressBar tasks={mission.tasks} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
+      <PenaltyHistogram mission={mission} elapsed={elapsed} />
+    </div>
+  )
+}
 
-  const title = isUnschedulable
-    ? `${TASK_FULL[task.type]} (T${task.type}) — cannot fulfill (requires asset types not committed)`
-    : isQueuedInChain
-    ? `${TASK_FULL[task.type]} (T${task.type}) — queued (agent completing a prior task first)`
-    : `${TASK_FULL[task.type]} (T${task.type}) — ${task.status}${onTogglePriority ? ' · click to prioritise' : ''}`
+function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive }: {
+  tasks: Task[]
+  urgency: UrgencyLevel
+  activeTaskIds: Set<string>
+  isActive: boolean
+}) {
+  const totalValue = tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
+  if (totalValue === 0) return null
+  const earnedValue = tasks.filter(t => t.status === 'completed').reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
+
+  function segBg(t: Task): string {
+    if (t.status === 'completed') return 'bg-green-600'
+    if (t.status === 'failed')    return 'bg-red-800'
+    if (t.status === 'executing') return 'bg-amber-500 animate-pulse'
+    if (t.status === 'traveling') {
+      if (isActive && !activeTaskIds.has(t.id) && t.assignedAssetIds.length > 0) return 'bg-blue-950/60'
+      return 'bg-blue-700 animate-pulse'
+    }
+    if (isActive && t.assignedAssetIds.length === 0) return 'bg-gray-800 opacity-60'
+    return 'bg-gray-700'
+  }
+
+  function urgencyTop(t: Task): string {
+    if (t.status === 'completed' || t.status === 'failed') return ''
+    return urgency === 'high' ? 'border-t-2 border-red-500'
+      : urgency === 'med'    ? 'border-t border-orange-400'
+      : urgency === 'low'    ? 'border-t border-yellow-600'
+      : ''
+  }
 
   return (
-    <div
-      className={`relative inline-flex flex-col items-center justify-center px-1.5 py-0.5 rounded
-        ${baseStyle}
-        ${onTogglePriority ? 'cursor-pointer hover:brightness-125' : 'cursor-default'}
-        ${isPriority ? 'ring-1 ring-yellow-400' : ''}`}
-      title={title}
-      onClick={onTogglePriority}
-    >
-      {isPriority && (
-        <span className="absolute -top-1 -right-1 text-yellow-400 text-xs leading-none">★</span>
-      )}
-      <span className="text-xs font-bold leading-tight">
-        {TASK_SHORT[task.type]}{isUnschedulable ? '?' : ''}
-      </span>
-      <div className="flex gap-0.5 mt-0.5">
-        {TASK_DOTS[task.type].map((t, i) => (
-          <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[t]} opacity-75`} />
+    <div className="space-y-1">
+      <div className="flex h-11 rounded-sm overflow-hidden gap-px">
+        {tasks.map(t => {
+          const widthPct = (TASK_WEIGHT[t.type] / totalValue) * 100
+          const showFull  = widthPct >= 15
+          const showShort = widthPct >= 7
+          return (
+            <div
+              key={t.id}
+              className={`flex flex-col items-center justify-center overflow-hidden flex-none ${segBg(t)} ${urgencyTop(t)}`}
+              style={{ width: `${widthPct}%` }}
+              title={`${TASK_FULL[t.type]} · +${TASK_WEIGHT[t.type]} pts · ${t.status}`}
+            >
+              {showShort && (
+                <img src={TASK_ICON[t.type]} className="w-4 h-4 flex-none" style={{ opacity: t.status === 'completed' ? 0.7 : 1 }} alt="" />
+              )}
+              {showFull && (
+                <span className="text-white/55 leading-none" style={{ fontSize: '8px' }}>
+                  +{TASK_WEIGHT[t.type]}
+                </span>
+              )}
+              {showShort && (
+                <div className="flex gap-0.5 mt-px">
+                  {TASK_DOTS[t.type].map((dot, i) => (
+                    <span key={i} className={`w-1 h-1 rounded-full ${ASSET_DOT_COLOR[dot]} opacity-80`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex items-center justify-between" style={{ fontSize: '10px' }}>
+        <span className="text-green-500">+{earnedValue} earned</span>
+        <div className="flex items-center gap-2 text-gray-600">
+          <LegendDot color="bg-green-600" label="Done" />
+          <LegendDot color="bg-blue-700" label="Route" />
+          <LegendDot color="bg-amber-500" label="Active" />
+          <LegendDot color="bg-gray-700" label="Pending" />
+        </div>
+        <span className="text-gray-500">{totalValue} max</span>
+      </div>
+    </div>
+  )
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      <span className={`w-2 h-2 rounded-sm inline-block flex-none ${color}`} />
+      <span>{label}</span>
+    </span>
+  )
+}
+
+function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: number }) {
+  const rate = CATEGORY_PENALTY_RATE[mission.category]
+  const isDone = mission.completionTime !== null
+  const waitSecs = Math.max(0, (mission.completionTime ?? elapsed) - mission.arrivalTime)
+  const numBars = Math.floor(waitSecs / CHARGE_INTERVAL)
+  const partialFrac = isDone ? 0 : (waitSecs % CHARGE_INTERVAL) / CHARGE_INTERVAL
+
+  const totalWeight = mission.tasks.reduce((s, t) => s + TASK_WEIGHT[t.type], 0)
+
+  // Fraction of task weight still pending (not individually completed) at a given time
+  function pendingFrac(atElapsed: number): number {
+    if (totalWeight === 0) return 0
+    let pending = 0
+    for (const t of mission.tasks) {
+      if (t.completionTime === null || t.completionTime > atElapsed) pending += TASK_WEIGHT[t.type]
+    }
+    return pending / totalWeight
+  }
+
+  // Per-task accrued penalty (matches gameReducer logic)
+  const totalPenalty = Math.round(
+    totalWeight > 0
+      ? mission.tasks.reduce((sum, t) => {
+          const taskRate = rate * TASK_WEIGHT[t.type] / totalWeight
+          const endTime = t.completionTime ?? elapsed
+          return sum + taskRate * Math.max(0, endTime - mission.arrivalTime)
+        }, 0)
+      : 0
+  )
+
+  // Bars: GROWTH^i × pendingFrac at bar midpoint — grows with time, dips when tasks complete
+  const GROWTH = 1.15
+  const MAX_H = 36
+  const hasPartial = !isDone && partialFrac > 0
+
+  const barRelH = Array.from({ length: numBars }, (_, i) => {
+    const midTime = mission.arrivalTime + (i + 0.5) * CHARGE_INTERVAL
+    return (GROWTH ** i) * pendingFrac(midTime)
+  })
+  const partialRelH = hasPartial
+    ? (GROWTH ** numBars) * pendingFrac(elapsed) * partialFrac
+    : 0
+  const maxRelH = Math.max(...barRelH, partialRelH, 0.001)
+  const scale = MAX_H / maxRelH
+
+  const currentRate = rate * pendingFrac(elapsed)
+
+  return (
+    <div className="space-y-0.5">
+      <div
+        className="flex items-end gap-px overflow-x-hidden"
+        style={{ height: `${MAX_H}px` }}
+        title="Penalty accrues per task until each task individually completes"
+      >
+        {numBars === 0 && !hasPartial && (
+          <span className="text-gray-700 self-end leading-none" style={{ fontSize: '9px' }}>
+            no penalty yet
+          </span>
+        )}
+        {barRelH.map((h, i) => (
+          <div
+            key={i}
+            className="flex-1 min-w-0 bg-red-600"
+            style={{ height: `${Math.max(1, h * scale)}px` }}
+          />
         ))}
+        {hasPartial && (
+          <div
+            className="flex-1 min-w-0 bg-red-900 opacity-60"
+            style={{ height: `${Math.max(1, partialRelH * scale)}px` }}
+          />
+        )}
+      </div>
+      <div className="flex justify-between" style={{ fontSize: '10px' }}>
+        <span className="text-red-400">
+          −{totalPenalty} pts{isDone ? ' (final)' : ''}
+        </span>
+        {!isDone && (
+          <span className="text-gray-600">−{currentRate.toFixed(2)}/s · each task reduces rate</span>
+        )}
       </div>
     </div>
   )
@@ -419,7 +631,7 @@ function DroneChip({ asset, recallable, isZeroCost, recallCostSec, callsign, onR
 
 // ─── Co-Pilot task plan ───────────────────────────────────────────────────
 
-function CopilotPlanPanel({ mission, useCallsigns }: { mission: Mission; useCallsigns: boolean }) {
+function CopilotPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMode: CallsignMode }) {
   const [open, setOpen] = useState(false)
 
   // Build per-asset task chains by grouping tasks by asset ID.
@@ -459,7 +671,7 @@ function CopilotPlanPanel({ mission, useCallsigns }: { mission: Mission; useCall
               <span className={`font-mono font-bold ${
                 assetId.startsWith('B') ? 'text-blue-400' :
                 assetId.startsWith('R') ? 'text-red-400' : 'text-green-400'
-              }`}>{useCallsigns ? (ASSET_CALLSIGNS[assetId] ?? assetId) : assetId}</span>
+              }`}>{resolveCallsign(assetId, callsignMode)}</span>
               {chain.map((task, i) => (
                 <span key={task.id} className="flex items-center gap-1">
                   {i > 0 && <span className="text-gray-600">→</span>}
@@ -602,7 +814,7 @@ function InlineAllocator({ state, dispatch }: { state: GameState; dispatch: (a: 
             const avail    = reserve[type]
             const deployed = state.assets.filter(a => a.type === type && a.status === 'deployed').length
             const returning = state.assets.filter(a => a.type === type && a.status === 'returning').length
-            const total    = ASSET_TOTAL[type]
+            const total    = state.assets.filter(a => a.type === type).length
             return (
               <div key={type} className="space-y-1">
                 <div className="flex justify-between items-baseline">
@@ -892,14 +1104,17 @@ function ReservePanel({ state, reserve }: { state: GameState; reserve: AssetRequ
     <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 space-y-3">
       <p className="text-xs text-gray-500 uppercase tracking-wider">Reserve</p>
       {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
-        const total    = ASSET_TOTAL[type]
+        const total    = state.assets.filter(a => a.type === type).length
         const avail    = reserve[type]
         const deployed = state.assets.filter(a => a.type === type && a.status === 'deployed').length
         const returning = state.assets.filter(a => a.type === type && a.status === 'returning').length
         return (
           <div key={type} className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className={ASSET_COLORS[type]}>{DRONE_NAME[type]}</span>
+            <div className="flex justify-between items-center text-xs">
+              <span className="flex items-center gap-1">
+                <img src={DRONE_ICON[type]} className="w-4 h-4 flex-none" alt="" />
+                <span className={ASSET_COLORS[type]}>{DRONE_NAME[type]}</span>
+              </span>
               <span className="text-gray-400 font-mono">
                 {avail} avail · {deployed} out · {returning} rtng
               </span>
@@ -955,6 +1170,31 @@ function ForecastPanel({ state }: { state: GameState }) {
           <span key={c} className={`text-xs px-1 rounded ${CAT_BADGE[c]}`}>
             {c} {Math.round(f[c] * 100)}%
           </span>
+        ))}
+      </div>
+      <div className="border-t border-gray-800 pt-2 grid grid-cols-1 gap-0.5" style={{ fontSize: '10px' }}>
+        <p className="text-gray-600 uppercase mb-0.5" style={{ fontSize: '9px', letterSpacing: '0.05em' }}>Mission categories</p>
+        {(cats as MissionCategory[]).map(c => (
+          <div key={c} className="flex items-center gap-1.5">
+            <span className={`w-4 h-4 rounded flex-none flex items-center justify-center font-bold text-xs ${CAT_BADGE[c]}`}>{c}</span>
+            <span className="text-gray-400">{CAT_NAME[c]}</span>
+            <span className="text-gray-600 ml-auto">×{CATEGORY_PENALTY_RATE[c].toFixed(2)} pts/s</span>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-gray-800 pt-2 grid grid-cols-1 gap-0.5" style={{ fontSize: '10px' }}>
+        <p className="text-gray-600 uppercase mb-0.5" style={{ fontSize: '9px', letterSpacing: '0.05em' }}>Task types</p>
+        {([1, 2, 3, 4, 5] as TaskType[]).map(t => (
+          <div key={t} className="flex items-center gap-1.5">
+            <img src={TASK_ICON[t]} className="w-4 h-4 flex-none" alt="" />
+            <span className="text-gray-400">{TASK_FULL[t]}</span>
+            <div className="flex gap-0.5 ml-1">
+              {TASK_DOTS[t].map((d, i) => (
+                <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[d]}`} />
+              ))}
+            </div>
+            <span className="text-gray-600 ml-auto">+{TASK_WEIGHT[t]} pts</span>
+          </div>
         ))}
       </div>
     </div>

@@ -1,7 +1,11 @@
 // ─── Study configuration ───────────────────────────────────────────────────
 
 export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'PP'
-export type Complexity = 'easy' | 'medium' | 'hard'
+// standard = 18B/9R/3G, balanced mix
+// surge    = 24B/12R/4G, frequent lighter missions (volume challenge)
+// precision= 12B/6R/2G, complex heavy missions (coordination challenge)
+// campaign = 24B/12R/4G, complex heavy missions (both challenges)
+export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign'
 
 export interface StudyConfig {
   participantId: string
@@ -126,6 +130,7 @@ export interface MapViewState {
   elapsed: number
   sessionNumber: 1 | 2 | 3
   score: number
+  penaltyAccrued: number
   phase: GamePhase
   pendingBlueprints: MissionBlueprint[]
   copilotMissionId: string | null   // which mission's allocation modal is open
@@ -155,7 +160,8 @@ export interface GameState {
   pendingBlueprints: MissionBlueprint[]  // pre-computed arrivals not yet spawned
 
   // Score
-  score: number
+  score: number           // net score: completionPoints − penaltyAccrued (floored at 0)
+  penaltyAccrued: number  // raw penalty total (for display breakdown)
   completedSessionScores: number[]
 
   // Forecast (updated on each mission arrival)
@@ -299,6 +305,8 @@ export interface SessionEndedEvent extends BaseEvent {
   type: 'session_ended'
   sessionNumber: number
   score: number
+  penaltyAccrued: number
+  completionPoints: number
   greenEfficiency: number
   meanMissionTime: number
   cpFollowRate: number

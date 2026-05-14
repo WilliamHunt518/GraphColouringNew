@@ -1,4 +1,4 @@
-import type { Condition, StudyConfig } from '../types'
+import type { Condition, Complexity, StudyConfig } from '../types'
 
 const EPSILON: Record<string, number> = { H: 0.10, L: 0.40, P: 0.00 }
 
@@ -20,7 +20,7 @@ export function parseURLConfig(): StudyConfig | null {
   if (!participantId || !condition || !complexity || !seedStr) return null
 
   const validConditions: Condition[] = ['HH', 'LH', 'HL', 'LL', 'PP']
-  const validComplexities = ['easy', 'medium', 'hard']
+  const validComplexities: Complexity[] = ['standard', 'surge', 'precision', 'campaign']
   if (!validConditions.includes(condition)) return null
   if (!validComplexities.includes(complexity)) return null
 
