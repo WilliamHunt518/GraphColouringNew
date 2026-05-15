@@ -18,10 +18,6 @@ export default function MapWindowClient() {
     return () => { channel.close(); channelRef.current = null }
   }, [])
 
-  function handleToggleTaskPriority(taskId: string) {
-    channelRef.current?.postMessage({ _mapAction: 'TOGGLE_TASK_PRIORITY', taskId })
-  }
-
   function handleReprioritiseTop(missionId: string, taskId: string) {
     channelRef.current?.postMessage({ _mapAction: 'REPRIORITISE_TOP', missionId, taskId })
   }
@@ -37,5 +33,5 @@ export default function MapWindowClient() {
     )
   }
 
-  return <MapDisplay state={viewState} onToggleTaskPriority={handleToggleTaskPriority} onReprioritiseTop={handleReprioritiseTop} />
+  return <MapDisplay state={viewState} onReprioritiseTop={handleReprioritiseTop} />
 }

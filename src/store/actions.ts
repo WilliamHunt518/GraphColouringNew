@@ -1,37 +1,40 @@
-import type { AssetRequirement, Posture, Strategy } from '../types'
+import type { AssetRequirement } from '../types'
 
 export type GameAction =
   // ── Simulation clock ────────────────────────────────────────────────────
-  | { type: 'TICK'; nowMs: number }          // wall-clock ms; reducer computes elapsed
+  | { type: 'TICK'; nowMs: number }
 
-  // ── Mission lifecycle ────────────────────────────────────────────────────
-  | { type: 'OPEN_ALLOCATE'; missionId: string }          // operator clicks "Allocate"
-  | { type: 'SELECT_STRATEGY'; strategyIndex: number }    // Co-Pilot card selected
-  | { type: 'EDIT_ALLOCATION'; allocation: AssetRequirement }  // operator tweaks assets
+  // ── Strategic allocation ─────────────────────────────────────────────────
+  | { type: 'OPEN_STRATEGIC'; missionId: string }          // open strategic panel
+  | { type: 'CLOSE_STRATEGIC' }                             // dismiss without allocating
+  | { type: 'PICK_STRATEGY'; strategyIndex: number }        // select agent strategy card
+  | { type: 'EDIT_MANUAL'; allocation: AssetRequirement }   // adjust manual count
   | {
-      type: 'APPLY_ALLOCATION'
+      type: 'APPLY_STRATEGIC'
       missionId: string
-      allocation: AssetRequirement
-      source: 'copilot_as_proposed' | 'copilot_modified' | 'manual'
-      strategies: Strategy[]    // current Co-Pilot strategies (for follow-rate tracking)
-      selectedIndex: number | null
+      source: 'agent' | 'manual'
+      strategyIndex: number | null          // null if manual
+      manualAllocation: AssetRequirement | null  // used when source='manual'
     }
-  | { type: 'DISMISS_COPILOT'; missionId: string }
+
+  // ── Tactical confirmation (agent mode — from map sidebar) ────────────────
+  | { type: 'CONFIRM_TACTICAL'; missionId: string }
+  | { type: 'OVERRIDE_TACTICAL'; missionId: string }        // user wants to edit tactical
+
+  // ── Drone failure recovery ───────────────────────────────────────────────
+  | { type: 'ACCEPT_RECOVERY'; missionId: string; recoveryType: 'reserve' | 'redistribute' }
+  | { type: 'APPLY_MANUAL_RECOVERY'; missionId: string; taskId: string; newAssetId: string }
 
   // ── In-mission operations ────────────────────────────────────────────────
   | { type: 'RECALL_ASSET'; assetId: string }
   | { type: 'REPRIORITISE_TASK'; missionId: string; taskId: string; direction: 'up' | 'down' | 'top' }
-  | { type: 'TOGGLE_TASK_PRIORITY'; taskId: string }
-
-  // ── Meta-Co-Pilot ────────────────────────────────────────────────────────
-  | { type: 'SET_META_POSTURE'; posture: Posture }   // operator overrides MCP posture
 
   // ── Surveys / probes ─────────────────────────────────────────────────────
   | { type: 'SUBMIT_TRUST_PROBE'; trust: number; workload: number }
   | { type: 'SUBMIT_SURVEY'; surveyName: string; responses: Record<string, number> }
-  | { type: 'FINISH_SURVEYS' }   // called once after all survey pages are submitted
+  | { type: 'FINISH_SURVEYS' }
   | { type: 'DISMISS_TRUST_PROBE' }
 
   // ── Session flow ─────────────────────────────────────────────────────────
-  | { type: 'NEXT_SESSION' }   // operator clicks Continue after between-session screen
+  | { type: 'NEXT_SESSION' }
   | { type: 'END_STUDY' }

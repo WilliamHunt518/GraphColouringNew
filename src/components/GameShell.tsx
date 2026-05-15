@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef } from 'react'
 import type { StudyConfig, MapViewState } from '../types'
-import { buildInitialState, gameReducer } from '../store/gameReducer'
+import { buildInitialState, gameReducer, reserveCount } from '../store/gameReducer'
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
 import SurveyModal from './SurveyModal'
@@ -16,30 +16,41 @@ export default function GameShell({ config }: Props) {
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
   const lastBroadcastElapsed = useRef<number>(-1)
-  const lastCopilotModalRef = useRef<typeof state.copilotModal>(null)
+  const lastStrategicModalRef = useRef<typeof state.strategicModal>(null)
 
   // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME)
     channelRef.current = channel
     channel.onmessage = (e: MessageEvent) => {
-      if (e.data?._mapAction === 'TOGGLE_TASK_PRIORITY' && typeof e.data.taskId === 'string') {
-        dispatch({ type: 'TOGGLE_TASK_PRIORITY', taskId: e.data.taskId })
+      const d = e.data
+      if (!d?._mapAction) return
+      if (d._mapAction === 'CONFIRM_TACTICAL' && typeof d.missionId === 'string') {
+        dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId })
       }
-      if (e.data?._mapAction === 'REPRIORITISE_TOP' && typeof e.data.missionId === 'string' && typeof e.data.taskId === 'string') {
-        dispatch({ type: 'REPRIORITISE_TASK', missionId: e.data.missionId, taskId: e.data.taskId, direction: 'top' })
+      if (d._mapAction === 'OVERRIDE_TACTICAL' && typeof d.missionId === 'string') {
+        dispatch({ type: 'OVERRIDE_TACTICAL', missionId: d.missionId })
+      }
+      if (d._mapAction === 'ACCEPT_RECOVERY' && typeof d.missionId === 'string' && typeof d.recoveryType === 'string') {
+        dispatch({ type: 'ACCEPT_RECOVERY', missionId: d.missionId, recoveryType: d.recoveryType })
+      }
+      if (d._mapAction === 'APPLY_MANUAL_RECOVERY' && typeof d.missionId === 'string') {
+        dispatch({ type: 'APPLY_MANUAL_RECOVERY', missionId: d.missionId, taskId: d.taskId, newAssetId: d.newAssetId })
+      }
+      if (d._mapAction === 'REPRIORITISE_TOP' && typeof d.missionId === 'string' && typeof d.taskId === 'string') {
+        dispatch({ type: 'REPRIORITISE_TASK', missionId: d.missionId, taskId: d.taskId, direction: 'top' })
       }
     }
     return () => { channel.close(); channelRef.current = null }
   }, [])
 
-  // Broadcast map state ~10fps, or immediately when copilot modal changes
+  // Broadcast map state ~10fps, or immediately when strategic modal changes
   useEffect(() => {
     if (!channelRef.current) return
-    const copilotChanged = state.copilotModal !== lastCopilotModalRef.current
-    if (!copilotChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
+    const modalChanged = state.strategicModal !== lastStrategicModalRef.current
+    if (!modalChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
     lastBroadcastElapsed.current = state.elapsed
-    lastCopilotModalRef.current = state.copilotModal
+    lastStrategicModalRef.current = state.strategicModal
     const payload: MapViewState = {
       assets: state.assets,
       missions: state.missions,
@@ -49,11 +60,11 @@ export default function GameShell({ config }: Props) {
       penaltyAccrued: state.penaltyAccrued,
       phase: state.phase,
       pendingBlueprints: state.pendingBlueprints,
-      copilotMissionId: state.copilotModal?.missionId ?? null,
-      priorityTaskIds:  state.copilotModal?.priorityTaskIds ?? [],
+      mode: state.config.mode,
+      reserve: reserveCount(state.assets),
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.copilotModal])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {
@@ -87,11 +98,10 @@ export default function GameShell({ config }: Props) {
     function downloadData() {
       const payload = {
         participantId: config.participantId,
-        condition: config.condition,
+        mode: config.mode,
         complexity: config.complexity,
         seed: config.seed,
-        epsilonCopilot: config.epsilonCopilot,
-        epsilonMeta: config.epsilonMeta,
+        agentErrorRate: config.agentErrorRate,
         sessionScores: state.completedSessionScores,
         totalScore,
         sessions: state.events,
@@ -100,7 +110,7 @@ export default function GameShell({ config }: Props) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `study_${config.participantId}_${config.condition}_${config.seed}.json`
+      a.download = `study_${config.participantId}_${config.mode}_${config.seed}.json`
       a.click()
       URL.revokeObjectURL(url)
     }
@@ -128,7 +138,7 @@ export default function GameShell({ config }: Props) {
           </div>
 
           <div className="space-y-2 text-xs text-gray-600">
-            <p>Participant: {config.participantId} · Condition: {config.condition} · Seed: {config.seed}</p>
+            <p>Participant: {config.participantId} · Mode: {config.mode} · Seed: {config.seed}</p>
           </div>
 
           <button

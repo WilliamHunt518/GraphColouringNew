@@ -61,10 +61,6 @@ function simulatePool(
 
 // ─── Utilities ────────────────────────────────────────────────────────────
 
-function isFeasible(needed: AssetRequirement, reserve: AssetRequirement): boolean {
-  return needed.Blue <= reserve.Blue && needed.Red <= reserve.Red && needed.Green <= reserve.Green
-}
-
 function cap(pool: AssetRequirement, reserve: AssetRequirement): AssetRequirement {
   return {
     Blue:  Math.min(pool.Blue,  reserve.Blue),
@@ -103,21 +99,29 @@ function toTaskComps(
   return result
 }
 
+function reservePressure(comp: TaskComposition, reserve: AssetRequirement): number {
+  let p = 0
+  if (comp.Blue  > 0) p += comp.Blue  / Math.max(1, reserve.Blue)
+  if (comp.Red   > 0) p += comp.Red   / Math.max(1, reserve.Red)
+  if (comp.Green > 0) p += comp.Green / Math.max(1, reserve.Green)
+  return p
+}
+
 // ─── Co-Pilot task ordering ───────────────────────────────────────────────
 
 /**
- * Builds the Co-Pilot's task execution order with ε_C noise.
- * At ε_C=0: optimal T5→T1 (most-constrained first).
- * At ε_C>0: each scheduling step has a ε_C probability of picking a random
+ * Builds the task execution order with optional noise.
+ * At errorRate=0: optimal T5→T1 (most-constrained first).
+ * At errorRate>0: each scheduling step has a errorRate probability of picking a random
  * remaining task instead of the optimal next one.
  */
-export function buildNoisyTaskOrder(tasks: Task[], epsilonC: number, rng: SeededRNG): Task[] {
+export function buildNoisyTaskOrder(tasks: Task[], errorRate: number, rng: SeededRNG): Task[] {
   if (tasks.length === 0) return []
   const remaining = [...tasks].sort((a, b) => b.type - a.type)  // T5→T1 optimal
-  if (epsilonC === 0) return remaining
+  if (errorRate === 0) return remaining
   const result: Task[] = []
   while (remaining.length > 0) {
-    if (remaining.length > 1 && rng.randFloat(0, 1) < epsilonC) {
+    if (remaining.length > 1 && rng.randFloat(0, 1) < errorRate) {
       const idx = rng.randInt(0, remaining.length - 1)
       result.push(remaining.splice(idx, 1)[0])
     } else {
@@ -130,22 +134,22 @@ export function buildNoisyTaskOrder(tasks: Task[], epsilonC: number, rng: Seeded
 // ─── Strategy generation ──────────────────────────────────────────────────
 
 /**
- * Generates Meta-Co-Pilot strategy cards (asset allocation recommendations).
+ * Generates exactly two strategies for agent mode: Aggressive and Conservative.
  *
- * 1. "Fastest Possible"  — all primaries, parallel pool (max parallelism)
- * 2. "Complete in Time"  — minimum pool finishing within 90% of remaining time
- * 3. "Asset-Preserving"  — substitutes on T2/T3/T4; max 1 Green committed
+ * Aggressive = maximum parallelism (parallel sum of all task requirements, capped by reserve).
+ * Conservative = reserve-pressure-chosen compositions + 30% top-up (reserve-balanced logic).
  *
- * ε_M=0: correct counts returned.
- * ε_M>0: each strategy's pool has a ε_M probability of ±1 on a random asset
- *        type, simulating an inaccurate Meta-Co-Pilot recommendation.
+ * Bad-agent errors (probability = agentErrorRate):
+ *   'over' — displayed assets increased by 2–3 on one random type; reserve looks worse than it is
+ *   'under' — displayed assets decreased by 2–3; displayed time is optimistic (computed from bad counts)
+ * In both cases, trueAssets/trueTaskComps hold the correct values used by greedyAssign.
+ * The displayed assets/time are intentionally wrong so the operator is misled.
  */
 export function generateStrategies(
   tasks: Task[],
   reserve: AssetRequirement,
-  epsilonM: number,
+  agentErrorRate: number,
   rng: SeededRNG,
-  elapsed: number,
   priorityTaskIds?: string[],
 ): Strategy[] {
   // Priority tasks run first; remaining fall back to T5→T1 (most-constrained first).
@@ -155,9 +159,8 @@ export function generateStrategies(
     .filter((t): t is Task => t !== undefined)
   const rest = [...tasks].filter(t => !prioritySet.has(t.id)).sort((a, b) => b.type - a.type)
   const sorted = [...priorityOrder, ...rest]
-  const remaining = Math.max(30, SESSION_DURATION - elapsed)
 
-  // ─── Primary compositions (all strategies share this base) ───────────────
+  // ─── Primary compositions (shared base) ──────────────────────────────────
   const primComps = new Map<string, { comp: TaskComposition; baseTime: number }>()
   for (const task of sorted) {
     primComps.set(task.id, {
@@ -166,9 +169,7 @@ export function generateStrategies(
     })
   }
 
-  // ── Strategy 1: Fastest Possible ─────────────────────────────────────────
-  // Parallel pool = sum of all task requirements (capped by reserve).
-  // All primaries — maximum speed.
+  // ── Aggressive strategy: parallel sum, all primaries ──────────────────────
   const parallelSum: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
   for (const task of sorted) {
     const c = primComps.get(task.id)!
@@ -176,110 +177,73 @@ export function generateStrategies(
     parallelSum.Red   += c.comp.Red
     parallelSum.Green += c.comp.Green
   }
-  const fastPool = cap(parallelSum, reserve)
+  const aggTruePool = cap(parallelSum, reserve)
+  const aggTrueTime = simulatePool(sorted, primComps, aggTruePool)
+  const aggTrueTaskComps = toTaskComps(sorted, primComps, primComps)
 
-  // ── Strategy 2: Complete in Time ─────────────────────────────────────────
-  // Search for the smallest pool completing within deadline (90% of remaining).
-  // Blue is fixed at the single-task maximum (can't go lower without skipping tasks).
-  // Search over Green (minG..3) and Red (minR..minR+4).
-  const deadline = remaining * 0.90
-
-  const minB = sorted.reduce((m, t) => Math.max(m, TASK_PRIMARY[t.type as TaskType].Blue),  0)
-  const minR = sorted.reduce((m, t) => Math.max(m, TASK_PRIMARY[t.type as TaskType].Red),   0)
-  const minG = sorted.some(t => TASK_PRIMARY[t.type as TaskType].Green > 0) ? 1 : 0
-
-  let citPool: AssetRequirement | null = null
-
-  outer:
-  for (let g = minG; g <= Math.min(reserve.Green, 3); g++) {
-    for (let r = minR; r <= Math.min(reserve.Red, minR + 4); r++) {
-      const candidate: AssetRequirement = { Blue: minB, Red: r, Green: g }
-      if (!isFeasible(candidate, reserve)) continue
-      if (simulatePool(sorted, primComps, candidate) <= deadline) {
-        citPool = candidate
-        break outer
-      }
-    }
-  }
-  // Fallback: use the same pool as "Fastest" (best we can do if deadline is unreachable)
-  if (!citPool) citPool = { ...fastPool }
-
-  // ── Strategy 3: Asset-Preserving (Reserve-Balanced) ─────────────────────
-  // For each T2/T3/T4 task, choose primary vs substitute based on which option
-  // applies less pressure to currently scarce asset types.
-  // Pressure = sum of (assets_needed / assets_available) — penalises drawing
-  // from types with low reserve. If Blues are depleted, primary comps (fewer Blue)
-  // beat substitutes (more Blue); if Reds are depleted, substitutes win instead.
-  // Pool = minimum feasible + 30% of remaining excess per type: proportional
-  // top-up draws more parallelism from whichever type has the most slack.
-  function reservePressure(comp: TaskComposition): number {
-    let p = 0
-    if (comp.Blue  > 0) p += comp.Blue  / Math.max(1, reserve.Blue)
-    if (comp.Red   > 0) p += comp.Red   / Math.max(1, reserve.Red)
-    if (comp.Green > 0) p += comp.Green / Math.max(1, reserve.Green)
-    return p
-  }
-
-  const presComps = new Map<string, { comp: TaskComposition; baseTime: number }>()
+  // ── Conservative strategy: reserve-pressure-chosen compositions + 30% top-up
+  const consComps = new Map<string, { comp: TaskComposition; baseTime: number }>()
   for (const task of sorted) {
     const sub = TASK_SUBSTITUTE[task.type as TaskType]
     const prim = TASK_PRIMARY[task.type as TaskType]
     if (sub && (task.type === 2 || task.type === 3 || task.type === 4)) {
-      const useSub = reservePressure(sub) < reservePressure(prim)
-      presComps.set(task.id, useSub
+      const useSub = reservePressure(sub, reserve) < reservePressure(prim, reserve)
+      consComps.set(task.id, useSub
         ? { comp: sub,  baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] }
         : { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] },
       )
     } else {
-      presComps.set(task.id, { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] })
+      consComps.set(task.id, { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] })
     }
   }
 
-  const presMin  = minPool(sorted, presComps)
-  const presBase = cap(presMin, reserve)
+  const consMin  = minPool(sorted, consComps)
+  const consBase = cap(consMin, reserve)
   const TOP_UP   = 0.30
-  const presPool: AssetRequirement = {
-    Blue:  Math.min(reserve.Blue,  presBase.Blue  + Math.floor((reserve.Blue  - presBase.Blue)  * TOP_UP)),
-    Red:   Math.min(reserve.Red,   presBase.Red   + Math.floor((reserve.Red   - presBase.Red)   * TOP_UP)),
-    Green: Math.min(reserve.Green, presBase.Green + Math.floor((reserve.Green - presBase.Green) * TOP_UP)),
+  const consTruePool: AssetRequirement = {
+    Blue:  Math.min(reserve.Blue,  consBase.Blue  + Math.floor((reserve.Blue  - consBase.Blue)  * TOP_UP)),
+    Red:   Math.min(reserve.Red,   consBase.Red   + Math.floor((reserve.Red   - consBase.Red)   * TOP_UP)),
+    Green: Math.min(reserve.Green, consBase.Green + Math.floor((reserve.Green - consBase.Green) * TOP_UP)),
   }
+  const consTrueTime = simulatePool(sorted, consComps, consTruePool)
+  const consTrueTaskComps = toTaskComps(sorted, consComps, primComps)
 
-  // ── Perturb pool counts with ε_M noise ───────────────────────────────────
-  // With probability ε_M, adjusts one asset type's count by ±1 (capped to
-  // [0, reserve]). Simulates the MCP over- or under-recommending assets.
-  // If noise renders the pool unable to complete all tasks, the original is kept —
-  // we never suggest a plan that leaves tasks incomplete.
-  function perturbPool(
-    pool: AssetRequirement,
-    comps: Map<string, { comp: TaskComposition; baseTime: number }>,
-  ): AssetRequirement {
-    if (epsilonM === 0 || rng.randFloat(0, 1) > epsilonM) return { ...pool }
-    const types: Array<keyof AssetRequirement> = ['Blue', 'Red', 'Green']
-    const type = types[rng.randInt(0, 2)]
-    const delta = rng.randFloat(0, 1) < 0.5 ? -1 : 1
-    const noisy = {
-      ...pool,
-      [type]: Math.max(0, Math.min(reserve[type], pool[type] + delta)),
+  // ── Bad-agent perturbation ────────────────────────────────────────────────
+  function applyBadAgent(truePool: AssetRequirement, trueTime: number, compsForSim: Map<string, { comp: TaskComposition; baseTime: number }>): {
+    displayPool: AssetRequirement; displayTime: number;
+    isBad: boolean; badType: 'over' | 'under' | null
+  } {
+    if (rng.randFloat(0, 1) > agentErrorRate) {
+      return { displayPool: { ...truePool }, displayTime: trueTime, isBad: false, badType: null }
     }
-    return simulatePool(sorted, comps, noisy) < Infinity ? noisy : { ...pool }
+    const types: Array<keyof AssetRequirement> = ['Blue', 'Red', 'Green']
+    const t = types[rng.randInt(0, 2)]
+    const isOver = rng.randFloat(0, 1) < 0.5
+    const delta = 2 + rng.randInt(0, 1)  // 2 or 3
+    const displayPool = { ...truePool }
+    if (isOver) {
+      displayPool[t] = Math.min(reserve[t], truePool[t] + delta)
+    } else {
+      displayPool[t] = Math.max(0, truePool[t] - delta)
+    }
+    // Displayed time: compute from the bad pool — looks plausible but is wrong
+    // For 'under' this will often be Infinity (infeasible) so use a clamped estimate
+    const rawTime = simulatePool(sorted, compsForSim, displayPool)
+    const displayTime = rawTime < Infinity ? rawTime : trueTime * (0.7 + rng.randFloat(0, 0.2))
+    return { displayPool, displayTime, isBad: true, badType: isOver ? 'over' : 'under' }
   }
 
-  const noisyFastPool = perturbPool(fastPool, primComps)
-  const noisyCitPool  = perturbPool(citPool,  primComps)
-  const noisyPresPool = perturbPool(presPool, presComps)
+  const aggBad = applyBadAgent(aggTruePool, aggTrueTime, primComps)
+  const consBad = applyBadAgent(consTruePool, consTrueTime, consComps)
 
-  // Recompute ETAs from noisy pools (so displayed time matches displayed counts)
-  const noisyFastTime = simulatePool(sorted, primComps, noisyFastPool)
-  const noisyCitTime  = simulatePool(sorted, primComps, noisyCitPool)
-  const noisyPresTime = simulatePool(sorted, presComps, noisyPresPool)
-
-  // ── Normalise display scores ──────────────────────────────────────────────
-  const times   = [noisyFastTime, noisyCitTime, noisyPresTime]
-  const minT    = Math.min(...times)
-  const spanT   = Math.max(...times) - minT || 1
+  // ── Score normalisation ───────────────────────────────────────────────────
+  const displayTimes = [aggBad.displayTime, consBad.displayTime].filter(t => t < Infinity)
+  const minT = displayTimes.length > 0 ? Math.min(...displayTimes) : 0
+  const maxT = displayTimes.length > 0 ? Math.max(...displayTimes) : 1
+  const spanT = maxT - minT || 1
 
   const specialists = (a: AssetRequirement) => a.Green * 3 + a.Red
-  const maxSpec     = Math.max(...[noisyFastPool, noisyCitPool, noisyPresPool].map(specialists)) || 1
+  const maxSpec = Math.max(specialists(aggBad.displayPool), specialists(consBad.displayPool)) || 1
 
   function reserveAfter(a: AssetRequirement): AssetRequirement {
     return {
@@ -289,45 +253,51 @@ export function generateStrategies(
     }
   }
 
-  const raw: Strategy[] = [
-    {
-      name: 'Fastest Possible',
-      description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time.',
-      assets: noisyFastPool,
-      expectedCompletionTime: noisyFastTime,
-      reserveAfter: reserveAfter(noisyFastPool),
-      speedScore: 1,
-      reserveScore: 1 - specialists(noisyFastPool) / maxSpec,
-      taskComps: toTaskComps(sorted, primComps, primComps),
-    },
-    {
-      name: 'Complete in Time',
-      description: `Minimum assets finishing before the ${Math.round(deadline)}s deadline — assets cycle sequentially between tasks.`,
-      assets: noisyCitPool,
-      expectedCompletionTime: noisyCitTime,
-      reserveAfter: reserveAfter(noisyCitPool),
-      speedScore: 1 - (noisyCitTime - minT) / spanT,
-      reserveScore: 1 - specialists(noisyCitPool) / maxSpec,
-      taskComps: toTaskComps(sorted, primComps, primComps),
-    },
-    {
-      name: 'Asset-Preserving',
-      description: 'Favours whichever asset types are most available — draws proportionally from reserve rather than always substituting.',
-      assets: noisyPresPool,
-      expectedCompletionTime: noisyPresTime,
-      reserveAfter: reserveAfter(noisyPresPool),
-      speedScore: 1 - (noisyPresTime - minT) / spanT,
-      reserveScore: 1 - specialists(noisyPresPool) / maxSpec,
-      taskComps: toTaskComps(sorted, presComps, primComps),
-    },
-  ]
+  // ── Assemble strategies ───────────────────────────────────────────────────
+  const strategies: Strategy[] = []
 
-  return raw.filter(s => isFeasible(s.assets, reserve) && s.expectedCompletionTime < Infinity)
+  // Aggressive
+  if (aggTrueTime < Infinity) {
+    strategies.push({
+      name: 'Aggressive',
+      description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time.',
+      assets: aggBad.displayPool,
+      expectedCompletionTime: aggBad.displayTime,
+      reserveAfter: reserveAfter(aggBad.displayPool),
+      speedScore: 1,
+      reserveScore: 1 - specialists(aggBad.displayPool) / maxSpec,
+      taskComps: aggTrueTaskComps,   // displayed taskComps use true comps (not shown to user anyway)
+      isBadSuggestion: aggBad.isBad,
+      badSuggestionType: aggBad.badType,
+      trueAssets: aggTruePool,
+      trueTaskComps: aggTrueTaskComps,
+    })
+  }
+
+  // Conservative
+  if (consTrueTime < Infinity) {
+    strategies.push({
+      name: 'Conservative',
+      description: 'Reserve-balanced deployment — favours whichever asset types are most available.',
+      assets: consBad.displayPool,
+      expectedCompletionTime: consBad.displayTime,
+      reserveAfter: reserveAfter(consBad.displayPool),
+      speedScore: 1 - (consBad.displayTime - minT) / spanT,
+      reserveScore: 1 - specialists(consBad.displayPool) / maxSpec,
+      taskComps: consTrueTaskComps,
+      isBadSuggestion: consBad.isBad,
+      badSuggestionType: consBad.badType,
+      trueAssets: consTruePool,
+      trueTaskComps: consTrueTaskComps,
+    })
+  }
+
+  return strategies
 }
 
 /**
  * Estimates completion time for a given asset pool and task list (primary compositions).
- * Used by ManualAllocator to show live ETA preview as the user adjusts counts.
+ * Used by ManualCountPicker to show live ETA preview as the user adjusts counts.
  */
 export function previewAllocation(tasks: Task[], pool: AssetRequirement): number {
   const comps = new Map<string, { comp: TaskComposition; baseTime: number }>()
@@ -340,3 +310,6 @@ export function previewAllocation(tasks: Task[], pool: AssetRequirement): number
   const sorted = [...tasks].sort((a, b) => b.type - a.type)
   return simulatePool(sorted, comps, pool)
 }
+
+// Re-export elapsed for SESSION_DURATION usage downstream
+export { SESSION_DURATION }

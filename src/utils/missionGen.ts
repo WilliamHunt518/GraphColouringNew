@@ -208,7 +208,19 @@ export function generateSessionPlan(
       taskTypes,
       zoneCenter,
       waypoints,
+      willFail: false,
+      droneFailureRelativeTime: null,
     })
+  }
+
+  // Mark ~1 in 5 missions to have a drone failure
+  // Use a separate pass so the blueprint ID chars don't affect failure probability
+  for (let i = 0; i < blueprints.length; i++) {
+    const willFail = rng.randFloat(0, 1) < 0.20
+    const droneFailureRelativeTime = willFail
+      ? 30 + rng.randFloat(0, 60)   // fail between 30–90s after arrival
+      : null
+    blueprints[i] = { ...blueprints[i], willFail, droneFailureRelativeTime }
   }
 
   return blueprints
@@ -296,33 +308,7 @@ export function createInitialAssets(complexity: Complexity): Asset[] {
         travelStartElapsed: 0,
         travelEndElapsed: 0,
         availableAt: 0,
-      })
-    }
-  }
-  return assets
-}
-
-// Tactical mode: large unconstrained pool so reserve is never the limiting factor.
-// 30B/15R/6G covers any conceivable concurrent task combination with slack.
-const TACTICAL_FLEET: [AssetType, number][] = [['Blue', 30], ['Red', 15], ['Green', 6]]
-
-export function createTacticalAssets(): Asset[] {
-  const assets: Asset[] = []
-  for (const [type, count] of TACTICAL_FLEET) {
-    for (let i = 1; i <= count; i++) {
-      const id = `${type[0]}${String(i).padStart(2, '0')}`
-      assets.push({
-        id,
-        type,
-        status: 'available',
-        currentMissionId: null,
-        currentTaskId: null,
-        position: { ...HUB },
-        travelFrom: { ...HUB },
-        targetPosition: { ...HUB },
-        travelStartElapsed: 0,
-        travelEndElapsed: 0,
-        availableAt: 0,
+        failedAt: null,
       })
     }
   }

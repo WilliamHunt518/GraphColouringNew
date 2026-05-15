@@ -1,16 +1,16 @@
 import type {
   GameState, GameEvent, Asset, Mission, Task,
   AssetType, TaskType, AssetRequirement,
-  MissionCategory, TaskComp,
+  MissionCategory, TaskComp, RecoveryOption,
+  PendingAllocation,
 } from '../types'
 import type { GameAction } from './actions'
 import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
   TASK_SUB_BASE_TIME, ZONE_RADIUS, CATEGORY_PENALTY_RATE, TASK_WEIGHT,
-  generateSessionPlan, createInitialAssets, createTacticalAssets, travelTime,
+  generateSessionPlan, createInitialAssets, travelTime,
 } from '../utils/missionGen'
-import { generateStrategies, buildNoisyTaskOrder } from '../utils/copilot'
-import { evaluatePosture } from '../utils/metacopilot'
+import { generateStrategies } from '../utils/copilot'
 import { SeededRNG } from '../utils/prng'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
@@ -41,16 +41,14 @@ export function buildInitialState(config: StudyConfig): GameState {
     sessionNumber: 1,
     elapsed: 0,
     sessionStartMs: null,
-    assets: config.mode === 'tactical' ? createTacticalAssets() : createInitialAssets(config.complexity),
+    assets: createInitialAssets(config.complexity),
     missions: [],
     pendingBlueprints: blueprints,
     score: 0,
     penaltyAccrued: 0,
     completedSessionScores: [],
     categoryForecast: initialForecast,
-    metaRec: null,
-    metaPostureOverride: null,
-    copilotModal: null,
+    strategicModal: null,
     trustProbeActive: false,
     nextTrustProbeAt: TRUST_PROBE_INTERVAL,
     events: [[], [], []],
@@ -61,8 +59,8 @@ export function buildInitialState(config: StudyConfig): GameState {
 
 // Distributive Omit so it works across the discriminated union
 type EventPayload = GameEvent extends infer E
-  ? E extends { timestamp: number; sessionNumber: number }
-    ? Omit<E, 'timestamp' | 'sessionNumber'>
+  ? E extends { timestamp: number; sessionNumber: number; elapsed: number; reserveState: AssetRequirement }
+    ? Omit<E, 'timestamp' | 'sessionNumber' | 'elapsed' | 'reserveState'>
     : never
   : never
 
@@ -71,6 +69,8 @@ function logEvent(state: GameState, event: EventPayload): GameState {
     ...event,
     timestamp: Math.round(state.elapsed * 1000),
     sessionNumber: state.sessionNumber,
+    elapsed: state.elapsed,
+    reserveState: reserveCount(state.assets),
   } as GameEvent
   const idx = state.sessionNumber - 1
   const updated = [...state.events]
@@ -82,8 +82,8 @@ function logEvent(state: GameState, event: EventPayload): GameState {
 
 export function reserveCount(assets: Asset[]): AssetRequirement {
   return {
-    Blue: assets.filter(a => a.type === 'Blue' && a.status === 'available').length,
-    Red: assets.filter(a => a.type === 'Red' && a.status === 'available').length,
+    Blue:  assets.filter(a => a.type === 'Blue'  && a.status === 'available').length,
+    Red:   assets.filter(a => a.type === 'Red'   && a.status === 'available').length,
     Green: assets.filter(a => a.type === 'Green' && a.status === 'available').length,
   }
 }
@@ -101,23 +101,6 @@ interface TaskAssignment {
 
 /**
  * Assigns assets to tasks using a virtual-timeline scheduler.
- *
- * Each committed asset is tracked as a virtual token with a `freeAt` time and
- * `position`.  Tasks are processed T5→T1 (most-constrained first).  For each
- * task the scheduler picks the n tokens with the earliest freeAt, computes the
- * actual startTime (when all required assets arrive), then advances each token's
- * freeAt to the task's completionTime and its position to the task's waypoint.
- *
- * This means a single Green token can be scheduled for T5 then T4 sequentially —
- * satisfying both even though only 1 Green was committed.
- *
- * Tasks that cannot be covered (not enough tokens) are skipped rather than
- * causing a complete failure, so a partial commitment still executes whatever
- * tasks it can.
- *
- * When `plan` is provided (from a Co-Pilot strategy), the exact per-task
- * compositions are used.  Without a plan (manual), the scheduler tries the
- * primary composition first, then the substitute.
  */
 function greedyAssign(
   tasks: Task[],
@@ -125,7 +108,7 @@ function greedyAssign(
   committed: AssetRequirement,
   now: number,
   plan?: Record<string, TaskComp>,
-  priorityTaskIds: string[] = [],
+  taskOrderIds: string[] = [],
 ): TaskAssignment[] {
   interface VAsset { id: string; type: AssetType; freeAt: number; pos: { x: number; y: number } }
 
@@ -138,14 +121,20 @@ function greedyAssign(
       .map(a => ({ id: a.id, type: 'Green' as AssetType, freeAt: now, pos: { ...HUB } })),
   ]
 
-  // Priority tasks first (user-specified order), then remaining T5→T1
-  const priorityTasks = priorityTaskIds
-    .map(id => tasks.find(t => t.id === id))
-    .filter((t): t is Task => t !== undefined)
-  const remaining = tasks
-    .filter(t => !priorityTaskIds.includes(t.id))
-    .sort((a, b) => b.type - a.type)
-  const sorted = [...priorityTasks, ...remaining]
+  // Sort tasks: if taskOrderIds provided, use that order, else T5→T1
+  let sorted: Task[]
+  if (taskOrderIds.length > 0) {
+    const priorityTasks = taskOrderIds
+      .map(id => tasks.find(t => t.id === id))
+      .filter((t): t is Task => t !== undefined)
+    const remaining = tasks
+      .filter(t => !taskOrderIds.includes(t.id))
+      .sort((a, b) => b.type - a.type)
+    sorted = [...priorityTasks, ...remaining]
+  } else {
+    sorted = [...tasks].sort((a, b) => b.type - a.type)
+  }
+
   const assignments: TaskAssignment[] = []
 
   const pickEarliest = (type: AssetType, n: number): VAsset[] =>
@@ -182,7 +171,6 @@ function greedyAssign(
     }
 
     // ── Pick earliest-available tokens ─────────────────────────────────────
-    // If the planned composition can't be met, try substitute before giving up
     {
       const avB = vPool.filter(v => v.type === 'Blue').length
       const avR = vPool.filter(v => v.type === 'Red').length
@@ -207,14 +195,12 @@ function greedyAssign(
 
     const picked = [...blueV, ...redV, ...greenV]
 
-    // ── Compute startTime: when the last required asset arrives ─────────────
     const startTime = Math.max(
       now,
       ...picked.map(v => v.freeAt + travelTime(v.pos, task.waypoint, ASSET_SPEED[v.type])),
     )
     const completionTime = startTime + baseTime
 
-    // ── Advance virtual tokens (sequential reuse) ───────────────────────────
     for (const v of picked) {
       v.freeAt = completionTime
       v.pos = { ...task.waypoint }
@@ -267,8 +253,16 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     arrivalTime: bp.arrivalTime,
     allocationTime: null,
     completionTime: null,
-    copilotInteraction: 'none',
+    agentInteraction: 'none',
+    chosenStrategyName: null,
     manualPriorityIds: [],
+    tacticalPending: false,
+    pendingAllocation: null,
+    droneFailureRelativeTime: bp.droneFailureRelativeTime,
+    droneFailureFired: false,
+    failedDroneId: null,
+    failureRecoveryPending: false,
+    pendingRecoveryOptions: null,
   }
 }
 
@@ -298,11 +292,6 @@ function computeCompletionPoints(missions: Mission[]): number {
   return pts
 }
 
-/**
- * Penalty accrues from a mission's arrivalTime until it is fully completed or
- * the session ends (elapsed).  Once completionTime is set, the clock stops.
- * Computed as a snapshot — no accumulation drift.
- */
 function computePenaltyAccrued(missions: Mission[], elapsed: number): number {
   let penalty = 0
   for (const m of missions) {
@@ -311,7 +300,6 @@ function computePenaltyAccrued(missions: Mission[], elapsed: number): number {
     const missionRate = CATEGORY_PENALTY_RATE[m.category]
     for (const t of m.tasks) {
       const taskRate = missionRate * TASK_WEIGHT[t.type] / totalWeight
-      // Each task accrues penalty until it individually completes
       const endTime = t.completionTime ?? elapsed
       penalty += taskRate * Math.max(0, endTime - m.arrivalTime)
     }
@@ -349,78 +337,70 @@ function computeMeanMissionTime(missions: Mission[]): number {
   return sum / completed.length
 }
 
-function computeCpFollowRate(events: GameEvent[]): number {
-  const shown = events.filter(e => e.type === 'copilot_shown').length
-  const followed = events.filter(e => e.type === 'allocation_applied' && (e as any).source === 'copilot_as_proposed').length
-  return shown > 0 ? followed / shown : 0
+// ─── Helper: build recovery options ───────────────────────────────────────
+
+function buildRecoveryOptions(
+  mission: Mission,
+  failedTask: Task,
+  failedDroneId: string,
+  assets: Asset[],
+  _elapsed: number,
+): RecoveryOption[] {
+  const options: RecoveryOption[] = []
+
+  // Option 1: Call Reserve — find an available asset of the same type as the failed drone
+  const failedDroneType = assets.find(a => a.id === failedDroneId)?.type
+  const reserveAsset = failedDroneType
+    ? assets.find(a => a.type === failedDroneType && a.status === 'available')
+    : undefined
+  options.push({
+    type: 'reserve',
+    label: 'Call Reserve',
+    description: reserveAsset
+      ? `Deploy ${reserveAsset.id} (${failedDroneType}) from reserve to replace failed drone`
+      : `No ${failedDroneType ?? 'matching'} drone available in reserve`,
+    taskId: failedTask.id,
+    newAssetId: reserveAsset?.id ?? null,
+    redistributeToAssetId: null,
+    expectedTimeImpact: reserveAsset ? 30 : 0,
+    feasible: reserveAsset !== undefined,
+  })
+
+  // Option 2: Redistribute — find another deployed drone in the same mission not currently executing
+  const otherDrone = assets.find(a =>
+    a.currentMissionId === mission.id &&
+    a.id !== failedDroneId &&
+    a.status === 'deployed' &&
+    mission.tasks.find(t => t.id === a.currentTaskId)?.status !== 'executing'
+  )
+  options.push({
+    type: 'redistribute',
+    label: 'Redistribute',
+    description: otherDrone
+      ? `Reassign task to ${otherDrone.id} (currently between tasks)`
+      : 'No available drone within mission to reassign',
+    taskId: failedTask.id,
+    newAssetId: null,
+    redistributeToAssetId: otherDrone?.id ?? null,
+    expectedTimeImpact: otherDrone ? 60 : 0,
+    feasible: otherDrone !== undefined,
+  })
+
+  return options
 }
 
-function computeMcpFollowRate(events: GameEvent[]): number {
-  const followed = events.filter(e => e.type === 'metacopilot_followed').length
-  const overridden = events.filter(e => e.type === 'metacopilot_overridden').length
-  const ignored = events.filter(e => e.type === 'metacopilot_ignored').length
-  const total = followed + overridden + ignored
-  return total > 0 ? followed / total : 0
-}
+// ─── Helper: apply tactical allocation ────────────────────────────────────
 
-// ─── Helper: open Co-Pilot modal for a queued mission (standard mode) ─────
-
-function openAllocateModal(s: GameState, missionId: string): GameState {
-  const mission = s.missions.find(m => m.id === missionId)
-  if (!mission || mission.status !== 'queued') return s
-
-  const reserve = reserveCount(s.assets)
-  const copilotRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1))
-  const strategies = generateStrategies(
-    mission.tasks, reserve, s.config.epsilonMeta, copilotRng, s.elapsed,
-  )
-
-  s = logEvent(s, { type: 'allocation_started', missionId, triggeredBy: 'operator' })
-  s = logEvent(s, { type: 'copilot_shown', missionId, strategies })
-  return {
-    ...s,
-    missions: s.missions.map(m => m.id === missionId ? { ...m, copilotInteraction: 'shown' } : m),
-    copilotModal: { missionId, strategies, selectedIndex: null, editedAllocation: null, priorityTaskIds: [] },
-  }
-}
-
-// ─── Helper: auto-apply conservative strategy (tactical mode) ──────────────
-
-// Mirrors APPLY_ALLOCATION but runs silently — no modal, picks Asset-Preserving.
-function autoApplyConservative(s: GameState, missionId: string): GameState {
-  const mission = s.missions.find(m => m.id === missionId)
-  if (!mission || mission.status !== 'queued') return s
-
-  const reserve = reserveCount(s.assets)
-  const copilotRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1))
-  const strategies = generateStrategies(
-    mission.tasks, reserve, s.config.epsilonMeta, copilotRng, s.elapsed,
-  )
-  if (strategies.length === 0) return s  // no feasible strategy; leave queued
-
-  const stratIdx = (() => {
-    const i = strategies.findIndex(st => st.name === 'Asset-Preserving')
-    return i >= 0 ? i : 0
-  })()
-  const strat = strategies[stratIdx]
-
-  const now = s.elapsed
-  const available = s.assets.filter(a => a.status === 'available')
-
-  const copilotOrderRng = new SeededRNG(s.config.seed ^ (mission.id.charCodeAt(1) || 0) ^ 0x5c0e)
-  const noisyOrder = buildNoisyTaskOrder(mission.tasks, s.config.epsilonCopilot, copilotOrderRng)
-  const fullScheduleOrder = noisyOrder.map(t => t.id)
-
-  const assignments = greedyAssign(
-    mission.tasks, available, strat.assets, now, strat.taskComps, fullScheduleOrder,
-  )
-  if (assignments.length === 0) return s
-
-  const recallRng = new SeededRNG(s.config.seed ^ (mission.id.charCodeAt(2) || 0) ^ 0xabcd)
-  const recallDelays = new Map<string, number>()
-  for (const asgn of assignments) {
-    recallDelays.set(asgn.taskId, s.config.epsilonCopilot > 0 ? recallRng.exponential(s.config.epsilonCopilot * 45) : 0)
-  }
+function applyTacticalAllocation(
+  state: GameState,
+  missionId: string,
+  assignments: TaskAssignment[],
+  pending: PendingAllocation,
+  taskOrder: string[],
+  wasOverridden: boolean,
+): GameState {
+  const mission = state.missions.find(m => m.id === missionId)!
+  const now = state.elapsed
 
   const allAssignedIds = [...new Set(assignments.flatMap(a => a.assetIds))]
 
@@ -437,28 +417,40 @@ function autoApplyConservative(s: GameState, missionId: string): GameState {
       useSubstitute: asgn.useSubstitute,
       startTime: asgn.startTime,
       completionTime: asgn.startTime + asgn.baseTime,
-      recallDelay: recallDelays.get(task.id) ?? 0,
+      recallDelay: 0,
     } : task)
   }
-  const updatedTasks: Task[] = fullScheduleOrder
+
+  const updatedTasks: Task[] = taskOrder
     .map(id => updatedTaskMap.get(id))
     .filter((t): t is Task => t !== undefined)
+
+  // Also include tasks not in taskOrder (shouldn't normally happen, but be safe)
+  const tasksInOrder = new Set(taskOrder)
+  for (const task of mission.tasks) {
+    if (!tasksInOrder.has(task.id)) {
+      const existing = updatedTaskMap.get(task.id)
+      if (existing) updatedTasks.push(existing)
+    }
+  }
 
   const updatedMission: Mission = {
     ...mission,
     status: 'active',
     tasks: updatedTasks,
     allocationTime: now,
-    copilotInteraction: 'followed',
+    tacticalPending: false,
+    pendingAllocation: null,
+    agentInteraction: wasOverridden ? 'overridden' : pending.isAgentSuggested ? 'followed' : 'manual',
+    chosenStrategyName: pending.strategyName,
     manualPriorityIds: [],
   }
 
-  const updatedAssets = s.assets.map(asset => {
+  const updatedAssets = state.assets.map(asset => {
     const myAsgns = assignments.filter(a => a.assetIds.includes(asset.id))
     if (myAsgns.length === 0) return asset
     const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
-    const task = updatedTasks.find(t => t.id === firstAsgn.taskId)
-    if (!task) return asset
+    const task = updatedTasks.find(t => t.id === firstAsgn.taskId)!
     const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
     return {
       ...asset,
@@ -473,16 +465,21 @@ function autoApplyConservative(s: GameState, missionId: string): GameState {
     }
   })
 
-  s = {
-    ...s,
-    missions: s.missions.map(m => m.id === missionId ? updatedMission : m),
+  let s: GameState = {
+    ...state,
+    missions: state.missions.map(m => m.id === missionId ? updatedMission : m),
     assets: updatedAssets,
   }
 
-  // Log the auto-assignment
-  s = logEvent(s, { type: 'allocation_started', missionId, triggeredBy: 'operator' })
-  s = logEvent(s, { type: 'copilot_strategy_selected', missionId, strategyIndex: stratIdx, strategyName: strat.name })
-  s = logEvent(s, { type: 'allocation_applied', missionId, assetsAllocated: allAssignedIds, source: 'copilot_as_proposed' })
+  s = logEvent(s, {
+    type: 'tactical_confirmed',
+    missionId: mission.id,
+    missionCategory: mission.category,
+    wasAgentSuggested: pending.isAgentSuggested,
+    overridden: wasOverridden,
+    assetsDeployed: allAssignedIds,
+    timeRemainingInSession: Math.max(0, SESSION_DURATION - now),
+  })
 
   return s
 }
@@ -516,15 +513,64 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             tasks: m.tasks.map(t => ({ id: t.id, type: t.type })),
             zoneCenter: m.zoneCenter,
             arrivalTime: m.arrivalTime,
+            timeRemainingInSession: Math.max(0, SESSION_DURATION - elapsed),
           })
         }
       }
 
-      // 1b. Tactical mode: silently auto-assign all newly queued missions (no modal)
-      if (s.config.mode === 'tactical') {
-        for (const m of s.missions.filter(m => m.status === 'queued')) {
-          s = autoApplyConservative(s, m.id)
-        }
+      // 1b. Drone failure check
+      for (const mission of s.missions) {
+        if (
+          mission.status !== 'active' ||
+          mission.droneFailureFired ||
+          mission.droneFailureRelativeTime === null
+        ) continue
+        if (elapsed < mission.arrivalTime + mission.droneFailureRelativeTime) continue
+
+        // Pick a random deployed drone on this mission that is currently executing
+        const executingDrones = s.assets.filter(
+          a => a.currentMissionId === mission.id && (a.status === 'deployed') &&
+            mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
+        )
+        if (executingDrones.length === 0) continue  // no executing drones yet, wait
+
+        // Seeded random pick
+        const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11)
+        const failedDrone = executingDrones[failRng.randInt(0, executingDrones.length - 1)]
+        const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
+
+        // Mark drone as failed
+        const updatedAssets = s.assets.map(a =>
+          a.id === failedDrone.id ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null } : a
+        )
+        // Revert task to pending, clear its assignment
+        const updatedMissions = s.missions.map(m => {
+          if (m.id !== mission.id) return m
+          return {
+            ...m,
+            droneFailureFired: true,
+            failedDroneId: failedDrone.id,
+            failureRecoveryPending: true,
+            tasks: m.tasks.map(t =>
+              t.id === failedTask.id
+                ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
+                : t
+            ),
+            pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, s.assets, elapsed),
+          }
+        })
+
+        s = { ...s, assets: updatedAssets, missions: updatedMissions }
+        s = logEvent(s, {
+          type: 'drone_failure',
+          missionId: mission.id,
+          missionCategory: mission.category,
+          droneId: failedDrone.id,
+          droneType: failedDrone.type,
+          taskId: failedTask.id,
+          taskType: failedTask.type,
+          timeRemainingInSession: Math.max(0, SESSION_DURATION - elapsed),
+        })
       }
 
       // 2. Advance task status based on elapsed time
@@ -562,7 +608,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         for (let ti = 0; ti < oldM.tasks.length; ti++) {
           const oldT = oldM.tasks[ti]
           const newT = newM.tasks[ti]
-          if (oldT.status !== 'completed' && newT.status === 'completed') {
+          if (oldT && newT && oldT.status !== 'completed' && newT.status === 'completed') {
             s = logEvent(s, {
               type: 'task_completed',
               missionId: newM.id,
@@ -579,6 +625,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 4. Update asset availability and positions
       const updatedAssets = s.assets.map(asset => {
+        // Don't move failed assets
+        if (asset.status === 'failed') return asset
+
         const newPos = interpolateAssetPosition(asset, elapsed)
         let newStatus = asset.status
 
@@ -605,15 +654,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
             if (nextTask) {
               // Sequential reuse: redirect directly to the next task's waypoint
-              const tt = travelTime(task.waypoint, nextTask.waypoint, ASSET_SPEED[asset.type])
-              debugLog('TICK: asset sequential redirect', {
-                assetId: asset.id, from: asset.currentTaskId, to: nextTask.id,
-                elapsed: Math.round(elapsed), tt: Math.round(tt),
-              })
+              const tt = travelTime(task!.waypoint, nextTask.waypoint, ASSET_SPEED[asset.type])
               return {
                 ...asset,
                 currentTaskId: nextTask.id,
-                travelFrom: { ...task.waypoint },
+                travelFrom: { ...task!.waypoint },
                 targetPosition: { ...nextTask.waypoint },
                 travelStartElapsed: elapsed,
                 travelEndElapsed: elapsed + tt,
@@ -622,13 +667,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             }
 
             // No next task — return to hub
-            const returnTime = travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type])
+            const returnTime = travelTime(task!.waypoint, HUB, ASSET_SPEED[asset.type])
             return {
               ...asset,
               status: 'returning' as const,
               currentMissionId: null,
               currentTaskId: null,
-              travelFrom: { ...task.waypoint },
+              travelFrom: { ...task!.waypoint },
               targetPosition: { ...HUB },
               travelStartElapsed: elapsed,
               travelEndElapsed: elapsed + returnTime,
@@ -657,25 +702,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         s = { ...s, categoryForecast: computeForecast(s.pendingBlueprints) }
       }
 
-      // 8. Meta-Co-Pilot recommendation — update every 30 s or on new mission arrival
-      const metaEpoch = Math.floor(elapsed / 30)
-      const prevMetaEpoch = Math.floor(state.elapsed / 30)
-      if (toSpawn.length > 0 || metaEpoch !== prevMetaEpoch) {
-        const metaRng = new SeededRNG(state.config.seed ^ state.sessionNumber * 10000 ^ metaEpoch)
-        s = {
-          ...s,
-          metaRec: evaluatePosture(
-            reserveCount(s.assets),
-            s.missions.filter(m => m.status === 'active').length,
-            s.categoryForecast,
-            state.config.epsilonMeta,
-            metaRng,
-            elapsed,
-          ),
-        }
-      }
-
-      // 9. Session end check
+      // 8. Session end check
       if (elapsed >= SESSION_DURATION) {
         s = endSession(s)
       }
@@ -683,196 +710,295 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return s
     }
 
-    // ── OPEN_ALLOCATE ────────────────────────────────────────────────────
-    case 'OPEN_ALLOCATE': {
-      return openAllocateModal(state, action.missionId)
-    }
-
-    // ── SELECT_STRATEGY ──────────────────────────────────────────────────
-    case 'SELECT_STRATEGY': {
-      if (!state.copilotModal) return state
-      const strat = state.copilotModal.strategies[action.strategyIndex]
-      if (!strat) return state
-      let s = logEvent(state, {
-        type: 'copilot_strategy_selected',
-        missionId: state.copilotModal.missionId,
-        strategyIndex: action.strategyIndex,
-        strategyName: strat.name,
-      })
-      s = {
-        ...s,
-        copilotModal: {
-          ...s.copilotModal!,
-          selectedIndex: action.strategyIndex,
-          editedAllocation: null,
-        },
-      }
-      return s
-    }
-
-    // ── EDIT_ALLOCATION ──────────────────────────────────────────────────
-    case 'EDIT_ALLOCATION': {
-      if (!state.copilotModal) return state
+    // ── OPEN_STRATEGIC ───────────────────────────────────────────────────
+    case 'OPEN_STRATEGIC': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || mission.status !== 'queued') return state
+      const reserve = reserveCount(state.assets)
+      const agentRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
+      const strategies = state.config.mode === 'agent'
+        ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
+        : []
       return {
         ...state,
-        copilotModal: { ...state.copilotModal, editedAllocation: action.allocation },
+        strategicModal: {
+          missionId: action.missionId,
+          strategies,
+          selectedStrategyIndex: null,
+          manualAllocation: { Blue: 0, Red: 0, Green: 0 },
+        },
       }
     }
 
-    // ── APPLY_ALLOCATION ─────────────────────────────────────────────────
-    case 'APPLY_ALLOCATION': {
+    // ── CLOSE_STRATEGIC ──────────────────────────────────────────────────
+    case 'CLOSE_STRATEGIC': {
+      return { ...state, strategicModal: null }
+    }
+
+    // ── PICK_STRATEGY ────────────────────────────────────────────────────
+    case 'PICK_STRATEGY': {
+      if (!state.strategicModal) return state
+      return {
+        ...state,
+        strategicModal: { ...state.strategicModal, selectedStrategyIndex: action.strategyIndex },
+      }
+    }
+
+    // ── EDIT_MANUAL ──────────────────────────────────────────────────────
+    case 'EDIT_MANUAL': {
+      if (!state.strategicModal) return state
+      return {
+        ...state,
+        strategicModal: { ...state.strategicModal, manualAllocation: action.allocation },
+      }
+    }
+
+    // ── APPLY_STRATEGIC ──────────────────────────────────────────────────
+    case 'APPLY_STRATEGIC': {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || mission.status !== 'queued') return state
 
+      const isAgent = state.config.mode === 'agent'
+      const modal = state.strategicModal
+      if (!modal) return state
+
+      // Determine the allocation and task comps to use
+      let composition: AssetRequirement
+      let strategyName: 'Aggressive' | 'Conservative' | 'Manual'
+      let taskComps: Record<string, TaskComp> | undefined
+      let isBad = false
+      let badType: 'over' | 'under' | null = null
+
+      if (action.source === 'agent' && action.strategyIndex !== null) {
+        const strat = modal.strategies[action.strategyIndex]
+        if (!strat) return state
+        composition = strat.trueAssets      // use TRUE assets for actual deployment
+        taskComps = strat.trueTaskComps
+        strategyName = strat.name
+        isBad = strat.isBadSuggestion
+        badType = strat.badSuggestionType
+      } else {
+        composition = action.manualAllocation ?? { Blue: 0, Red: 0, Green: 0 }
+        strategyName = 'Manual'
+        taskComps = undefined  // let greedyAssign pick compositions automatically
+      }
+
       const now = state.elapsed
       const available = state.assets.filter(a => a.status === 'available')
-      const selectedStrat = action.selectedIndex !== null ? action.strategies[action.selectedIndex] : null
-      const plan = action.source !== 'manual' ? selectedStrat?.taskComps : undefined
-      const priorityTaskIds = state.copilotModal?.priorityTaskIds ?? []
 
-      debugLog('APPLY_ALLOCATION attempt', {
-        missionId: action.missionId, source: action.source,
-        allocation: action.allocation, hasPlan: !!plan,
-      })
+      // Run greedyAssign to get the specific drone→task mapping
+      const taskOrder = mission.tasks.sort((a, b) => b.type - a.type).map(t => t.id)
+      const assignments = greedyAssign(mission.tasks, available, composition, now, taskComps, taskOrder)
+      if (assignments.length === 0) return state  // infeasible — bail
 
-      // Co-Pilot task ordering: apply ε_C noise to non-priority tasks.
-      // User priority overrides go first; remaining tasks ordered stochastically.
-      const copilotOrderRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(1) || 0) ^ 0x5c0e)
-      const nonPriorityTasks = mission.tasks.filter(t => !priorityTaskIds.includes(t.id))
-      const noisyNonPriority = buildNoisyTaskOrder(nonPriorityTasks, state.config.epsilonCopilot, copilotOrderRng)
-      // Full scheduling order: user priorities first, then Co-Pilot's (possibly noisy) order
-      const fullScheduleOrder = [...priorityTaskIds, ...noisyNonPriority.map(t => t.id)]
+      // Build the PendingAllocation record
+      const taskAssignments: Record<string, string[]> = {}
+      for (const asgn of assignments) { taskAssignments[asgn.taskId] = asgn.assetIds }
 
-      const assignments = greedyAssign(mission.tasks, available, action.allocation, now, plan, fullScheduleOrder)
-
-      // Co-Pilot recall delays: ε_C noise on how long assets linger before returning to hub
-      const epsilonC = state.config.epsilonCopilot
-      const recallRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(2) || 0) ^ 0xabcd)
-      const recallDelays = new Map<string, number>()
-      for (const asgn of assignments) {
-        recallDelays.set(asgn.taskId, epsilonC > 0 ? recallRng.exponential(epsilonC * 45) : 0)
-      }
-      if (assignments.length === 0) {
-        debugLog('APPLY_ALLOCATION: greedyAssign returned empty — aborting')
-        return state
+      const pendingAllocation: PendingAllocation = {
+        strategyName,
+        composition,
+        taskAssignments,
+        taskOrder,
+        expectedCompletionTime: Math.max(...assignments.map(a => a.startTime + a.baseTime)),
+        isAgentSuggested: action.source === 'agent',
+        isBadSuggestion: isBad,
+        badSuggestionType: badType,
       }
 
-      // Unique asset IDs across all assignments (sequential reuse → same ID may appear in multiple)
-      const allAssignedIds = [...new Set(assignments.flatMap(a => a.assetIds))]
-
-      // Update tasks — unassigned tasks remain 'pending' in the active mission
-      const updatedTaskMap = new Map<string, Task>()
-      for (const task of mission.tasks) {
-        const asgn = assignments.find(a => a.taskId === task.id)
-        updatedTaskMap.set(task.id, asgn ? {
-          ...task,
-          status: 'traveling' as const,
-          assignedAssetIds: asgn.assetIds,
-          allocatedAt: now,
-          travelTime: asgn.travelTime,
-          baseTime: asgn.baseTime,
-          useSubstitute: asgn.useSubstitute,
-          startTime: asgn.startTime,
-          completionTime: asgn.startTime + asgn.baseTime,
-          recallDelay: recallDelays.get(task.id) ?? 0,
-        } : task)
-      }
-      // Store tasks in Co-Pilot's planned execution order so routes and
-      // reprioritisation panels reflect the actual (possibly noisy) schedule.
-      const updatedTasks: Task[] = fullScheduleOrder
-        .map(id => updatedTaskMap.get(id))
-        .filter((t): t is Task => t !== undefined)
-
-      // Mark mission as active
-      const updatedMission: Mission = {
-        ...mission,
-        status: 'active',
-        tasks: updatedTasks,
-        allocationTime: now,
-        copilotInteraction: action.source === 'copilot_as_proposed'
-          ? 'followed'
-          : action.source === 'copilot_modified'
-            ? 'modified'
-            : 'dismissed',
-        manualPriorityIds: [],
-      }
-
-      // Deploy each asset to its FIRST assigned task (earliest startTime).
-      // Assets scheduled for later tasks (sequential reuse) start with the first
-      // task — TICK redirects them to subsequent tasks as each completes.
-      const updatedAssets = state.assets.map(asset => {
-        const myAsgns = assignments.filter(a => a.assetIds.includes(asset.id))
-        if (myAsgns.length === 0) return asset
-
-        // First task = lowest startTime
-        const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
-        const task = updatedTasks.find(t => t.id === firstAsgn.taskId)!
-        const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
-
-        return {
-          ...asset,
-          status: 'deployed' as const,
-          currentMissionId: mission.id,
-          currentTaskId: task.id,
-          travelFrom: { ...HUB },
-          targetPosition: task.waypoint,
-          travelStartElapsed: now,
-          travelEndElapsed: now + tt,
-          // rough estimate — updated by TICK when the asset eventually returns
-          availableAt: now + tt + firstAsgn.baseTime + travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type]),
-        }
-      })
-
-      let s: GameState = {
-        ...state,
-        missions: state.missions.map(m => m.id === mission.id ? updatedMission : m),
-        assets: updatedAssets,
-        copilotModal: null,
-      }
-
-      // Log modification if operator edited the strategy allocation
-      if (action.source === 'copilot_modified' && action.selectedIndex !== null) {
-        const original = action.strategies[action.selectedIndex]
-        s = logEvent(s, {
-          type: 'copilot_strategy_modified',
-          missionId: mission.id,
-          originalStrategy: original,
-          modifiedAssets: action.allocation,
-        })
-      }
-
-      s = logEvent(s, {
-        type: 'allocation_applied',
+      let s = logEvent(state, {
+        type: 'strategic_choice',
         missionId: mission.id,
-        assetsAllocated: allAssignedIds,
-        source: action.source,
+        missionCategory: mission.category,
+        choiceType: strategyName === 'Aggressive' ? 'aggressive' : strategyName === 'Conservative' ? 'conservative' : 'manual',
+        wasAgentSuggestion: action.source === 'agent',
+        agentSuggestionWasBad: isBad,
+        badSuggestionType: badType,
+        assetsChosen: composition,
+        timeRemainingInSession: Math.max(0, SESSION_DURATION - now),
       })
 
-      // Log MCP interaction
-      if (s.metaRec) {
-        const recPosture = s.metaRec.posture
-        const chosenPosture = s.metaPostureOverride ?? recPosture
-        if (s.metaPostureOverride && s.metaPostureOverride !== recPosture) {
-          s = logEvent(s, { type: 'metacopilot_overridden', missionId: mission.id, recommendedPosture: recPosture, chosenPosture })
-        } else if (mission.copilotInteraction === 'none') {
-          s = logEvent(s, { type: 'metacopilot_ignored', missionId: mission.id })
-        } else {
-          s = logEvent(s, { type: 'metacopilot_followed', missionId: mission.id, recommendedPosture: recPosture, chosenPosture })
+      if (isAgent) {
+        // Agent mode: set tacticalPending — wait for user to OK on map sidebar
+        s = {
+          ...s,
+          missions: s.missions.map(m => m.id === mission.id ? {
+            ...m,
+            tacticalPending: true,
+            pendingAllocation,
+            agentInteraction: action.source === 'agent' ? 'shown' : 'manual',
+            chosenStrategyName: strategyName,
+          } : m),
+          strategicModal: null,
         }
+      } else {
+        // No-agent mode: auto-confirm — deploy immediately
+        s = applyTacticalAllocation(s, mission.id, assignments, pendingAllocation, taskOrder, false)
+        s = { ...s, strategicModal: null }
       }
 
-      return { ...s, metaPostureOverride: null }
+      return s
     }
 
-    // ── DISMISS_COPILOT ──────────────────────────────────────────────────
-    case 'DISMISS_COPILOT': {
-      let s = logEvent(state, { type: 'copilot_dismissed', missionId: action.missionId })
+    // ── CONFIRM_TACTICAL ─────────────────────────────────────────────────
+    case 'CONFIRM_TACTICAL': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
+
+      const available = state.assets.filter(a => a.status === 'available')
+      const pending = mission.pendingAllocation
+      const assignments = greedyAssign(mission.tasks, available, pending.composition, state.elapsed, undefined, pending.taskOrder)
+      if (assignments.length === 0) return state
+
+      return applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, false)
+    }
+
+    // ── OVERRIDE_TACTICAL ────────────────────────────────────────────────
+    case 'OVERRIDE_TACTICAL': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || !mission.tacticalPending) return state
+      // Clear pending state and open the strategic modal again for re-allocation
+      const reserve = reserveCount(state.assets)
+      const agentRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
+      const strategies = state.config.mode === 'agent'
+        ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
+        : []
+      return {
+        ...state,
+        missions: state.missions.map(m => m.id === action.missionId ? { ...m, tacticalPending: false, pendingAllocation: null } : m),
+        strategicModal: { missionId: action.missionId, strategies, selectedStrategyIndex: null, manualAllocation: null },
+      }
+    }
+
+    // ── ACCEPT_RECOVERY ──────────────────────────────────────────────────
+    case 'ACCEPT_RECOVERY': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || !mission.failureRecoveryPending || !mission.pendingRecoveryOptions) return state
+      const opt = mission.pendingRecoveryOptions.find(o => o.type === action.recoveryType)
+      if (!opt || !opt.feasible) return state
+
+      let s = logEvent(state, {
+        type: 'failure_recovery',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        recoveryType: action.recoveryType,
+        wasAgentSuggested: true,
+        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+      })
+
+      if (action.recoveryType === 'reserve' && opt.newAssetId) {
+        // Deploy the reserve drone to the failed task
+        const task = mission.tasks.find(t => t.id === opt.taskId)
+        if (!task) return state
+        const asset = s.assets.find(a => a.id === opt.newAssetId)
+        if (!asset) return state
+        const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
+        const startTime = s.elapsed + tt
+        const completionTime = startTime + task.baseTime
+        s = {
+          ...s,
+          assets: s.assets.map(a => a.id === opt.newAssetId ? {
+            ...a,
+            status: 'deployed' as const,
+            currentMissionId: mission.id,
+            currentTaskId: task.id,
+            travelFrom: { ...HUB },
+            targetPosition: { ...task.waypoint },
+            travelStartElapsed: s.elapsed,
+            travelEndElapsed: s.elapsed + tt,
+            availableAt: completionTime + travelTime(task.waypoint, HUB, ASSET_SPEED[a.type]),
+          } : a),
+          missions: s.missions.map(m => m.id === mission.id ? {
+            ...m,
+            failureRecoveryPending: false,
+            pendingRecoveryOptions: null,
+            tasks: m.tasks.map(t => t.id === task.id ? {
+              ...t,
+              status: 'traveling' as const,
+              assignedAssetIds: [...t.assignedAssetIds, opt.newAssetId!],
+              allocatedAt: s.elapsed,
+              travelTime: tt,
+              startTime,
+              completionTime,
+            } : t),
+          } : m),
+        }
+      } else if (action.recoveryType === 'redistribute' && opt.redistributeToAssetId) {
+        // Redirect an existing drone to the failed task
+        const task = mission.tasks.find(t => t.id === opt.taskId)
+        const asset = s.assets.find(a => a.id === opt.redistributeToAssetId)
+        if (!task || !asset) return state
+        const currentPos = interpolateAssetPosition(asset, s.elapsed)
+        const tt = travelTime(currentPos, task.waypoint, ASSET_SPEED[asset.type])
+        const startTime = s.elapsed + tt
+        const completionTime = startTime + task.baseTime
+        s = {
+          ...s,
+          assets: s.assets.map(a => a.id === opt.redistributeToAssetId ? {
+            ...a,
+            currentTaskId: task.id,
+            travelFrom: currentPos,
+            targetPosition: { ...task.waypoint },
+            travelStartElapsed: s.elapsed,
+            travelEndElapsed: s.elapsed + tt,
+            availableAt: completionTime + travelTime(task.waypoint, HUB, ASSET_SPEED[a.type]),
+          } : a),
+          missions: s.missions.map(m => m.id === mission.id ? {
+            ...m,
+            failureRecoveryPending: false,
+            pendingRecoveryOptions: null,
+            tasks: m.tasks.map(t => t.id === task.id ? {
+              ...t,
+              status: 'traveling' as const,
+              assignedAssetIds: [...t.assignedAssetIds, opt.redistributeToAssetId!],
+              allocatedAt: s.elapsed,
+              travelTime: tt,
+              startTime,
+              completionTime,
+            } : t),
+          } : m),
+        }
+      }
+
+      return s
+    }
+
+    // ── APPLY_MANUAL_RECOVERY ────────────────────────────────────────────
+    case 'APPLY_MANUAL_RECOVERY': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      const task = mission?.tasks.find(t => t.id === action.taskId)
+      const asset = state.assets.find(a => a.id === action.newAssetId)
+      if (!mission || !task || !asset || asset.status !== 'available') return state
+      const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
+      const startTime = state.elapsed + tt
+      const completionTime = startTime + task.baseTime
+      let s = logEvent(state, {
+        type: 'failure_recovery',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        recoveryType: 'manual',
+        wasAgentSuggested: false,
+        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+      })
       s = {
         ...s,
-        missions: s.missions.map(m =>
-          m.id === action.missionId ? { ...m, copilotInteraction: 'dismissed' } : m,
-        ),
-        copilotModal: null,
+        assets: s.assets.map(a => a.id === action.newAssetId ? {
+          ...a, status: 'deployed' as const,
+          currentMissionId: mission.id, currentTaskId: task.id,
+          travelFrom: { ...HUB }, targetPosition: { ...task.waypoint },
+          travelStartElapsed: s.elapsed, travelEndElapsed: s.elapsed + tt,
+          availableAt: completionTime + travelTime(task.waypoint, HUB, ASSET_SPEED[a.type]),
+        } : a),
+        missions: s.missions.map(m => m.id === mission.id ? {
+          ...m,
+          failureRecoveryPending: false,
+          pendingRecoveryOptions: null,
+          tasks: m.tasks.map(t => t.id === task.id ? {
+            ...t, status: 'traveling' as const,
+            assignedAssetIds: [...t.assignedAssetIds, action.newAssetId],
+            allocatedAt: s.elapsed, travelTime: tt, startTime, completionTime,
+          } : t),
+        } : m),
       }
       return s
     }
@@ -880,15 +1006,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // ── RECALL_ASSET ─────────────────────────────────────────────────────
     case 'RECALL_ASSET': {
       const asset = state.assets.find(a => a.id === action.assetId)
-      if (!asset || asset.status === 'available' || asset.status === 'returning') return state
+      if (!asset || asset.status === 'available' || asset.status === 'returning' || asset.status === 'failed') return state
 
       const taskId = asset.currentTaskId!
       const missionId = asset.currentMissionId!
       const elapsed = state.elapsed
       const returnTime = travelTime(asset.position, HUB, ASSET_SPEED[asset.type])
 
-      // If the task is already completed (0-cost recall / auto-recall window),
-      // just redirect the asset to hub without failing the task.
       const currentTask = state.missions
         .find(m => m.id === missionId)
         ?.tasks.find(t => t.id === taskId)
@@ -934,8 +1058,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!mission) return state
 
       if (action.direction === 'top') {
-        // Toggle + prepend: clicking a task adds it to the front of the priority stack;
-        // clicking again removes it. Remaining movable tasks sort T5→T1 (greedy order).
         const current = mission.manualPriorityIds
         const alreadyIn = current.includes(action.taskId)
         const newPriorityIds = alreadyIn
@@ -950,8 +1072,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           .sort((a, b) => b.type - a.type)
         const fixed = mission.tasks.filter(t => t.status !== 'pending' && t.status !== 'traveling')
 
-        // When a task is newly added (not toggled off), redirect any of its assigned assets
-        // that are still en route to a lower-priority task, then recompute task timing.
         let taskOverrides = new Map<string, Partial<Task>>()
         let updatedAssets = state.assets
 
@@ -966,13 +1086,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               if (asset.currentMissionId !== mission.id) return asset
 
               if (asset.currentTaskId === pTask.id) {
-                // Already heading to this task — keep, record arrival
                 newStartTime = Math.max(newStartTime, asset.travelEndElapsed)
                 return asset
               }
 
-              // Asset is still en route to a different task — redirect only if not yet executing
-              if (state.elapsed >= asset.travelEndElapsed) return asset  // already at waypoint
+              if (state.elapsed >= asset.travelEndElapsed) return asset
 
               const currentPos = interpolateAssetPosition(asset, state.elapsed)
               const tt = travelTime(currentPos, pTask.waypoint, ASSET_SPEED[asset.type])
@@ -1019,7 +1137,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
-      // 'up'/'down': reorder pending tasks only (used from primary display)
+      // 'up'/'down': reorder pending tasks only
       const pending = mission.tasks.filter(t => t.status === 'pending')
       const idx = pending.findIndex(t => t.id === action.taskId)
       if (idx < 0) return state
@@ -1027,47 +1145,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const reordered = [...pending]
       ;[reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]]
       const nonPending = mission.tasks.filter(t => t.status !== 'pending')
-      const updatedMission = { ...mission, tasks: [...nonPending, ...reordered] }
+      const updatedMission2 = { ...mission, tasks: [...nonPending, ...reordered] }
       let s = logEvent(state, {
         type: 'task_reprioritised',
         missionId: action.missionId,
         taskId: action.taskId,
         newPosition: newIdx,
       })
-      return { ...s, missions: s.missions.map(m => m.id === action.missionId ? updatedMission : m) }
-    }
-
-    // ── TOGGLE_TASK_PRIORITY ─────────────────────────────────────────────
-    case 'TOGGLE_TASK_PRIORITY': {
-      if (!state.copilotModal) return state
-      const ids = state.copilotModal.priorityTaskIds
-      const newIds = ids.includes(action.taskId)
-        ? ids.filter(id => id !== action.taskId)
-        : [...ids, action.taskId]
-
-      // Re-generate strategies with the new priority order so ETAs update.
-      const mission = state.missions.find(m => m.id === state.copilotModal!.missionId)
-      if (mission) {
-        const reserve = reserveCount(state.assets)
-        const copilotRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
-        const strategies = generateStrategies(
-          mission.tasks, reserve, state.config.epsilonMeta, copilotRng, state.elapsed, newIds,
-        )
-        return {
-          ...state,
-          copilotModal: { ...state.copilotModal!, priorityTaskIds: newIds, strategies },
-        }
-      }
-
-      return {
-        ...state,
-        copilotModal: { ...state.copilotModal, priorityTaskIds: newIds },
-      }
-    }
-
-    // ── SET_META_POSTURE ─────────────────────────────────────────────────
-    case 'SET_META_POSTURE': {
-      return { ...state, metaPostureOverride: action.posture }
+      return { ...s, missions: s.missions.map(m => m.id === action.missionId ? updatedMission2 : m) }
     }
 
     // ── SUBMIT_TRUST_PROBE ───────────────────────────────────────────────
@@ -1108,14 +1193,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         sessionNumber: nextSession,
         elapsed: 0,
         sessionStartMs: null,
-        assets: state.config.mode === 'tactical' ? createTacticalAssets() : createInitialAssets(state.config.complexity),
+        assets: createInitialAssets(state.config.complexity),
         missions: [],
         pendingBlueprints: blueprints,
         score: 0,
         penaltyAccrued: 0,
-        metaRec: null,
-        metaPostureOverride: null,
-        copilotModal: null,
+        strategicModal: null,
         trustProbeActive: false,
         nextTrustProbeAt: TRUST_PROBE_INTERVAL,
       }
@@ -1151,8 +1234,13 @@ function endSession(s: GameState): GameState {
   const completionPoints = computeCompletionPoints(failedMissions)
   const greenEff = computeGreenEfficiency(failedMissions)
   const meanTime = computeMeanMissionTime(failedMissions)
-  const cpRate = computeCpFollowRate(evs)
-  const mcpRate = computeMcpFollowRate(evs)
+
+  const agentFollowRate = (() => {
+    const choices = evs.filter(e => e.type === 'strategic_choice') as Array<{ wasAgentSuggestion: boolean; agentSuggestionWasBad: boolean }>
+    const followed = choices.filter(e => e.wasAgentSuggestion && !e.agentSuggestionWasBad).length
+    const total = choices.filter(e => e.wasAgentSuggestion).length
+    return total > 0 ? followed / total : 0
+  })()
 
   let s2 = logEvent({ ...s, missions: failedMissions, score, penaltyAccrued }, {
     type: 'session_ended',
@@ -1161,8 +1249,7 @@ function endSession(s: GameState): GameState {
     completionPoints,
     greenEfficiency: greenEff,
     meanMissionTime: meanTime,
-    cpFollowRate: cpRate,
-    mcpFollowRate: mcpRate,
+    agentFollowRate,
   })
 
   s2 = {
@@ -1180,10 +1267,8 @@ function computeForecast(
   pending: GameState['pendingBlueprints'],
 ): Record<MissionCategory, number> {
   if (pending.length === 0) {
-    // No more missions coming — show uniform
     return { A: 0.2, B: 0.2, C: 0.2, D: 0.2, E: 0.2 }
   }
-  // Use the next few pending missions to estimate the distribution
   const window = pending.slice(0, Math.min(5, pending.length))
   const counts: Record<MissionCategory, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 }
   window.forEach(bp => counts[bp.category]++)

@@ -1,29 +1,20 @@
 // ─── Study configuration ───────────────────────────────────────────────────
 
-export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'PP'
-// standard = 18B/9R/3G, balanced mix
-// surge    = 24B/12R/4G, frequent lighter missions (volume challenge)
-// precision= 12B/6R/2G, complex heavy missions (coordination challenge)
-// campaign = 24B/12R/4G, complex heavy missions (both challenges)
 export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign'
-// standard = full strategic + tactical command (reserve management + Co-Pilot)
-// tactical = missions auto-assigned; operator only picks within-mission strategy
-export type Mode = 'standard' | 'tactical'
+export type Mode = 'no-agent' | 'agent'
 
 export interface StudyConfig {
   participantId: string
-  condition: Condition
-  complexity: Complexity
   mode: Mode
+  complexity: Complexity
   seed: number
-  epsilonCopilot: number
-  epsilonMeta: number
+  agentErrorRate: number  // fixed at 0.20
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
 
 export type AssetType = 'Blue' | 'Red' | 'Green'
-export type AssetStatus = 'available' | 'deployed' | 'returning'
+export type AssetStatus = 'available' | 'deployed' | 'returning' | 'failed'
 
 export interface Asset {
   id: string
@@ -31,14 +22,39 @@ export interface Asset {
   status: AssetStatus
   currentMissionId: string | null
   currentTaskId: string | null
-  // Animation — position interpolated between travelFrom → position at elapsed ∈ [travelStartElapsed, travelEndElapsed]
-  position: { x: number; y: number }   // current rendered position (updated on tick)
+  position: { x: number; y: number }
   travelFrom: { x: number; y: number }
   targetPosition: { x: number; y: number }
   travelStartElapsed: number
   travelEndElapsed: number
-  // Availability
-  availableAt: number   // session elapsed (s) when asset is back at hub (0 = available now)
+  availableAt: number
+  failedAt: number | null  // elapsed (s) when drone failed; null = healthy
+}
+
+// ─── Pending tactical allocation ──────────────────────────────────────────
+
+export interface PendingAllocation {
+  strategyName: 'Aggressive' | 'Conservative' | 'Manual'
+  composition: AssetRequirement
+  taskAssignments: Record<string, string[]>  // taskId → assetId[]
+  taskOrder: string[]                         // taskIds in planned execution order
+  expectedCompletionTime: number              // seconds
+  isAgentSuggested: boolean
+  isBadSuggestion: boolean
+  badSuggestionType: 'over' | 'under' | null
+}
+
+// ─── Recovery options (drone failure) ────────────────────────────────────
+
+export interface RecoveryOption {
+  type: 'reserve' | 'redistribute'
+  label: string
+  description: string
+  taskId: string
+  newAssetId: string | null          // 'reserve': the specific reserve drone; null = none available
+  redistributeToAssetId: string | null  // 'redistribute': existing mission drone to take over
+  expectedTimeImpact: number         // extra seconds
+  feasible: boolean
 }
 
 // ─── Tasks ────────────────────────────────────────────────────────────────
@@ -53,13 +69,13 @@ export interface Task {
   status: TaskStatus
   waypoint: { x: number; y: number }
   assignedAssetIds: string[]
-  allocatedAt: number | null          // elapsed (s) when assets started traveling to waypoint
-  travelTime: number                  // seconds hub→waypoint for slowest assigned asset
-  baseTime: number                    // seconds to execute at waypoint
-  startTime: number | null            // elapsed (s) when execution begins = allocatedAt + travelTime
-  completionTime: number | null       // elapsed (s) = startTime + baseTime
-  useSubstitute: boolean              // false = primary composition; true = substitute composition
-  recallDelay: number                 // extra seconds Co-Pilot delays recall after task completion (ε_C noise)
+  allocatedAt: number | null
+  travelTime: number
+  baseTime: number
+  startTime: number | null
+  completionTime: number | null
+  useSubstitute: boolean
+  recallDelay: number
 }
 
 // ─── Missions ─────────────────────────────────────────────────────────────
@@ -74,16 +90,26 @@ export interface Mission {
   zoneCenter: { x: number; y: number }
   zoneRadius: number
   tasks: Task[]
-  arrivalTime: number       // elapsed (s) when mission appeared
+  arrivalTime: number
   allocationTime: number | null
   completionTime: number | null
-  // Track which Co-Pilot interaction occurred (for follow-rate logging)
-  copilotInteraction: 'none' | 'shown' | 'followed' | 'modified' | 'dismissed'
-  // Post-allocation execution priority stack — most-recently-clicked task is index 0 (runs first)
+  // Interaction tracking
+  agentInteraction: 'none' | 'shown' | 'followed' | 'overridden' | 'manual'
+  chosenStrategyName: 'Aggressive' | 'Conservative' | 'Manual' | null
   manualPriorityIds: string[]
+  // Tactical allocation state (agent mode: awaits sidebar confirmation)
+  tacticalPending: boolean
+  pendingAllocation: PendingAllocation | null
+  // Drone failure
+  droneFailureRelativeTime: number | null  // seconds after arrivalTime; null = no failure
+  droneFailureFired: boolean
+  failedDroneId: string | null
+  // Failure recovery state
+  failureRecoveryPending: boolean
+  pendingRecoveryOptions: RecoveryOption[] | null
 }
 
-// ─── Co-Pilot ─────────────────────────────────────────────────────────────
+// ─── Strategies ───────────────────────────────────────────────────────────
 
 export interface AssetRequirement {
   Blue: number
@@ -96,37 +122,31 @@ export interface TaskComp {
 }
 
 export interface Strategy {
-  name: 'Fastest Possible' | 'Complete in Time' | 'Asset-Preserving'
+  name: 'Aggressive' | 'Conservative'
   description: string
-  assets: AssetRequirement
-  expectedCompletionTime: number  // seconds
+  assets: AssetRequirement            // displayed counts (may be wrong if isBadSuggestion)
+  expectedCompletionTime: number      // displayed time (may be wrong if isBadSuggestion)
   reserveAfter: AssetRequirement
-  speedScore: number    // 0–1
-  reserveScore: number  // 0–1
-  taskComps: Record<string, TaskComp>  // keyed by task.id — drives greedyAssign
+  speedScore: number
+  reserveScore: number
+  taskComps: Record<string, TaskComp>
+  isBadSuggestion: boolean
+  badSuggestionType: 'over' | 'under' | null
+  // True (correct) values — never shown to user, used by reducer for actual assignment
+  trueAssets: AssetRequirement
+  trueTaskComps: Record<string, TaskComp>
 }
 
-export interface CopilotModal {
+// ─── Game state UI ────────────────────────────────────────────────────────
+
+export interface StrategicModal {
   missionId: string
-  strategies: Strategy[]
-  selectedIndex: number | null
-  editedAllocation: AssetRequirement | null
-  priorityTaskIds: string[]           // tasks user marked for priority scheduling
+  strategies: Strategy[]    // length 2 in agent mode, [] in no-agent mode
+  selectedStrategyIndex: number | null
+  manualAllocation: AssetRequirement | null
 }
 
-// ─── Meta-Co-Pilot ────────────────────────────────────────────────────────
-
-export type Posture = 'Aggressive' | 'Conservative' | 'Hold'
-export type AssetChip = 'commit freely' | 'commit cautiously' | 'hold'
-
-export interface MetaRecommendation {
-  posture: Posture
-  rationale: string
-  chips: Record<AssetType, AssetChip>
-  timestamp: number  // elapsed (s)
-}
-
-// ─── Map view state (BroadcastChannel payload — omits event log) ─────────
+// ─── Map view state ───────────────────────────────────────────────────────
 
 export interface MapViewState {
   assets: Asset[]
@@ -137,69 +157,56 @@ export interface MapViewState {
   penaltyAccrued: number
   phase: GamePhase
   pendingBlueprints: MissionBlueprint[]
-  copilotMissionId: string | null   // which mission's allocation modal is open
-  priorityTaskIds: string[]          // tasks currently in the priority queue
+  mode: Mode
+  reserve: AssetRequirement
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────
 
-export type GamePhase =
-  | 'playing'
-  | 'survey'
-  | 'between'   // 30s between-session screen
-  | 'done'
+export type GamePhase = 'playing' | 'survey' | 'between' | 'done'
 
 export interface GameState {
   config: StudyConfig
   phase: GamePhase
   sessionNumber: 1 | 2 | 3
-
-  // Session clock
-  elapsed: number      // seconds since current session start
-  sessionStartMs: number | null  // wall-clock ms when session started (null until first tick)
-
-  // Simulation
+  elapsed: number
+  sessionStartMs: number | null
   assets: Asset[]
-  missions: Mission[]              // all arrived missions for current session
-  pendingBlueprints: MissionBlueprint[]  // pre-computed arrivals not yet spawned
-
-  // Score
-  score: number           // net score: completionPoints − penaltyAccrued (floored at 0)
-  penaltyAccrued: number  // raw penalty total (for display breakdown)
+  missions: Mission[]
+  pendingBlueprints: MissionBlueprint[]
+  score: number
+  penaltyAccrued: number
   completedSessionScores: number[]
-
-  // Forecast (updated on each mission arrival)
   categoryForecast: Record<MissionCategory, number>
-
-  // AI
-  metaRec: MetaRecommendation | null
-  metaPostureOverride: Posture | null  // operator manual override
-
   // UI state
-  copilotModal: CopilotModal | null
+  strategicModal: StrategicModal | null
   trustProbeActive: boolean
-  nextTrustProbeAt: number   // elapsed (s) when next probe appears; 90s intervals
-
-  // Data logging — one array per session, indexed by sessionNumber-1
+  nextTrustProbeAt: number
+  // Data logging — one array per session
   events: GameEvent[][]
 }
 
-// Blueprint pre-computed at session start (before dynamic allocation)
+// ─── Blueprints ───────────────────────────────────────────────────────────
+
 export interface MissionBlueprint {
   id: string
-  arrivalTime: number   // seconds from session start
+  arrivalTime: number
   category: MissionCategory
-  taskTypes: TaskType[] // sorted T5→T1 (execution priority order)
+  taskTypes: TaskType[]
   zoneCenter: { x: number; y: number }
-  waypoints: { x: number; y: number }[]  // parallel to taskTypes
+  waypoints: { x: number; y: number }[]
+  willFail: boolean
+  droneFailureRelativeTime: number | null  // seconds after arrivalTime; null if !willFail
 }
 
 // ─── Events (data logging) ────────────────────────────────────────────────
 
 export interface BaseEvent {
   type: string
-  timestamp: number     // milliseconds from session start
+  timestamp: number       // ms from session start
   sessionNumber: number
+  elapsed: number         // seconds
+  reserveState: AssetRequirement
 }
 
 export interface MissionArrivedEvent extends BaseEvent {
@@ -209,70 +216,49 @@ export interface MissionArrivedEvent extends BaseEvent {
   tasks: Array<{ id: string; type: TaskType }>
   zoneCenter: { x: number; y: number }
   arrivalTime: number
+  timeRemainingInSession: number
 }
 
-export interface AllocationStartedEvent extends BaseEvent {
-  type: 'allocation_started'
+export interface StrategicChoiceEvent extends BaseEvent {
+  type: 'strategic_choice'
   missionId: string
-  triggeredBy: 'operator'
+  missionCategory: MissionCategory
+  choiceType: 'aggressive' | 'conservative' | 'manual'
+  wasAgentSuggestion: boolean
+  agentSuggestionWasBad: boolean
+  badSuggestionType: 'over' | 'under' | null
+  assetsChosen: AssetRequirement
+  timeRemainingInSession: number
 }
 
-export interface CopilotShownEvent extends BaseEvent {
-  type: 'copilot_shown'
+export interface TacticalConfirmedEvent extends BaseEvent {
+  type: 'tactical_confirmed'
   missionId: string
-  strategies: Strategy[]
+  missionCategory: MissionCategory
+  wasAgentSuggested: boolean
+  overridden: boolean
+  assetsDeployed: string[]
+  timeRemainingInSession: number
 }
 
-export interface CopilotStrategySelectedEvent extends BaseEvent {
-  type: 'copilot_strategy_selected'
+export interface DroneFailureEvent extends BaseEvent {
+  type: 'drone_failure'
   missionId: string
-  strategyIndex: number
-  strategyName: string
+  missionCategory: MissionCategory
+  droneId: string
+  droneType: AssetType
+  taskId: string
+  taskType: TaskType
+  timeRemainingInSession: number
 }
 
-export interface CopilotStrategyModifiedEvent extends BaseEvent {
-  type: 'copilot_strategy_modified'
+export interface FailureRecoveryEvent extends BaseEvent {
+  type: 'failure_recovery'
   missionId: string
-  originalStrategy: Strategy
-  modifiedAssets: AssetRequirement
-}
-
-export interface CopilotDismissedEvent extends BaseEvent {
-  type: 'copilot_dismissed'
-  missionId: string
-}
-
-export interface AllocationAppliedEvent extends BaseEvent {
-  type: 'allocation_applied'
-  missionId: string
-  assetsAllocated: string[]
-  source: 'copilot_as_proposed' | 'copilot_modified' | 'manual'
-}
-
-export interface MetaRecommendationEvent extends BaseEvent {
-  type: 'metacopilot_recommendation'
-  posture: Posture
-  rationale: string
-  perAssetChips: Record<AssetType, AssetChip>
-}
-
-export interface MetaFollowedEvent extends BaseEvent {
-  type: 'metacopilot_followed'
-  missionId: string
-  recommendedPosture: Posture
-  chosenPosture: Posture
-}
-
-export interface MetaOverriddenEvent extends BaseEvent {
-  type: 'metacopilot_overridden'
-  missionId: string
-  recommendedPosture: Posture
-  chosenPosture: Posture
-}
-
-export interface MetaIgnoredEvent extends BaseEvent {
-  type: 'metacopilot_ignored'
-  missionId: string
+  missionCategory: MissionCategory
+  recoveryType: 'reserve' | 'redistribute' | 'manual'
+  wasAgentSuggested: boolean
+  timeRemainingInSession: number
 }
 
 export interface TaskCompletedEvent extends BaseEvent {
@@ -288,7 +274,7 @@ export interface TaskFailedEvent extends BaseEvent {
   type: 'task_failed'
   missionId: string
   taskId: string
-  reason: 'asset_recalled' | 'session_ended'
+  reason: 'asset_recalled' | 'session_ended' | 'drone_failure'
 }
 
 export interface AssetRecalledEvent extends BaseEvent {
@@ -313,8 +299,7 @@ export interface SessionEndedEvent extends BaseEvent {
   completionPoints: number
   greenEfficiency: number
   meanMissionTime: number
-  cpFollowRate: number
-  mcpFollowRate: number
+  agentFollowRate: number  // fraction of agent suggestions accepted
 }
 
 export interface TrustProbeEvent extends BaseEvent {
@@ -331,16 +316,10 @@ export interface SurveyResponseEvent extends BaseEvent {
 
 export type GameEvent =
   | MissionArrivedEvent
-  | AllocationStartedEvent
-  | CopilotShownEvent
-  | CopilotStrategySelectedEvent
-  | CopilotStrategyModifiedEvent
-  | CopilotDismissedEvent
-  | AllocationAppliedEvent
-  | MetaRecommendationEvent
-  | MetaFollowedEvent
-  | MetaOverriddenEvent
-  | MetaIgnoredEvent
+  | StrategicChoiceEvent
+  | TacticalConfirmedEvent
+  | DroneFailureEvent
+  | FailureRecoveryEvent
   | TaskCompletedEvent
   | TaskFailedEvent
   | AssetRecalledEvent
