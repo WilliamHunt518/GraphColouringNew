@@ -1,4 +1,4 @@
-import type { Condition, Complexity, StudyConfig } from '../types'
+import type { Condition, Complexity, Mode, StudyConfig } from '../types'
 
 const EPSILON: Record<string, number> = { H: 0.10, L: 0.40, P: 0.00 }
 
@@ -27,7 +27,11 @@ export function parseURLConfig(): StudyConfig | null {
   const seed = parseInt(seedStr, 10)
   if (isNaN(seed)) return null
 
-  return { participantId, condition, complexity, seed, ...conditionToEpsilons(condition) }
+  const validModes: Mode[] = ['standard', 'tactical']
+  const modeParam = p.get('mode') as Mode | null
+  const mode: Mode = modeParam && validModes.includes(modeParam) ? modeParam : 'standard'
+
+  return { participantId, condition, complexity, mode, seed, ...conditionToEpsilons(condition) }
 }
 
 /** Generate a random seed suitable as a default. */

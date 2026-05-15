@@ -321,11 +321,10 @@ function MissionZone({
   const completedTasks = mission.tasks.filter(t => t.status === 'completed').length
   const totalTasks = mission.tasks.length
 
-  // Penalty info for live missions
+  // Urgency for zone stroke colour
   const waitSecs = isLive ? Math.max(0, (mission.completionTime ?? elapsed) - mission.arrivalTime) : 0
   const penaltyPts = isLive ? Math.round(CATEGORY_PENALTY_RATE[mission.category] * waitSecs) : 0
   const missionValue = mission.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
-  const penaltyFrac = missionValue > 0 ? Math.min(1, penaltyPts / missionValue) : 0
   const urgency = isLive ? mapPenaltyUrgency(penaltyPts) : 'none'
   const urgencyColor = URGENCY_STROKE[urgency]
 
@@ -354,10 +353,6 @@ function MissionZone({
       {/* Task value progress arc (green, inner) */}
       {isLive && missionValue > 0 && (
         <ProgressArc cx={cx} cy={cy} r={r} fraction={progressFrac} />
-      )}
-      {/* Penalty arc (red/orange, outer) — grows as cost accumulates */}
-      {isLive && penaltyFrac > 0 && (
-        <PenaltyArc cx={cx} cy={cy} r={r} fraction={penaltyFrac} urgency={urgency} />
       )}
       {mission.tasks.map(t => {
         const isMovable = movableTasks.some(m => m.id === t.id)
@@ -407,12 +402,6 @@ function arcPath(cx: number, cy: number, r: number, fraction: number): string {
 function ProgressArc({ cx, cy, r, fraction }: { cx: number; cy: number; r: number; fraction: number }) {
   if (fraction <= 0) return null
   return <path d={arcPath(cx, cy, r + 4, fraction)} fill="none" stroke="#10b981" strokeWidth={2} strokeLinecap="round" />
-}
-
-function PenaltyArc({ cx, cy, r, fraction, urgency }: { cx: number; cy: number; r: number; fraction: number; urgency: 'none'|'low'|'med'|'high' }) {
-  if (fraction <= 0) return null
-  const color = urgency === 'high' ? '#ef4444' : urgency === 'med' ? '#f97316' : '#eab308'
-  return <path d={arcPath(cx, cy, r + 10, fraction)} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
 }
 
 function TaskWaypoint({ task, priorityIndex = -1, onToggle, onReprioritiseTop }: {

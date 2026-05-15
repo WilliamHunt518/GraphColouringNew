@@ -204,22 +204,45 @@ export function generateStrategies(
   // Fallback: use the same pool as "Fastest" (best we can do if deadline is unreachable)
   if (!citPool) citPool = { ...fastPool }
 
-  // ── Strategy 3: Asset-Preserving ─────────────────────────────────────────
-  // Substitute on T2, T3, T4 (avoids Green on T4; reduces Red on T2/T3).
-  // Primary on T1 and T5 (T5 must use Green; no substitute exists for T1/T5).
-  // Pool capped at 1 Green — only T5 tasks need the Green specialist.
+  // ── Strategy 3: Asset-Preserving (Reserve-Balanced) ─────────────────────
+  // For each T2/T3/T4 task, choose primary vs substitute based on which option
+  // applies less pressure to currently scarce asset types.
+  // Pressure = sum of (assets_needed / assets_available) — penalises drawing
+  // from types with low reserve. If Blues are depleted, primary comps (fewer Blue)
+  // beat substitutes (more Blue); if Reds are depleted, substitutes win instead.
+  // Pool = minimum feasible + 30% of remaining excess per type: proportional
+  // top-up draws more parallelism from whichever type has the most slack.
+  function reservePressure(comp: TaskComposition): number {
+    let p = 0
+    if (comp.Blue  > 0) p += comp.Blue  / Math.max(1, reserve.Blue)
+    if (comp.Red   > 0) p += comp.Red   / Math.max(1, reserve.Red)
+    if (comp.Green > 0) p += comp.Green / Math.max(1, reserve.Green)
+    return p
+  }
+
   const presComps = new Map<string, { comp: TaskComposition; baseTime: number }>()
   for (const task of sorted) {
     const sub = TASK_SUBSTITUTE[task.type as TaskType]
+    const prim = TASK_PRIMARY[task.type as TaskType]
     if (sub && (task.type === 2 || task.type === 3 || task.type === 4)) {
-      presComps.set(task.id, { comp: sub, baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] })
+      const useSub = reservePressure(sub) < reservePressure(prim)
+      presComps.set(task.id, useSub
+        ? { comp: sub,  baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] }
+        : { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] },
+      )
     } else {
-      presComps.set(task.id, { comp: TASK_PRIMARY[task.type as TaskType], baseTime: TASK_BASE_TIME[task.type as TaskType] })
+      presComps.set(task.id, { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] })
     }
   }
-  const presMin = minPool(sorted, presComps)
-  // Cap Green at 1 (preserve specialists)
-  const presPool = cap({ ...presMin, Green: Math.min(presMin.Green, 1) }, reserve)
+
+  const presMin  = minPool(sorted, presComps)
+  const presBase = cap(presMin, reserve)
+  const TOP_UP   = 0.30
+  const presPool: AssetRequirement = {
+    Blue:  Math.min(reserve.Blue,  presBase.Blue  + Math.floor((reserve.Blue  - presBase.Blue)  * TOP_UP)),
+    Red:   Math.min(reserve.Red,   presBase.Red   + Math.floor((reserve.Red   - presBase.Red)   * TOP_UP)),
+    Green: Math.min(reserve.Green, presBase.Green + Math.floor((reserve.Green - presBase.Green) * TOP_UP)),
+  }
 
   // ── Perturb pool counts with ε_M noise ───────────────────────────────────
   // With probability ε_M, adjusts one asset type's count by ±1 (capped to
@@ -289,7 +312,7 @@ export function generateStrategies(
     },
     {
       name: 'Asset-Preserving',
-      description: 'Substitutes on all but Specialist Ops — commits at most 1 Green, maximises reserve.',
+      description: 'Favours whichever asset types are most available — draws proportionally from reserve rather than always substituting.',
       assets: noisyPresPool,
       expectedCompletionTime: noisyPresTime,
       reserveAfter: reserveAfter(noisyPresPool),

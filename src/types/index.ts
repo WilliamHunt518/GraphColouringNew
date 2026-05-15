@@ -6,11 +6,15 @@ export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'PP'
 // precision= 12B/6R/2G, complex heavy missions (coordination challenge)
 // campaign = 24B/12R/4G, complex heavy missions (both challenges)
 export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign'
+// standard = full strategic + tactical command (reserve management + Co-Pilot)
+// tactical = missions auto-assigned; operator only picks within-mission strategy
+export type Mode = 'standard' | 'tactical'
 
 export interface StudyConfig {
   participantId: string
   condition: Condition
   complexity: Complexity
+  mode: Mode
   seed: number
   epsilonCopilot: number
   epsilonMeta: number

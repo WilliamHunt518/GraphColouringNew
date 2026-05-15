@@ -7,7 +7,7 @@ import type { GameAction } from './actions'
 import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
   TASK_SUB_BASE_TIME, ZONE_RADIUS, CATEGORY_PENALTY_RATE, TASK_WEIGHT,
-  generateSessionPlan, createInitialAssets, travelTime,
+  generateSessionPlan, createInitialAssets, createTacticalAssets, travelTime,
 } from '../utils/missionGen'
 import { generateStrategies, buildNoisyTaskOrder } from '../utils/copilot'
 import { evaluatePosture } from '../utils/metacopilot'
@@ -41,7 +41,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     sessionNumber: 1,
     elapsed: 0,
     sessionStartMs: null,
-    assets: createInitialAssets(config.complexity),
+    assets: config.mode === 'tactical' ? createTacticalAssets() : createInitialAssets(config.complexity),
     missions: [],
     pendingBlueprints: blueprints,
     score: 0,
@@ -363,6 +363,130 @@ function computeMcpFollowRate(events: GameEvent[]): number {
   return total > 0 ? followed / total : 0
 }
 
+// ─── Helper: open Co-Pilot modal for a queued mission (standard mode) ─────
+
+function openAllocateModal(s: GameState, missionId: string): GameState {
+  const mission = s.missions.find(m => m.id === missionId)
+  if (!mission || mission.status !== 'queued') return s
+
+  const reserve = reserveCount(s.assets)
+  const copilotRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1))
+  const strategies = generateStrategies(
+    mission.tasks, reserve, s.config.epsilonMeta, copilotRng, s.elapsed,
+  )
+
+  s = logEvent(s, { type: 'allocation_started', missionId, triggeredBy: 'operator' })
+  s = logEvent(s, { type: 'copilot_shown', missionId, strategies })
+  return {
+    ...s,
+    missions: s.missions.map(m => m.id === missionId ? { ...m, copilotInteraction: 'shown' } : m),
+    copilotModal: { missionId, strategies, selectedIndex: null, editedAllocation: null, priorityTaskIds: [] },
+  }
+}
+
+// ─── Helper: auto-apply conservative strategy (tactical mode) ──────────────
+
+// Mirrors APPLY_ALLOCATION but runs silently — no modal, picks Asset-Preserving.
+function autoApplyConservative(s: GameState, missionId: string): GameState {
+  const mission = s.missions.find(m => m.id === missionId)
+  if (!mission || mission.status !== 'queued') return s
+
+  const reserve = reserveCount(s.assets)
+  const copilotRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1))
+  const strategies = generateStrategies(
+    mission.tasks, reserve, s.config.epsilonMeta, copilotRng, s.elapsed,
+  )
+  if (strategies.length === 0) return s  // no feasible strategy; leave queued
+
+  const stratIdx = (() => {
+    const i = strategies.findIndex(st => st.name === 'Asset-Preserving')
+    return i >= 0 ? i : 0
+  })()
+  const strat = strategies[stratIdx]
+
+  const now = s.elapsed
+  const available = s.assets.filter(a => a.status === 'available')
+
+  const copilotOrderRng = new SeededRNG(s.config.seed ^ (mission.id.charCodeAt(1) || 0) ^ 0x5c0e)
+  const noisyOrder = buildNoisyTaskOrder(mission.tasks, s.config.epsilonCopilot, copilotOrderRng)
+  const fullScheduleOrder = noisyOrder.map(t => t.id)
+
+  const assignments = greedyAssign(
+    mission.tasks, available, strat.assets, now, strat.taskComps, fullScheduleOrder,
+  )
+  if (assignments.length === 0) return s
+
+  const recallRng = new SeededRNG(s.config.seed ^ (mission.id.charCodeAt(2) || 0) ^ 0xabcd)
+  const recallDelays = new Map<string, number>()
+  for (const asgn of assignments) {
+    recallDelays.set(asgn.taskId, s.config.epsilonCopilot > 0 ? recallRng.exponential(s.config.epsilonCopilot * 45) : 0)
+  }
+
+  const allAssignedIds = [...new Set(assignments.flatMap(a => a.assetIds))]
+
+  const updatedTaskMap = new Map<string, Task>()
+  for (const task of mission.tasks) {
+    const asgn = assignments.find(a => a.taskId === task.id)
+    updatedTaskMap.set(task.id, asgn ? {
+      ...task,
+      status: 'traveling' as const,
+      assignedAssetIds: asgn.assetIds,
+      allocatedAt: now,
+      travelTime: asgn.travelTime,
+      baseTime: asgn.baseTime,
+      useSubstitute: asgn.useSubstitute,
+      startTime: asgn.startTime,
+      completionTime: asgn.startTime + asgn.baseTime,
+      recallDelay: recallDelays.get(task.id) ?? 0,
+    } : task)
+  }
+  const updatedTasks: Task[] = fullScheduleOrder
+    .map(id => updatedTaskMap.get(id))
+    .filter((t): t is Task => t !== undefined)
+
+  const updatedMission: Mission = {
+    ...mission,
+    status: 'active',
+    tasks: updatedTasks,
+    allocationTime: now,
+    copilotInteraction: 'followed',
+    manualPriorityIds: [],
+  }
+
+  const updatedAssets = s.assets.map(asset => {
+    const myAsgns = assignments.filter(a => a.assetIds.includes(asset.id))
+    if (myAsgns.length === 0) return asset
+    const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
+    const task = updatedTasks.find(t => t.id === firstAsgn.taskId)
+    if (!task) return asset
+    const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
+    return {
+      ...asset,
+      status: 'deployed' as const,
+      currentMissionId: mission.id,
+      currentTaskId: task.id,
+      travelFrom: { ...HUB },
+      targetPosition: task.waypoint,
+      travelStartElapsed: now,
+      travelEndElapsed: now + tt,
+      availableAt: now + tt + firstAsgn.baseTime + travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type]),
+    }
+  })
+
+  s = {
+    ...s,
+    missions: s.missions.map(m => m.id === missionId ? updatedMission : m),
+    assets: updatedAssets,
+  }
+
+  // Log the auto-assignment
+  s = logEvent(s, { type: 'allocation_started', missionId, triggeredBy: 'operator' })
+  s = logEvent(s, { type: 'copilot_strategy_selected', missionId, strategyIndex: stratIdx, strategyName: strat.name })
+  s = logEvent(s, { type: 'allocation_applied', missionId, assetsAllocated: allAssignedIds, source: 'copilot_as_proposed' })
+
+  return s
+}
+
 // ─── Reducer ──────────────────────────────────────────────────────────────
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -393,6 +517,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             zoneCenter: m.zoneCenter,
             arrivalTime: m.arrivalTime,
           })
+        }
+      }
+
+      // 1b. Tactical mode: silently auto-assign all newly queued missions (no modal)
+      if (s.config.mode === 'tactical') {
+        for (const m of s.missions.filter(m => m.status === 'queued')) {
+          s = autoApplyConservative(s, m.id)
         }
       }
 
@@ -554,32 +685,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── OPEN_ALLOCATE ────────────────────────────────────────────────────
     case 'OPEN_ALLOCATE': {
-      const mission = state.missions.find(m => m.id === action.missionId)
-      if (!mission || mission.status !== 'queued') return state
-
-      const reserve = reserveCount(state.assets)
-      const copilotRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
-      const strategies = generateStrategies(
-        mission.tasks,
-        reserve,
-        state.config.epsilonMeta,
-        copilotRng,
-        state.elapsed,
-      )
-
-      let s = logEvent(state, { type: 'allocation_started', missionId: mission.id, triggeredBy: 'operator' })
-      s = logEvent(s, { type: 'copilot_shown', missionId: mission.id, strategies })
-
-      // Mark mission as having had Co-Pilot shown
-      s = {
-        ...s,
-        missions: s.missions.map(m =>
-          m.id === mission.id ? { ...m, copilotInteraction: 'shown' } : m,
-        ),
-        copilotModal: { missionId: mission.id, strategies, selectedIndex: null, editedAllocation: null, priorityTaskIds: [] },
-      }
-
-      return s
+      return openAllocateModal(state, action.missionId)
     }
 
     // ── SELECT_STRATEGY ──────────────────────────────────────────────────
@@ -1002,7 +1108,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         sessionNumber: nextSession,
         elapsed: 0,
         sessionStartMs: null,
-        assets: createInitialAssets(state.config.complexity),
+        assets: state.config.mode === 'tactical' ? createTacticalAssets() : createInitialAssets(state.config.complexity),
         missions: [],
         pendingBlueprints: blueprints,
         score: 0,

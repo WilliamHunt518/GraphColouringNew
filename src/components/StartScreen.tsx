@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Condition, StudyConfig } from '../types'
+import type { Condition, Mode, StudyConfig } from '../types'
 import { conditionToEpsilons, randomSeed } from '../utils/config'
 
 const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
@@ -17,6 +17,11 @@ const COMPLEXITIES: { value: StudyConfig['complexity']; label: string; desc: str
   { value: 'campaign',  label: 'Campaign',      desc: '24 / 12 / 4 drones · complex heavy missions' },
 ]
 
+const MODES: { value: Mode; label: string; desc: string }[] = [
+  { value: 'standard', label: 'Standard',      desc: 'Full command — reserve management + Co-Pilot' },
+  { value: 'tactical', label: 'Tactical Only', desc: 'Auto-assigned missions · pick within-mission strategy' },
+]
+
 interface Props {
   onStart: (config: StudyConfig) => void
 }
@@ -25,6 +30,7 @@ export default function StartScreen({ onStart }: Props) {
   const [participantId, setParticipantId] = useState('')
   const [condition, setCondition] = useState<Condition>('PP')
   const [complexity, setComplexity] = useState<StudyConfig['complexity']>('standard')
+  const [mode, setMode] = useState<Mode>('standard')
   const [seed, setSeed] = useState(String(randomSeed()))
   const [error, setError] = useState('')
 
@@ -33,7 +39,7 @@ export default function StartScreen({ onStart }: Props) {
     if (isNaN(seedNum) || seedNum < 1) { setError('Seed must be a positive integer.'); return }
     const finalId = participantId.trim() || `P-${String(randomSeed() % 9000 + 1000)}`
     setError('')
-    onStart({ participantId: finalId, condition, complexity, seed: seedNum, ...conditionToEpsilons(condition) })
+    onStart({ participantId: finalId, condition, complexity, mode, seed: seedNum, ...conditionToEpsilons(condition) })
   }
 
   return (
@@ -99,6 +105,27 @@ export default function StartScreen({ onStart }: Props) {
               >
                 <span className="font-medium">{cx.label}</span>
                 <span className="block text-xs mt-0.5 text-gray-400">{cx.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mode */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-300">Mode</label>
+          <div className="grid grid-cols-2 gap-2">
+            {MODES.map(m => (
+              <button
+                key={m.value}
+                onClick={() => setMode(m.value)}
+                className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                  mode === m.value
+                    ? 'bg-blue-600 border-blue-500 text-white'
+                    : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <span className="font-medium">{m.label}</span>
+                <span className="block text-xs mt-0.5 text-gray-400">{m.desc}</span>
               </button>
             ))}
           </div>

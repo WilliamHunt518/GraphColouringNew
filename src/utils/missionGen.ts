@@ -302,6 +302,33 @@ export function createInitialAssets(complexity: Complexity): Asset[] {
   return assets
 }
 
+// Tactical mode: large unconstrained pool so reserve is never the limiting factor.
+// 30B/15R/6G covers any conceivable concurrent task combination with slack.
+const TACTICAL_FLEET: [AssetType, number][] = [['Blue', 30], ['Red', 15], ['Green', 6]]
+
+export function createTacticalAssets(): Asset[] {
+  const assets: Asset[] = []
+  for (const [type, count] of TACTICAL_FLEET) {
+    for (let i = 1; i <= count; i++) {
+      const id = `${type[0]}${String(i).padStart(2, '0')}`
+      assets.push({
+        id,
+        type,
+        status: 'available',
+        currentMissionId: null,
+        currentTaskId: null,
+        position: { ...HUB },
+        travelFrom: { ...HUB },
+        targetPosition: { ...HUB },
+        travelStartElapsed: 0,
+        travelEndElapsed: 0,
+        availableAt: 0,
+      })
+    }
+  }
+  return assets
+}
+
 // ─── Travel time helpers ──────────────────────────────────────────────────
 
 export function travelTime(

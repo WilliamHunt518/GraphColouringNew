@@ -74,6 +74,12 @@ const ASSET_CHIP_IDLE: Record<AssetType, string> = {
   Green: 'bg-green-900/40 text-green-400',
 }
 
+const ASSET_CHIP_ACTIVE: Record<AssetType, string> = {
+  Blue:  'bg-blue-900/70 text-blue-300 hover:bg-blue-800',
+  Red:   'bg-red-900/70 text-red-300 hover:bg-red-800',
+  Green: 'bg-emerald-900/70 text-emerald-300 hover:bg-emerald-800',
+}
+
 
 function fmtTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -157,6 +163,11 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
           <span className="text-xs text-gray-400 uppercase tracking-wide">
             Session {state.sessionNumber} / 3
           </span>
+          {state.config.mode === 'tactical' && (
+            <span className="text-xs px-2 py-0.5 rounded bg-purple-900/60 text-purple-300 border border-purple-700/50 uppercase tracking-wide">
+              Tactical Only
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-6 text-sm">
           <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
@@ -194,59 +205,65 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
 
       {/* Body */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: mission queue */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 min-w-0">
-          {(queued.length > 0 || active.length > 0) && (
-            <div className="flex items-center justify-end mb-1">
-              <button
-                onClick={() => setSortMode(s => s === 'arrival' ? 'score' : 'arrival')}
-                className={`text-xs px-2 py-0.5 rounded border transition-colors ${
-                  sortMode === 'score'
-                    ? 'bg-blue-900/30 text-blue-400 border-blue-700'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
-                }`}
-                title="Sort missions by arrival time or by accrued penalty"
-              >
-                Sort: {sortMode === 'arrival' ? 'Arrival ↓' : 'Score ↓'}
-              </button>
-            </div>
-          )}
-          {queued.length > 0 && (
-            <section>
-              <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
-              {sortedQueued.map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
-              ))}
-            </section>
-          )}
-          {active.length > 0 && (
-            <section className={queued.length > 0 ? 'mt-4' : ''}>
-              <SectionLabel text="Active missions" dot="bg-blue-400" />
-              {sortedActive.map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
-              ))}
-            </section>
-          )}
-          {done.length > 0 && (
-            <section className="mt-4 opacity-60">
-              <SectionLabel text="Completed" dot="bg-gray-500" />
-              {done.slice(-6).map(m => (
-                <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
-              ))}
-            </section>
-          )}
-          {queued.length === 0 && active.length === 0 && done.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-600">
-              <p className="text-sm">No missions yet</p>
-              <p className="text-xs mt-1">Missions will appear here as they arrive</p>
+        {/* Left panel: tactical simplified or standard full queue */}
+        <div className="flex-1 overflow-y-auto p-4 min-w-0">
+          {state.config.mode === 'tactical' ? (
+            <TacticalContent state={state} dispatch={dispatch} callsignMode={callsignMode} />
+          ) : (
+            <div className="space-y-2">
+              {(queued.length > 0 || active.length > 0) && (
+                <div className="flex items-center justify-end mb-1">
+                  <button
+                    onClick={() => setSortMode(s => s === 'arrival' ? 'score' : 'arrival')}
+                    className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                      sortMode === 'score'
+                        ? 'bg-blue-900/30 text-blue-400 border-blue-700'
+                        : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+                    }`}
+                    title="Sort missions by arrival time or task score"
+                  >
+                    Sort: {sortMode === 'arrival' ? 'Arrival ↓' : 'Score ↓'}
+                  </button>
+                </div>
+              )}
+              {queued.length > 0 && (
+                <section>
+                  <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
+                  {sortedQueued.map(m => (
+                    <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+                  ))}
+                </section>
+              )}
+              {active.length > 0 && (
+                <section className={queued.length > 0 ? 'mt-4' : ''}>
+                  <SectionLabel text="Active missions" dot="bg-blue-400" />
+                  {sortedActive.map(m => (
+                    <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+                  ))}
+                </section>
+              )}
+              {done.length > 0 && (
+                <section className="mt-4 opacity-60">
+                  <SectionLabel text="Completed" dot="bg-gray-500" />
+                  {done.slice(-6).map(m => (
+                    <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+                  ))}
+                </section>
+              )}
+              {queued.length === 0 && active.length === 0 && done.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-48 text-gray-600">
+                  <p className="text-sm">No missions yet</p>
+                  <p className="text-xs mt-1">Missions will appear here as they arrive</p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Right: reserve + Meta-Co-Pilot */}
+        {/* Right: reserve (standard only) + Meta-Co-Pilot */}
         <aside className="w-72 flex-none border-l border-gray-800 flex flex-col overflow-hidden">
           <div className="overflow-y-auto flex-1 p-4 space-y-4">
-            <ReservePanel state={state} reserve={reserve} />
+            {state.config.mode !== 'tactical' && <ReservePanel state={state} reserve={reserve} />}
             <ForecastPanel state={state} />
           </div>
         </aside>
@@ -329,13 +346,16 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
           {isActive && eta !== null && (
             <span className="text-xs text-gray-400 font-mono">ETA {formatSeconds(eta)}</span>
           )}
-          {isQueued && !isAllocating && (
+          {isQueued && !isAllocating && state.config.mode !== 'tactical' && (
             <button
               onClick={() => dispatch({ type: 'OPEN_ALLOCATE', missionId: mission.id })}
               className="px-3 py-1 bg-amber-600 hover:bg-amber-500 rounded text-xs font-semibold text-white transition-colors"
             >
               Allocate
             </button>
+          )}
+          {isQueued && !isAllocating && state.config.mode === 'tactical' && (
+            <span className="text-xs text-amber-400 font-medium">awaiting…</span>
           )}
           {isAllocating && (
             <span className="text-xs text-blue-400 font-medium">Allocating…</span>
@@ -591,7 +611,7 @@ function DroneChip({ asset, recallable, isZeroCost, recallCostSec, callsign, onR
           recallable
             ? isZeroCost
               ? 'bg-green-800/60 text-green-200 hover:bg-green-700 cursor-pointer'
-              : 'bg-orange-900/60 text-orange-300 hover:bg-orange-800 cursor-pointer'
+              : `${ASSET_CHIP_ACTIVE[asset.type]} cursor-pointer`
             : `${ASSET_CHIP_IDLE[asset.type]} cursor-default opacity-70`
         }`}
       >
@@ -866,7 +886,14 @@ function InlineAllocator({ state, dispatch }: { state: GameState; dispatch: (a: 
       </div>
 
       {/* Strategies or manual */}
-      {!manualMode ? (
+      {manualMode ? (
+        <ManualAllocator
+          reserve={reserve}
+          allocation={manualAlloc}
+          tasks={state.missions.find(m => m.id === modal.missionId)?.tasks ?? []}
+          onChange={setManualAlloc}
+        />
+      ) : (
         <InlineStrategyCards
           strategies={modal.strategies}
           selectedIndex={modal.selectedIndex}
@@ -876,13 +903,6 @@ function InlineAllocator({ state, dispatch }: { state: GameState; dispatch: (a: 
           onSelect={i => { dispatch({ type: 'SELECT_STRATEGY', strategyIndex: i }); setEditingIndex(null) }}
           onEdit={a => dispatch({ type: 'EDIT_ALLOCATION', allocation: a })}
           onToggleEdit={i => setEditingIndex(editingIndex === i ? null : i)}
-        />
-      ) : (
-        <ManualAllocator
-          reserve={reserve}
-          allocation={manualAlloc}
-          tasks={state.missions.find(m => m.id === modal.missionId)?.tasks ?? []}
-          onChange={setManualAlloc}
         />
       )}
 
@@ -1017,6 +1037,58 @@ function InlineStrategyCards({
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ─── Tactical mode content ────────────────────────────────────────────────
+
+function TacticalContent({ state, dispatch, callsignMode }: { state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode }) {
+  const active = state.missions.filter(m => m.status === 'active')
+  const done   = state.missions.filter(m => m.status === 'completed' || m.status === 'failed')
+
+  if (active.length === 0 && done.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-48 text-gray-600">
+        <p className="text-sm">Standby</p>
+        <p className="text-xs mt-1">Missions are assigned automatically — manage task priorities here when they arrive</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {active.length > 0 && (
+        <section>
+          <SectionLabel text="Active missions — manage task priorities" dot="bg-blue-400" />
+          {active.map(m => (
+            <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+          ))}
+        </section>
+      )}
+      {done.length > 0 && (
+        <section className={`${active.length > 0 ? 'mt-4' : ''} opacity-60`}>
+          <SectionLabel text="Completed" dot="bg-gray-500" />
+          {done.slice(-6).map(m => <TacticalDoneCard key={m.id} mission={m} elapsed={state.elapsed} />)}
+        </section>
+      )}
+    </div>
+  )
+}
+
+function TacticalDoneCard({ mission, elapsed }: { mission: Mission; elapsed: number }) {
+  const earned = mission.tasks.filter(t => t.status === 'completed').reduce((s, t) => s + TASK_WEIGHT[t.type], 0)
+  const pen = missionPenaltyAccrued(mission, elapsed)
+  return (
+    <div className="rounded-lg border border-gray-800 bg-gray-900/40 px-3 py-2 mb-1 flex items-center gap-2">
+      <span className="font-mono text-xs text-gray-500">{mission.id}</span>
+      <img src={CAT_ICON[mission.category]} className="w-4 h-4 flex-none" alt="" />
+      {mission.status === 'completed'
+        ? <span className="text-xs text-green-400">✓</span>
+        : <span className="text-xs text-red-400">✗</span>}
+      <span className="text-xs text-gray-600 ml-auto">
+        +{earned} pts &nbsp;−{pen} pen
+      </span>
     </div>
   )
 }
