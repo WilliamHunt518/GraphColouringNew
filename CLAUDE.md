@@ -6,8 +6,8 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 A **web-based human-subjects study platform** for research on trust in hierarchical autonomous AI systems. Operators manage a reserve of heterogeneous drone assets and allocate them to incoming search-and-rescue missions. Two AI assistants operate at different decision tiers:
 
-- **Co-Pilot** — tactical tier; triggered when allocating a mission; proposes three strategies
-- **Meta-Co-Pilot** — strategic tier; always-visible widget; recommends reserve posture
+- **Co-Pilot** — **strategic** tier; triggered when allocating a mission; proposes Aggressive/Conservative allocation strategies (how many drones of each type to commit)
+- **Meta-Co-Pilot** — **tactical** tier; always-visible widget; recommends reserve posture relative to upcoming mission load
 
 Study uses a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL).
 
@@ -41,12 +41,12 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=medium&seed=42
 
 Three 10-minute sessions separated by 30-second between-session screens. Asset pool: 18 Blue, 9 Red, 3 Green (30 total).
 
-| Condition | ε_Co-Pilot | ε_Meta-Co-Pilot |
-|-----------|-----------|----------------|
-| HH        | 0.10      | 0.10           |
-| LH        | 0.40      | 0.10           |
-| HL        | 0.10      | 0.40           |
-| LL        | 0.40      | 0.40           |
+| Condition | ε_Strategic (Co-Pilot) | ε_Tactical (Meta-Co-Pilot) |
+|-----------|----------------------|--------------------------|
+| HH        | 0.10                 | 0.10                     |
+| LH        | 0.40                 | 0.10                     |
+| HL        | 0.10                 | 0.40                     |
+| LL        | 0.40                 | 0.40                     |
 
 ### Key Files
 
@@ -62,8 +62,8 @@ src/
     prng.ts              # SeededRNG class (Mulberry32)
     config.ts            # URL param parsing, condition → epsilon mapping
     missionGen.ts        # Seeded mission generator (Poisson arrivals, zone placement)
-    copilot.ts           # Co-Pilot strategy generator with ε noise
-    metacopilot.ts       # Meta-Co-Pilot posture evaluator with ε noise
+    copilot.ts           # Co-Pilot (strategic tier) — Aggressive/Conservative strategy generator with ε noise
+    metacopilot.ts       # Meta-Co-Pilot (tactical tier) — reserve posture advisor with ε noise (stub, not yet implemented)
     scoring.ts           # Score, green efficiency, follow-rate calculation
   store/
     gameReducer.ts       # useReducer state machine
@@ -116,11 +116,11 @@ Edit `src/types/index.ts` first, then update `missionGen.ts` and `copilot.ts`.
 ### Changing accuracy
 Edit `conditionToEpsilons()` in `src/utils/config.ts`.
 
-### Modifying Co-Pilot strategies
-`src/utils/copilot.ts` — `generateStrategies()`. Noise is applied to objective weights before ranking.
+### Modifying Co-Pilot strategies (strategic tier)
+`src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count strategies for a specific mission. ε noise perturbs displayed asset counts (not true values used at deploy).
 
-### Modifying Meta-Co-Pilot
-`src/utils/metacopilot.ts` — `evaluatePosture()`. Noise perturbs the category forecast before EV calculation.
+### Modifying Meta-Co-Pilot (tactical tier)
+`src/utils/metacopilot.ts` — currently a stub. Will implement reserve-posture recommendations (preserve / maintain / spend down) based on current reserve state vs. expected future demand.
 
 ## Critical Constraints
 

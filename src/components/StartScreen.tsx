@@ -21,6 +21,7 @@ export default function StartScreen({ onStart }: Props) {
   const [complexity, setComplexity] = useState<StudyConfig['complexity']>('standard')
   const [mode, setMode] = useState<Mode>('no-agent')
   const [seed, setSeed] = useState(String(randomSeed()))
+  const [testingMode, setTestingMode] = useState(false)
   const [error, setError] = useState('')
 
   function handleStart() {
@@ -28,7 +29,7 @@ export default function StartScreen({ onStart }: Props) {
     if (isNaN(seedNum) || seedNum < 1) { setError('Seed must be a positive integer.'); return }
     const finalId = participantId.trim() || `P-${String(randomSeed() % 9000 + 1000)}`
     setError('')
-    onStart({ participantId: finalId, mode, complexity, seed: seedNum, agentErrorRate: 0.20 })
+    onStart({ participantId: finalId, mode, complexity, seed: seedNum, agentErrorRate: 0.20, testingMode })
   }
 
   return (
@@ -87,6 +88,19 @@ export default function StartScreen({ onStart }: Props) {
               Randomise
             </button>
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            id="testing-mode"
+            type="checkbox"
+            checked={testingMode}
+            onChange={e => setTestingMode(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-orange-500"
+          />
+          <label htmlFor="testing-mode" className="text-sm text-gray-400 cursor-pointer select-none">
+            Testing mode <span className="text-gray-600 text-xs">(infinite time, manual mission/failure triggers)</span>
+          </label>
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}

@@ -1,15 +1,18 @@
-import { useState } from 'react'
-import type { GameState, Mission, Task, Asset, AssetType, MissionCategory, AssetRequirement, Strategy, TaskType, StrategicModal } from '../types'
+import { useState, useRef, useEffect } from 'react'
+import type { GameState, Mission, Task, AssetType, MissionCategory, AssetRequirement, Strategy, StrategicModal } from '../types'
 import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadDebugLog } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
-import { ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL } from '../utils/missionGen'
+import { HUB, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL } from '../utils/missionGen'
 import { CAT_ICON, TASK_ICON, DRONE_ICON } from '../utils/icons'
+import type { TaskType } from '../types'
 
 interface Props {
   state: GameState
   dispatch: (a: GameAction) => void
+  callsignMode: CallsignMode
+  setCallsignMode: (m: CallsignMode) => void
 }
 
 // ─── Colour / label helpers ────────────────────────────────────────────────
@@ -38,22 +41,16 @@ const TASK_STATUS_STYLE: Record<Task['status'], string> = {
   failed:    'bg-red-900 text-red-300',
 }
 
-const TASK_SHORT: Record<number, string> = { 1: 'Rcn', 2: 'Sup', 3: 'Ext', 4: 'Med', 5: 'Rsc' }
-const TASK_FULL:  Record<number, string> = { 1: 'Recce', 2: 'Resupply', 3: 'Extraction', 4: 'Medevac', 5: 'Rescue' }
+const TASK_SHORT: Record<number, string> = { 1: 'Rcn', 2: 'Rco', 3: 'MnD', 4: 'MjD', 5: 'S&S' }
+const TASK_FULL:  Record<number, string> = { 1: 'Recce', 2: 'Recon', 3: 'Minor Drop', 4: 'Major Drop', 5: 'Search & Supply' }
 
 // Colored dots showing which drone types a task requires (primary composition)
 const TASK_DOTS: Record<number, AssetType[]> = {
   1: ['Blue'],
-  2: ['Blue', 'Red'],
-  3: ['Blue', 'Red', 'Red'],
-  4: ['Blue', 'Blue', 'Blue', 'Green'],
+  2: ['Blue', 'Blue', 'Blue', 'Green'],
+  3: ['Blue', 'Red'],
+  4: ['Blue', 'Red', 'Red'],
   5: ['Red', 'Green'],
-}
-
-const DRONE_NAME: Record<AssetType, string> = {
-  Blue:  'Recon',
-  Red:   'Logistics',
-  Green: 'Specialist',
 }
 
 const ASSET_COLORS: Record<AssetType, string> = {
@@ -64,21 +61,12 @@ const ASSET_DOT_COLOR: Record<AssetType, string> = {
   Blue: 'bg-blue-400', Red: 'bg-red-400', Green: 'bg-green-400',
 }
 
-const ASSET_BAR_COLOR: Record<AssetType, string> = {
-  Blue: 'bg-blue-500', Red: 'bg-red-500', Green: 'bg-green-500',
-}
-
 const ASSET_CHIP_IDLE: Record<AssetType, string> = {
   Blue:  'bg-blue-900/40 text-blue-400',
   Red:   'bg-red-900/40 text-red-400',
   Green: 'bg-green-900/40 text-green-400',
 }
 
-const ASSET_CHIP_ACTIVE: Record<AssetType, string> = {
-  Blue:  'bg-blue-900/70 text-blue-300 hover:bg-blue-800',
-  Red:   'bg-red-900/70 text-red-300 hover:bg-red-800',
-  Green: 'bg-emerald-900/70 text-emerald-300 hover:bg-emerald-800',
-}
 
 function fmtTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -132,8 +120,7 @@ function penaltyUrgency(penaltyPts: number): UrgencyLevel {
 
 // ─── Top-level ────────────────────────────────────────────────────────────
 
-export default function PrimaryDisplay({ state, dispatch }: Props) {
-  const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
+export default function PrimaryDisplay({ state, dispatch, callsignMode, setCallsignMode }: Props) {
   const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
@@ -167,8 +154,37 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
           }`}>
             {state.config.mode === 'agent' ? 'Agent Assist' : 'Manual'}
           </span>
+          {state.config.testingMode && (
+            <span className="text-xs px-2 py-0.5 rounded border uppercase tracking-wide bg-orange-900/60 text-orange-300 border-orange-700/50 font-bold">
+              TEST
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {state.config.testingMode && (
+            <>
+              <button
+                onClick={() => dispatch({ type: 'FORCE_MISSION_ARRIVAL' })}
+                disabled={state.pendingBlueprints.length === 0}
+                className="text-xs px-2.5 py-1 rounded bg-orange-900/50 hover:bg-orange-800/60 text-orange-300 border border-orange-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Spawn next mission immediately"
+              >
+                New Mission
+              </button>
+              <button
+                onClick={() => dispatch({ type: 'FORCE_DRONE_FAILURE' })}
+                disabled={!state.missions.some(m =>
+                  m.status === 'active' && !m.failureRecoveryPending && !m.droneFailureFired &&
+                  state.assets.some(a => a.currentMissionId === m.id && a.status === 'deployed' &&
+                    m.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing')
+                )}
+                className="text-xs px-2.5 py-1 rounded bg-red-900/50 hover:bg-red-800/60 text-red-300 border border-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Force a drone failure on an active mission"
+              >
+                Force Failure
+              </button>
+            </>
+          )}
           <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
           <span className="text-gray-400 flex items-baseline gap-1.5">
             <span>Score: <span className="text-white font-bold">{state.score}</span></span>
@@ -179,10 +195,10 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
             onClick={() => window.open('/?view=map', '_blank', 'noopener')}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
           >
-            Open Map
+            Tactical →
           </button>
           <button
-            onClick={() => setCallsignMode(m => nextCallsignMode(m))}
+            onClick={() => setCallsignMode(nextCallsignMode(callsignMode))}
             className={`text-xs px-2.5 py-1 rounded border transition-colors ${
               callsignMode !== 'id'
                 ? 'bg-blue-700 text-white border-blue-500'
@@ -204,9 +220,35 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
 
       {/* Body */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left panel: mission queue */}
-        <div className="flex-1 overflow-y-auto p-4 min-w-0">
-          <div className="space-y-2">
+        {/* Left: compact reserve strip + mission list */}
+        <div className="w-[440px] flex-none flex flex-col overflow-hidden border-r border-gray-800">
+          {/* Compact reserve strip */}
+          <div className="flex-none px-3 py-1.5 border-b border-gray-800 bg-gray-900/50 flex items-center gap-3 flex-wrap">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider">Reserve</span>
+            {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
+              const avail = reserve[type]
+              const deployed = state.assets.filter(a => a.type === type && a.status === 'deployed').length
+              const returning = state.assets.filter(a => a.type === type && a.status === 'returning').length
+              return (
+                <span key={type} className={`flex items-center gap-1 text-xs ${ASSET_COLORS[type]}`}>
+                  <img src={DRONE_ICON[type]} className="w-3.5 h-3.5 flex-none" alt="" />
+                  <span className="font-mono font-bold">{avail}</span>
+                  <span className="text-gray-600 text-[10px]">/{deployed}out {returning > 0 ? `${returning}rtg` : ''}</span>
+                </span>
+              )
+            })}
+            {state.categoryForecast && (
+              <span className="ml-auto text-[10px] text-gray-600">
+                {(['A', 'B', 'C', 'D', 'E'] as const)
+                  .filter(c => state.categoryForecast[c] > 0.1)
+                  .map(c => `${c}${Math.round(state.categoryForecast[c] * 100)}%`)
+                  .join(' ')}
+              </span>
+            )}
+          </div>
+
+          {/* Scrollable mission list */}
+          <div className="flex-1 overflow-y-auto p-3 min-w-0 space-y-2">
             {(queued.length > 0 || active.length > 0) && (
               <div className="flex items-center justify-end mb-1">
                 <button
@@ -254,13 +296,10 @@ export default function PrimaryDisplay({ state, dispatch }: Props) {
           </div>
         </div>
 
-        {/* Right: reserve panel */}
-        <aside className="w-72 flex-none border-l border-gray-800 flex flex-col overflow-hidden">
-          <div className="overflow-y-auto flex-1 p-4 space-y-4">
-            <ReservePanel state={state} reserve={reserve} />
-            <ForecastPanel state={state} />
-          </div>
-        </aside>
+        {/* Right: embedded operational map */}
+        <div className="flex-1 relative overflow-hidden bg-gray-950">
+          <EmbeddedOperationalMap state={state} dispatch={dispatch} callsignMode={callsignMode} />
+        </div>
       </div>
     </div>
   )
@@ -381,24 +420,13 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
       {/* Assigned assets strip */}
       {isActive && deployedHere.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-gray-700/40">
-          {deployedHere.map(a => {
-            const task = mission.tasks.find(t => t.id === a.currentTaskId)
-            const recallable = task?.status === 'traveling' || task?.status === 'executing'
-            const recallCostSec = task?.completionTime != null
-              ? Math.max(0, Math.round(task.completionTime - state.elapsed))
-              : null
-            return (
-              <DroneChip
-                key={a.id}
-                asset={a}
-                recallable={recallable ?? false}
-                isZeroCost={recallCostSec === 0}
-                recallCostSec={recallCostSec}
-                callsign={callsignMode !== 'id' ? resolveCallsign(a.id, callsignMode) : undefined}
-                onRecall={() => dispatch({ type: 'RECALL_ASSET', assetId: a.id })}
-              />
-            )
-          })}
+          {deployedHere.map(a => (
+            <span key={a.id}
+              className={`font-mono text-xs px-1 py-0.5 rounded leading-none ${ASSET_CHIP_IDLE[a.type]} opacity-70`}
+            >
+              {callsignMode !== 'id' ? resolveCallsign(a.id, callsignMode) : a.id}
+            </span>
+          ))}
         </div>
       )}
 
@@ -479,6 +507,8 @@ function StrategicPanel({ modal, state, dispatch }: { modal: StrategicModal; sta
 }
 
 function StrategyCard({ strat, selected, onSelect }: { strat: Strategy; selected: boolean; reserve?: AssetRequirement; onSelect: () => void }) {
+  const DRONE_COLOR: Record<AssetType, string> = { Blue: 'text-blue-300', Red: 'text-red-300', Green: 'text-green-300' }
+  const DRONE_COLOR_DIM: Record<AssetType, string> = { Blue: 'text-blue-400/60', Red: 'text-red-400/60', Green: 'text-green-400/60' }
   return (
     <button onClick={onSelect}
       className={`text-left p-3 rounded-lg border transition-colors ${selected ? 'border-blue-500 bg-blue-900/30' : 'border-gray-600 bg-gray-800 hover:border-gray-400'}`}>
@@ -487,10 +517,28 @@ function StrategyCard({ strat, selected, onSelect }: { strat: Strategy; selected
         <div className="font-semibold text-sm text-white">{strat.name}</div>
       </div>
       <div className="text-xs text-gray-400 mt-0.5">{strat.description}</div>
-      <div className="mt-2 text-xs space-y-0.5">
-        <div className="text-blue-300">B:{strat.assets.Blue} R:{strat.assets.Red} G:{strat.assets.Green}</div>
+      <div className="mt-2 text-xs space-y-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {(['Blue', 'Red', 'Green'] as AssetType[]).filter(t => strat.assets[t] > 0).map(t => (
+            <span key={t} className={`flex items-center gap-0.5 ${DRONE_COLOR[t]}`}>
+              <img src={DRONE_ICON[t]} className="w-3.5 h-3.5 flex-none" alt="" />
+              <span className="font-bold">{strat.assets[t]}</span>
+            </span>
+          ))}
+          {(['Blue', 'Red', 'Green'] as AssetType[] as AssetType[]).every(t => strat.assets[t] === 0) && (
+            <span className="text-gray-600">—</span>
+          )}
+        </div>
         <div className="text-gray-400">ETA: {fmtTime(strat.expectedCompletionTime)}</div>
-        <div className="text-gray-500">Reserve after: B:{strat.reserveAfter.Blue} R:{strat.reserveAfter.Red} G:{strat.reserveAfter.Green}</div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <span className="text-gray-600 text-xs">Res:</span>
+          {(['Blue', 'Red', 'Green'] as AssetType[]).map(t => (
+            <span key={t} className={`flex items-center gap-0.5 ${DRONE_COLOR_DIM[t]}`}>
+              <img src={DRONE_ICON[t]} className="w-3 h-3 flex-none" alt="" />
+              <span style={{ fontSize: '10px' }}>{strat.reserveAfter[t]}</span>
+            </span>
+          ))}
+        </div>
       </div>
       <div className="mt-2 space-y-1">
         <ScoreBar label="Speed" value={strat.speedScore} color="bg-blue-500" />
@@ -525,7 +573,10 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
         </div>
       ))}
       <div className="text-xs text-gray-400">
-        ETA: {eta < Infinity ? fmtTime(eta) : 'Insufficient assets'}
+        {eta < Infinity
+          ? <>ETA: <span className="text-white">{fmtTime(eta)}</span></>
+          : <span className="text-red-400">No tasks feasible with this pool</span>
+        }
       </div>
     </div>
   )
@@ -716,67 +767,6 @@ function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: num
   )
 }
 
-// ─── Drone chip with confirmation popout ──────────────────────────────────
-
-function DroneChip({ asset, recallable, isZeroCost, recallCostSec, callsign, onRecall }: {
-  asset: Asset
-  recallable: boolean
-  isZeroCost: boolean
-  recallCostSec: number | null
-  callsign?: string
-  onRecall: () => void
-}) {
-  const [confirming, setConfirming] = useState(false)
-  const label = callsign ?? asset.id
-
-  return (
-    <div className="relative">
-      <button
-        disabled={!recallable}
-        onClick={() => recallable && setConfirming(c => !c)}
-        title={recallable ? `Click to recall ${label}` : label}
-        className={`font-mono text-xs px-1 py-0.5 rounded leading-none transition-colors ${
-          recallable
-            ? isZeroCost
-              ? 'bg-green-800/60 text-green-200 hover:bg-green-700 cursor-pointer'
-              : `${ASSET_CHIP_ACTIVE[asset.type]} cursor-pointer`
-            : `${ASSET_CHIP_IDLE[asset.type]} cursor-default opacity-70`
-        }`}
-      >
-        {label}
-      </button>
-
-      {confirming && (
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-30 bg-gray-900 border border-gray-600 rounded-lg p-2 shadow-2xl min-w-max"
-          onClick={e => e.stopPropagation()}
-        >
-          <p className="text-xs font-semibold text-white mb-0.5">Recall {label}?</p>
-          <p className={`text-xs mb-2 ${isZeroCost ? 'text-green-400' : 'text-orange-400'}`}>
-            {isZeroCost ? 'Free — task complete' : `+${recallCostSec}s penalty`}
-          </p>
-          <div className="flex gap-1">
-            <button
-              onClick={() => { onRecall(); setConfirming(false) }}
-              className={`px-2 py-0.5 text-xs rounded font-semibold text-white ${
-                isZeroCost ? 'bg-green-700 hover:bg-green-600' : 'bg-red-700 hover:bg-red-600'
-              }`}
-            >
-              Recall
-            </button>
-            <button
-              onClick={() => setConfirming(false)}
-              className="px-2 py-0.5 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
-            >
-              x
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Co-Pilot task plan ───────────────────────────────────────────────────
 
 function CopilotPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMode: CallsignMode }) {
@@ -859,108 +849,288 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
   )
 }
 
-// ─── Reserve panel ────────────────────────────────────────────────────────
+// ─── Embedded operational map ─────────────────────────────────────────────
 
-function ReservePanel({ state, reserve }: { state: GameState; reserve: AssetRequirement }) {
-  return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 space-y-3">
-      <p className="text-xs text-gray-500 uppercase tracking-wider">Reserve</p>
-      {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
-        const total    = state.assets.filter(a => a.type === type && a.status !== 'failed').length
-        const avail    = reserve[type]
-        const deployed = state.assets.filter(a => a.type === type && a.status === 'deployed').length
-        const returning = state.assets.filter(a => a.type === type && a.status === 'returning').length
-        const failed   = state.assets.filter(a => a.type === type && a.status === 'failed').length
-        return (
-          <div key={type} className="space-y-1">
-            <div className="flex justify-between items-center text-xs">
-              <span className="flex items-center gap-1">
-                <img src={DRONE_ICON[type]} className="w-4 h-4 flex-none" alt="" />
-                <span className={ASSET_COLORS[type]}>{DRONE_NAME[type]}</span>
-              </span>
-              <span className="text-gray-400 font-mono">
-                {avail} avail · {deployed} out · {returning} rtng{failed > 0 ? ` · ${failed} lost` : ''}
-              </span>
-            </div>
-            <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden flex">
-              <div
-                className={`h-full ${ASSET_BAR_COLOR[type]} transition-all`}
-                style={{ width: total > 0 ? `${(avail / total) * 100}%` : '0%' }}
-              />
-              <div
-                className="h-full bg-gray-500 transition-all"
-                style={{ width: total > 0 ? `${(returning / total) * 100}%` : '0%' }}
-              />
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
+const MAP_ZONE_STROKE: Record<string, string> = {
+  queued: '#b45309', active: '#1d4ed8', completed: '#374151', failed: '#7f1d1d',
 }
+const MAP_ZONE_FILL: Record<string, string> = {
+  queued: 'rgba(120,53,15,0.12)', active: 'rgba(29,78,216,0.10)', completed: 'rgba(55,65,81,0.04)', failed: 'rgba(127,29,29,0.04)',
+}
+const MAP_ASSET_COLOR: Record<AssetType, string> = { Blue: '#60a5fa', Red: '#f87171', Green: '#4ade80' }
 
-// ─── Forecast panel ───────────────────────────────────────────────────────
+function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
+  state: GameState
+  dispatch: (a: GameAction) => void
+  callsignMode: CallsignMode
+}) {
+  const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
+  const [grabbing, setGrabbing] = useState(false)
+  const [detailLevel, setDetailLevel] = useState<0 | 1 | 2>(0)
+  const svgRef = useRef<SVGSVGElement>(null)
+  const isPanning = useRef(false)
+  const hasMoved = useRef(false)
+  const lastPos = useRef({ x: 0, y: 0 })
+  const mapChannelRef = useRef<BroadcastChannel | null>(null)
 
-function ForecastPanel({ state }: { state: GameState }) {
-  const f = state.categoryForecast
-  const cats = ['A', 'B', 'C', 'D', 'E'] as MissionCategory[]
-  const next = state.pendingBlueprints[0]
-  const maxF = Math.max(...cats.map(c => f[c]), 0.01)
+  useEffect(() => {
+    const ch = new BroadcastChannel('sar-study')
+    mapChannelRef.current = ch
+    return () => ch.close()
+  }, [])
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = svg.getBoundingClientRect()
+      const pt = {
+        x: (e.clientX - rect.left) / rect.width * 1000,
+        y: (e.clientY - rect.top) / rect.height * 800,
+      }
+      const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2
+      setView(v => {
+        const ns = Math.min(8, Math.max(0.25, v.scale * factor))
+        const ratio = ns / v.scale
+        return { x: pt.x - (pt.x - v.x) * ratio, y: pt.y - (pt.y - v.y) * ratio, scale: ns }
+      })
+    }
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    return () => svg.removeEventListener('wheel', onWheel)
+  }, [])
+
+  const gt = `translate(${view.x},${view.y}) scale(${view.scale})`
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500 uppercase tracking-wider">Next mission forecast</p>
-        {next && (
-          <span className="text-xs text-gray-600 font-mono">
-            in {formatSeconds(Math.max(0, next.arrivalTime - state.elapsed))}
-          </span>
+    <svg
+      ref={svgRef}
+      viewBox="0 0 1000 800"
+      className="w-full h-full"
+      style={{ cursor: grabbing ? 'grabbing' : 'grab', background: '#030712' }}
+      onPointerDown={e => {
+        e.currentTarget.setPointerCapture(e.pointerId)
+        isPanning.current = true
+        hasMoved.current = false
+        lastPos.current = { x: e.clientX, y: e.clientY }
+        setGrabbing(true)
+      }}
+      onPointerMove={e => {
+        if (!isPanning.current) return
+        const dx = e.clientX - lastPos.current.x
+        const dy = e.clientY - lastPos.current.y
+        lastPos.current = { x: e.clientX, y: e.clientY }
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) hasMoved.current = true
+        const rect = svgRef.current!.getBoundingClientRect()
+        setView(v => ({ ...v, x: v.x + dx * 1000 / rect.width, y: v.y + dy * 800 / rect.height }))
+      }}
+      onPointerUp={() => { isPanning.current = false; setGrabbing(false) }}
+    >
+      <defs>
+        <marker id="emap-arr-blue"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#60a5fa" />
+        </marker>
+        <marker id="emap-arr-red"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#f87171" />
+        </marker>
+        <marker id="emap-arr-green" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#4ade80" />
+        </marker>
+      </defs>
+      <g transform={gt}>
+        {/* Dark background */}
+        <rect width="1000" height="800" fill="#030712" />
+
+        {/* Grid dots */}
+        {Array.from({ length: 20 }, (_, i) => i * 50).flatMap(gx =>
+          Array.from({ length: 16 }, (_, j) => j * 50).map(gy => (
+            <circle key={`${gx},${gy}`} cx={gx} cy={gy} r={0.8} fill="#1f2937" />
+          ))
         )}
-      </div>
-      <div className="flex gap-1 items-end" style={{ height: '68px' }}>
-        {cats.map(c => (
-          <div key={c} className="flex-1 flex flex-col items-center gap-0.5">
-            <div
-              className={`w-full rounded-t transition-all ${CAT_BADGE[c].split(' ')[0]}`}
-              style={{ height: `${Math.max(f[c] > 0 ? 2 : 0, Math.round((f[c] / maxF) * 52))}px` }}
+
+        {/* Mission zones */}
+        {[...state.missions]
+          .sort((a, b) => {
+            const ord: Record<string, number> = { completed: 0, failed: 0, queued: 1, active: 2 }
+            return (ord[a.status] ?? 0) - (ord[b.status] ?? 0)
+          })
+          .map(m => {
+            const isAllocatable = m.status === 'queued' && !m.pendingAllocation && !m.tacticalPending
+            const isTactical = m.tacticalPending || m.failureRecoveryPending
+            const isClickable = isAllocatable || m.tacticalPending || m.failureRecoveryPending || m.status === 'active'
+            return (
+              <g key={m.id}
+                onClick={e => {
+                  if (hasMoved.current) return
+                  e.stopPropagation()
+                  if (m.tacticalPending || m.failureRecoveryPending || m.status === 'active') {
+                    mapChannelRef.current?.postMessage({ _autoOpenTactical: m.id })
+                  } else if (isAllocatable) {
+                    dispatch({ type: 'OPEN_STRATEGIC', missionId: m.id })
+                  }
+                }}
+                style={{ cursor: isClickable ? 'pointer' : 'default' }}
+              >
+                <circle
+                  cx={m.zoneCenter.x} cy={m.zoneCenter.y} r={m.zoneRadius}
+                  fill={MAP_ZONE_FILL[m.status] ?? 'rgba(55,65,81,0.04)'}
+                  stroke={isTactical ? '#d97706' : (MAP_ZONE_STROKE[m.status] ?? '#374151')}
+                  strokeWidth={isTactical ? '2' : '1.5'}
+                  strokeDasharray={isTactical ? '6 3' : undefined}
+                />
+                <text x={m.zoneCenter.x} y={m.zoneCenter.y - 4} textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="monospace">{m.id}</text>
+                <text x={m.zoneCenter.x} y={m.zoneCenter.y + 10} textAnchor="middle" fill="#9ca3af" fontSize="8" fontFamily="sans-serif">Cat {m.category}</text>
+                {m.failureRecoveryPending && (
+                  <text x={m.zoneCenter.x} y={m.zoneCenter.y + 22} textAnchor="middle" fill="#f87171" fontSize="7" fontFamily="sans-serif">FAILURE</text>
+                )}
+                {m.tacticalPending && !m.failureRecoveryPending && (
+                  <text x={m.zoneCenter.x} y={m.zoneCenter.y + 22} textAnchor="middle" fill="#fbbf24" fontSize="7" fontFamily="sans-serif">TACTICAL</text>
+                )}
+                {isAllocatable && (
+                  <text x={m.zoneCenter.x} y={m.zoneCenter.y + 22} textAnchor="middle" fill="#f59e0b" fontSize="7" fontFamily="sans-serif">allocate</text>
+                )}
+              </g>
+            )
+          })}
+
+        {/* Asset route lines — all levels */}
+        {state.assets
+          .filter(a => a.status === 'deployed' || a.status === 'returning')
+          .map(a => (
+            <line key={`r-${a.id}`}
+              x1={a.travelFrom.x} y1={a.travelFrom.y}
+              x2={a.targetPosition.x} y2={a.targetPosition.y}
+              stroke={MAP_ASSET_COLOR[a.type]}
+              strokeWidth={detailLevel >= 1 ? '1.5' : '0.5'}
+              opacity="0.2"
             />
-            <span className="text-xs text-gray-500" title={CAT_NAME[c]}>{c}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-1 items-center justify-end">
-        {cats.filter(c => f[c] > 0.05).map(c => (
-          <span key={c} className={`text-xs px-1 rounded ${CAT_BADGE[c]}`}>
-            {c} {Math.round(f[c] * 100)}%
-          </span>
-        ))}
-      </div>
-      <div className="border-t border-gray-800 pt-2 grid grid-cols-1 gap-0.5" style={{ fontSize: '10px' }}>
-        <p className="text-gray-600 uppercase mb-0.5" style={{ fontSize: '9px', letterSpacing: '0.05em' }}>Mission categories</p>
-        {cats.map(c => (
-          <div key={c} className="flex items-center gap-1.5">
-            <span className={`w-4 h-4 rounded flex-none flex items-center justify-center font-bold text-xs ${CAT_BADGE[c]}`}>{c}</span>
-            <span className="text-gray-400">{CAT_NAME[c]}</span>
-            <span className="text-gray-600 ml-auto">×{CATEGORY_PENALTY_RATE[c].toFixed(2)} pts/s</span>
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-gray-800 pt-2 grid grid-cols-1 gap-0.5" style={{ fontSize: '10px' }}>
-        <p className="text-gray-600 uppercase mb-0.5" style={{ fontSize: '9px', letterSpacing: '0.05em' }}>Task types</p>
-        {([1, 2, 3, 4, 5] as TaskType[]).map(t => (
-          <div key={t} className="flex items-center gap-1.5">
-            <img src={TASK_ICON[t]} className="w-4 h-4 flex-none" alt="" />
-            <span className="text-gray-400">{TASK_FULL[t]}</span>
-            <div className="flex gap-0.5 ml-1">
-              {TASK_DOTS[t].map((d, i) => (
-                <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[d]}`} />
-              ))}
-            </div>
-            <span className="text-gray-600 ml-auto">+{TASK_WEIGHT[t]} pts</span>
-          </div>
-        ))}
-      </div>
-    </div>
+          ))}
+
+        {/* Full: inter-task chain paths (dashed) for chained drones */}
+        {detailLevel === 2 && (() => {
+          const statusOrd: Record<string, number> = { executing: 0, traveling: 1, pending: 2 }
+          const droneTaskMap = new Map<string, { task: Task; missionId: string }[]>()
+          for (const m of state.missions.filter(m => m.status === 'active')) {
+            for (const task of m.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')) {
+              for (const droneId of task.assignedAssetIds) {
+                if (!droneTaskMap.has(droneId)) droneTaskMap.set(droneId, [])
+                droneTaskMap.get(droneId)!.push({ task, missionId: m.id })
+              }
+            }
+          }
+          const lines: React.ReactElement[] = []
+          droneTaskMap.forEach((entries, droneId) => {
+            if (entries.length < 2) return
+            const asset = state.assets.find(a => a.id === droneId)
+            if (!asset) return
+            const color = MAP_ASSET_COLOR[asset.type]
+            const sorted = [...entries].sort((a, b) =>
+              (statusOrd[a.task.status] ?? 3) - (statusOrd[b.task.status] ?? 3) || b.task.type - a.task.type
+            )
+            for (let i = 0; i < sorted.length - 1; i++) {
+              const from = sorted[i].task.waypoint
+              const to = sorted[i + 1].task.waypoint
+              lines.push(
+                <line key={`ch-${droneId}-${i}`}
+                  x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                  stroke={color} strokeWidth="1.5" strokeOpacity="0.5" strokeDasharray="4 3"
+                  markerEnd={`url(#emap-arr-${asset.type.toLowerCase()})`}
+                />
+              )
+            }
+          })
+          return <>{lines}</>
+        })()}
+
+        {/* Asset icons — all levels */}
+        {state.assets
+          .filter(a => a.status !== 'available' && a.status !== 'failed')
+          .map(a => {
+            const opacity = a.status === 'returning' ? 0.5 : 1
+            return (
+              <g key={a.id} opacity={opacity}>
+                <circle cx={a.position.x} cy={a.position.y} r={5}
+                  fill={MAP_ASSET_COLOR[a.type]} fillOpacity={0.15} />
+                <image href={DRONE_ICON[a.type]}
+                  x={a.position.x - 4} y={a.position.y - 4} width={8} height={8}
+                  style={{ pointerEvents: 'none' }} />
+                {detailLevel >= 1 && (
+                  <text
+                    x={a.position.x + 7} y={a.position.y - 4}
+                    fill={MAP_ASSET_COLOR[a.type]} fontSize="7" fontFamily="monospace"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {resolveCallsign(a.id, callsignMode)}
+                  </text>
+                )}
+              </g>
+            )
+          })}
+
+        {/* Mid/Full: task waypoints inside active mission zones */}
+        {detailLevel >= 1 && state.missions
+          .filter(m => m.status === 'active')
+          .flatMap(m => m.tasks.map(t => ({ t, m })))
+          .map(({ t }) => (
+            <g key={`wp-${t.id}`}>
+              <circle cx={t.waypoint.x} cy={t.waypoint.y} r={5}
+                fill={t.status === 'completed' ? 'rgba(16,185,129,0.2)' : t.status === 'executing' ? 'rgba(245,158,11,0.2)' : 'rgba(30,41,59,0.8)'}
+                stroke={t.status === 'completed' ? '#4ade80' : t.status === 'executing' ? '#f59e0b' : '#475569'}
+                strokeWidth={0.8}
+              />
+              <image href={TASK_ICON[t.type as TaskType]}
+                x={t.waypoint.x - 4} y={t.waypoint.y - 4} width={8} height={8}
+                style={{ pointerEvents: 'none' }}
+              />
+              {detailLevel === 2 && (
+                <text x={t.waypoint.x} y={t.waypoint.y + 10}
+                  textAnchor="middle" fill="#94a3b8" fontSize="6" fontFamily="sans-serif"
+                  style={{ pointerEvents: 'none' }}>
+                  {TASK_FULL[t.type as TaskType]}
+                </text>
+              )}
+            </g>
+          ))}
+
+        {/* Full: queued mission task waypoints (future planned tasks) */}
+        {detailLevel === 2 && state.missions
+          .filter(m => m.status === 'queued')
+          .flatMap(m => m.tasks.map(t => ({ t, m })))
+          .map(({ t }) => (
+            <g key={`qwp-${t.id}`} opacity={0.45}>
+              <circle cx={t.waypoint.x} cy={t.waypoint.y} r={4}
+                fill="rgba(30,41,59,0.5)" stroke="#374151" strokeWidth={0.7} strokeDasharray="2 2"
+              />
+              <image href={TASK_ICON[t.type as TaskType]}
+                x={t.waypoint.x - 3} y={t.waypoint.y - 3} width={6} height={6}
+                style={{ pointerEvents: 'none' }}
+              />
+              <text x={t.waypoint.x} y={t.waypoint.y + 8}
+                textAnchor="middle" fill="#6b7280" fontSize="5.5" fontFamily="sans-serif"
+                style={{ pointerEvents: 'none' }}>
+                {TASK_FULL[t.type as TaskType]}
+              </text>
+            </g>
+          ))}
+
+        {/* Hub */}
+        <circle cx={HUB.x} cy={HUB.y} r={9} fill="#1e3a8a" stroke="#3b82f6" strokeWidth="1.5" />
+        <text x={HUB.x} y={HUB.y + 22} textAnchor="middle" fill="#60a5fa" fontSize="9" fontFamily="monospace">HUB</text>
+      </g>
+
+      {/* Detail level toggle — stopPropagation prevents SVG pan handler from capturing pointer */}
+      <g onClick={() => setDetailLevel(l => ((l + 1) % 3) as 0 | 1 | 2)} onPointerDown={e => e.stopPropagation()} style={{ cursor: 'pointer' }}>
+        <rect x="6" y="770" width="60" height="16" rx="3" fill="#1f2937" stroke="#374151" />
+        <text x="36" y="781" textAnchor="middle" fill="#9ca3af" fontSize="9" fontFamily="sans-serif">
+          {(['Low', 'Mid', 'Full'] as const)[detailLevel]}
+        </text>
+      </g>
+
+      {/* Status overlay */}
+      <text x="6" y="794" fill="#374151" fontSize="9" fontFamily="sans-serif">
+        Scroll/drag to navigate · click queued zone to allocate
+      </text>
+    </svg>
   )
 }
 

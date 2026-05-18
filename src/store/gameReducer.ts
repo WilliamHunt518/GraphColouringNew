@@ -484,6 +484,58 @@ function applyTacticalAllocation(
   return s
 }
 
+// ─── Helper: build assignments from manual drag-and-drop ──────────────────
+
+function buildManualAssignments(
+  mission: Mission,
+  assets: Asset[],
+  taskAssignments: Record<string, string[]>,
+  taskOrder: string[],
+  elapsed: number,
+): TaskAssignment[] {
+  const assetById = new Map(assets.map(a => [a.id, a]))
+  const assetFreeAt = new Map<string, number>()
+  const assetPos = new Map<string, { x: number; y: number }>()
+  const result: TaskAssignment[] = []
+
+  for (const taskId of taskOrder) {
+    const task = mission.tasks.find(t => t.id === taskId)
+    if (!task) continue
+    const assetIds = (taskAssignments[taskId] ?? []).filter(id => assetById.has(id))
+    if (assetIds.length === 0) continue
+
+    const comp: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
+    for (const id of assetIds) { const a = assetById.get(id)!; comp[a.type]++ }
+
+    const prim = TASK_PRIMARY[task.type as TaskType]
+    const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+    let baseTime = TASK_BASE_TIME[task.type as TaskType]
+    let useSubstitute = false
+    if (!(comp.Blue >= prim.Blue && comp.Red >= prim.Red && comp.Green >= prim.Green)) {
+      if (sub && comp.Blue >= sub.Blue && comp.Red >= sub.Red && comp.Green >= sub.Green) {
+        baseTime = TASK_SUB_BASE_TIME[task.type as TaskType]
+        useSubstitute = true
+      }
+    }
+
+    let startTime = elapsed
+    for (const id of assetIds) {
+      const a = assetById.get(id)!
+      const freeAt = assetFreeAt.get(id) ?? elapsed
+      const pos = assetPos.get(id) ?? { ...HUB }
+      startTime = Math.max(startTime, freeAt + travelTime(pos, task.waypoint, ASSET_SPEED[a.type]))
+    }
+    const completionTime = startTime + baseTime
+    for (const id of assetIds) {
+      assetFreeAt.set(id, completionTime)
+      assetPos.set(id, { ...task.waypoint })
+    }
+
+    result.push({ taskId, assetIds, startTime, travelTime: startTime - elapsed, baseTime, useSubstitute })
+  }
+  return result
+}
+
 // ─── Reducer ──────────────────────────────────────────────────────────────
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -495,12 +547,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // Initialise wall-clock reference on first tick
       const sessionStartMs = state.sessionStartMs ?? action.nowMs
-      const elapsed = Math.min(SESSION_DURATION, (action.nowMs - sessionStartMs) / 1000)
+      const rawElapsed = (action.nowMs - sessionStartMs) / 1000
+      const elapsed = state.config.testingMode ? rawElapsed : Math.min(SESSION_DURATION, rawElapsed)
 
       let s: GameState = { ...state, elapsed, sessionStartMs }
 
-      // 1. Spawn missions whose arrivalTime has passed
-      const toSpawn = s.pendingBlueprints.filter(bp => bp.arrivalTime <= elapsed)
+      // 1. Spawn missions whose arrivalTime has passed (suppressed in testing mode)
+      const toSpawn = state.config.testingMode ? [] : s.pendingBlueprints.filter(bp => bp.arrivalTime <= elapsed)
       if (toSpawn.length > 0) {
         const newMissions: Mission[] = toSpawn.map(spawnMission)
         s = { ...s, pendingBlueprints: s.pendingBlueprints.filter(bp => bp.arrivalTime > elapsed) }
@@ -518,59 +571,61 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
-      // 1b. Drone failure check
-      for (const mission of s.missions) {
-        if (
-          mission.status !== 'active' ||
-          mission.droneFailureFired ||
-          mission.droneFailureRelativeTime === null
-        ) continue
-        if (elapsed < mission.arrivalTime + mission.droneFailureRelativeTime) continue
+      // 1b. Drone failure check (suppressed in testing mode)
+      if (!state.config.testingMode) {
+        for (const mission of s.missions) {
+          if (
+            mission.status !== 'active' ||
+            mission.droneFailureFired ||
+            mission.droneFailureRelativeTime === null
+          ) continue
+          if (elapsed < mission.arrivalTime + mission.droneFailureRelativeTime) continue
 
-        // Pick a random deployed drone on this mission that is currently executing
-        const executingDrones = s.assets.filter(
-          a => a.currentMissionId === mission.id && (a.status === 'deployed') &&
-            mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
-        )
-        if (executingDrones.length === 0) continue  // no executing drones yet, wait
+          // Pick a random deployed drone on this mission that is currently executing
+          const executingDrones = s.assets.filter(
+            a => a.currentMissionId === mission.id && (a.status === 'deployed') &&
+              mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
+          )
+          if (executingDrones.length === 0) continue  // no executing drones yet, wait
 
-        // Seeded random pick
-        const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11)
-        const failedDrone = executingDrones[failRng.randInt(0, executingDrones.length - 1)]
-        const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
+          // Seeded random pick
+          const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11)
+          const failedDrone = executingDrones[failRng.randInt(0, executingDrones.length - 1)]
+          const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
 
-        // Mark drone as failed
-        const updatedAssets = s.assets.map(a =>
-          a.id === failedDrone.id ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null } : a
-        )
-        // Revert task to pending, clear its assignment
-        const updatedMissions = s.missions.map(m => {
-          if (m.id !== mission.id) return m
-          return {
-            ...m,
-            droneFailureFired: true,
-            failedDroneId: failedDrone.id,
-            failureRecoveryPending: true,
-            tasks: m.tasks.map(t =>
-              t.id === failedTask.id
-                ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
-                : t
-            ),
-            pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, s.assets, elapsed),
-          }
-        })
+          // Mark drone as failed
+          const updatedAssets = s.assets.map(a =>
+            a.id === failedDrone.id ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null } : a
+          )
+          // Revert task to pending, clear its assignment
+          const updatedMissions = s.missions.map(m => {
+            if (m.id !== mission.id) return m
+            return {
+              ...m,
+              droneFailureFired: true,
+              failedDroneId: failedDrone.id,
+              failureRecoveryPending: true,
+              tasks: m.tasks.map(t =>
+                t.id === failedTask.id
+                  ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
+                  : t
+              ),
+              pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, s.assets, elapsed),
+            }
+          })
 
-        s = { ...s, assets: updatedAssets, missions: updatedMissions }
-        s = logEvent(s, {
-          type: 'drone_failure',
-          missionId: mission.id,
-          missionCategory: mission.category,
-          droneId: failedDrone.id,
-          droneType: failedDrone.type,
-          taskId: failedTask.id,
-          taskType: failedTask.type,
-          timeRemainingInSession: Math.max(0, SESSION_DURATION - elapsed),
-        })
+          s = { ...s, assets: updatedAssets, missions: updatedMissions }
+          s = logEvent(s, {
+            type: 'drone_failure',
+            missionId: mission.id,
+            missionCategory: mission.category,
+            droneId: failedDrone.id,
+            droneType: failedDrone.type,
+            taskId: failedTask.id,
+            taskType: failedTask.type,
+            timeRemainingInSession: Math.max(0, SESSION_DURATION - elapsed),
+          })
+        }
       }
 
       // 2. Advance task status based on elapsed time
@@ -666,7 +721,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               }
             }
 
-            // No next task — return to hub
+            // No next task — return to hub; available for reallocation immediately
             const returnTime = travelTime(task!.waypoint, HUB, ASSET_SPEED[asset.type])
             return {
               ...asset,
@@ -677,7 +732,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               targetPosition: { ...HUB },
               travelStartElapsed: elapsed,
               travelEndElapsed: elapsed + returnTime,
-              availableAt: elapsed + returnTime,
+              availableAt: elapsed,
               position: newPos,
             }
           }
@@ -702,8 +757,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         s = { ...s, categoryForecast: computeForecast(s.pendingBlueprints) }
       }
 
-      // 8. Session end check
-      if (elapsed >= SESSION_DURATION) {
+      // 8. Session end check (suppressed in testing mode)
+      if (!state.config.testingMode && elapsed >= SESSION_DURATION) {
         s = endSession(s)
       }
 
@@ -758,7 +813,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || mission.status !== 'queued') return state
 
-      const isAgent = state.config.mode === 'agent'
       const modal = state.strategicModal
       if (!modal) return state
 
@@ -785,22 +839,40 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const now = state.elapsed
       const available = state.assets.filter(a => a.status === 'available')
+      const taskOrder = [...mission.tasks].sort((a, b) => b.type - a.type).map(t => t.id)
 
-      // Run greedyAssign to get the specific drone→task mapping
-      const taskOrder = mission.tasks.sort((a, b) => b.type - a.type).map(t => t.id)
-      const assignments = greedyAssign(mission.tasks, available, composition, now, taskComps, taskOrder)
-      if (assignments.length === 0) return state  // infeasible — bail
+      let dronePool: string[]
+      let taskAssignmentMap: Record<string, string[]>
+      let expectedCompletionTime = 0
 
-      // Build the PendingAllocation record
-      const taskAssignments: Record<string, string[]> = {}
-      for (const asgn of assignments) { taskAssignments[asgn.taskId] = asgn.assetIds }
+      if (action.source === 'agent') {
+        // Agent mode: run greedyAssign to produce suggested drone→task assignments
+        const assignments = greedyAssign(mission.tasks, available, composition, now, taskComps, taskOrder)
+        if (assignments.length === 0) return state  // infeasible — bail
+        dronePool = [...new Set(assignments.flatMap(a => a.assetIds))]
+        taskAssignmentMap = Object.fromEntries(assignments.map(a => [a.taskId, a.assetIds]))
+        expectedCompletionTime = Math.max(...assignments.map(a => a.startTime + a.baseTime))
+      } else {
+        // Manual mode: reserve matching drones but do NOT pre-assign to tasks
+        const avB = available.filter(a => a.type === 'Blue')
+        const avR = available.filter(a => a.type === 'Red')
+        const avG = available.filter(a => a.type === 'Green')
+        if (avB.length < composition.Blue || avR.length < composition.Red || avG.length < composition.Green) return state
+        dronePool = [
+          ...avB.slice(0, composition.Blue).map(a => a.id),
+          ...avR.slice(0, composition.Red).map(a => a.id),
+          ...avG.slice(0, composition.Green).map(a => a.id),
+        ]
+        taskAssignmentMap = {}  // operator assigns drones to tasks manually
+      }
 
       const pendingAllocation: PendingAllocation = {
         strategyName,
         composition,
-        taskAssignments,
+        dronePool,
+        taskAssignments: taskAssignmentMap,
         taskOrder,
-        expectedCompletionTime: Math.max(...assignments.map(a => a.startTime + a.baseTime)),
+        expectedCompletionTime,
         isAgentSuggested: action.source === 'agent',
         isBadSuggestion: isBad,
         badSuggestionType: badType,
@@ -818,25 +890,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, SESSION_DURATION - now),
       })
 
-      if (isAgent) {
-        // Agent mode: set tacticalPending — wait for user to OK on map sidebar
-        s = {
-          ...s,
-          missions: s.missions.map(m => m.id === mission.id ? {
-            ...m,
-            tacticalPending: true,
-            pendingAllocation,
-            agentInteraction: action.source === 'agent' ? 'shown' : 'manual',
-            chosenStrategyName: strategyName,
-          } : m),
-          strategicModal: null,
-        }
-      } else {
-        // No-agent mode: auto-confirm — deploy immediately
-        s = applyTacticalAllocation(s, mission.id, assignments, pendingAllocation, taskOrder, false)
-        s = { ...s, strategicModal: null }
+      // Both modes: set tacticalPending for tactical assignment step
+      s = {
+        ...s,
+        missions: s.missions.map(m => m.id === mission.id ? {
+          ...m,
+          tacticalPending: true,
+          pendingAllocation,
+          agentInteraction: action.source === 'agent' ? 'shown' : 'manual',
+          chosenStrategyName: strategyName,
+        } : m),
+        strategicModal: null,
       }
-
       return s
     }
 
@@ -845,11 +910,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
 
-      const available = state.assets.filter(a => a.status === 'available')
       const pending = mission.pendingAllocation
-      const assignments = greedyAssign(mission.tasks, available, pending.composition, state.elapsed, undefined, pending.taskOrder)
-      if (assignments.length === 0) return state
+      let assignments: TaskAssignment[]
 
+      if (action.taskAssignments) {
+        assignments = buildManualAssignments(mission, state.assets, action.taskAssignments, pending.taskOrder, state.elapsed)
+      } else {
+        const available = state.assets.filter(a => a.status === 'available')
+        assignments = greedyAssign(mission.tasks, available, pending.composition, state.elapsed, undefined, pending.taskOrder)
+      }
+
+      if (assignments.length === 0) return state
       return applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, false)
     }
 
@@ -1001,6 +1072,73 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         } : m),
       }
       return s
+    }
+
+    // ── CONFIRM_FAILURE_RECOVERY ─────────────────────────────────────────
+    case 'CONFIRM_FAILURE_RECOVERY': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || !mission.failureRecoveryPending) return state
+      const now = state.elapsed
+
+      let newAssets = [...state.assets]
+      const newTasks = mission.tasks.map(task => {
+        if (task.status !== 'pending') return task
+        const assignedIds = action.taskAssignments[task.id] ?? []
+        if (assignedIds.length === 0) return task
+
+        const travelTimes = assignedIds.map(id => {
+          const asset = newAssets.find(a => a.id === id)
+          if (!asset || asset.status !== 'available') return 0
+          return Math.hypot(task.waypoint.x - HUB.x, task.waypoint.y - HUB.y) / ASSET_SPEED[asset.type]
+        })
+        const startTime = now + Math.max(0, ...travelTimes)
+        const completionTime = startTime + task.baseTime
+
+        for (const droneId of assignedIds) {
+          const assetIdx = newAssets.findIndex(a => a.id === droneId)
+          if (assetIdx < 0) continue
+          const asset = newAssets[assetIdx]
+          if (asset.status !== 'available') continue
+          const tt = Math.hypot(task.waypoint.x - HUB.x, task.waypoint.y - HUB.y) / ASSET_SPEED[asset.type]
+          newAssets[assetIdx] = {
+            ...asset,
+            status: 'deployed' as const,
+            currentMissionId: mission.id,
+            currentTaskId: task.id,
+            travelFrom: { ...HUB },
+            targetPosition: { ...task.waypoint },
+            travelStartElapsed: now,
+            travelEndElapsed: now + tt,
+            availableAt: completionTime + Math.hypot(task.waypoint.x - HUB.x, task.waypoint.y - HUB.y) / ASSET_SPEED[asset.type],
+          }
+        }
+
+        const newAssignedIds = [
+          ...task.assignedAssetIds.filter(id => !assignedIds.includes(id)),
+          ...assignedIds.filter(id => {
+            const asset = newAssets.find(a => a.id === id)
+            return asset?.status === 'deployed' && asset.currentTaskId === task.id
+          }),
+        ]
+        return {
+          ...task,
+          assignedAssetIds: newAssignedIds,
+          startTime,
+          completionTime,
+          status: 'traveling' as const,
+        }
+      })
+
+      return {
+        ...state,
+        assets: newAssets,
+        missions: state.missions.map(m => m.id === action.missionId ? {
+          ...m,
+          tasks: newTasks,
+          failureRecoveryPending: false,
+          pendingRecoveryOptions: null,
+        } : m),
+      }
     }
 
     // ── RECALL_ASSET ─────────────────────────────────────────────────────
@@ -1207,6 +1345,76 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // ── END_STUDY ────────────────────────────────────────────────────────
     case 'END_STUDY': {
       return { ...state, phase: 'done' }
+    }
+
+    // ── FORCE_MISSION_ARRIVAL (testing mode) ─────────────────────────────
+    case 'FORCE_MISSION_ARRIVAL': {
+      if (!state.config.testingMode) return state
+      const bp = state.pendingBlueprints[0]
+      if (!bp) return state
+      const mission = spawnMission({ ...bp, arrivalTime: state.elapsed })
+      let s: GameState = {
+        ...state,
+        pendingBlueprints: state.pendingBlueprints.slice(1),
+        missions: [...state.missions, mission],
+      }
+      s = logEvent(s, {
+        type: 'mission_arrived',
+        missionId: mission.id,
+        category: mission.category,
+        tasks: mission.tasks.map(t => ({ id: t.id, type: t.type })),
+        zoneCenter: mission.zoneCenter,
+        arrivalTime: mission.arrivalTime,
+        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+      })
+      return s
+    }
+
+    // ── FORCE_DRONE_FAILURE (testing mode) ───────────────────────────────
+    case 'FORCE_DRONE_FAILURE': {
+      if (!state.config.testingMode) return state
+      // Find first active mission without a pending failure
+      const mission = state.missions.find(
+        m => m.status === 'active' && !m.failureRecoveryPending && !m.droneFailureFired
+      )
+      if (!mission) return state
+      const executingDrones = state.assets.filter(
+        a => a.currentMissionId === mission.id && a.status === 'deployed' &&
+          mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
+      )
+      if (executingDrones.length === 0) return state
+      const failedDrone = executingDrones[0]
+      const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
+      const updatedAssets = state.assets.map(a =>
+        a.id === failedDrone.id ? { ...a, status: 'failed' as const, failedAt: state.elapsed, currentMissionId: null, currentTaskId: null } : a
+      )
+      const updatedMissions = state.missions.map(m => {
+        if (m.id !== mission.id) return m
+        return {
+          ...m,
+          droneFailureFired: true,
+          failedDroneId: failedDrone.id,
+          failureRecoveryPending: true,
+          tasks: m.tasks.map(t =>
+            t.id === failedTask.id
+              ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
+              : t
+          ),
+          pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, state.assets, state.elapsed),
+        }
+      })
+      let s: GameState = { ...state, assets: updatedAssets, missions: updatedMissions }
+      s = logEvent(s, {
+        type: 'drone_failure',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        droneId: failedDrone.id,
+        droneType: failedDrone.type,
+        taskId: failedTask.id,
+        taskType: failedTask.type,
+        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+      })
+      return s
     }
 
     default:

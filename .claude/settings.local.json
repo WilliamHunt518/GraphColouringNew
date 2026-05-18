@@ -67,7 +67,8 @@
       "Bash(npm run *)",
       "PowerShell(& \"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"G:\\\\Files\\\\Code\\\\GraphColouringNew\\\\node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit --project \"G:\\\\Files\\\\Code\\\\GraphColouringNew\\\\tsconfig.json\" 2>&1)",
       "Bash(Get-ChildItem *)",
-      "Bash(echo \"Exit code: $?\")"
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(echo \"Exit: $?\")"
     ]
   }
 }

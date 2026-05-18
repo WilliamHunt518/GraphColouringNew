@@ -20,11 +20,11 @@ export const ASSET_SPEED: Record<AssetType, number> = {
 
 /** Base execution time (seconds) per task type, primary composition */
 export const TASK_BASE_TIME: Record<TaskType, number> = {
-  1: 15,
-  2: 30,
-  3: 45,
-  4: 30,
-  5: 45,
+  1: 15,   // T1 Recce
+  2: 30,   // T2 Recon (Green thermal dramatically reduces sweep time)
+  3: 30,   // T3 Minor Drop
+  4: 45,   // T4 Major Drop
+  5: 45,   // T5 Search & Supply
 }
 
 // ─── Asset requirements ───────────────────────────────────────────────────
@@ -37,32 +37,33 @@ export interface TaskComposition {
 
 /**
  * Primary and substitute compositions per task type.
- * T1 and T5 have no substitute.
+ * T1 Recce and T5 Search & Supply have no substitute.
+ * T2 Recon / T3 Minor Drop / T4 Major Drop all have slower all-Blue (or Blue-heavy) substitutes.
  */
 export const TASK_PRIMARY: Record<TaskType, TaskComposition> = {
-  1: { Blue: 1, Red: 0, Green: 0 },
-  2: { Blue: 1, Red: 1, Green: 0 },
-  3: { Blue: 1, Red: 2, Green: 0 },
-  4: { Blue: 3, Red: 0, Green: 1 },
-  5: { Blue: 0, Red: 1, Green: 1 },
+  1: { Blue: 1, Red: 0, Green: 0 },   // T1 Recce: 1 Blue
+  2: { Blue: 3, Red: 0, Green: 1 },   // T2 Recon: 3 Blues + 1 Green (thermal)
+  3: { Blue: 1, Red: 1, Green: 0 },   // T3 Minor Drop: 1 Blue + 1 Red
+  4: { Blue: 1, Red: 2, Green: 0 },   // T4 Major Drop: 1 Blue + 2 Reds
+  5: { Blue: 0, Red: 1, Green: 1 },   // T5 Search & Supply: 1 Red + 1 Green (sequential)
 }
 
 /** Substitute composition (null = no substitute exists) */
 export const TASK_SUBSTITUTE: Record<TaskType, TaskComposition | null> = {
   1: null,
-  2: { Blue: 3, Red: 0, Green: 0 },
-  3: { Blue: 3, Red: 1, Green: 0 },
-  4: { Blue: 8, Red: 0, Green: 0 },
+  2: { Blue: 8, Red: 0, Green: 0 },   // T2 Recon sub: 8 Blues (no thermal; slower)
+  3: { Blue: 3, Red: 0, Green: 0 },   // T3 Minor Drop sub: 3 Blues (lighter payload)
+  4: { Blue: 3, Red: 1, Green: 0 },   // T4 Major Drop sub: 3 Blues + 1 Red
   5: null,
 }
 
-/** Base time multiplier when using substitute composition */
+/** Base time when using substitute composition — same as primary; penalty is the extra drones required */
 export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
-  1: 15,   // unused (no sub)
-  2: 45,
-  3: 60,
-  4: 65,
-  5: 45,   // unused (no sub)
+  1: 15,
+  2: 30,
+  3: 30,
+  4: 45,
+  5: 45,
 }
 
 // ─── Complexity parameters ────────────────────────────────────────────────
@@ -98,8 +99,8 @@ function buildTaskList(rng: SeededRNG, category: MissionCategory): TaskType[] {
     }
     case 'B':
       return rng.randFloat(0, 1) < 0.5
-        ? [5, 4, 3, 3, 2, 2, 1, 1]   // with specialist tasks (needs Green)
-        : [3, 3, 2, 2, 2, 1, 1, 1]   // logistics-only (no Green required)
+        ? [5, 4, 3, 3, 2, 2, 1, 1]   // T5+T4 heavy variant
+        : [3, 3, 2, 2, 2, 1, 1, 1]   // lighter T3/T2/T1 mix
     case 'C': return [5, 4, 4, 3, 3, 2, 2, 1]
     case 'D': return [5, 5, 4, 4, 3, 3, 2, 2]
     case 'E': return [5, 5, 5, 4, 4, 3, 3, 2, 1]
@@ -119,6 +120,36 @@ function sampleInCircle(rng: SeededRNG, cx: number, cy: number, r: number) {
     const y = cy + rng.randFloat(-r, r)
     if ((x - cx) ** 2 + (y - cy) ** 2 < r * r) return { x, y }
   }
+}
+
+/** Random point inside a circle, at least minDist from all existing points */
+function sampleInCircleNoOverlap(
+  rng: SeededRNG,
+  cx: number, cy: number, r: number,
+  existing: Array<{ x: number; y: number }>,
+  minDist: number,
+): { x: number; y: number } {
+  // Try with full minDist
+  for (let attempt = 0; attempt < 250; attempt++) {
+    const pt = sampleInCircle(rng, cx, cy, r)
+    if (existing.every(e => Math.hypot(pt.x - e.x, pt.y - e.y) >= minDist)) return pt
+  }
+  // Relax progressively
+  for (let d = minDist * 0.75; d >= 25; d *= 0.8) {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const pt = sampleInCircle(rng, cx, cy, r)
+      if (existing.every(e => Math.hypot(pt.x - e.x, pt.y - e.y) >= d)) return pt
+    }
+  }
+  // Last resort: pick the candidate that maximises minimum distance from existing
+  let best = sampleInCircle(rng, cx, cy, r)
+  let bestMin = 0
+  for (let attempt = 0; attempt < 150; attempt++) {
+    const pt = sampleInCircle(rng, cx, cy, r)
+    const minD = existing.length === 0 ? Infinity : Math.min(...existing.map(e => Math.hypot(pt.x - e.x, pt.y - e.y)))
+    if (minD > bestMin) { bestMin = minD; best = pt }
+  }
+  return best
 }
 
 function placeZone(
@@ -197,9 +228,10 @@ export function generateSessionPlan(
     const zoneCenter = placeZone(rng, usedCenters.slice(-5))
     usedCenters.push(zoneCenter)
 
-    const waypoints = taskTypes.map(() =>
-      sampleInCircle(rng, zoneCenter.x, zoneCenter.y, ZONE_RADIUS),
-    )
+    const waypoints: Array<{ x: number; y: number }> = []
+    for (let i = 0; i < taskTypes.length; i++) {
+      waypoints.push(sampleInCircleNoOverlap(rng, zoneCenter.x, zoneCenter.y, ZONE_RADIUS, waypoints, 50))
+    }
 
     blueprints.push({
       id: `M${String(++seq).padStart(3, '0')}`,

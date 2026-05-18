@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- top box, slight tilt, shifted right -->
+  <g transform="translate(30,6) rotate(-8)">
+    <rect x="0" y="0" width="22" height="18" rx="2" fill="#e85c5c" stroke="#c83a3a" stroke-width="1"/>
+    <line x1="0" y1="9"  x2="22" y2="9"  stroke="#c83a3a" stroke-width="0.8"/>
+    <line x1="11" y1="0" x2="11" y2="18" stroke="#c83a3a" stroke-width="0.8"/>
+  </g>
+  <!-- bottom-left box, shifted right -->
+  <g transform="translate(14,32) rotate(6)">
+    <rect x="0" y="0" width="22" height="18" rx="2" fill="#e85c5c" stroke="#c83a3a" stroke-width="1"/>
+    <line x1="0" y1="9"  x2="22" y2="9"  stroke="#c83a3a" stroke-width="0.8"/>
+    <line x1="11" y1="0" x2="11" y2="18" stroke="#c83a3a" stroke-width="0.8"/>
+  </g>
+  <!-- bottom-right box, shifted right -->
+  <g transform="translate(42,34) rotate(-5)">
+    <rect x="0" y="0" width="22" height="18" rx="2" fill="#e85c5c" stroke="#c83a3a" stroke-width="1"/>
+    <line x1="0" y1="9"  x2="22" y2="9"  stroke="#c83a3a" stroke-width="0.8"/>
+    <line x1="11" y1="0" x2="11" y2="18" stroke="#c83a3a" stroke-width="0.8"/>
+  </g>
+  <!-- drop arrow, recentred under boxes -->
+  <line x1="36" y1="54" x2="36" y2="57" stroke="#e85c5c" stroke-width="2.5" stroke-linecap="round"/>
+  <polyline points="28,54 36,62 44,54" fill="none" stroke="#e85c5c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -6,14 +6,20 @@ const CHANNEL_NAME = 'sar-study'
 
 export default function MapWindowClient() {
   const [viewState, setViewState] = useState<MapViewState | null>(null)
+  const [autoOpenSignal, setAutoOpenSignal] = useState<{id: string; n: number} | null>(null)
+  const nonceRef = useRef(0)
   const channelRef = useRef<BroadcastChannel | null>(null)
 
   useEffect(() => {
     const channel = new BroadcastChannel(CHANNEL_NAME)
     channelRef.current = channel
     channel.onmessage = (e: MessageEvent) => {
-      // Ignore action messages (from other map windows); only accept MapViewState payloads
-      if (!e.data?._mapAction) setViewState(e.data as MapViewState)
+      if (e.data?._mapAction) return  // outgoing action echoes — ignore
+      if (e.data?._autoOpenTactical) {
+        setAutoOpenSignal({ id: e.data._autoOpenTactical as string, n: ++nonceRef.current })
+        return
+      }
+      setViewState(e.data as MapViewState)
     }
     return () => { channel.close(); channelRef.current = null }
   }, [])
@@ -33,5 +39,5 @@ export default function MapWindowClient() {
     )
   }
 
-  return <MapDisplay state={viewState} onReprioritiseTop={handleReprioritiseTop} />
+  return <MapDisplay state={viewState} onReprioritiseTop={handleReprioritiseTop} autoOpenSignal={autoOpenSignal} />
 }

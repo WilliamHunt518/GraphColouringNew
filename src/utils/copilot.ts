@@ -296,17 +296,23 @@ export function generateStrategies(
 }
 
 /**
- * Estimates completion time for a given asset pool and task list (primary compositions).
- * Used by ManualCountPicker to show live ETA preview as the user adjusts counts.
+ * Estimates completion time for a given asset pool and task list.
+ * Returns Infinity if any task cannot be covered (no partial ETAs).
  */
 export function previewAllocation(tasks: Task[], pool: AssetRequirement): number {
   const comps = new Map<string, { comp: TaskComposition; baseTime: number }>()
   for (const task of tasks) {
-    comps.set(task.id, {
-      comp:     TASK_PRIMARY[task.type as TaskType],
-      baseTime: TASK_BASE_TIME[task.type as TaskType],
-    })
+    const prim = TASK_PRIMARY[task.type as TaskType]
+    const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+    if (pool.Blue >= prim.Blue && pool.Red >= prim.Red && pool.Green >= prim.Green) {
+      comps.set(task.id, { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] })
+    } else if (sub && pool.Blue >= sub.Blue && pool.Red >= sub.Red && pool.Green >= sub.Green) {
+      comps.set(task.id, { comp: sub, baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] })
+    } else {
+      return Infinity  // can't cover all tasks with this pool
+    }
   }
+  if (comps.size === 0) return 0
   const sorted = [...tasks].sort((a, b) => b.type - a.type)
   return simulatePool(sorted, comps, pool)
 }

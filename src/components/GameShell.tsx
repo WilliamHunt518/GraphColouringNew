@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useRef } from 'react'
+import { useReducer, useEffect, useRef, useState } from 'react'
 import type { StudyConfig, MapViewState } from '../types'
 import { buildInitialState, gameReducer, reserveCount } from '../store/gameReducer'
 import PrimaryDisplay from './PrimaryDisplay'
@@ -7,16 +7,20 @@ import SurveyModal from './SurveyModal'
 
 const CHANNEL_NAME = 'sar-study'
 
+type CallsignMode = 'id' | 'arthurian' | 'nato'
+
 interface Props {
   config: StudyConfig
 }
 
 export default function GameShell({ config }: Props) {
   const [state, dispatch] = useReducer(gameReducer, config, buildInitialState)
+  const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
   const lastBroadcastElapsed = useRef<number>(-1)
   const lastStrategicModalRef = useRef<typeof state.strategicModal>(null)
+  const prevTacticalPendingRef = useRef<Set<string>>(new Set())
 
   // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
@@ -26,7 +30,7 @@ export default function GameShell({ config }: Props) {
       const d = e.data
       if (!d?._mapAction) return
       if (d._mapAction === 'CONFIRM_TACTICAL' && typeof d.missionId === 'string') {
-        dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId })
+        dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId, taskAssignments: d.taskAssignments })
       }
       if (d._mapAction === 'OVERRIDE_TACTICAL' && typeof d.missionId === 'string') {
         dispatch({ type: 'OVERRIDE_TACTICAL', missionId: d.missionId })
@@ -37,18 +41,44 @@ export default function GameShell({ config }: Props) {
       if (d._mapAction === 'APPLY_MANUAL_RECOVERY' && typeof d.missionId === 'string') {
         dispatch({ type: 'APPLY_MANUAL_RECOVERY', missionId: d.missionId, taskId: d.taskId, newAssetId: d.newAssetId })
       }
+      if (d._mapAction === 'CONFIRM_FAILURE_RECOVERY' && typeof d.missionId === 'string') {
+        dispatch({ type: 'CONFIRM_FAILURE_RECOVERY', missionId: d.missionId, taskAssignments: d.taskAssignments })
+      }
       if (d._mapAction === 'REPRIORITISE_TOP' && typeof d.missionId === 'string' && typeof d.taskId === 'string') {
         dispatch({ type: 'REPRIORITISE_TASK', missionId: d.missionId, taskId: d.taskId, direction: 'top' })
+      }
+      if (d._mapAction === 'APPLY_STRATEGIC' && typeof d.missionId === 'string') {
+        dispatch({ type: 'APPLY_STRATEGIC', missionId: d.missionId, source: d.source,
+          strategyIndex: d.strategyIndex ?? null, manualAllocation: d.manualAllocation ?? null })
+      }
+      if (d._mapAction === 'CLOSE_STRATEGIC') {
+        dispatch({ type: 'CLOSE_STRATEGIC' })
       }
     }
     return () => { channel.close(); channelRef.current = null }
   }, [])
 
-  // Broadcast map state ~10fps, or immediately when strategic modal changes
+  // Dedicated unthrottled effect: detect new tacticalPending / failureRecoveryPending missions and auto-open on map
+  useEffect(() => {
+    const currentPending = new Set(
+      state.missions
+        .filter(m => (m.tacticalPending && !!m.pendingAllocation) || m.failureRecoveryPending)
+        .map(m => m.id)
+    )
+    for (const id of currentPending) {
+      if (!prevTacticalPendingRef.current.has(id)) {
+        channelRef.current?.postMessage({ _autoOpenTactical: id })
+      }
+    }
+    prevTacticalPendingRef.current = currentPending
+  }, [state.missions])
+
+  // Broadcast map state ~10fps, or immediately when strategic modal / callsignMode changes
   useEffect(() => {
     if (!channelRef.current) return
     const modalChanged = state.strategicModal !== lastStrategicModalRef.current
     if (!modalChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
+
     lastBroadcastElapsed.current = state.elapsed
     lastStrategicModalRef.current = state.strategicModal
     const payload: MapViewState = {
@@ -62,9 +92,11 @@ export default function GameShell({ config }: Props) {
       pendingBlueprints: state.pendingBlueprints,
       mode: state.config.mode,
       reserve: reserveCount(state.assets),
+      callsignMode,
+      strategicModal: state.strategicModal,
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {
@@ -81,7 +113,7 @@ export default function GameShell({ config }: Props) {
   }, [state.phase])
 
   if (state.phase === 'playing') {
-    return <PrimaryDisplay state={state} dispatch={dispatch} />
+    return <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} />
   }
 
   if (state.phase === 'survey') {

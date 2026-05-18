@@ -18,12 +18,13 @@ export type GameAction =
     }
 
   // ── Tactical confirmation (agent mode — from map sidebar) ────────────────
-  | { type: 'CONFIRM_TACTICAL'; missionId: string }
+  | { type: 'CONFIRM_TACTICAL'; missionId: string; taskAssignments?: Record<string, string[]> }
   | { type: 'OVERRIDE_TACTICAL'; missionId: string }        // user wants to edit tactical
 
   // ── Drone failure recovery ───────────────────────────────────────────────
   | { type: 'ACCEPT_RECOVERY'; missionId: string; recoveryType: 'reserve' | 'redistribute' }
   | { type: 'APPLY_MANUAL_RECOVERY'; missionId: string; taskId: string; newAssetId: string }
+  | { type: 'CONFIRM_FAILURE_RECOVERY'; missionId: string; taskAssignments: Record<string, string[]> }
 
   // ── In-mission operations ────────────────────────────────────────────────
   | { type: 'RECALL_ASSET'; assetId: string }
@@ -34,6 +35,10 @@ export type GameAction =
   | { type: 'SUBMIT_SURVEY'; surveyName: string; responses: Record<string, number> }
   | { type: 'FINISH_SURVEYS' }
   | { type: 'DISMISS_TRUST_PROBE' }
+
+  // ── Testing mode ─────────────────────────────────────────────────────────
+  | { type: 'FORCE_MISSION_ARRIVAL' }
+  | { type: 'FORCE_DRONE_FAILURE' }
 
   // ── Session flow ─────────────────────────────────────────────────────────
   | { type: 'NEXT_SESSION' }

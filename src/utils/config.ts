@@ -18,7 +18,9 @@ export function parseURLConfig(): StudyConfig | null {
   const modeParam = p.get('mode') as Mode | null
   const mode: Mode = modeParam && validModes.includes(modeParam) ? modeParam : 'no-agent'
 
-  return { participantId, mode, complexity, seed, agentErrorRate: 0.20 }
+  const testingMode = p.get('test') === '1'
+
+  return { participantId, mode, complexity, seed, agentErrorRate: 0.20, testingMode }
 }
 
 export function randomSeed(): number {

@@ -11,6 +11,7 @@
 \usepackage{multirow}
 \usepackage[table]{xcolor}
 \usepackage{caption}
+\usepackage{float}
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows,positioning,calc}
 
@@ -42,13 +43,12 @@ The recent trend in agentic design patterns provides myriad approaches to assist
 
 Real-world deployments rarely involve a single tier of autonomous support. A drone operator managing a search-and-rescue response faces at least two interleaved decision problems: how to allocate resources to incoming missions, and how to prioritise effort within a given mission once resources are committed. Autonomous tools could assist at either level, and their reliability at each level may differ. Yet to our knowledge, no prior work has examined whether operators are more tolerant of imperfect autonomy at higher or lower levels of such a hierarchy, or how inaccuracy at one level propagates into trust at the other.
 
-We develop a simulated search-and-rescue scenario using a heterogeneous drone swarm, and characterise how operators interact with a two-tier assistive system at different rates of reliability of each tier: the Co-Pilot, which suggests allocation strategies within missions, and the Meta-Co-Pilot, which recommends cross-mission resource deployment. In a 2$\times$2 between-subjects design we test the following hypotheses:
+We develop a simulated search-and-rescue scenario using a heterogeneous drone swarm, and characterise how operators interact with the two-tier assistive system compared to a fully manual baseline. In a within-subjects counterbalanced design (agent-assisted vs.\ manual), we address the following research questions:
 
 \begin{itemize}
-  \item \textbf{H1}: Operators use the Co-Pilot selectively: more often under high mission complexity and low reserve depth, less often when they feel in control of a simpler situation.
-  \item \textbf{H2}: Operators are more tolerant of inaccuracy at the Co-Pilot level than at the Meta-Co-Pilot level; trust in the lower-level system degrades more slowly and possibly recovers more readily.
-  \item \textbf{H3}: Inaccuracy at one tier contaminates trust in the other.
-  \item \textbf{H4}: Under high workload, operators adopt more conservative strategies and are more likely to accept autonomous suggestions regardless of accuracy, consistent with cognitive offloading under load.
+  \item \textbf{RQ1}: Does access to the assistive system improve operator performance, and under what situational conditions is the benefit largest?
+  \item \textbf{RQ2}: When the assistive system is available, do operators use it selectively---more readily under high mission complexity or low reserve depth, and less so when the situation is under control?
+  \item \textbf{RQ3}: What advantage does agent-assisted allocation confer relative to manual allocation, in terms of score, Green utilisation, and mission completion time?
 \end{itemize}
 
 % -----------------------------------------------------------------
@@ -66,7 +66,7 @@ Similar to calibrating trust, it is important that any assistive autonomous syst
 
 Another important factor is the level of workload. Prior works have found that under high task load, more reliable automation increases operator performance, however under low task load, more reliable automation actually \textit{decreases} operator performance. This is likely due to the over-trust issue discussed above, and presents a difficult challenge to designers, as users may defer to the agent even when not overloaded~\cite{parasuraman_adaptive_2009}.
 
-The level of chosen autonomy will necessarily represent a trade-off between different desirable qualities as alluded to above, and no single solution is likely to best suit every scenario~\cite{miller_delegation_nodate}. This motivates a flexible approach where the level of autonomy is not fixed, rather it can be chosen by the operator. Such flexible approaches have been explored to the extent where agents can be granted autonomy where desirable~\cite{hardin_using_nodate}, or else autonomous agents can be overridden at any level while they attempt to perform autonomously~\cite{valero-gomez_impact_2011}. So-called mixed-initiative approaches to swarm control allow a human to switch the entire swarm between manual and autonomous modes~\cite{nam_trust_2018}. To our knowledge, however, no prior work has examined the behaviour of an operator when autonomous assistance is structured into a two-tier hierarchy, and reliability at each tier is independently manipulated. Such a manipulation allows us to ask not only whether imperfect autonomy is tolerated, but whether tolerance is sensitive to the level at which imperfection occurs.
+The level of chosen autonomy will necessarily represent a trade-off between different desirable qualities as alluded to above, and no single solution is likely to best suit every scenario~\cite{miller_delegation_nodate}. This motivates a flexible approach where the level of autonomy is not fixed, rather it can be chosen by the operator. Such flexible approaches have been explored to the extent where agents can be granted autonomy where desirable~\cite{hardin_using_nodate}, or else autonomous agents can be overridden at any level while they attempt to perform autonomously~\cite{valero-gomez_impact_2011}. So-called mixed-initiative approaches to swarm control allow a human to switch the entire swarm between manual and autonomous modes~\cite{nam_trust_2018}. To our knowledge, however, no prior work has examined the behaviour of an operator when autonomous assistance is structured into a two-tier hierarchy and the operator is free to use it selectively. Such a design allows us to ask not only whether the assistive system improves performance, but \emph{when} operators choose to engage it and what advantage that engagement confers.
 
 We term the two structural dimensions of selective autonomy the \textbf{Depth} and \textbf{Breadth} of autonomy. \textbf{Depth} refers to how autonomous some agent is, pertaining directly to Sheridan and Verplank's LOAs~\cite{sheridan1978human}. \textbf{Breadth} refers to the scale of autonomy, whether that be an individual asset, a mission's worth of assets, or the entire reserve. The present work extends this framework by stacking two agents vertically in a hierarchy---one operating at the within-mission (tactical) level and one at the cross-mission (strategic) level---and asking how imperfection at each level is experienced by the operator.
 
@@ -77,195 +77,258 @@ Metrics exist to assess the difficulty of tasks in the context of swarms, such a
 
 \subsection{Operational Scenario}
 
-We design a simulated search-and-rescue operation. The operator manages a heterogeneous reserve of autonomous assets that must be allocated to incoming rescue missions. Missions arrive at irregular intervals and consist of several individual tasks, each of which demands a particular combination of asset types to complete. The operator must decide how many and which assets to commit to each mission, balancing the need to resolve current missions quickly against holding sufficient reserve for future demand. Once assets are assigned to a mission, they execute a centrally-planned greedy task schedule without further operator involvement unless the operator intervenes. This scenario was chosen to provide resource scarcity managed by a two-level decision structure: strategic decisions about which assets to deploy to which mission, and tactical decisions about how to prioritise effort within a mission once resources are committed.
+We design a simulated search-and-rescue operation. The operator manages a heterogeneous reserve of autonomous assets that must be allocated to incoming rescue missions. Missions arrive at irregular intervals and consist of several individual tasks, each of which demands a particular combination of asset types to complete. The operator must decide how many and which assets to commit to each mission, balancing the need to resolve current missions quickly against holding sufficient reserve for future demand. O This scenario was chosen to provide resource scarcity managed by a two-level decision structure: strategic decisions about which assets to deploy to which mission, and tactical decisions about how to prioritise effort within a mission once resources are committed.
 
 \subsection{Asset Types}\label{sec:assets}
 
-The reserve comprises three asset types with distinct capabilities and availabilities. The total pool size is approximately 30 assets.
+The reserve comprises three asset types with distinct capabilities and speeds. In the standard preset the pool is 18 Blue, 9 Red, and 3 Green drones (30 total); assets return to reserve automatically after completing their task chain.
 
-\paragraph{Blue --- Reconnaissance Drones ($\approx$18 units).}
-Lightweight quadrotors equipped with a standard optical camera. Fast to deploy and redeploy, with a short task completion time. Blues provide visual survey capability but cannot physically interact with the environment or casualties. They are the most abundant asset and form the backbone of any light or moderate mission.
+\paragraph{Blue --- Reconnaissance Drones (18 units).}
+Lightweight quadrotors equipped with a standard optical camera. Fast and rapid to redeploy. Blues perform basic visual survey, coordinate deliveries, and are the basis of most missions. They are the most abundant asset.
 
-\paragraph{Red --- Aid Drones ($\approx$9 units).}
-Heavier rotary-wing platforms carrying medical supplies and provisions. Slower to deploy than Blues, but capable of directly supporting casualties. Reds are necessary for any task requiring physical intervention.
+\paragraph{Red --- Aid Drones (9 units).}
+Heavier rotary-wing platforms carrying medical supplies and provisions. Reds are necessary for any task requiring physical delivery.
 
-\paragraph{Green --- Thermal/Specialist Units ($\approx$3 units).}
-Ground-mobile or heavy aerial platforms equipped with thermal imaging. Greens are essential for locating casualties in obscured environments (collapsed structures, smoke, low visibility) and for assessing medical severity prior to extraction. They are the rarest and slowest-redeploying asset.
-
-The scarcity gradient is intentional. With only three Greens in the reserve, simultaneous heavy missions create a bottleneck that drives difficult allocation decisions.
+\paragraph{Green --- Thermal/Specialist Units (3 units).}
+More expensive platforms equipped with thermal imaging. Greens are essential for detailed area reconnaissance and for locating casualties in obscured environments; they are the rarest and slowest asset. Their scarcity is the primary driver of allocation pressure.
 
 \subsection{Task Types}\label{sec:tasks}
 
-Individual tasks within a mission are of five types, each requiring a specific combination of assets:
+There are five task types of increasing complexity and reward value (Table~\ref{tab:tasks}). They each have a specific requirement of assets to perform them (primary composition), but in some cases using additional Blue drones when specialist assets are unavailable can be an option (substitute composition).
+
+\begin{table}[H]
+\centering
+\caption{Task types: primary composition and substitute. Execution times and reward values are listed in Table~\ref{tab:params}.}
+\label{tab:tasks}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{llll}
+\toprule
+\textbf{Type} & \textbf{Name} & \textbf{Primary} & \textbf{Sub.} \\
+\midrule
+T1 & Recce          & 1\,B             & ---           \\
+T2 & Recon          & 3\,B + 1\,G      & 8\,B          \\
+T3 & Minor Drop     & 1\,B + 1\,R      & 3\,B          \\
+T4 & Major Drop     & 1\,B + 2\,R      & 3\,B + 1\,R   \\
+T5 & Search \& Supply & 1\,R + 1\,G   & ---           \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{itemize}[noitemsep]
-  \item \textbf{Type~1 --- Recce.} Requires 1~Blue. Fast completion. An area of interest such as a damaged building needs to be photographed.
-  \item \textbf{Type~2 --- Minor supply drop.} Requires 1~Red + 1~Blue (primary); or 3~Blues (slower substitute). The Blue locates the exact position of the casualty and the Red delivers aid. Alternatively three Blues can carry the aid. This is slower and occupies more assets.
-  \item \textbf{Type~3 --- Major supply drop.} Requires 1~Blue and 2~Reds (primary); or 1~Red + 3~Blues (slower substitute). Delivery of more supplies, some of which are infeasible to carry by a blue. Similar to type 2 but at least one red is unavoidable.
-  \item \textbf{Type~4 --- Area reconnaissance.} Requires 1~Green and 3~Blues or 8~Blues. Detailed exploration of an area; thermal imagery massively expedites this process.
-  \item \textbf{Type~5 --- Search and triage.} Requires 1~Green + 1~Red. Casualty location or medical status is unknown; the Green's thermal camera and triage capability are required before the Red can act. No substitution is possible.
+  \item \textbf{T1 Recce.} A single Blue photographs an area of interest.
+  \item \textbf{T2 Recon.} Detailed area survey combining optical and thermal coverage: three Blues sweep systematically while one Green provides thermal imaging, dramatically accelerating the search. Without a Green, eight Blues perform the same sweep optically but use far more assets.
+  \item \textbf{T3 Minor Drop.} Supply delivery to a located casualty: one Blue identifies the precise drop point; one Red delivers aid. Without a Red, three Blues can carry a lighter cargo load.
+  \item \textbf{T4 Major Drop.} Larger-scale delivery requiring heavier lift: one Blue coordinates while two Reds transport substantial payload. At least one Red is always required; the substitute replaces one Red with three Blues.
+  \item \textbf{T5 Search \& Supply.} Combined casualty search and immediate triage. The Green's thermal camera locates and triages the casualty; the Red delivers medical supplies. No substitution is possible.
 \end{itemize}
 
 \subsection{Missions and Complexity}\label{sec:missions}
 
-A mission is a bundle of 6--9 tasks drawn from the five types above, depending on category (Category~A: 6--8; Categories~B--D: 8; Category~E: 9). Missions arrive at irregular intervals drawn from a Poisson process with mean inter-arrival time $\lambda$; the operator can see the status of all active missions simultaneously. Five mission profiles capture a gradient of complexity:
+A mission is a bundle of tasks drawn from the five types above, the mix determined by category. Missions arrive via a Poisson process; the operator can see all active missions simultaneously. Five categories capture a gradient of severity, penalty rate, and specialist demand (Table~\ref{tab:categories}).
+
+\begin{table}[H]
+\centering
+\caption{Mission categories and task composition. Penalty rates and maximum scores are listed in Table~\ref{tab:params}.}
+\label{tab:categories}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}
+\toprule
+\textbf{Cat.} & \textbf{Name} & \textbf{Task mix} \\
+\midrule
+A & Routine       & 3--4$\times$T1, 2--3$\times$T2, 1$\times$T3           \\
+B & Moderate      & T5, T4, 2$\times$T3, 2$\times$T2, 2$\times$T1          \\
+C & Significant   & T5, 2$\times$T4, 2$\times$T3, 2$\times$T2, T1          \\
+D & Critical      & 2$\times$T5, 2$\times$T4, 2$\times$T3, 2$\times$T2     \\
+E & Mass Casualty & 3$\times$T5, 2$\times$T4, 2$\times$T3, T2, T1          \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{itemize}[noitemsep]
-  \item \textbf{Category~A (Light).} Mostly Type~1 and Type~2 tasks, one or two Type~3s. Primarily Blue and Red demand; no Green required. Fast to clear and relatively low reserve drain.
-  \item \textbf{Category~B (Moderate).} Mix of Types~1--3, with one Type~4. First Green commitment required, though the 8-Blue substitution is feasible if the reserve supports it. Moderate overall duration.
-  \item \textbf{Category~C (Standard).} Balanced mix of Types~1--4, with one Type~5. The Type~5 requires a Green with no substitution possible; the Type~4 creates an additional Green-or-Blues decision. Significant specialist asset demand.
-  \item \textbf{Category~D (Heavy).} Mostly Types~2--4, with two Type~5s. Two unavoidable Green commitments make this category the primary bottleneck scenario. High Red drain alongside the Green pressure.
-  \item \textbf{Category~E (Critical).} Multiple Type~4s and Type~5s alongside several Type~3s, few Type~1s. Maximum pressure across all asset types; likely infeasible to complete fully without a well-stocked reserve and careful sequencing of Green redeployment between tasks.
+  \item \textbf{Category~A (Routine).} Primarily T1 and T2 tasks with one T3; Blue and Green demand only. Fast to clear with moderate reserve drain.
+  \item \textbf{Category~B (Moderate).} Includes the first mandatory T5 (Green + Red, no substitute) and one T4. Moderate Green pressure; the 8-Blue T2 substitute is feasible if Green is scarce.
+  \item \textbf{Category~C (Significant).} One T5 (unavoidable Green commitment) and two T4s alongside three lighter tasks. Green scarcity begins to bite; a T5 and T4 competing for the same Green forces sequencing decisions.
+  \item \textbf{Category~D (Critical).} Two T5s and two T4s. The two unavoidable Green commitments make this the primary bottleneck category; Red pressure is also high.
+  \item \textbf{Category~E (Mass Casualty).} Three T5s plus two T4s; maximum pressure on all specialist assets. Likely infeasible to complete fully without a well-stocked reserve and careful Green redeployment across tasks.
 \end{itemize}
 
-The operator does not know the exact task composition of an incoming mission until it arrives. They instead see a probability distribution over mission categories for the next arrival---for example, ``60\% Category~B, 30\% Category~C, 10\% Category~D''---enabling principled hedging decisions about reserve depth.
+The operator does not know the exact task composition of an incoming mission until it arrives. A category probability forecast is visible at all times, enabling principled hedging decisions about reserve depth\footnote{This is implemented but no longer communicated to the user clearly. It may be an necessary detail.}.
 
 \subsection{Performance Metric}\label{sec:metric}
 
-Performance is measured as the total task completion score $S$ accumulated over the session of duration $T$:
+Performance is measured as the net score $S$ accumulated over a session of duration $T$:
 \begin{equation}
-S = \sum_{m \in \mathcal{M}} \sum_{k \in \mathcal{T}_m} w_k \cdot \mathbf{1}[\text{task } k \text{ completed within } T]
+S = \sum_{m \in \mathcal{M}} \left[
+    \sum_{k \in \mathcal{T}_m} w_k \cdot \mathbf{1}[\text{task } k \text{ completed}]
+    \;-\; r_m \cdot \bigl(\min(t^c_m, T) - t^a_m\bigr)
+    \right]
 \label{eq:score}
 \end{equation}
-where $\mathcal{M}$ is the set of missions that arrive, $\mathcal{T}_m$ is the set of tasks within mission $m$, and $w_k$ is the weight of task type $k$ (higher weights for more complex task types). Secondary measures include Green utilisation efficiency (fraction of Green asset-time spent on Type~4 and Type~5 tasks), mean mission completion time, and reserve depth at mission arrival events.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.85\linewidth]{figs/1.png}
-    \caption{Co-Pilot allocation panel (strategy view) for a Category~C mission.
-             \textbf{Top}: fleet status bars (Recon, Logistics, Specialist) and task
-             composition strip. \textbf{Middle}: execution priority chips --- the
-             operator can click a task chip to run it first.
-             \textbf{Below}: the three Co-Pilot strategy cards, each showing the
-             required asset counts, reserve remaining after allocation, and
-             speed/reserve trade-off bars.}
-    \label{fig:copilot}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.85\linewidth]{figs/2.png}
-    \caption{Manual allocation mode, accessed via the \textit{Manual} tab in the
-             same panel. The operator sets asset counts directly using
-             $+$/$-$ controls; a live estimated completion time updates with each
-             change.}
-    \label{fig:manual}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \includegraphics[width=1\linewidth]{figs/3.png}
-    \caption{Secondary map display. Mission zones are shown as circles; task
-             waypoints within each zone carry type icons and amber priority badges.
-             Coloured polylines trace each asset's current and planned travel
-             route from the central hub.}
-    \label{fig:map}
-\end{figure}
+where $w_k$ is the reward weight of task type $k$ (see Table~\ref{tab:params}), $r_m$ is the category-specific penalty rate, $t^a_m$ is the mission arrival time, and $t^c_m$ is the completion time (session end if not finished). Penalty scales exponentially from arrival, growing rapidly as unresolved missions accumulate; the net score therefore rewards both completing tasks and doing so quickly. Secondary measures include Green utilisation efficiency (fraction of Green asset-time on T4/T5 tasks), mean mission completion time, and reserve depth at allocation events.
 
 % -----------------------------------------------------------------
 \section{Assistive System Design}\label{sec:agents}
 
 The assistive system comprises two tiers operating at different decision levels.
 
-\subsection{Co-Pilot (Tactical Tier)}\label{sec:copilot}
+\subsection{Strategic Agent}\label{sec:strategic}
 
-The Co-Pilot is an automatic task scheduler that operates within each allocated mission. Given the set of assets committed by the Meta-Co-Pilot (Section~\ref{sec:metacopilot}), the Co-Pilot determines the order in which tasks are executed and assigns specific assets to each task. A well-performing Co-Pilot schedules tasks in a near-optimal order---prioritising the most asset-constrained tasks (Types~5 and~4) first---so that specialist assets are freed early and can be reused within the same mission. This minimises total mission time: an asset that finishes one task can proceed directly to the next rather than returning to the hub first.
-
-When the Co-Pilot is inaccurate ($\varepsilon_C > 0$), it deviates from the optimal schedule. At each scheduling step, with probability $\varepsilon_C$ it selects a random remaining task rather than the most-constrained next task. This can result in specialist assets being tied up on lower-priority tasks, sub-optimal travel paths between waypoints, and longer overall mission times. The planned task sequence is visible to the operator through the route lines on the map display; the operator can intervene by clicking a task waypoint to move it to the front of the execution queue---in effect, correcting the Co-Pilot's plan.
-
-A secondary effect of Co-Pilot inaccuracy is a delayed asset recall: assets completing a task may not be immediately dispatched back to the hub, governed by an exponential delay also scaled by $\varepsilon_C$. Taken together, both effects degrade reserve replenishment speed in proportion to Co-Pilot inaccuracy.
-
-\subsection{Meta-Co-Pilot (Strategic Tier)}\label{sec:metacopilot}
-
-The Meta-Co-Pilot assists with cross-mission resource allocation. When the operator initiates allocation of a mission, the Meta-Co-Pilot analyses the task composition and the current reserve state, and presents up to three strategies as labelled options. Each strategy specifies how many assets of each type to commit, the expected mission completion time, and the effect on reserve depth. The strategies are:
+The Strategic Agent activates when the operator initiates allocation of a queued mission. It analyses the mission's task composition and the current reserve state, then presents two pre-computed strategies (Figure~\ref{fig:agent}):
 
 \begin{itemize}[noitemsep]
-  \item \textit{Fastest Possible}: commits the primary (optimal) asset composition
-        for every task in parallel; minimises expected mission completion time;
-        reduces reserve most aggressively.
-  \item \textit{Complete in Time}: finds the smallest asset pool that finishes
-        within a deadline (90\% of remaining session time), cycling assets
-        sequentially between tasks; balances speed and reserve conservation.
-  \item \textit{Asset-Preserving}: uses substitute compositions on Types~2, 3,
-        and~4---eliminating Green from Type~4 and reducing Red on
-        Types~2--3---committing at most one Green specialist; maximises reserve
-        depth at the cost of longer task execution.
+  \item \textbf{Aggressive} --- commits the maximum feasible drone counts (parallel sum of all task requirements, capped by reserve), minimising expected completion time at the cost of reserve depth.
+  \item \textbf{Conservative} --- favours whichever asset types are most plentiful relative to demand, using substitute compositions where specialist drones are scarce, then adds a 30\,\% top-up above the bare minimum; preserves reserve at the cost of a longer ETA.
 \end{itemize}
 
-The operator selects one strategy, edits the asset counts before applying it, or switches to a manual allocation mode. Once a strategy is applied, the committed assets are handed off to the Co-Pilot for within-mission scheduling. The operator can also recall an asset from an active mission (returning it to reserve, leaving its assigned task incomplete or slower).
+Each strategy card displays the proposed drone counts, projected ETA, a \emph{speed score} (fraction of the minimum achievable completion time), and a \emph{reserve score} (fraction of specialist drones preserved). The operator may accept a strategy, select it and modify individual counts before deploying, or dismiss the modal and allocate manually via type-count spinners (the manual condition workflow described in Section~\ref{sec:interface}).
 
-The Meta-Co-Pilot generates strategies using a lightweight optimiser scoring feasible allocations against a linear objective weighting completion time and reserve preservation. The noise parameter $\varepsilon_M$ controls accuracy: at $\varepsilon_M = 0$ the recommended asset counts are optimal; at higher $\varepsilon_M$ the count for one asset type in each strategy is perturbed by $\pm 1$ with probability $\varepsilon_M$, causing the operator to over- or under-commit assets in ways that may not be immediately apparent.
+Accepting a strategy moves the mission to \emph{tactical-pending} state and opens the tactical planner (Section~\ref{sec:interface}) on the map window, where the operator confirms or adjusts the specific drone-to-task assignments before execution begins.
 
-\subsection{Interface}\label{sec:ui}
+\paragraph{Error injection.} With probability $\varepsilon_S$ the displayed asset counts for one strategy are subtly corrupted: either \emph{inflated} by 2--3 units on a randomly chosen drone type (the reserve appears worse than reality) or \emph{deflated} by 2--3 units (the ETA appears optimistic because fewer drones than shown will actually execute). The true values used for deployment are unaffected; only the displayed figures mislead. Neither the error nor the condition is communicated to participants.
 
-The operator interface spans two displays. The primary display hosts the reserve panel, the active mission queue, and the Co-Pilot strategy suggestions, which appear as a modal panel when the operator initiates allocation. The secondary display shows a live map of the operational area, including asset positions, mission zones, task waypoints, and travel time annotations for routes from the central hub to each active or pending mission. The operator can interact with the Co-Pilot at any time and override it without penalty. Key interface design decisions are described in Section~\ref{sec:interface_detail} and illustrated in Figures~\ref{fig:copilot}, \ref{fig:manual}, and~\ref{fig:map}.
+\subsection{Tactical Agent}\label{sec:tactical}
+
+The Tactical Agent operates at the within-mission level, advising the operator on how to assign specific drone assets to individual tasks once a high-level allocation has been committed. It is an always-visible widget on the primary display that evaluates the current reserve state against the expected future mission load and recommends whether to \emph{preserve}, \emph{maintain}, or \emph{spend down} specialist reserve depth---informing how aggressively the operator should commit Greens to the current mission given that a Category~D or~E mission may arrive within minutes.
+
+As with the Strategic Agent, a noise parameter $\varepsilon_T$ controls reliability. At $\varepsilon_T = 0$ the recommendation reflects the true expected value of reserve depth given the forecast; at higher $\varepsilon_T$ the forecast is perturbed before the recommendation is computed, causing the Tactical Agent to recommend postures that are systematically too conservative or too aggressive.
+
+% -----------------------------------------------------------------
+\section{Platform and Interface}\label{sec:interface}
+
+\subsection{Interface Layout}
+
+The platform is a browser-based simulation designed for a two-monitor setup. The \emph{primary window} (Figure~\ref{fig:primary}) runs on the main monitor and provides the command console; the \emph{map window} runs on a second monitor and provides the operational map and tactical planner.
+
+The primary window has three regions: (1) a \textbf{reserve bar} (top) showing live counts of available and deployed drones per type; (2) a \textbf{mission queue} (left) listing all incoming and active missions as cards, each showing category, task-type progress icons, a real-time penalty bar, accrual rate, ETA, and --- once allocated --- a collapsible drone assignment plan; and (3) an \textbf{embedded strategic map} (right) showing the hub, all mission zones, and live drone positions. Zones labelled \textit{allocate} await the operator's attention; clicking any active or tactical-pending zone opens it in the map window.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figs/1}
+  \caption{Primary command window at the start of a session.
+           \textbf{Left Panel: } Reserve of drones, and list of missions. For each mission, the set of constituent tasks is shown as well as the climbing penalty (explained below).
+           \textbf{Right Panel: } Map showing each mission and the drone hub. Can be viewed at varying levels of abstraction down to showing individual asset paths.}
+  \label{fig:primary}
+\end{figure}
+
+\subsection{Allocation: Manual Condition}
+
+In the manual condition no strategy suggestions are shown. Clicking \textit{Allocate} on a mission opens a compact modal (Figure~\ref{fig:manual}) with $+$/$-$ spinners for each drone type and a live ETA computed from the greedy task schedule. An infeasible allocation (too few drones to cover even a substitute composition) displays $\infty$. Pressing \textit{Deploy} commits the counts and starts execution.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.52\linewidth]{figs/2}
+  \caption{Manual allocation modal for a Category~B mission.
+           The operator sets per-type counts; ETA updates live.
+           Here 4\,B, 4\,R, 2\,G are committed from an 18\,B/9\,R/3\,G reserve.}
+  \label{fig:manual}
+\end{figure}
+
+\subsection{Allocation: Agent-Assisted Condition}
+
+In the agent condition, clicking \textit{Allocate} shows the Strategic Agent strategy modal (Figure~\ref{fig:agent}) with the Aggressive and Conservative cards described in Section~\ref{sec:strategic}. Selecting a strategy immediately transitions the mission to tactical-pending and opens the \textbf{tactical planner} (Figure~\ref{fig:tactical}) in the map window.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.52\linewidth]{figs/7}
+  \caption{Strategic Agent strategy modal (agent condition) for a Category~B mission.
+           }
+  \label{fig:agent}
+\end{figure}
+
+The tactical planner shows the mission zone with drone icons on the boundary and dashed arrows indicating planned task assignments. The operator may drag any drone onto a task waypoint to reassign it; holding Shift while dropping \emph{chains} the drone to execute a second task after the first. Sequence numbers on the arrows indicate execution order. A \textit{Deploy} button activates once every task has at least a substitute-feasible composition; pressing it begins execution.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figs/3}
+  \caption{Tactical planner (map window).
+           Drone icons around the zone boundary.
+           Task circles show type name and current drone-count progress (e.g.\ 0/1\,B\,0/1\,R for a Minor Drop).
+           The right panel lists tasks with assigned drones; \textit{Deploy} activates once all tasks are feasible.}
+  \label{fig:tactical}
+\end{figure}
+
+\subsection{Mid-Session State}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figs/4}
+  \caption{Mid-session primary display.
+           At the highest detail level, every asset's path is visible (this can be abstracted away). Notice on the left the penalty for each mission scales exponentially over time, incentivising faster resolution of tasks.}
+  \label{fig:active}
+\end{figure}
+
+\subsection{Drone Failure and Recovery}
+
+Approximately once per session, one deployed drone fails. The affected mission card displays a red banner naming the lost drone (Figure~\ref{fig:failure}). Clicking the mission opens the tactical planner in \emph{recovery mode} (Figure~\ref{fig:recovery}), pre-loaded with the current allocation minus the failed drone.
+
+In recovery mode, executing tasks carry amber badges and travelling tasks carry blue badges; the failed drone appears greyed-out with a red cross. A cluster of up to five reserve drones per type is anchored at the HUB corner of the zone; the operator drags reserve drones onto tasks to restore feasibility, chains them for sequential execution, or redistributes existing drones. \textit{Deploy} commits the updated plan and resumes execution.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\linewidth]{figs/5}
+  \caption{Drone failure notification on a Category~C mission card.
+           The red banner identifies the lost drone (B02).}
+  \label{fig:failure}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figs/6}
+  \caption{Recovery-mode tactical planner.
+           Deployed drones sit at their task-assigned boundary positions; the failed
+           drone (greyed, red cross) is shown near the HUB label.
+           Reserve drones cluster at the HUB anchor (lower-left) in case the user needs to call additional assets into this mission}
+  \label{fig:recovery}
+\end{figure}
 
 % -----------------------------------------------------------------
 \section{Experiment Design}\label{sec:studydesign}
 
 \subsection{Design}
 
-The study employs a 2$\times$2 between-subjects design crossing Co-Pilot accuracy (High: $\varepsilon_C = 0.10$; Low: $\varepsilon_C = 0.40$) with Meta-Co-Pilot accuracy (High: $\varepsilon_M = 0.10$; Low: $\varepsilon_M = 0.40$), yielding four conditions:
+The study employs a within-subjects design with two conditions: \textbf{Agent} (Strategic and Tactical Agents available) and \textbf{Manual} (no assistive system). Each participant completes one session per condition. Condition order is counterbalanced across participants to control for learning and fatigue effects.
 
-\begin{table}[ht]
-\centering
-\caption{Between-subjects accuracy conditions.}
-\label{tab:conditions}
-\begin{tabular}{lcc}
-\toprule
-Condition & Co-Pilot accuracy & Meta-Co-Pilot accuracy \\
-\midrule
-HH & High & High \\
-LH & Low  & High \\
-HL & High & Low \\
-LL & Low  & Low \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-A between-subjects design is preferred because trust is partly a learning process; within-subjects accuracy shifts would introduce carry-over effects that obscure the trust formation dynamics of central interest. Within each condition, all participants complete three sessions at Medium complexity. Medium complexity (missions drawn from Categories~B and~C with occasional~D, at a moderate arrival rate) was selected as the primary complexity level because it generates meaningful Green-scarcity decisions without overwhelming participants in a single session. The three repeated sessions allow trust dynamics to develop and stabilise over time.
-
-The accuracy manipulation is operationalised as follows. In high-accuracy conditions the relevant agent's objective weights are perturbed by $\pm10\%$, producing strategies or postures that are near-optimal but occasionally imperfect. In low-accuracy conditions the weights are perturbed by $\pm40\%$, reliably producing recommendations that are noticeably but not obviously suboptimal---sufficient to be consequential without being immediately dismissible as random. The simulation seed is held constant per participant to ensure reproducibility across conditions.
-
-$N = XX$ participants per condition ($N_{\mathrm{total}} = 4 \times XX$) are recruited from [population].
+$N = XX$ participants are recruited from [population].
 
 \subsection{Procedure}
 
-Each session follows a fixed sequence:
+Each study session follows a fixed sequence:
 \begin{enumerate}[noitemsep]
   \item \textbf{Pre-study questionnaire.} Demographics, technology comfort, prior experience with autonomous systems, drone operations, or emergency management.
-  \item \textbf{Tutorial.} Scripted walkthrough of the interface, asset types, task types, mission mechanics, and both assistive tiers. Followed by a free-play practice session of 3 minutes.
-  \item \textbf{Trials.} Three timed sessions, each of duration $T = 10$ minutes, preceded by a one-minute briefing screen. Sessions are not counterbalanced; all participants experience the same session sequence to allow temporal trust dynamics to be compared across conditions.
-  \item \textbf{Post-trial survey.} After each trial: NASA-TLX, trust scale (full version), and TAM (see Section~\ref{sec:metrics}). A 2-item trust probe (trust 1--10, workload 1--10) is administered automatically every 90~seconds during play to capture within-session dynamics.
-  \item \textbf{Post-study questionnaire.} Per-condition ratings of difficulty and tool usefulness; open-ended strategy reflections; preference rankings between tiers.
+  \item \textbf{Tutorial.} Scripted walkthrough of the interface, asset types, task types, and mission mechanics. In the Agent condition the tutorial additionally covers both assistive tiers. Followed by a free-play practice session of 3 minutes.
+  \item \textbf{Trial.} One timed session of duration $T = 10$ minutes, preceded by a one-minute briefing screen.
+  \item \textbf{Post-trial survey.} NASA-TLX, trust scale (Agent condition only), and TAM (Agent condition only); see Section~\ref{sec:metrics}.
+  \item \textbf{Post-study questionnaire.} Ratings of difficulty and tool usefulness; open-ended reflections on strategy and decision confidence.
 \end{enumerate}
 
-The session lasts approximately 60 minutes.
+The full study (both conditions) lasts approximately 45--60 minutes.
 
 \subsection{Metrics}\label{sec:metrics}
 
 \subsubsection{Objective Performance}
 
-Primary measure: total score $S$ (Equation~\ref{eq:score}). Secondary measures: Green utilisation efficiency; mean mission completion time; reserve depth at allocation events; number of manual overrides of Co-Pilot and Meta-Co-Pilot recommendations.
+Primary measure: total score $S$ (Equation~\ref{eq:score}). Secondary measures: Green utilisation efficiency; mean mission completion time; reserve depth at allocation events.
 
-\subsubsection{Interaction Behaviour}
+\subsubsection{Interaction Behaviour (Agent Condition)}
 
-Co-Pilot strategy choices are classified as: accepted as proposed; accepted after modification; rejected (manual allocation chosen). Meta-Co-Pilot posture recommendations are classified as: followed; overridden (different posture chosen); ignored. Temporal analysis of override frequency across the three sessions captures trust formation and possible decay over time.
+Every allocation decision in the Agent condition is logged with its situational context: number of active missions, current reserve depth per asset type, incoming mission category, and which action the operator took (Strategic Agent strategy accepted as proposed; accepted after modification; rejected in favour of manual allocation). Tactical Agent posture recommendations are logged alongside whether the operator's subsequent allocation was consistent with the recommended posture. This record supports analysis of \emph{when} operators elect to use the agent and \emph{what advantage} agent-assisted allocations confer relative to counterfactual manual choices.
 
 \subsubsection{Subjective Measures}
 
-After each non-tutorial trial participants complete:
+After each trial participants complete:
 \begin{itemize}[noitemsep]
   \item \textbf{NASA Task Load Index (TLX)}~\cite{hart1988nasa}: six subscales on a 20-point scale; we report the unweighted mean (TLX$_\mu$).
-  \item \textbf{Trust in the assistant}~\cite{jian2000foundations}: six items adapted from Jian, Bisantz \& Drury (2000) on a 7-point Likert scale, administered separately for the Co-Pilot and Meta-Co-Pilot. Two items (\textit{suspicious}, \textit{wary}) are reverse-scored; a composite trust score is computed as $\frac{\bar{x}_{\mathrm{pos}} - \bar{x}_{\mathrm{neg}} + 6}{12}\times 7$.
-  \item \textbf{Technology acceptance (TAM)}~\cite{davis1989perceived}: four items assessing perceived usefulness, ease of use, and intention to use on a 7-point Likert scale; we report the mean (TAM$_\mu$), administered separately for each tier.
+  \item \textbf{Trust in the assistant}~\cite{jian2000foundations} (Agent condition): six items adapted from Jian, Bisantz \& Drury (2000) on a 7-point Likert scale, administered separately for the Strategic and Tactical Agents. Two items (\textit{suspicious}, \textit{wary}) are reverse-scored; a composite trust score is computed as $\frac{\bar{x}_{\mathrm{pos}} - \bar{x}_{\mathrm{neg}} + 6}{12}\times 7$.
+  \item \textbf{Technology acceptance (TAM)}~\cite{davis1989perceived} (Agent condition): four items assessing perceived usefulness, ease of use, and intention to use on a 7-point Likert scale; we report the mean (TAM$_\mu$), administered separately for each tier.
 \end{itemize}
 
-The post-study questionnaire elicits per-condition ratings of difficulty and tool usefulness, frequency of manual override, and decision confidence, plus open-ended reflections on strategy and tier preference.
+The post-study questionnaire elicits ratings of difficulty and tool usefulness, and open-ended strategy reflections.
 
 \subsection{Planned Analyses}
 
-H1 (selective use) is examined descriptively via override rate as a function of reserve depth and the number of active missions at the moment of each allocation decision. H2 (hierarchical tolerance) is tested by comparing trust in Co-Pilot and Meta-Co-Pilot across conditions LH and HL: if tolerance is higher at the tactical level, trust scores should be better preserved in LH than in HL. H3 (trust contamination) is tested by comparing single-tier inaccuracy conditions (LH, HL) against the double-inaccuracy condition (LL): non-additive trust degradation would support holistic rather than tier-specific trust processing. H4 (workload buffering) is tested by examining the interaction between TLX$_\mu$ and override rate within low-accuracy conditions: cognitive offloading predicts that override rate decreases as TLX$_\mu$ increases even when suggestions are unreliable.
+RQ1 (performance benefit) is addressed by comparing score $S$, Green utilisation efficiency, and mean mission completion time between Agent and Manual conditions using paired tests. RQ2 (selective use) is examined descriptively: agent engagement rate is modelled as a function of situational covariates (reserve depth, number of active missions, incoming mission category) at the moment of each allocation decision. RQ3 (agent advantage) is estimated by comparing the score contribution of missions allocated with agent assistance against those allocated manually within the Agent condition, controlling for mission category.
 
 % -----------------------------------------------------------------
 \section{Results}\label{sec:results}
@@ -276,14 +339,12 @@ H1 (selective use) is examined descriptively via override rate as a function of 
 \centering
 \caption{Mean performance by condition (placeholder).}
 \label{tab:perf}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-Condition & Score $S$ & Green efficiency & Mean mission time (s) & CP follow rate \\
+Condition & Score $S$ & Green efficiency & Mean mission time (s) \\
 \midrule
-HH & -- & -- & -- & -- \\
-LH & -- & -- & -- & -- \\
-HL & -- & -- & -- & -- \\
-LL & -- & -- & -- & -- \\
+Agent  & -- & -- & -- \\
+Manual & -- & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -292,14 +353,12 @@ LL & -- & -- & -- & -- \\
 \centering
 \caption{Mean subjective scores by condition (placeholder).}
 \label{tab:survey}
-\begin{tabular}{lccccc}
+\begin{tabular}{lccc}
 \toprule
-Condition & TLX$_\mu$ & Trust (Co-Pilot) & Trust (Meta-Co-Pilot) & Override rate (CP) & Override rate (MCP) \\
+Condition & TLX$_\mu$ & Trust (Strategic Agent) & Trust (Tactical Agent) \\
 \midrule
-HH & -- & -- & -- & -- & -- \\
-LH & -- & -- & -- & -- & -- \\
-HL & -- & -- & -- & -- & -- \\
-LL & -- & -- & -- & -- & -- \\
+Agent  & -- & -- & -- \\
+Manual & -- & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -307,24 +366,58 @@ LL & -- & -- & -- & -- & -- \\
 % -----------------------------------------------------------------
 \section{Discussion}\label{sec:discussion}
 
-[To be written. Key themes: hierarchical tolerance vs.\ contamination; whether operators correctly attribute inaccuracy to the responsible tier; relationship between reserve depth, workload, and override behaviour; implications for the design of layered autonomous systems; practical guidance on where to invest reliability effort in a two-tier architecture.]
-
-% -----------------------------------------------------------------
-\section{Interface Design}\label{sec:interface_detail}
-
-The operator interface is designed around two conceptual spaces: the \textit{reserve panel}, showing the current state of available assets, and the \textit{mission queue}, showing active and incoming missions. Both are visible simultaneously on the primary display. The Co-Pilot strategy suggestions appear as a modal panel when the operator initiates allocation. The secondary display presents the operational map: agents are shown at their current positions or along their travel routes, mission zones are marked with task waypoints, and travel time from the central hub to each mission is annotated directly on the map. This spatial context is intended to make the cost of distant or Green-intensive missions immediately legible without requiring the operator to perform explicit arithmetic.
-
-Key design decisions include: colour-coding of asset type (Blue, Red, Green matching their designations) with availability encoded by opacity on the reserve panel; mission task composition shown as a compact icon strip allowing rapid visual assessment of specialist demand; and Co-Pilot strategies presented in a card layout with the key trade-off for each strategy (completion time vs.\ reserve impact) shown as a simple bar comparison.
-
-The allocation panel is illustrated in Figures~\ref{fig:copilot} and~\ref{fig:manual};
-the map display is shown in Figure~\ref{fig:map}.
+[To be written. Key themes: whether agent-assisted allocation produces a measurable performance advantage and under what situational conditions that advantage is largest; characterisation of when operators elect to use the agent versus allocate manually, and whether this is sensitive to reserve depth and mission complexity; implications for the design of selective autonomy interfaces in human-swarm coordination.]
 
 % -----------------------------------------------------------------
 \section{Conclusion}\label{sec:conclusion}
 
-We have presented a user study examining how operators interact with a hierarchically structured autonomous assistance system in a simulated search-and-rescue context, and how imperfect accuracy at each tier of that hierarchy affects trust, performance, and workload. The core theoretical contribution is a hierarchical framing for selective autonomy: prior work has examined depth and breadth of autonomy within a single decision layer; the present work asks what happens when autonomous assistance is structured across two qualitatively different decision levels, and whether operators treat trust at those levels as independent or coupled. The practical contribution is a characterisation of where reliability investment yields the greatest return in a two-tier autonomous system---a question of direct relevance to the design of next-generation command-and-control interfaces for autonomous platforms.
+We have presented a user study examining how operators interact with a hierarchically structured autonomous assistance system in a simulated search-and-rescue context. In a within-subjects counterbalanced design, we compare agent-assisted and manual allocation to assess the performance benefit of the assistive system, characterise when operators choose to engage it, and estimate the advantage conferred by agent-assisted decisions relative to manual ones. The core theoretical contribution is an empirical account of selective autonomy use across a two-tier hierarchy: prior work has examined depth and breadth of autonomy within a single decision layer; the present work asks how operators distribute and selectively engage autonomous assistance structured across two qualitatively different decision levels. The practical contribution is a characterisation of the situational factors that predict agent engagement---a question of direct relevance to the design of next-generation command-and-control interfaces for autonomous platforms.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
+
+% -----------------------------------------------------------------
+\appendix
+\section{Simulation Parameters}\label{app:params}
+
+Table~\ref{tab:params} lists all fixed numerical parameters of the simulation. These values are held constant across all conditions and participants.
+
+\begin{table}[H]
+\centering
+\caption{Fixed simulation parameters.}
+\label{tab:params}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{llr}
+\toprule
+\textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
+\midrule
+\multicolumn{3}{l}{\textit{Asset pool (standard preset)}} \\
+Blue drones   & Reconnaissance; speed & 18 units; 9.0\,u/s \\
+Red drones    & Aid delivery; speed   & 9 units; 6.0\,u/s  \\
+Green drones  & Thermal/specialist; speed & 3 units; 4.2\,u/s \\
+\midrule
+\multicolumn{3}{l}{\textit{Task execution times and reward weights}} \\
+T1 Recce          & 1\,B              & 15\,s;\quad 10\,pts \\
+T2 Recon          & 3\,B + 1\,G       & 30\,s;\quad 20\,pts \\
+T3 Minor Drop     & 1\,B + 1\,R       & 30\,s;\quad 30\,pts \\
+T4 Major Drop     & 1\,B + 2\,R       & 45\,s;\quad 40\,pts \\
+T5 Search \& Supply & 1\,R + 1\,G     & 45\,s;\quad 50\,pts \\
+\midrule
+\multicolumn{3}{l}{\textit{Mission category penalty rates and maximum scores}} \\
+A Routine       & & 0.05\,pts/s;\quad 110\,pts \\
+B Moderate      & & 0.10\,pts/s;\quad 210\,pts \\
+C Significant   & & 0.15\,pts/s;\quad 240\,pts \\
+D Critical      & & 0.20\,pts/s;\quad 300\,pts \\
+E Mass Casualty & & 0.25\,pts/s;\quad 380\,pts \\
+\midrule
+\multicolumn{3}{l}{\textit{Session parameters}} \\
+Session duration $T$ & Per trial & 10\,min \\
+Tutorial free-play   & Practice session & 3\,min \\
+Conservative top-up  & Strategic Agent reserve padding & +30\% above minimum \\
+Drone failure rate   & Approximate frequency & 1 per session \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}

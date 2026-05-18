@@ -9,6 +9,7 @@ export interface StudyConfig {
   complexity: Complexity
   seed: number
   agentErrorRate: number  // fixed at 0.20
+  testingMode: boolean
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
@@ -36,7 +37,8 @@ export interface Asset {
 export interface PendingAllocation {
   strategyName: 'Aggressive' | 'Conservative' | 'Manual'
   composition: AssetRequirement
-  taskAssignments: Record<string, string[]>  // taskId → assetId[]
+  dronePool: string[]                         // specific asset IDs committed for tactical assignment
+  taskAssignments: Record<string, string[]>  // taskId → assetId[] (empty in manual mode until user assigns)
   taskOrder: string[]                         // taskIds in planned execution order
   expectedCompletionTime: number              // seconds
   isAgentSuggested: boolean
@@ -159,6 +161,8 @@ export interface MapViewState {
   pendingBlueprints: MissionBlueprint[]
   mode: Mode
   reserve: AssetRequirement
+  callsignMode: 'id' | 'arthurian' | 'nato'
+  strategicModal: StrategicModal | null
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────
