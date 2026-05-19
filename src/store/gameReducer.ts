@@ -902,7 +902,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         taskAssignmentMap = Object.fromEntries(assignments.map(a => [a.taskId, a.assetIds]))
         expectedCompletionTime = Math.max(...assignments.map(a => a.startTime + a.baseTime))
       } else {
-        // Manual mode: reserve matching drones but do NOT pre-assign to tasks
+        // Manual mode: reserve matching drones
         const avB = available.filter(a => a.type === 'Blue')
         const avR = available.filter(a => a.type === 'Red')
         const avG = available.filter(a => a.type === 'Green')
@@ -912,7 +912,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...avR.slice(0, composition.Red).map(a => a.id),
           ...avG.slice(0, composition.Green).map(a => a.id),
         ]
-        taskAssignmentMap = {}  // operator assigns drones to tasks manually
+        if (state.config.mode === 'agent') {
+          // In agent mode, generate tactical suggestions even for a manually-set composition
+          const agentAssignments = greedyAssign(mission.tasks, available, composition, now, undefined, taskOrder)
+          taskAssignmentMap = Object.fromEntries(agentAssignments.map(a => [a.taskId, a.assetIds]))
+          if (agentAssignments.length > 0) {
+            expectedCompletionTime = Math.max(...agentAssignments.map(a => a.startTime + a.baseTime))
+          }
+        } else {
+          taskAssignmentMap = {}  // no-agent mode: operator assigns drones to tasks manually
+        }
       }
 
       const pendingAllocation: PendingAllocation = {

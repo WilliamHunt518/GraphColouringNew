@@ -336,6 +336,58 @@ function computeDronePositions(
   return positions
 }
 
+// ─── Tactical suggestion (greedy assign, mirrors reducer logic) ───────────
+
+function computeTacticalSuggestion(
+  dronePool: string[],
+  taskOrder: string[],
+  tasks: Mission['tasks'],
+  assets: Asset[],
+): Record<string, string[]> {
+  const assetById = new Map(assets.map(a => [a.id, a]))
+  const freeAt: Record<string, number> = Object.fromEntries(dronePool.map(id => [id, 0]))
+  const freePos: Record<string, { x: number; y: number }> = Object.fromEntries(dronePool.map(id => [id, { ...HUB }]))
+  const result: Record<string, string[]> = {}
+
+  for (const tid of taskOrder) {
+    const task = tasks.find(t => t.id === tid)
+    if (!task) continue
+    const prim = TASK_PRIMARY[task.type as TaskType]
+    const sub = TASK_SUBSTITUTE[task.type as TaskType]
+
+    const tryAssign = (req: { Blue: number; Red: number; Green: number }, baseTime: number): boolean => {
+      const pickEarliest = (type: AssetType, n: number) =>
+        dronePool
+          .filter(id => assetById.get(id)?.type === type)
+          .sort((a, b) => freeAt[a] - freeAt[b])
+          .slice(0, n)
+
+      const blues = pickEarliest('Blue', req.Blue)
+      const reds = pickEarliest('Red', req.Red)
+      const greens = pickEarliest('Green', req.Green)
+      if (blues.length < req.Blue || reds.length < req.Red || greens.length < req.Green) return false
+
+      const picked = [...blues, ...reds, ...greens]
+      const startTime = Math.max(...picked.map(id => {
+        const asset = assetById.get(id)!
+        const tt = Math.hypot(freePos[id].x - task.waypoint.x, freePos[id].y - task.waypoint.y) / ASSET_SPEED[asset.type]
+        return freeAt[id] + tt
+      }))
+      for (const id of picked) {
+        freeAt[id] = startTime + baseTime
+        freePos[id] = { ...task.waypoint }
+      }
+      result[tid] = picked
+      return true
+    }
+
+    if (!tryAssign(prim, TASK_BASE_TIME[task.type as TaskType])) {
+      if (sub) tryAssign(sub, TASK_SUB_BASE_TIME[task.type as TaskType])
+    }
+  }
+  return result
+}
+
 // ─── Active-mission view-only allocation ─────────────────────────────────
 
 function buildActiveAllocation(mission: Mission, assets: Asset[]): PendingAllocation {
@@ -629,6 +681,12 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     setDroneChainOrder({})
   }
 
+  function handleSuggest() {
+    const suggestion = computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets)
+    setAssignments(suggestion)
+    setDroneChainOrder({})
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-950">
       {/* Header */}
@@ -647,6 +705,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         <div className="flex-1" />
         {!readOnly && <span className="text-xs text-gray-500">Drag → assign · Shift+drag → chain sequence</span>}
         {!readOnly && <button onClick={handleReset} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">Reset</button>}
+        {!readOnly && !recoveryMode && state.mode === 'agent' && (
+          <button onClick={handleSuggest} className="px-3 py-1.5 bg-purple-800 hover:bg-purple-700 rounded text-purple-200 text-xs transition-colors">Suggest</button>
+        )}
         {!readOnly && !recoveryMode && (
           <button onClick={() => onMapAction({ _mapAction: 'OVERRIDE_TACTICAL', missionId: mission.id })}
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">Change Team</button>
