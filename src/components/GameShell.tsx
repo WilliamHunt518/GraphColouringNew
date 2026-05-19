@@ -1,4 +1,6 @@
 import { useReducer, useEffect, useRef, useState } from 'react'
+
+const LOG = true
 import type { StudyConfig, MapViewState } from '../types'
 import { buildInitialState, gameReducer, reserveCount } from '../store/gameReducer'
 import PrimaryDisplay from './PrimaryDisplay'
@@ -16,11 +18,13 @@ interface Props {
 export default function GameShell({ config }: Props) {
   const [state, dispatch] = useReducer(gameReducer, config, buildInitialState)
   const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
+  const [openMissionId, setOpenMissionId] = useState<string | null>(null)
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
   const lastBroadcastElapsed = useRef<number>(-1)
   const lastStrategicModalRef = useRef<typeof state.strategicModal>(null)
-  const prevTacticalPendingRef = useRef<Set<string>>(new Set())
+  const lastOpenMissionIdRef = useRef<string | null>(null)
+  const prevPendingRef = useRef<Set<string>>(new Set())
 
   // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
@@ -30,7 +34,7 @@ export default function GameShell({ config }: Props) {
       const d = e.data
       if (!d?._mapAction) return
       if (d._mapAction === 'CONFIRM_TACTICAL' && typeof d.missionId === 'string') {
-        dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId, taskAssignments: d.taskAssignments })
+        dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId, taskAssignments: d.taskAssignments, droneSequences: d.droneSequences })
       }
       if (d._mapAction === 'OVERRIDE_TACTICAL' && typeof d.missionId === 'string') {
         dispatch({ type: 'OVERRIDE_TACTICAL', missionId: d.missionId })
@@ -58,29 +62,37 @@ export default function GameShell({ config }: Props) {
     return () => { channel.close(); channelRef.current = null }
   }, [])
 
-  // Dedicated unthrottled effect: detect new tacticalPending / failureRecoveryPending missions and auto-open on map
+  // Auto-open for new failure recovery missions; auto-clear when pending mission is confirmed
   useEffect(() => {
-    const currentPending = new Set(
-      state.missions
-        .filter(m => (m.tacticalPending && !!m.pendingAllocation) || m.failureRecoveryPending)
-        .map(m => m.id)
-    )
-    for (const id of currentPending) {
-      if (!prevTacticalPendingRef.current.has(id)) {
-        channelRef.current?.postMessage({ _autoOpenTactical: id })
-      }
+    const failurePending = new Set(state.missions.filter(m => m.failureRecoveryPending).map(m => m.id))
+    const allPending = new Set(state.missions.filter(m => m.failureRecoveryPending || (m.tacticalPending && !!m.pendingAllocation)).map(m => m.id))
+
+    for (const id of failurePending) {
+      if (!prevPendingRef.current.has(id)) setOpenMissionId(id)
     }
-    prevTacticalPendingRef.current = currentPending
+    // When the currently-open mission is confirmed (leaves pending), close it automatically
+    setOpenMissionId(prev => {
+      if (prev && prevPendingRef.current.has(prev) && !allPending.has(prev)) {
+        LOG && console.log('[SHELL] auto-clear: openMissionId → null (was:', prev, ')')
+        return null
+      }
+      return prev
+    })
+
+    prevPendingRef.current = allPending
   }, [state.missions])
 
-  // Broadcast map state ~10fps, or immediately when strategic modal / callsignMode changes
+  // Broadcast map state ~10fps, or immediately when strategic modal / openMissionId changes
   useEffect(() => {
     if (!channelRef.current) return
     const modalChanged = state.strategicModal !== lastStrategicModalRef.current
-    if (!modalChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
+    const openChanged = openMissionId !== lastOpenMissionIdRef.current
+    if (!modalChanged && !openChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
 
+    LOG && console.log('[SHELL] broadcasting — openMissionId:', openMissionId)
     lastBroadcastElapsed.current = state.elapsed
     lastStrategicModalRef.current = state.strategicModal
+    lastOpenMissionIdRef.current = openMissionId
     const payload: MapViewState = {
       assets: state.assets,
       missions: state.missions,
@@ -94,9 +106,10 @@ export default function GameShell({ config }: Props) {
       reserve: reserveCount(state.assets),
       callsignMode,
       strategicModal: state.strategicModal,
+      openMissionId,
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode, openMissionId])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {
@@ -113,7 +126,7 @@ export default function GameShell({ config }: Props) {
   }, [state.phase])
 
   if (state.phase === 'playing') {
-    return <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} />
+    return <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} setOpenMissionId={setOpenMissionId} />
   }
 
   if (state.phase === 'survey') {

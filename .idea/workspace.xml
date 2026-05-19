@@ -2,34 +2,20 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/docs/paper/figs/4.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/paper/figs/5.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/paper/figs/6.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/paper/figs/7.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/manualAddOnline/console-export-2026-5-19_11-5-18.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/manualAddOnline/console-export-2026-5-19_11-6-3.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/paper/figs/1.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/paper/figs/1.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/paper/figs/2.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/paper/figs/2.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/paper/figs/3.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/paper/figs/3.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/paper/main.tex" beforeDir="false" afterPath="$PROJECT_DIR$/docs/paper/main.tex" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/task-t2-minor-drop.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/task-t3-major-drop.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/task-t4-area-recon.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/task-t5-search-triage.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/manualAddOnline/sar-debug-1778362243309.log" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/MapWindowClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapWindowClient.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/StartScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/StartScreen.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/store/actions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/actions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/copilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/copilot.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/icons.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/icons.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/metacopilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/metacopilot.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/missionGen.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/missionGen.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,16 +45,16 @@
     "RunOnceActivity.git.unshallow": "true",
     "WebServerToolWindowFactoryState": "false",
     "git-widget-placeholder": "TacticalStrategic",
-    "last_opened_file_path": "G:/Files/Code/GraphColouringNew/docs/paper/figs",
+    "last_opened_file_path": "G:/Files/Code/GraphColouringNew/logs/manualAddOnline",
     "nodejs_package_manager_path": "npm"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="G:\Files\Code\GraphColouringNew\logs\manualAddOnline" />
       <recent name="G:\Files\Code\GraphColouringNew\docs\paper\figs" />
       <recent name="G:\Files\Code\GraphColouringNew\docs" />
       <recent name="G:\Files\Code\GraphColouringNew\docs\paper" />
-      <recent name="G:\Files\Code\GraphColouringNew\logs\manualAddOnline" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\wh1g17\GraphColouringNew" />

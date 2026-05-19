@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+
+const LOG = true
 import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAllocation } from '../types'
 import { HUB, ASSET_SPEED, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
@@ -69,12 +71,11 @@ const CAT_NAMES: Record<string, string> = {
 interface Props {
   state: MapViewState
   onReprioritiseTop?: (missionId: string, taskId: string) => void
-  autoOpenSignal?: { id: string; n: number } | null
 }
 
 // ─── Main component ───────────────────────────────────────────────────────
 
-export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTop, autoOpenSignal }: Props) {
+export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTop }: Props) {
   const [tacticalMissionId, setTacticalMissionId] = useState<string | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
 
@@ -88,9 +89,12 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
     channelRef.current?.postMessage(action)
   }
 
+  // Mirror primary window's mission selection into the tactical view
   useEffect(() => {
-    if (autoOpenSignal) setTacticalMissionId(autoOpenSignal.id)
-  }, [autoOpenSignal])
+    LOG && console.log('[MAP DISPLAY] state.openMissionId changed to:', state.openMissionId)
+    setTacticalMissionId(state.openMissionId)
+    LOG && console.log('[MAP DISPLAY] setTacticalMissionId →', state.openMissionId)
+  }, [state.openMissionId])
 
   const tacticalMission = tacticalMissionId
     ? state.missions.find(m => m.id === tacticalMissionId &&
@@ -279,7 +283,7 @@ function computeDronePositions(
   if (dronePool.length === 0) return {}
   const { zoneCenter: { x: cx, y: cy }, zoneRadius: r } = mission
   const hubAngle = Math.atan2(HUB.y - cy, HUB.x - cx)
-  const droneR = r + 20  // all drones at this radius from zone center
+  const droneR = r + 28  // all drones at this radius from zone center
   const TWO_PI = Math.PI * 2
 
   // Desired angle: assigned → entry angle of first task; unassigned → hub angle
@@ -298,8 +302,8 @@ function computeDronePositions(
   const norm = (a: number) => ((a % TWO_PI) + TWO_PI) % TWO_PI
   const sorted = [...dronePool].sort((a, b) => norm(desiredAngles[a]) - norm(desiredAngles[b]))
 
-  // Minimum angular gap so icon circles (r=11, so diam=22) don't touch — add 3px clearance
-  const minGap = Math.min(25 / droneR, TWO_PI / sorted.length)
+  // Minimum angular gap so icon circles don't touch — add clearance
+  const minGap = Math.min(22 / droneR, TWO_PI / sorted.length)
 
   // Unwrap angles monotonically
   const angles = sorted.map(id => norm(desiredAngles[id]))
@@ -371,10 +375,10 @@ function buildRecoveryAllocation(mission: Mission, assets: Asset[]): { allocatio
     a.currentMissionId === mission.id && a.status === 'deployed'
   )
 
-  // Up to 5 reserve drones per type — allows grabbing multiple of same colour
-  const reserveBlue  = assets.filter(a => a.status === 'available' && a.type === 'Blue').slice(0, 5)
-  const reserveRed   = assets.filter(a => a.status === 'available' && a.type === 'Red').slice(0, 5)
-  const reserveGreen = assets.filter(a => a.status === 'available' && a.type === 'Green').slice(0, 5)
+  // All available reserve drones shown at hub corner — user drags any of them to assign
+  const reserveBlue  = assets.filter(a => a.status === 'available' && a.type === 'Blue')
+  const reserveRed   = assets.filter(a => a.status === 'available' && a.type === 'Red')
+  const reserveGreen = assets.filter(a => a.status === 'available' && a.type === 'Green')
   const reserveDrones = [...reserveBlue, ...reserveRed, ...reserveGreen]
   const reserveIds = new Set(reserveDrones.map(a => a.id))
 
@@ -464,10 +468,12 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     }
   }, [pendingKey])
 
-  // Return to waiting when deployed / recovery resolved
+  // Return to waiting when deployed / recovery resolved (not for read-only active-mission views)
   const onBackRef = useRef(onBack)
   onBackRef.current = onBack
+  const initiallyReadOnly = useRef(readOnly)
   useEffect(() => {
+    if (initiallyReadOnly.current) return
     if (recoveryMode ? !mission.failureRecoveryPending : !mission.tacticalPending) onBackRef.current()
   }, [mission.tacticalPending, mission.failureRecoveryPending, recoveryMode])
 
@@ -501,15 +507,20 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const dronePositions = useMemo(() => {
     const positions = computeDronePositions(pending.dronePool, pending.taskAssignments, pending.taskOrder, mission)
     if (recoveryMode && recoveryReserveIdsRef.current) {
-      // Only move reserve drones to HUB corner; deployed drones stay at their task angles
+      // Arrange reserve drones in a compact grid at hub corner, grouped by type
       const reserveArr = pending.dronePool.filter(id => recoveryReserveIdsRef.current!.has(id))
       const perpAngle = hubAngle + Math.PI / 2
-      const n = reserveArr.length
+      const colSpacing = 11   // perpendicular to hub angle
+      const rowSpacing = 13   // along hub angle (away from zone)
+      const maxCols = Math.min(reserveArr.length, 6)
       reserveArr.forEach((id, i) => {
-        const off = (i - (n - 1) / 2) * 18
+        const col = i % maxCols
+        const row = Math.floor(i / maxCols)
+        const perpOff = (col - (maxCols - 1) / 2) * colSpacing
+        const hubDirOff = row * rowSpacing
         positions[id] = {
-          x: hubCornerX + Math.cos(perpAngle) * off,
-          y: hubCornerY + Math.sin(perpAngle) * off,
+          x: hubCornerX + Math.cos(perpAngle) * perpOff + Math.cos(hubAngle) * hubDirOff,
+          y: hubCornerY + Math.sin(perpAngle) * perpOff + Math.sin(hubAngle) * hubDirOff,
         }
       })
     }
@@ -528,7 +539,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     (max, pos) => Math.max(max, Math.hypot(pos.x - cx, pos.y - cy)),
     r + 30
   )
-  const margin = Math.max(40, maxDroneExtent - r + 25)
+  const margin = Math.max(22, maxDroneExtent - r + 12)
   const aspect = containerSize.w / containerSize.h
   const halfW = (r + margin) * Math.max(1, aspect)
   const halfH = (r + margin) * Math.max(1, 1 / aspect)
@@ -609,7 +620,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     if (recoveryMode) {
       onMapAction({ _mapAction: 'CONFIRM_FAILURE_RECOVERY', missionId: mission.id, taskAssignments: assignments })
     } else {
-      onMapAction({ _mapAction: 'CONFIRM_TACTICAL', missionId: mission.id, taskAssignments: assignments })
+      onMapAction({ _mapAction: 'CONFIRM_TACTICAL', missionId: mission.id, taskAssignments: assignments, droneSequences })
     }
   }
 
@@ -673,7 +684,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               if (!dragging) return
               const { x, y } = toSVG(e)
               setDragging(prev => prev ? { ...prev, svgX: x, svgY: y } : null)
-              let closest: string | null = null, minD = 20
+              let closest: string | null = null, minD = 18
               for (const task of mission.tasks) {
                 if (task.status === 'completed') continue
                 const d = Math.hypot(x - task.waypoint.x, y - task.waypoint.y)
@@ -725,12 +736,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   style={{ pointerEvents: 'none' }}
                 />
                 <text x={hubCornerX} y={hubCornerY - 30} textAnchor="middle"
-                  fill="#1e40af" fontSize="8" fontFamily="monospace" style={{ pointerEvents: 'none' }}>
-                  RESERVE
-                </text>
-                <text x={hubCornerX} y={hubCornerY - 20} textAnchor="middle"
-                  fill="#374151" fontSize="6.5" fontFamily="sans-serif" style={{ pointerEvents: 'none' }}>
-                  drag here to unassign
+                  fill="#60a5fa" fontSize="9" fontFamily="monospace" fontWeight="bold" style={{ pointerEvents: 'none' }}>
+                  HUB RESERVE
                 </text>
               </g>
             )}
@@ -755,51 +762,80 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               )
             })()}
 
-            {/* Assignment arrows with sequence numbers */}
-            {pending.dronePool.map(droneId => {
-              const seq = droneSequences[droneId] ?? []
-              if (seq.length === 0) return null
-              const asset = state.assets.find(a => a.id === droneId)
-              const type: AssetType = asset?.type ?? 'Blue'
-              const color = ASSET_COLOR[type]
-              const markerId = `arr-${type.toLowerCase()}`
-              const pos = dronePositions[droneId]
-              if (!pos) return null
-              const isArrowHighlighted = hoverDrone === droneId
-              const points: Array<{ x: number; y: number }> = [pos]
-              for (const tid of seq) {
-                const task = mission.tasks.find(t => t.id === tid)
-                if (task) points.push(task.waypoint)
+            {/* Assignment arrows — bezier curves with per-drone perpendicular offset at destination */}
+            {(() => {
+              // For each task, ordered list of assigned drones → drives curve offset
+              const taskAssignees: Record<string, string[]> = {}
+              for (const task of mission.tasks) {
+                taskAssignees[task.id] = pending.dronePool.filter(
+                  id => (assignments[task.id] ?? []).includes(id)
+                )
               }
-              return (
-                <g key={droneId}>
-                  {points.slice(0, -1).map((from, i) => {
-                    const to = points[i + 1]
-                    const mx = (from.x + to.x) / 2
-                    const my = (from.y + to.y) / 2
-                    return (
-                      <g key={i}>
-                        <line
-                          x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                          stroke={color}
-                          strokeWidth={isArrowHighlighted ? "2.5" : "1.5"}
-                          strokeOpacity={isArrowHighlighted ? 1.0 : 0.65}
-                          strokeDasharray="6 4"
-                          markerEnd={`url(#${markerId})`}
-                        />
-                        {/* Sequence number badge */}
-                        <circle cx={mx} cy={my} r={5} fill={color} opacity="0.85" />
-                        <text x={mx} y={my} textAnchor="middle" dominantBaseline="central"
-                          fill="white" fontSize="6" fontWeight="bold" fontFamily="monospace"
-                          style={{ pointerEvents: 'none' }}>
-                          {i + 1}
-                        </text>
-                      </g>
-                    )
-                  })}
-                </g>
-              )
-            })}
+              return pending.dronePool.map(droneId => {
+                const seq = droneSequences[droneId] ?? []
+                if (seq.length === 0) return null
+                const asset = state.assets.find(a => a.id === droneId)
+                const type: AssetType = asset?.type ?? 'Blue'
+                const color = ASSET_COLOR[type]
+                const markerId = `arr-${type.toLowerCase()}`
+                const pos = dronePositions[droneId]
+                if (!pos) return null
+                const isHighlighted = hoverDrone === droneId
+
+                const points: Array<{ x: number; y: number; taskId: string | null }> = [
+                  { ...pos, taskId: null },
+                ]
+                for (const tid of seq) {
+                  const task = mission.tasks.find(t => t.id === tid)
+                  if (task) points.push({ ...task.waypoint, taskId: tid })
+                }
+
+                return (
+                  <g key={droneId}>
+                    {points.slice(0, -1).map((from, i) => {
+                      const to = points[i + 1]
+                      // Perpendicular offset: fan parallel lines arriving at same task
+                      let ctrlX = (from.x + to.x) / 2
+                      let ctrlY = (from.y + to.y) / 2
+                      if (to.taskId) {
+                        const assignees = taskAssignees[to.taskId] ?? []
+                        const n = assignees.length
+                        if (n > 1) {
+                          const idx = assignees.indexOf(droneId)
+                          const spread = (idx - (n - 1) / 2) * 10
+                          const dx = to.x - from.x, dy = to.y - from.y
+                          const len = Math.hypot(dx, dy) || 1
+                          ctrlX += (-dy / len) * spread
+                          ctrlY += (dx / len) * spread
+                        }
+                      }
+                      // Bezier midpoint at t=0.5: 0.25·from + 0.5·ctrl + 0.25·to
+                      const bmx = 0.25 * from.x + 0.5 * ctrlX + 0.25 * to.x
+                      const bmy = 0.25 * from.y + 0.5 * ctrlY + 0.25 * to.y
+                      return (
+                        <g key={i}>
+                          <path
+                            d={`M ${from.x} ${from.y} Q ${ctrlX} ${ctrlY} ${to.x} ${to.y}`}
+                            fill="none"
+                            stroke={color}
+                            strokeWidth={isHighlighted ? '2.5' : '1.5'}
+                            strokeOpacity={isHighlighted ? 1.0 : 0.6}
+                            strokeDasharray="6 4"
+                            markerEnd={`url(#${markerId})`}
+                          />
+                          <circle cx={bmx} cy={bmy} r={4.5} fill={color} opacity="0.9" />
+                          <text x={bmx} y={bmy} textAnchor="middle" dominantBaseline="central"
+                            fill="white" fontSize="5.5" fontWeight="bold" fontFamily="monospace"
+                            style={{ pointerEvents: 'none' }}>
+                            {i + 1}
+                          </text>
+                        </g>
+                      )
+                    })}
+                  </g>
+                )
+              })
+            })()}
 
             {/* Live drag wire */}
             {dragging && (() => {
@@ -838,14 +874,14 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                 return (
                   <g key={task.id}>
                     <circle
-                      cx={task.waypoint.x} cy={task.waypoint.y} r={13}
+                      cx={task.waypoint.x} cy={task.waypoint.y} r={11}
                       fill="rgba(16,185,129,0.06)" stroke="#374151"
                       strokeWidth={1} opacity={0.6}
                     />
                     <image
                       href={TASK_ICON[task.type as TaskType]}
-                      x={task.waypoint.x - 8} y={task.waypoint.y - 8}
-                      width={16} height={16}
+                      x={task.waypoint.x - 6.5} y={task.waypoint.y - 6.5}
+                      width={13} height={13}
                       style={{ pointerEvents: 'none', opacity: 0.35 }}
                     />
                     <text x={task.waypoint.x} y={task.waypoint.y + 24}
@@ -866,7 +902,6 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                 : null
 
               // Active / interactive task
-              const waitEntries = Object.entries(timings.droneWaits[task.id] ?? {})
               return (
                 <g key={task.id}
                   onDragOver={(e: React.DragEvent<SVGGElement>) => { e.preventDefault(); setHoverTask(task.id) }}
@@ -879,7 +914,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   }}
                 >
                   <circle
-                    cx={task.waypoint.x} cy={task.waypoint.y} r={isHovered ? 16 : 13}
+                    cx={task.waypoint.x} cy={task.waypoint.y} r={isHovered ? 14 : 11}
                     fill={complete ? 'rgba(16,185,129,0.15)'
                       : recoveryStatusLabel ? 'rgba(245,158,11,0.08)'
                       : isHovered ? 'rgba(59,130,246,0.25)' : 'rgba(15,23,42,0.9)'}
@@ -897,29 +932,19 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   )}
                   <image
                     href={TASK_ICON[task.type as TaskType]}
-                    x={task.waypoint.x - 8} y={task.waypoint.y - 8}
-                    width={16} height={16}
+                    x={task.waypoint.x - 6.5} y={task.waypoint.y - 6.5}
+                    width={13} height={13}
                     style={{ pointerEvents: 'none' }}
                   />
-                  <text x={task.waypoint.x} y={task.waypoint.y + 24}
+                  <text x={task.waypoint.x} y={task.waypoint.y + 21}
                     textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="sans-serif"
                     style={{ pointerEvents: 'none' }}>
                     {TASK_TYPE_NAMES[task.type]}
                   </text>
                   {complete ? (
-                    <>
-                      <text x={task.waypoint.x} y={task.waypoint.y + 33}
-                        textAnchor="middle" fill="#4ade80" fontSize="7" fontFamily="monospace"
-                        style={{ pointerEvents: 'none' }}>✓</text>
-                      {waitEntries.map(([droneId, wait], i) => (
-                        <text key={droneId}
-                          x={task.waypoint.x} y={task.waypoint.y + 42 + i * 9}
-                          textAnchor="middle" fill="#fb923c" fontSize="6" fontFamily="monospace"
-                          style={{ pointerEvents: 'none' }}>
-                          {resolveCallsign(droneId, callsignMode)} +{wait}s
-                        </text>
-                      ))}
-                    </>
+                    <text x={task.waypoint.x} y={task.waypoint.y + 33}
+                      textAnchor="middle" fill="#4ade80" fontSize="7" fontFamily="monospace"
+                      style={{ pointerEvents: 'none' }}>✓</text>
                   ) : (
                     <>
                       {/* Primary comp — per-type color (B=blue, R=red, G=green) */}
@@ -966,12 +991,19 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   onMouseEnter={() => !dragging && setHoverDrone(droneId)}
                   onMouseLeave={() => setHoverDrone(null)}
                 >
-                  <circle cx={pos.x} cy={pos.y} r={9} fill="#1e293b"
+                  <circle cx={pos.x} cy={pos.y} r={8} fill="#1e293b"
                     stroke={isHoveredDrone ? '#fbbf24' : color}
                     strokeWidth={isDraggingThis || isHoveredDrone ? 2.5 : 1.5} />
-                  <image href={DRONE_ICON[type]} x={pos.x - 6} y={pos.y - 6} width={12} height={12} style={{ pointerEvents: 'none' }} />
-                  <text x={pos.x} y={pos.y + 15} textAnchor="middle" fill={color} fontSize="7" fontFamily="monospace"
+                  <image href={DRONE_ICON[type]} x={pos.x - 5} y={pos.y - 5} width={10} height={10} style={{ pointerEvents: 'none' }} />
+                  <text x={pos.x} y={pos.y + 14} textAnchor="middle" fill={color} fontSize="6.5" fontFamily="monospace"
                     style={{ pointerEvents: 'none' }}>{cs}</text>
+                  {(droneSequences[droneId]?.length ?? 0) > 0 && (
+                    <text x={pos.x + 7} y={pos.y - 5} textAnchor="middle"
+                      fill="#fb923c" fontSize="6" fontFamily="monospace"
+                      style={{ pointerEvents: 'none' }}>
+                      {droneSequences[droneId].length}
+                    </text>
+                  )}
                 </g>
               )
             })}

@@ -99,14 +99,6 @@ function toTaskComps(
   return result
 }
 
-function reservePressure(comp: TaskComposition, reserve: AssetRequirement): number {
-  let p = 0
-  if (comp.Blue  > 0) p += comp.Blue  / Math.max(1, reserve.Blue)
-  if (comp.Red   > 0) p += comp.Red   / Math.max(1, reserve.Red)
-  if (comp.Green > 0) p += comp.Green / Math.max(1, reserve.Green)
-  return p
-}
-
 // ─── Co-Pilot task ordering ───────────────────────────────────────────────
 
 /**
@@ -181,17 +173,19 @@ export function generateStrategies(
   const aggTrueTime = simulatePool(sorted, primComps, aggTruePool)
   const aggTrueTaskComps = toTaskComps(sorted, primComps, primComps)
 
-  // ── Conservative strategy: reserve-pressure-chosen compositions + 30% top-up
+  // ── Conservative strategy: primaries by default; substitute only when reserve
+  //    cannot cover the primary requirement. Pool sized near the sequential minimum
+  //    (small top-up) so tasks run mostly in series — slower but reserve-preserving.
   const consComps = new Map<string, { comp: TaskComposition; baseTime: number }>()
   for (const task of sorted) {
-    const sub = TASK_SUBSTITUTE[task.type as TaskType]
     const prim = TASK_PRIMARY[task.type as TaskType]
-    if (sub && (task.type === 2 || task.type === 3 || task.type === 4)) {
-      const useSub = reservePressure(sub, reserve) < reservePressure(prim, reserve)
-      consComps.set(task.id, useSub
-        ? { comp: sub,  baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] }
-        : { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] },
-      )
+    const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+    const reserveLacksPrimary =
+      reserve.Blue  < prim.Blue  ||
+      reserve.Red   < prim.Red   ||
+      reserve.Green < prim.Green
+    if (reserveLacksPrimary && sub) {
+      consComps.set(task.id, { comp: sub, baseTime: TASK_SUB_BASE_TIME[task.type as TaskType] })
     } else {
       consComps.set(task.id, { comp: prim, baseTime: TASK_BASE_TIME[task.type as TaskType] })
     }
@@ -199,7 +193,7 @@ export function generateStrategies(
 
   const consMin  = minPool(sorted, consComps)
   const consBase = cap(consMin, reserve)
-  const TOP_UP   = 0.30
+  const TOP_UP   = 0.15
   const consTruePool: AssetRequirement = {
     Blue:  Math.min(reserve.Blue,  consBase.Blue  + Math.floor((reserve.Blue  - consBase.Blue)  * TOP_UP)),
     Red:   Math.min(reserve.Red,   consBase.Red   + Math.floor((reserve.Red   - consBase.Red)   * TOP_UP)),
@@ -278,7 +272,7 @@ export function generateStrategies(
   if (consTrueTime < Infinity) {
     strategies.push({
       name: 'Conservative',
-      description: 'Reserve-balanced deployment — favours whichever asset types are most available.',
+      description: 'Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.',
       assets: consBad.displayPool,
       expectedCompletionTime: consBad.displayTime,
       reserveAfter: reserveAfter(consBad.displayPool),

@@ -258,6 +258,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     manualPriorityIds: [],
     tacticalPending: false,
     pendingAllocation: null,
+    droneSequences: {},
     droneFailureRelativeTime: bp.droneFailureRelativeTime,
     droneFailureFired: false,
     failedDroneId: null,
@@ -398,6 +399,7 @@ function applyTacticalAllocation(
   pending: PendingAllocation,
   taskOrder: string[],
   wasOverridden: boolean,
+  droneSequences: Record<string, string[]> = {},
 ): GameState {
   const mission = state.missions.find(m => m.id === missionId)!
   const now = state.elapsed
@@ -441,6 +443,7 @@ function applyTacticalAllocation(
     allocationTime: now,
     tacticalPending: false,
     pendingAllocation: null,
+    droneSequences,
     agentInteraction: wasOverridden ? 'overridden' : pending.isAgentSuggested ? 'followed' : 'manual',
     chosenStrategyName: pending.strategyName,
     manualPriorityIds: [],
@@ -486,54 +489,87 @@ function applyTacticalAllocation(
 
 // ─── Helper: build assignments from manual drag-and-drop ──────────────────
 
+/**
+ * Computes task start times respecting the user's per-drone chain order.
+ * Uses 3-pass iteration so multi-drone tasks (where each drone's arrival
+ * depends on the previous task in its sequence) converge correctly.
+ */
 function buildManualAssignments(
   mission: Mission,
   assets: Asset[],
   taskAssignments: Record<string, string[]>,
-  taskOrder: string[],
+  droneSequences: Record<string, string[]>,
   elapsed: number,
 ): TaskAssignment[] {
   const assetById = new Map(assets.map(a => [a.id, a]))
-  const assetFreeAt = new Map<string, number>()
-  const assetPos = new Map<string, { x: number; y: number }>()
-  const result: TaskAssignment[] = []
+  const allDroneIds = [...new Set(Object.values(taskAssignments).flat())]
 
-  for (const taskId of taskOrder) {
-    const task = mission.tasks.find(t => t.id === taskId)
-    if (!task) continue
-    const assetIds = (taskAssignments[taskId] ?? []).filter(id => assetById.has(id))
-    if (assetIds.length === 0) continue
+  // Iteratively converge task start times.
+  // Pass N uses taskStarts from pass N-1 to compute drone departure times.
+  const taskStarts: Record<string, number> = {}
 
-    const comp: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
-    for (const id of assetIds) { const a = assetById.get(id)!; comp[a.type]++ }
+  for (let pass = 0; pass < 3; pass++) {
+    // Reset per-drone state at start of each pass
+    const droneFreeAt: Record<string, number> = {}
+    const dronePos: Record<string, { x: number; y: number }> = {}
+    for (const id of allDroneIds) { droneFreeAt[id] = elapsed; dronePos[id] = { ...HUB } }
 
-    const prim = TASK_PRIMARY[task.type as TaskType]
-    const sub  = TASK_SUBSTITUTE[task.type as TaskType]
-    let baseTime = TASK_BASE_TIME[task.type as TaskType]
-    let useSubstitute = false
-    if (!(comp.Blue >= prim.Blue && comp.Red >= prim.Red && comp.Green >= prim.Green)) {
-      if (sub && comp.Blue >= sub.Blue && comp.Red >= sub.Red && comp.Green >= sub.Green) {
-        baseTime = TASK_SUB_BASE_TIME[task.type as TaskType]
-        useSubstitute = true
+    // Reset task starts for re-computation this pass
+    for (const taskId of Object.keys(taskAssignments)) delete taskStarts[taskId]
+
+    // Forward-sweep each drone's sequence, accumulating max arrivals per task
+    for (const droneId of allDroneIds) {
+      const asset = assetById.get(droneId)
+      if (!asset) continue
+      const speed = ASSET_SPEED[asset.type]
+      const seq = droneSequences[droneId] ?? []
+
+      for (const taskId of seq) {
+        const task = mission.tasks.find(t => t.id === taskId)
+        if (!task) continue
+        const arrival = droneFreeAt[droneId] + travelTime(dronePos[droneId], task.waypoint, speed)
+        taskStarts[taskId] = Math.max(taskStarts[taskId] ?? arrival, arrival)
+        // Drone departs after the task finishes (using updated taskStart from this pass)
+        const baseTime = getManualBaseTime(task, taskAssignments[taskId] ?? [], assetById)
+        droneFreeAt[droneId] = taskStarts[taskId] + baseTime
+        dronePos[droneId] = { ...task.waypoint }
       }
     }
+  }
 
-    let startTime = elapsed
-    for (const id of assetIds) {
-      const a = assetById.get(id)!
-      const freeAt = assetFreeAt.get(id) ?? elapsed
-      const pos = assetPos.get(id) ?? { ...HUB }
-      startTime = Math.max(startTime, freeAt + travelTime(pos, task.waypoint, ASSET_SPEED[a.type]))
-    }
-    const completionTime = startTime + baseTime
-    for (const id of assetIds) {
-      assetFreeAt.set(id, completionTime)
-      assetPos.set(id, { ...task.waypoint })
-    }
-
-    result.push({ taskId, assetIds, startTime, travelTime: startTime - elapsed, baseTime, useSubstitute })
+  // Build TaskAssignment records from converged start times
+  const result: TaskAssignment[] = []
+  for (const [taskId, droneIds] of Object.entries(taskAssignments)) {
+    const task = mission.tasks.find(t => t.id === taskId)
+    if (!task || droneIds.length === 0 || taskStarts[taskId] === undefined) continue
+    const startTime = taskStarts[taskId]
+    const baseTime = getManualBaseTime(task, droneIds, assetById)
+    const useSubstitute = isUsingSubstitute(task, droneIds, assetById)
+    result.push({ taskId, assetIds: droneIds, startTime, travelTime: startTime - elapsed, baseTime, useSubstitute })
   }
   return result
+}
+
+function getManualBaseTime(task: Task, droneIds: string[], assetById: Map<string, Asset>): number {
+  const prim = TASK_PRIMARY[task.type as TaskType]
+  const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+  const comp: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
+  for (const id of droneIds) { const a = assetById.get(id); if (a) comp[a.type]++ }
+  if (sub && !(comp.Blue >= prim.Blue && comp.Red >= prim.Red && comp.Green >= prim.Green)
+      && comp.Blue >= sub.Blue && comp.Red >= sub.Red && comp.Green >= sub.Green) {
+    return TASK_SUB_BASE_TIME[task.type as TaskType]
+  }
+  return TASK_BASE_TIME[task.type as TaskType]
+}
+
+function isUsingSubstitute(task: Task, droneIds: string[], assetById: Map<string, Asset>): boolean {
+  const prim = TASK_PRIMARY[task.type as TaskType]
+  const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+  const comp: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
+  for (const id of droneIds) { const a = assetById.get(id); if (a) comp[a.type]++ }
+  if (!sub) return false
+  return !(comp.Blue >= prim.Blue && comp.Red >= prim.Red && comp.Green >= prim.Green)
+    && comp.Blue >= sub.Blue && comp.Red >= sub.Red && comp.Green >= sub.Green
 }
 
 // ─── Reducer ──────────────────────────────────────────────────────────────
@@ -699,13 +735,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             elapsed >= (task.completionTime ?? 0) + task.recallDelay
 
           if (recallReady) {
-            // Look for a next task in the same mission this asset is scheduled for
-            const nextTask = currentMission?.tasks.find(t =>
-              t.id !== asset.currentTaskId &&
-              t.assignedAssetIds.includes(asset.id) &&
-              t.status !== 'completed' &&
-              t.status !== 'failed',
-            )
+            // Find next task using per-drone sequence (respects user's chain order)
+            const seq = currentMission?.droneSequences?.[asset.id] ?? []
+            const curIdx = seq.indexOf(asset.currentTaskId!)
+            const nextTaskId = curIdx >= 0
+              ? seq.slice(curIdx + 1).find(tid => {
+                  const t = currentMission?.tasks.find(t => t.id === tid)
+                  return t && t.status !== 'completed' && t.status !== 'failed'
+                })
+              : undefined
+            // Fallback: any assigned incomplete task (handles agent-mode without explicit sequences)
+            const nextTask = nextTaskId
+              ? currentMission?.tasks.find(t => t.id === nextTaskId)
+              : seq.length === 0
+                ? currentMission?.tasks.find(t =>
+                    t.id !== asset.currentTaskId &&
+                    t.assignedAssetIds.includes(asset.id) &&
+                    t.status !== 'completed' &&
+                    t.status !== 'failed',
+                  )
+                : undefined
 
             if (nextTask) {
               // Sequential reuse: redirect directly to the next task's waypoint
@@ -721,7 +770,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               }
             }
 
-            // No next task — return to hub; available for reallocation immediately
+            // No next task — return to hub
             const returnTime = travelTime(task!.waypoint, HUB, ASSET_SPEED[asset.type])
             return {
               ...asset,
@@ -732,7 +781,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               targetPosition: { ...HUB },
               travelStartElapsed: elapsed,
               travelEndElapsed: elapsed + returnTime,
-              availableAt: elapsed,
+              availableAt: elapsed + returnTime,
               position: newPos,
             }
           }
@@ -911,17 +960,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
 
       const pending = mission.pendingAllocation
+      const droneSeqs = action.droneSequences ?? {}
       let assignments: TaskAssignment[]
 
       if (action.taskAssignments) {
-        assignments = buildManualAssignments(mission, state.assets, action.taskAssignments, pending.taskOrder, state.elapsed)
+        assignments = buildManualAssignments(mission, state.assets, action.taskAssignments, droneSeqs, state.elapsed)
       } else {
         const available = state.assets.filter(a => a.status === 'available')
         assignments = greedyAssign(mission.tasks, available, pending.composition, state.elapsed, undefined, pending.taskOrder)
       }
 
       if (assignments.length === 0) return state
-      return applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, false)
+      return applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, false, droneSeqs)
     }
 
     // ── OVERRIDE_TACTICAL ────────────────────────────────────────────────

@@ -18,7 +18,7 @@ export type GameAction =
     }
 
   // ── Tactical confirmation (agent mode — from map sidebar) ────────────────
-  | { type: 'CONFIRM_TACTICAL'; missionId: string; taskAssignments?: Record<string, string[]> }
+  | { type: 'CONFIRM_TACTICAL'; missionId: string; taskAssignments?: Record<string, string[]>; droneSequences?: Record<string, string[]> }
   | { type: 'OVERRIDE_TACTICAL'; missionId: string }        // user wants to edit tactical
 
   // ── Drone failure recovery ───────────────────────────────────────────────

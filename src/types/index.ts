@@ -102,6 +102,8 @@ export interface Mission {
   // Tactical allocation state (agent mode: awaits sidebar confirmation)
   tacticalPending: boolean
   pendingAllocation: PendingAllocation | null
+  // Per-drone task execution order (droneId → ordered taskId[]) — set on tactical confirm
+  droneSequences: Record<string, string[]>
   // Drone failure
   droneFailureRelativeTime: number | null  // seconds after arrivalTime; null = no failure
   droneFailureFired: boolean
@@ -163,6 +165,7 @@ export interface MapViewState {
   reserve: AssetRequirement
   callsignMode: 'id' | 'arthurian' | 'nato'
   strategicModal: StrategicModal | null
+  openMissionId: string | null
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────

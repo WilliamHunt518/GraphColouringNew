@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+
+const LOG = true
 import type { GameState, Mission, Task, AssetType, MissionCategory, AssetRequirement, Strategy, StrategicModal } from '../types'
 import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
@@ -13,6 +15,7 @@ interface Props {
   dispatch: (a: GameAction) => void
   callsignMode: CallsignMode
   setCallsignMode: (m: CallsignMode) => void
+  setOpenMissionId: (id: string | null) => void
 }
 
 // ─── Colour / label helpers ────────────────────────────────────────────────
@@ -120,7 +123,7 @@ function penaltyUrgency(penaltyPts: number): UrgencyLevel {
 
 // ─── Top-level ────────────────────────────────────────────────────────────
 
-export default function PrimaryDisplay({ state, dispatch, callsignMode, setCallsignMode }: Props) {
+export default function PrimaryDisplay({ state, dispatch, callsignMode, setCallsignMode, setOpenMissionId }: Props) {
   const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
@@ -298,7 +301,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
 
         {/* Right: embedded operational map */}
         <div className="flex-1 relative overflow-hidden bg-gray-950">
-          <EmbeddedOperationalMap state={state} dispatch={dispatch} callsignMode={callsignMode} />
+          <EmbeddedOperationalMap state={state} dispatch={dispatch} callsignMode={callsignMode} setOpenMissionId={setOpenMissionId} />
         </div>
       </div>
     </div>
@@ -859,10 +862,11 @@ const MAP_ZONE_FILL: Record<string, string> = {
 }
 const MAP_ASSET_COLOR: Record<AssetType, string> = { Blue: '#60a5fa', Red: '#f87171', Green: '#4ade80' }
 
-function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
+function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionId }: {
   state: GameState
   dispatch: (a: GameAction) => void
   callsignMode: CallsignMode
+  setOpenMissionId: (id: string | null) => void
 }) {
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
   const [grabbing, setGrabbing] = useState(false)
@@ -871,13 +875,8 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
   const isPanning = useRef(false)
   const hasMoved = useRef(false)
   const lastPos = useRef({ x: 0, y: 0 })
-  const mapChannelRef = useRef<BroadcastChannel | null>(null)
-
-  useEffect(() => {
-    const ch = new BroadcastChannel('sar-study')
-    mapChannelRef.current = ch
-    return () => ch.close()
-  }, [])
+  const panPointerId = useRef<number | null>(null)
+  const hasCaptured = useRef(false)
 
   useEffect(() => {
     const svg = svgRef.current
@@ -908,10 +907,15 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
       viewBox="0 0 1000 800"
       className="w-full h-full"
       style={{ cursor: grabbing ? 'grabbing' : 'grab', background: '#030712' }}
+      onClick={() => {
+        LOG && console.log('[PRIMARY] blank SVG click, hasMoved:', hasMoved.current)
+        if (!hasMoved.current) setOpenMissionId(null)
+      }}
       onPointerDown={e => {
-        e.currentTarget.setPointerCapture(e.pointerId)
         isPanning.current = true
         hasMoved.current = false
+        hasCaptured.current = false
+        panPointerId.current = e.pointerId
         lastPos.current = { x: e.clientX, y: e.clientY }
         setGrabbing(true)
       }}
@@ -920,11 +924,17 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
         const dx = e.clientX - lastPos.current.x
         const dy = e.clientY - lastPos.current.y
         lastPos.current = { x: e.clientX, y: e.clientY }
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) hasMoved.current = true
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          hasMoved.current = true
+          if (!hasCaptured.current) {
+            e.currentTarget.setPointerCapture(panPointerId.current!)
+            hasCaptured.current = true
+          }
+        }
         const rect = svgRef.current!.getBoundingClientRect()
         setView(v => ({ ...v, x: v.x + dx * 1000 / rect.width, y: v.y + dy * 800 / rect.height }))
       }}
-      onPointerUp={() => { isPanning.current = false; setGrabbing(false) }}
+      onPointerUp={() => { isPanning.current = false; setGrabbing(false); hasCaptured.current = false }}
     >
       <defs>
         <marker id="emap-arr-blue"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -961,10 +971,12 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
             return (
               <g key={m.id}
                 onClick={e => {
-                  if (hasMoved.current) return
                   e.stopPropagation()
+                  LOG && console.log('[PRIMARY] mission click', m.id, { hasMoved: hasMoved.current, tacticalPending: m.tacticalPending, failureRecoveryPending: m.failureRecoveryPending, status: m.status, isAllocatable })
+                  if (hasMoved.current) return
                   if (m.tacticalPending || m.failureRecoveryPending || m.status === 'active') {
-                    mapChannelRef.current?.postMessage({ _autoOpenTactical: m.id })
+                    LOG && console.log('[PRIMARY] → setOpenMissionId', m.id)
+                    setOpenMissionId(m.id)
                   } else if (isAllocatable) {
                     dispatch({ type: 'OPEN_STRATEGIC', missionId: m.id })
                   }
@@ -1008,13 +1020,14 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
 
         {/* Full: inter-task chain paths (dashed) for chained drones */}
         {detailLevel === 2 && (() => {
-          const statusOrd: Record<string, number> = { executing: 0, traveling: 1, pending: 2 }
+          const missionByDroneId = new Map<string, Mission>()
           const droneTaskMap = new Map<string, { task: Task; missionId: string }[]>()
           for (const m of state.missions.filter(m => m.status === 'active')) {
             for (const task of m.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')) {
               for (const droneId of task.assignedAssetIds) {
                 if (!droneTaskMap.has(droneId)) droneTaskMap.set(droneId, [])
                 droneTaskMap.get(droneId)!.push({ task, missionId: m.id })
+                missionByDroneId.set(droneId, m)
               }
             }
           }
@@ -1024,9 +1037,15 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode }: {
             const asset = state.assets.find(a => a.id === droneId)
             if (!asset) return
             const color = MAP_ASSET_COLOR[asset.type]
-            const sorted = [...entries].sort((a, b) =>
-              (statusOrd[a.task.status] ?? 3) - (statusOrd[b.task.status] ?? 3) || b.task.type - a.task.type
-            )
+            // Use stored droneSequences if available; otherwise fall back to status/type sort
+            const mission = missionByDroneId.get(droneId)
+            const seq = mission?.droneSequences?.[droneId] ?? []
+            const sorted = seq.length > 0
+              ? seq.map(tid => entries.find(e => e.task.id === tid)).filter((e): e is typeof entries[0] => !!e)
+              : [...entries].sort((a, b) => {
+                  const statusOrd: Record<string, number> = { executing: 0, traveling: 1, pending: 2 }
+                  return (statusOrd[a.task.status] ?? 3) - (statusOrd[b.task.status] ?? 3) || b.task.type - a.task.type
+                })
             for (let i = 0; i < sorted.length - 1; i++) {
               const from = sorted[i].task.waypoint
               const to = sorted[i + 1].task.waypoint
