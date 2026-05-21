@@ -416,6 +416,8 @@ function buildActiveAllocation(mission: Mission, assets: Asset[]): PendingAlloca
     isAgentSuggested: false,
     isBadSuggestion: false,
     badSuggestionType: null,
+    hasTacticalError: false,
+    suppressedTaskId: null,
   }
 }
 
@@ -463,6 +465,8 @@ function buildRecoveryAllocation(mission: Mission, assets: Asset[]): { allocatio
       isAgentSuggested: false,
       isBadSuggestion: false,
       badSuggestionType: null,
+      hasTacticalError: false,
+      suppressedTaskId: null,
     },
     reserveIds,
     failedDroneId: mission.failedDroneId,
@@ -597,8 +601,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const halfH = (r + margin) * Math.max(1, 1 / aspect)
   const vx = cx - halfW, vy = cy - halfH, vw = halfW * 2, vh = halfH * 2
 
-  // Deploy readiness — accepts primary OR substitute composition
+  // Deploy readiness — accepts primary OR substitute composition.
+  // Suppressed task (tactical error) is exempt: it appears allocated so Deploy stays enabled.
   const canDeploy = pending.taskOrder.every(tid => {
+    if (pending.hasTacticalError && tid === pending.suppressedTaskId) return true  // deceptively "complete"
     const task = mission.tasks.find(t => t.id === tid)!
     const prim = TASK_PRIMARY[task.type as TaskType]
     const sub = TASK_SUBSTITUTE[task.type as TaskType]
@@ -683,6 +689,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
   function handleSuggest() {
     const suggestion = computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets)
+    // Re-apply tactical error: keep the same task suppressed even after re-suggesting
+    if (pending.hasTacticalError && pending.suppressedTaskId) {
+      delete suggestion[pending.suppressedTaskId]
+    }
     setAssignments(suggestion)
     setDroneChainOrder({})
   }
@@ -927,7 +937,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               }
               const meetsPrimComp = counts.Blue >= req.Blue && counts.Red >= req.Red && counts.Green >= req.Green
               const meetsSubComp = !!sub && counts.Blue >= sub.Blue && counts.Red >= sub.Red && counts.Green >= sub.Green
-              const complete = meetsPrimComp || meetsSubComp
+              // Tactical error: suppressed task is deceptively shown as complete
+              const isSuppressed = pending.hasTacticalError && task.id === pending.suppressedTaskId
+              const complete = isSuppressed ? true : (meetsPrimComp || meetsSubComp)
               const isHovered = hoverTask === task.id && !!dragging
 
               // Completed tasks — always greyed out
@@ -1084,6 +1096,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           onDeploy={handleDeploy}
           recoveryMode={!!recoveryMode}
           failedDroneId={failedDroneIdRef.current ?? null}
+          suppressedTaskId={pending.suppressedTaskId}
         />
       </div>
     </div>
@@ -1092,7 +1105,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId, suppressedTaskId }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1104,6 +1117,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   onDeploy: () => void
   recoveryMode?: boolean
   failedDroneId?: string | null
+  suppressedTaskId?: string | null
 }) {
   const ASSET_COLOR_TEXT: Record<AssetType, string> = { Blue: 'text-blue-400', Red: 'text-red-400', Green: 'text-green-400' }
   const ASSET_BG: Record<AssetType, string> = { Blue: 'bg-blue-900/50 border-blue-700/50', Red: 'bg-red-900/50 border-red-700/50', Green: 'bg-emerald-900/50 border-emerald-700/50' }
@@ -1198,7 +1212,8 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
           for (const id of assigned) { counts[getType(id) as AssetType]++ }
           const meetsPrimRP = counts.Blue >= req.Blue && counts.Red >= req.Red && counts.Green >= req.Green
           const meetsSubRP = !!sub && counts.Blue >= sub.Blue && counts.Red >= sub.Red && counts.Green >= sub.Green
-          const complete = meetsPrimRP || meetsSubRP
+          const isSuppressedRP = taskId === suppressedTaskId
+          const complete = isSuppressedRP ? true : (meetsPrimRP || meetsSubRP)
           const tStart = timings.taskStarts[taskId]
           const tEnd = tStart !== undefined ? Math.round(tStart + baseTime) : null
 

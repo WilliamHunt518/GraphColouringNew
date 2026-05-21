@@ -203,28 +203,33 @@ export function generateStrategies(
   const consTrueTaskComps = toTaskComps(sorted, consComps, primComps)
 
   // ── Bad-agent perturbation ────────────────────────────────────────────────
+  // When an error fires, both the displayed pool AND the true pool used for execution
+  // are corrupted — so errors have real consequences, not just display confusion.
+  //   'over' — commits extra drones (reserve depleted unnecessarily)
+  //   'under' — commits too few drones (some tasks skipped in greedyAssign, causing lockout)
   function applyBadAgent(truePool: AssetRequirement, trueTime: number, compsForSim: Map<string, { comp: TaskComposition; baseTime: number }>): {
     displayPool: AssetRequirement; displayTime: number;
+    badTruePool: AssetRequirement;  // pool used for actual execution (= displayPool when bad)
     isBad: boolean; badType: 'over' | 'under' | null
   } {
     if (rng.randFloat(0, 1) > agentErrorRate) {
-      return { displayPool: { ...truePool }, displayTime: trueTime, isBad: false, badType: null }
+      return { displayPool: { ...truePool }, displayTime: trueTime, badTruePool: { ...truePool }, isBad: false, badType: null }
     }
     const types: Array<keyof AssetRequirement> = ['Blue', 'Red', 'Green']
     const t = types[rng.randInt(0, 2)]
     const isOver = rng.randFloat(0, 1) < 0.5
     const delta = 2 + rng.randInt(0, 1)  // 2 or 3
-    const displayPool = { ...truePool }
+    const badPool = { ...truePool }
     if (isOver) {
-      displayPool[t] = Math.min(reserve[t], truePool[t] + delta)
+      badPool[t] = Math.min(reserve[t], truePool[t] + delta)
     } else {
-      displayPool[t] = Math.max(0, truePool[t] - delta)
+      badPool[t] = Math.max(0, truePool[t] - delta)
     }
-    // Displayed time: compute from the bad pool — looks plausible but is wrong
-    // For 'under' this will often be Infinity (infeasible) so use a clamped estimate
-    const rawTime = simulatePool(sorted, compsForSim, displayPool)
+    // Displayed time computed from the bad pool — looks plausible but is misleading
+    // For 'under', pool may be infeasible; show an optimistic estimate instead of Infinity
+    const rawTime = simulatePool(sorted, compsForSim, badPool)
     const displayTime = rawTime < Infinity ? rawTime : trueTime * (0.7 + rng.randFloat(0, 0.2))
-    return { displayPool, displayTime, isBad: true, badType: isOver ? 'over' : 'under' }
+    return { displayPool: badPool, displayTime, badTruePool: badPool, isBad: true, badType: isOver ? 'over' : 'under' }
   }
 
   const aggBad = applyBadAgent(aggTruePool, aggTrueTime, primComps)
@@ -260,10 +265,10 @@ export function generateStrategies(
       reserveAfter: reserveAfter(aggBad.displayPool),
       speedScore: 1,
       reserveScore: 1 - specialists(aggBad.displayPool) / maxSpec,
-      taskComps: aggTrueTaskComps,   // displayed taskComps use true comps (not shown to user anyway)
+      taskComps: aggTrueTaskComps,
       isBadSuggestion: aggBad.isBad,
       badSuggestionType: aggBad.badType,
-      trueAssets: aggTruePool,
+      trueAssets: aggBad.badTruePool,   // corrupted pool used for real deployment when bad
       trueTaskComps: aggTrueTaskComps,
     })
   }
@@ -281,7 +286,7 @@ export function generateStrategies(
       taskComps: consTrueTaskComps,
       isBadSuggestion: consBad.isBad,
       badSuggestionType: consBad.badType,
-      trueAssets: consTruePool,
+      trueAssets: consBad.badTruePool,  // corrupted pool used for real deployment when bad
       trueTaskComps: consTrueTaskComps,
     })
   }

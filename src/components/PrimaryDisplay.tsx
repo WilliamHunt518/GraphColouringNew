@@ -4,7 +4,7 @@ const LOG = true
 import type { GameState, Mission, Task, AssetType, MissionCategory, AssetRequirement, Strategy, StrategicModal } from '../types'
 import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
-import { downloadDebugLog } from '../utils/debugLog'
+import { downloadStudySnapshot } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
 import { HUB, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL } from '../utils/missionGen'
 import { CAT_ICON, TASK_ICON, DRONE_ICON } from '../utils/icons'
@@ -212,11 +212,11 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
             {CALLSIGN_LABELS[callsignMode]}
           </button>
           <button
-            onClick={downloadDebugLog}
+            onClick={() => downloadStudySnapshot(state)}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-500 border border-gray-700 transition-colors"
-            title="Download debug log"
+            title="Download mid-session study snapshot (JSON)"
           >
-            Debug Log
+            Snapshot
           </button>
         </div>
       </header>
@@ -417,8 +417,8 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
       {/* Task progress + penalty histogram */}
       <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
 
-      {/* Co-Pilot task plan — shown after allocation */}
-      {isActive && <CopilotPlanPanel mission={mission} callsignMode={callsignMode} />}
+      {/* Task plan — shows drone→task assignments after allocation */}
+      {isActive && <TaskPlanPanel mission={mission} callsignMode={callsignMode} />}
 
       {/* Assigned assets strip */}
       {isActive && deployedHere.length > 0 && (
@@ -772,7 +772,7 @@ function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: num
 
 // ─── Co-Pilot task plan ───────────────────────────────────────────────────
 
-function CopilotPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMode: CallsignMode }) {
+function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMode: CallsignMode }) {
   const [open, setOpen] = useState(false)
 
   const assetChains = new Map<string, Task[]>()

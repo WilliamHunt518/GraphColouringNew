@@ -14,12 +14,51 @@ const MODES = [
   { value: 'agent'    as const, label: 'Agent Assist',   desc: 'Agent suggests strategic & tactical options' },
 ]
 
+const EPSILON_STEP = 0.05
+const EPSILON_MIN  = 0.00  // 100% accuracy
+const EPSILON_MAX  = 0.95  // 5% accuracy
+
+function epsilonToAccuracy(eps: number): number {
+  return Math.round((1 - eps) * 100)
+}
+
+function AccuracySpinner({ label, epsilon, onChange }: {
+  label: string
+  epsilon: number
+  onChange: (v: number) => void
+}) {
+  const accuracy = epsilonToAccuracy(epsilon)
+  return (
+    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 space-y-2">
+      <span className="block text-xs font-medium text-gray-400">{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => onChange(parseFloat(Math.min(EPSILON_MAX, epsilon + EPSILON_STEP).toFixed(2)))}
+          disabled={epsilon >= EPSILON_MAX}
+          className="w-7 h-7 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white font-bold flex items-center justify-center"
+        >−</button>
+        <div className="text-center flex-1">
+          <span className="text-white font-bold text-xl font-mono tabular-nums">{accuracy}%</span>
+          <span className="block text-xs text-gray-500 font-mono">ε = {epsilon.toFixed(2)}</span>
+        </div>
+        <button
+          onClick={() => onChange(parseFloat(Math.max(EPSILON_MIN, epsilon - EPSILON_STEP).toFixed(2)))}
+          disabled={epsilon <= EPSILON_MIN}
+          className="w-7 h-7 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white font-bold flex items-center justify-center"
+        >+</button>
+      </div>
+    </div>
+  )
+}
+
 interface Props { onStart: (config: StudyConfig) => void }
 
 export default function StartScreen({ onStart }: Props) {
   const [participantId, setParticipantId] = useState('')
   const [complexity, setComplexity] = useState<StudyConfig['complexity']>('standard')
   const [mode, setMode] = useState<Mode>('no-agent')
+  const [epsilonStrategic, setEpsilonStrategic] = useState(0.20)
+  const [epsilonTactical, setEpsilonTactical]   = useState(0.20)
   const [seed, setSeed] = useState(String(randomSeed()))
   const [testingMode, setTestingMode] = useState(false)
   const [error, setError] = useState('')
@@ -29,7 +68,16 @@ export default function StartScreen({ onStart }: Props) {
     if (isNaN(seedNum) || seedNum < 1) { setError('Seed must be a positive integer.'); return }
     const finalId = participantId.trim() || `P-${String(randomSeed() % 9000 + 1000)}`
     setError('')
-    onStart({ participantId: finalId, mode, complexity, seed: seedNum, agentErrorRate: 0.20, testingMode })
+    onStart({
+      participantId: finalId,
+      condition: 'none',
+      mode,
+      complexity,
+      seed: seedNum,
+      agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
+      epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
+      testingMode,
+    })
   }
 
   return (
@@ -63,6 +111,19 @@ export default function StartScreen({ onStart }: Props) {
           </div>
         </div>
 
+        {mode === 'agent' && (
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-300">
+              Agent Accuracy
+              <span className="ml-2 text-xs text-gray-500 font-normal">how often each agent's suggestion is correct</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <AccuracySpinner label="Strategic Agent" epsilon={epsilonStrategic} onChange={setEpsilonStrategic} />
+              <AccuracySpinner label="Tactical Agent"  epsilon={epsilonTactical}  onChange={setEpsilonTactical} />
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-300">Complexity</label>
           <div className="grid grid-cols-2 gap-2">
@@ -91,13 +152,9 @@ export default function StartScreen({ onStart }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
-          <input
-            id="testing-mode"
-            type="checkbox"
-            checked={testingMode}
+          <input id="testing-mode" type="checkbox" checked={testingMode}
             onChange={e => setTestingMode(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-orange-500"
-          />
+            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-orange-500" />
           <label htmlFor="testing-mode" className="text-sm text-gray-400 cursor-pointer select-none">
             Testing mode <span className="text-gray-600 text-xs">(infinite time, manual mission/failure triggers)</span>
           </label>

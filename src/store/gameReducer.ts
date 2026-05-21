@@ -88,6 +88,19 @@ export function reserveCount(assets: Asset[]): AssetRequirement {
   }
 }
 
+// Returns assets that are available AND not already locked into another mission's pending plan.
+// Prevents double-allocation when multiple missions are in the tactical-pending state simultaneously.
+function availableExcludingPending(assets: Asset[], missions: Mission[], excludeMissionId: string): Asset[] {
+  const locked = new Set<string>()
+  for (const m of missions) {
+    if (m.id === excludeMissionId) continue
+    if (m.tacticalPending && m.pendingAllocation) {
+      for (const id of m.pendingAllocation.dronePool) locked.add(id)
+    }
+  }
+  return assets.filter(a => a.status === 'available' && !locked.has(a.id))
+}
+
 // ─── Helper: greedy asset assignment with sequential reuse ────────────────
 
 interface TaskAssignment {
@@ -264,6 +277,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     failedDroneId: null,
     failureRecoveryPending: false,
     pendingRecoveryOptions: null,
+    tacticallySuppressedTaskId: null,
   }
 }
 
@@ -398,7 +412,7 @@ function applyTacticalAllocation(
   assignments: TaskAssignment[],
   pending: PendingAllocation,
   taskOrder: string[],
-  wasOverridden: boolean,
+  modifiedFromAgentPlan: boolean,
   droneSequences: Record<string, string[]> = {},
 ): GameState {
   const mission = state.missions.find(m => m.id === missionId)!
@@ -444,7 +458,7 @@ function applyTacticalAllocation(
     tacticalPending: false,
     pendingAllocation: null,
     droneSequences,
-    agentInteraction: wasOverridden ? 'overridden' : pending.isAgentSuggested ? 'followed' : 'manual',
+    agentInteraction: modifiedFromAgentPlan ? 'overridden' : pending.isAgentSuggested ? 'followed' : 'manual',
     chosenStrategyName: pending.strategyName,
     manualPriorityIds: [],
   }
@@ -452,6 +466,8 @@ function applyTacticalAllocation(
   const updatedAssets = state.assets.map(asset => {
     const myAsgns = assignments.filter(a => a.assetIds.includes(asset.id))
     if (myAsgns.length === 0) return asset
+    // Safety: don't re-deploy a drone that is already deployed elsewhere (stale pending pool)
+    if (asset.status !== 'available') return asset
     const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
     const task = updatedTasks.find(t => t.id === firstAsgn.taskId)!
     const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
@@ -479,7 +495,7 @@ function applyTacticalAllocation(
     missionId: mission.id,
     missionCategory: mission.category,
     wasAgentSuggested: pending.isAgentSuggested,
-    overridden: wasOverridden,
+    modifiedFromAgentPlan,
     assetsDeployed: allAssignedIds,
     timeRemainingInSession: Math.max(0, SESSION_DURATION - now),
   })
@@ -714,6 +730,31 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       s = { ...s, missions: updatedMissions }
 
+      // 3b. Tactical lockout: detect suppressed tasks that will never receive drones
+      // When all other tasks in the mission are complete/failed, fail the suppressed task.
+      for (const mission of s.missions) {
+        if (mission.status !== 'active' || !mission.tacticallySuppressedTaskId) continue
+        const suppTask = mission.tasks.find(t => t.id === mission.tacticallySuppressedTaskId)
+        if (!suppTask || suppTask.status !== 'pending' || suppTask.assignedAssetIds.length > 0) continue
+        const othersDone = mission.tasks
+          .filter(t => t.id !== suppTask.id)
+          .every(t => t.status === 'completed' || t.status === 'failed')
+        if (!othersDone) continue
+        s = {
+          ...s,
+          missions: s.missions.map(m => m.id === mission.id ? {
+            ...m,
+            tasks: m.tasks.map(t => t.id === suppTask.id ? { ...t, status: 'failed' as const } : t),
+          } : m),
+        }
+        s = logEvent(s, {
+          type: 'task_failed',
+          missionId: mission.id,
+          taskId: suppTask.id,
+          reason: 'tactical_lockout',
+        })
+      }
+
       // 4. Update asset availability and positions
       const updatedAssets = s.assets.map(asset => {
         // Don't move failed assets
@@ -818,12 +859,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'OPEN_STRATEGIC': {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || mission.status !== 'queued') return state
-      const reserve = reserveCount(state.assets)
+      // Exclude drones already locked into other pending tactical plans
+      const effectiveAvail = availableExcludingPending(state.assets, state.missions, action.missionId)
+      const reserve = {
+        Blue:  effectiveAvail.filter(a => a.type === 'Blue').length,
+        Red:   effectiveAvail.filter(a => a.type === 'Red').length,
+        Green: effectiveAvail.filter(a => a.type === 'Green').length,
+      }
       const agentRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
       const strategies = state.config.mode === 'agent'
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
-      return {
+      let s: GameState = {
         ...state,
         strategicModal: {
           missionId: action.missionId,
@@ -832,6 +879,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           manualAllocation: { Blue: 0, Red: 0, Green: 0 },
         },
       }
+      s = logEvent(s, {
+        type: 'strategic_modal_opened',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+        strategiesPresented: strategies.map(st => ({
+          name: st.name,
+          description: st.description,
+          displayedAssets: st.assets,
+          trueAssets: st.trueAssets,
+          displayedCompletionTime: st.expectedCompletionTime,
+          reserveAfter: st.reserveAfter,
+          speedScore: st.speedScore,
+          reserveScore: st.reserveScore,
+          isBadSuggestion: st.isBadSuggestion,
+          badSuggestionType: st.badSuggestionType,
+        })),
+      })
+      return s
     }
 
     // ── CLOSE_STRATEGIC ──────────────────────────────────────────────────
@@ -887,7 +953,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       const now = state.elapsed
-      const available = state.assets.filter(a => a.status === 'available')
+      // Exclude drones already reserved in other pending tactical plans to prevent double-allocation
+      const available = availableExcludingPending(state.assets, state.missions, mission.id)
       const taskOrder = [...mission.tasks].sort((a, b) => b.type - a.type).map(t => t.id)
 
       let dronePool: string[]
@@ -895,12 +962,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let expectedCompletionTime = 0
 
       if (action.source === 'agent') {
-        // Agent mode: run greedyAssign to produce suggested drone→task assignments
+        // Agent mode: run greedyAssign to produce suggested drone→task assignments.
+        // Bad 'under' suggestions may yield partial assignments (some tasks skipped) — allow this.
         const assignments = greedyAssign(mission.tasks, available, composition, now, taskComps, taskOrder)
-        if (assignments.length === 0) return state  // infeasible — bail
+        // Only bail if the pool itself is empty (nothing to deploy at all)
+        const poolEmpty = composition.Blue === 0 && composition.Red === 0 && composition.Green === 0
+        if (poolEmpty) return state
         dronePool = [...new Set(assignments.flatMap(a => a.assetIds))]
+        if (dronePool.length === 0) {
+          // Under-allocation so severe nothing was assignable — still form pool from available assets
+          const avB = available.filter(a => a.type === 'Blue').slice(0, composition.Blue)
+          const avR = available.filter(a => a.type === 'Red').slice(0, composition.Red)
+          const avG = available.filter(a => a.type === 'Green').slice(0, composition.Green)
+          dronePool = [...avB, ...avR, ...avG].map(a => a.id)
+          if (dronePool.length === 0) return state
+        }
         taskAssignmentMap = Object.fromEntries(assignments.map(a => [a.taskId, a.assetIds]))
-        expectedCompletionTime = Math.max(...assignments.map(a => a.startTime + a.baseTime))
+        expectedCompletionTime = assignments.length > 0
+          ? Math.max(...assignments.map(a => a.startTime + a.baseTime))
+          : 0
       } else {
         // Manual mode: reserve matching drones
         const avB = available.filter(a => a.type === 'Blue')
@@ -924,6 +1004,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
+      // ── Tactical error injection (agent mode only) ─────────────────────────
+      // With probability epsilonTactical, remove one task from the tactical plan.
+      // The suppressed task will appear allocated in the UI (deception) but has no drone.
+      let hasTacticalError = false
+      let suppressedTaskId: string | null = null
+      if (action.source === 'agent' && state.config.epsilonTactical > 0) {
+        const tacRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(2) ?? 0) ^ 0x7ac1)
+        if (tacRng.randFloat(0, 1) < state.config.epsilonTactical) {
+          // Only suppress a task that actually has drones assigned to it
+          const suppressable = taskOrder.filter(tid => (taskAssignmentMap[tid] ?? []).length > 0)
+          if (suppressable.length > 0) {
+            suppressedTaskId = suppressable[tacRng.randInt(0, suppressable.length - 1)]
+            taskAssignmentMap = { ...taskAssignmentMap }
+            delete taskAssignmentMap[suppressedTaskId]
+            hasTacticalError = true
+          }
+        }
+      }
+
       const pendingAllocation: PendingAllocation = {
         strategyName,
         composition,
@@ -934,6 +1033,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         isAgentSuggested: action.source === 'agent',
         isBadSuggestion: isBad,
         badSuggestionType: badType,
+        hasTacticalError,
+        suppressedTaskId,
       }
 
       let s = logEvent(state, {
@@ -972,23 +1073,43 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const droneSeqs = action.droneSequences ?? {}
       let assignments: TaskAssignment[]
 
-      if (action.taskAssignments) {
-        assignments = buildManualAssignments(mission, state.assets, action.taskAssignments, droneSeqs, state.elapsed)
+      const userProvidedAssignments = !!action.taskAssignments
+      if (userProvidedAssignments) {
+        assignments = buildManualAssignments(mission, state.assets, action.taskAssignments!, droneSeqs, state.elapsed)
       } else {
         const available = state.assets.filter(a => a.status === 'available')
         assignments = greedyAssign(mission.tasks, available, pending.composition, state.elapsed, undefined, pending.taskOrder)
       }
 
       if (assignments.length === 0) return state
-      return applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, false, droneSeqs)
+      // modifiedFromAgentPlan: true if the user drag-dropped custom assignments rather than accepting the agent plan
+      const modifiedFromAgentPlan = pending.isAgentSuggested && userProvidedAssignments
+      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs)
+      // Persist the suppressed task ID onto the mission so TICK can detect the lockout
+      if (pending.hasTacticalError && pending.suppressedTaskId) {
+        s = { ...s, missions: s.missions.map(m => m.id === action.missionId
+          ? { ...m, tacticallySuppressedTaskId: pending.suppressedTaskId }
+          : m) }
+      }
+      return s
     }
 
     // ── OVERRIDE_TACTICAL ────────────────────────────────────────────────
     case 'OVERRIDE_TACTICAL': {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || !mission.tacticalPending) return state
-      // Clear pending state and open the strategic modal again for re-allocation
-      const reserve = reserveCount(state.assets)
+      // Clear pending state and open the strategic modal again for re-allocation.
+      // When computing reserve, exclude drones in OTHER missions' pending pools
+      // (this mission's own pool is being released, so include those drones back).
+      const missionsWithoutThis = state.missions.map(m =>
+        m.id === action.missionId ? { ...m, tacticalPending: false, pendingAllocation: null } : m
+      )
+      const ovEffAvail = availableExcludingPending(state.assets, missionsWithoutThis, action.missionId)
+      const reserve = {
+        Blue:  ovEffAvail.filter(a => a.type === 'Blue').length,
+        Red:   ovEffAvail.filter(a => a.type === 'Red').length,
+        Green: ovEffAvail.filter(a => a.type === 'Green').length,
+      }
       const agentRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
       const strategies = state.config.mode === 'agent'
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
@@ -1360,7 +1481,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'DISMISS_TRUST_PROBE': {
-      return { ...state, trustProbeActive: false, nextTrustProbeAt: state.elapsed + TRUST_PROBE_INTERVAL }
+      let s = logEvent(state, { type: 'trust_probe_dismissed' })
+      return { ...s, trustProbeActive: false, nextTrustProbeAt: state.elapsed + TRUST_PROBE_INTERVAL }
     }
 
     // ── SUBMIT_SURVEY ────────────────────────────────────────────────────

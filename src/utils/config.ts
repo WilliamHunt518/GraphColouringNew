@@ -18,9 +18,20 @@ export function parseURLConfig(): StudyConfig | null {
   const modeParam = p.get('mode') as Mode | null
   const mode: Mode = modeParam && validModes.includes(modeParam) ? modeParam : 'no-agent'
 
+  const parseEpsilon = (raw: string | null, fallback: number): number => {
+    if (raw === null) return fallback
+    const v = parseFloat(raw)
+    return isNaN(v) ? fallback : Math.min(0.95, Math.max(0, v))
+  }
+
+  const agentErrorRate  = parseEpsilon(p.get('eps_s'), 0.20)
+  const epsilonTactical = parseEpsilon(p.get('eps_t'), 0.20)
   const testingMode = p.get('test') === '1'
 
-  return { participantId, mode, complexity, seed, agentErrorRate: 0.20, testingMode }
+  return {
+    participantId, condition: 'none', mode, complexity, seed,
+    agentErrorRate, epsilonTactical, testingMode,
+  }
 }
 
 export function randomSeed(): number {

@@ -62,6 +62,28 @@ export default function GameShell({ config }: Props) {
     return () => { channel.close(); channelRef.current = null }
   }, [])
 
+  // Autosave to localStorage at each session boundary so data survives a page reload/crash
+  useEffect(() => {
+    if (state.phase !== 'survey' && state.phase !== 'done') return
+    const payload = {
+      participantId: config.participantId,
+      condition: config.condition,
+      mode: config.mode,
+      complexity: config.complexity,
+      seed: config.seed,
+      epsilonStrategic: config.agentErrorRate,
+      epsilonTactical: config.epsilonTactical,
+      sessionScores: state.completedSessionScores,
+      sessions: state.events,
+    }
+    try {
+      localStorage.setItem(
+        `sar_backup_${config.participantId}_${config.seed}`,
+        JSON.stringify(payload),
+      )
+    } catch { /* storage quota exceeded — ignore */ }
+  }, [state.phase, state.sessionNumber])  // fires when each session ends or study completes
+
   // Auto-open for new failure recovery missions; auto-clear when pending mission is confirmed
   useEffect(() => {
     const failurePending = new Set(state.missions.filter(m => m.failureRecoveryPending).map(m => m.id))
@@ -140,22 +162,27 @@ export default function GameShell({ config }: Props) {
   if (state.phase === 'done') {
     const totalScore = state.completedSessionScores.reduce((a, b) => a + b, 0)
 
-    function downloadData() {
-      const payload = {
+    function buildPayload() {
+      return {
         participantId: config.participantId,
+        condition: config.condition,
         mode: config.mode,
         complexity: config.complexity,
         seed: config.seed,
-        agentErrorRate: config.agentErrorRate,
+        epsilonStrategic: config.agentErrorRate,
+        epsilonTactical: config.epsilonTactical,
         sessionScores: state.completedSessionScores,
         totalScore,
         sessions: state.events,
       }
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    }
+
+    function downloadData() {
+      const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `study_${config.participantId}_${config.mode}_${config.seed}.json`
+      a.download = `study_${config.participantId}_${config.condition}_${config.seed}.json`
       a.click()
       URL.revokeObjectURL(url)
     }
@@ -183,7 +210,7 @@ export default function GameShell({ config }: Props) {
           </div>
 
           <div className="space-y-2 text-xs text-gray-600">
-            <p>Participant: {config.participantId} · Mode: {config.mode} · Seed: {config.seed}</p>
+            <p>Participant: {config.participantId} · Condition: {config.condition} · Seed: {config.seed}</p>
           </div>
 
           <button

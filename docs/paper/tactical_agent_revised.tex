@@ -1,0 +1,18 @@
+% ---------------------------------------------------------------
+% Revised Section 4.2 — Tactical Agent
+% Drop-in replacement for the corresponding subsection in main.tex
+% ---------------------------------------------------------------
+
+\subsection{Tactical Agent}\label{sec:tactical}
+
+The Tactical Agent operates at the within-mission level, activating immediately after the operator accepts a Strategic Agent strategy (or commits a manual allocation). Where the Strategic Agent decides \emph{how many} drones of each type to commit to a mission, the Tactical Agent decides \emph{which specific drones} execute \emph{which tasks}, and in \emph{what order}.
+
+Once an allocation is committed, the agent constructs a full execution plan using a virtual-timeline scheduler. For each task, it selects the earliest-available drones of the required types from the committed pool, routing them greedily to minimise total mission completion time. Tasks are scheduled in priority order (T5 first, as the most asset-constrained) unless the operator has specified a custom ordering. Where a primary composition cannot be satisfied, the scheduler falls back to a substitute composition if one exists for that task type. The result is a concrete assignment map: a set of $\langle\text{drone},\,\text{task},\,\text{sequence index}\rangle$ triples specifying each drone's full chain of tasks.
+
+This plan is presented to the operator in the \textbf{tactical planner} (Figure~\ref{fig:tactical}), displayed in the map window. Drone icons are arranged around the mission zone boundary; dashed arrows indicate planned task assignments, with sequence numbers on chained assignments showing execution order. The operator may accept the plan as proposed or modify it by dragging drone icons onto task waypoints. Holding Shift while dropping a drone \emph{chains} it to execute a second task after completing its first, and the sequence arrows update live. A \textit{Deploy} button becomes active once every task has at least a substitute-feasible composition assigned; pressing it commits the plan and begins execution.
+
+\paragraph{Error injection.}
+With probability $\varepsilon_T$ the agent's suggested assignment for one randomly selected task is corrupted: either a suboptimal drone type is substituted (degrading execution time), or the suggested task ordering deviates from the greedy optimum in a way that increases the expected mission completion time. As with the Strategic Agent, the corruption affects only the \emph{suggestion shown to the operator}; if the operator accepts the plan without modification, the corrupted assignment executes as displayed. Neither the error nor the condition assignment is communicated to participants. The operator can always correct the plan via drag-and-drop before pressing \textit{Deploy}.
+
+\paragraph{Logging.}
+Every tactical confirmation is logged with a \texttt{tactical\_confirmed} event recording the full set of deployed drone IDs, whether the plan originated from an agent suggestion (\texttt{wasAgentSuggested}), and whether the operator modified any drone--task assignment before confirming (\texttt{modifiedFromAgentPlan}). This supports analysis of how frequently operators engage with, versus override, the Tactical Agent's recommendations, and whether modification behaviour correlates with the agent's error rate $\varepsilon_T$.

@@ -6,8 +6,15 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 A **web-based human-subjects study platform** for research on trust in hierarchical autonomous AI systems. Operators manage a reserve of heterogeneous drone assets and allocate them to incoming search-and-rescue missions. Two AI assistants operate at different decision tiers:
 
-- **Co-Pilot** — **strategic** tier; triggered when allocating a mission; proposes Aggressive/Conservative allocation strategies (how many drones of each type to commit)
-- **Meta-Co-Pilot** — **tactical** tier; always-visible widget; recommends reserve posture relative to upcoming mission load
+- **Strategic Agent** — fires when the operator initiates allocation of a queued mission. Presents two pre-computed strategy cards (Aggressive / Conservative) showing the **bundle of drone counts** to commit to that mission, projected ETA, speed score, and reserve score. The operator picks one, or dismisses and allocates manually.
+- **Tactical Agent** — fires immediately after strategic allocation is accepted. Presents a **within-mission drone→task assignment plan**: which specific drone IDs are assigned to which tasks, in which execution order. Shown in the tactical planner on the map window. The operator confirms the plan or drag-drops to modify individual assignments.
+
+These are genuinely different decision levels:
+- **Strategic** = cross-mission resource commitment (how many of each drone type to send)
+- **Tactical** = within-mission execution planning (which specific drones do which tasks)
+
+**IMPORTANT — do not reintroduce old concepts:**
+There is NO "reserve posture widget", NO "preserve/maintain/spend down" recommendation, and NO "Meta-Co-Pilot". Those ideas were considered and removed. The tactical tier is purely the within-mission drone→task assignment planner.
 
 Study uses a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL).
 
@@ -28,7 +35,7 @@ npm run dev       # dev server at http://localhost:5173
 
 **URL parameters** pre-fill the start screen (useful for researcher setup):
 ```
-http://localhost:5173/?pid=P001&condition=HH&complexity=medium&seed=42
+http://localhost:5173/?pid=P001&condition=HH&complexity=standard&seed=42
 ```
 
 **Two-monitor setup:**
@@ -39,14 +46,14 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=medium&seed=42
 
 ### Study Design
 
-Three 10-minute sessions separated by 30-second between-session screens. Asset pool: 18 Blue, 9 Red, 3 Green (30 total).
+Three 10-minute sessions. Asset pool (standard): 18 Blue, 9 Red, 3 Green (30 total).
 
-| Condition | ε_Strategic (Co-Pilot) | ε_Tactical (Meta-Co-Pilot) |
-|-----------|----------------------|--------------------------|
-| HH        | 0.10                 | 0.10                     |
-| LH        | 0.40                 | 0.10                     |
-| HL        | 0.10                 | 0.40                     |
-| LL        | 0.40                 | 0.40                     |
+| Condition | ε_Strategic | ε_Tactical |
+|-----------|------------|------------|
+| HH        | 0.10       | 0.10       |
+| LH        | 0.40       | 0.10       |
+| HL        | 0.10       | 0.40       |
+| LL        | 0.40       | 0.40       |
 
 ### Key Files
 
@@ -62,33 +69,54 @@ src/
     prng.ts              # SeededRNG class (Mulberry32)
     config.ts            # URL param parsing, condition → epsilon mapping
     missionGen.ts        # Seeded mission generator (Poisson arrivals, zone placement)
-    copilot.ts           # Co-Pilot (strategic tier) — Aggressive/Conservative strategy generator with ε noise
-    metacopilot.ts       # Meta-Co-Pilot (tactical tier) — reserve posture advisor with ε noise (stub, not yet implemented)
+    copilot.ts           # Strategic Agent — Aggressive/Conservative strategy generator with ε_S noise
+    metacopilot.ts       # Tactical Agent stub (not yet implemented as a separate module;
+                         #   tactical suggestions currently computed inline in gameReducer via greedyAssign)
     scoring.ts           # Score, green efficiency, follow-rate calculation
   store/
     gameReducer.ts       # useReducer state machine
     actions.ts           # Action type union
   components/
     StartScreen.tsx      # Researcher setup: participantId, condition, complexity, seed
-    GameShell.tsx        # Session wrapper, clock, broadcast sync
-    PrimaryDisplay.tsx   # Reserve panel + mission queue + Co-Pilot modal + MCP widget
-    MapDisplay.tsx       # SVG operational map
+    GameShell.tsx        # Session wrapper, clock, broadcast sync, localStorage autosave
+    PrimaryDisplay.tsx   # Reserve panel + mission queue + Strategic Agent modal
+    MapDisplay.tsx       # SVG operational map + tactical planner
     SurveyModal.tsx      # NASA-TLX, trust, TAM surveys
-    TrustProbe.tsx       # Periodic 2-question trust/workload probe (every 90s)
+    TrustProbeModal.tsx  # Periodic 2-question trust/workload probe (every 90s)
     BetweenSession.tsx   # 30s inter-session screen
 ```
 
 ### Data Output
 
-All events logged in-memory. At session end, "Download Data" button exports:
+All events logged in-memory. At study end, "Download Data" button exports (also autosaved to localStorage after each session):
 ```json
 {
   "participantId": "P001",
   "condition": "HH",
-  "seed": 42,
+  "mode": "agent",
+  "epsilonStrategic": 0.10,
+  "epsilonTactical": 0.10,
   "sessions": [{ ...events }]
 }
 ```
+
+### Event Types Logged
+
+| Event | When fired |
+|-------|-----------|
+| `mission_arrived` | Mission spawns from blueprint |
+| `strategic_modal_opened` | Strategic Agent modal opens; logs full strategy cards shown to user |
+| `strategic_choice` | Operator picks Aggressive/Conservative/Manual |
+| `tactical_confirmed` | Operator confirms drone→task plan (tactical planner); `modifiedFromAgentPlan` flag records whether they changed the suggestions |
+| `drone_failure` | In-mission drone fails |
+| `failure_recovery` | Recovery option chosen |
+| `task_completed` / `task_failed` | Task state transition |
+| `asset_recalled` | Operator manually recalls a drone |
+| `task_reprioritised` | Operator reorders task queue |
+| `session_ended` | Session summary metrics |
+| `trust_probe` | Trust/workload probe submitted |
+| `trust_probe_dismissed` | Trust probe dismissed without answering |
+| `survey_response` | Post-session survey submitted |
 
 ### Mission Generation
 
@@ -106,7 +134,7 @@ Tasks execute greedily (T5 first → most constrained).
 
 ### Trust Probe
 
-A 2-question modal (trust 1–10, workload 1–10) appears every 90 seconds during play. Non-blocking — operator can dismiss immediately.
+A 2-question modal (trust 1–10, workload 1–10) appears every 90 seconds during play.
 
 ## Development Guidelines
 
@@ -116,16 +144,16 @@ Edit `src/types/index.ts` first, then update `missionGen.ts` and `copilot.ts`.
 ### Changing accuracy
 Edit `conditionToEpsilons()` in `src/utils/config.ts`.
 
-### Modifying Co-Pilot strategies (strategic tier)
-`src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count strategies for a specific mission. ε noise perturbs displayed asset counts (not true values used at deploy).
+### Modifying the Strategic Agent
+`src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count bundles for a specific mission. ε_S noise perturbs the *displayed* asset counts (not the true values used at deploy).
 
-### Modifying Meta-Co-Pilot (tactical tier)
-`src/utils/metacopilot.ts` — currently a stub. Will implement reserve-posture recommendations (preserve / maintain / spend down) based on current reserve state vs. expected future demand.
+### Modifying the Tactical Agent
+Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_T is stored in config but not yet wired to noise injection.
 
 ## Critical Constraints
 
 1. **All randomness seeded** — pass `SeededRNG` instances everywhere, never call `Math.random()` in game logic
 2. **No backend** — all state in-memory; export is a client-side JSON download
-3. **UI language** — use "assistant" or "Co-Pilot" / "Meta-Co-Pilot", never "AI" or "algorithm"
+3. **UI language** — use "Strategic Agent" / "Tactical Agent", never "Co-Pilot", "Meta-Co-Pilot", "AI", or "algorithm"
 4. **Events logged immediately** — every operator action and agent recommendation must be logged with ms timestamp
 5. **BroadcastChannel host/client** — primary window is host; map window subscribes only; never let client mutate state

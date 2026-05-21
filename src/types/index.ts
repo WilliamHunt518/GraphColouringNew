@@ -2,13 +2,16 @@
 
 export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign'
 export type Mode = 'no-agent' | 'agent'
+export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'none'
 
 export interface StudyConfig {
   participantId: string
+  condition: Condition
   mode: Mode
   complexity: Complexity
   seed: number
-  agentErrorRate: number  // fixed at 0.20
+  agentErrorRate: number   // epsilonStrategic — error rate for Co-Pilot (strategic tier)
+  epsilonTactical: number  // error rate for Meta-Co-Pilot (tactical tier)
   testingMode: boolean
 }
 
@@ -44,6 +47,8 @@ export interface PendingAllocation {
   isAgentSuggested: boolean
   isBadSuggestion: boolean
   badSuggestionType: 'over' | 'under' | null
+  hasTacticalError: boolean                   // true when tactical agent suppressed one task
+  suppressedTaskId: string | null             // the task the tactical agent omitted from its plan
 }
 
 // ─── Recovery options (drone failure) ────────────────────────────────────
@@ -111,6 +116,8 @@ export interface Mission {
   // Failure recovery state
   failureRecoveryPending: boolean
   pendingRecoveryOptions: RecoveryOption[] | null
+  // Tactical agent error tracking
+  tacticallySuppressedTaskId: string | null   // set after Deploy when tactical error was active
 }
 
 // ─── Strategies ───────────────────────────────────────────────────────────
@@ -243,7 +250,7 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   missionId: string
   missionCategory: MissionCategory
   wasAgentSuggested: boolean
-  overridden: boolean
+  modifiedFromAgentPlan: boolean  // true if operator changed any drone→task assignment from agent suggestion
   assetsDeployed: string[]
   timeRemainingInSession: number
 }
@@ -281,7 +288,7 @@ export interface TaskFailedEvent extends BaseEvent {
   type: 'task_failed'
   missionId: string
   taskId: string
-  reason: 'asset_recalled' | 'session_ended' | 'drone_failure'
+  reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout'
 }
 
 export interface AssetRecalledEvent extends BaseEvent {
@@ -309,10 +316,34 @@ export interface SessionEndedEvent extends BaseEvent {
   agentFollowRate: number  // fraction of agent suggestions accepted
 }
 
+export interface StrategicModalOpenedEvent extends BaseEvent {
+  type: 'strategic_modal_opened'
+  missionId: string
+  missionCategory: MissionCategory
+  timeRemainingInSession: number
+  // What was displayed to the user (strategies array empty in no-agent mode)
+  strategiesPresented: Array<{
+    name: 'Aggressive' | 'Conservative'
+    description: string
+    displayedAssets: AssetRequirement        // counts shown in UI (may be perturbed)
+    trueAssets: AssetRequirement             // counts actually used if chosen (never shown)
+    displayedCompletionTime: number          // time shown in UI (may be perturbed)
+    reserveAfter: AssetRequirement
+    speedScore: number
+    reserveScore: number
+    isBadSuggestion: boolean
+    badSuggestionType: 'over' | 'under' | null
+  }>
+}
+
 export interface TrustProbeEvent extends BaseEvent {
   type: 'trust_probe'
   trust: number
   workload: number
+}
+
+export interface TrustProbeDismissedEvent extends BaseEvent {
+  type: 'trust_probe_dismissed'
 }
 
 export interface SurveyResponseEvent extends BaseEvent {
@@ -323,6 +354,7 @@ export interface SurveyResponseEvent extends BaseEvent {
 
 export type GameEvent =
   | MissionArrivedEvent
+  | StrategicModalOpenedEvent
   | StrategicChoiceEvent
   | TacticalConfirmedEvent
   | DroneFailureEvent
@@ -333,4 +365,5 @@ export type GameEvent =
   | TaskReprioritisedEvent
   | SessionEndedEvent
   | TrustProbeEvent
+  | TrustProbeDismissedEvent
   | SurveyResponseEvent

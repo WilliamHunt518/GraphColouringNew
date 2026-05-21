@@ -37,18 +37,23 @@
 % -----------------------------------------------------------------
 \section{Introduction}\label{sec:intro}
 
-The deployment of large numbers of robots has advanced from speculation to practice in a short time frame. Present applications of drones and similar uncrewed vehicles are increasingly requiring either large numbers of well-organised operators~\cite{ramchurn2016disaster}, or else provide early demonstrations of semi-autonomous command-and-control software~\cite{anduril2023lattice}. There is significant appetite for the incorporation of autonomy for reasons including but not limited to the impracticalities of supporting one pilot for each asset, and a desire for a single operator to maintain a complete picture of the entire operation~\cite{mod2022ukairpower}. The need for interfaces and control paradigms which allow autonomy is therefore high. Previous works have explored many forms of autonomy~\cite{nam_trust_2018}, but these have typically been treated at the level of a single decision layer.
+The deployment of large numbers of robots has advanced from speculation from practice in a short time frame. Present applications of drones and similar uncrewed vehicles are increasingly requiring either large numbers of well-organised operators~\cite{ramchurn2016disaster}, or else provide early demonstrations of semi-autonomous command-and-control software~\cite{anduril2023lattice}. There is significant appetite for the incorporation of autonomy for reasons including but not limited to the impracticalities of supporting one pilot for each asset, and a desire for a single operator to maintain a complete picture of the entire operation~\cite{mod2022ukairpower}. As swarms scale further, the one-to-one or many-to-one models of human control must give way to a one-to-many paradigm, and some degree of autonomy becomes not merely desirable but unavoidable.
 
-The recent trend in agentic design patterns provides myriad approaches to assistive tools which are deferred to by a human operator, or else proactively make suggestions to them. Such tools may provide a promising direction in human-swarm interface design~\cite{zhang2023understanding}. An additional concern is when autonomy should be employed and at what level of a decision hierarchy. Operators should be given the choice to use these tools where preferred, but it would be beneficial to understand what their experiences are, both subjectively and objectively, as the accuracy of those tools varies. Factors such as task complexity likely have significant impact on the performance of a human-autonomy team, the workload and trust of the operator, and ultimately when and where autonomous assistance is appropriate.
+How that autonomy is best integrated, however, remains an open question. Autonomy is far from new; defence operations have long been organised around autonomy at different levels of a hierarchy. Auftragstaktik (mission command) requires strategic command to communicate high-level goals to subordinates and grants them latitude over low-level execution, and indeed further delegation. A similar logic can be applied to robot swarms: tactical decisions may be delegated to individual assets or sub-groups, while strategic decisions remain with a human commander. Yet it is not obvious that the best configuration places the tactical under full autonomy while leaving the strategic entirely manual. Lower-level interventions may benefit heavily from human oversight; robots still struggle with physical execution, while  autonomous planners are near-perfect at many allocation problems. Of course, higher-level decisions carry greater consequence and arguably warrant closer human control; it is natural to prefer an autonomy-at-tactical approach, however the best possible combination of autonomy levels may not be so simple. Each of these judgements also depends on operator workload and situational context. The need for interfaces and control paradigms which allow autonomy is therefore high~\cite{mod2022ukairpower}, but the question of \textit{where} in a command hierarchy that autonomy should sit, and whether this should be fixed or operator-configurable, has received little attention. Previous works have explored many forms of autonomy~\cite{nam_trust_2018}, but these have typically been treated at the level of a single decision layer.
 
-Real-world deployments rarely involve a single tier of autonomous support. A drone operator managing a search-and-rescue response faces at least two interleaved decision problems: how to allocate resources to incoming missions, and how to prioritise effort within a given mission once resources are committed. Autonomous tools could assist at either level, and their reliability at each level may differ. Yet to our knowledge, no prior work has examined whether operators are more tolerant of imperfect autonomy at higher or lower levels of such a hierarchy, or how inaccuracy at one level propagates into trust at the other.
+%The recent trend in agentic design patterns provides myriad approaches to assistive tools which are deferred to by a human operator, or else proactively make suggestions to them. Such tools may provide a promising direction in human-swarm interface design~\cite{zhang2023understanding}. An additional concern is when autonomy should be employed and at what level of a decision hierarchy. Operators should be given the choice to use these tools where preferred, but it would be beneficial to understand what their experiences are, both subjectively and objectively, as the accuracy of those tools varies. Factors such as task complexity likely have significant impact on the performance of a human-autonomy team, the workload and trust of the operator, and ultimately when and where autonomous assistance is appropriate.
 
-We develop a simulated search-and-rescue scenario using a heterogeneous drone swarm, and characterise how operators interact with the two-tier assistive system compared to a fully manual baseline. In a within-subjects counterbalanced design (agent-assisted vs.\ manual), we address the following research questions:
+%Real-world deployments rarely involve a single tier of autonomous support. A drone operator managing a search-and-rescue response faces at least two interleaved decision problems: how to allocate resources to incoming missions, and how to prioritise effort within a given mission once resources are committed. Autonomous tools could assist at either level, and their reliability at each level may differ. Yet to our knowledge, no prior work has examined whether operators are more tolerant of imperfect autonomy at higher or lower levels of such a hierarchy, or how inaccuracy at one level propagates into trust at the other.
 
+
+
+This work represents a first step toward a longer-term vision: We aim to understand how autonomy effects both user and mission when deployed at each level of a multi-layered command hierarchy, and move towards a system where each level of concern from strategic down to tactical details, can be automated to varying degrees. Finally, we propose a ``co-pilot'' that, instead of attempting to fully automate the mission, identifies where the user is most needed, and suggest to them an autonomy profile which adapts on-the-fly.
+
+We develop a simulated search-and-rescue scenario using a heterogeneous drone swarm, and characterise how operators interact with a two-tier assistive system compared to a fully manual baseline. In a within-subjects counterbalanced design (agent-assisted vs.\ manual), we address the following research questions:
 \begin{itemize}
   \item \textbf{RQ1}: Does access to the assistive system improve operator performance, and under what situational conditions is the benefit largest?
   \item \textbf{RQ2}: When the assistive system is available, do operators use it selectively---more readily under high mission complexity or low reserve depth, and less so when the situation is under control?
-  \item \textbf{RQ3}: What advantage does agent-assisted allocation confer relative to manual allocation, in terms of score, Green utilisation, and mission completion time?
+  \item \textbf{RQ3}: What advantage does agent-assisted allocation confer relative to manual allocation, in terms of score, asset utilisation, and mission completion time?
 \end{itemize}
 
 % -----------------------------------------------------------------
@@ -72,12 +77,13 @@ We term the two structural dimensions of selective autonomy the \textbf{Depth} a
 
 Metrics exist to assess the difficulty of tasks in the context of swarms, such as efficiency and effectiveness, and it has been suggested that autonomy should vary depending on these~\cite{hussein_characterization_2022}. As well as the complexity of the task, a more direct assessment of cognitive complexity via operator state metrics such as EEG has been employed~\cite{abbass_augmented_2014}, and such signals could in principle inform a meta-level recommendation system.
 
+
 % -----------------------------------------------------------------
 \section{Scenario and Task Design}\label{sec:task}
 
 \subsection{Operational Scenario}
 
-We design a simulated search-and-rescue operation. The operator manages a heterogeneous reserve of autonomous assets that must be allocated to incoming rescue missions. Missions arrive at irregular intervals and consist of several individual tasks, each of which demands a particular combination of asset types to complete. The operator must decide how many and which assets to commit to each mission, balancing the need to resolve current missions quickly against holding sufficient reserve for future demand. O This scenario was chosen to provide resource scarcity managed by a two-level decision structure: strategic decisions about which assets to deploy to which mission, and tactical decisions about how to prioritise effort within a mission once resources are committed.
+We design a simulated search-and-rescue operation. The operator manages a heterogeneous reserve of autonomous assets that must be allocated to incoming rescue missions. Missions arrive at irregular intervals and consist of several individual tasks, each of which demands a particular combination of asset types to complete. The operator must decide how many and which assets to commit to each mission, balancing the need to resolve current missions quickly against holding sufficient reserve for future demand. This scenario was chosen to provide resource scarcity managed by a two-level decision structure: strategic decisions about which assets to deploy to which mission, and tactical decisions about how to prioritise effort within a mission once resources are committed.
 
 \subsection{Asset Types}\label{sec:assets}
 
@@ -263,8 +269,6 @@ The tactical planner shows the mission zone with drone icons on the boundary and
 
 Approximately once per session, one deployed drone fails. The affected mission card displays a red banner naming the lost drone (Figure~\ref{fig:failure}). Clicking the mission opens the tactical planner in \emph{recovery mode} (Figure~\ref{fig:recovery}), pre-loaded with the current allocation minus the failed drone.
 
-In recovery mode, executing tasks carry amber badges and travelling tasks carry blue badges; the failed drone appears greyed-out with a red cross. A cluster of up to five reserve drones per type is anchored at the HUB corner of the zone; the operator drags reserve drones onto tasks to restore feasibility, chains them for sequential execution, or redistributes existing drones. \textit{Deploy} commits the updated plan and resumes execution.
-
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.6\linewidth]{figs/5}
@@ -272,6 +276,8 @@ In recovery mode, executing tasks carry amber badges and travelling tasks carry 
            The red banner identifies the lost drone (B02).}
   \label{fig:failure}
 \end{figure}
+
+In recovery mode, executing tasks carry amber badges and travelling tasks carry blue badges; the failed drone appears greyed-out with a red cross. A cluster of up to five reserve drones per type is anchored at the HUB corner of the zone; the operator drags reserve drones onto tasks to restore feasibility, chains them for sequential execution, or redistributes existing drones. \textit{Deploy} commits the updated plan and resumes execution.
 
 \begin{figure}[H]
   \centering
@@ -282,6 +288,18 @@ In recovery mode, executing tasks carry amber badges and travelling tasks carry 
            Reserve drones cluster at the HUB anchor (lower-left) in case the user needs to call additional assets into this mission}
   \label{fig:recovery}
 \end{figure}
+
+\section{Proposed Changes}
+After meeting Tuesday 19th, the following issues were raised:
+
+\begin{itemize}
+    \item Do the two levels of task (strategic and tactical) represent sufficiently different problems? They are both on some level allocation/optimisation problems - is the notion of higher-abstraction for strategic sufficiently different.
+    \item Are we likely to sufficiently capture differences between the absence and presence of the agent? What informs people's usage and will they engage with the manual mode in the agent setting?
+\end{itemize}
+
+Regarding the first of these, we have considered trying to factor in the increasing level of unpredictability of lower levels as control moves up the abstraction hierarchy. This would require more uncertainty at the tactical level. Some of this is already present, but perhaps more would be useful, although it is difficult to do this without further complicating the study.
+
+Regarding the second, we are considering stressing to the user the importance of failures. Accountability for mistakes might motivate them to allocate manually more often. A ``reliability score'' is assigned to the user and reported to them live. It penalises the user when their allocations fail, and penalises more on tasks that could more easily have been performed. If the user relies on the agent often, more mistakes happen (as the agent sometimes under-allocates etc), and the user is noticeably punished for this. We could test the presence vs absence of this in each condition. Each scenario goes through four 3-minute phases, varying easy and hard allocations at both the strategic and tactical levels, totalling 12 minutes. This gives us data on agent use with or without accountability for its mistakes, and covering difficulty at each scale of the swarm.
 
 % -----------------------------------------------------------------
 \section{Experiment Design}\label{sec:studydesign}
@@ -333,45 +351,13 @@ RQ1 (performance benefit) is addressed by comparing score $S$, Green utilisation
 % -----------------------------------------------------------------
 \section{Results}\label{sec:results}
 
-[Pending.]
-
-\begin{table}[ht]
-\centering
-\caption{Mean performance by condition (placeholder).}
-\label{tab:perf}
-\begin{tabular}{lccc}
-\toprule
-Condition & Score $S$ & Green efficiency & Mean mission time (s) \\
-\midrule
-Agent  & -- & -- & -- \\
-Manual & -- & -- & -- \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[ht]
-\centering
-\caption{Mean subjective scores by condition (placeholder).}
-\label{tab:survey}
-\begin{tabular}{lccc}
-\toprule
-Condition & TLX$_\mu$ & Trust (Strategic Agent) & Trust (Tactical Agent) \\
-\midrule
-Agent  & -- & -- & -- \\
-Manual & -- & -- & -- \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 % -----------------------------------------------------------------
 \section{Discussion}\label{sec:discussion}
 
-[To be written. Key themes: whether agent-assisted allocation produces a measurable performance advantage and under what situational conditions that advantage is largest; characterisation of when operators elect to use the agent versus allocate manually, and whether this is sensitive to reserve depth and mission complexity; implications for the design of selective autonomy interfaces in human-swarm coordination.]
-
 % -----------------------------------------------------------------
 \section{Conclusion}\label{sec:conclusion}
 
-We have presented a user study examining how operators interact with a hierarchically structured autonomous assistance system in a simulated search-and-rescue context. In a within-subjects counterbalanced design, we compare agent-assisted and manual allocation to assess the performance benefit of the assistive system, characterise when operators choose to engage it, and estimate the advantage conferred by agent-assisted decisions relative to manual ones. The core theoretical contribution is an empirical account of selective autonomy use across a two-tier hierarchy: prior work has examined depth and breadth of autonomy within a single decision layer; the present work asks how operators distribute and selectively engage autonomous assistance structured across two qualitatively different decision levels. The practical contribution is a characterisation of the situational factors that predict agent engagement---a question of direct relevance to the design of next-generation command-and-control interfaces for autonomous platforms.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
