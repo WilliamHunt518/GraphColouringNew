@@ -120,6 +120,7 @@ export default function GameShell({ config }: Props) {
       missions: state.missions,
       elapsed: state.elapsed,
       sessionNumber: state.sessionNumber,
+      numSessions: state.config.numSessions,
       score: state.score,
       penaltyAccrued: state.penaltyAccrued,
       phase: state.phase,

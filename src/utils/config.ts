@@ -8,7 +8,7 @@ export function parseURLConfig(): StudyConfig | null {
 
   if (!participantId || !complexity || !seedStr) return null
 
-  const validComplexities: Complexity[] = ['standard', 'surge', 'precision', 'campaign']
+  const validComplexities: Complexity[] = ['standard', 'surge', 'precision', 'campaign', 'quick']
   if (!validComplexities.includes(complexity)) return null
 
   const seed = parseInt(seedStr, 10)
@@ -27,10 +27,12 @@ export function parseURLConfig(): StudyConfig | null {
   const agentErrorRate  = parseEpsilon(p.get('eps_s'), 0.20)
   const epsilonTactical = parseEpsilon(p.get('eps_t'), 0.20)
   const testingMode = p.get('test') === '1'
+  const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
+  const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
-    agentErrorRate, epsilonTactical, testingMode,
+    agentErrorRate, epsilonTactical, testingMode, numSessions,
   }
 }
 

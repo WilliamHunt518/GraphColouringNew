@@ -1,6 +1,6 @@
 // ─── Study configuration ───────────────────────────────────────────────────
 
-export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign'
+export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign' | 'quick'
 export type Mode = 'no-agent' | 'agent'
 export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'none'
 
@@ -13,6 +13,7 @@ export interface StudyConfig {
   agentErrorRate: number   // epsilonStrategic — error rate for Co-Pilot (strategic tier)
   epsilonTactical: number  // error rate for Meta-Co-Pilot (tactical tier)
   testingMode: boolean
+  numSessions: number
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
@@ -163,7 +164,8 @@ export interface MapViewState {
   assets: Asset[]
   missions: Mission[]
   elapsed: number
-  sessionNumber: 1 | 2 | 3
+  sessionNumber: number
+  numSessions: number
   score: number
   penaltyAccrued: number
   phase: GamePhase
@@ -182,7 +184,7 @@ export type GamePhase = 'playing' | 'survey' | 'between' | 'done'
 export interface GameState {
   config: StudyConfig
   phase: GamePhase
-  sessionNumber: 1 | 2 | 3
+  sessionNumber: number
   elapsed: number
   sessionStartMs: number | null
   assets: Asset[]
@@ -191,6 +193,7 @@ export interface GameState {
   score: number
   penaltyAccrued: number
   completedSessionScores: number[]
+  sessionDuration: number
   categoryForecast: Record<MissionCategory, number>
   // UI state
   strategicModal: StrategicModal | null

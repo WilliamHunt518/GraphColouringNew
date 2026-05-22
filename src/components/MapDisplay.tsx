@@ -150,7 +150,7 @@ function WaitingScreen({ pending, onSelect, state }: {
     <div className="flex flex-col h-screen bg-gray-950 text-gray-300">
       {/* Status bar */}
       <div className="flex items-center gap-6 px-6 py-3 bg-gray-900 border-b border-gray-800 flex-none">
-        <span className="text-sm font-semibold text-gray-400">Session {state.sessionNumber}/3</span>
+        <span className="text-sm font-semibold text-gray-400">Session {state.sessionNumber}/{state.numSessions}</span>
         <span className="text-sm">
           Score: <span className="text-white font-bold font-mono">{state.score}</span>
           <span className="text-red-400 ml-1 font-mono">−{state.penaltyAccrued}</span>

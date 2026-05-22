@@ -2,13 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/docs/paper/ScopeOfAutonomy-2.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/manualAddOnline/sar_snapshot_P-4081_s2_5s_1779447783666.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/paper/main.tex" beforeDir="false" afterPath="$PROJECT_DIR$/docs/paper/main.tex" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/manualAddOnline/console-export-2026-5-19_11-5-18.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/manualAddOnline/console-export-2026-5-19_11-6-3.log" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
@@ -16,9 +13,7 @@
       <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/copilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/copilot.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/debugLog.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/debugLog.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/metacopilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/metacopilot.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/missionGen.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/missionGen.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -240,6 +235,7 @@
       <workItem from="1778837193212" duration="3380000" />
       <workItem from="1779201084529" duration="2049000" />
       <workItem from="1779368340607" duration="3008000" />
+      <workItem from="1779446602206" duration="4705000" />
     </task>
     <servers />
   </component>

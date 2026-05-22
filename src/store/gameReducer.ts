@@ -9,6 +9,7 @@ import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
   TASK_SUB_BASE_TIME, ZONE_RADIUS, CATEGORY_PENALTY_RATE, TASK_WEIGHT,
   generateSessionPlan, createInitialAssets, travelTime,
+  SESSION_DURATION_BY_COMPLEXITY,
 } from '../utils/missionGen'
 import { generateStrategies } from '../utils/copilot'
 import { SeededRNG } from '../utils/prng'
@@ -17,7 +18,6 @@ import type { StudyConfig } from '../types'
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
-const SESSION_DURATION = 600  // seconds
 const TRUST_PROBE_INTERVAL = 90  // seconds
 
 // ─── Initial state factory ─────────────────────────────────────────────────
@@ -33,6 +33,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     case 'surge':     Object.assign(initialForecast, { A: 0.40, B: 0.35, C: 0.17, D: 0.07, E: 0.01 }); break
     case 'precision': Object.assign(initialForecast, { A: 0.05, B: 0.20, C: 0.30, D: 0.30, E: 0.15 }); break
     case 'campaign':  Object.assign(initialForecast, { A: 0.05, B: 0.20, C: 0.28, D: 0.30, E: 0.17 }); break
+    case 'quick':     Object.assign(initialForecast, { A: 0.35, B: 0.30, C: 0.20, D: 0.12, E: 0.03 }); break
   }
 
   return {
@@ -47,6 +48,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     score: 0,
     penaltyAccrued: 0,
     completedSessionScores: [],
+    sessionDuration: SESSION_DURATION_BY_COMPLEXITY[config.complexity],
     categoryForecast: initialForecast,
     strategicModal: null,
     trustProbeActive: false,
@@ -497,7 +499,7 @@ function applyTacticalAllocation(
     wasAgentSuggested: pending.isAgentSuggested,
     modifiedFromAgentPlan,
     assetsDeployed: allAssignedIds,
-    timeRemainingInSession: Math.max(0, SESSION_DURATION - now),
+    timeRemainingInSession: Math.max(0, state.sessionDuration - now),
   })
 
   return s
@@ -600,7 +602,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Initialise wall-clock reference on first tick
       const sessionStartMs = state.sessionStartMs ?? action.nowMs
       const rawElapsed = (action.nowMs - sessionStartMs) / 1000
-      const elapsed = state.config.testingMode ? rawElapsed : Math.min(SESSION_DURATION, rawElapsed)
+      const elapsed = state.config.testingMode ? rawElapsed : Math.min(state.sessionDuration, rawElapsed)
 
       let s: GameState = { ...state, elapsed, sessionStartMs }
 
@@ -618,7 +620,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             tasks: m.tasks.map(t => ({ id: t.id, type: t.type })),
             zoneCenter: m.zoneCenter,
             arrivalTime: m.arrivalTime,
-            timeRemainingInSession: Math.max(0, SESSION_DURATION - elapsed),
+            timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
           })
         }
       }
@@ -675,7 +677,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             droneType: failedDrone.type,
             taskId: failedTask.id,
             taskType: failedTask.type,
-            timeRemainingInSession: Math.max(0, SESSION_DURATION - elapsed),
+            timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
           })
         }
       }
@@ -848,7 +850,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // 8. Session end check (suppressed in testing mode)
-      if (!state.config.testingMode && elapsed >= SESSION_DURATION) {
+      if (!state.config.testingMode && elapsed >= state.sessionDuration) {
         s = endSession(s)
       }
 
@@ -883,7 +885,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         type: 'strategic_modal_opened',
         missionId: mission.id,
         missionCategory: mission.category,
-        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
         strategiesPresented: strategies.map(st => ({
           name: st.name,
           description: st.description,
@@ -1046,7 +1048,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         agentSuggestionWasBad: isBad,
         badSuggestionType: badType,
         assetsChosen: composition,
-        timeRemainingInSession: Math.max(0, SESSION_DURATION - now),
+        timeRemainingInSession: Math.max(0, state.sessionDuration - now),
       })
 
       // Both modes: set tacticalPending for tactical assignment step
@@ -1134,7 +1136,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missionCategory: mission.category,
         recoveryType: action.recoveryType,
         wasAgentSuggested: true,
-        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
 
       if (action.recoveryType === 'reserve' && opt.newAssetId) {
@@ -1229,7 +1231,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missionCategory: mission.category,
         recoveryType: 'manual',
         wasAgentSuggested: false,
-        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
       s = {
         ...s,
@@ -1496,14 +1498,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── FINISH_SURVEYS ────────────────────────────────────────────────────
     case 'FINISH_SURVEYS': {
-      if (state.sessionNumber < 3) return { ...state, phase: 'between' }
+      if (state.sessionNumber < state.config.numSessions) return { ...state, phase: 'between' }
       return { ...state, phase: 'done' }
     }
 
     // ── NEXT_SESSION ─────────────────────────────────────────────────────
     case 'NEXT_SESSION': {
       if (state.phase !== 'between') return state
-      const nextSession = (state.sessionNumber + 1) as 1 | 2 | 3
+      const nextSession = state.sessionNumber + 1
       const blueprints = generateSessionPlan(new SeededRNG(state.config.seed ^ nextSession), state.config.complexity)
 
       return {
@@ -1546,7 +1548,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         tasks: mission.tasks.map(t => ({ id: t.id, type: t.type })),
         zoneCenter: mission.zoneCenter,
         arrivalTime: mission.arrivalTime,
-        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
       return s
     }
@@ -1593,7 +1595,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         droneType: failedDrone.type,
         taskId: failedTask.id,
         taskType: failedTask.type,
-        timeRemainingInSession: Math.max(0, SESSION_DURATION - state.elapsed),
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
       return s
     }
@@ -1625,10 +1627,9 @@ function endSession(s: GameState): GameState {
   const meanTime = computeMeanMissionTime(failedMissions)
 
   const agentFollowRate = (() => {
-    const choices = evs.filter(e => e.type === 'strategic_choice') as Array<{ wasAgentSuggestion: boolean; agentSuggestionWasBad: boolean }>
-    const followed = choices.filter(e => e.wasAgentSuggestion && !e.agentSuggestionWasBad).length
-    const total = choices.filter(e => e.wasAgentSuggestion).length
-    return total > 0 ? followed / total : 0
+    const choices = evs.filter(e => e.type === 'strategic_choice') as Array<{ wasAgentSuggestion: boolean }>
+    const followed = choices.filter(e => e.wasAgentSuggestion).length
+    return choices.length > 0 ? followed / choices.length : 0
   })()
 
   let s2 = logEvent({ ...s, missions: failedMissions, score, penaltyAccrued }, {

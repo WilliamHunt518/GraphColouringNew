@@ -3,6 +3,7 @@ import type { Mode, StudyConfig } from '../types'
 import { randomSeed } from '../utils/config'
 
 const COMPLEXITIES = [
+  { value: 'quick'     as const, label: 'Quick Ops',     desc: '12/6/2 drones · 3–5 tasks/mission' },
   { value: 'standard'  as const, label: 'Standard',      desc: '18/9/3 drones · balanced mix' },
   { value: 'surge'     as const, label: 'Fleet Surge',   desc: '24/12/4 drones · lighter missions' },
   { value: 'precision' as const, label: 'Precision Ops', desc: '12/6/2 drones · heavy missions' },
@@ -60,6 +61,7 @@ export default function StartScreen({ onStart }: Props) {
   const [epsilonStrategic, setEpsilonStrategic] = useState(0.20)
   const [epsilonTactical, setEpsilonTactical]   = useState(0.20)
   const [seed, setSeed] = useState(String(randomSeed()))
+  const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
   const [error, setError] = useState('')
 
@@ -77,6 +79,7 @@ export default function StartScreen({ onStart }: Props) {
       agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
       epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
       testingMode,
+      numSessions,
     })
   }
 
@@ -148,6 +151,18 @@ export default function StartScreen({ onStart }: Props) {
               className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-sm text-gray-300 transition-colors">
               Randomise
             </button>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-300">Sessions</label>
+          <div className="flex gap-2">
+            {[1, 2, 3].map(n => (
+              <button key={n} onClick={() => setNumSessions(n)}
+                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${numSessions === n ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-400'}`}>
+                {n} {n === 1 ? 'session' : 'sessions'}
+              </button>
+            ))}
           </div>
         </div>
 

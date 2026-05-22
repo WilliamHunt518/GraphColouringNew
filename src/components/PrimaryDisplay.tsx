@@ -148,7 +148,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
         <div className="flex items-center gap-4">
           <span className="font-bold text-white">SAR Command</span>
           <span className="text-xs text-gray-400 uppercase tracking-wide">
-            Session {state.sessionNumber} / 3
+            Session {state.sessionNumber} / {state.config.numSessions}
           </span>
           <span className={`text-xs px-2 py-0.5 rounded border uppercase tracking-wide ${
             state.config.mode === 'agent'
@@ -188,7 +188,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               </button>
             </>
           )}
-          <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed)}</span>
+          <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed, state.sessionDuration)}</span>
           <span className="text-gray-400 flex items-baseline gap-1.5">
             <span>Score: <span className="text-white font-bold">{state.score}</span></span>
             <span className="text-xs text-green-500" title="Completion points earned">+{completionPoints}</span>
@@ -1155,8 +1155,8 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
 
 // ─── Utilities ────────────────────────────────────────────────────────────
 
-function formatCountdown(elapsed: number): string {
-  const rem = Math.max(0, 600 - elapsed)
+function formatCountdown(elapsed: number, duration: number): string {
+  const rem = Math.max(0, duration - elapsed)
   const m = Math.floor(rem / 60)
   const s = Math.floor(rem % 60)
   return `${m}:${s.toString().padStart(2, '0')}`

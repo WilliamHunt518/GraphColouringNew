@@ -20,11 +20,11 @@ export const ASSET_SPEED: Record<AssetType, number> = {
 
 /** Base execution time (seconds) per task type, primary composition */
 export const TASK_BASE_TIME: Record<TaskType, number> = {
-  1: 15,   // T1 Recce
-  2: 30,   // T2 Recon (Green thermal dramatically reduces sweep time)
-  3: 30,   // T3 Minor Drop
-  4: 45,   // T4 Major Drop
-  5: 45,   // T5 Search & Supply
+  1: 10,   // T1 Recce
+  2: 20,   // T2 Recon
+  3: 20,   // T3 Minor Drop
+  4: 30,   // T4 Major Drop
+  5: 30,   // T5 Search & Supply
 }
 
 // ─── Asset requirements ───────────────────────────────────────────────────
@@ -45,13 +45,13 @@ export const TASK_PRIMARY: Record<TaskType, TaskComposition> = {
   2: { Blue: 3, Red: 0, Green: 1 },   // T2 Recon: 3 Blues + 1 Green (thermal)
   3: { Blue: 1, Red: 1, Green: 0 },   // T3 Minor Drop: 1 Blue + 1 Red
   4: { Blue: 1, Red: 2, Green: 0 },   // T4 Major Drop: 1 Blue + 2 Reds
-  5: { Blue: 0, Red: 1, Green: 1 },   // T5 Search & Supply: 1 Red + 1 Green (sequential)
+  5: { Blue: 0, Red: 1, Green: 1 },   // T5 Search & Supply: 1 Red + 1 Green
 }
 
 /** Substitute composition (null = no substitute exists) */
 export const TASK_SUBSTITUTE: Record<TaskType, TaskComposition | null> = {
   1: null,
-  2: { Blue: 8, Red: 0, Green: 0 },   // T2 Recon sub: 8 Blues (no thermal; slower)
+  2: null,
   3: { Blue: 3, Red: 0, Green: 0 },   // T3 Minor Drop sub: 3 Blues (lighter payload)
   4: { Blue: 3, Red: 1, Green: 0 },   // T4 Major Drop sub: 3 Blues + 1 Red
   5: null,
@@ -59,11 +59,21 @@ export const TASK_SUBSTITUTE: Record<TaskType, TaskComposition | null> = {
 
 /** Base time when using substitute composition — same as primary; penalty is the extra drones required */
 export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
-  1: 15,
-  2: 30,
-  3: 30,
-  4: 45,
-  5: 45,
+  1: 10,
+  2: 20,
+  3: 20,
+  4: 30,
+  5: 30,
+}
+
+// ─── Session duration ─────────────────────────────────────────────────────
+
+export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
+  standard:  600,
+  surge:     600,
+  precision: 600,
+  campaign:  600,
+  quick:     600,  // 10 minutes
 }
 
 // ─── Complexity parameters ────────────────────────────────────────────────
@@ -74,23 +84,41 @@ const LAMBDA: Record<Complexity, number> = {
   surge:     45,   // 1.33× fleet → 1.33× missions
   precision: 90,   // 0.67× fleet → 0.67× missions
   campaign:  50,   // large fleet, slower due to mission complexity
+  quick:     42,   // small fleet, fast missions → busier throughput
 }
 
 // Category probability weights [A, B, C, D, E].
 // standard/surge: lighter mix (more small allocations per session)
 // precision/campaign: heavier mix (each allocation is a bigger decision)
+// quick: favours A/B — mostly 3-4 task missions
 const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
   standard:  [25, 35, 25, 12,  3],
   surge:     [40, 35, 17,  7,  1],
   precision: [ 5, 20, 30, 30, 15],
   campaign:  [ 5, 20, 28, 30, 17],
+  quick:     [35, 30, 20, 12,  3],
 }
 
 const CATEGORIES: MissionCategory[] = ['A', 'B', 'C', 'D', 'E']
 
 // ─── Task composition per mission category ────────────────────────────────
 
-function buildTaskList(rng: SeededRNG, category: MissionCategory): TaskType[] {
+function buildTaskList(rng: SeededRNG, category: MissionCategory, complexity: Complexity): TaskType[] {
+  if (complexity === 'quick') {
+    // 3–5 tasks per mission — compact but still varied
+    switch (category) {
+      case 'A': return rng.randFloat(0, 1) < 0.5
+        ? [3, 2, 1]     // T3 + T2 + T1 (3 tasks, no Green)
+        : [2, 2, 1]     // T2 + T2 + T1 (3 tasks, no Green)
+      case 'B': return rng.randFloat(0, 1) < 0.5
+        ? [5, 3, 2, 1]  // T5 + T3 + T2 + T1 (4 tasks, 1 Green needed)
+        : [4, 3, 2]     // T4 + T3 + T2 (3 tasks, no Green)
+      case 'C': return [5, 4, 3, 2]    // 4 tasks (1 Green needed)
+      case 'D': return [5, 4, 3, 2, 1] // 5 tasks (1 Green needed)
+      case 'E': return [5, 4, 4, 3, 2] // 5 tasks, two T4s (1 Green needed)
+    }
+  }
+
   switch (category) {
     case 'A': {
       const t1 = rng.randInt(3, 5)  // 3 or 4
@@ -205,7 +233,7 @@ function placeZone(
 export function generateSessionPlan(
   rng: SeededRNG,
   complexity: Complexity,
-  duration = 600,
+  duration = SESSION_DURATION_BY_COMPLEXITY[complexity],
 ): MissionBlueprint[] {
   const lambda = LAMBDA[complexity]
   const blueprints: MissionBlueprint[] = []
@@ -222,7 +250,7 @@ export function generateSessionPlan(
     if (time > duration) break
 
     const category = rng.weightedChoice(CATEGORIES, CATEGORY_WEIGHTS[complexity])
-    const taskTypes = buildTaskList(rng, category)
+    const taskTypes = buildTaskList(rng, category, complexity)
     // Only check against the last 5 zone centres — earlier missions will have completed
     // and their map space is available again.
     const zoneCenter = placeZone(rng, usedCenters.slice(-5))
@@ -245,14 +273,33 @@ export function generateSessionPlan(
     })
   }
 
-  // Mark ~1 in 5 missions to have a drone failure
-  // Use a separate pass so the blueprint ID chars don't affect failure probability
-  for (let i = 0; i < blueprints.length; i++) {
-    const willFail = rng.randFloat(0, 1) < 0.20
-    const droneFailureRelativeTime = willFail
-      ? 30 + rng.randFloat(0, 60)   // fail between 30–90s after arrival
-      : null
-    blueprints[i] = { ...blueprints[i], willFail, droneFailureRelativeTime }
+  // Assign drone failures using a deck-of-cards approach:
+  // missions are split into batches of FAILURE_BATCH_SIZE; within each batch
+  // exactly floor(FAILURE_RATE * FAILURE_BATCH_SIZE) missions fail, at a
+  // seeded-random position. This guarantees the configured rate is met
+  // precisely over any multiple of FAILURE_BATCH_SIZE missions.
+  const FAILURE_RATE = 0.20
+  const FAILURE_BATCH_SIZE = 5
+  const failuresPerBatch = Math.floor(FAILURE_RATE * FAILURE_BATCH_SIZE)  // = 1
+
+  for (let batchStart = 0; batchStart < blueprints.length; batchStart += FAILURE_BATCH_SIZE) {
+    const batchEnd = Math.min(batchStart + FAILURE_BATCH_SIZE, blueprints.length)
+    const batchLen = batchEnd - batchStart
+    // Shuffle [0..batchLen-1] with Fisher-Yates using the seeded RNG
+    const order = Array.from({ length: batchLen }, (_, i) => i)
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = rng.randInt(0, i + 1)
+      ;[order[i], order[j]] = [order[j], order[i]]
+    }
+    // The first failuresPerBatch indices in the shuffled order are the failures
+    const failSet = new Set(order.slice(0, Math.min(failuresPerBatch, batchLen)))
+    for (let i = 0; i < batchLen; i++) {
+      const willFail = failSet.has(i)
+      const droneFailureRelativeTime = willFail
+        ? 30 + rng.randFloat(0, 60)   // fail between 30–90s after arrival
+        : null
+      blueprints[batchStart + i] = { ...blueprints[batchStart + i], willFail, droneFailureRelativeTime }
+    }
   }
 
   return blueprints
@@ -287,6 +334,7 @@ const FLEET: Record<Complexity, [AssetType, number][]> = {
   surge:     [['Blue', 24], ['Red', 12], ['Green', 4]],
   precision: [['Blue', 12], ['Red',  6], ['Green', 2]],
   campaign:  [['Blue', 24], ['Red', 12], ['Green', 4]],
+  quick:     [['Blue', 12], ['Red',  6], ['Green', 2]],
 }
 
 // Arthurian knight callsigns — unique per drone, readable, UK military tradition

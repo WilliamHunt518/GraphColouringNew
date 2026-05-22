@@ -1,0 +1,2874 @@
+{
+  "snapshotTime": "2026-05-22T11:03:03.665Z",
+  "snapshotType": "mid_session",
+  "participantId": "P-4081",
+  "condition": "none",
+  "mode": "agent",
+  "complexity": "standard",
+  "seed": 44090,
+  "epsilonStrategic": 0.2,
+  "epsilonTactical": 0.2,
+  "testingMode": false,
+  "sessionNumber": 2,
+  "elapsed": 5.3,
+  "score": 0,
+  "penaltyAccrued": 0,
+  "sessionScores": [
+    1234
+  ],
+  "liveSession": {
+    "elapsed": 5.3,
+    "score": 0,
+    "penaltyAccrued": 0,
+    "reserve": {
+      "Blue": 18,
+      "Red": 9,
+      "Green": 3
+    },
+    "effectiveReserve": {
+      "Blue": 18,
+      "Red": 9,
+      "Green": 3
+    },
+    "missions": [
+      {
+        "id": "M001",
+        "category": "B",
+        "status": "queued",
+        "allocationTime": null,
+        "completionTime": null,
+        "agentInteraction": "none",
+        "chosenStrategy": null,
+        "tacticalPending": false,
+        "failureRecoveryPending": false,
+        "tacticallySuppressedTaskId": null,
+        "tasks": [
+          {
+            "id": "M001-T1",
+            "type": 3,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T2",
+            "type": 3,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T3",
+            "type": 2,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T4",
+            "type": 2,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T5",
+            "type": 2,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T6",
+            "type": 1,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T7",
+            "type": 1,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T8",
+            "type": 1,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          }
+        ]
+      }
+    ],
+    "assets": [
+      {
+        "id": "B01",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B02",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B03",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B04",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B05",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B06",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B07",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B08",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B09",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B10",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B11",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B12",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B13",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B14",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B15",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B16",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B17",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B18",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R01",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R02",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R03",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R04",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R05",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R06",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R07",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R08",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R09",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G01",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G02",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G03",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      }
+    ]
+  },
+  "sessions": [
+    [
+      {
+        "type": "mission_arrived",
+        "missionId": "M001",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M001-T1",
+            "type": 5
+          },
+          {
+            "id": "M001-T2",
+            "type": 4
+          },
+          {
+            "id": "M001-T3",
+            "type": 3
+          },
+          {
+            "id": "M001-T4",
+            "type": 3
+          },
+          {
+            "id": "M001-T5",
+            "type": 2
+          },
+          {
+            "id": "M001-T6",
+            "type": 2
+          },
+          {
+            "id": "M001-T7",
+            "type": 1
+          },
+          {
+            "id": "M001-T8",
+            "type": 1
+          }
+        ],
+        "zoneCenter": {
+          "x": 290.5123114967719,
+          "y": 189.0266611194238
+        },
+        "arrivalTime": 3,
+        "timeRemainingInSession": 596.991,
+        "timestamp": 3009,
+        "sessionNumber": 1,
+        "elapsed": 3.009,
+        "reserveState": {
+          "Blue": 18,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "timeRemainingInSession": 595.557,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 13,
+              "Red": 5,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 13,
+              "Red": 5,
+              "Green": 1
+            },
+            "displayedCompletionTime": 108.37717149386818,
+            "reserveAfter": {
+              "Blue": 5,
+              "Red": 4,
+              "Green": 2
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 6,
+              "Red": 5,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 6,
+              "Red": 5,
+              "Green": 1
+            },
+            "displayedCompletionTime": 127.03992866212221,
+            "reserveAfter": {
+              "Blue": 12,
+              "Red": 4,
+              "Green": 2
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 4443,
+        "sessionNumber": 1,
+        "elapsed": 4.443,
+        "reserveState": {
+          "Blue": 18,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": true,
+        "badSuggestionType": "over",
+        "assetsChosen": {
+          "Blue": 6,
+          "Red": 5,
+          "Green": 1
+        },
+        "timeRemainingInSession": 592.507,
+        "timestamp": 7493,
+        "sessionNumber": 1,
+        "elapsed": 7.493,
+        "reserveState": {
+          "Blue": 18,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M002",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M002-T1",
+            "type": 5
+          },
+          {
+            "id": "M002-T2",
+            "type": 4
+          },
+          {
+            "id": "M002-T3",
+            "type": 3
+          },
+          {
+            "id": "M002-T4",
+            "type": 3
+          },
+          {
+            "id": "M002-T5",
+            "type": 2
+          },
+          {
+            "id": "M002-T6",
+            "type": 2
+          },
+          {
+            "id": "M002-T7",
+            "type": 1
+          },
+          {
+            "id": "M002-T8",
+            "type": 1
+          }
+        ],
+        "zoneCenter": {
+          "x": 795.7956462744623,
+          "y": 135.83209884818643
+        },
+        "arrivalTime": 17.614598484655183,
+        "timeRemainingInSession": 582.375,
+        "timestamp": 17625,
+        "sessionNumber": 1,
+        "elapsed": 17.625,
+        "reserveState": {
+          "Blue": 18,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R01",
+          "G01",
+          "B01",
+          "R02",
+          "R03",
+          "B02",
+          "R04",
+          "B03",
+          "R05",
+          "B04",
+          "B05",
+          "B06"
+        ],
+        "timeRemainingInSession": 581.025,
+        "timestamp": 18975,
+        "sessionNumber": 1,
+        "elapsed": 18.975,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 4,
+          "Green": 2
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "timeRemainingInSession": 577.574,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 12,
+              "Red": 4,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 12,
+              "Red": 4,
+              "Green": 1
+            },
+            "displayedCompletionTime": 133.38844295763607,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 1
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 5,
+              "Red": 4,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 5,
+              "Red": 4,
+              "Green": 1
+            },
+            "displayedCompletionTime": 172.9400511238043,
+            "reserveAfter": {
+              "Blue": 7,
+              "Red": 0,
+              "Green": 1
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 22426,
+        "sessionNumber": 1,
+        "elapsed": 22.426,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 4,
+          "Green": 2
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": true,
+        "badSuggestionType": "over",
+        "assetsChosen": {
+          "Blue": 5,
+          "Red": 4,
+          "Green": 1
+        },
+        "timeRemainingInSession": 570.858,
+        "timestamp": 29142,
+        "sessionNumber": 1,
+        "elapsed": 29.142,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 4,
+          "Green": 2
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M003",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M003-T1",
+            "type": 5
+          },
+          {
+            "id": "M003-T2",
+            "type": 4
+          },
+          {
+            "id": "M003-T3",
+            "type": 4
+          },
+          {
+            "id": "M003-T4",
+            "type": 3
+          },
+          {
+            "id": "M003-T5",
+            "type": 3
+          },
+          {
+            "id": "M003-T6",
+            "type": 2
+          },
+          {
+            "id": "M003-T7",
+            "type": 2
+          },
+          {
+            "id": "M003-T8",
+            "type": 1
+          }
+        ],
+        "zoneCenter": {
+          "x": 760.7878080289811,
+          "y": 429.30585250165313
+        },
+        "arrivalTime": 36.82495926001779,
+        "timeRemainingInSession": 563.175,
+        "timestamp": 36825,
+        "sessionNumber": 1,
+        "elapsed": 36.825,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 4,
+          "Green": 2
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R06",
+          "G02",
+          "B07",
+          "R07",
+          "R08",
+          "B08",
+          "R09",
+          "B09",
+          "B10",
+          "B11"
+        ],
+        "timeRemainingInSession": 561.425,
+        "timestamp": 38575,
+        "sessionNumber": 1,
+        "elapsed": 38.575,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 558.158,
+        "strategiesPresented": [],
+        "timestamp": 41842,
+        "sessionNumber": 1,
+        "elapsed": 41.842,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T3",
+        "taskType": 3,
+        "assetsUsed": [
+          "B02",
+          "R04"
+        ],
+        "completionTime": 74.158,
+        "timestamp": 74158,
+        "sessionNumber": 1,
+        "elapsed": 74.158,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T4",
+        "taskType": 3,
+        "assetsUsed": [
+          "B03",
+          "R05"
+        ],
+        "completionTime": 79.473,
+        "timestamp": 79473,
+        "sessionNumber": 1,
+        "elapsed": 79.473,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 508.194,
+        "strategiesPresented": [],
+        "timestamp": 91806,
+        "sessionNumber": 1,
+        "elapsed": 91.806,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T2",
+        "taskType": 4,
+        "assetsUsed": [
+          "B01",
+          "R02",
+          "R03"
+        ],
+        "completionTime": 92.556,
+        "timestamp": 92556,
+        "sessionNumber": 1,
+        "elapsed": 92.556,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M004",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M004-T1",
+            "type": 5
+          },
+          {
+            "id": "M004-T2",
+            "type": 5
+          },
+          {
+            "id": "M004-T3",
+            "type": 4
+          },
+          {
+            "id": "M004-T4",
+            "type": 4
+          },
+          {
+            "id": "M004-T5",
+            "type": 3
+          },
+          {
+            "id": "M004-T6",
+            "type": 3
+          },
+          {
+            "id": "M004-T7",
+            "type": 2
+          },
+          {
+            "id": "M004-T8",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 740.0840433072299,
+          "y": 633.0719720395282
+        },
+        "arrivalTime": 97.08714574888398,
+        "timeRemainingInSession": 502.90999999999997,
+        "timestamp": 97090,
+        "sessionNumber": 1,
+        "elapsed": 97.09,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T5",
+        "taskType": 2,
+        "assetsUsed": [
+          "B04",
+          "B05",
+          "B06",
+          "B02"
+        ],
+        "completionTime": 99.613,
+        "timestamp": 99613,
+        "sessionNumber": 1,
+        "elapsed": 99.613,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 487.31100000000004,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "displayedCompletionTime": 368.3642638917338,
+            "reserveAfter": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 112689,
+        "sessionNumber": 1,
+        "elapsed": 112.689,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T7",
+        "taskType": 1,
+        "assetsUsed": [
+          "B05"
+        ],
+        "completionTime": 118.139,
+        "timestamp": 118139,
+        "sessionNumber": 1,
+        "elapsed": 118.139,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T8",
+        "taskType": 1,
+        "assetsUsed": [
+          "B06"
+        ],
+        "completionTime": 118.838,
+        "timestamp": 118838,
+        "sessionNumber": 1,
+        "elapsed": 118.838,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 480.578,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "displayedCompletionTime": 368.3642638917338,
+            "reserveAfter": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 119422,
+        "sessionNumber": 1,
+        "elapsed": 119.422,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T2",
+        "taskType": 4,
+        "assetsUsed": [
+          "B07",
+          "R07",
+          "R08"
+        ],
+        "completionTime": 121.722,
+        "timestamp": 121722,
+        "sessionNumber": 1,
+        "elapsed": 121.722,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 477.762,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 7,
+              "Red": 2,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 7,
+              "Red": 2,
+              "Green": 1
+            },
+            "displayedCompletionTime": 237.9194582620617,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 2,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 2,
+              "Green": 1
+            },
+            "displayedCompletionTime": 326.2619029089674,
+            "reserveAfter": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 122238,
+        "sessionNumber": 1,
+        "elapsed": 122.238,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "R01",
+          "G01"
+        ],
+        "completionTime": 127.355,
+        "timestamp": 127355,
+        "sessionNumber": 1,
+        "elapsed": 127.355,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 469.66200000000003,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 7,
+              "Red": 2,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 7,
+              "Red": 2,
+              "Green": 1
+            },
+            "displayedCompletionTime": 237.9194582620617,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 2,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 2,
+              "Green": 1
+            },
+            "displayedCompletionTime": 326.2619029089674,
+            "reserveAfter": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 130338,
+        "sessionNumber": 1,
+        "elapsed": 130.338,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T3",
+        "taskType": 3,
+        "assetsUsed": [
+          "B08",
+          "R09"
+        ],
+        "completionTime": 130.455,
+        "timestamp": 130455,
+        "sessionNumber": 1,
+        "elapsed": 130.455,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T6",
+        "taskType": 2,
+        "assetsUsed": [
+          "B03",
+          "B01",
+          "B02",
+          "B04"
+        ],
+        "completionTime": 134.305,
+        "timestamp": 134305,
+        "sessionNumber": 1,
+        "elapsed": 134.305,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "choiceType": "aggressive",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        },
+        "timeRemainingInSession": 465.211,
+        "timestamp": 134789,
+        "sessionNumber": 1,
+        "elapsed": 134.789,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 1
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R04",
+          "G03",
+          "B12",
+          "R05",
+          "B13",
+          "B14",
+          "B15",
+          "B16",
+          "B17",
+          "B18"
+        ],
+        "timeRemainingInSession": 460.812,
+        "timestamp": 139188,
+        "sessionNumber": 1,
+        "elapsed": 139.188,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "timeRemainingInSession": 458.845,
+        "strategiesPresented": [],
+        "timestamp": 141155,
+        "sessionNumber": 1,
+        "elapsed": 141.155,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T5",
+        "taskType": 2,
+        "assetsUsed": [
+          "B10",
+          "B11",
+          "B07",
+          "B08"
+        ],
+        "completionTime": 144.554,
+        "timestamp": 144554,
+        "sessionNumber": 1,
+        "elapsed": 144.554,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "timeRemainingInSession": 449.86199999999997,
+        "strategiesPresented": [],
+        "timestamp": 150138,
+        "sessionNumber": 1,
+        "elapsed": 150.138,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T4",
+        "taskType": 3,
+        "assetsUsed": [
+          "B09",
+          "R07"
+        ],
+        "completionTime": 152.122,
+        "timestamp": 152122,
+        "sessionNumber": 1,
+        "elapsed": 152.122,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "timeRemainingInSession": 437.679,
+        "strategiesPresented": [],
+        "timestamp": 162321,
+        "sessionNumber": 1,
+        "elapsed": 162.321,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T7",
+        "taskType": 1,
+        "assetsUsed": [
+          "B11"
+        ],
+        "completionTime": 163.438,
+        "timestamp": 163438,
+        "sessionNumber": 1,
+        "elapsed": 163.438,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "R06",
+          "G02"
+        ],
+        "completionTime": 171.971,
+        "timestamp": 171971,
+        "sessionNumber": 1,
+        "elapsed": 171.971,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "timeRemainingInSession": 425.89599999999996,
+        "strategiesPresented": [],
+        "timestamp": 174104,
+        "sessionNumber": 1,
+        "elapsed": 174.104,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T6",
+        "taskType": 2,
+        "assetsUsed": [
+          "B09",
+          "B07",
+          "B08",
+          "B10"
+        ],
+        "completionTime": 184.27,
+        "timestamp": 184270,
+        "sessionNumber": 1,
+        "elapsed": 184.27,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 4,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T8",
+        "taskType": 1,
+        "assetsUsed": [
+          "B11"
+        ],
+        "completionTime": 187.571,
+        "timestamp": 187571,
+        "sessionNumber": 1,
+        "elapsed": 187.571,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 4,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "timeRemainingInSession": 390.197,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 6,
+              "Red": 5,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 6,
+              "Red": 5,
+              "Green": 1
+            },
+            "displayedCompletionTime": 167.2364968153012,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 4,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 4,
+              "Green": 1
+            },
+            "displayedCompletionTime": 218.3764449741685,
+            "reserveAfter": {
+              "Blue": 2,
+              "Red": 1,
+              "Green": 0
+            },
+            "speedScore": 0,
+            "reserveScore": 0.125,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 209803,
+        "sessionNumber": 1,
+        "elapsed": 209.803,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 5,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": true,
+        "badSuggestionType": "over",
+        "assetsChosen": {
+          "Blue": 4,
+          "Red": 4,
+          "Green": 1
+        },
+        "timeRemainingInSession": 385.86400000000003,
+        "timestamp": 214136,
+        "sessionNumber": 1,
+        "elapsed": 214.136,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 5,
+          "Green": 1
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R01",
+          "G01",
+          "R02",
+          "B01",
+          "R03",
+          "R08",
+          "B02",
+          "B03",
+          "B04"
+        ],
+        "timeRemainingInSession": 375.531,
+        "timestamp": 224469,
+        "sessionNumber": 1,
+        "elapsed": 224.469,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "R04",
+          "G03"
+        ],
+        "completionTime": 244.302,
+        "timestamp": 244302,
+        "sessionNumber": 1,
+        "elapsed": 244.302,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 0
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M005",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M005-T1",
+            "type": 5
+          },
+          {
+            "id": "M005-T2",
+            "type": 4
+          },
+          {
+            "id": "M005-T3",
+            "type": 4
+          },
+          {
+            "id": "M005-T4",
+            "type": 3
+          },
+          {
+            "id": "M005-T5",
+            "type": 3
+          },
+          {
+            "id": "M005-T6",
+            "type": 2
+          },
+          {
+            "id": "M005-T7",
+            "type": 2
+          },
+          {
+            "id": "M005-T8",
+            "type": 1
+          }
+        ],
+        "zoneCenter": {
+          "x": 369.1708946740255,
+          "y": 477.47274142690003
+        },
+        "arrivalTime": 266.38199719280976,
+        "timeRemainingInSession": 333.616,
+        "timestamp": 266384,
+        "sessionNumber": 1,
+        "elapsed": 266.384,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "droneId": "B01",
+        "droneType": "Blue",
+        "taskId": "M004-T3",
+        "taskType": 4,
+        "timeRemainingInSession": 332.998,
+        "timestamp": 267002,
+        "sessionNumber": 1,
+        "elapsed": 267.002,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T2",
+        "taskType": 4,
+        "assetsUsed": [
+          "B12",
+          "R05",
+          "R04"
+        ],
+        "completionTime": 269.051,
+        "timestamp": 269051,
+        "sessionNumber": 1,
+        "elapsed": 269.051,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "timeRemainingInSession": 327.85,
+        "strategiesPresented": [],
+        "timestamp": 272150,
+        "sessionNumber": 1,
+        "elapsed": 272.15,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "timeRemainingInSession": 307.584,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 6,
+              "Red": 3,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 6,
+              "Red": 3,
+              "Green": 1
+            },
+            "displayedCompletionTime": 171.5325743104994,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 1
+            },
+            "displayedCompletionTime": 225.34142334779844,
+            "reserveAfter": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 292416,
+        "sessionNumber": 1,
+        "elapsed": 292.416,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "choiceType": "aggressive",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 6,
+          "Red": 3,
+          "Green": 1
+        },
+        "timeRemainingInSession": 300.451,
+        "timestamp": 299549,
+        "sessionNumber": 1,
+        "elapsed": 299.549,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T6",
+        "taskType": 2,
+        "assetsUsed": [
+          "B16",
+          "B17",
+          "B18",
+          "B12"
+        ],
+        "completionTime": 307.083,
+        "timestamp": 307083,
+        "sessionNumber": 1,
+        "elapsed": 307.083,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R06",
+          "G02",
+          "B05",
+          "R07",
+          "R09",
+          "B06",
+          "B07",
+          "B08",
+          "B09",
+          "B11"
+        ],
+        "timeRemainingInSession": 287.533,
+        "timestamp": 312467,
+        "sessionNumber": 1,
+        "elapsed": 312.467,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T3",
+        "taskType": 4,
+        "assetsUsed": [
+          "B13",
+          "R04",
+          "R05"
+        ],
+        "completionTime": 315.918,
+        "timestamp": 315918,
+        "sessionNumber": 1,
+        "elapsed": 315.918,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "R01",
+          "G01"
+        ],
+        "completionTime": 324.815,
+        "timestamp": 324815,
+        "sessionNumber": 1,
+        "elapsed": 324.815,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T8",
+        "taskType": 1,
+        "assetsUsed": [
+          "B13"
+        ],
+        "completionTime": 333.432,
+        "timestamp": 333432,
+        "sessionNumber": 1,
+        "elapsed": 333.432,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T7",
+        "taskType": 2,
+        "assetsUsed": [
+          "B12",
+          "B16",
+          "B17",
+          "B18"
+        ],
+        "completionTime": 337.098,
+        "timestamp": 337098,
+        "sessionNumber": 1,
+        "elapsed": 337.098,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T5",
+        "taskType": 3,
+        "assetsUsed": [
+          "B03",
+          "R01"
+        ],
+        "completionTime": 341.748,
+        "timestamp": 341748,
+        "sessionNumber": 1,
+        "elapsed": 341.748,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T3",
+        "taskType": 4,
+        "assetsUsed": [
+          "R03",
+          "R08",
+          "B10"
+        ],
+        "completionTime": 347.964,
+        "timestamp": 347964,
+        "sessionNumber": 1,
+        "elapsed": 347.964,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T4",
+        "taskType": 3,
+        "assetsUsed": [
+          "B14",
+          "R04"
+        ],
+        "completionTime": 350.448,
+        "timestamp": 350448,
+        "sessionNumber": 1,
+        "elapsed": 350.448,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T5",
+        "taskType": 3,
+        "assetsUsed": [
+          "B15",
+          "R05"
+        ],
+        "completionTime": 354.581,
+        "timestamp": 354581,
+        "sessionNumber": 1,
+        "elapsed": 354.581,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T4",
+        "taskType": 4,
+        "assetsUsed": [
+          "B02",
+          "R03",
+          "R08"
+        ],
+        "completionTime": 354.598,
+        "timestamp": 354598,
+        "sessionNumber": 1,
+        "elapsed": 354.598,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T2",
+        "taskType": 4,
+        "assetsUsed": [
+          "B05",
+          "R07",
+          "R09"
+        ],
+        "completionTime": 363.031,
+        "timestamp": 363031,
+        "sessionNumber": 1,
+        "elapsed": 363.031,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T2",
+        "taskType": 5,
+        "assetsUsed": [
+          "R02",
+          "G01"
+        ],
+        "completionTime": 377.631,
+        "timestamp": 377631,
+        "sessionNumber": 1,
+        "elapsed": 377.631,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T6",
+        "taskType": 3,
+        "assetsUsed": [
+          "B04",
+          "R03"
+        ],
+        "completionTime": 386.13,
+        "timestamp": 386130,
+        "sessionNumber": 1,
+        "elapsed": 386.13,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "R06",
+          "G02"
+        ],
+        "completionTime": 390.246,
+        "timestamp": 390246,
+        "sessionNumber": 1,
+        "elapsed": 390.246,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T3",
+        "taskType": 4,
+        "assetsUsed": [
+          "B06",
+          "R07",
+          "R09"
+        ],
+        "completionTime": 411.163,
+        "timestamp": 411163,
+        "sessionNumber": 1,
+        "elapsed": 411.163,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T7",
+        "taskType": 2,
+        "assetsUsed": [
+          "B01",
+          "B02",
+          "B03",
+          "B04"
+        ],
+        "completionTime": 416.679,
+        "timestamp": 416679,
+        "sessionNumber": 1,
+        "elapsed": 416.679,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T4",
+        "taskType": 3,
+        "assetsUsed": [
+          "B07",
+          "R06"
+        ],
+        "completionTime": 419.163,
+        "timestamp": 419163,
+        "sessionNumber": 1,
+        "elapsed": 419.163,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T8",
+        "taskType": 2,
+        "assetsUsed": [
+          "B01",
+          "B02",
+          "B03",
+          "B04"
+        ],
+        "completionTime": 442.862,
+        "timestamp": 442862,
+        "sessionNumber": 1,
+        "elapsed": 442.862,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 7,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T6",
+        "taskType": 2,
+        "assetsUsed": [
+          "B09",
+          "B11",
+          "B05",
+          "B06"
+        ],
+        "completionTime": 451.894,
+        "timestamp": 451894,
+        "sessionNumber": 1,
+        "elapsed": 451.894,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 8,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T5",
+        "taskType": 3,
+        "assetsUsed": [
+          "B08",
+          "R07"
+        ],
+        "completionTime": 459.111,
+        "timestamp": 459111,
+        "sessionNumber": 1,
+        "elapsed": 459.111,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 8,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T8",
+        "taskType": 1,
+        "assetsUsed": [
+          "B11"
+        ],
+        "completionTime": 472.177,
+        "timestamp": 472177,
+        "sessionNumber": 1,
+        "elapsed": 472.177,
+        "reserveState": {
+          "Blue": 8,
+          "Red": 8,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T7",
+        "taskType": 2,
+        "assetsUsed": [
+          "B07",
+          "B05",
+          "B06",
+          "B09"
+        ],
+        "completionTime": 484.01,
+        "timestamp": 484010,
+        "sessionNumber": 1,
+        "elapsed": 484.01,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M006",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M006-T1",
+            "type": 5
+          },
+          {
+            "id": "M006-T2",
+            "type": 5
+          },
+          {
+            "id": "M006-T3",
+            "type": 4
+          },
+          {
+            "id": "M006-T4",
+            "type": 4
+          },
+          {
+            "id": "M006-T5",
+            "type": 3
+          },
+          {
+            "id": "M006-T6",
+            "type": 3
+          },
+          {
+            "id": "M006-T7",
+            "type": 2
+          },
+          {
+            "id": "M006-T8",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 560.6516718436033,
+          "y": 141.3447858048603
+        },
+        "arrivalTime": 485.91774926120263,
+        "timeRemainingInSession": 114.07299999999998,
+        "timestamp": 485927,
+        "sessionNumber": 1,
+        "elapsed": 485.927,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "timeRemainingInSession": 107.40699999999998,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time.",
+            "displayedAssets": {
+              "Blue": 12,
+              "Red": 8,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 12,
+              "Red": 8,
+              "Green": 2
+            },
+            "displayedCompletionTime": 88.18214604598941,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 5,
+              "Red": 5,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 5,
+              "Red": 5,
+              "Green": 1
+            },
+            "displayedCompletionTime": 190.30459807630677,
+            "reserveAfter": {
+              "Blue": 7,
+              "Red": 4,
+              "Green": 2
+            },
+            "speedScore": 0,
+            "reserveScore": 0.4285714285714286,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 492593,
+        "sessionNumber": 1,
+        "elapsed": 492.593,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "choiceType": "aggressive",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 12,
+          "Red": 8,
+          "Green": 2
+        },
+        "timeRemainingInSession": 106.08999999999997,
+        "timestamp": 493910,
+        "sessionNumber": 1,
+        "elapsed": 493.91,
+        "reserveState": {
+          "Blue": 12,
+          "Red": 9,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R01",
+          "G01",
+          "R02",
+          "G02",
+          "B02",
+          "R03",
+          "R04",
+          "B03",
+          "R05",
+          "R06",
+          "B04",
+          "R07",
+          "B08",
+          "R08",
+          "B10",
+          "B12",
+          "B13",
+          "B14",
+          "B15",
+          "B16",
+          "B17",
+          "B18"
+        ],
+        "timeRemainingInSession": 103.83999999999997,
+        "timestamp": 496160,
+        "sessionNumber": 1,
+        "elapsed": 496.16,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M007",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M007-T1",
+            "type": 5
+          },
+          {
+            "id": "M007-T2",
+            "type": 4
+          },
+          {
+            "id": "M007-T3",
+            "type": 4
+          },
+          {
+            "id": "M007-T4",
+            "type": 3
+          },
+          {
+            "id": "M007-T5",
+            "type": 3
+          },
+          {
+            "id": "M007-T6",
+            "type": 2
+          },
+          {
+            "id": "M007-T7",
+            "type": 2
+          },
+          {
+            "id": "M007-T8",
+            "type": 1
+          }
+        ],
+        "zoneCenter": {
+          "x": 207.6445338157937,
+          "y": 599.1330674281344
+        },
+        "arrivalTime": 518.4506957384347,
+        "timeRemainingInSession": 81.54100000000005,
+        "timestamp": 518459,
+        "sessionNumber": 1,
+        "elapsed": 518.459,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M007",
+        "missionCategory": "C",
+        "timeRemainingInSession": 78.957,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "displayedCompletionTime": 380.7283377625722,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "isBadSuggestion": true,
+            "badSuggestionType": "over"
+          }
+        ],
+        "timestamp": 521043,
+        "sessionNumber": 1,
+        "elapsed": 521.043,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M007",
+        "missionCategory": "C",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": true,
+        "badSuggestionType": "over",
+        "assetsChosen": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 1
+        },
+        "timeRemainingInSession": 77.94100000000003,
+        "timestamp": 522059,
+        "sessionNumber": 1,
+        "elapsed": 522.059,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 1
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M007",
+        "missionCategory": "C",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "assetsDeployed": [
+          "R09",
+          "G03",
+          "B05",
+          "B06",
+          "B07",
+          "B09"
+        ],
+        "timeRemainingInSession": 75.44100000000003,
+        "timestamp": 524559,
+        "sessionNumber": 1,
+        "elapsed": 524.559,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "droneId": "B12",
+        "droneType": "Blue",
+        "taskId": "M006-T7",
+        "taskType": 2,
+        "timeRemainingInSession": 63.990999999999985,
+        "timestamp": 536009,
+        "sessionNumber": 1,
+        "elapsed": 536.009,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T8",
+        "taskType": 2,
+        "assetsUsed": [
+          "B15",
+          "B16",
+          "B17",
+          "B18"
+        ],
+        "completionTime": 538.193,
+        "timestamp": 538193,
+        "sessionNumber": 1,
+        "elapsed": 538.193,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T5",
+        "taskType": 3,
+        "assetsUsed": [
+          "B04",
+          "R07"
+        ],
+        "completionTime": 547.774,
+        "timestamp": 547774,
+        "sessionNumber": 1,
+        "elapsed": 547.774,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T6",
+        "taskType": 3,
+        "assetsUsed": [
+          "B08",
+          "R08"
+        ],
+        "completionTime": 570.691,
+        "timestamp": 570691,
+        "sessionNumber": 1,
+        "elapsed": 570.691,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T4",
+        "taskType": 4,
+        "assetsUsed": [
+          "B03",
+          "R05",
+          "R06"
+        ],
+        "completionTime": 572.141,
+        "timestamp": 572141,
+        "sessionNumber": 1,
+        "elapsed": 572.141,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T3",
+        "taskType": 4,
+        "assetsUsed": [
+          "B02",
+          "R03",
+          "R04"
+        ],
+        "completionTime": 574.291,
+        "timestamp": 574291,
+        "sessionNumber": 1,
+        "elapsed": 574.291,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 0,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T2",
+        "taskType": 5,
+        "assetsUsed": [
+          "R02",
+          "G02"
+        ],
+        "completionTime": 582.557,
+        "timestamp": 582557,
+        "sessionNumber": 1,
+        "elapsed": 582.557,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "R01",
+          "G01"
+        ],
+        "completionTime": 584.358,
+        "timestamp": 584358,
+        "sessionNumber": 1,
+        "elapsed": 584.358,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 0
+        }
+      },
+      {
+        "type": "session_ended",
+        "score": 1234,
+        "penaltyAccrued": 206,
+        "completionPoints": 1440,
+        "greenEfficiency": 1,
+        "meanMissionTime": 173.931,
+        "agentFollowRate": 0.42857142857142855,
+        "timestamp": 600000,
+        "sessionNumber": 1,
+        "elapsed": 600,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 0
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "nasa_tlx",
+        "responses": {
+          "mental_demand": 10,
+          "physical_demand": 10,
+          "temporal_demand": 10,
+          "performance": 10,
+          "effort": 10,
+          "frustration": 10
+        },
+        "timestamp": 600000,
+        "sessionNumber": 1,
+        "elapsed": 600,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 0
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "trust_copilot",
+        "responses": {
+          "cp_reliable": 4,
+          "cp_trust": 4,
+          "cp_performs": 4,
+          "cp_confident": 4,
+          "cp_useful": 4,
+          "cp_follow": 4
+        },
+        "timestamp": 600000,
+        "sessionNumber": 1,
+        "elapsed": 600,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 0
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "trust_metacopilot",
+        "responses": {
+          "mcp_trust": 4,
+          "mcp_performs": 4,
+          "mcp_confident": 4,
+          "mcp_useful": 4,
+          "mcp_follow": 4,
+          "mcp_reliable": 4
+        },
+        "timestamp": 600000,
+        "sessionNumber": 1,
+        "elapsed": 600,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 0
+        }
+      }
+    ],
+    [
+      {
+        "type": "mission_arrived",
+        "missionId": "M001",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M001-T1",
+            "type": 3
+          },
+          {
+            "id": "M001-T2",
+            "type": 3
+          },
+          {
+            "id": "M001-T3",
+            "type": 2
+          },
+          {
+            "id": "M001-T4",
+            "type": 2
+          },
+          {
+            "id": "M001-T5",
+            "type": 2
+          },
+          {
+            "id": "M001-T6",
+            "type": 1
+          },
+          {
+            "id": "M001-T7",
+            "type": 1
+          },
+          {
+            "id": "M001-T8",
+            "type": 1
+          }
+        ],
+        "zoneCenter": {
+          "x": 305.9111376302317,
+          "y": 463.80442004837096
+        },
+        "arrivalTime": 3,
+        "timeRemainingInSession": 596.996,
+        "timestamp": 3004,
+        "sessionNumber": 2,
+        "elapsed": 3.004,
+        "reserveState": {
+          "Blue": 18,
+          "Red": 9,
+          "Green": 3
+        }
+      }
+    ],
+    []
+  ],
+  "debugTrace": [
+    "[2026-05-22T10:52:21.693Z] greedyAssign result {\"committed\":{\"Blue\":6,\"Red\":5,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M001-T1\",\"assetIds\":[\"R01\",\"G01\"],\"startTime\":86},{\"taskId\":\"M001-T2\",\"assetIds\":[\"B01\",\"R02\",\"R03\"],\"startTime\":51},{\"taskId\":\"M001-T3\",\"assetIds\":[\"B02\",\"R04\"],\"startTime\":43},{\"taskId\":\"M001-T4\",\"assetIds\":[\"B03\",\"R05\"],\"startTime\":48},{\"taskId\":\"M001-T5\",\"assetIds\":[\"B04\",\"B05\",\"B06\",\"B02\"],\"startTime\":80},{\"taskId\":\"M001-T6\",\"assetIds\":[\"B03\",\"B01\",\"B02\",\"B04\"],\"startTime\":115},{\"taskId\":\"M001-T7\",\"assetIds\":[\"B05\"],\"startTime\":108},{\"taskId\":\"M001-T8\",\"assetIds\":[\"B06\"],\"startTime\":109}]}",
+    "[2026-05-22T10:52:21.693Z] greedyAssign result {\"committed\":{\"Blue\":6,\"Red\":5,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M001-T1\",\"assetIds\":[\"R01\",\"G01\"],\"startTime\":86},{\"taskId\":\"M001-T2\",\"assetIds\":[\"B01\",\"R02\",\"R03\"],\"startTime\":51},{\"taskId\":\"M001-T3\",\"assetIds\":[\"B02\",\"R04\"],\"startTime\":43},{\"taskId\":\"M001-T4\",\"assetIds\":[\"B03\",\"R05\"],\"startTime\":48},{\"taskId\":\"M001-T5\",\"assetIds\":[\"B04\",\"B05\",\"B06\",\"B02\"],\"startTime\":80},{\"taskId\":\"M001-T6\",\"assetIds\":[\"B03\",\"B01\",\"B02\",\"B04\"],\"startTime\":115},{\"taskId\":\"M001-T7\",\"assetIds\":[\"B05\"],\"startTime\":108},{\"taskId\":\"M001-T8\",\"assetIds\":[\"B06\"],\"startTime\":109}]}",
+    "[2026-05-22T10:52:43.345Z] greedyAssign result {\"committed\":{\"Blue\":5,\"Red\":4,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M002-T1\",\"assetIds\":[\"R06\",\"G02\"],\"startTime\":133},{\"taskId\":\"M002-T2\",\"assetIds\":[\"B07\",\"R07\",\"R08\"],\"startTime\":82},{\"taskId\":\"M002-T3\",\"assetIds\":[\"B08\",\"R09\"],\"startTime\":101},{\"taskId\":\"M002-T4\",\"assetIds\":[\"B09\",\"R07\"],\"startTime\":123},{\"taskId\":\"M002-T5\",\"assetIds\":[\"B10\",\"B11\",\"B07\",\"B08\"],\"startTime\":139},{\"taskId\":\"M002-T6\",\"assetIds\":[\"B09\",\"B07\",\"B08\",\"B10\"],\"startTime\":174},{\"taskId\":\"M002-T7\",\"assetIds\":[\"B11\"],\"startTime\":168},{\"taskId\":\"M002-T8\",\"assetIds\":[\"B11\"],\"startTime\":192}]}",
+    "[2026-05-22T10:52:43.345Z] greedyAssign result {\"committed\":{\"Blue\":5,\"Red\":4,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M002-T1\",\"assetIds\":[\"R06\",\"G02\"],\"startTime\":133},{\"taskId\":\"M002-T2\",\"assetIds\":[\"B07\",\"R07\",\"R08\"],\"startTime\":82},{\"taskId\":\"M002-T3\",\"assetIds\":[\"B08\",\"R09\"],\"startTime\":101},{\"taskId\":\"M002-T4\",\"assetIds\":[\"B09\",\"R07\"],\"startTime\":123},{\"taskId\":\"M002-T5\",\"assetIds\":[\"B10\",\"B11\",\"B07\",\"B08\"],\"startTime\":139},{\"taskId\":\"M002-T6\",\"assetIds\":[\"B09\",\"B07\",\"B08\",\"B10\"],\"startTime\":174},{\"taskId\":\"M002-T7\",\"assetIds\":[\"B11\"],\"startTime\":168},{\"taskId\":\"M002-T8\",\"assetIds\":[\"B11\"],\"startTime\":192}]}",
+    "[2026-05-22T10:54:28.993Z] greedyAssign result {\"committed\":{\"Blue\":7,\"Red\":2,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M003-T1\",\"assetIds\":[\"R04\",\"G03\"],\"startTime\":210},{\"taskId\":\"M003-T2\",\"assetIds\":[\"B12\",\"R05\",\"R04\"],\"startTime\":257},{\"taskId\":\"M003-T3\",\"assetIds\":[\"B13\",\"R04\",\"R05\"],\"startTime\":304},{\"taskId\":\"M003-T4\",\"assetIds\":[\"B14\",\"R04\"],\"startTime\":349},{\"taskId\":\"M003-T5\",\"assetIds\":[\"B15\",\"R05\"],\"startTime\":353},{\"taskId\":\"M003-T6\",\"assetIds\":[\"B16\",\"B17\",\"B18\",\"B12\"],\"startTime\":305},{\"taskId\":\"M003-T7\",\"assetIds\":[\"B12\",\"B16\",\"B17\",\"B18\"],\"startTime\":335},{\"taskId\":\"M003-T8\",\"assetIds\":[\"B13\"],\"startTime\":342}]}",
+    "[2026-05-22T10:54:28.993Z] greedyAssign result {\"committed\":{\"Blue\":7,\"Red\":2,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M003-T1\",\"assetIds\":[\"R04\",\"G03\"],\"startTime\":210},{\"taskId\":\"M003-T2\",\"assetIds\":[\"B12\",\"R05\",\"R04\"],\"startTime\":257},{\"taskId\":\"M003-T3\",\"assetIds\":[\"B13\",\"R04\",\"R05\"],\"startTime\":304},{\"taskId\":\"M003-T4\",\"assetIds\":[\"B14\",\"R04\"],\"startTime\":349},{\"taskId\":\"M003-T5\",\"assetIds\":[\"B15\",\"R05\"],\"startTime\":353},{\"taskId\":\"M003-T6\",\"assetIds\":[\"B16\",\"B17\",\"B18\",\"B12\"],\"startTime\":305},{\"taskId\":\"M003-T7\",\"assetIds\":[\"B12\",\"B16\",\"B17\",\"B18\"],\"startTime\":335},{\"taskId\":\"M003-T8\",\"assetIds\":[\"B13\"],\"startTime\":342}]}",
+    "[2026-05-22T10:55:48.348Z] greedyAssign result {\"committed\":{\"Blue\":4,\"Red\":4,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M004-T1\",\"assetIds\":[\"R01\",\"G01\"],\"startTime\":284},{\"taskId\":\"M004-T2\",\"assetIds\":[\"R02\",\"G01\"],\"startTime\":337},{\"taskId\":\"M004-T3\",\"assetIds\":[\"B01\",\"R03\",\"R08\"],\"startTime\":257},{\"taskId\":\"M004-T4\",\"assetIds\":[\"B02\",\"R03\",\"R08\"],\"startTime\":314},{\"taskId\":\"M004-T5\",\"assetIds\":[\"B03\",\"R01\"],\"startTime\":333},{\"taskId\":\"M004-T6\",\"assetIds\":[\"B04\",\"R03\"],\"startTime\":356},{\"taskId\":\"M004-T7\",\"assetIds\":[\"B01\",\"B02\",\"B03\",\"B04\"],\"startTime\":386},{\"taskId\":\"M004-T8\",\"assetIds\":[\"B01\",\"B02\",\"B03\",\"B04\"],\"startTime\":413}]}",
+    "[2026-05-22T10:55:48.349Z] greedyAssign result {\"committed\":{\"Blue\":4,\"Red\":4,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M004-T1\",\"assetIds\":[\"R01\",\"G01\"],\"startTime\":284},{\"taskId\":\"M004-T2\",\"assetIds\":[\"R02\",\"G01\"],\"startTime\":337},{\"taskId\":\"M004-T3\",\"assetIds\":[\"B01\",\"R03\",\"R08\"],\"startTime\":257},{\"taskId\":\"M004-T4\",\"assetIds\":[\"B02\",\"R03\",\"R08\"],\"startTime\":314},{\"taskId\":\"M004-T5\",\"assetIds\":[\"B03\",\"R01\"],\"startTime\":333},{\"taskId\":\"M004-T6\",\"assetIds\":[\"B04\",\"R03\"],\"startTime\":356},{\"taskId\":\"M004-T7\",\"assetIds\":[\"B01\",\"B02\",\"B03\",\"B04\"],\"startTime\":386},{\"taskId\":\"M004-T8\",\"assetIds\":[\"B01\",\"B02\",\"B03\",\"B04\"],\"startTime\":413}]}",
+    "[2026-05-22T10:57:13.761Z] greedyAssign result {\"committed\":{\"Blue\":6,\"Red\":3,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M005-T1\",\"assetIds\":[\"R06\",\"G02\"],\"startTime\":347},{\"taskId\":\"M005-T2\",\"assetIds\":[\"B05\",\"R07\",\"R09\"],\"startTime\":320},{\"taskId\":\"M005-T3\",\"assetIds\":[\"B06\",\"R07\",\"R09\"],\"startTime\":368},{\"taskId\":\"M005-T4\",\"assetIds\":[\"B07\",\"R06\"],\"startTime\":401},{\"taskId\":\"M005-T5\",\"assetIds\":[\"B08\",\"R07\"],\"startTime\":426},{\"taskId\":\"M005-T6\",\"assetIds\":[\"B09\",\"B11\",\"B05\",\"B06\"],\"startTime\":419},{\"taskId\":\"M005-T7\",\"assetIds\":[\"B07\",\"B05\",\"B06\",\"B09\"],\"startTime\":451},{\"taskId\":\"M005-T8\",\"assetIds\":[\"B11\"],\"startTime\":449}]}",
+    "[2026-05-22T10:57:13.762Z] greedyAssign result {\"committed\":{\"Blue\":6,\"Red\":3,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M005-T1\",\"assetIds\":[\"R06\",\"G02\"],\"startTime\":347},{\"taskId\":\"M005-T2\",\"assetIds\":[\"B05\",\"R07\",\"R09\"],\"startTime\":320},{\"taskId\":\"M005-T3\",\"assetIds\":[\"B06\",\"R07\",\"R09\"],\"startTime\":368},{\"taskId\":\"M005-T4\",\"assetIds\":[\"B07\",\"R06\"],\"startTime\":401},{\"taskId\":\"M005-T5\",\"assetIds\":[\"B08\",\"R07\"],\"startTime\":426},{\"taskId\":\"M005-T6\",\"assetIds\":[\"B09\",\"B11\",\"B05\",\"B06\"],\"startTime\":419},{\"taskId\":\"M005-T7\",\"assetIds\":[\"B07\",\"B05\",\"B06\",\"B09\"],\"startTime\":451},{\"taskId\":\"M005-T8\",\"assetIds\":[\"B11\"],\"startTime\":449}]}",
+    "[2026-05-22T11:00:28.116Z] greedyAssign result {\"committed\":{\"Blue\":12,\"Red\":8,\"Green\":2},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M006-T1\",\"assetIds\":[\"R01\",\"G01\"],\"startTime\":552},{\"taskId\":\"M006-T2\",\"assetIds\":[\"R02\",\"G02\"],\"startTime\":550},{\"taskId\":\"M006-T3\",\"assetIds\":[\"B02\",\"R03\",\"R04\"],\"startTime\":542},{\"taskId\":\"M006-T4\",\"assetIds\":[\"B03\",\"R05\",\"R06\"],\"startTime\":540},{\"taskId\":\"M006-T5\",\"assetIds\":[\"B04\",\"R07\"],\"startTime\":526},{\"taskId\":\"M006-T6\",\"assetIds\":[\"B08\",\"R08\"],\"startTime\":548},{\"taskId\":\"M006-T7\",\"assetIds\":[\"B10\",\"B12\",\"B13\",\"B14\"],\"startTime\":532},{\"taskId\":\"M006-T8\",\"assetIds\":[\"B15\",\"B16\",\"B17\",\"B18\"],\"startTime\":516}]}",
+    "[2026-05-22T11:00:28.116Z] greedyAssign result {\"committed\":{\"Blue\":12,\"Red\":8,\"Green\":2},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M006-T1\",\"assetIds\":[\"R01\",\"G01\"],\"startTime\":552},{\"taskId\":\"M006-T2\",\"assetIds\":[\"R02\",\"G02\"],\"startTime\":550},{\"taskId\":\"M006-T3\",\"assetIds\":[\"B02\",\"R03\",\"R04\"],\"startTime\":542},{\"taskId\":\"M006-T4\",\"assetIds\":[\"B03\",\"R05\",\"R06\"],\"startTime\":540},{\"taskId\":\"M006-T5\",\"assetIds\":[\"B04\",\"R07\"],\"startTime\":526},{\"taskId\":\"M006-T6\",\"assetIds\":[\"B08\",\"R08\"],\"startTime\":548},{\"taskId\":\"M006-T7\",\"assetIds\":[\"B10\",\"B12\",\"B13\",\"B14\"],\"startTime\":532},{\"taskId\":\"M006-T8\",\"assetIds\":[\"B15\",\"B16\",\"B17\",\"B18\"],\"startTime\":516}]}",
+    "[2026-05-22T11:00:56.269Z] greedyAssign result {\"committed\":{\"Blue\":4,\"Red\":1,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M007-T1\",\"assetIds\":[\"R09\",\"G03\"],\"startTime\":599},{\"taskId\":\"M007-T2\",\"assetIds\":[\"B05\",\"B06\",\"B07\",\"R09\"],\"startTime\":644},{\"taskId\":\"M007-T3\",\"assetIds\":[\"B09\",\"B05\",\"B06\",\"R09\"],\"startTime\":694},{\"taskId\":\"M007-T4\",\"assetIds\":[\"B07\",\"R09\"],\"startTime\":753},{\"taskId\":\"M007-T5\",\"assetIds\":[\"B05\",\"R09\"],\"startTime\":788},{\"taskId\":\"M007-T6\",\"assetIds\":[\"B06\",\"B09\",\"B07\",\"B05\"],\"startTime\":818},{\"taskId\":\"M007-T7\",\"assetIds\":[\"B05\",\"B06\",\"B07\",\"B09\"],\"startTime\":854},{\"taskId\":\"M007-T8\",\"assetIds\":[\"B05\"],\"startTime\":893}]}",
+    "[2026-05-22T11:00:56.269Z] greedyAssign result {\"committed\":{\"Blue\":4,\"Red\":1,\"Green\":1},\"taskCount\":8,\"assigned\":8,\"tasks\":[{\"taskId\":\"M007-T1\",\"assetIds\":[\"R09\",\"G03\"],\"startTime\":599},{\"taskId\":\"M007-T2\",\"assetIds\":[\"B05\",\"B06\",\"B07\",\"R09\"],\"startTime\":644},{\"taskId\":\"M007-T3\",\"assetIds\":[\"B09\",\"B05\",\"B06\",\"R09\"],\"startTime\":694},{\"taskId\":\"M007-T4\",\"assetIds\":[\"B07\",\"R09\"],\"startTime\":753},{\"taskId\":\"M007-T5\",\"assetIds\":[\"B05\",\"R09\"],\"startTime\":788},{\"taskId\":\"M007-T6\",\"assetIds\":[\"B06\",\"B09\",\"B07\",\"B05\"],\"startTime\":818},{\"taskId\":\"M007-T7\",\"assetIds\":[\"B05\",\"B06\",\"B07\",\"B09\"],\"startTime\":854},{\"taskId\":\"M007-T8\",\"assetIds\":[\"B05\"],\"startTime\":893}]}"
+  ]
+}
