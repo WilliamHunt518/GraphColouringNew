@@ -59,7 +59,7 @@ const ASSET_COLOR: Record<AssetType, string> = {
 }
 
 const TASK_TYPE_NAMES: Record<number, string> = {
-  1: 'Recce', 2: 'Recon', 3: 'Minor Drop', 4: 'Major Drop', 5: 'Search & Supply',
+  1: 'Recce', 2: 'Recon', 3: 'Supply Drop', 4: 'Prec Supply Drop', 5: 'Search & Service',
 }
 
 const CAT_NAMES: Record<string, string> = {
@@ -424,19 +424,13 @@ function buildActiveAllocation(mission: Mission, assets: Asset[]): PendingAlloca
 // ─── Recovery allocation builder ─────────────────────────────────────────
 
 function buildRecoveryAllocation(mission: Mission, assets: Asset[]): { allocation: PendingAllocation; reserveIds: Set<string>; failedDroneId: string | null } {
-  // Drones currently deployed on this mission (not failed, not yet returned)
+  // Only deployed mission drones — operators fix failures with their subswarm, not reserve
   const deployedDrones = assets.filter(a =>
     a.currentMissionId === mission.id && a.status === 'deployed'
   )
 
-  // All available reserve drones shown at hub corner — user drags any of them to assign
-  const reserveBlue  = assets.filter(a => a.status === 'available' && a.type === 'Blue')
-  const reserveRed   = assets.filter(a => a.status === 'available' && a.type === 'Red')
-  const reserveGreen = assets.filter(a => a.status === 'available' && a.type === 'Green')
-  const reserveDrones = [...reserveBlue, ...reserveRed, ...reserveGreen]
-  const reserveIds = new Set(reserveDrones.map(a => a.id))
-
-  const dronePool = [...deployedDrones.map(a => a.id), ...reserveDrones.map(a => a.id)]
+  const reserveIds = new Set<string>()  // no reserve access during failure recovery
+  const dronePool = deployedDrones.map(a => a.id)
   const dronePoolSet = new Set(dronePool)
 
   // All non-completed tasks — sorted for display
@@ -863,7 +857,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
                 return (
                   <g key={droneId}>
-                    {points.slice(0, -1).map((from, i) => {
+                    {points.slice(0, 1).map((from, i) => {
                       const to = points[i + 1]
                       // Perpendicular offset: fan parallel lines arriving at same task
                       let ctrlX = (from.x + to.x) / 2
@@ -944,8 +938,16 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
               // Completed tasks — always greyed out
               if (task.status === 'completed') {
+                const R_RING = 14, circ_c = 2 * Math.PI * R_RING
                 return (
                   <g key={task.id}>
+                    <circle
+                      cx={task.waypoint.x} cy={task.waypoint.y} r={R_RING}
+                      fill="none" stroke="#10b981" strokeWidth={2} opacity={0.5}
+                      strokeDasharray={`${circ_c} ${circ_c}`} strokeDashoffset={0}
+                      transform={`rotate(-90 ${task.waypoint.x} ${task.waypoint.y})`}
+                      style={{ pointerEvents: 'none' }}
+                    />
                     <circle
                       cx={task.waypoint.x} cy={task.waypoint.y} r={11}
                       fill="rgba(16,185,129,0.06)" stroke="#374151"
@@ -975,6 +977,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                 : null
 
               // Active / interactive task
+              const execProgress = task.status === 'executing' && task.startTime !== null && task.baseTime > 0
+                ? Math.min(1, Math.max(0, (state.elapsed - task.startTime) / task.baseTime))
+                : 0
+              const R_ACT = 14, circ_a = 2 * Math.PI * R_ACT
               return (
                 <g key={task.id}
                   onDragOver={(e: React.DragEvent<SVGGElement>) => { e.preventDefault(); setHoverTask(task.id) }}
@@ -986,6 +992,16 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                     setHoverTask(null)
                   }}
                 >
+                  {execProgress > 0 && (
+                    <circle
+                      cx={task.waypoint.x} cy={task.waypoint.y} r={R_ACT}
+                      fill="none" stroke="#3b82f6" strokeWidth={2}
+                      strokeDasharray={`${circ_a} ${circ_a}`}
+                      strokeDashoffset={circ_a * (1 - execProgress)}
+                      transform={`rotate(-90 ${task.waypoint.x} ${task.waypoint.y})`}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  )}
                   <circle
                     cx={task.waypoint.x} cy={task.waypoint.y} r={isHovered ? 14 : 11}
                     fill={complete ? 'rgba(16,185,129,0.15)'
@@ -1097,6 +1113,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           recoveryMode={!!recoveryMode}
           failedDroneId={failedDroneIdRef.current ?? null}
           suppressedTaskId={pending.suppressedTaskId}
+          missionId={mission.id}
+          onMapAction={onMapAction}
         />
       </div>
     </div>
@@ -1105,7 +1123,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId, suppressedTaskId }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1118,6 +1136,8 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   recoveryMode?: boolean
   failedDroneId?: string | null
   suppressedTaskId?: string | null
+  missionId?: string
+  onMapAction?: (action: object) => void
 }) {
   const ASSET_COLOR_TEXT: Record<AssetType, string> = { Blue: 'text-blue-400', Red: 'text-red-400', Green: 'text-green-400' }
   const ASSET_BG: Record<AssetType, string> = { Blue: 'bg-blue-900/50 border-blue-700/50', Red: 'bg-red-900/50 border-red-700/50', Green: 'bg-emerald-900/50 border-emerald-700/50' }
@@ -1161,13 +1181,15 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         const fd = assets.find(a => a.id === failedDroneId)
         if (!fd) return null
         return (
-          <div className="flex-none px-3 py-2 border-b border-red-900/60 bg-red-950/30 flex items-center gap-2">
-            <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider">⚠ Drone Failed</span>
-            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded border border-red-800/50 bg-red-900/20 ml-1`}>
-              <img src={DRONE_ICON[fd.type]} className="w-3.5 h-3.5 flex-none grayscale opacity-50" alt="" />
-              <span className="font-mono text-[10px] text-gray-500 line-through">{getCS(failedDroneId)}</span>
+          <div className="flex-none px-3 py-2 border-b border-red-900/60 bg-red-950/30 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider">⚠ Drone Failed</span>
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-red-800/50 bg-red-900/20">
+                <img src={DRONE_ICON[fd.type]} className="w-3.5 h-3.5 flex-none grayscale opacity-50" alt="" />
+                <span className="font-mono text-[10px] text-gray-500 line-through">{getCS(failedDroneId)}</span>
+              </div>
             </div>
-            <span className="text-gray-500 text-[9px] ml-auto">Reassign its task below</span>
+            <p className="text-[9px] text-gray-500">Reassign its task using remaining mission drones, or abandon.</p>
           </div>
         )
       })()}
@@ -1300,7 +1322,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         })}
       </div>
 
-      {/* Footer: ETA + Deploy */}
+      {/* Footer: ETA + Deploy + Abandon */}
       <div className="flex-none p-3 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
           <div className="text-xs text-gray-400">
@@ -1312,8 +1334,16 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
           disabled={!canDeploy}
           className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-sm font-semibold transition-colors"
         >
-          {canDeploy ? 'Deploy ✓' : 'Deploy (incomplete)'}
+          {recoveryMode ? (canDeploy ? 'Reassign ✓' : 'Reassign (incomplete)') : (canDeploy ? 'Deploy ✓' : 'Deploy (incomplete)')}
         </button>
+        {recoveryMode && missionId && onMapAction && (
+          <button
+            onClick={() => onMapAction({ _mapAction: 'ABANDON_MISSION', missionId })}
+            className="w-full py-1.5 bg-transparent hover:bg-red-950/40 border border-red-800/60 hover:border-red-700 rounded text-red-500 hover:text-red-300 text-sm transition-colors"
+          >
+            Abandon Mission
+          </button>
+        )}
       </div>
     </div>
   )

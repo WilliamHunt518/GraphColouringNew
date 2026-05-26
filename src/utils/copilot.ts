@@ -161,6 +161,31 @@ export function generateStrategies(
     })
   }
 
+  // Sequential floor = max requirement per type across all tasks (minimum pool for serial completion).
+  // Drones are reused between tasks, so you only need as many of a type as the hardest single task demands.
+  function sequentialFloor(comps: Map<string, { comp: TaskComposition; baseTime: number }>): AssetRequirement {
+    let Blue = 0, Red = 0, Green = 0
+    for (const task of sorted) {
+      const c = comps.get(task.id)
+      if (!c) continue
+      Blue  = Math.max(Blue,  c.comp.Blue)
+      Red   = Math.max(Red,   c.comp.Red)
+      Green = Math.max(Green, c.comp.Green)
+    }
+    return { Blue, Red, Green }
+  }
+
+  // Redundancy = buffer above sequential floor / total pool.
+  // A pool well above the floor can absorb failures and still complete serially.
+  function computeRedundancyScore(pool: AssetRequirement, floor: AssetRequirement): number {
+    const total = pool.Blue + pool.Red + pool.Green
+    if (total === 0) return 0
+    const buffer = Math.max(0, pool.Blue  - floor.Blue)
+                 + Math.max(0, pool.Red   - floor.Red)
+                 + Math.max(0, pool.Green - floor.Green)
+    return Math.min(1, buffer / total)
+  }
+
   // ── Aggressive strategy: parallel sum, all primaries ──────────────────────
   const parallelSum: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
   for (const task of sorted) {
@@ -172,6 +197,8 @@ export function generateStrategies(
   const aggTruePool = cap(parallelSum, reserve)
   const aggTrueTime = simulatePool(sorted, primComps, aggTruePool)
   const aggTrueTaskComps = toTaskComps(sorted, primComps, primComps)
+  const aggFloor = sequentialFloor(primComps)
+  const aggMinimumAssets = aggFloor
 
   // ── Conservative strategy: primaries by default; substitute only when reserve
   //    cannot cover the primary requirement. Pool sized near the sequential minimum
@@ -193,14 +220,18 @@ export function generateStrategies(
 
   const consMin  = minPool(sorted, consComps)
   const consBase = cap(consMin, reserve)
-  const TOP_UP   = 0.15
+  const TOP_UP          = 0.15
+  // +1 buffer only for colours that appear in the mission (robust to any single failure of a used colour)
+  const REDUNDANCY_BUFFER = 1
   const consTruePool: AssetRequirement = {
-    Blue:  Math.min(reserve.Blue,  consBase.Blue  + Math.floor((reserve.Blue  - consBase.Blue)  * TOP_UP)),
-    Red:   Math.min(reserve.Red,   consBase.Red   + Math.floor((reserve.Red   - consBase.Red)   * TOP_UP)),
-    Green: Math.min(reserve.Green, consBase.Green + Math.floor((reserve.Green - consBase.Green) * TOP_UP)),
+    Blue:  Math.min(reserve.Blue,  consBase.Blue  + Math.floor((reserve.Blue  - consBase.Blue)  * TOP_UP) + (consBase.Blue  > 0 ? REDUNDANCY_BUFFER : 0)),
+    Red:   Math.min(reserve.Red,   consBase.Red   + Math.floor((reserve.Red   - consBase.Red)   * TOP_UP) + (consBase.Red   > 0 ? REDUNDANCY_BUFFER : 0)),
+    Green: Math.min(reserve.Green, consBase.Green + Math.floor((reserve.Green - consBase.Green) * TOP_UP) + (consBase.Green > 0 ? REDUNDANCY_BUFFER : 0)),
   }
   const consTrueTime = simulatePool(sorted, consComps, consTruePool)
   const consTrueTaskComps = toTaskComps(sorted, consComps, primComps)
+  const consFloor = sequentialFloor(consComps)
+  const consMinimumAssets = consFloor
 
   // ── Bad-agent perturbation ────────────────────────────────────────────────
   // When an error fires, both the displayed pool AND the true pool used for execution
@@ -259,12 +290,14 @@ export function generateStrategies(
   if (aggTrueTime < Infinity) {
     strategies.push({
       name: 'Aggressive',
-      description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time.',
+      description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time. Minimal failure buffer.',
       assets: aggBad.displayPool,
       expectedCompletionTime: aggBad.displayTime,
       reserveAfter: reserveAfter(aggBad.displayPool),
       speedScore: 1,
       reserveScore: 1 - specialists(aggBad.displayPool) / maxSpec,
+      redundancyScore: computeRedundancyScore(aggBad.displayPool, aggFloor),
+      minimumAssets: aggMinimumAssets,
       taskComps: aggTrueTaskComps,
       isBadSuggestion: aggBad.isBad,
       badSuggestionType: aggBad.badType,
@@ -277,12 +310,14 @@ export function generateStrategies(
   if (consTrueTime < Infinity) {
     strategies.push({
       name: 'Conservative',
-      description: 'Reserve-preserving deployment — prioritises standard compositions at reduced parallelism, accepting longer mission time to keep assets in reserve.',
+      description: 'Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.',
       assets: consBad.displayPool,
       expectedCompletionTime: consBad.displayTime,
       reserveAfter: reserveAfter(consBad.displayPool),
       speedScore: 1 - (consBad.displayTime - minT) / spanT,
       reserveScore: 1 - specialists(consBad.displayPool) / maxSpec,
+      redundancyScore: computeRedundancyScore(consBad.displayPool, consFloor),
+      minimumAssets: consMinimumAssets,
       taskComps: consTrueTaskComps,
       isBadSuggestion: consBad.isBad,
       badSuggestionType: consBad.badType,

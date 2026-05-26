@@ -20,6 +20,10 @@ import type { StudyConfig } from '../types'
 
 const TRUST_PROBE_INTERVAL = 90  // seconds
 
+function hashId(id: string): number {
+  return id.split('').reduce((acc, c, i) => (acc ^ (c.charCodeAt(0) * (i + 7))) >>> 0, 0)
+}
+
 // ─── Initial state factory ─────────────────────────────────────────────────
 
 export function buildInitialState(config: StudyConfig): GameState {
@@ -29,10 +33,10 @@ export function buildInitialState(config: StudyConfig): GameState {
   const initialForecast = { ...baseCategories }
   // Default to complexity-appropriate prior
   switch (config.complexity) {
-    case 'standard':  Object.assign(initialForecast, { A: 0.25, B: 0.35, C: 0.25, D: 0.12, E: 0.03 }); break
-    case 'surge':     Object.assign(initialForecast, { A: 0.40, B: 0.35, C: 0.17, D: 0.07, E: 0.01 }); break
-    case 'precision': Object.assign(initialForecast, { A: 0.05, B: 0.20, C: 0.30, D: 0.30, E: 0.15 }); break
-    case 'campaign':  Object.assign(initialForecast, { A: 0.05, B: 0.20, C: 0.28, D: 0.30, E: 0.17 }); break
+    case 'balanced':  Object.assign(initialForecast, { A: 0.20, B: 0.30, C: 0.28, D: 0.17, E: 0.05 }); break
+    case 'strategic': Object.assign(initialForecast, { A: 0.40, B: 0.38, C: 0.16, D: 0.05, E: 0.01 }); break
+    case 'tactical':  Object.assign(initialForecast, { A: 0.03, B: 0.08, C: 0.22, D: 0.42, E: 0.25 }); break
+    case 'full':      Object.assign(initialForecast, { A: 0.05, B: 0.15, C: 0.28, D: 0.32, E: 0.20 }); break
     case 'quick':     Object.assign(initialForecast, { A: 0.35, B: 0.30, C: 0.20, D: 0.12, E: 0.03 }); break
   }
 
@@ -274,12 +278,15 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     tacticalPending: false,
     pendingAllocation: null,
     droneSequences: {},
-    droneFailureRelativeTime: bp.droneFailureRelativeTime,
-    droneFailureFired: false,
+    droneFailureTimes: bp.droneFailureTimes,
+    droneFailuresFired: 0,
     failedDroneId: null,
     failureRecoveryPending: false,
     pendingRecoveryOptions: null,
     tacticallySuppressedTaskId: null,
+    abandonedAt: null,
+    isResidual: false,
+    needsGreedyReplan: false,
   }
 }
 
@@ -363,34 +370,14 @@ function buildRecoveryOptions(
   assets: Asset[],
   _elapsed: number,
 ): RecoveryOption[] {
-  const options: RecoveryOption[] = []
-
-  // Option 1: Call Reserve — find an available asset of the same type as the failed drone
-  const failedDroneType = assets.find(a => a.id === failedDroneId)?.type
-  const reserveAsset = failedDroneType
-    ? assets.find(a => a.type === failedDroneType && a.status === 'available')
-    : undefined
-  options.push({
-    type: 'reserve',
-    label: 'Call Reserve',
-    description: reserveAsset
-      ? `Deploy ${reserveAsset.id} (${failedDroneType}) from reserve to replace failed drone`
-      : `No ${failedDroneType ?? 'matching'} drone available in reserve`,
-    taskId: failedTask.id,
-    newAssetId: reserveAsset?.id ?? null,
-    redistributeToAssetId: null,
-    expectedTimeImpact: reserveAsset ? 30 : 0,
-    feasible: reserveAsset !== undefined,
-  })
-
-  // Option 2: Redistribute — find another deployed drone in the same mission not currently executing
+  // Only redistribution — operators must fix failures with their deployed subswarm
   const otherDrone = assets.find(a =>
     a.currentMissionId === mission.id &&
     a.id !== failedDroneId &&
     a.status === 'deployed' &&
     mission.tasks.find(t => t.id === a.currentTaskId)?.status !== 'executing'
   )
-  options.push({
+  return [{
     type: 'redistribute',
     label: 'Redistribute',
     description: otherDrone
@@ -401,9 +388,7 @@ function buildRecoveryOptions(
     redistributeToAssetId: otherDrone?.id ?? null,
     expectedTimeImpact: otherDrone ? 60 : 0,
     feasible: otherDrone !== undefined,
-  })
-
-  return options
+  }]
 }
 
 // ─── Helper: apply tactical allocation ────────────────────────────────────
@@ -626,14 +611,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // 1b. Drone failure check (suppressed in testing mode)
+      // Each mission has multiple scheduled failure times; fire at most one per tick,
+      // and wait for any pending recovery to be resolved before the next failure.
       if (!state.config.testingMode) {
         for (const mission of s.missions) {
-          if (
-            mission.status !== 'active' ||
-            mission.droneFailureFired ||
-            mission.droneFailureRelativeTime === null
-          ) continue
-          if (elapsed < mission.arrivalTime + mission.droneFailureRelativeTime) continue
+          if (mission.status !== 'active') continue
+          if (mission.droneFailuresFired >= mission.droneFailureTimes.length) continue
+          if (mission.failureRecoveryPending) continue  // wait for operator to resolve previous failure
+          const nextFailTime = mission.droneFailureTimes[mission.droneFailuresFired]
+          if (elapsed < mission.arrivalTime + nextFailTime) continue
 
           // Pick a random deployed drone on this mission that is currently executing
           const executingDrones = s.assets.filter(
@@ -642,8 +628,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           )
           if (executingDrones.length === 0) continue  // no executing drones yet, wait
 
-          // Seeded random pick
-          const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11)
+          // Seeded random pick — seed varies by fired count so each failure picks a different drone
+          const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11 ^ mission.droneFailuresFired)
           const failedDrone = executingDrones[failRng.randInt(0, executingDrones.length - 1)]
           const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
 
@@ -656,7 +642,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             if (m.id !== mission.id) return m
             return {
               ...m,
-              droneFailureFired: true,
+              droneFailuresFired: m.droneFailuresFired + 1,
               failedDroneId: failedDrone.id,
               failureRecoveryPending: true,
               tasks: m.tasks.map(t =>
@@ -679,6 +665,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             taskType: failedTask.type,
             timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
           })
+          break  // at most one new failure per tick
         }
       }
 
@@ -787,10 +774,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
                   return t && t.status !== 'completed' && t.status !== 'failed'
                 })
               : undefined
-            // Fallback: any assigned incomplete task (handles agent-mode without explicit sequences)
+            // Fallback: any assigned incomplete task
+            // Used when no explicit sequence exists, OR in greedy mode (sequences trimmed to 1 task)
             const nextTask = nextTaskId
               ? currentMission?.tasks.find(t => t.id === nextTaskId)
-              : seq.length === 0
+              : (seq.length === 0 || currentMission?.needsGreedyReplan)
                 ? currentMission?.tasks.find(t =>
                     t.id !== asset.currentTaskId &&
                     t.assignedAssetIds.includes(asset.id) &&
@@ -868,7 +856,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         Red:   effectiveAvail.filter(a => a.type === 'Red').length,
         Green: effectiveAvail.filter(a => a.type === 'Green').length,
       }
-      const agentRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
+      const agentRng = new SeededRNG(state.config.seed ^ hashId(mission.id))
       const strategies = state.config.mode === 'agent'
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
@@ -1072,7 +1060,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
 
       const pending = mission.pendingAllocation
-      const droneSeqs = action.droneSequences ?? {}
+      const rawDroneSeqs = action.droneSequences ?? {}
+      // In greedy mode, trim each drone's sequence to its first task only
+      const isGreedy = state.config.tacticalMode === 'greedy'
+      const droneSeqs = isGreedy
+        ? Object.fromEntries(Object.entries(rawDroneSeqs).map(([id, seq]) => [id, seq.slice(0, 1)]))
+        : rawDroneSeqs
       let assignments: TaskAssignment[]
 
       const userProvidedAssignments = !!action.taskAssignments
@@ -1091,6 +1084,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (pending.hasTacticalError && pending.suppressedTaskId) {
         s = { ...s, missions: s.missions.map(m => m.id === action.missionId
           ? { ...m, tacticallySuppressedTaskId: pending.suppressedTaskId }
+          : m) }
+      }
+      // In greedy mode, mark mission for auto-replan after each task completion
+      if (isGreedy) {
+        s = { ...s, missions: s.missions.map(m => m.id === action.missionId
+          ? { ...m, needsGreedyReplan: true }
           : m) }
       }
       return s
@@ -1112,7 +1111,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         Red:   ovEffAvail.filter(a => a.type === 'Red').length,
         Green: ovEffAvail.filter(a => a.type === 'Green').length,
       }
-      const agentRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(1))
+      const agentRng = new SeededRNG(state.config.seed ^ hashId(mission.id))
       const strategies = state.config.mode === 'agent'
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
@@ -1139,44 +1138,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
 
-      if (action.recoveryType === 'reserve' && opt.newAssetId) {
-        // Deploy the reserve drone to the failed task
-        const task = mission.tasks.find(t => t.id === opt.taskId)
-        if (!task) return state
-        const asset = s.assets.find(a => a.id === opt.newAssetId)
-        if (!asset) return state
-        const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
-        const startTime = s.elapsed + tt
-        const completionTime = startTime + task.baseTime
-        s = {
-          ...s,
-          assets: s.assets.map(a => a.id === opt.newAssetId ? {
-            ...a,
-            status: 'deployed' as const,
-            currentMissionId: mission.id,
-            currentTaskId: task.id,
-            travelFrom: { ...HUB },
-            targetPosition: { ...task.waypoint },
-            travelStartElapsed: s.elapsed,
-            travelEndElapsed: s.elapsed + tt,
-            availableAt: completionTime + travelTime(task.waypoint, HUB, ASSET_SPEED[a.type]),
-          } : a),
-          missions: s.missions.map(m => m.id === mission.id ? {
-            ...m,
-            failureRecoveryPending: false,
-            pendingRecoveryOptions: null,
-            tasks: m.tasks.map(t => t.id === task.id ? {
-              ...t,
-              status: 'traveling' as const,
-              assignedAssetIds: [...t.assignedAssetIds, opt.newAssetId!],
-              allocatedAt: s.elapsed,
-              travelTime: tt,
-              startTime,
-              completionTime,
-            } : t),
-          } : m),
-        }
-      } else if (action.recoveryType === 'redistribute' && opt.redistributeToAssetId) {
+      if (action.recoveryType === 'redistribute' && opt.redistributeToAssetId) {
         // Redirect an existing drone to the failed task
         const task = mission.tasks.find(t => t.id === opt.taskId)
         const asset = s.assets.find(a => a.id === opt.redistributeToAssetId)
@@ -1320,6 +1282,113 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           failureRecoveryPending: false,
           pendingRecoveryOptions: null,
         } : m),
+      }
+    }
+
+    // ── ABANDON_MISSION ──────────────────────────────────────────────────
+    case 'ABANDON_MISSION': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || mission.status !== 'active') return state
+      const elapsed = state.elapsed
+
+      // Return all deployed drones from this mission to hub
+      const updatedAssets = state.assets.map(asset => {
+        if (asset.currentMissionId !== mission.id) return asset
+        const returnTime = travelTime(asset.position, HUB, ASSET_SPEED[asset.type])
+        return {
+          ...asset,
+          status: 'returning' as const,
+          currentMissionId: null as string | null,
+          currentTaskId: null as string | null,
+          travelFrom: { ...asset.position },
+          targetPosition: { ...HUB },
+          travelStartElapsed: elapsed,
+          travelEndElapsed: elapsed + returnTime,
+          availableAt: elapsed + returnTime,
+        }
+      })
+
+      // Collect incomplete tasks for residual mission
+      const incompleteTasks = mission.tasks.filter(
+        t => t.status === 'pending' || t.status === 'traveling' || t.status === 'executing'
+      )
+
+      // Build residual mission if there is anything left to do
+      let residualMission: Mission | null = null
+      if (incompleteTasks.length > 0) {
+        const residualTasks: Task[] = incompleteTasks.map((t, i) => {
+          const execSoFar = t.status === 'executing' && t.startTime !== null
+            ? Math.max(0, elapsed - t.startTime)
+            : 0
+          const remainingBase = Math.max(5, t.baseTime - execSoFar)
+          return {
+            ...t,
+            id: `${mission.id}-R-T${i + 1}`,
+            missionId: `${mission.id}-R`,
+            status: 'pending' as const,
+            assignedAssetIds: [],
+            allocatedAt: null,
+            travelTime: 0,
+            baseTime: remainingBase,
+            startTime: null,
+            completionTime: null,
+            useSubstitute: false,
+            recallDelay: 0,
+          }
+        })
+
+        // Schedule failures proportional to task count (~1 per 5 tasks)
+        const failureCount = Math.round(residualTasks.length / 5)
+        const residualRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(0) ^ 0xABBA)
+        const residualFailureTimes: number[] = []
+        for (let f = 0; f < failureCount; f++) {
+          residualFailureTimes.push(30 + f * 60 + residualRng.randFloat(0, 30))
+        }
+
+        residualMission = {
+          ...mission,
+          id: `${mission.id}-R`,
+          status: 'queued' as const,
+          tasks: residualTasks,
+          allocationTime: null,
+          completionTime: null,
+          arrivalTime: elapsed,
+          agentInteraction: 'none',
+          chosenStrategyName: null,
+          manualPriorityIds: [],
+          tacticalPending: false,
+          pendingAllocation: null,
+          droneSequences: {},
+          droneFailureTimes: residualFailureTimes,
+          droneFailuresFired: 0,
+          failedDroneId: null,
+          failureRecoveryPending: false,
+          pendingRecoveryOptions: null,
+          tacticallySuppressedTaskId: null,
+          abandonedAt: null,
+          isResidual: true,
+          needsGreedyReplan: false,
+        }
+      }
+
+      let s = logEvent(state, {
+        type: 'mission_abandoned' as const,
+        missionId: mission.id,
+        missionCategory: mission.category,
+        completedTaskCount: mission.tasks.filter(t => t.status === 'completed').length,
+        remainingTaskCount: incompleteTasks.length,
+      })
+
+      const updatedMissions = s.missions.map(m =>
+        m.id === mission.id
+          ? { ...m, status: 'abandoned' as const, abandonedAt: elapsed, failureRecoveryPending: false, pendingRecoveryOptions: null }
+          : m
+      )
+
+      return {
+        ...s,
+        assets: updatedAssets,
+        missions: residualMission ? [...updatedMissions, residualMission] : updatedMissions,
       }
     }
 
@@ -1556,9 +1625,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // ── FORCE_DRONE_FAILURE (testing mode) ───────────────────────────────
     case 'FORCE_DRONE_FAILURE': {
       if (!state.config.testingMode) return state
-      // Find first active mission without a pending failure
+      // Find first active mission without a pending failure (ignore scheduled-failure-count limit in testing mode)
       const mission = state.missions.find(
-        m => m.status === 'active' && !m.failureRecoveryPending && !m.droneFailureFired
+        m => m.status === 'active' && !m.failureRecoveryPending
       )
       if (!mission) return state
       const executingDrones = state.assets.filter(
@@ -1575,7 +1644,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (m.id !== mission.id) return m
         return {
           ...m,
-          droneFailureFired: true,
+          droneFailuresFired: m.droneFailuresFired + 1,
           failedDroneId: failedDrone.id,
           failureRecoveryPending: true,
           tasks: m.tasks.map(t =>

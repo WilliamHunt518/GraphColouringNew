@@ -21,10 +21,10 @@ export const ASSET_SPEED: Record<AssetType, number> = {
 /** Base execution time (seconds) per task type, primary composition */
 export const TASK_BASE_TIME: Record<TaskType, number> = {
   1: 10,   // T1 Recce
-  2: 20,   // T2 Recon
-  3: 20,   // T3 Minor Drop
-  4: 30,   // T4 Major Drop
-  5: 30,   // T5 Search & Supply
+  2: 15,   // T2 Recon
+  3: 25,   // T3 Supply Drop
+  4: 30,   // T4 Precision Supply Drop
+  5: 45,   // T5 Search and Service
 }
 
 // ─── Asset requirements ───────────────────────────────────────────────────
@@ -36,66 +36,73 @@ export interface TaskComposition {
 }
 
 /**
- * Primary and substitute compositions per task type.
- * T1 Recce and T5 Search & Supply have no substitute.
- * T2 Recon / T3 Minor Drop / T4 Major Drop all have slower all-Blue (or Blue-heavy) substitutes.
+ * Primary compositions — paired drones (2X) where meaningful.
+ * Blue = fast fixed-wing (recce/recon). Red = rotary supply. Green = slow specialist.
+ *
+ * T3 Supply Drop: two Reds brute-force carry, Green guides — sub drops one Red (2R→1R).
+ * T4 Precision Drop: one Red carries carefully, two Greens guide — sub drops one Green (2G→1G).
+ * Substitutes always use the same types as primary, just one fewer of the paired type, ~2.5× time.
+ * T5 has no substitute — Search and Service requires the full team.
  */
 export const TASK_PRIMARY: Record<TaskType, TaskComposition> = {
-  1: { Blue: 1, Red: 0, Green: 0 },   // T1 Recce: 1 Blue
-  2: { Blue: 3, Red: 0, Green: 1 },   // T2 Recon: 3 Blues + 1 Green (thermal)
-  3: { Blue: 1, Red: 1, Green: 0 },   // T3 Minor Drop: 1 Blue + 1 Red
-  4: { Blue: 1, Red: 2, Green: 0 },   // T4 Major Drop: 1 Blue + 2 Reds
-  5: { Blue: 0, Red: 1, Green: 1 },   // T5 Search & Supply: 1 Red + 1 Green
+  1: { Blue: 1, Red: 0, Green: 0 },   // T1 Recce: solo fixed-wing pass
+  2: { Blue: 2, Red: 0, Green: 0 },   // T2 Recon: paired fast sweep
+  3: { Blue: 0, Red: 2, Green: 1 },   // T3 Supply Drop: two Reds carry, Green guides
+  4: { Blue: 0, Red: 1, Green: 2 },   // T4 Precision Supply Drop: Red carries, two Greens place
+  5: { Blue: 1, Red: 1, Green: 1 },   // T5 Search and Service: full mixed team
 }
 
-/** Substitute composition (null = no substitute exists) */
+/** Substitutes use the same drone types but one fewer of the paired type (2→1), ~2.5× base time. */
 export const TASK_SUBSTITUTE: Record<TaskType, TaskComposition | null> = {
   1: null,
-  2: null,
-  3: { Blue: 3, Red: 0, Green: 0 },   // T3 Minor Drop sub: 3 Blues (lighter payload)
-  4: { Blue: 3, Red: 1, Green: 0 },   // T4 Major Drop sub: 3 Blues + 1 Red
-  5: null,
+  2: { Blue: 1, Red: 0, Green: 0 },   // T2 sub: 1 Blue solo (2B→1B)
+  3: { Blue: 0, Red: 1, Green: 1 },   // T3 sub: 1 Red + Green (2R→1R)
+  4: { Blue: 0, Red: 1, Green: 1 },   // T4 sub: Red + 1 Green (2G→1G)
+  5: null,                             // T5: no substitute — full team required
 }
 
-/** Base time when using substitute composition — same as primary; penalty is the extra drones required */
+/** Base time when using substitute composition — approximately 2.5× primary time */
 export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
   1: 10,
-  2: 20,
-  3: 20,
-  4: 30,
-  5: 30,
+  2: 38,
+  3: 62,
+  4: 75,
+  5: 45,   // unused (T5 has no sub), kept for type completeness
 }
 
 // ─── Session duration ─────────────────────────────────────────────────────
 
 export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
-  standard:  600,
-  surge:     600,
-  precision: 600,
-  campaign:  600,
-  quick:     600,  // 10 minutes
+  balanced:  600,
+  strategic: 600,
+  tactical:  600,
+  full:      600,
+  quick:     600,
 }
 
 // ─── Complexity parameters ────────────────────────────────────────────────
 
-// Mean inter-arrival time (seconds). Scales inversely with fleet so load-per-drone stays constant.
+// Mean inter-arrival time (seconds).
+// tactical: slow arrivals (few decisions), large missions per arrival
+// strategic: fast arrivals (many decisions), small missions per arrival
+// full: moderate arrivals but large missions — maximum pressure
 const LAMBDA: Record<Complexity, number> = {
-  standard:  60,
-  surge:     45,   // 1.33× fleet → 1.33× missions
-  precision: 90,   // 0.67× fleet → 0.67× missions
-  campaign:  50,   // large fleet, slower due to mission complexity
-  quick:     42,   // small fleet, fast missions → busier throughput
+  balanced:  65,
+  strategic: 38,   // high strategic: frequent arrivals → constant reserve decisions
+  tactical:  90,   // low strategic: infrequent arrivals → fewer allocation decisions
+  full:      50,   // high on both axes: frequent and large
+  quick:     42,
 }
 
 // Category probability weights [A, B, C, D, E].
-// standard/surge: lighter mix (more small allocations per session)
-// precision/campaign: heavier mix (each allocation is a bigger decision)
-// quick: favours A/B — mostly 3-4 task missions
+// tactical:  mostly D/E — within-mission planning is the challenge
+// strategic: mostly A/B — reserve allocation frequency is the challenge
+// full:      mostly C/D/E — both axes demanding
 const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
-  standard:  [25, 35, 25, 12,  3],
-  surge:     [40, 35, 17,  7,  1],
-  precision: [ 5, 20, 30, 30, 15],
-  campaign:  [ 5, 20, 28, 30, 17],
+  balanced:  [20, 30, 28, 17,  5],
+  strategic: [40, 38, 16,  5,  1],  // low tactical: simple missions, lots of them
+  tactical:  [ 3,  8, 22, 42, 25],  // high tactical: complex missions, fewer of them
+  full:      [ 5, 15, 28, 32, 20],  // high on both axes
   quick:     [35, 30, 20, 12,  3],
 }
 
@@ -103,35 +110,62 @@ const CATEGORIES: MissionCategory[] = ['A', 'B', 'C', 'D', 'E']
 
 // ─── Task composition per mission category ────────────────────────────────
 
+// Task type demands: T1=1B  T2=2B  T3=2R+1G  T4=1R+2G  T5=1B+1R+1G
+//
+// Archetypes weight toward one drone type per mission, breaking the old
+// always-equal demand pattern. Over many missions the aggregate demand is
+// approximately Blue > Red > Green, matching fleet composition.
+//
+// Archetype probabilities [blue, red, green, mixed] = [35, 28, 22, 15]
+// Avg per category:  A≈1.7B/1.6R/1.4G  B≈2.6B/2.3R/2.0G  C≈3.5B/2.8R/2.7G
+//                    D≈4.1B/4.2R/3.7G   E≈5.3B/4.9R/4.5G
+
 function buildTaskList(rng: SeededRNG, category: MissionCategory, complexity: Complexity): TaskType[] {
   if (complexity === 'quick') {
-    // 3–5 tasks per mission — compact but still varied
     switch (category) {
-      case 'A': return rng.randFloat(0, 1) < 0.5
-        ? [3, 2, 1]     // T3 + T2 + T1 (3 tasks, no Green)
-        : [2, 2, 1]     // T2 + T2 + T1 (3 tasks, no Green)
-      case 'B': return rng.randFloat(0, 1) < 0.5
-        ? [5, 3, 2, 1]  // T5 + T3 + T2 + T1 (4 tasks, 1 Green needed)
-        : [4, 3, 2]     // T4 + T3 + T2 (3 tasks, no Green)
-      case 'C': return [5, 4, 3, 2]    // 4 tasks (1 Green needed)
-      case 'D': return [5, 4, 3, 2, 1] // 5 tasks (1 Green needed)
-      case 'E': return [5, 4, 4, 3, 2] // 5 tasks, two T4s (1 Green needed)
+      case 'A': return rng.randFloat(0, 1) < 0.5 ? [2, 3] : [1, 3]
+      case 'B': return [1, 2, 3, 4]
+      case 'C': return [1, 2, 3, 4, 5]
+      case 'D': return [1, 2, 3, 4, 5, 5]
+      case 'E': return [1, 1, 2, 3, 4, 5]
     }
   }
 
+  const archetype = rng.weightedChoice(
+    ['blue', 'red', 'green', 'mixed'],
+    [35, 28, 22, 15],
+  )
+
   switch (category) {
-    case 'A': {
-      const t1 = rng.randInt(3, 5)  // 3 or 4
-      const t2 = rng.randInt(2, 4)  // 2 or 3
-      return [...Array<TaskType>(t1).fill(1), ...Array<TaskType>(t2).fill(2), 3]
-    }
-    case 'B':
-      return rng.randFloat(0, 1) < 0.5
-        ? [5, 4, 3, 3, 2, 2, 1, 1]   // T5+T4 heavy variant
-        : [3, 3, 2, 2, 2, 1, 1, 1]   // lighter T3/T2/T1 mix
-    case 'C': return [5, 4, 4, 3, 3, 2, 2, 1]
-    case 'D': return [5, 5, 4, 4, 3, 3, 2, 2]
-    case 'E': return [5, 5, 5, 4, 4, 3, 3, 2, 1]
+    case 'A':   // 2 tasks
+      if (archetype === 'blue')  return [1, 2]           // 3B
+      if (archetype === 'red')   return [3, 5]           // 1B+3R+2G
+      if (archetype === 'green') return [4, 5]           // 1B+2R+3G
+      return [1, 3]                                      // 1B+2R+1G
+
+    case 'B':   // 3 tasks
+      if (archetype === 'blue')  return [1, 2, 2]        // 5B
+      if (archetype === 'red')   return [3, 3, 5]        // 1B+5R+3G
+      if (archetype === 'green') return [1, 4, 4]        // 1B+2R+4G
+      return [1, 3, 5]                                   // 2B+3R+2G
+
+    case 'C':   // 4 tasks
+      if (archetype === 'blue')  return [1, 1, 2, 2]     // 6B
+      if (archetype === 'red')   return [3, 3, 5, 5]     // 2B+6R+4G
+      if (archetype === 'green') return [1, 4, 4, 4]     // 1B+3R+6G
+      return [1, 2, 3, 5]                                // 4B+3R+2G
+
+    case 'D':   // 5 tasks
+      if (archetype === 'blue')  return [1, 1, 2, 2, 5]  // 7B+1R+1G
+      if (archetype === 'red')   return [3, 3, 3, 5, 5]  // 2B+8R+5G
+      if (archetype === 'green') return [1, 4, 4, 4, 5]  // 2B+4R+7G
+      return [1, 2, 3, 3, 5]                             // 4B+5R+3G
+
+    case 'E':   // 6 tasks
+      if (archetype === 'blue')  return [1, 1, 2, 2, 2, 5]   // 9B+1R+1G
+      if (archetype === 'red')   return [3, 3, 3, 5, 5, 5]   // 3B+9R+6G
+      if (archetype === 'green') return [4, 4, 4, 1, 5, 5]   // 3B+5R+8G
+      return [1, 2, 3, 3, 4, 5]                              // 4B+6R+5G
   }
 }
 
@@ -269,37 +303,24 @@ export function generateSessionPlan(
       zoneCenter,
       waypoints,
       willFail: false,
-      droneFailureRelativeTime: null,
+      droneFailureTimes: [],
     })
   }
 
-  // Assign drone failures using a deck-of-cards approach:
-  // missions are split into batches of FAILURE_BATCH_SIZE; within each batch
-  // exactly floor(FAILURE_RATE * FAILURE_BATCH_SIZE) missions fail, at a
-  // seeded-random position. This guarantees the configured rate is met
-  // precisely over any multiple of FAILURE_BATCH_SIZE missions.
-  const FAILURE_RATE = 0.20
-  const FAILURE_BATCH_SIZE = 5
-  const failuresPerBatch = Math.floor(FAILURE_RATE * FAILURE_BATCH_SIZE)  // = 1
+  // Schedule multiple drone failures per mission.
+  // Each mission gets FAILURE_COUNT failure events staggered over time so that
+  // redundancy planning (extra drones in the allocation) is essential.
+  const FAILURE_COUNT = 2   // failures per mission; raise to 3 for higher pressure
+  const FAILURE_GAP   = 60  // minimum seconds between successive failures
+  const FAILURE_JITTER = 30 // random jitter added to each failure time
 
-  for (let batchStart = 0; batchStart < blueprints.length; batchStart += FAILURE_BATCH_SIZE) {
-    const batchEnd = Math.min(batchStart + FAILURE_BATCH_SIZE, blueprints.length)
-    const batchLen = batchEnd - batchStart
-    // Shuffle [0..batchLen-1] with Fisher-Yates using the seeded RNG
-    const order = Array.from({ length: batchLen }, (_, i) => i)
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = rng.randInt(0, i + 1)
-      ;[order[i], order[j]] = [order[j], order[i]]
+  for (let i = 0; i < blueprints.length; i++) {
+    const times: number[] = []
+    for (let f = 0; f < FAILURE_COUNT; f++) {
+      // Failure 1 ≈ 30–60s, failure 2 ≈ 90–120s, etc.
+      times.push(30 + f * FAILURE_GAP + rng.randFloat(0, FAILURE_JITTER))
     }
-    // The first failuresPerBatch indices in the shuffled order are the failures
-    const failSet = new Set(order.slice(0, Math.min(failuresPerBatch, batchLen)))
-    for (let i = 0; i < batchLen; i++) {
-      const willFail = failSet.has(i)
-      const droneFailureRelativeTime = willFail
-        ? 30 + rng.randFloat(0, 60)   // fail between 30–90s after arrival
-        : null
-      blueprints[batchStart + i] = { ...blueprints[batchStart + i], willFail, droneFailureRelativeTime }
-    }
+    blueprints[i] = { ...blueprints[i], willFail: true, droneFailureTimes: times }
   }
 
   return blueprints
@@ -328,13 +349,15 @@ export const CHARGE_INTERVAL = 15
 
 // ─── Asset pool ───────────────────────────────────────────────────────────
 
-// Fleet sizes per preset.  Surge/campaign reach 24B/12R/4G for higher volume.
+// Fleet is slightly Blue-heavy to match average demand: Blue returns fastest (9 u/s) so each Blue
+// covers more missions per hour, meaning you need marginally more of them per unit of total demand.
+// Ratio is small — 10/9/8 keeps utilisation rates nearly equal across all three types.
 const FLEET: Record<Complexity, [AssetType, number][]> = {
-  standard:  [['Blue', 18], ['Red',  9], ['Green', 3]],
-  surge:     [['Blue', 24], ['Red', 12], ['Green', 4]],
-  precision: [['Blue', 12], ['Red',  6], ['Green', 2]],
-  campaign:  [['Blue', 24], ['Red', 12], ['Green', 4]],
-  quick:     [['Blue', 12], ['Red',  6], ['Green', 2]],
+  balanced:  [['Blue', 10], ['Red',  9],  ['Green', 8]],   // ~27 total
+  strategic: [['Blue',  9], ['Red',  8],  ['Green', 7]],   // ~24 — smaller fleet, small missions
+  tactical:  [['Blue', 10], ['Red',  9],  ['Green', 8]],   // ~27 — same size, large missions
+  full:      [['Blue', 12], ['Red', 11],  ['Green', 10]],  // ~33 — stretched by volume + size
+  quick:     [['Blue',  5], ['Red',  5],  ['Green',  5]],
 }
 
 // Arthurian knight callsigns — unique per drone, readable, UK military tradition
@@ -350,8 +373,10 @@ export const ASSET_CALLSIGNS: Record<string, string> = {
   R01: 'Ector',     R02: 'Lot',       R03: 'Uriens',    R04: 'Leodegrance', R05: 'Caradoc',
   R06: 'Bagdemagus',R07: 'Brunor',    R08: 'Safer',     R09: 'Pellinore',
   R10: 'Colgrevance', R11: 'Meliodas', R12: 'Agglovale',
-  // Green — heavy specialist drones (legendary figures, G01–G04)
+  // Green — specialist thermal/precision drones (Arthurian figures, G01–G10)
   G01: 'Balin',     G02: 'Balan',     G03: 'Elyan',     G04: 'Nimue',
+  G05: 'Merlin',    G06: 'Morgana',   G07: 'Lynette',   G08: 'Elaine',
+  G09: 'Enid',      G10: 'Luned',
 }
 
 // NATO phonetic / aircraft callsigns extended to cover surge/campaign fleet
@@ -367,8 +392,10 @@ export const ASSET_CALLSIGNS_NATO: Record<string, string> = {
   R01: 'Sierra',   R02: 'Tango',    R03: 'Uniform',  R04: 'Victor',   R05: 'Whiskey',
   R06: 'X-ray',    R07: 'Yankee',   R08: 'Zulu',     R09: 'Niner',
   R10: 'Ranger',   R11: 'Spartan',  R12: 'Nomad',
-  // Green — extended specialist class (G01–G04)
+  // Green — specialist class (G01–G10)
   G01: 'Jade',     G02: 'Ember',    G03: 'Onyx',     G04: 'Flint',
+  G05: 'Kilo',     G06: 'Lima',     G07: 'Mike',     G08: 'November',
+  G09: 'Oscar',    G10: 'Papa',
 }
 
 export function createInitialAssets(complexity: Complexity): Asset[] {

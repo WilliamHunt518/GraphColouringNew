@@ -68,7 +68,15 @@
       "PowerShell(& \"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"G:\\\\Files\\\\Code\\\\GraphColouringNew\\\\node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit --project \"G:\\\\Files\\\\Code\\\\GraphColouringNew\\\\tsconfig.json\" 2>&1)",
       "Bash(Get-ChildItem *)",
       "Bash(echo \"Exit code: $?\")",
-      "Bash(echo \"Exit: $?\")"
+      "Bash(echo \"Exit: $?\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "Bash(Stop-Process -Force)",
+      "Bash(Start-Sleep -Milliseconds 500)",
+      "PowerShell(Get-Process *)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Get-Content \"C:\\\\Users\\\\Work\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\G--Files-Code-GraphColouringNew\\\\20df6ee8-f291-4f5c-a6ba-fb3432fab706\\\\tasks\\\\bwoiptn3m.output\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-String -Path \"src\\\\components\\\\MapDisplay.tsx\" -Pattern \"shiftKey\" -Context 2)"
     ]
   }
 }

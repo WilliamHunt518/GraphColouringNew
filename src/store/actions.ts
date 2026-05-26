@@ -22,9 +22,10 @@ export type GameAction =
   | { type: 'OVERRIDE_TACTICAL'; missionId: string }        // user wants to edit tactical
 
   // ── Drone failure recovery ───────────────────────────────────────────────
-  | { type: 'ACCEPT_RECOVERY'; missionId: string; recoveryType: 'reserve' | 'redistribute' }
+  | { type: 'ACCEPT_RECOVERY'; missionId: string; recoveryType: 'redistribute' }
   | { type: 'APPLY_MANUAL_RECOVERY'; missionId: string; taskId: string; newAssetId: string }
   | { type: 'CONFIRM_FAILURE_RECOVERY'; missionId: string; taskAssignments: Record<string, string[]> }
+  | { type: 'ABANDON_MISSION'; missionId: string }
 
   // ── In-mission operations ────────────────────────────────────────────────
   | { type: 'RECALL_ASSET'; assetId: string }

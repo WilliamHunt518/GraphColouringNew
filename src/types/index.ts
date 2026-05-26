@@ -1,6 +1,6 @@
 // ─── Study configuration ───────────────────────────────────────────────────
 
-export type Complexity = 'standard' | 'surge' | 'precision' | 'campaign' | 'quick'
+export type Complexity = 'balanced' | 'strategic' | 'tactical' | 'full' | 'quick'
 export type Mode = 'no-agent' | 'agent'
 export type Condition = 'HH' | 'LH' | 'HL' | 'LL' | 'none'
 
@@ -12,6 +12,7 @@ export interface StudyConfig {
   seed: number
   agentErrorRate: number   // epsilonStrategic — error rate for Co-Pilot (strategic tier)
   epsilonTactical: number  // error rate for Meta-Co-Pilot (tactical tier)
+  tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
   numSessions: number
 }
@@ -89,7 +90,7 @@ export interface Task {
 // ─── Missions ─────────────────────────────────────────────────────────────
 
 export type MissionCategory = 'A' | 'B' | 'C' | 'D' | 'E'
-export type MissionStatus = 'queued' | 'active' | 'completed' | 'failed'
+export type MissionStatus = 'queued' | 'active' | 'completed' | 'failed' | 'abandoned'
 
 export interface Mission {
   id: string
@@ -111,14 +112,18 @@ export interface Mission {
   // Per-drone task execution order (droneId → ordered taskId[]) — set on tactical confirm
   droneSequences: Record<string, string[]>
   // Drone failure
-  droneFailureRelativeTime: number | null  // seconds after arrivalTime; null = no failure
-  droneFailureFired: boolean
+  droneFailureTimes: number[]   // seconds after arrivalTime for each scheduled failure
+  droneFailuresFired: number    // how many failure events have triggered so far
   failedDroneId: string | null
   // Failure recovery state
   failureRecoveryPending: boolean
   pendingRecoveryOptions: RecoveryOption[] | null
   // Tactical agent error tracking
   tacticallySuppressedTaskId: string | null   // set after Deploy when tactical error was active
+  // Abandon tracking
+  abandonedAt: number | null     // elapsed (s) when operator abandoned; null = not abandoned
+  isResidual: boolean            // true if this mission was re-queued from an abandoned one
+  needsGreedyReplan: boolean     // true when greedy mode is active; auto-replans after each task
 }
 
 // ─── Strategies ───────────────────────────────────────────────────────────
@@ -141,6 +146,8 @@ export interface Strategy {
   reserveAfter: AssetRequirement
   speedScore: number
   reserveScore: number
+  redundancyScore: number             // 0–1: buffer drones above mission minimum / pool size
+  minimumAssets: AssetRequirement     // sum of all primary task compositions (floor allocation)
   taskComps: Record<string, TaskComp>
   isBadSuggestion: boolean
   badSuggestionType: 'over' | 'under' | null
@@ -213,7 +220,7 @@ export interface MissionBlueprint {
   zoneCenter: { x: number; y: number }
   waypoints: { x: number; y: number }[]
   willFail: boolean
-  droneFailureRelativeTime: number | null  // seconds after arrivalTime; null if !willFail
+  droneFailureTimes: number[]   // seconds after arrivalTime for each scheduled failure; [] if none
 }
 
 // ─── Events (data logging) ────────────────────────────────────────────────
@@ -355,6 +362,14 @@ export interface SurveyResponseEvent extends BaseEvent {
   responses: Record<string, number>
 }
 
+export interface MissionAbandonedEvent extends BaseEvent {
+  type: 'mission_abandoned'
+  missionId: string
+  missionCategory: MissionCategory
+  completedTaskCount: number
+  remainingTaskCount: number
+}
+
 export type GameEvent =
   | MissionArrivedEvent
   | StrategicModalOpenedEvent
@@ -370,3 +385,4 @@ export type GameEvent =
   | TrustProbeEvent
   | TrustProbeDismissedEvent
   | SurveyResponseEvent
+  | MissionAbandonedEvent

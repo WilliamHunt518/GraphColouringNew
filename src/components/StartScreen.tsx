@@ -3,11 +3,11 @@ import type { Mode, StudyConfig } from '../types'
 import { randomSeed } from '../utils/config'
 
 const COMPLEXITIES = [
-  { value: 'quick'     as const, label: 'Quick Ops',     desc: '12/6/2 drones · 3–5 tasks/mission' },
-  { value: 'standard'  as const, label: 'Standard',      desc: '18/9/3 drones · balanced mix' },
-  { value: 'surge'     as const, label: 'Fleet Surge',   desc: '24/12/4 drones · lighter missions' },
-  { value: 'precision' as const, label: 'Precision Ops', desc: '12/6/2 drones · heavy missions' },
-  { value: 'campaign'  as const, label: 'Campaign',      desc: '24/12/4 drones · heavy+volume' },
+  { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 10B 9R 8G' },
+  { value: 'tactical'  as const, label: 'Tactical Heavy',   desc: 'Low Strategic / High Tactical · few large missions · 10B 9R 8G' },
+  { value: 'strategic' as const, label: 'Strategic Heavy',  desc: 'High Strategic / Low Tactical · many small missions · 9B 8R 7G' },
+  { value: 'full'      as const, label: 'Full Spectrum',    desc: 'High Strategic / High Tactical · frequent large missions · 12B 11R 10G' },
+  { value: 'quick'     as const, label: 'Quick Test',       desc: 'Dev only · 5B 5R 5G' },
 ]
 
 const MODES = [
@@ -56,10 +56,11 @@ interface Props { onStart: (config: StudyConfig) => void }
 
 export default function StartScreen({ onStart }: Props) {
   const [participantId, setParticipantId] = useState('')
-  const [complexity, setComplexity] = useState<StudyConfig['complexity']>('standard')
-  const [mode, setMode] = useState<Mode>('no-agent')
-  const [epsilonStrategic, setEpsilonStrategic] = useState(0.20)
-  const [epsilonTactical, setEpsilonTactical]   = useState(0.20)
+  const [complexity, setComplexity] = useState<StudyConfig['complexity']>('balanced')
+  const [mode, setMode] = useState<Mode>('agent')
+  const [epsilonStrategic, setEpsilonStrategic] = useState(0.0)
+  const [epsilonTactical, setEpsilonTactical]   = useState(0.0)
+  const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('plan-all')
   const [seed, setSeed] = useState(String(randomSeed()))
   const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
@@ -78,6 +79,7 @@ export default function StartScreen({ onStart }: Props) {
       seed: seedNum,
       agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
       epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
+      tacticalMode: mode === 'agent' ? tacticalMode : 'plan-all',
       testingMode,
       numSessions,
     })
@@ -115,14 +117,31 @@ export default function StartScreen({ onStart }: Props) {
         </div>
 
         {mode === 'agent' && (
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-300">
-              Agent Accuracy
-              <span className="ml-2 text-xs text-gray-500 font-normal">how often each agent's suggestion is correct</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <AccuracySpinner label="Strategic Agent" epsilon={epsilonStrategic} onChange={setEpsilonStrategic} />
-              <AccuracySpinner label="Tactical Agent"  epsilon={epsilonTactical}  onChange={setEpsilonTactical} />
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-300">
+                Agent Accuracy
+                <span className="ml-2 text-xs text-gray-500 font-normal">how often each agent's suggestion is correct</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <AccuracySpinner label="Strategic Agent" epsilon={epsilonStrategic} onChange={setEpsilonStrategic} />
+                <AccuracySpinner label="Tactical Agent"  epsilon={epsilonTactical}  onChange={setEpsilonTactical} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-300">Tactical Agent Style</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: 'plan-all' as const, label: 'Plan All', desc: 'Full sequence, confirm once' },
+                  { value: 'greedy'   as const, label: 'Greedy',   desc: 'Next task only, auto-replans' },
+                ] as const).map(opt => (
+                  <button key={opt.value} onClick={() => setTacticalMode(opt.value)}
+                    className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${tacticalMode === opt.value ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-400'}`}>
+                    <span className="font-medium">{opt.label}</span>
+                    <span className="block text-xs mt-0.5 text-gray-400">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

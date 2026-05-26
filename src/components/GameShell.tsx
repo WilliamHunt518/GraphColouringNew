@@ -48,6 +48,9 @@ export default function GameShell({ config }: Props) {
       if (d._mapAction === 'CONFIRM_FAILURE_RECOVERY' && typeof d.missionId === 'string') {
         dispatch({ type: 'CONFIRM_FAILURE_RECOVERY', missionId: d.missionId, taskAssignments: d.taskAssignments })
       }
+      if (d._mapAction === 'ABANDON_MISSION' && typeof d.missionId === 'string') {
+        dispatch({ type: 'ABANDON_MISSION', missionId: d.missionId })
+      }
       if (d._mapAction === 'REPRIORITISE_TOP' && typeof d.missionId === 'string' && typeof d.taskId === 'string') {
         dispatch({ type: 'REPRIORITISE_TASK', missionId: d.missionId, taskId: d.taskId, direction: 'top' })
       }
@@ -90,7 +93,13 @@ export default function GameShell({ config }: Props) {
     const allPending = new Set(state.missions.filter(m => m.failureRecoveryPending || (m.tacticalPending && !!m.pendingAllocation)).map(m => m.id))
 
     for (const id of failurePending) {
-      if (!prevPendingRef.current.has(id)) setOpenMissionId(id)
+      if (!prevPendingRef.current.has(id)) {
+        setOpenMissionId(prev => {
+          // Don't hijack the view if the operator is already handling a failure recovery
+          const alreadyInRecovery = state.missions.some(m => m.id === prev && m.failureRecoveryPending)
+          return alreadyInRecovery ? prev : id
+        })
+      }
     }
     // When the currently-open mission is confirmed (leaves pending), close it automatically
     setOpenMissionId(prev => {

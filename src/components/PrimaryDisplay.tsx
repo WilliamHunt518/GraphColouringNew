@@ -44,16 +44,16 @@ const TASK_STATUS_STYLE: Record<Task['status'], string> = {
   failed:    'bg-red-900 text-red-300',
 }
 
-const TASK_SHORT: Record<number, string> = { 1: 'Rcn', 2: 'Rco', 3: 'MnD', 4: 'MjD', 5: 'S&S' }
-const TASK_FULL:  Record<number, string> = { 1: 'Recce', 2: 'Recon', 3: 'Minor Drop', 4: 'Major Drop', 5: 'Search & Supply' }
+const TASK_SHORT: Record<number, string> = { 1: 'Rcc', 2: 'Rcn', 3: 'Sup', 4: 'PSD', 5: 'S&S' }
+const TASK_FULL:  Record<number, string> = { 1: 'Recce', 2: 'Recon', 3: 'Supply Drop', 4: 'Prec Supply Drop', 5: 'Search & Service' }
 
-// Colored dots showing which drone types a task requires (primary composition)
+// Colored dots showing primary drone type composition
 const TASK_DOTS: Record<number, AssetType[]> = {
   1: ['Blue'],
-  2: ['Blue', 'Blue', 'Blue', 'Green'],
-  3: ['Blue', 'Red'],
-  4: ['Blue', 'Red', 'Red'],
-  5: ['Red', 'Green'],
+  2: ['Blue', 'Blue'],
+  3: ['Red', 'Red', 'Green'],
+  4: ['Red', 'Green', 'Green'],
+  5: ['Blue', 'Red', 'Green'],
 }
 
 const ASSET_COLORS: Record<AssetType, string> = {
@@ -127,7 +127,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
   const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
-  const done    = state.missions.filter(m => m.status === 'completed' || m.status === 'failed')
+  const done    = state.missions.filter(m => m.status === 'completed' || m.status === 'failed' || m.status === 'abandoned')
   const reserve = reserveCount(state.assets)
 
   function sortByScore(missions: Mission[]) {
@@ -177,7 +177,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               <button
                 onClick={() => dispatch({ type: 'FORCE_DRONE_FAILURE' })}
                 disabled={!state.missions.some(m =>
-                  m.status === 'active' && !m.failureRecoveryPending && !m.droneFailureFired &&
+                  m.status === 'active' && !m.failureRecoveryPending &&
                   state.assets.some(a => a.currentMissionId === m.id && a.status === 'deployed' &&
                     m.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing')
                 )}
@@ -546,6 +546,16 @@ function StrategyCard({ strat, selected, onSelect }: { strat: Strategy; selected
       <div className="mt-2 space-y-1">
         <ScoreBar label="Speed" value={strat.speedScore} color="bg-blue-500" />
         <ScoreBar label="Reserve" value={strat.reserveScore} color="bg-green-500" />
+        <ScoreBar label="Resilience" value={strat.redundancyScore} color="bg-amber-500" />
+      </div>
+      <div className="mt-1 text-[10px] text-gray-500">
+        Buffer:{' '}
+        {(() => {
+          const parts = (['Blue', 'Red', 'Green'] as AssetType[])
+            .filter(t => strat.assets[t] > strat.minimumAssets[t])
+            .map(t => `+${strat.assets[t] - strat.minimumAssets[t]} ${t}`)
+          return parts.length > 0 ? parts.join(' · ') : 'at minimum'
+        })()}
       </div>
     </button>
   )
@@ -578,7 +588,7 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
       <div className="text-xs text-gray-400">
         {eta < Infinity
           ? <>ETA: <span className="text-white">{fmtTime(eta)}</span></>
-          : <span className="text-red-400">No tasks feasible with this pool</span>
+          : <span className="text-red-400">Waiting for other missions to complete</span>
         }
       </div>
     </div>
@@ -826,7 +836,7 @@ function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMo
               <span>⚠ Cannot fulfill:</span>
               {unschedulable.map(t => (
                 <span key={t.id} className="px-1 py-0.5 rounded bg-amber-900/30 border border-amber-700/40"
-                  title={`${TASK_FULL[t.type]} (T${t.type}) requires asset types not in committed pool`}>
+                  title={`${TASK_FULL[t.type]} (T${t.type}) cannot start until required assets are freed from other missions`}>
                   {TASK_SHORT[t.type]}
                 </span>
               ))}
@@ -961,7 +971,7 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
         {/* Mission zones */}
         {[...state.missions]
           .sort((a, b) => {
-            const ord: Record<string, number> = { completed: 0, failed: 0, queued: 1, active: 2 }
+            const ord: Record<string, number> = { completed: 0, failed: 0, abandoned: 0, queued: 1, active: 2 }
             return (ord[a.status] ?? 0) - (ord[b.status] ?? 0)
           })
           .map(m => {
@@ -1046,7 +1056,7 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
                   const statusOrd: Record<string, number> = { executing: 0, traveling: 1, pending: 2 }
                   return (statusOrd[a.task.status] ?? 3) - (statusOrd[b.task.status] ?? 3) || b.task.type - a.task.type
                 })
-            for (let i = 0; i < sorted.length - 1; i++) {
+            for (let i = 0; i < Math.min(1, sorted.length - 1); i++) {
               const from = sorted[i].task.waypoint
               const to = sorted[i + 1].task.waypoint
               lines.push(
@@ -1092,6 +1102,29 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
           .flatMap(m => m.tasks.map(t => ({ t, m })))
           .map(({ t }) => (
             <g key={`wp-${t.id}`}>
+              {(() => {
+                if (t.status !== 'executing' && t.status !== 'completed') return null
+                const progress = t.status === 'completed'
+                  ? 1
+                  : t.startTime !== null && t.baseTime > 0
+                    ? Math.min(1, Math.max(0, (state.elapsed - t.startTime) / t.baseTime))
+                    : 0
+                if (progress <= 0) return null
+                const R = 8, circ = 2 * Math.PI * R
+                return (
+                  <circle
+                    cx={t.waypoint.x} cy={t.waypoint.y} r={R}
+                    fill="none"
+                    stroke={t.status === 'completed' ? '#10b981' : '#3b82f6'}
+                    strokeWidth={1.5}
+                    strokeDasharray={`${circ} ${circ}`}
+                    strokeDashoffset={circ * (1 - progress)}
+                    transform={`rotate(-90 ${t.waypoint.x} ${t.waypoint.y})`}
+                    style={{ pointerEvents: 'none' }}
+                    opacity={0.8}
+                  />
+                )
+              })()}
               <circle cx={t.waypoint.x} cy={t.waypoint.y} r={5}
                 fill={t.status === 'completed' ? 'rgba(16,185,129,0.2)' : t.status === 'executing' ? 'rgba(245,158,11,0.2)' : 'rgba(30,41,59,0.8)'}
                 stroke={t.status === 'completed' ? '#4ade80' : t.status === 'executing' ? '#f59e0b' : '#475569'}
