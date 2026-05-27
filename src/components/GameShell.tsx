@@ -87,21 +87,9 @@ export default function GameShell({ config }: Props) {
     } catch { /* storage quota exceeded — ignore */ }
   }, [state.phase, state.sessionNumber])  // fires when each session ends or study completes
 
-  // Auto-open for new failure recovery missions; auto-clear when pending mission is confirmed
+  // Auto-clear openMissionId when the mission leaves the pending pool
   useEffect(() => {
-    const failurePending = new Set(state.missions.filter(m => m.failureRecoveryPending).map(m => m.id))
     const allPending = new Set(state.missions.filter(m => m.failureRecoveryPending || (m.tacticalPending && !!m.pendingAllocation)).map(m => m.id))
-
-    for (const id of failurePending) {
-      if (!prevPendingRef.current.has(id)) {
-        setOpenMissionId(prev => {
-          // Don't hijack the view if the operator is already handling a failure recovery
-          const alreadyInRecovery = state.missions.some(m => m.id === prev && m.failureRecoveryPending)
-          return alreadyInRecovery ? prev : id
-        })
-      }
-    }
-    // When the currently-open mission is confirmed (leaves pending), close it automatically
     setOpenMissionId(prev => {
       if (prev && prevPendingRef.current.has(prev) && !allPending.has(prev)) {
         LOG && console.log('[SHELL] auto-clear: openMissionId → null (was:', prev, ')')
@@ -109,7 +97,6 @@ export default function GameShell({ config }: Props) {
       }
       return prev
     })
-
     prevPendingRef.current = allPending
   }, [state.missions])
 

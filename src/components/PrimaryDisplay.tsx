@@ -6,7 +6,7 @@ import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadStudySnapshot } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
-import { HUB, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL } from '../utils/missionGen'
+import { HUB, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL, TASK_PRIMARY, TASK_SUBSTITUTE } from '../utils/missionGen'
 import { CAT_ICON, TASK_ICON, DRONE_ICON } from '../utils/icons'
 import type { TaskType } from '../types'
 
@@ -64,11 +64,6 @@ const ASSET_DOT_COLOR: Record<AssetType, string> = {
   Blue: 'bg-blue-400', Red: 'bg-red-400', Green: 'bg-green-400',
 }
 
-const ASSET_CHIP_IDLE: Record<AssetType, string> = {
-  Blue:  'bg-blue-900/40 text-blue-400',
-  Red:   'bg-red-900/40 text-red-400',
-  Green: 'bg-green-900/40 text-green-400',
-}
 
 
 function fmtTime(seconds: number): string {
@@ -420,18 +415,6 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
       {/* Task plan — shows drone→task assignments after allocation */}
       {isActive && <TaskPlanPanel mission={mission} callsignMode={callsignMode} />}
 
-      {/* Assigned assets strip */}
-      {isActive && deployedHere.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-gray-700/40">
-          {deployedHere.map(a => (
-            <span key={a.id}
-              className={`font-mono text-xs px-1 py-0.5 rounded leading-none ${ASSET_CHIP_IDLE[a.type]} opacity-70`}
-            >
-              {callsignMode !== 'id' ? resolveCallsign(a.id, callsignMode) : a.id}
-            </span>
-          ))}
-        </div>
-      )}
 
       {/* Strategic allocation panel */}
       {isAllocating && state.strategicModal && (
@@ -644,7 +627,7 @@ function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive }: {
 
   return (
     <div className="space-y-1">
-      <div className="flex h-11 rounded-sm overflow-hidden gap-px">
+      <div className="flex h-8 rounded-sm overflow-hidden gap-px">
         {tasks.map(t => {
           const widthPct = (TASK_WEIGHT[t.type] / totalValue) * 100
           const showFull  = widthPct >= 15
@@ -796,9 +779,30 @@ function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMo
     chain.sort((a, b) => mission.tasks.indexOf(a) - mission.tasks.indexOf(b))
   }
 
-  const unschedulable = mission.tasks.filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0)
+  const unassigned = mission.tasks.filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0)
 
-  if (assetChains.size === 0 && unschedulable.length === 0) return null
+  // Build the total drone pool for this mission from all tasks' assigned IDs
+  const poolIds = new Set(mission.tasks.flatMap(t => t.assignedAssetIds))
+  const poolCounts = { Blue: 0, Red: 0, Green: 0 }
+  for (const id of poolIds) {
+    if (id.startsWith('B')) poolCounts.Blue++
+    else if (id.startsWith('R')) poolCounts.Red++
+    else poolCounts.Green++
+  }
+
+  // Split: tasks whose composition the pool CAN satisfy (queued) vs truly impossible
+  const queuedTasks: Task[] = []
+  const cannotFulfilTasks: Task[] = []
+  for (const task of unassigned) {
+    const prim = TASK_PRIMARY[task.type as TaskType]
+    const sub = TASK_SUBSTITUTE[task.type as TaskType]
+    const canPrim = poolCounts.Blue >= prim.Blue && poolCounts.Red >= prim.Red && poolCounts.Green >= prim.Green
+    const canSub = !!sub && poolCounts.Blue >= sub.Blue && poolCounts.Red >= sub.Red && poolCounts.Green >= sub.Green
+    if (canPrim || canSub) queuedTasks.push(task)
+    else cannotFulfilTasks.push(task)
+  }
+
+  if (assetChains.size === 0 && unassigned.length === 0) return null
 
   return (
     <div className="mt-2 border-t border-gray-700/40 pt-2">
@@ -808,8 +812,11 @@ function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMo
       >
         <span className="font-medium text-gray-400">Task Plan</span>
         <span>{open ? '▲' : '▼'}</span>
-        {unschedulable.length > 0 && (
-          <span className="ml-1 text-amber-500">⚠ {unschedulable.length} cannot fulfill</span>
+        {queuedTasks.length > 0 && (
+          <span className="ml-1 text-blue-400">⏳ {queuedTasks.length} queued</span>
+        )}
+        {cannotFulfilTasks.length > 0 && (
+          <span className="ml-1 text-amber-500">⚠ {cannotFulfilTasks.length} cannot fulfil</span>
         )}
       </button>
 
@@ -831,12 +838,23 @@ function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMo
               ))}
             </div>
           ))}
-          {unschedulable.length > 0 && (
+          {queuedTasks.length > 0 && (
+            <div className="flex items-center gap-1 text-xs text-blue-500">
+              <span>⏳ Queued:</span>
+              {queuedTasks.map(t => (
+                <span key={t.id} className="px-1 py-0.5 rounded bg-blue-900/30 border border-blue-700/40"
+                  title={`${TASK_FULL[t.type]} (T${t.type}) waiting for drones to become available`}>
+                  {TASK_SHORT[t.type]}
+                </span>
+              ))}
+            </div>
+          )}
+          {cannotFulfilTasks.length > 0 && (
             <div className="flex items-center gap-1 text-xs text-amber-600">
-              <span>⚠ Cannot fulfill:</span>
-              {unschedulable.map(t => (
+              <span>⚠ Cannot fulfil:</span>
+              {cannotFulfilTasks.map(t => (
                 <span key={t.id} className="px-1 py-0.5 rounded bg-amber-900/30 border border-amber-700/40"
-                  title={`${TASK_FULL[t.type]} (T${t.type}) cannot start until required assets are freed from other missions`}>
+                  title={`${TASK_FULL[t.type]} (T${t.type}) — not enough drones of the required type were allocated`}>
                   {TASK_SHORT[t.type]}
                 </span>
               ))}
@@ -1028,48 +1046,6 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
             />
           ))}
 
-        {/* Full: inter-task chain paths (dashed) for chained drones */}
-        {detailLevel === 2 && (() => {
-          const missionByDroneId = new Map<string, Mission>()
-          const droneTaskMap = new Map<string, { task: Task; missionId: string }[]>()
-          for (const m of state.missions.filter(m => m.status === 'active')) {
-            for (const task of m.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')) {
-              for (const droneId of task.assignedAssetIds) {
-                if (!droneTaskMap.has(droneId)) droneTaskMap.set(droneId, [])
-                droneTaskMap.get(droneId)!.push({ task, missionId: m.id })
-                missionByDroneId.set(droneId, m)
-              }
-            }
-          }
-          const lines: React.ReactElement[] = []
-          droneTaskMap.forEach((entries, droneId) => {
-            if (entries.length < 2) return
-            const asset = state.assets.find(a => a.id === droneId)
-            if (!asset) return
-            const color = MAP_ASSET_COLOR[asset.type]
-            // Use stored droneSequences if available; otherwise fall back to status/type sort
-            const mission = missionByDroneId.get(droneId)
-            const seq = mission?.droneSequences?.[droneId] ?? []
-            const sorted = seq.length > 0
-              ? seq.map(tid => entries.find(e => e.task.id === tid)).filter((e): e is typeof entries[0] => !!e)
-              : [...entries].sort((a, b) => {
-                  const statusOrd: Record<string, number> = { executing: 0, traveling: 1, pending: 2 }
-                  return (statusOrd[a.task.status] ?? 3) - (statusOrd[b.task.status] ?? 3) || b.task.type - a.task.type
-                })
-            for (let i = 0; i < Math.min(1, sorted.length - 1); i++) {
-              const from = sorted[i].task.waypoint
-              const to = sorted[i + 1].task.waypoint
-              lines.push(
-                <line key={`ch-${droneId}-${i}`}
-                  x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                  stroke={color} strokeWidth="1.5" strokeOpacity="0.5" strokeDasharray="4 3"
-                  markerEnd={`url(#emap-arr-${asset.type.toLowerCase()})`}
-                />
-              )
-            }
-          })
-          return <>{lines}</>
-        })()}
 
         {/* Asset icons — all levels */}
         {state.assets

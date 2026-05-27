@@ -186,7 +186,12 @@ export function generateStrategies(
     return Math.min(1, buffer / total)
   }
 
-  // ── Aggressive strategy: parallel sum, all primaries ──────────────────────
+  // ── Aggressive strategy: parallel sum + per-type redundancy floor ───────────
+  // Start from the parallel sum (enough drones for all tasks to run simultaneously),
+  // then raise each used type to at least floor+1 so one failure can't block completion.
+  // The parallel sum is always >= floor, so this only adds drones for types where
+  // only a single task uses that type (parallelSum == floor for that type).
+  const aggFloor = sequentialFloor(primComps)
   const parallelSum: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
   for (const task of sorted) {
     const c = primComps.get(task.id)!
@@ -194,10 +199,14 @@ export function generateStrategies(
     parallelSum.Red   += c.comp.Red
     parallelSum.Green += c.comp.Green
   }
-  const aggTruePool = cap(parallelSum, reserve)
+  const aggWithRedundancy: AssetRequirement = {
+    Blue:  aggFloor.Blue  > 0 ? Math.max(parallelSum.Blue,  aggFloor.Blue  + 1) : 0,
+    Red:   aggFloor.Red   > 0 ? Math.max(parallelSum.Red,   aggFloor.Red   + 1) : 0,
+    Green: aggFloor.Green > 0 ? Math.max(parallelSum.Green, aggFloor.Green + 1) : 0,
+  }
+  const aggTruePool = cap(aggWithRedundancy, reserve)
   const aggTrueTime = simulatePool(sorted, primComps, aggTruePool)
   const aggTrueTaskComps = toTaskComps(sorted, primComps, primComps)
-  const aggFloor = sequentialFloor(primComps)
   const aggMinimumAssets = aggFloor
 
   // ── Conservative strategy: primaries by default; substitute only when reserve
@@ -290,7 +299,7 @@ export function generateStrategies(
   if (aggTrueTime < Infinity) {
     strategies.push({
       name: 'Aggressive',
-      description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time. Minimal failure buffer.',
+      description: 'Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.',
       assets: aggBad.displayPool,
       expectedCompletionTime: aggBad.displayTime,
       reserveAfter: reserveAfter(aggBad.displayPool),

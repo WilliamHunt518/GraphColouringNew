@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 
-const LOG = true
 import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAllocation } from '../types'
 import { HUB, ASSET_SPEED, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
@@ -89,57 +88,80 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
     channelRef.current?.postMessage(action)
   }
 
-  // Mirror primary window's mission selection into the tactical view
+  // Auto-clear local selection when the selected mission is no longer pending/active
   useEffect(() => {
-    LOG && console.log('[MAP DISPLAY] state.openMissionId changed to:', state.openMissionId)
-    setTacticalMissionId(state.openMissionId)
-    LOG && console.log('[MAP DISPLAY] setTacticalMissionId →', state.openMissionId)
-  }, [state.openMissionId])
+    setTacticalMissionId(prev => {
+      if (!prev) return null
+      const m = state.missions.find(m => m.id === prev)
+      if (!m) return null
+      if (!m.tacticalPending && !m.failureRecoveryPending && m.status !== 'active') return null
+      return prev
+    })
+  }, [state.missions])
+
+  const pending = state.missions.filter(m =>
+    (m.tacticalPending && !!m.pendingAllocation) || m.failureRecoveryPending
+  )
 
   const tacticalMission = tacticalMissionId
     ? state.missions.find(m => m.id === tacticalMissionId &&
         ((m.tacticalPending && !!m.pendingAllocation) || m.failureRecoveryPending || m.status === 'active')) ?? null
     : null
 
-  if (tacticalMission) {
-    const isRecovery = tacticalMission.failureRecoveryPending
-    const isReadOnly = !isRecovery && !tacticalMission.tacticalPending && tacticalMission.status === 'active'
-    let overrideAlloc: PendingAllocation | undefined
-    let recoveryReserveIds: Set<string> | undefined
-    let recoveryFailedDroneId: string | null = null
-    if (isRecovery) {
-      const result = buildRecoveryAllocation(tacticalMission, state.assets)
-      overrideAlloc = result.allocation
-      recoveryReserveIds = result.reserveIds
-      recoveryFailedDroneId = result.failedDroneId
-    } else if (isReadOnly) {
-      overrideAlloc = buildActiveAllocation(tacticalMission, state.assets)
-    }
-    return (
-      <TacticalPlannerView
-        mission={tacticalMission}
-        state={state}
-        onBack={() => setTacticalMissionId(null)}
-        onMapAction={handleMapAction}
-        overrideAllocation={overrideAlloc}
-        recoveryMode={isRecovery}
-        recoveryReserveIds={recoveryReserveIds}
-        failedDroneId={recoveryFailedDroneId}
-        readOnly={isReadOnly}
-      />
-    )
+  const isRecovery = !!(tacticalMission?.failureRecoveryPending)
+  const isReadOnly = !!tacticalMission && !isRecovery && !tacticalMission.tacticalPending && tacticalMission.status === 'active'
+  let overrideAlloc: PendingAllocation | undefined
+  let recoveryReserveIds: Set<string> | undefined
+  let recoveryFailedDroneId: string | null = null
+  if (tacticalMission && isRecovery) {
+    const result = buildRecoveryAllocation(tacticalMission, state.assets)
+    overrideAlloc = result.allocation
+    recoveryReserveIds = result.reserveIds
+    recoveryFailedDroneId = result.failedDroneId
+  } else if (tacticalMission && isReadOnly) {
+    overrideAlloc = buildActiveAllocation(tacticalMission, state.assets)
   }
 
-  const pending = state.missions.filter(m =>
-    (m.tacticalPending && !!m.pendingAllocation) || m.failureRecoveryPending
+  return (
+    <div className="flex h-screen bg-gray-950 overflow-hidden">
+      <MissionQueuePanel
+        pending={pending}
+        selectedId={tacticalMissionId}
+        onSelect={setTacticalMissionId}
+        state={state}
+      />
+      <div className="flex-1 min-w-0">
+        {tacticalMission ? (
+          <TacticalPlannerView
+            mission={tacticalMission}
+            state={state}
+            onBack={() => setTacticalMissionId(null)}
+            onMapAction={handleMapAction}
+            overrideAllocation={overrideAlloc}
+            recoveryMode={isRecovery}
+            recoveryReserveIds={recoveryReserveIds}
+            failedDroneId={recoveryFailedDroneId}
+            readOnly={isReadOnly}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-600">
+            <p className="text-sm">Select a mission from the panel</p>
+            {pending.length === 0 && (
+              <p className="text-xs text-gray-700">No missions currently require tactical assignment</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   )
-  return <WaitingScreen pending={pending} onSelect={setTacticalMissionId} state={state} />
 }
 
-// ─── Waiting screen ───────────────────────────────────────────────────────
 
-function WaitingScreen({ pending, onSelect, state }: {
+// ─── Mission queue panel (persistent left sidebar) ────────────────────────
+
+function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
   pending: Mission[]
+  selectedId: string | null
   onSelect: (id: string) => void
   state: MapViewState
 }) {
@@ -147,70 +169,63 @@ function WaitingScreen({ pending, onSelect, state }: {
   const queued = state.missions.filter(m => m.status === 'queued').length
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-gray-300">
+    <div className="flex flex-col w-64 flex-none bg-gray-900 border-r border-gray-800 h-full overflow-hidden">
       {/* Status bar */}
-      <div className="flex items-center gap-6 px-6 py-3 bg-gray-900 border-b border-gray-800 flex-none">
-        <span className="text-sm font-semibold text-gray-400">Session {state.sessionNumber}/{state.numSessions}</span>
-        <span className="text-sm">
-          Score: <span className="text-white font-bold font-mono">{state.score}</span>
-          <span className="text-red-400 ml-1 font-mono">−{state.penaltyAccrued}</span>
-        </span>
-        <span className="text-sm text-gray-500">{active} active · {queued} queued</span>
-        <span className="text-sm text-gray-500">{formatSeconds(state.elapsed)} elapsed</span>
+      <div className="flex-none px-3 py-2 border-b border-gray-800 space-y-0.5">
+        <div className="text-xs font-semibold text-gray-400">Session {state.sessionNumber}/{state.numSessions}</div>
+        <div className="text-xs text-gray-500">{active} active · {queued} queued</div>
+        <div className="text-xs">
+          Score: <span className="text-white font-mono font-bold">{state.score}</span>
+          <span className="text-red-400 font-mono ml-1">−{state.penaltyAccrued}</span>
+        </div>
+        <div className="text-[10px] text-gray-600 font-mono">{formatSeconds(state.elapsed)}</div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8">
+      {/* Header */}
+      <div className="flex-none px-3 pt-2 pb-1">
+        <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+          Pending{pending.length > 0 ? ` (${pending.length})` : ''}
+        </span>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
         {pending.length === 0 ? (
-          <div className="text-center space-y-3">
-            <p className="text-2xl font-semibold text-gray-500">No tactical assignment active</p>
-            <p className="text-sm text-gray-600">When a mission requires tactical planning, it will appear here.</p>
-          </div>
+          <p className="text-xs text-gray-700 text-center mt-4">No missions pending</p>
         ) : (
-          <div className="w-full max-w-lg space-y-4">
-            <p className="text-center text-lg font-semibold text-yellow-400">Tactical Assignment Pending</p>
-            <p className="text-center text-sm text-gray-500">{pending.length} mission{pending.length !== 1 ? 's' : ''} awaiting tactical planning</p>
-            {pending.map(m => {
-              const isRecovery = m.failureRecoveryPending
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => onSelect(m.id)}
-                  className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-                    isRecovery
-                      ? 'border-red-700/60 bg-red-900/10 hover:bg-red-900/25'
-                      : 'border-yellow-700/60 bg-yellow-900/10 hover:bg-yellow-900/25'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono font-bold text-white text-lg">{m.id}</span>
-                      <span className="text-sm text-gray-400">Cat {m.category} · {CAT_NAMES[m.category] ?? ''}</span>
-                    </div>
-                    <div className={`flex items-center gap-2 text-sm ${isRecovery ? 'text-red-400' : 'text-yellow-400'}`}>
-                      {isRecovery ? (
-                        <span className="px-1.5 py-0.5 bg-red-900/50 border border-red-700/60 rounded text-xs font-bold text-red-300">FAILURE</span>
-                      ) : (
-                        <span>{m.pendingAllocation?.dronePool.length ?? 0} drones</span>
-                      )}
-                      <span>→</span>
-                      <span>Open</span>
-                    </div>
-                  </div>
-                  {!isRecovery && m.pendingAllocation && (
-                    <p className="mt-1 text-xs text-gray-500">
-                      {m.pendingAllocation.strategyName} · {m.pendingAllocation.taskOrder.length} tasks
-                    </p>
+          pending.map(m => {
+            const isRecov = m.failureRecoveryPending
+            const isSelected = m.id === selectedId
+            return (
+              <button
+                key={m.id}
+                onClick={() => onSelect(m.id)}
+                className={`w-full text-left px-3 py-2.5 rounded border transition-colors ${
+                  isSelected
+                    ? isRecov
+                      ? 'border-red-500 bg-red-900/40'
+                      : 'border-yellow-500 bg-yellow-900/40'
+                    : isRecov
+                      ? 'border-red-700/70 bg-red-950/30 hover:bg-red-900/30'
+                      : 'border-yellow-700/60 bg-yellow-950/20 hover:bg-yellow-900/25'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className={`font-mono font-bold text-base ${isRecov ? 'text-red-200' : 'text-yellow-200'}`}>{m.id}</span>
+                  {isRecov ? (
+                    <span className="px-1.5 py-0.5 bg-red-900/70 border border-red-600/70 rounded text-[10px] font-bold text-red-300">FAIL</span>
+                  ) : (
+                    <span className="text-[10px] text-yellow-600">{m.pendingAllocation?.dronePool.length ?? 0} drones</span>
                   )}
-                  {isRecovery && (
-                    <p className="mt-1 text-xs text-red-500">
-                      Drone failure — reassign pending tasks
-                    </p>
-                  )}
-                </button>
-              )
-            })}
-          </div>
+                </div>
+                <div className={`text-[11px] mt-0.5 ${isRecov ? 'text-red-400/80' : 'text-yellow-600/80'}`}>
+                  Cat {m.category}
+                  {!isRecov && m.pendingAllocation && ` · ${m.pendingAllocation.taskOrder.length} tasks`}
+                  {isRecov && <span className="ml-1">reassign pending</span>}
+                </div>
+              </button>
+            )
+          })
         )}
       </div>
     </div>
@@ -483,14 +498,17 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const pending = overrideAllocation ?? mission.pendingAllocation!
   const callsignMode = state.callsignMode
 
-  const [assignments, setAssignments] = useState<Record<string, string[]>>(() =>
-    Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
-  )
+  const [assignments, setAssignments] = useState<Record<string, string[]>>(() => {
+    if (recoveryMode || readOnly) {
+      return Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
+    }
+    // New plan: all task slots present but empty — operator allocates manually or via Auto-Allocate
+    return Object.fromEntries(Object.keys(pending.taskAssignments).map(k => [k, []]))
+  })
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
   const [dragging, setDragging] = useState<{ droneId: string; svgX: number; svgY: number } | null>(null)
   const [hoverTask, setHoverTask] = useState<string | null>(null)
-  const [hoverHub, setHoverHub] = useState(false)
   const [hoverDrone, setHoverDrone] = useState<string | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -692,7 +710,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
+    <div className="flex flex-col h-full bg-gray-950">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 flex-none">
         <button onClick={onBack} className="text-xs text-gray-400 hover:text-white transition-colors">← Back</button>
@@ -756,16 +774,13 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                 if (d < minD) { minD = d; closest = task.id }
               }
               setHoverTask(closest)
-              setHoverHub(!!recoveryMode && Math.hypot(x - hubCornerX, y - hubCornerY) < 28)
             }}
             onPointerUp={e => {
               if (!dragging) return
-              if (hoverHub) unassignDrone(dragging.droneId)
-              else if (hoverTask) moveDrone(dragging.droneId, hoverTask, e.shiftKey)
+              if (hoverTask) moveDrone(dragging.droneId, hoverTask, e.shiftKey)
               else unassignDrone(dragging.droneId)
               setDragging(null)
               setHoverTask(null)
-              setHoverHub(false)
             }}
           >
             <defs>
@@ -791,21 +806,6 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
             <line x1={hubEdgeX} y1={hubEdgeY} x2={hubLabelX} y2={hubLabelY} stroke="#4b5563" strokeWidth="1" markerEnd="url(#arr-drag)" />
             <text x={hubLabelX} y={hubLabelY} textAnchor="middle" dy="3" fill="#6b7280" fontSize="8" fontFamily="monospace">HUB</text>
 
-            {/* Recovery: HUB corner anchor — reserve drones cluster here; drag to it to unassign */}
-            {recoveryMode && (
-              <g>
-                <circle cx={hubCornerX} cy={hubCornerY} r={24}
-                  fill={hoverHub && dragging ? 'rgba(59,130,246,0.15)' : 'rgba(30,64,175,0.06)'}
-                  stroke={hoverHub && dragging ? '#3b82f6' : '#1e3a8a'}
-                  strokeWidth={1} strokeDasharray="4 3"
-                  style={{ pointerEvents: 'none' }}
-                />
-                <text x={hubCornerX} y={hubCornerY - 30} textAnchor="middle"
-                  fill="#60a5fa" fontSize="9" fontFamily="monospace" fontWeight="bold" style={{ pointerEvents: 'none' }}>
-                  HUB RESERVE
-                </text>
-              </g>
-            )}
 
             {/* Recovery: failed drone icon (greyed out, informational) */}
             {recoveryMode && failedDroneIdRef.current && (() => {
@@ -1043,10 +1043,15 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                         {[
                           req.Blue  > 0 ? { c: counts.Blue,  r: req.Blue,  key: 'B', col: '#60a5fa' } : null,
                           req.Red   > 0 ? { c: counts.Red,   r: req.Red,   key: 'R', col: '#f87171' } : null,
-                          req.Green > 0 ? { c: counts.Green, r: req.Green, key: 'G', col: '#4ade80' } : null,
+                          req.Green > 0 ? { c: counts.Green, r: req.Green, key: 'G', col: '#86efac' } : null,
                         ].filter((p): p is { c: number; r: number; key: string; col: string } => p !== null)
                           .map((p, i) => (
-                            <tspan key={p.key} fill={p.c >= p.r ? '#4ade80' : p.col}>
+                            <tspan key={p.key} fill={
+                              meetsPrimComp ? '#4ade80'
+                              : meetsSubComp ? '#facc15'
+                              : p.c >= p.r  ? '#9ca3af'
+                              : p.col
+                            }>
                               {i > 0 ? ' ' : ''}{p.c}/{p.r}{p.key}
                             </tspan>
                           ))}
@@ -1086,13 +1091,6 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   <image href={DRONE_ICON[type]} x={pos.x - 5} y={pos.y - 5} width={10} height={10} style={{ pointerEvents: 'none' }} />
                   <text x={pos.x} y={pos.y + 14} textAnchor="middle" fill={color} fontSize="6.5" fontFamily="monospace"
                     style={{ pointerEvents: 'none' }}>{cs}</text>
-                  {(droneSequences[droneId]?.length ?? 0) > 0 && (
-                    <text x={pos.x + 7} y={pos.y - 5} textAnchor="middle"
-                      fill="#fb923c" fontSize="6" fontFamily="monospace"
-                      style={{ pointerEvents: 'none' }}>
-                      {droneSequences[droneId].length}
-                    </text>
-                  )}
                 </g>
               )
             })}
@@ -1110,6 +1108,17 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           onRemove={removeDrone}
           canDeploy={canDeploy}
           onDeploy={handleDeploy}
+          onAutoAllocate={!readOnly ? () => {
+            const suggestion = computeTacticalSuggestion(
+              pending.dronePool, pending.taskOrder, mission.tasks, state.assets
+            )
+            setAssignments(
+              Object.fromEntries(
+                Object.keys(pending.taskAssignments).map(k => [k, suggestion[k] ?? []])
+              )
+            )
+            setDroneChainOrder({})
+          } : undefined}
           recoveryMode={!!recoveryMode}
           failedDroneId={failedDroneIdRef.current ?? null}
           suppressedTaskId={pending.suppressedTaskId}
@@ -1123,7 +1132,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, onAutoAllocate, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1133,6 +1142,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   onRemove: (droneId: string, taskId: string) => void
   canDeploy: boolean
   onDeploy: () => void
+  onAutoAllocate?: () => void
   recoveryMode?: boolean
   failedDroneId?: string | null
   suppressedTaskId?: string | null
@@ -1295,7 +1305,9 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
                   )}
                   {/* Comp progress */}
                   {!complete && (
-                    <div className="text-amber-400 font-mono text-[9px]">{buildCompLabel(counts, req)}</div>
+                    <div className={`font-mono text-[9px] ${meetsPrimRP ? 'text-green-400' : meetsSubRP ? 'text-yellow-400' : 'text-amber-400'}`}>
+                      {buildCompLabel(counts, req)}
+                    </div>
                   )}
                 </div>
               )}
@@ -1322,12 +1334,20 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         })}
       </div>
 
-      {/* Footer: ETA + Deploy + Abandon */}
+      {/* Footer: ETA + Auto-Allocate + Deploy + Abandon */}
       <div className="flex-none p-3 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
           <div className="text-xs text-gray-400">
             Est. completion: <span className="text-white font-mono font-bold">~{overallETA}s</span>
           </div>
+        )}
+        {onAutoAllocate && (
+          <button
+            onClick={onAutoAllocate}
+            className="w-full py-2 bg-emerald-700 hover:bg-emerald-600 rounded text-white text-sm font-semibold transition-colors"
+          >
+            Auto-Allocate
+          </button>
         )}
         <button
           onClick={onDeploy}
