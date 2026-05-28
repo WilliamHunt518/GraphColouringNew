@@ -14,6 +14,7 @@ export interface StudyConfig {
   epsilonTactical: number  // error rate for Meta-Co-Pilot (tactical tier)
   tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
+  tutorialMode: boolean
   numSessions: number
 }
 
@@ -182,6 +183,8 @@ export interface MapViewState {
   callsignMode: 'id' | 'arthurian' | 'nato'
   strategicModal: StrategicModal | null
   openMissionId: string | null
+  tutorialActive: boolean
+  tutorialStep: number
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────

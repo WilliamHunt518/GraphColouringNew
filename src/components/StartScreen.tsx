@@ -81,6 +81,7 @@ export default function StartScreen({ onStart }: Props) {
       epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
       tacticalMode: mode === 'agent' ? tacticalMode : 'plan-all',
       testingMode,
+      tutorialMode: false,
       numSessions,
     })
   }
@@ -200,6 +201,33 @@ export default function StartScreen({ onStart }: Props) {
           className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-semibold text-sm transition-colors">
           Start Study
         </button>
+
+        <div className="relative">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-gray-800" />
+          <span className="relative block text-center text-xs text-gray-600 bg-gray-900 px-3 w-fit mx-auto">or</span>
+        </div>
+
+        <button
+          onClick={() => onStart({
+            participantId: 'DEMO',
+            condition: 'none',
+            mode: 'agent',
+            complexity: 'balanced',
+            seed: 77777,
+            agentErrorRate: 0.10,
+            epsilonTactical: 0.10,
+            tacticalMode: 'plan-all',
+            testingMode: true,
+            tutorialMode: true,
+            numSessions: 1,
+          })}
+          className="w-full py-3 bg-indigo-700 hover:bg-indigo-600 rounded-lg text-white font-semibold text-sm transition-colors"
+        >
+          Run Tutorial
+        </button>
+        <p className="text-center text-xs text-gray-600">
+          Guided walkthrough of every interface element — no configuration needed.
+        </p>
       </div>
     </div>
   )

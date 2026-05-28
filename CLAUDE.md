@@ -82,7 +82,6 @@ src/
     PrimaryDisplay.tsx   # Reserve panel + mission queue + Strategic Agent modal
     MapDisplay.tsx       # SVG operational map + tactical planner
     SurveyModal.tsx      # NASA-TLX, trust, TAM surveys
-    TrustProbeModal.tsx  # Periodic 2-question trust/workload probe (every 90s)
     BetweenSession.tsx   # 30s inter-session screen
 ```
 
@@ -114,8 +113,6 @@ All events logged in-memory. At study end, "Download Data" button exports (also 
 | `asset_recalled` | Operator manually recalls a drone |
 | `task_reprioritised` | Operator reorders task queue |
 | `session_ended` | Session summary metrics |
-| `trust_probe` | Trust/workload probe submitted |
-| `trust_probe_dismissed` | Trust probe dismissed without answering |
 | `survey_response` | Post-session survey submitted |
 
 ### Mission Generation
@@ -131,10 +128,6 @@ Tasks execute greedily (T5 first → most constrained).
 | Blue  | 9.0   | Fast, recce-only |
 | Red   | 6.0   | Standard, supply + extract |
 | Green | 4.2   | Slow, required for T5 only |
-
-### Trust Probe
-
-A 2-question modal (trust 1–10, workload 1–10) appears every 90 seconds during play.
 
 ## Development Guidelines
 

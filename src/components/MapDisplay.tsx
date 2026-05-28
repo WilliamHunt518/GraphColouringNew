@@ -169,7 +169,7 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
   const queued = state.missions.filter(m => m.status === 'queued').length
 
   return (
-    <div className="flex flex-col w-64 flex-none bg-gray-900 border-r border-gray-800 h-full overflow-hidden">
+    <div data-tutorial="tac-mission-list" className="flex flex-col w-64 flex-none bg-gray-900 border-r border-gray-800 h-full overflow-hidden">
       {/* Status bar */}
       <div className="flex-none px-3 py-2 border-b border-gray-800 space-y-0.5">
         <div className="text-xs font-semibold text-gray-400">Session {state.sessionNumber}/{state.numSessions}</div>
@@ -712,7 +712,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   return (
     <div className="flex flex-col h-full bg-gray-950">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 flex-none">
+      <div data-tutorial="tac-header" className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 flex-none">
         <button onClick={onBack} className="text-xs text-gray-400 hover:text-white transition-colors">← Back</button>
         <div className="h-4 w-px bg-gray-700" />
         <span className="font-mono text-sm text-white font-bold">{mission.id}</span>
@@ -748,7 +748,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
       {/* Body: SVG + right panel */}
       <div className="flex-1 flex overflow-hidden">
         {/* SVG area */}
-        <div ref={containerRef} className="flex-1 overflow-hidden relative">
+        <div data-tutorial="tac-svg-container" ref={containerRef} className="flex-1 overflow-hidden relative">
           <svg
             ref={svgRef}
             viewBox={`${vx} ${vy} ${vw} ${vh}`}
@@ -1185,7 +1185,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   })()
 
   return (
-    <div className="w-[560px] flex-none border-l border-gray-800 bg-gray-900 flex flex-col overflow-hidden">
+    <div data-tutorial="tac-right-panel" className="w-[560px] flex-none border-l border-gray-800 bg-gray-900 flex flex-col overflow-hidden">
       {/* Failure banner */}
       {recoveryMode && failedDroneId && (() => {
         const fd = assets.find(a => a.id === failedDroneId)
@@ -1205,7 +1205,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
       })()}
       {/* Unassigned reference list */}
       {unassigned.length > 0 && (
-        <div className="flex-none p-3 border-b border-gray-800">
+        <div data-tutorial="tac-unassigned" className="flex-none p-3 border-b border-gray-800">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
             Unassigned ({unassigned.length})
           </p>
@@ -1230,7 +1230,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
       )}
 
       {/* Task schedule — sorted by actual execution order */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div data-tutorial="tac-schedule" className="flex-1 overflow-y-auto p-3 space-y-2">
         <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Task Schedule</p>
         {sortedTaskOrder.map((taskId, idx) => {
           const task = tasks.find(t => t.id === taskId)
@@ -1350,6 +1350,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
           </button>
         )}
         <button
+          data-tutorial="tac-deploy-btn"
           onClick={onDeploy}
           disabled={!canDeploy}
           className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-sm font-semibold transition-colors"

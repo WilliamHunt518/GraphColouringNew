@@ -33,7 +33,7 @@ export function parseURLConfig(): StudyConfig | null {
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
-    agentErrorRate, epsilonTactical, tacticalMode, testingMode, numSessions,
+    agentErrorRate, epsilonTactical, tacticalMode, testingMode, tutorialMode: false, numSessions,
   }
 }
 

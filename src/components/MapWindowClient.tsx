@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 const LOG = true
 import type { MapViewState } from '../types'
 import MapDisplay from './MapDisplay'
+import TacticalTutorial from './TacticalTutorial'
+import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
 const CHANNEL_NAME = 'sar-study'
 
@@ -23,6 +25,7 @@ export default function MapWindowClient() {
         }
       }
       if (e.data?._mapAction) return  // outgoing action echoes — ignore
+      if (e.data?._tutorialAction) return  // tutorial back-channel — ignore
       setViewState(e.data as MapViewState)
     }
     return () => { channel.close(); channelRef.current = null }
@@ -30,6 +33,10 @@ export default function MapWindowClient() {
 
   function handleReprioritiseTop(missionId: string, taskId: string) {
     channelRef.current?.postMessage({ _mapAction: 'REPRIORITISE_TOP', missionId, taskId })
+  }
+
+  function sendTutorialAction(action: 'NEXT' | 'BACK' | 'COMPLETE') {
+    channelRef.current?.postMessage({ _tutorialAction: action })
   }
 
   if (!viewState) {
@@ -43,5 +50,22 @@ export default function MapWindowClient() {
     )
   }
 
-  return <MapDisplay state={viewState} onReprioritiseTop={handleReprioritiseTop} />
+  const showTacticalTutorial =
+    viewState.tutorialActive &&
+    (TUTORIAL_STEPS[viewState.tutorialStep]?.inMapWindow ?? false)
+
+  return (
+    <>
+      <MapDisplay state={viewState} onReprioritiseTop={handleReprioritiseTop} />
+      {showTacticalTutorial && (
+        <TacticalTutorial
+          state={viewState}
+          step={viewState.tutorialStep}
+          onNext={()     => sendTutorialAction('NEXT')}
+          onBack={()     => sendTutorialAction('BACK')}
+          onComplete={() => sendTutorialAction('COMPLETE')}
+        />
+      )}
+    </>
+  )
 }

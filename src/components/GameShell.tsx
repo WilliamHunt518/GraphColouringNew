@@ -6,6 +6,8 @@ import { buildInitialState, gameReducer, reserveCount } from '../store/gameReduc
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
 import SurveyModal from './SurveyModal'
+import Tutorial from './Tutorial'
+import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
 const CHANNEL_NAME = 'sar-study'
 
@@ -18,6 +20,8 @@ interface Props {
 export default function GameShell({ config }: Props) {
   const [state, dispatch] = useReducer(gameReducer, config, buildInitialState)
   const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
+  const [showTutorial, setShowTutorial] = useState(config.tutorialMode ?? false)
+  const [tutorialStep, setTutorialStep] = useState(0)
   const [openMissionId, setOpenMissionId] = useState<string | null>(null)
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
@@ -25,6 +29,7 @@ export default function GameShell({ config }: Props) {
   const lastStrategicModalRef = useRef<typeof state.strategicModal>(null)
   const lastOpenMissionIdRef = useRef<string | null>(null)
   const prevPendingRef = useRef<Set<string>>(new Set())
+  const lastTutorialRef = useRef<{ active: boolean; step: number }>({ active: false, step: -1 })
 
   // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
@@ -32,6 +37,13 @@ export default function GameShell({ config }: Props) {
     channelRef.current = channel
     channel.onmessage = (e: MessageEvent) => {
       const d = e.data
+      // Tutorial navigation from map window
+      if (d?._tutorialAction) {
+        if (d._tutorialAction === 'NEXT')     setTutorialStep(s => Math.min(s + 1, TUTORIAL_STEPS.length - 1))
+        if (d._tutorialAction === 'BACK')     setTutorialStep(s => Math.max(0, s - 1))
+        if (d._tutorialAction === 'COMPLETE') setShowTutorial(false)
+        return
+      }
       if (!d?._mapAction) return
       if (d._mapAction === 'CONFIRM_TACTICAL' && typeof d.missionId === 'string') {
         dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId, taskAssignments: d.taskAssignments, droneSequences: d.droneSequences })
@@ -65,7 +77,7 @@ export default function GameShell({ config }: Props) {
     return () => { channel.close(); channelRef.current = null }
   }, [])
 
-  // Autosave to localStorage at each session boundary so data survives a page reload/crash
+  // Autosave to localStorage at each session boundary
   useEffect(() => {
     if (state.phase !== 'survey' && state.phase !== 'done') return
     const payload = {
@@ -80,12 +92,9 @@ export default function GameShell({ config }: Props) {
       sessions: state.events,
     }
     try {
-      localStorage.setItem(
-        `sar_backup_${config.participantId}_${config.seed}`,
-        JSON.stringify(payload),
-      )
+      localStorage.setItem(`sar_backup_${config.participantId}_${config.seed}`, JSON.stringify(payload))
     } catch { /* storage quota exceeded — ignore */ }
-  }, [state.phase, state.sessionNumber])  // fires when each session ends or study completes
+  }, [state.phase, state.sessionNumber])
 
   // Auto-clear openMissionId when the mission leaves the pending pool
   useEffect(() => {
@@ -100,17 +109,20 @@ export default function GameShell({ config }: Props) {
     prevPendingRef.current = allPending
   }, [state.missions])
 
-  // Broadcast map state ~10fps, or immediately when strategic modal / openMissionId changes
+  // Broadcast map state ~10fps, or immediately when strategic modal / openMissionId / tutorial changes
   useEffect(() => {
     if (!channelRef.current) return
-    const modalChanged = state.strategicModal !== lastStrategicModalRef.current
-    const openChanged = openMissionId !== lastOpenMissionIdRef.current
-    if (!modalChanged && !openChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
+    const modalChanged   = state.strategicModal !== lastStrategicModalRef.current
+    const openChanged    = openMissionId !== lastOpenMissionIdRef.current
+    const tutChanged     = showTutorial !== lastTutorialRef.current.active || tutorialStep !== lastTutorialRef.current.step
+    if (!modalChanged && !openChanged && !tutChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
 
     LOG && console.log('[SHELL] broadcasting — openMissionId:', openMissionId)
     lastBroadcastElapsed.current = state.elapsed
     lastStrategicModalRef.current = state.strategicModal
     lastOpenMissionIdRef.current = openMissionId
+    lastTutorialRef.current = { active: showTutorial, step: tutorialStep }
+
     const payload: MapViewState = {
       assets: state.assets,
       missions: state.missions,
@@ -126,9 +138,11 @@ export default function GameShell({ config }: Props) {
       callsignMode,
       strategicModal: state.strategicModal,
       openMissionId,
+      tutorialActive: showTutorial,
+      tutorialStep,
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode, openMissionId])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode, openMissionId, showTutorial, tutorialStep])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {
@@ -145,7 +159,20 @@ export default function GameShell({ config }: Props) {
   }, [state.phase])
 
   if (state.phase === 'playing') {
-    return <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} setOpenMissionId={setOpenMissionId} />
+    return (
+      <>
+        <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} setOpenMissionId={setOpenMissionId} />
+        {showTutorial && (
+          <Tutorial
+            state={state}
+            dispatch={dispatch}
+            step={tutorialStep}
+            onStep={setTutorialStep}
+            onComplete={() => setShowTutorial(false)}
+          />
+        )}
+      </>
+    )
   }
 
   if (state.phase === 'survey') {
@@ -192,7 +219,6 @@ export default function GameShell({ config }: Props) {
             <h2 className="text-2xl font-bold text-white">Thank you</h2>
             <p className="text-gray-400 text-sm mt-1">Please ask the researcher to download your data.</p>
           </div>
-
           <div className="bg-gray-800 rounded-xl p-4 space-y-2 text-left">
             {state.completedSessionScores.map((s, i) => (
               <div key={i} className="flex justify-between text-sm text-gray-400">
@@ -205,15 +231,10 @@ export default function GameShell({ config }: Props) {
               <span className="font-mono tabular-nums">{totalScore} pts</span>
             </div>
           </div>
-
           <div className="space-y-2 text-xs text-gray-600">
             <p>Participant: {config.participantId} · Condition: {config.condition} · Seed: {config.seed}</p>
           </div>
-
-          <button
-            onClick={downloadData}
-            className="w-full py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white text-sm transition-colors"
-          >
+          <button onClick={downloadData} className="w-full py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white text-sm transition-colors">
             Download Study Data
           </button>
         </div>

@@ -139,13 +139,13 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-5 py-2.5 bg-gray-900 border-b border-gray-800 flex-none">
+      <header data-tutorial="header" className="flex items-center justify-between px-5 py-2.5 bg-gray-900 border-b border-gray-800 flex-none">
         <div className="flex items-center gap-4">
           <span className="font-bold text-white">SAR Command</span>
           <span className="text-xs text-gray-400 uppercase tracking-wide">
             Session {state.sessionNumber} / {state.config.numSessions}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded border uppercase tracking-wide ${
+          <span data-tutorial="mode-badge" className={`text-xs px-2 py-0.5 rounded border uppercase tracking-wide ${
             state.config.mode === 'agent'
               ? 'bg-purple-900/60 text-purple-300 border-purple-700/50'
               : 'bg-gray-800 text-gray-400 border-gray-700'
@@ -183,13 +183,14 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               </button>
             </>
           )}
-          <span className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed, state.sessionDuration)}</span>
-          <span className="text-gray-400 flex items-baseline gap-1.5">
+          <span data-tutorial="timer" className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed, state.sessionDuration)}</span>
+          <span data-tutorial="score" className="text-gray-400 flex items-baseline gap-1.5">
             <span>Score: <span className="text-white font-bold">{state.score}</span></span>
             <span className="text-xs text-green-500" title="Completion points earned">+{completionPoints}</span>
             <span className="text-xs text-red-400" title="Accumulated wait penalty">−{state.penaltyAccrued} pen</span>
           </span>
           <button
+            data-tutorial="tactical-btn"
             onClick={() => window.open('/?view=map', '_blank', 'noopener')}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
           >
@@ -221,7 +222,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
         {/* Left: compact reserve strip + mission list */}
         <div className="w-[440px] flex-none flex flex-col overflow-hidden border-r border-gray-800">
           {/* Compact reserve strip */}
-          <div className="flex-none px-3 py-1.5 border-b border-gray-800 bg-gray-900/50 flex items-center gap-3 flex-wrap">
+          <div data-tutorial="reserve-strip" className="flex-none px-3 py-1.5 border-b border-gray-800 bg-gray-900/50 flex items-center gap-3 flex-wrap">
             <span className="text-[10px] text-gray-500 uppercase tracking-wider">Reserve</span>
             {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
               const avail = reserve[type]
@@ -246,7 +247,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
           </div>
 
           {/* Scrollable mission list */}
-          <div className="flex-1 overflow-y-auto p-3 min-w-0 space-y-2">
+          <div data-tutorial="mission-list" className="flex-1 overflow-y-auto p-3 min-w-0 space-y-2">
             {(queued.length > 0 || active.length > 0) && (
               <div className="flex items-center justify-end mb-1">
                 <button
@@ -264,8 +265,8 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
             {queued.length > 0 && (
               <section>
                 <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
-                {sortedQueued.map(m => (
-                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+                {sortedQueued.map((m, i) => (
+                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} isTutorialFirst={i === 0} />
                 ))}
               </section>
             )}
@@ -295,7 +296,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
         </div>
 
         {/* Right: embedded operational map */}
-        <div className="flex-1 relative overflow-hidden bg-gray-950">
+        <div data-tutorial="embedded-map" className="flex-1 relative overflow-hidden bg-gray-950">
           <EmbeddedOperationalMap state={state} dispatch={dispatch} callsignMode={callsignMode} setOpenMissionId={setOpenMissionId} />
         </div>
       </div>
@@ -316,7 +317,7 @@ function SectionLabel({ text, dot }: { text: string; dot: string }) {
 
 // ─── Mission card ─────────────────────────────────────────────────────────
 
-function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode }) {
+function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode; isTutorialFirst?: boolean }) {
   const isQueued    = mission.status === 'queued'
   const isActive    = mission.status === 'active'
   const isCompleted = mission.status === 'completed'
@@ -356,7 +357,7 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
     : null
 
   return (
-    <div className={`rounded-lg border ${borderColor} ${bgColor} p-3 mb-2`}>
+    <div data-tutorial={isTutorialFirst ? 'first-mission-card' : undefined} className={`rounded-lg border ${borderColor} ${bgColor} p-3 mb-2`}>
       {/* Card header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -381,6 +382,7 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
           )}
           {isQueued && !isAllocating && (
             <button
+              data-tutorial={isTutorialFirst ? 'first-allocate-btn' : undefined}
               onClick={() => dispatch({ type: 'OPEN_STRATEGIC', missionId: mission.id })}
               className="px-3 py-1 bg-amber-600 hover:bg-amber-500 rounded text-xs font-semibold text-white transition-colors"
             >
@@ -404,13 +406,13 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
 
       {/* Tactical pending notice */}
       {mission.tacticalPending && !mission.failureRecoveryPending && (
-        <div className="mb-2 px-2 py-1 bg-yellow-900/30 border border-yellow-700/50 rounded text-xs text-yellow-300">
+        <div data-tutorial={isTutorialFirst ? 'first-tactical-pending' : undefined} className="mb-2 px-2 py-1 bg-yellow-900/30 border border-yellow-700/50 rounded text-xs text-yellow-300">
           Tactical allocation pending confirmation — review on map
         </div>
       )}
 
       {/* Task progress + penalty histogram */}
-      <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
+      <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} tutorialFirst={isTutorialFirst} />
 
       {/* Task plan — shows drone→task assignments after allocation */}
       {isActive && <TaskPlanPanel mission={mission} callsignMode={callsignMode} />}
@@ -418,7 +420,7 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
 
       {/* Strategic allocation panel */}
       {isAllocating && state.strategicModal && (
-        <StrategicPanel modal={state.strategicModal} state={state} dispatch={dispatch} />
+        <StrategicPanel modal={state.strategicModal} state={state} dispatch={dispatch} isTutorialFirst={isTutorialFirst} />
       )}
     </div>
   )
@@ -426,7 +428,7 @@ function MissionCard({ mission, state, dispatch, callsignMode }: { mission: Miss
 
 // ─── Strategic panel ──────────────────────────────────────────────────────
 
-function StrategicPanel({ modal, state, dispatch }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void }) {
+function StrategicPanel({ modal, state, dispatch, isTutorialFirst }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean }) {
   const isAgent = state.config.mode === 'agent'
   const [showManual, setShowManual] = useState(!isAgent)
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
@@ -447,11 +449,11 @@ function StrategicPanel({ modal, state, dispatch }: { modal: StrategicModal; sta
     : selectedIdx !== null
 
   return (
-    <div className="mt-2 border border-gray-700 rounded-lg bg-gray-800/50 p-3 space-y-3">
+    <div data-tutorial={isTutorialFirst ? 'first-strategic-panel' : undefined} className="mt-2 border border-gray-700 rounded-lg bg-gray-800/50 p-3 space-y-3">
       {isAgent && !showManual && (
         <div className="grid grid-cols-2 gap-2">
           {modal.strategies.map((strat, i) => (
-            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} reserve={reserve} onSelect={() => setSelectedIdx(i)} />
+            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} reserve={reserve} onSelect={() => setSelectedIdx(i)} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
           ))}
           {modal.strategies.length === 0 && (
             <p className="col-span-2 text-xs text-gray-500 py-2 text-center">
@@ -462,22 +464,29 @@ function StrategicPanel({ modal, state, dispatch }: { modal: StrategicModal; sta
       )}
 
       {(!isAgent || showManual) && (
-        <ManualCountPicker
-          allocation={manualAlloc}
-          reserve={reserve}
-          tasks={mission?.tasks ?? []}
-          onChange={setManualAlloc}
-        />
+        <div data-tutorial={isTutorialFirst ? 'first-manual-picker' : undefined}>
+          <ManualCountPicker
+            allocation={manualAlloc}
+            reserve={reserve}
+            tasks={mission?.tasks ?? []}
+            onChange={setManualAlloc}
+          />
+        </div>
       )}
 
       {isAgent && (
-        <button onClick={() => setShowManual(v => !v)} className="text-xs text-gray-500 hover:text-gray-300">
+        <button
+          data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
+          onClick={() => setShowManual(v => !v)}
+          className="text-xs text-gray-500 hover:text-gray-300"
+        >
           {showManual ? '← Back to suggestions' : 'Set manually instead'}
         </button>
       )}
 
       <div className="flex gap-2">
         <button
+          data-tutorial={isTutorialFirst ? 'first-deploy-btn' : undefined}
           onClick={handleApply}
           disabled={!canApply}
           className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded text-white text-sm font-semibold transition-colors">
@@ -492,11 +501,11 @@ function StrategicPanel({ modal, state, dispatch }: { modal: StrategicModal; sta
   )
 }
 
-function StrategyCard({ strat, selected, onSelect }: { strat: Strategy; selected: boolean; reserve?: AssetRequirement; onSelect: () => void }) {
+function StrategyCard({ strat, selected, onSelect, tutorialId }: { strat: Strategy; selected: boolean; reserve?: AssetRequirement; onSelect: () => void; tutorialId?: string }) {
   const DRONE_COLOR: Record<AssetType, string> = { Blue: 'text-blue-300', Red: 'text-red-300', Green: 'text-green-300' }
   const DRONE_COLOR_DIM: Record<AssetType, string> = { Blue: 'text-blue-400/60', Red: 'text-red-400/60', Green: 'text-green-400/60' }
   return (
-    <button onClick={onSelect}
+    <button data-tutorial={tutorialId} onClick={onSelect}
       className={`text-left p-3 rounded-lg border transition-colors ${selected ? 'border-blue-500 bg-blue-900/30' : 'border-gray-600 bg-gray-800 hover:border-gray-400'}`}>
       <div className="flex items-center gap-1 mb-0.5">
         {selected && <span className="text-blue-400 text-xs">✓</span>}
@@ -580,17 +589,22 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
 
 // ─── Mission progress section ─────────────────────────────────────────────
 
-function MissionProgressSection({ mission, elapsed, urgency, activeTaskIds, isActive }: {
+function MissionProgressSection({ mission, elapsed, urgency, activeTaskIds, isActive, tutorialFirst }: {
   mission: Mission
   elapsed: number
   urgency: UrgencyLevel
   activeTaskIds: Set<string>
   isActive: boolean
+  tutorialFirst?: boolean
 }) {
   return (
     <div className="mt-2 pt-1.5 border-t border-gray-700/40 space-y-1.5">
-      <TaskProgressBar tasks={mission.tasks} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
-      <PenaltyHistogram mission={mission} elapsed={elapsed} />
+      <div data-tutorial={tutorialFirst ? 'first-task-progress' : undefined}>
+        <TaskProgressBar tasks={mission.tasks} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
+      </div>
+      <div data-tutorial={tutorialFirst ? 'first-penalty' : undefined}>
+        <PenaltyHistogram mission={mission} elapsed={elapsed} />
+      </div>
     </div>
   )
 }
