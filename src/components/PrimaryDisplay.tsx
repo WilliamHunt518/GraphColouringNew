@@ -16,6 +16,7 @@ interface Props {
   callsignMode: CallsignMode
   setCallsignMode: (m: CallsignMode) => void
   setOpenMissionId: (id: string | null) => void
+  tutorialForceManual?: boolean
 }
 
 // ─── Colour / label helpers ────────────────────────────────────────────────
@@ -118,7 +119,7 @@ function penaltyUrgency(penaltyPts: number): UrgencyLevel {
 
 // ─── Top-level ────────────────────────────────────────────────────────────
 
-export default function PrimaryDisplay({ state, dispatch, callsignMode, setCallsignMode, setOpenMissionId }: Props) {
+export default function PrimaryDisplay({ state, dispatch, callsignMode, setCallsignMode, setOpenMissionId, tutorialForceManual }: Props) {
   const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
@@ -266,7 +267,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               <section>
                 <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
                 {sortedQueued.map((m, i) => (
-                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} isTutorialFirst={i === 0} />
+                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} isTutorialFirst={i === 0} tutorialForceManual={i === 0 ? tutorialForceManual : undefined} />
                 ))}
               </section>
             )}
@@ -317,7 +318,7 @@ function SectionLabel({ text, dot }: { text: string; dot: string }) {
 
 // ─── Mission card ─────────────────────────────────────────────────────────
 
-function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode; isTutorialFirst?: boolean }) {
+function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, tutorialForceManual }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode; isTutorialFirst?: boolean; tutorialForceManual?: boolean }) {
   const isQueued    = mission.status === 'queued'
   const isActive    = mission.status === 'active'
   const isCompleted = mission.status === 'completed'
@@ -420,7 +421,7 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst }
 
       {/* Strategic allocation panel */}
       {isAllocating && state.strategicModal && (
-        <StrategicPanel modal={state.strategicModal} state={state} dispatch={dispatch} isTutorialFirst={isTutorialFirst} />
+        <StrategicPanel modal={state.strategicModal} state={state} dispatch={dispatch} isTutorialFirst={isTutorialFirst} tutorialForceManual={tutorialForceManual} />
       )}
     </div>
   )
@@ -428,13 +429,15 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst }
 
 // ─── Strategic panel ──────────────────────────────────────────────────────
 
-function StrategicPanel({ modal, state, dispatch, isTutorialFirst }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean }) {
+function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForceManual }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean; tutorialForceManual?: boolean }) {
   const isAgent = state.config.mode === 'agent'
   const [showManual, setShowManual] = useState(!isAgent)
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const [manualAlloc, setManualAlloc] = useState<AssetRequirement>(modal.manualAllocation ?? { Blue: 0, Red: 0, Green: 0 })
   const reserve = reserveCount(state.assets)
   const mission = state.missions.find(m => m.id === modal.missionId)
+
+  const showAgentCards = isAgent && !showManual
 
   function handleApply() {
     if (showManual || !isAgent) {
@@ -444,14 +447,14 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst }: { modal: St
     }
   }
 
-  const canApply = showManual || !isAgent
-    ? (manualAlloc.Blue + manualAlloc.Red + manualAlloc.Green > 0)
-    : selectedIdx !== null
+  const canApply = showAgentCards
+    ? selectedIdx !== null
+    : (manualAlloc.Blue + manualAlloc.Red + manualAlloc.Green > 0)
 
   return (
     <div data-tutorial={isTutorialFirst ? 'first-strategic-panel' : undefined} className="mt-2 border border-gray-700 rounded-lg bg-gray-800/50 p-3 space-y-3">
-      {isAgent && !showManual && (
-        <div className="grid grid-cols-2 gap-2">
+      {showAgentCards && (
+        <div className={`grid grid-cols-2 gap-2${tutorialForceManual ? ' opacity-40 pointer-events-none select-none' : ''}`}>
           {modal.strategies.map((strat, i) => (
             <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} reserve={reserve} onSelect={() => setSelectedIdx(i)} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
           ))}
@@ -463,7 +466,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst }: { modal: St
         </div>
       )}
 
-      {(!isAgent || showManual) && (
+      {(!showAgentCards) && (
         <div data-tutorial={isTutorialFirst ? 'first-manual-picker' : undefined}>
           <ManualCountPicker
             allocation={manualAlloc}
@@ -474,14 +477,31 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst }: { modal: St
         </div>
       )}
 
+      {/* Toggle: when showing agent cards → big "Set manually instead" button;
+          when in manual → small "← Back" link (hidden if tutorialForceManual so user can't undo) */}
       {isAgent && (
-        <button
-          data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
-          onClick={() => setShowManual(v => !v)}
-          className="text-xs text-gray-500 hover:text-gray-300"
-        >
-          {showManual ? '← Back to suggestions' : 'Set manually instead'}
-        </button>
+        showManual ? (
+          !tutorialForceManual && (
+            <button
+              data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
+              onClick={() => setShowManual(false)}
+              className="text-xs text-gray-500 hover:text-gray-300 w-full text-left"
+            >
+              ← Back to suggestions
+            </button>
+          )
+        ) : (
+          <button
+            data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
+            onClick={() => {
+              setShowManual(true)
+              if (tutorialForceManual) document.dispatchEvent(new CustomEvent('tutorial-manual-selected'))
+            }}
+            className="w-full py-2 px-3 rounded-lg border border-gray-600 bg-gray-800/50 hover:border-gray-400 hover:bg-gray-700/50 text-sm text-gray-400 hover:text-gray-200 transition-colors text-left"
+          >
+            Set manually instead
+          </button>
+        )
       )}
 
       <div className="flex gap-2">
@@ -490,7 +510,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst }: { modal: St
           onClick={handleApply}
           disabled={!canApply}
           className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded text-white text-sm font-semibold transition-colors">
-          {isAgent && !showManual ? 'Deploy Selected' : 'Deploy'}
+          {showAgentCards ? 'Deploy Selected' : 'Deploy'}
         </button>
         <button onClick={() => dispatch({ type: 'CLOSE_STRATEGIC' })}
           className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-sm transition-colors">

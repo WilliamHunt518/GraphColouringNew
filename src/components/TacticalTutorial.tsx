@@ -60,6 +60,21 @@ export default function TacticalTutorial({ step, onNext, onBack, onComplete }: P
   const isFirstTacStep = step === TACTICAL_STEP_FIRST
   const isLastTacStep  = step === TACTICAL_STEP_LAST
 
+  // Spacebar advances non-mustInteract steps
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      if (current?.mustInteract) return
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      e.preventDefault()
+      if (isLastTacStep) onComplete()
+      else onNext()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [step, current, isLastTacStep, onNext, onComplete])
+
   // Track highlighted element rect
   const refreshSpot = useCallback(() => {
     if (!current.highlight) { setSpot(null); return }
@@ -90,16 +105,19 @@ export default function TacticalTutorial({ step, onNext, onBack, onComplete }: P
   const pct = ((step + 1) / TUTORIAL_STEPS.length) * 100
   const cardPos = computeCardPos(spot, current.cardSide ?? 'center', vw, vh)
 
+  const isTryIt = !!(current.tryIt && !current.mustInteract)
+  const dimOnly = isTryIt ? 'none' : 'auto'
+
   const portal = (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
 
       {/* Spotlight */}
       {spot ? (
         <>
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
-          <div style={{ position: 'fixed', top: spot.bottom, left: 0, right: 0, bottom: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
-          <div style={{ position: 'fixed', top: spot.top, left: 0, width: spot.left, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
-          <div style={{ position: 'fixed', top: spot.top, left: spot.right, right: 0, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
+          <div style={{ position: 'fixed', top: spot.bottom, left: 0, right: 0, bottom: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
+          <div style={{ position: 'fixed', top: spot.top, left: 0, width: spot.left, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
+          <div style={{ position: 'fixed', top: spot.top, left: spot.right, right: 0, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
           <div style={{
             position: 'fixed', top: spot.top, left: spot.left,
             width: spot.right - spot.left, height: spot.bottom - spot.top,
@@ -107,12 +125,12 @@ export default function TacticalTutorial({ step, onNext, onBack, onComplete }: P
             boxShadow: '0 0 0 1px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.18)',
             pointerEvents: 'none',
           }} />
-          {!current.allowClickThrough && (
+          {!current.allowClickThrough && !isTryIt && (
             <div style={{ position: 'fixed', top: spot.top, left: spot.left, width: spot.right - spot.left, height: spot.bottom - spot.top, pointerEvents: 'auto' }} />
           )}
         </>
       ) : (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
       )}
 
       {/* Card */}
@@ -153,7 +171,7 @@ export default function TacticalTutorial({ step, onNext, onBack, onComplete }: P
           {/* tryIt hint */}
           {current.tryIt && !current.mustInteract && (
             <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontSize: 12, color: '#a5b4fc', lineHeight: 1.5 }}>
-              Try the highlighted element, then click Next.
+              {current.tryItHint ?? 'Try the highlighted element, then click Next.'}
             </div>
           )}
           {/* navigation */}

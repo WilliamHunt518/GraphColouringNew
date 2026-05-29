@@ -159,9 +159,10 @@ export default function GameShell({ config }: Props) {
   }, [state.phase])
 
   if (state.phase === 'playing') {
+    const tutorialForceManual = showTutorial && (TUTORIAL_STEPS[tutorialStep]?.forceManual ?? false)
     return (
       <>
-        <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} setOpenMissionId={setOpenMissionId} />
+        <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} setOpenMissionId={setOpenMissionId} tutorialForceManual={tutorialForceManual} />
         {showTutorial && (
           <Tutorial
             state={state}

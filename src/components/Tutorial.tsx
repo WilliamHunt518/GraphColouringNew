@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
-import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
+import { TUTORIAL_STEPS, AGENT_INTRO_STEP } from '../utils/tutorialSteps'
 
 interface Props {
   state: GameState
@@ -52,13 +52,14 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
 
 export default function Tutorial({ state, dispatch, step, onStep, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
-  const autoFiredRef    = useRef(new Set<number>())
-  const missionForcedRef = useRef(false)
+  const autoFiredRef      = useRef(new Set<number>())
+  const missionForcedRef  = useRef(false)
+  const missionTwoForcedRef = useRef(false)
 
   const current = TUTORIAL_STEPS[step]
   const isLast  = step === TUTORIAL_STEPS.length - 1
 
-  // Spawn a demo mission at tutorial start
+  // Spawn first demo mission at tutorial start
   useEffect(() => {
     if (missionForcedRef.current) return
     missionForcedRef.current = true
@@ -66,6 +67,16 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
       dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Spawn second mission when agent-intro phase begins
+  useEffect(() => {
+    if (missionTwoForcedRef.current) return
+    if (step < AGENT_INTRO_STEP) return
+    missionTwoForcedRef.current = true
+    if (state.pendingBlueprints.length > 0) {
+      dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
+    }
+  }, [step, state.pendingBlueprints.length, dispatch])
 
   // Track highlighted element rect
   const refreshSpot = useCallback(() => {
@@ -89,7 +100,10 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     const ro = new ResizeObserver(refreshSpot)
     if (el) ro.observe(el)
     window.addEventListener('resize', refreshSpot)
-    return () => { ro.disconnect(); window.removeEventListener('resize', refreshSpot) }
+    // MutationObserver: re-check spotlight when DOM changes (e.g. dynamic panels appearing)
+    const mo = new MutationObserver(refreshSpot)
+    mo.observe(document.body, { childList: true, subtree: true })
+    return () => { ro.disconnect(); mo.disconnect(); window.removeEventListener('resize', refreshSpot) }
   }, [refreshSpot])
 
   // Auto-advance based on game state
@@ -98,9 +112,35 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     if (autoFiredRef.current.has(step)) return
     if (current.autoAdvanceWhen(state)) {
       autoFiredRef.current.add(step)
-      setTimeout(() => onStep(Math.min(step + 1, TUTORIAL_STEPS.length - 1)), 500)
+      setTimeout(() => onStep(Math.min(step + 1, TUTORIAL_STEPS.length - 1)), current?.autoAdvanceDelay ?? 500)
     }
   }, [state, step, current, onStep])
+
+  // Advance panel-intro step when user clicks "Set manually instead"
+  useEffect(() => {
+    if (current?.id !== 'panel-intro') return
+    const handler = () => onStep(Math.min(step + 1, TUTORIAL_STEPS.length - 1))
+    document.addEventListener('tutorial-manual-selected', handler)
+    return () => document.removeEventListener('tutorial-manual-selected', handler)
+  }, [step, current, onStep])
+
+
+  // Spacebar advances non-mustInteract steps
+  useEffect(() => {
+    if (current?.inMapWindow) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      if (current?.mustInteract) return
+      // Don't fire when focus is inside an input/button (let normal behaviour run)
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      e.preventDefault()
+      if (isLast) onComplete()
+      else onStep(step + 1)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [step, current, isLast, onComplete, onStep])
 
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -128,16 +168,22 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
 
   const cardPos = computeCardPos(spot, current?.cardSide ?? 'center', vw, vh)
 
+  // tryIt steps: dim only — whole interface stays interactive
+  // mustInteract steps: only the spotlight is interactive (allowClickThrough handles opening it)
+  // regular steps: everything blocked
+  const isTryIt = !!(current?.tryIt && !current?.mustInteract)
+  const dimOnly = isTryIt ? 'none' : 'auto'
+
   const portal = (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
 
       {/* Spotlight overlay */}
       {spot ? (
         <>
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
-          <div style={{ position: 'fixed', top: spot.bottom, left: 0, right: 0, bottom: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
-          <div style={{ position: 'fixed', top: spot.top, left: 0, width: spot.left, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
-          <div style={{ position: 'fixed', top: spot.top, left: spot.right, right: 0, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
+          <div style={{ position: 'fixed', top: spot.bottom, left: 0, right: 0, bottom: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
+          <div style={{ position: 'fixed', top: spot.top, left: 0, width: spot.left, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
+          <div style={{ position: 'fixed', top: spot.top, left: spot.right, right: 0, height: spot.bottom - spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
           {/* ring */}
           <div style={{
             position: 'fixed', top: spot.top, left: spot.left,
@@ -146,12 +192,12 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
             boxShadow: '0 0 0 1px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.18)',
             pointerEvents: 'none',
           }} />
-          {!current?.allowClickThrough && (
+          {!current?.allowClickThrough && !isTryIt && (
             <div style={{ position: 'fixed', top: spot.top, left: spot.left, width: spot.right - spot.left, height: spot.bottom - spot.top, pointerEvents: 'auto' }} />
           )}
         </>
       ) : (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: 'auto' }} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
       )}
 
       {/* Tutorial card */}
@@ -192,7 +238,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
           {/* tryIt hint */}
           {current?.tryIt && !current?.mustInteract && (
             <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontSize: 12, color: '#a5b4fc', lineHeight: 1.5 }}>
-              Try the highlighted element, then click Next to continue.
+              {current.tryItHint ?? 'Try the highlighted element, then click Next to continue.'}
             </div>
           )}
           {/* navigation */}
