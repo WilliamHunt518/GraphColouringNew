@@ -1,13 +1,16 @@
-import { useReducer, useEffect, useRef, useState } from 'react'
+import { useReducer, useEffect, useRef, useState, useMemo } from 'react'
 
 const LOG = true
-import type { StudyConfig, MapViewState } from '../types'
+import type { StudyConfig, MapViewState, FreePlayAchievement } from '../types'
 import { buildInitialState, gameReducer, reserveCount } from '../store/gameReducer'
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
 import SurveyModal from './SurveyModal'
 import Tutorial from './Tutorial'
+import FreePlayOverlay from './FreePlayOverlay'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
+
+const FREE_PLAY_MAX = 300  // seconds
 
 const CHANNEL_NAME = 'sar-study'
 
@@ -23,6 +26,8 @@ export default function GameShell({ config }: Props) {
   const [showTutorial, setShowTutorial] = useState(config.tutorialMode ?? false)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [openMissionId, setOpenMissionId] = useState<string | null>(null)
+  const [showFreePlay, setShowFreePlay] = useState(false)
+  const [freePlayStartAt, setFreePlayStartAt] = useState<number | null>(null)
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
   const lastBroadcastElapsed = useRef<number>(-1)
@@ -109,6 +114,37 @@ export default function GameShell({ config }: Props) {
     prevPendingRef.current = allPending
   }, [state.missions])
 
+  // Free play achievement computation
+  const freePlayAchievements = useMemo<FreePlayAchievement[]>(() => {
+    if (!showFreePlay) return []
+    const evts = state.events.flat()
+    return [
+      { id: 'manual_alloc',      label: 'Perform a manual strategic allocation',
+        done: evts.some(e => e.type === 'strategic_choice' && (e as any).choiceType === 'manual') },
+      { id: 'agent_alloc',       label: 'Accept a Strategic Agent strategy',
+        done: evts.some(e => e.type === 'strategic_choice' && (e as any).choiceType !== 'manual') },
+      { id: 'override_tactical', label: 'Override a tactical plan',
+        done: evts.some(e => e.type === 'tactical_confirmed' && (e as any).modifiedFromAgentPlan) },
+      { id: 'chain_drone',       label: 'Chain a drone through two tasks',
+        done: evts.some(e => e.type === 'tactical_confirmed' && (e as any).chainingUsed) },
+    ]
+  }, [showFreePlay, state.events])
+
+  const freePlaySecondsLeft = freePlayStartAt !== null
+    ? Math.max(0, FREE_PLAY_MAX - (state.elapsed - freePlayStartAt))
+    : FREE_PLAY_MAX
+
+  // Auto-end free play when all achieved OR timed out
+  useEffect(() => {
+    if (!showFreePlay || freePlayStartAt === null) return
+    const allDone = freePlayAchievements.every(a => a.done)
+    const timedOut = state.elapsed >= freePlayStartAt + FREE_PLAY_MAX
+    if (allDone || timedOut) {
+      setShowFreePlay(false)
+      dispatch({ type: 'FORCE_SESSION_END' })
+    }
+  }, [showFreePlay, freePlayStartAt, freePlayAchievements, state.elapsed, dispatch])
+
   // Broadcast map state ~10fps, or immediately when strategic modal / openMissionId / tutorial changes
   useEffect(() => {
     if (!channelRef.current) return
@@ -140,9 +176,12 @@ export default function GameShell({ config }: Props) {
       openMissionId,
       tutorialActive: showTutorial,
       tutorialStep,
+      freePlayActive: showFreePlay,
+      freePlayAchievements,
+      freePlaySecondsLeft,
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode, openMissionId, showTutorial, tutorialStep])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode, openMissionId, showTutorial, tutorialStep, showFreePlay, freePlayAchievements, freePlaySecondsLeft])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {
@@ -169,7 +208,22 @@ export default function GameShell({ config }: Props) {
             dispatch={dispatch}
             step={tutorialStep}
             onStep={setTutorialStep}
-            onComplete={() => setShowTutorial(false)}
+            onComplete={() => {
+              setShowTutorial(false)
+              if (config.tutorialMode) {
+                setShowFreePlay(true)
+                setFreePlayStartAt(state.elapsed)
+                dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
+                dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
+              }
+            }}
+          />
+        )}
+        {showFreePlay && config.tutorialMode && (
+          <FreePlayOverlay
+            achievements={freePlayAchievements}
+            secondsLeft={freePlaySecondsLeft}
+            onSkip={() => { setShowFreePlay(false); dispatch({ type: 'FORCE_SESSION_END' }) }}
           />
         )}
       </>

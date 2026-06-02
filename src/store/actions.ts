@@ -40,6 +40,7 @@ export type GameAction =
   // ── Testing mode ─────────────────────────────────────────────────────────
   | { type: 'FORCE_MISSION_ARRIVAL' }
   | { type: 'FORCE_DRONE_FAILURE' }
+  | { type: 'FORCE_SESSION_END' }
 
   // ── Session flow ─────────────────────────────────────────────────────────
   | { type: 'NEXT_SESSION' }

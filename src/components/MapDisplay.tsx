@@ -199,7 +199,7 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
             return (
               <button
                 key={m.id}
-                onClick={() => onSelect(m.id)}
+                onClick={() => { onSelect(m.id); document.dispatchEvent(new CustomEvent('tutorial-mission-selected')) }}
                 className={`w-full text-left px-3 py-2.5 rounded border transition-colors ${
                   isSelected
                     ? isRecov
@@ -653,6 +653,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
       } else {
         const existing = prev[droneId] ?? []
         if (existing.includes(taskId)) return prev
+        document.dispatchEvent(new CustomEvent('tutorial-drone-chained'))
         return { ...prev, [droneId]: [...existing, taskId] }
       }
     })
@@ -707,6 +708,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     }
     setAssignments(suggestion)
     setDroneChainOrder({})
+    document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
   }
 
   return (

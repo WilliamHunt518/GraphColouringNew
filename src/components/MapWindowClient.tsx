@@ -4,6 +4,7 @@ const LOG = true
 import type { MapViewState } from '../types'
 import MapDisplay from './MapDisplay'
 import TacticalTutorial from './TacticalTutorial'
+import FreePlayOverlay from './FreePlayOverlay'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
 const CHANNEL_NAME = 'sar-study'
@@ -64,6 +65,14 @@ export default function MapWindowClient() {
           onNext={()     => sendTutorialAction('NEXT')}
           onBack={()     => sendTutorialAction('BACK')}
           onComplete={() => sendTutorialAction('COMPLETE')}
+        />
+      )}
+      {viewState.freePlayActive && (
+        <FreePlayOverlay
+          achievements={viewState.freePlayAchievements}
+          secondsLeft={viewState.freePlaySecondsLeft}
+          onSkip={() => {}}
+          readOnly
         />
       )}
     </>

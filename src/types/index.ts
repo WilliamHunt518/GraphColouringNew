@@ -168,6 +168,12 @@ export interface StrategicModal {
 
 // ─── Map view state ───────────────────────────────────────────────────────
 
+export interface FreePlayAchievement {
+  id: string
+  label: string
+  done: boolean
+}
+
 export interface MapViewState {
   assets: Asset[]
   missions: Mission[]
@@ -185,6 +191,9 @@ export interface MapViewState {
   openMissionId: string | null
   tutorialActive: boolean
   tutorialStep: number
+  freePlayActive: boolean
+  freePlayAchievements: FreePlayAchievement[]
+  freePlaySecondsLeft: number
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────
@@ -264,6 +273,7 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   missionCategory: MissionCategory
   wasAgentSuggested: boolean
   modifiedFromAgentPlan: boolean  // true if operator changed any drone→task assignment from agent suggestion
+  chainingUsed: boolean           // true if any drone was assigned to more than one task
   assetsDeployed: string[]
   timeRemainingInSession: number
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
-import { TUTORIAL_STEPS, AGENT_INTRO_STEP } from '../utils/tutorialSteps'
+import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP } from '../utils/tutorialSteps'
 
 interface Props {
   state: GameState
@@ -52,9 +52,11 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
 
 export default function Tutorial({ state, dispatch, step, onStep, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
-  const autoFiredRef      = useRef(new Set<number>())
-  const missionForcedRef  = useRef(false)
+  const autoFiredRef        = useRef(new Set<number>())
+  const missionForcedRef    = useRef(false)
   const missionTwoForcedRef = useRef(false)
+  const failureDemoFiredRef = useRef(false)
+  const failureTryTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const current = TUTORIAL_STEPS[step]
   const isLast  = step === TUTORIAL_STEPS.length - 1
@@ -77,6 +79,29 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
       dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
     }
   }, [step, state.pendingBlueprints.length, dispatch])
+
+  // Force a drone failure for the demo once Mission 1 has an executing drone
+  useEffect(() => {
+    if (failureDemoFiredRef.current) return
+    if (step < FAILURE_DEMO_STEP) return
+    if (state.missions.some(m => m.failureRecoveryPending)) {
+      failureDemoFiredRef.current = true
+      return
+    }
+    const hasExecuting = state.missions.some(
+      m => m.status === 'active' && m.tasks.some(t => t.status === 'executing')
+    )
+    if (hasExecuting) {
+      failureDemoFiredRef.current = true
+      dispatch({ type: 'FORCE_DRONE_FAILURE' })
+    } else if (!failureTryTimerRef.current) {
+      // Drones may still be in transit — retry in 2 s
+      failureTryTimerRef.current = setTimeout(() => {
+        failureTryTimerRef.current = null
+        failureDemoFiredRef.current = false   // allow re-check on next state update
+      }, 2000)
+    }
+  }, [state, step, dispatch])
 
   // Track highlighted element rect
   const refreshSpot = useCallback(() => {

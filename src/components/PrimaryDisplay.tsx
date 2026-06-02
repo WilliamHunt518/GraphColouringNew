@@ -582,21 +582,37 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
   onChange: (a: AssetRequirement) => void
 }) {
   const eta = previewAllocation(tasks, allocation)
+  // Per-type minimum (max single-task demand) — drones above this can absorb failures
+  const floor = { Blue: 0, Red: 0, Green: 0 }
+  for (const t of tasks) {
+    const p = TASK_PRIMARY[t.type as TaskType]
+    floor.Blue  = Math.max(floor.Blue,  p.Blue)
+    floor.Red   = Math.max(floor.Red,   p.Red)
+    floor.Green = Math.max(floor.Green, p.Green)
+  }
   return (
     <div className="space-y-2">
-      {(['Blue', 'Red', 'Green'] as const).map(type => (
-        <div key={type} className="flex items-center gap-2">
-          <span className={`text-xs w-20 ${ASSET_COLORS[type]}`}>
-            {type} ({reserve[type]} avail)
-          </span>
-          <button onClick={() => onChange({ ...allocation, [type]: Math.max(0, allocation[type] - 1) })}
-            className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white font-bold flex items-center justify-center">−</button>
-          <span className="w-5 text-center font-mono text-white text-sm">{allocation[type]}</span>
-          <button onClick={() => onChange({ ...allocation, [type]: Math.min(reserve[type], allocation[type] + 1) })}
-            className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white font-bold flex items-center justify-center">+</button>
-          <span className="text-xs text-gray-500">/ {reserve[type]}</span>
-        </div>
-      ))}
+      {(['Blue', 'Red', 'Green'] as const).map(type => {
+        const spare = allocation[type] - floor[type]
+        return (
+          <div key={type} className="flex items-center gap-2">
+            <span className={`text-xs w-20 ${ASSET_COLORS[type]}`}>
+              {type} ({reserve[type]} avail)
+            </span>
+            <button onClick={() => onChange({ ...allocation, [type]: Math.max(0, allocation[type] - 1) })}
+              className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white font-bold flex items-center justify-center">−</button>
+            <span className="w-5 text-center font-mono text-white text-sm">{allocation[type]}</span>
+            <button onClick={() => onChange({ ...allocation, [type]: Math.min(reserve[type], allocation[type] + 1) })}
+              className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white font-bold flex items-center justify-center">+</button>
+            <span className="text-xs text-gray-500">/ {reserve[type]}</span>
+            {allocation[type] > 0 && (
+              <span className={`text-[10px] ml-0.5 ${spare > 0 ? 'text-gray-600' : 'text-gray-700'}`}>
+                {spare > 0 ? `${spare} can fail` : 'no spare'}
+              </span>
+            )}
+          </div>
+        )
+      })}
       <div className="text-xs text-gray-400">
         {eta < Infinity
           ? <>ETA: <span className="text-white">{fmtTime(eta)}</span></>

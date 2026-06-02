@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { MapViewState } from '../types'
 import { TUTORIAL_STEPS, TACTICAL_STEP_FIRST, TACTICAL_STEP_LAST } from '../utils/tutorialSteps'
@@ -49,8 +49,10 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
   }
 }
 
-export default function TacticalTutorial({ step, onNext, onBack, onComplete }: Props) {
+export default function TacticalTutorial({ state, step, onNext, onBack, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
+  const chainCountRef        = useRef(0)
+  const sawFailurePendingRef = useRef(false)
 
   const current = TUTORIAL_STEPS[step]
 
@@ -59,6 +61,44 @@ export default function TacticalTutorial({ step, onNext, onBack, onComplete }: P
 
   const isFirstTacStep = step === TACTICAL_STEP_FIRST
   const isLastTacStep  = step === TACTICAL_STEP_LAST
+
+  // Auto-advance tac-select when user clicks a mission in the sidebar
+  useEffect(() => {
+    if (current?.id !== 'tac-select') return
+    const handler = () => onNext()
+    document.addEventListener('tutorial-mission-selected', handler)
+    return () => document.removeEventListener('tutorial-mission-selected', handler)
+  }, [step, current, onNext])
+
+  // tac-chain: count Shift+drags, advance after 2
+  useEffect(() => {
+    if (current?.id !== 'tac-chain') { chainCountRef.current = 0; return }
+    const handler = () => {
+      chainCountRef.current++
+      if (chainCountRef.current >= 2) setTimeout(() => onNext(), 400)
+    }
+    document.addEventListener('tutorial-drone-chained', handler)
+    return () => document.removeEventListener('tutorial-drone-chained', handler)
+  }, [step, current, onNext])
+
+  // tac-suggest: advance when Suggest is clicked
+  useEffect(() => {
+    if (current?.id !== 'tac-suggest') return
+    const handler = () => onNext()
+    document.addEventListener('tutorial-suggest-clicked', handler)
+    return () => document.removeEventListener('tutorial-suggest-clicked', handler)
+  }, [step, current, onNext])
+
+  // failure-recovery-do: advance when failureRecoveryPending transitions true → false
+  useEffect(() => {
+    if (current?.id !== 'failure-recovery-do') { sawFailurePendingRef.current = false; return }
+    const hasPending = state.missions.some(m => m.failureRecoveryPending)
+    if (hasPending) {
+      sawFailurePendingRef.current = true
+    } else if (sawFailurePendingRef.current) {
+      setTimeout(() => onNext(), 600)
+    }
+  }, [state, step, current, onNext])
 
   // Spacebar advances non-mustInteract steps
   useEffect(() => {

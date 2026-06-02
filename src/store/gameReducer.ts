@@ -2,7 +2,7 @@ import type {
   GameState, GameEvent, Asset, Mission, Task,
   AssetType, TaskType, AssetRequirement,
   MissionCategory, TaskComp, RecoveryOption,
-  PendingAllocation,
+  PendingAllocation, MissionBlueprint,
 } from '../types'
 import type { GameAction } from './actions'
 import {
@@ -24,10 +24,34 @@ function hashId(id: string): number {
   return id.split('').reduce((acc, c, i) => (acc ^ (c.charCodeAt(0) * (i + 7))) >>> 0, 0)
 }
 
+// ─── Tutorial first-mission blueprint ─────────────────────────────────────
+// Fixed 4-task mission: T1 Recce + T1 Recce + T3 Supply + T5 Search & Service
+// Uses all three drone types; the two T1s naturally demonstrate chaining.
+// No failures so the tutorial flow stays clean.
+
+const TUTORIAL_FIRST_BLUEPRINT: MissionBlueprint = {
+  id: 'T001',
+  arrivalTime: 0,  // overridden by FORCE_MISSION_ARRIVAL
+  category: 'C',
+  taskTypes: [1, 1, 3, 5],
+  zoneCenter: { x: 220, y: 180 },
+  waypoints: [
+    { x: 200, y: 155 },  // T1 — northwest
+    { x: 248, y: 162 },  // T1 — north-northeast
+    { x: 255, y: 205 },  // T3 — east
+    { x: 195, y: 220 },  // T5 — south
+  ],
+  willFail: false,
+  droneFailureTimes: [],
+}
+
 // ─── Initial state factory ─────────────────────────────────────────────────
 
 export function buildInitialState(config: StudyConfig): GameState {
-  const blueprints = generateSessionPlan(new SeededRNG(config.seed ^ 1), config.complexity)
+  const generated = generateSessionPlan(new SeededRNG(config.seed ^ 1), config.complexity)
+  const blueprints = config.tutorialMode
+    ? [TUTORIAL_FIRST_BLUEPRINT, ...generated]
+    : generated
 
   const baseCategories: Record<MissionCategory, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 }
   const initialForecast = { ...baseCategories }
@@ -401,6 +425,7 @@ function applyTacticalAllocation(
   taskOrder: string[],
   modifiedFromAgentPlan: boolean,
   droneSequences: Record<string, string[]> = {},
+  chainingUsed = false,
 ): GameState {
   const mission = state.missions.find(m => m.id === missionId)!
   const now = state.elapsed
@@ -483,6 +508,7 @@ function applyTacticalAllocation(
     missionCategory: mission.category,
     wasAgentSuggested: pending.isAgentSuggested,
     modifiedFromAgentPlan,
+    chainingUsed,
     assetsDeployed: allAssignedIds,
     timeRemainingInSession: Math.max(0, state.sessionDuration - now),
   })
@@ -1079,7 +1105,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (assignments.length === 0) return state
       // modifiedFromAgentPlan: true if the user drag-dropped custom assignments rather than accepting the agent plan
       const modifiedFromAgentPlan = pending.isAgentSuggested && userProvidedAssignments
-      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs)
+      // chainingUsed: true if any drone appears in more than one task's assignment list
+      const chainingUsed = userProvidedAssignments
+        ? (() => {
+            const allIds = Object.values(action.taskAssignments!).flat()
+            return allIds.some((id, _, arr) => arr.filter(x => x === id).length > 1)
+          })()
+        : false
+      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs, chainingUsed)
       // Persist the suppressed task ID onto the mission so TICK can detect the lockout
       if (pending.hasTacticalError && pending.suppressedTaskId) {
         s = { ...s, missions: s.missions.map(m => m.id === action.missionId
@@ -1667,6 +1700,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
       return s
+    }
+
+    // ── FORCE_SESSION_END (testing/tutorial mode) ────────────────────────
+    case 'FORCE_SESSION_END': {
+      if (!state.config.testingMode) return state
+      return endSession(state)
     }
 
     default:
