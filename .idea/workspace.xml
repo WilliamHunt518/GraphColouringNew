@@ -5,15 +5,13 @@
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/MapWindowClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapWindowClient.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/StartScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/StartScreen.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/TacticalTutorial.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/TacticalTutorial.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Tutorial.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Tutorial.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/store/actions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/actions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/tutorialSteps.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/tutorialSteps.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

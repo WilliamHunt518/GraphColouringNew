@@ -228,6 +228,16 @@ export default function StartScreen({ onStart }: Props) {
         <p className="text-center text-xs text-gray-600">
           Guided walkthrough of every interface element — no configuration needed.
         </p>
+
+        <button
+          onClick={() => window.open('/?view=map', 'sar-tactical')}
+          className="w-full py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-gray-300 font-medium text-sm transition-colors"
+        >
+          Open Tactical Planner →
+        </button>
+        <p className="text-center text-xs text-gray-600">
+          Open the map window on a second screen before starting.
+        </p>
       </div>
     </div>
   )

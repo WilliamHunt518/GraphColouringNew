@@ -192,7 +192,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
           </span>
           <button
             data-tutorial="tactical-btn"
-            onClick={() => window.open('/?view=map', '_blank', 'noopener')}
+            onClick={() => window.open('/?view=map', 'sar-tactical')}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
           >
             Tactical →

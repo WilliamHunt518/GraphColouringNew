@@ -1655,6 +1655,46 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return s
     }
 
+    // ── TUTORIAL_OVERRIDE_TEAM ───────────────────────────────────────────
+    // Replaces Mission 1's pending drone pool with 2 Blue + 1 Red + 1 Green
+    // so the chaining exercise in the tutorial is always exercisable.
+    case 'TUTORIAL_OVERRIDE_TEAM': {
+      const mission = state.missions.find(m => m.tacticalPending && m.pendingAllocation)
+      if (!mission || !mission.pendingAllocation) return state
+      const pending = mission.pendingAllocation
+      const allAvailable = availableExcludingPending(state.assets, state.missions, mission.id)
+      const want = { Blue: 2, Red: 1, Green: 1 }
+      const blues  = allAvailable.filter(a => a.type === 'Blue').slice(0, want.Blue)
+      const reds   = allAvailable.filter(a => a.type === 'Red').slice(0, want.Red)
+      const greens = allAvailable.filter(a => a.type === 'Green').slice(0, want.Green)
+      const newPool = [...blues, ...reds, ...greens].map(a => a.id)
+      if (newPool.length === 0) return state
+      const newComposition: AssetRequirement = { Blue: blues.length, Red: reds.length, Green: greens.length }
+      const now = state.elapsed
+      const taskOrder = [...mission.tasks].sort((a, b) => b.type - a.type).map(t => t.id)
+      const allAssets = state.assets
+      const poolAssets = allAssets.filter(a => newPool.includes(a.id))
+      const assignments = greedyAssign(mission.tasks, poolAssets, newComposition, now, undefined, taskOrder)
+      const taskAssignmentMap = Object.fromEntries(assignments.map(a => [a.taskId, a.assetIds]))
+      const expectedCompletionTime = assignments.length > 0
+        ? Math.max(...assignments.map(a => a.startTime + a.baseTime))
+        : pending.expectedCompletionTime
+      return {
+        ...state,
+        missions: state.missions.map(m => m.id === mission.id ? {
+          ...m,
+          pendingAllocation: {
+            ...pending,
+            composition: newComposition,
+            dronePool: newPool,
+            taskAssignments: taskAssignmentMap,
+            taskOrder,
+            expectedCompletionTime,
+          },
+        } : m),
+      }
+    }
+
     // ── FORCE_DRONE_FAILURE (testing mode) ───────────────────────────────
     case 'FORCE_DRONE_FAILURE': {
       if (!state.config.testingMode) return state

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
-import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP } from '../utils/tutorialSteps'
+import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP, ALLOCATION_OVERRIDE_STEP } from '../utils/tutorialSteps'
 
 interface Props {
   state: GameState
@@ -52,11 +52,12 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
 
 export default function Tutorial({ state, dispatch, step, onStep, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
-  const autoFiredRef        = useRef(new Set<number>())
-  const missionForcedRef    = useRef(false)
-  const missionTwoForcedRef = useRef(false)
-  const failureDemoFiredRef = useRef(false)
-  const failureTryTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoFiredRef           = useRef(new Set<number>())
+  const missionForcedRef       = useRef(false)
+  const missionTwoForcedRef    = useRef(false)
+  const overrideTeamFiredRef   = useRef(false)
+  const failureDemoFiredRef    = useRef(false)
+  const failureTryTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const current = TUTORIAL_STEPS[step]
   const isLast  = step === TUTORIAL_STEPS.length - 1
@@ -69,6 +70,14 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
       dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Override the first mission's drone team when the allocation-override step is entered
+  useEffect(() => {
+    if (overrideTeamFiredRef.current) return
+    if (step !== ALLOCATION_OVERRIDE_STEP) return
+    overrideTeamFiredRef.current = true
+    dispatch({ type: 'TUTORIAL_OVERRIDE_TEAM' })
+  }, [step, dispatch])
 
   // Spawn second mission when agent-intro phase begins
   useEffect(() => {
@@ -171,21 +180,18 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const vh = window.innerHeight
   const pct = ((step + 1) / TUTORIAL_STEPS.length) * 100
 
-  // ── Minimal indicator for map-window steps ──
+  // When tutorial is active but the current step is in the tactical window,
+  // grey out the entire primary window so the user knows to switch screens.
   if (current?.inMapWindow) {
     return createPortal(
       <div style={{
-        position: 'fixed', bottom: 16, right: 16, zIndex: 9000, pointerEvents: 'auto',
-        background: 'linear-gradient(135deg, #1e2d45, #1a2438)',
-        border: '1px solid rgba(99,102,241,0.45)',
-        borderRadius: 10, padding: '10px 14px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-        color: '#94a3b8', fontSize: 12, fontFamily: 'inherit',
-        display: 'flex', alignItems: 'center', gap: 10, maxWidth: 260,
+        position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'auto',
+        background: 'rgba(2,6,23,0.88)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
       }}>
-        <span style={{ color: '#818cf8', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>Tutorial</span>
-        <span>See Tactical Planner window →</span>
-        <span style={{ color: '#475569', whiteSpace: 'nowrap', fontSize: 11 }}>{step + 1}/{TUTORIAL_STEPS.length}</span>
+        <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', fontFamily: 'inherit' }}>Tutorial</span>
+        <span style={{ fontSize: 14, color: '#94a3b8', fontFamily: 'inherit' }}>See the Tactical Planner window →</span>
+        <span style={{ fontSize: 11, color: '#475569', fontFamily: 'inherit' }}>{step + 1} / {TUTORIAL_STEPS.length}</span>
       </div>,
       document.body,
     )

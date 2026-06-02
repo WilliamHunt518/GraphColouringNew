@@ -631,6 +631,15 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     return meetsPrim || meetsSub
   })
 
+  // Fire tutorial-plan-complete on the rising edge of canDeploy
+  const prevCanDeployRef = useRef(false)
+  useEffect(() => {
+    if (canDeploy && !prevCanDeployRef.current) {
+      document.dispatchEvent(new CustomEvent('tutorial-plan-complete'))
+    }
+    prevCanDeployRef.current = canDeploy
+  }, [canDeploy])
+
   // Unified move/chain handler — maintains droneChainOrder so sequences follow assignment order
   function moveDrone(droneId: string, taskId: string, chain: boolean) {
     setAssignments(prev => {
@@ -649,6 +658,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     })
     setDroneChainOrder(prev => {
       if (!chain) {
+        document.dispatchEvent(new CustomEvent('tutorial-drone-assigned'))
         return { ...prev, [droneId]: [taskId] }
       } else {
         const existing = prev[droneId] ?? []

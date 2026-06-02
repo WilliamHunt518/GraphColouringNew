@@ -37,10 +37,11 @@ export type GameAction =
   | { type: 'FINISH_SURVEYS' }
   | { type: 'DISMISS_TRUST_PROBE' }
 
-  // ── Testing mode ─────────────────────────────────────────────────────────
+  // ── Testing / tutorial mode ──────────────────────────────────────────────
   | { type: 'FORCE_MISSION_ARRIVAL' }
   | { type: 'FORCE_DRONE_FAILURE' }
   | { type: 'FORCE_SESSION_END' }
+  | { type: 'TUTORIAL_OVERRIDE_TEAM' }   // replace Mission 1 team with 2B+1R+1G for chaining practice
 
   // ── Session flow ─────────────────────────────────────────────────────────
   | { type: 'NEXT_SESSION' }

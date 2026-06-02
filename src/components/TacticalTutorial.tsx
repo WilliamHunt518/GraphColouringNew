@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { MapViewState } from '../types'
-import { TUTORIAL_STEPS, TACTICAL_STEP_FIRST, TACTICAL_STEP_LAST } from '../utils/tutorialSteps'
+import { TUTORIAL_STEPS, TACTICAL_STEP_LAST } from '../utils/tutorialSteps'
 
 interface Props {
   state: MapViewState
@@ -56,10 +56,12 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
 
   const current = TUTORIAL_STEPS[step]
 
-  // Only render for map-window steps
+  // Primary-window steps: let the map show normally so the user has context.
+  // (The primary window already shows a full grey overlay directing them here.)
   if (!current?.inMapWindow) return null
 
-  const isFirstTacStep = step === TACTICAL_STEP_FIRST
+  // Hide Back at the start of each tactical phase (when the preceding step is in the primary window)
+  const isFirstTacStep = !(TUTORIAL_STEPS[step - 1]?.inMapWindow ?? false)
   const isLastTacStep  = step === TACTICAL_STEP_LAST
 
   // Auto-advance tac-select when user clicks a mission in the sidebar
@@ -68,6 +70,14 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     const handler = () => onNext()
     document.addEventListener('tutorial-mission-selected', handler)
     return () => document.removeEventListener('tutorial-mission-selected', handler)
+  }, [step, current, onNext])
+
+  // tac-manual: advance when first normal drag fires
+  useEffect(() => {
+    if (current?.id !== 'tac-manual') return
+    const handler = () => onNext()
+    document.addEventListener('tutorial-drone-assigned', handler)
+    return () => document.removeEventListener('tutorial-drone-assigned', handler)
   }, [step, current, onNext])
 
   // tac-chain: count Shift+drags, advance after 2
@@ -79,6 +89,14 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     }
     document.addEventListener('tutorial-drone-chained', handler)
     return () => document.removeEventListener('tutorial-drone-chained', handler)
+  }, [step, current, onNext])
+
+  // tac-fill: advance when all tasks are covered (canDeploy rising edge)
+  useEffect(() => {
+    if (current?.id !== 'tac-fill') return
+    const handler = () => onNext()
+    document.addEventListener('tutorial-plan-complete', handler)
+    return () => document.removeEventListener('tutorial-plan-complete', handler)
   }, [step, current, onNext])
 
   // tac-suggest: advance when Suggest is clicked
