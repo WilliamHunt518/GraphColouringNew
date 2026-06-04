@@ -2,16 +2,22 @@ import type { GameState } from '../types'
 
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
 export const TACTICAL_STEP_FIRST = 17
-export const TACTICAL_STEP_LAST  = 44   // tac-deploy2 at index 44 (last inMapWindow step)
+export const TACTICAL_STEP_LAST  = 46   // tac-deploy2 at index 46 (shifted +2 by abort steps)
 
 // Step index where agent-introduction phase begins (triggers second mission spawn)
-export const AGENT_INTRO_STEP = 34
+export const AGENT_INTRO_STEP = 36   // shifted +2 by the two abort steps inserted after failure-lesson
 
 // Step index where Tutorial.tsx begins trying to force a drone failure
 export const FAILURE_DEMO_STEP = 29
 
 // Step index where Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM
 export const ALLOCATION_OVERRIDE_STEP = 14
+
+// Step index where Tutorial.tsx dispatches TUTORIAL_FORCE_ABANDON_SCENARIO (abort-explain is shown here)
+export const ABORT_EXPLAIN_STEP = 34
+
+// First tactical-window step in PHASE 2 (abort-do) — used to keep TacticalTutorial overlay running
+export const ABORT_DO_STEP = 35
 
 export interface TutorialStep {
   id: string
@@ -507,9 +513,41 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     cardSide: 'center',
   },
 
+  // ════════════════ ABORT LESSON (primary + map window) ════════════════════════
+
+  // ── 34. abort-explain (PRIMARY) — explain mission abandonment, dispatch forced scenario ──
+  {
+    id: 'abort-explain',
+    title: 'When You Cannot Recover',
+    body: [
+      'Sometimes a drone failure leaves a task uncoverable — for example, you have sent all your Green drones to other missions and cannot spare one.',
+      'In that situation the only option is to abort the mission. Partial task completions are still scored; the remaining tasks are re-queued as a residual mission.',
+      'The tutorial will now put your active mission into an unrecoverable state. Switch to the Tactical Planner to try it.',
+    ],
+    cardSide: 'center',
+  },
+
+  // ── 35. abort-do (MAP WINDOW) — mustInteract: click Abandon ─────────────────
+  {
+    id: 'abort-do',
+    title: 'Abort the Mission',
+    body: [
+      'The mission now has a failure with no drones available to cover it. At the bottom of the recovery panel you will see an "Abort Mission" button.',
+      'Click it to abandon the mission. The tutorial advances automatically.',
+    ],
+    highlight: 'tac-mission-list',
+    cardSide: 'right',
+    allowClickThrough: true,
+    mustInteract: true,
+    mustInteractHint: 'Click "Abort Mission" at the bottom of the recovery panel.',
+    autoAdvanceWhen: state => state.missions.some(m => m.status === 'abandoned'),
+    inMapWindow: true,
+    noOverlayOnPrimary: true,
+  },
+
   // ════════════════ AGENT INTRODUCTION — STRATEGIC (back in primary) ════════════
 
-  // ── 32. Agent intro ───────────────────────────────────────────────────────────
+  // ── 36. Agent intro ───────────────────────────────────────────────────────────
   {
     id: 'agent-intro',
     title: 'Now Try the Agents',

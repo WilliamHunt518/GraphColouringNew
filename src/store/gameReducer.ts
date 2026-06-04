@@ -426,6 +426,7 @@ function applyTacticalAllocation(
   modifiedFromAgentPlan: boolean,
   droneSequences: Record<string, string[]> = {},
   chainingUsed = false,
+  changedTaskIds: string[] = [],
 ): GameState {
   const mission = state.missions.find(m => m.id === missionId)!
   const now = state.elapsed
@@ -508,6 +509,7 @@ function applyTacticalAllocation(
     missionCategory: mission.category,
     wasAgentSuggested: pending.isAgentSuggested,
     modifiedFromAgentPlan,
+    changedTaskIds,
     chainingUsed,
     assetsDeployed: allAssignedIds,
     timeRemainingInSession: Math.max(0, state.sessionDuration - now),
@@ -659,9 +661,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const failedDrone = executingDrones[failRng.randInt(0, executingDrones.length - 1)]
           const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
 
-          // Mark drone as failed
+          // Mark drone as failed; schedule replacement arrival at hub in 30–45 s
+          const replaceRng = new SeededRNG(s.config.seed ^ 0x4E3B ^ mission.droneFailuresFired)
+          const replacementDelay = 30 + replaceRng.randFloat(0, 15)
           const updatedAssets = s.assets.map(a =>
-            a.id === failedDrone.id ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null } : a
+            a.id === failedDrone.id
+              ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null, replacementAt: elapsed + replacementDelay }
+              : a
           )
           // Revert task to pending, clear its assignment
           const updatedMissions = s.missions.map(m => {
@@ -772,7 +778,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // 4. Update asset availability and positions
       const updatedAssets = s.assets.map(asset => {
-        // Don't move failed assets
+        // Replacement drone arrives at hub
+        if (asset.status === 'failed' && asset.replacementAt !== null && elapsed >= asset.replacementAt) {
+          return {
+            ...asset,
+            status: 'available' as const,
+            failedAt: null,
+            replacementAt: null,
+            currentMissionId: null,
+            currentTaskId: null,
+            position: { ...HUB },
+            travelFrom: { ...HUB },
+            targetPosition: { ...HUB },
+            availableAt: elapsed,
+          }
+        }
+        // Don't move failed assets (with no pending replacement)
         if (asset.status === 'failed') return asset
 
         const newPos = interpolateAssetPosition(asset, elapsed)
@@ -1103,8 +1124,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       if (assignments.length === 0) return state
-      // modifiedFromAgentPlan: true if the user drag-dropped custom assignments rather than accepting the agent plan
-      const modifiedFromAgentPlan = pending.isAgentSuggested && userProvidedAssignments
+
+      // modifiedFromAgentPlan: true if the user's assignments differ from the greedy suggestion stored in pending
+      const taskAssignmentsEqual = (a: Record<string, string[]>, b: Record<string, string[]>) => {
+        const keysA = Object.keys(a).sort(), keysB = Object.keys(b).sort()
+        if (keysA.join() !== keysB.join()) return false
+        return keysA.every(k => [...(a[k] ?? [])].sort().join() === [...(b[k] ?? [])].sort().join())
+      }
+      const modifiedFromAgentPlan = userProvidedAssignments &&
+        !taskAssignmentsEqual(action.taskAssignments!, pending.taskAssignments)
+
+      // Per-task diff: which task IDs had drone assignments changed from the greedy suggestion
+      const changedTaskIds = userProvidedAssignments
+        ? Object.keys(action.taskAssignments!).filter(tid => {
+            const before = [...(pending.taskAssignments[tid] ?? [])].sort().join()
+            const after  = [...(action.taskAssignments![tid]  ?? [])].sort().join()
+            return before !== after
+          })
+        : []
+
       // chainingUsed: true if any drone appears in more than one task's assignment list
       const chainingUsed = userProvidedAssignments
         ? (() => {
@@ -1112,7 +1150,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             return allIds.some((id, _, arr) => arr.filter(x => x === id).length > 1)
           })()
         : false
-      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs, chainingUsed)
+      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs, chainingUsed, changedTaskIds)
       // Persist the suppressed task ID onto the mission so TICK can detect the lockout
       if (pending.hasTacticalError && pending.suppressedTaskId) {
         s = { ...s, missions: s.missions.map(m => m.id === action.missionId
@@ -1404,7 +1442,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
-      let s = logEvent(state, {
+      let s: GameState = state
+
+      // Log task_failed for every task that won't carry over to the residual
+      for (const t of incompleteTasks) {
+        s = logEvent(s, {
+          type: 'task_failed',
+          missionId: mission.id,
+          taskId: t.id,
+          reason: 'mission_abandoned',
+        })
+      }
+
+      s = logEvent(s, {
         type: 'mission_abandoned' as const,
         missionId: mission.id,
         missionCategory: mission.category,
@@ -1691,6 +1741,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             taskOrder,
             expectedCompletionTime,
           },
+        } : m),
+      }
+    }
+
+    // ── TUTORIAL_FORCE_ABANDON_SCENARIO ─────────────────────────────────
+    // Sets the first active mission into an unrecoverable failure state (no feasible
+    // recovery options) so the tutorial's abort step can make the operator abandon it.
+    case 'TUTORIAL_FORCE_ABANDON_SCENARIO': {
+      const mission = state.missions.find(m => m.status === 'active' && !m.failureRecoveryPending)
+      if (!mission) return state
+      return {
+        ...state,
+        missions: state.missions.map(m => m.id === mission.id ? {
+          ...m,
+          failureRecoveryPending: true,
+          failedDroneId: null,
+          pendingRecoveryOptions: [],   // empty = no feasible recovery, operator must abandon
         } : m),
       }
     }

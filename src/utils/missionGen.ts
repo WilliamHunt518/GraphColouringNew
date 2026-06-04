@@ -101,7 +101,7 @@ const LAMBDA: Record<Complexity, number> = {
 const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
   balanced:  [20, 30, 28, 17,  5],
   strategic: [40, 38, 16,  5,  1],  // low tactical: simple missions, lots of them
-  tactical:  [ 3,  8, 22, 42, 25],  // high tactical: complex missions, fewer of them
+  tactical:  [ 5, 13, 28, 38, 16],  // high tactical: complex missions, fewer of them
   full:      [ 5, 15, 28, 32, 20],  // high on both axes
   quick:     [35, 30, 20, 12,  3],
 }
@@ -416,6 +416,7 @@ export function createInitialAssets(complexity: Complexity): Asset[] {
         travelEndElapsed: 0,
         availableAt: 0,
         failedAt: null,
+        replacementAt: null,
       })
     }
   }

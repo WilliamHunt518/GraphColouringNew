@@ -431,7 +431,9 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
 
 function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForceManual }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean; tutorialForceManual?: boolean }) {
   const isAgent = state.config.mode === 'agent'
-  const [showManual, setShowManual] = useState(!isAgent)
+  // Auto-enter manual mode when there are no agent strategies (depleted reserve)
+  const [showManual, setShowManual] = useState(!isAgent || modal.strategies.length === 0)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const [manualAlloc, setManualAlloc] = useState<AssetRequirement>(modal.manualAllocation ?? { Blue: 0, Red: 0, Green: 0 })
   const reserve = reserveCount(state.assets)
@@ -512,10 +514,24 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
           className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded text-white text-sm font-semibold transition-colors">
           {showAgentCards ? 'Deploy Selected' : 'Deploy'}
         </button>
-        <button onClick={() => dispatch({ type: 'CLOSE_STRATEGIC' })}
-          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-sm transition-colors">
-          Cancel
-        </button>
+        {confirmCancel ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-amber-400">Mission stays unallocated.</span>
+            <button onClick={() => dispatch({ type: 'CLOSE_STRATEGIC' })}
+              className="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-white text-xs font-semibold transition-colors">
+              Confirm dismiss
+            </button>
+            <button onClick={() => setConfirmCancel(false)}
+              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">
+              Go back
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmCancel(true)}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-sm transition-colors">
+            Cancel
+          </button>
+        )}
       </div>
     </div>
   )

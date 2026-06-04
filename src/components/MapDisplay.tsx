@@ -500,11 +500,15 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const callsignMode = state.callsignMode
 
   const [assignments, setAssignments] = useState<Record<string, string[]>>(() => {
-    if (recoveryMode || readOnly) {
-      return Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
+    // Always pre-populate from the greedy suggestion stored in pendingAllocation.
+    // In recovery mode this is the recovery plan; for new missions it's the greedy default.
+    // The operator can drag-drop to override; modifiedFromAgentPlan is computed by diff.
+    const base = Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
+    // Strip the suppressed task slot for tactical-error plans so it stays empty
+    if (!recoveryMode && !readOnly && pending.hasTacticalError && pending.suppressedTaskId) {
+      base[pending.suppressedTaskId] = []
     }
-    // New plan: all task slots present but empty — operator allocates manually or via Suggest
-    return Object.fromEntries(Object.keys(pending.taskAssignments).map(k => [k, []]))
+    return base
   })
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})

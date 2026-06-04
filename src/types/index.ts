@@ -36,7 +36,8 @@ export interface Asset {
   travelStartElapsed: number
   travelEndElapsed: number
   availableAt: number
-  failedAt: number | null  // elapsed (s) when drone failed; null = healthy
+  failedAt: number | null       // elapsed (s) when drone failed; null = healthy
+  replacementAt: number | null  // elapsed (s) when replacement arrives at hub; null = no replacement scheduled
 }
 
 // ─── Pending tactical allocation ──────────────────────────────────────────
@@ -273,7 +274,8 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   missionId: string
   missionCategory: MissionCategory
   wasAgentSuggested: boolean
-  modifiedFromAgentPlan: boolean  // true if operator changed any drone→task assignment from agent suggestion
+  modifiedFromAgentPlan: boolean  // true if operator changed any drone→task assignment from the greedy suggestion
+  changedTaskIds: string[]        // task IDs whose drone assignment differed from the greedy suggestion
   chainingUsed: boolean           // true if any drone was assigned to more than one task
   assetsDeployed: string[]
   timeRemainingInSession: number
@@ -312,7 +314,7 @@ export interface TaskFailedEvent extends BaseEvent {
   type: 'task_failed'
   missionId: string
   taskId: string
-  reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout'
+  reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout' | 'mission_abandoned'
 }
 
 export interface AssetRecalledEvent extends BaseEvent {

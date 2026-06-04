@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
-import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP, ALLOCATION_OVERRIDE_STEP } from '../utils/tutorialSteps'
+import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP, ALLOCATION_OVERRIDE_STEP, ABORT_EXPLAIN_STEP } from '../utils/tutorialSteps'
 
 interface Props {
   state: GameState
@@ -61,6 +61,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const missionTwoForcedRef    = useRef(false)
   const overrideTeamFiredRef   = useRef(false)
   const failureDemoFiredRef    = useRef(false)
+  const abandonScenarioFiredRef = useRef(false)
   const failureTryTimerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const current = TUTORIAL_STEPS[step]
@@ -81,6 +82,14 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     if (step !== ALLOCATION_OVERRIDE_STEP) return
     overrideTeamFiredRef.current = true
     dispatch({ type: 'TUTORIAL_OVERRIDE_TEAM' })
+  }, [step, dispatch])
+
+  // Dispatch TUTORIAL_FORCE_ABANDON_SCENARIO when the abort-explain step is entered
+  useEffect(() => {
+    if (abandonScenarioFiredRef.current) return
+    if (step !== ABORT_EXPLAIN_STEP) return
+    abandonScenarioFiredRef.current = true
+    dispatch({ type: 'TUTORIAL_FORCE_ABANDON_SCENARIO' })
   }, [step, dispatch])
 
   // Spawn second mission when agent-intro phase begins

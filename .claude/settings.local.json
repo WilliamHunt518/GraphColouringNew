@@ -79,7 +79,8 @@
       "Bash(Select-String -Path \"src\\\\components\\\\MapDisplay.tsx\" -Pattern \"shiftKey\" -Context 2)",
       "Bash(Select-Object -First 20)",
       "Bash(curl -s http://localhost:5173)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(pdflatex --version)"
     ]
   }
 }

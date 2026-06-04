@@ -270,13 +270,17 @@ export default function GameShell({ config }: Props) {
 
     function downloadData() {
       const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
+      const url  = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `study_${config.participantId}_${config.condition}_${config.seed}.json`
       a.click()
       URL.revokeObjectURL(url)
     }
+
+    // Auto-download once when the done screen mounts
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => { downloadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
