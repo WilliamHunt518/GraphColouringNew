@@ -23,11 +23,12 @@ interface Props {
 export default function GameShell({ config }: Props) {
   const [state, dispatch] = useReducer(gameReducer, config, buildInitialState)
   const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
-  const [showTutorial, setShowTutorial] = useState(config.tutorialMode ?? false)
+  const [showTutorial, setShowTutorial] = useState((config.tutorialMode ?? false) && !config.skipToFreePlay)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [openMissionId, setOpenMissionId] = useState<string | null>(null)
   const [showFreePlay, setShowFreePlay] = useState(false)
   const [freePlayStartAt, setFreePlayStartAt] = useState<number | null>(null)
+  const [freePlayEventStart, setFreePlayEventStart] = useState(0)
   const rafRef = useRef<number | null>(null)
   const channelRef = useRef<BroadcastChannel | null>(null)
   const lastBroadcastElapsed = useRef<number>(-1)
@@ -35,6 +36,16 @@ export default function GameShell({ config }: Props) {
   const lastOpenMissionIdRef = useRef<string | null>(null)
   const prevPendingRef = useRef<Set<string>>(new Set())
   const lastTutorialRef = useRef<{ active: boolean; step: number }>({ active: false, step: -1 })
+
+  // Skip directly to free play when flag is set (testing shortcut)
+  useEffect(() => {
+    if (!config.skipToFreePlay) return
+    setFreePlayEventStart(0)
+    setShowFreePlay(true)
+    setFreePlayStartAt(state.elapsed)
+    dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
+    dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
@@ -114,10 +125,10 @@ export default function GameShell({ config }: Props) {
     prevPendingRef.current = allPending
   }, [state.missions])
 
-  // Free play achievement computation
+  // Free play achievement computation — only checks events that occurred after free play began
   const freePlayAchievements = useMemo<FreePlayAchievement[]>(() => {
     if (!showFreePlay) return []
-    const evts = state.events.flat()
+    const evts = state.events.flat().slice(freePlayEventStart)
     return [
       { id: 'manual_alloc',      label: 'Perform a manual strategic allocation',
         done: evts.some(e => e.type === 'strategic_choice' && (e as any).choiceType === 'manual') },
@@ -128,7 +139,7 @@ export default function GameShell({ config }: Props) {
       { id: 'chain_drone',       label: 'Chain a drone through two tasks',
         done: evts.some(e => e.type === 'tactical_confirmed' && (e as any).chainingUsed) },
     ]
-  }, [showFreePlay, state.events])
+  }, [showFreePlay, state.events, freePlayEventStart])
 
   const freePlaySecondsLeft = freePlayStartAt !== null
     ? Math.max(0, FREE_PLAY_MAX - (state.elapsed - freePlayStartAt))
@@ -211,6 +222,7 @@ export default function GameShell({ config }: Props) {
             onComplete={() => {
               setShowTutorial(false)
               if (config.tutorialMode) {
+                setFreePlayEventStart(state.events.flat().length)
                 setShowFreePlay(true)
                 setFreePlayStartAt(state.elapsed)
                 dispatch({ type: 'FORCE_MISSION_ARRIVAL' })

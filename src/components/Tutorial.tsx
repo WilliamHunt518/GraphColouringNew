@@ -24,11 +24,14 @@ function clamp(min: number, val: number, max: number) {
 }
 
 function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: number) {
-  if (!spot || side === 'center') {
-    return {
-      top:  clamp(MARGIN, (vh - CARD_H_EST) / 2, vh - CARD_H_EST - MARGIN),
-      left: clamp(MARGIN, (vw - CARD_W) / 2, vw - CARD_W - MARGIN),
-    }
+  const centeredTop  = clamp(MARGIN, (vh - CARD_H_EST) / 2, vh - CARD_H_EST - MARGIN)
+  const centeredLeft = clamp(MARGIN, (vw - CARD_W)    / 2, vw - CARD_W    - MARGIN)
+  if (side === 'center') return { top: centeredTop, left: centeredLeft }
+  if (!spot) {
+    // No spotlight — anchor card to the named screen edge
+    if (side === 'right')  return { top: centeredTop, left: vw - CARD_W - MARGIN }
+    if (side === 'left')   return { top: centeredTop, left: MARGIN }
+    return { top: centeredTop, left: centeredLeft }
   }
   let top: number, left: number
   if (side === 'right') {
@@ -52,6 +55,7 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
 
 export default function Tutorial({ state, dispatch, step, onStep, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
+  const [failureHoldExpired, setFailureHoldExpired] = useState(false)
   const autoFiredRef           = useRef(new Set<number>())
   const missionForcedRef       = useRef(false)
   const missionTwoForcedRef    = useRef(false)
@@ -89,28 +93,38 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     }
   }, [step, state.pendingBlueprints.length, dispatch])
 
-  // Force a drone failure for the demo once Mission 1 has an executing drone
+  // Start the 5-second hold when the failure-demo step is first reached
   useEffect(() => {
+    if (step < FAILURE_DEMO_STEP || failureHoldExpired) return
+    const t = setTimeout(() => setFailureHoldExpired(true), 5000)
+    return () => clearTimeout(t)
+  }, [step, failureHoldExpired])
+
+  // Force a drone failure after the hold expires
+  useEffect(() => {
+    if (!failureHoldExpired) return
     if (failureDemoFiredRef.current) return
-    if (step < FAILURE_DEMO_STEP) return
     if (state.missions.some(m => m.failureRecoveryPending)) {
       failureDemoFiredRef.current = true
       return
     }
-    const hasExecuting = state.missions.some(
-      m => m.status === 'active' && m.tasks.some(t => t.status === 'executing')
+    // Any deployed drone with a task assignment is enough — reducer now accepts traveling drones too
+    const hasDeployed = state.missions.some(
+      m => m.status === 'active' && state.assets.some(
+        a => a.currentMissionId === m.id && a.status === 'deployed' && a.currentTaskId
+      )
     )
-    if (hasExecuting) {
+    if (hasDeployed) {
       failureDemoFiredRef.current = true
       dispatch({ type: 'FORCE_DRONE_FAILURE' })
     } else if (!failureTryTimerRef.current) {
-      // Drones may still be in transit — retry in 2 s
+      // Drones may not have departed yet — retry in 1 s
       failureTryTimerRef.current = setTimeout(() => {
         failureTryTimerRef.current = null
-        failureDemoFiredRef.current = false   // allow re-check on next state update
-      }, 2000)
+        failureDemoFiredRef.current = false
+      }, 1000)
     }
-  }, [state, step, dispatch])
+  }, [state, step, failureHoldExpired, dispatch])
 
   // Track highlighted element rect
   const refreshSpot = useCallback(() => {
@@ -181,8 +195,9 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const pct = ((step + 1) / TUTORIAL_STEPS.length) * 100
 
   // When tutorial is active but the current step is in the tactical window,
-  // grey out the entire primary window so the user knows to switch screens.
+  // grey out the primary window — unless noOverlayOnPrimary lets it stay visible.
   if (current?.inMapWindow) {
+    if (current.noOverlayOnPrimary) return null
     return createPortal(
       <div style={{
         position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'auto',
@@ -208,8 +223,8 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const portal = (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
 
-      {/* Spotlight overlay */}
-      {spot ? (
+      {/* Spotlight overlay — omitted entirely for noOverlay steps */}
+      {!current?.noOverlay && (spot ? (
         <>
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
           <div style={{ position: 'fixed', top: spot.bottom, left: 0, right: 0, bottom: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
@@ -229,7 +244,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
         </>
       ) : (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
-      )}
+      ))}
 
       {/* Tutorial card */}
       <div style={{
@@ -263,7 +278,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
           {/* mustInteract hint */}
           {current?.mustInteract && (
             <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 6, fontSize: 12, color: '#fde68a', lineHeight: 1.5 }}>
-              Perform the highlighted action above to continue.
+              {current.mustInteractHint ?? 'Perform the highlighted action above to continue.'}
             </div>
           )}
           {/* tryIt hint */}

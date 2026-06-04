@@ -15,6 +15,7 @@ export interface StudyConfig {
   tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
   tutorialMode: boolean
+  skipToFreePlay?: boolean
   numSessions: number
 }
 

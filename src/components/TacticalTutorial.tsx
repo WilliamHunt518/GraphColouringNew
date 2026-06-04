@@ -23,11 +23,13 @@ function clamp(min: number, val: number, max: number) {
 }
 
 function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: number) {
-  if (!spot || side === 'center') {
-    return {
-      top:  clamp(MARGIN, (vh - CARD_H_EST) / 2, vh - CARD_H_EST - MARGIN),
-      left: clamp(MARGIN, (vw - CARD_W) / 2, vw - CARD_W - MARGIN),
-    }
+  const centeredTop  = clamp(MARGIN, (vh - CARD_H_EST) / 2, vh - CARD_H_EST - MARGIN)
+  const centeredLeft = clamp(MARGIN, (vw - CARD_W)    / 2, vw - CARD_W    - MARGIN)
+  if (side === 'center') return { top: centeredTop, left: centeredLeft }
+  if (!spot) {
+    if (side === 'right')  return { top: centeredTop, left: vw - CARD_W - MARGIN }
+    if (side === 'left')   return { top: centeredTop, left: MARGIN }
+    return { top: centeredTop, left: centeredLeft }
   }
   let top: number, left: number
   if (side === 'right') {
@@ -53,6 +55,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
   const [spot, setSpot] = useState<SpotRect | null>(null)
   const chainCountRef        = useRef(0)
   const sawFailurePendingRef = useRef(false)
+  const recoveryAdvancedRef  = useRef(false)
 
   const current = TUTORIAL_STEPS[step]
 
@@ -64,9 +67,9 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
   const isFirstTacStep = !(TUTORIAL_STEPS[step - 1]?.inMapWindow ?? false)
   const isLastTacStep  = step === TACTICAL_STEP_LAST
 
-  // Auto-advance tac-select when user clicks a mission in the sidebar
+  // Advance when user clicks a mission in the sidebar (several steps gate on this)
   useEffect(() => {
-    if (current?.id !== 'tac-select') return
+    if (current?.id !== 'tac-select' && current?.id !== 'failure-tac-view' && current?.id !== 'tac-select-m2') return
     const handler = () => onNext()
     document.addEventListener('tutorial-mission-selected', handler)
     return () => document.removeEventListener('tutorial-mission-selected', handler)
@@ -107,13 +110,18 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     return () => document.removeEventListener('tutorial-suggest-clicked', handler)
   }, [step, current, onNext])
 
-  // failure-recovery-do: advance when failureRecoveryPending transitions true → false
+  // failure-recovery-do: advance once when failureRecoveryPending transitions true → false
   useEffect(() => {
-    if (current?.id !== 'failure-recovery-do') { sawFailurePendingRef.current = false; return }
+    if (current?.id !== 'failure-recovery-do') {
+      sawFailurePendingRef.current = false
+      recoveryAdvancedRef.current  = false
+      return
+    }
     const hasPending = state.missions.some(m => m.failureRecoveryPending)
     if (hasPending) {
       sawFailurePendingRef.current = true
-    } else if (sawFailurePendingRef.current) {
+    } else if (sawFailurePendingRef.current && !recoveryAdvancedRef.current) {
+      recoveryAdvancedRef.current = true   // guard: only one setTimeout regardless of tick rate
       setTimeout(() => onNext(), 600)
     }
   }, [state, step, current, onNext])
@@ -169,8 +177,8 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
   const portal = (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
 
-      {/* Spotlight */}
-      {spot ? (
+      {/* Spotlight — omitted entirely for noOverlay steps */}
+      {!current.noOverlay && (spot ? (
         <>
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: spot.top, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
           <div style={{ position: 'fixed', top: spot.bottom, left: 0, right: 0, bottom: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
@@ -189,7 +197,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
         </>
       ) : (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.80)', pointerEvents: dimOnly }} />
-      )}
+      ))}
 
       {/* Card */}
       <div style={{
@@ -223,7 +231,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
           {/* mustInteract hint */}
           {current.mustInteract && (
             <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 6, fontSize: 12, color: '#fde68a', lineHeight: 1.5 }}>
-              Perform the highlighted action to continue.
+              {current.mustInteractHint ?? 'Perform the highlighted action to continue.'}
             </div>
           )}
           {/* tryIt hint */}

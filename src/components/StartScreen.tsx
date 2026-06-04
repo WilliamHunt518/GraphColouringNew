@@ -225,6 +225,25 @@ export default function StartScreen({ onStart }: Props) {
         >
           Run Tutorial
         </button>
+        <button
+          onClick={() => onStart({
+            participantId: 'DEMO',
+            condition: 'none',
+            mode: 'agent',
+            complexity: 'balanced',
+            seed: 77777,
+            agentErrorRate: 0.10,
+            epsilonTactical: 0.10,
+            tacticalMode: 'plan-all',
+            testingMode: true,
+            tutorialMode: true,
+            skipToFreePlay: true,
+            numSessions: 1,
+          })}
+          className="w-full py-2 bg-indigo-900 hover:bg-indigo-800 border border-indigo-700 rounded-lg text-indigo-300 font-medium text-sm transition-colors"
+        >
+          Skip to Free Play
+        </button>
         <p className="text-center text-xs text-gray-600">
           Guided walkthrough of every interface element — no configuration needed.
         </p>

@@ -1703,12 +1703,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         m => m.status === 'active' && !m.failureRecoveryPending
       )
       if (!mission) return state
-      const executingDrones = state.assets.filter(
-        a => a.currentMissionId === mission.id && a.status === 'deployed' &&
-          mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
+      const deployedDrones = state.assets.filter(
+        a => a.currentMissionId === mission.id && a.status === 'deployed' && a.currentTaskId
       )
-      if (executingDrones.length === 0) return state
-      const failedDrone = executingDrones[0]
+      const executingDrones = deployedDrones.filter(
+        a => mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
+      )
+      // Prefer an executing drone; fall back to any deployed drone with a task (may still be traveling)
+      const candidateDrones = executingDrones.length > 0 ? executingDrones : deployedDrones
+      if (candidateDrones.length === 0) return state
+      const failedDrone = candidateDrones[0]
       const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
       const updatedAssets = state.assets.map(a =>
         a.id === failedDrone.id ? { ...a, status: 'failed' as const, failedAt: state.elapsed, currentMissionId: null, currentTaskId: null } : a

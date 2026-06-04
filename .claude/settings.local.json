@@ -78,7 +78,8 @@
       "Bash(Get-Content \"C:\\\\Users\\\\Work\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\G--Files-Code-GraphColouringNew\\\\20df6ee8-f291-4f5c-a6ba-fb3432fab706\\\\tasks\\\\bwoiptn3m.output\" -ErrorAction SilentlyContinue)",
       "Bash(Select-String -Path \"src\\\\components\\\\MapDisplay.tsx\" -Pattern \"shiftKey\" -Context 2)",
       "Bash(Select-Object -First 20)",
-      "Bash(curl -s http://localhost:5173)"
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(node *)"
     ]
   }
 }

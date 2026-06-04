@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAllocation } from '../types'
 import { HUB, ASSET_SPEED, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
+import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -502,7 +503,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     if (recoveryMode || readOnly) {
       return Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
     }
-    // New plan: all task slots present but empty — operator allocates manually or via Auto-Allocate
+    // New plan: all task slots present but empty — operator allocates manually or via Suggest
     return Object.fromEntries(Object.keys(pending.taskAssignments).map(k => [k, []]))
   })
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
@@ -739,8 +740,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         <div className="flex-1" />
         {!readOnly && <span className="text-xs text-gray-500">Drag → assign · Shift+drag → chain sequence</span>}
         {!readOnly && <button onClick={handleReset} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">Reset</button>}
-        {!readOnly && !recoveryMode && state.mode === 'agent' && (
-          <button onClick={handleSuggest} className="px-3 py-1.5 bg-purple-800 hover:bg-purple-700 rounded text-purple-200 text-xs transition-colors">Suggest</button>
+        {!readOnly && !recoveryMode && state.mode === 'agent' &&
+          !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
+          <button data-tutorial="tac-suggest-btn" onClick={handleSuggest} className="px-3 py-1.5 bg-purple-800 hover:bg-purple-700 rounded text-purple-200 text-xs transition-colors">Suggest</button>
         )}
         {!readOnly && !recoveryMode && (
           <button onClick={() => onMapAction({ _mapAction: 'OVERRIDE_TACTICAL', missionId: mission.id })}
@@ -1120,17 +1122,6 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           onRemove={removeDrone}
           canDeploy={canDeploy}
           onDeploy={handleDeploy}
-          onAutoAllocate={!readOnly ? () => {
-            const suggestion = computeTacticalSuggestion(
-              pending.dronePool, pending.taskOrder, mission.tasks, state.assets
-            )
-            setAssignments(
-              Object.fromEntries(
-                Object.keys(pending.taskAssignments).map(k => [k, suggestion[k] ?? []])
-              )
-            )
-            setDroneChainOrder({})
-          } : undefined}
           recoveryMode={!!recoveryMode}
           failedDroneId={failedDroneIdRef.current ?? null}
           suppressedTaskId={pending.suppressedTaskId}
@@ -1144,7 +1135,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, onAutoAllocate, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1154,7 +1145,6 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   onRemove: (droneId: string, taskId: string) => void
   canDeploy: boolean
   onDeploy: () => void
-  onAutoAllocate?: () => void
   recoveryMode?: boolean
   failedDroneId?: string | null
   suppressedTaskId?: string | null
@@ -1346,20 +1336,12 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         })}
       </div>
 
-      {/* Footer: ETA + Auto-Allocate + Deploy + Abandon */}
+      {/* Footer: ETA + Deploy + Abandon */}
       <div className="flex-none p-3 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
           <div className="text-xs text-gray-400">
             Est. completion: <span className="text-white font-mono font-bold">~{overallETA}s</span>
           </div>
-        )}
-        {onAutoAllocate && (
-          <button
-            onClick={onAutoAllocate}
-            className="w-full py-2 bg-emerald-700 hover:bg-emerald-600 rounded text-white text-sm font-semibold transition-colors"
-          >
-            Auto-Allocate
-          </button>
         )}
         <button
           data-tutorial="tac-deploy-btn"

@@ -2,10 +2,10 @@ import type { GameState } from '../types'
 
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
 export const TACTICAL_STEP_FIRST = 17
-export const TACTICAL_STEP_LAST  = 43   // tac-deploy2 (last inMapWindow step)
+export const TACTICAL_STEP_LAST  = 44   // tac-deploy2 at index 44 (last inMapWindow step)
 
 // Step index where agent-introduction phase begins (triggers second mission spawn)
-export const AGENT_INTRO_STEP = 33
+export const AGENT_INTRO_STEP = 34
 
 // Step index where Tutorial.tsx begins trying to force a drone failure
 export const FAILURE_DEMO_STEP = 29
@@ -22,6 +22,8 @@ export interface TutorialStep {
   allowClickThrough?: boolean
   /** No Next button — user MUST perform the action; autoAdvanceWhen fires */
   mustInteract?: boolean
+  /** Override the default "Perform the highlighted action…" mustInteract hint text */
+  mustInteractHint?: string
   /** Show a "Try it" hint but keep Next button */
   tryIt?: boolean
   /** Override the default tryIt hint text */
@@ -30,8 +32,12 @@ export interface TutorialStep {
   /** Delay in ms before auto-advancing (default 500) */
   autoAdvanceDelay?: number
   spotlightPadding?: number
+  /** Suppress ALL dim/spotlight overlay — card floats freely, full UI visible and interactive */
+  noOverlay?: boolean
   /** Rendered in TacticalTutorial (map window), not primary Tutorial */
   inMapWindow?: boolean
+  /** inMapWindow steps normally black out the primary window; this suppresses that overlay so the strategic view stays visible */
+  noOverlayOnPrimary?: boolean
   /** StrategicPanel shows agent cards greyed-out and forces manual-only flow */
   forceManual?: boolean
 }
@@ -431,50 +437,62 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 
   // ════════════════ FAILURE DEMO (all in tactical window) ════════════════════
 
-  // ── 29. Watch the deployment, wait for failure to fire (TACTICAL, inMapWindow) ──
+  // ── 29. Watch the deployment, wait for failure to fire (PRIMARY window) ──
   {
     id: 'failure-incoming',
     title: 'Watch the Deployment',
     body: [
-      'Your drones have departed — watch them flying towards the mission zone on the map. This is what a live mission looks like.',
-      'A drone is about to experience a technical fault. Keep an eye on the mission queue on the left: the affected mission will appear with a red border when the failure triggers.',
-      'This step advances automatically.',
+      'Your drones have departed — switch to the map window to watch them flying. This is what a live mission looks like.',
+      'A drone is about to experience a technical fault. Watch the mission queue here: the affected mission will appear with a red border when the failure triggers.',
     ],
-    cardSide: 'center',
+    cardSide: 'right',
+    noOverlay: true,
     mustInteract: true,
+    mustInteractHint: 'Waiting for the failure to trigger — this step advances automatically.',
     autoAdvanceWhen: state => state.missions.some(m => m.failureRecoveryPending),
     autoAdvanceDelay: 1200,
-    inMapWindow: true,
   },
 
-  // ── 30. failure-tac-view (TACTICAL inMapWindow) ───────────────────────────────
+  // ── 30. failure-tac-view (TACTICAL inMapWindow, primary stays visible) ─────────
   {
     id: 'failure-tac-view',
     title: 'Mission Failure Alert',
     body: [
       'Mission 1 now has a red border and a "FAIL" badge in the queue. Click it to open its recovery plan.',
-      'You will see the failed task and which drones are still available within the team.',
     ],
     highlight: 'tac-mission-list',
     cardSide: 'right',
     allowClickThrough: true,
-    tryIt: true,
-    tryItHint: 'Click the red-bordered mission, then click Next →.',
+    mustInteract: true,
+    mustInteractHint: 'Click the red-bordered mission in the queue to continue.',
+    inMapWindow: true,
+    noOverlayOnPrimary: true,
+  },
+
+  // ── 31. failure-recovery-explain (TACTICAL — read-only intro to the recovery planner) ─
+  {
+    id: 'failure-recovery-explain',
+    title: 'Recovery Planner',
+    body: [
+      'The planner has switched to recovery mode. The failed drone has been removed from its task — that task is now uncovered and highlighted.',
+      'Your remaining team drones are still available. Drag one onto the uncovered task circle to cover the gap, then click "Reassign ✓" to dispatch.',
+    ],
+    cardSide: 'left',
+    noOverlay: true,
     inMapWindow: true,
   },
 
-  // ── 30. failure-recovery-do (TACTICAL mustInteract — resolves when pending clears) ──
+  // ── 32. failure-recovery-do (TACTICAL — mustInteract, noOverlay keeps planner accessible) ─
   {
     id: 'failure-recovery-do',
-    title: 'Resolve the Recovery',
+    title: 'Reassign Now',
     body: [
-      'Use the recovery planner to reassign an available drone to cover the failed task. Drag a drone from the map onto the affected task circle.',
-      'When recovery is confirmed the mission resumes automatically and this step advances.',
+      'Drag an available drone onto the uncovered task circle, then click "Reassign ✓". The tutorial advances automatically once recovery is confirmed.',
     ],
-    highlight: 'tac-svg-container',
     cardSide: 'left',
-    allowClickThrough: true,
+    noOverlay: true,
     mustInteract: true,
+    mustInteractHint: 'Drag a drone to the uncovered task, then click "Reassign ✓".',
     inMapWindow: true,
   },
 
@@ -536,13 +554,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Reading a Strategy Card',
     body: [
       'Each card shows: the drone composition (e.g. 2 Blue, 1 Red, 1 Green), the estimated completion time for all tasks, and how many drones of each type remain in reserve after deployment.',
-      'Click a card to select it — a blue ✓ appears. You can change your selection before deploying.',
     ],
     highlight: 'first-strategy-card',
     cardSide: 'right',
-    allowClickThrough: true,
-    tryIt: true,
-    tryItHint: 'Click one of the strategy cards to select it, then click Next →.',
   },
 
   // ── 36. Score bars ────────────────────────────────────────────────────────────
@@ -572,47 +586,48 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     spotlightPadding: 6,
   },
 
-  // ════════════════ AGENT INTRODUCTION — TACTICAL (back in map window) ══════════
-
-  // ── 38. Bridge back to tactical for agent-assisted planning ──────────────────
-  {
-    id: 'tactical-agent-intro',
-    title: 'Now Use the Tactical Agent',
-    body: [
-      'Mission 2 is now awaiting tactical planning. Switch to the Tactical Planner window — the tutorial continues there.',
-      'This time, instead of assigning drones manually, you will let the Tactical Agent suggest the full plan.',
-    ],
-    highlight: 'tactical-btn',
-    cardSide: 'bottom',
-    spotlightPadding: 6,
-  },
-
   // ════════════════════ MAP WINDOW STEPS — PHASE 2 (inMapWindow: true) ══════════
 
-  // ── 39. Tactical agent intro card ────────────────────────────────────────────
+  // ── 38. Tactical agent intro card ────────────────────────────────────────────
   {
     id: 'tac-suggest-intro',
     title: 'The Tactical Agent',
     body: [
-      'Mission 2 is ready for planning. The Tactical Agent can fill in all drone-to-task assignments automatically using a greedy scheduling algorithm.',
-      'You can accept the plan as-is, or drag any drone to a different task to override individual assignments before deploying.',
+      'Mission 2 is waiting for tactical planning. This time, instead of assigning drones manually, you will use the Tactical Agent.',
+      'The agent fills in all drone-to-task assignments automatically. You can then accept the plan or drag to override individual assignments before deploying.',
     ],
     cardSide: 'center',
     inMapWindow: true,
   },
 
-  // ── 40. Tactical Suggest (mustInteract — click Suggest) ─────────────────────
+  // ── 40. Select mission 2 in the tactical queue ───────────────────────────────
+  {
+    id: 'tac-select-m2',
+    title: 'Select Mission 2',
+    body: [
+      'Mission 2 is waiting in the queue with a yellow border. Click it to open its plan in the planner.',
+    ],
+    highlight: 'tac-mission-list',
+    cardSide: 'right',
+    allowClickThrough: true,
+    mustInteract: true,
+    mustInteractHint: 'Click mission 2 in the queue to continue.',
+    inMapWindow: true,
+  },
+
+  // ── 41. Click Suggest (mustInteract — advances on tutorial-suggest-clicked) ──
   {
     id: 'tac-suggest',
     title: 'Let the Tactical Agent Fill the Plan',
     body: [
-      'Select the pending mission in the sidebar, then click the "Suggest" button in the header. The agent fills in all drone-to-task assignments automatically.',
+      'Click the "Suggest" button in the planner header. The agent fills in all drone-to-task assignments automatically.',
       'You will see dashed arrows appear on the map and the schedule update.',
     ],
-    highlight: 'tac-header',
+    highlight: 'tac-suggest-btn',
     cardSide: 'bottom',
     allowClickThrough: true,
     mustInteract: true,
+    mustInteractHint: 'Click the "Suggest" button to continue.',
     inMapWindow: true,
   },
 
