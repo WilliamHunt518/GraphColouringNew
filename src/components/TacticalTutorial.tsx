@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { MapViewState } from '../types'
 import { TUTORIAL_STEPS, TACTICAL_STEP_LAST } from '../utils/tutorialSteps'
+import TutorialText from './TutorialText'
 
 interface Props {
   state: MapViewState
@@ -69,7 +70,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
 
   // Advance when user clicks a mission in the sidebar (several steps gate on this)
   useEffect(() => {
-    if (current?.id !== 'tac-select' && current?.id !== 'failure-tac-view' && current?.id !== 'tac-select-m2') return
+    if (current?.id !== 'tac-select' && current?.id !== 'failure-tac-view' && current?.id !== 'abort-select' && current?.id !== 'tac-select-m2') return
     const handler = () => onNext()
     document.addEventListener('tutorial-mission-selected', handler)
     return () => document.removeEventListener('tutorial-mission-selected', handler)
@@ -225,7 +226,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
           {/* body */}
           <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.65 }}>
             {current.body.map((para, i) => (
-              <p key={i} style={{ margin: i < current.body.length - 1 ? '0 0 8px' : 0 }}>{para}</p>
+              <p key={i} style={{ margin: i < current.body.length - 1 ? '0 0 8px' : 0 }}><TutorialText text={para} /></p>
             ))}
           </div>
           {/* mustInteract hint */}

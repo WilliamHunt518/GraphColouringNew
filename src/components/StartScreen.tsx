@@ -60,10 +60,11 @@ export default function StartScreen({ onStart }: Props) {
   const [mode, setMode] = useState<Mode>('agent')
   const [epsilonStrategic, setEpsilonStrategic] = useState(0.0)
   const [epsilonTactical, setEpsilonTactical]   = useState(0.0)
-  const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('plan-all')
+  const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('greedy')
   const [seed, setSeed] = useState(String(randomSeed()))
   const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
+  const [fullPathsOnHover, setFullPathsOnHover] = useState(false)
   const [error, setError] = useState('')
 
   function handleStart() {
@@ -83,6 +84,7 @@ export default function StartScreen({ onStart }: Props) {
       testingMode,
       tutorialMode: false,
       numSessions,
+      fullPathsOnHover,
     })
   }
 
@@ -195,6 +197,15 @@ export default function StartScreen({ onStart }: Props) {
           </label>
         </div>
 
+        <div className="flex items-center gap-3">
+          <input id="full-paths" type="checkbox" checked={fullPathsOnHover}
+            onChange={e => setFullPathsOnHover(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500" />
+          <label htmlFor="full-paths" className="text-sm text-gray-400 cursor-pointer select-none">
+            Full paths on hover <span className="text-gray-600 text-xs">(hover a drone or mission on the map to reveal its full planned route)</span>
+          </label>
+        </div>
+
         {error && <p className="text-sm text-red-400">{error}</p>}
 
         <button onClick={handleStart}
@@ -234,11 +245,12 @@ export default function StartScreen({ onStart }: Props) {
             seed: 77777,
             agentErrorRate: 0.10,
             epsilonTactical: 0.10,
-            tacticalMode: 'plan-all',
+            tacticalMode: 'greedy',
             testingMode: true,
             tutorialMode: true,
             skipToFreePlay: true,
             numSessions: 1,
+            fullPathsOnHover: true,
           })}
           className="w-full py-2 bg-indigo-900 hover:bg-indigo-800 border border-indigo-700 rounded-lg text-indigo-300 font-medium text-sm transition-colors"
         >

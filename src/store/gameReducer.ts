@@ -118,6 +118,20 @@ export function reserveCount(assets: Asset[]): AssetRequirement {
   }
 }
 
+// Greedy redundancy: a stable spot on the mission-zone perimeter (hub-facing arc) where a
+// drone waits when it has no task. Deterministic per drone id so a loitering drone keeps the
+// same slot frame-to-frame. All committed drones sit at the zone edge so they can cover a
+// failure quickly; they only return to the reserve once every task is done.
+function loiterSlot(mission: Mission, droneId: string): { x: number; y: number } {
+  const { x: cx, y: cy } = mission.zoneCenter
+  const r = mission.zoneRadius
+  const hubAngle = Math.atan2(HUB.y - cy, HUB.x - cx)
+  const arc = Math.PI * 0.9
+  const frac = (hashId(droneId) % 997) / 997   // 0..1, stable per drone
+  const a = hubAngle - arc / 2 + arc * frac
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }
+}
+
 // Returns assets that are available AND not already locked into another mission's pending plan.
 // Prevents double-allocation when multiple missions are in the tactical-pending state simultaneously.
 function availableExcludingPending(assets: Asset[], missions: Mission[], excludeMissionId: string): Asset[] {
@@ -427,6 +441,7 @@ function applyTacticalAllocation(
   droneSequences: Record<string, string[]> = {},
   chainingUsed = false,
   changedTaskIds: string[] = [],
+  loiterAll = false,
 ): GameState {
   const mission = state.missions.find(m => m.id === missionId)!
   const now = state.elapsed
@@ -476,9 +491,29 @@ function applyTacticalAllocation(
     manualPriorityIds: [],
   }
 
+  const poolSet = new Set(pending.dronePool)
   const updatedAssets = state.assets.map(asset => {
     const myAsgns = assignments.filter(a => a.assetIds.includes(asset.id))
-    if (myAsgns.length === 0) return asset
+    if (myAsgns.length === 0) {
+      // Greedy: a committed-but-unassigned drone still flies out to the mission edge and
+      // waits there as a redundancy backup (covers failures quickly). Other modes: stays put.
+      if (loiterAll && poolSet.has(asset.id) && asset.status === 'available') {
+        const slot = loiterSlot(mission, asset.id)
+        const tt = travelTime(HUB, slot, ASSET_SPEED[asset.type])
+        return {
+          ...asset,
+          status: 'deployed' as const,
+          currentMissionId: mission.id,
+          currentTaskId: null,
+          travelFrom: { ...HUB },
+          targetPosition: slot,
+          travelStartElapsed: now,
+          travelEndElapsed: now + tt,
+          availableAt: now + tt,
+        }
+      }
+      return asset
+    }
     // Safety: don't re-deploy a drone that is already deployed elsewhere (stale pending pool)
     if (asset.status !== 'available') return asset
     const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
@@ -603,6 +638,111 @@ function isUsingSubstitute(task: Task, droneIds: string[], assetById: Map<string
     && comp.Blue >= sub.Blue && comp.Red >= sub.Red && comp.Green >= sub.Green
 }
 
+// ─── Greedy one-step replanning ─────────────────────────────────────────────
+
+// Pick the drones needed to cover a task from a pool of free drones (primary comp, else
+// substitute). Returns null if the free pool can't cover it right now.
+function pickDronesForTask(task: Task, free: Asset[]): { ids: string[]; useSubstitute: boolean; baseTime: number } | null {
+  const tryComp = (req: AssetRequirement, baseTime: number, useSub: boolean) => {
+    const ids: string[] = []
+    for (const col of ['Blue', 'Red', 'Green'] as AssetType[]) {
+      const cands = free.filter(a => a.type === col && !ids.includes(a.id)).slice(0, req[col]).map(a => a.id)
+      if (cands.length < req[col]) return null
+      ids.push(...cands)
+    }
+    return { ids, useSubstitute: useSub, baseTime }
+  }
+  const prim = tryComp(TASK_PRIMARY[task.type as TaskType], TASK_BASE_TIME[task.type as TaskType], false)
+  if (prim) return prim
+  const sub = TASK_SUBSTITUTE[task.type as TaskType]
+  if (sub) {
+    const subPick = tryComp(sub, TASK_SUB_BASE_TIME[task.type as TaskType], true)
+    if (subPick) return subPick
+  }
+  return null
+}
+
+// Greedy mode commits one step at a time, but engages EVERY drone each step: whenever a
+// mission has drones loitering on-mission and pending (unscheduled) tasks, assign as many of
+// those tasks as the free drones can cover RIGHT NOW, in parallel — most-constrained first.
+// One drone per task this wave (no chaining); tasks it can't cover stay pending ("to plan")
+// until drones free up. This runs every tick, so a drone that finishes never sits idle while a
+// coverable task remains.
+export function applyGreedyReplan(state: GameState, elapsed: number): GameState {
+  let missions = state.missions
+  let assets = state.assets
+  let changed = false
+
+  for (const mission of state.missions) {
+    if (mission.status !== 'active') continue
+
+    const free = assets.filter(a =>
+      a.currentMissionId === mission.id && a.status === 'deployed' && a.currentTaskId === null)
+    if (free.length === 0) continue
+
+    const pendingTasks = mission.tasks
+      .filter(t => t.status === 'pending' && t.assignedAssetIds.length === 0 && t.id !== mission.tacticallySuppressedTaskId)
+      .sort((a, b) => b.type - a.type)   // most-constrained first
+    if (pendingTasks.length === 0) continue
+
+    // Greedily cover as many pending tasks as possible this wave, each drone used once.
+    const used = new Set<string>()
+    const taskUpdate = new Map<string, { ids: string[]; useSubstitute: boolean; baseTime: number; startTime: number }>()
+    const assetTarget = new Map<string, { taskId: string; waypoint: { x: number; y: number } }>()
+    for (const task of pendingTasks) {
+      const avail = free.filter(a => !used.has(a.id))
+      const pick = pickDronesForTask(task, avail)
+      if (!pick) continue   // can't cover yet — leave pending for a later wave
+      const startTime = elapsed + Math.max(...pick.ids.map(id => {
+        const a = assets.find(x => x.id === id)!
+        return travelTime(a.position, task.waypoint, ASSET_SPEED[a.type])
+      }))
+      pick.ids.forEach(id => used.add(id))
+      taskUpdate.set(task.id, { ids: pick.ids, useSubstitute: pick.useSubstitute, baseTime: pick.baseTime, startTime })
+      for (const id of pick.ids) assetTarget.set(id, { taskId: task.id, waypoint: task.waypoint })
+    }
+    if (taskUpdate.size === 0) continue
+
+    missions = missions.map(m => m.id !== mission.id ? m : {
+      ...m,
+      tasks: m.tasks.map(t => {
+        const u = taskUpdate.get(t.id)
+        if (!u) return t
+        return {
+          ...t,
+          status: 'traveling' as const,
+          assignedAssetIds: u.ids,
+          allocatedAt: elapsed,
+          useSubstitute: u.useSubstitute,
+          baseTime: u.baseTime,
+          travelTime: Math.max(0, u.startTime - elapsed),
+          startTime: u.startTime,
+          completionTime: u.startTime + u.baseTime,
+          recallDelay: 0,
+        }
+      }),
+      droneSequences: {
+        ...m.droneSequences,
+        ...Object.fromEntries([...taskUpdate].flatMap(([tid, u]) => u.ids.map(id => [id, [tid]]))),
+      },
+    })
+    assets = assets.map(a => {
+      const tgt = assetTarget.get(a.id)
+      if (!tgt) return a
+      return {
+        ...a,
+        currentTaskId: tgt.taskId,
+        travelFrom: { ...a.position },
+        targetPosition: { ...tgt.waypoint },
+        travelStartElapsed: elapsed,
+        travelEndElapsed: elapsed + travelTime(a.position, tgt.waypoint, ASSET_SPEED[a.type]),
+      }
+    })
+    changed = true
+  }
+  return changed ? { ...state, missions, assets } : state
+}
+
 // ─── Reducer ──────────────────────────────────────────────────────────────
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -616,6 +756,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const sessionStartMs = state.sessionStartMs ?? action.nowMs
       const rawElapsed = (action.nowMs - sessionStartMs) / 1000
       const elapsed = state.config.testingMode ? rawElapsed : Math.min(state.sessionDuration, rawElapsed)
+      const isGreedy = state.config.tacticalMode === 'greedy'
 
       let s: GameState = { ...state, elapsed, sessionStartMs }
 
@@ -848,7 +989,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               }
             }
 
-            // No next task — return to hub
+            // No next task. In greedy mode the drone stays on-mission as a redundancy backup:
+            // it flies to its slot on the zone edge and waits there. It only returns to the
+            // reserve once ALL of the mission's tasks are done (handled in the loiter block).
+            if (isGreedy && currentMission && currentMission.status === 'active') {
+              const slot = loiterSlot(currentMission, asset.id)
+              const tt = travelTime(newPos, slot, ASSET_SPEED[asset.type])
+              return {
+                ...asset,
+                currentTaskId: null,                 // free, loitering on-mission
+                travelFrom: { ...newPos },
+                targetPosition: slot,
+                travelStartElapsed: elapsed,
+                travelEndElapsed: elapsed + tt,
+                position: newPos,
+              }
+            }
+
+            // Return to hub
             const returnTime = travelTime(task!.waypoint, HUB, ASSET_SPEED[asset.type])
             return {
               ...asset,
@@ -865,10 +1023,37 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           }
         }
 
+        // Greedy loitering backup drone (waiting at the zone edge): hold until the mission is
+        // no longer active (all tasks done / abandoned), then return to the reserve.
+        if (asset.status === 'deployed' && asset.currentTaskId === null && asset.currentMissionId) {
+          const loiterMission = s.missions.find(m => m.id === asset.currentMissionId)
+          const stillOnMission = !!loiterMission && loiterMission.status === 'active'
+          if (!stillOnMission) {
+            const returnTime = travelTime(asset.position, HUB, ASSET_SPEED[asset.type])
+            return {
+              ...asset,
+              status: 'returning' as const,
+              currentMissionId: null,
+              currentTaskId: null,
+              travelFrom: { ...asset.position },
+              targetPosition: { ...HUB },
+              travelStartElapsed: elapsed,
+              travelEndElapsed: elapsed + returnTime,
+              availableAt: elapsed + returnTime,
+              position: newPos,
+            }
+          }
+          return { ...asset, position: newPos }   // keep loitering in place
+        }
+
         return { ...asset, status: newStatus, position: newPos }
       })
 
       s = { ...s, assets: updatedAssets }
+
+      // 4b. Greedy one-step replanning: dispatch the next task from on-mission drones once
+      // the current step is done.
+      if (isGreedy) s = applyGreedyReplan(s, elapsed)
 
       // 5. Recalculate score (snapshot — penalty grows continuously)
       const { score: newScore, penaltyAccrued: newPenalty } = computeScore(s.missions, elapsed)
@@ -1014,6 +1199,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           dronePool = [...avB, ...avR, ...avG].map(a => a.id)
           if (dronePool.length === 0) return state
         }
+        // Greedy: commit the WHOLE team (assigned drones + any redundant spares in the
+        // composition) to the mission so every committed drone flies to the zone edge and
+        // waits — spares provide quick failure cover. Other modes keep the assigned subset.
+        if (state.config.tacticalMode === 'greedy') {
+          const full: string[] = []
+          for (const type of ['Blue', 'Red', 'Green'] as AssetType[]) {
+            full.push(...available.filter(a => a.type === type).slice(0, composition[type]).map(a => a.id))
+          }
+          dronePool = [...new Set([...dronePool, ...full])]
+        }
         taskAssignmentMap = Object.fromEntries(assignments.map(a => [a.taskId, a.assetIds]))
         expectedCompletionTime = assignments.length > 0
           ? Math.max(...assignments.map(a => a.startTime + a.baseTime))
@@ -1058,6 +1253,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             hasTacticalError = true
           }
         }
+      }
+
+      // Greedy: the suggested baseline only ever holds the first step (no future tasks).
+      if (state.config.tacticalMode === 'greedy') {
+        const f = taskOrder[0]
+        taskAssignmentMap = taskAssignmentMap[f] ? { [f]: taskAssignmentMap[f] } : {}
       }
 
       const pendingAllocation: PendingAllocation = {
@@ -1107,17 +1308,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
 
       const pending = mission.pendingAllocation
-      const rawDroneSeqs = action.droneSequences ?? {}
-      // In greedy mode, trim each drone's sequence to its first task only
       const isGreedy = state.config.tacticalMode === 'greedy'
-      const droneSeqs = isGreedy
-        ? Object.fromEntries(Object.entries(rawDroneSeqs).map(([id, seq]) => [id, seq.slice(0, 1)]))
-        : rawDroneSeqs
+      // Greedy commits only ONE step: keep just the first task's assignment (and that task in
+      // each drone's sequence). Remaining tasks are filled by the greedy replanner in TICK as
+      // each step completes — the committed plan never contains future steps.
+      const firstTid = pending.taskOrder[0]
+      const ta: Record<string, string[]> | undefined = action.taskAssignments
+        ? (isGreedy
+            ? (action.taskAssignments[firstTid] ? { [firstTid]: action.taskAssignments[firstTid] } : {})
+            : action.taskAssignments)
+        : undefined
+      const droneSeqs = action.droneSequences
+        ? (isGreedy
+            ? Object.fromEntries(Object.entries(action.droneSequences).map(([id, seq]) => [id, seq.filter(t => t === firstTid)]))
+            : action.droneSequences)
+        : {}
       let assignments: TaskAssignment[]
 
-      const userProvidedAssignments = !!action.taskAssignments
+      const userProvidedAssignments = !!ta
       if (userProvidedAssignments) {
-        assignments = buildManualAssignments(mission, state.assets, action.taskAssignments!, droneSeqs, state.elapsed)
+        assignments = buildManualAssignments(mission, state.assets, ta!, droneSeqs, state.elapsed)
       } else {
         const available = state.assets.filter(a => a.status === 'available')
         assignments = greedyAssign(mission.tasks, available, pending.composition, state.elapsed, undefined, pending.taskOrder)
@@ -1132,13 +1342,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return keysA.every(k => [...(a[k] ?? [])].sort().join() === [...(b[k] ?? [])].sort().join())
       }
       const modifiedFromAgentPlan = userProvidedAssignments &&
-        !taskAssignmentsEqual(action.taskAssignments!, pending.taskAssignments)
+        !taskAssignmentsEqual(ta!, pending.taskAssignments)
 
       // Per-task diff: which task IDs had drone assignments changed from the greedy suggestion
       const changedTaskIds = userProvidedAssignments
-        ? Object.keys(action.taskAssignments!).filter(tid => {
+        ? Object.keys(ta!).filter(tid => {
             const before = [...(pending.taskAssignments[tid] ?? [])].sort().join()
-            const after  = [...(action.taskAssignments![tid]  ?? [])].sort().join()
+            const after  = [...(ta![tid]  ?? [])].sort().join()
             return before !== after
           })
         : []
@@ -1146,11 +1356,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // chainingUsed: true if any drone appears in more than one task's assignment list
       const chainingUsed = userProvidedAssignments
         ? (() => {
-            const allIds = Object.values(action.taskAssignments!).flat()
+            const allIds = Object.values(ta!).flat()
             return allIds.some((id, _, arr) => arr.filter(x => x === id).length > 1)
           })()
         : false
-      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs, chainingUsed, changedTaskIds)
+      let s = applyTacticalAllocation(state, action.missionId, assignments, pending, pending.taskOrder, modifiedFromAgentPlan, droneSeqs, chainingUsed, changedTaskIds, isGreedy)
       // Persist the suppressed task ID onto the mission so TICK can detect the lockout
       if (pending.hasTacticalError && pending.suppressedTaskId) {
         s = { ...s, missions: s.missions.map(m => m.id === action.missionId
@@ -1746,20 +1956,66 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     // ── TUTORIAL_FORCE_ABANDON_SCENARIO ─────────────────────────────────
-    // Sets the first active mission into an unrecoverable failure state (no feasible
-    // recovery options) so the tutorial's abort step can make the operator abandon it.
+    // Fails the mission's Red drone so its task becomes genuinely uncoverable:
+    // failure recovery only draws from the deployed subswarm, which now has no Red
+    // to spare. With no feasible recovery the operator's only option is to abandon.
     case 'TUTORIAL_FORCE_ABANDON_SCENARIO': {
       const mission = state.missions.find(m => m.status === 'active' && !m.failureRecoveryPending)
       if (!mission) return state
-      return {
-        ...state,
-        missions: state.missions.map(m => m.id === mission.id ? {
-          ...m,
-          failureRecoveryPending: true,
-          failedDroneId: null,
-          pendingRecoveryOptions: [],   // empty = no feasible recovery, operator must abandon
-        } : m),
+
+      // Prefer the Red drone (the training mission has only one) so the Red-requiring
+      // task is left with no substitute in the subswarm. Fall back to any deployed drone.
+      const deployed = state.assets.filter(
+        a => a.currentMissionId === mission.id && a.status === 'deployed' && a.currentTaskId
+      )
+      const failedDrone = deployed.find(a => a.type === 'Red') ?? deployed[0]
+
+      // No deployed drone with a task yet — fall back to the bare unrecoverable flag.
+      if (!failedDrone) {
+        return {
+          ...state,
+          missions: state.missions.map(m => m.id === mission.id ? {
+            ...m,
+            failureRecoveryPending: true,
+            failedDroneId: null,
+            pendingRecoveryOptions: [],
+          } : m),
+        }
       }
+
+      const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
+      const updatedAssets = state.assets.map(a =>
+        a.id === failedDrone.id
+          ? { ...a, status: 'failed' as const, failedAt: state.elapsed, currentMissionId: null, currentTaskId: null }
+          : a
+      )
+      const updatedMissions = state.missions.map(m => {
+        if (m.id !== mission.id) return m
+        return {
+          ...m,
+          droneFailuresFired: m.droneFailuresFired + 1,
+          failedDroneId: failedDrone.id,
+          failureRecoveryPending: true,
+          tasks: m.tasks.map(t =>
+            t.id === failedTask.id
+              ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
+              : t
+          ),
+          pendingRecoveryOptions: [],   // empty = no feasible recovery, operator must abandon
+        }
+      })
+      let s: GameState = { ...state, assets: updatedAssets, missions: updatedMissions }
+      s = logEvent(s, {
+        type: 'drone_failure',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        droneId: failedDrone.id,
+        droneType: failedDrone.type,
+        taskId: failedTask.id,
+        taskType: failedTask.type,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+      })
+      return s
     }
 
     // ── FORCE_DRONE_FAILURE (testing mode) ───────────────────────────────

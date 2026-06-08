@@ -26,14 +26,16 @@ export function parseURLConfig(): StudyConfig | null {
 
   const agentErrorRate  = parseEpsilon(p.get('eps_s'), 0.0)
   const epsilonTactical = parseEpsilon(p.get('eps_t'), 0.0)
-  const tacticalMode: StudyConfig['tacticalMode'] = p.get('tacticalMode') === 'greedy' ? 'greedy' : 'plan-all'
+  const tacticalMode: StudyConfig['tacticalMode'] = p.get('tacticalMode') === 'plan-all' ? 'plan-all' : 'greedy'
   const testingMode = p.get('test') === '1'
+  const fullPathsOnHover = p.get('fullpaths') === '1'
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
     agentErrorRate, epsilonTactical, tacticalMode, testingMode, tutorialMode: false, numSessions,
+    fullPathsOnHover,
   }
 }
 

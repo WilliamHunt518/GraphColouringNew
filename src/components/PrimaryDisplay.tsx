@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 
 const LOG = true
-import type { GameState, Mission, Task, AssetType, MissionCategory, AssetRequirement, Strategy, StrategicModal } from '../types'
+import type { GameState, Mission, Task, Asset, AssetType, MissionCategory, AssetRequirement, Strategy, StrategicModal } from '../types'
 import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadStudySnapshot } from '../utils/debugLog'
@@ -174,8 +174,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
                 onClick={() => dispatch({ type: 'FORCE_DRONE_FAILURE' })}
                 disabled={!state.missions.some(m =>
                   m.status === 'active' && !m.failureRecoveryPending &&
-                  state.assets.some(a => a.currentMissionId === m.id && a.status === 'deployed' &&
-                    m.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing')
+                  state.assets.some(a => a.currentMissionId === m.id && a.status === 'deployed' && a.currentTaskId)
                 )}
                 className="text-xs px-2.5 py-1 rounded bg-red-900/50 hover:bg-red-800/60 text-red-300 border border-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Force a drone failure on an active mission"
@@ -223,17 +222,17 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
         {/* Left: compact reserve strip + mission list */}
         <div className="w-[440px] flex-none flex flex-col overflow-hidden border-r border-gray-800">
           {/* Compact reserve strip */}
-          <div data-tutorial="reserve-strip" className="flex-none px-3 py-1.5 border-b border-gray-800 bg-gray-900/50 flex items-center gap-3 flex-wrap">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider">Reserve</span>
+          <div data-tutorial="reserve-strip" className="flex-none px-4 py-2.5 border-b border-gray-800 bg-gray-900/50 flex items-center gap-4 flex-wrap">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Reserve</span>
             {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
               const avail = reserve[type]
               const deployed = state.assets.filter(a => a.type === type && a.status === 'deployed').length
               const returning = state.assets.filter(a => a.type === type && a.status === 'returning').length
               return (
-                <span key={type} className={`flex items-center gap-1 text-xs ${ASSET_COLORS[type]}`}>
-                  <img src={DRONE_ICON[type]} className="w-3.5 h-3.5 flex-none" alt="" />
+                <span key={type} className={`flex items-center gap-1.5 text-base ${ASSET_COLORS[type]}`}>
+                  <img src={DRONE_ICON[type]} className="w-6 h-6 flex-none" alt="" />
                   <span className="font-mono font-bold">{avail}</span>
-                  <span className="text-gray-600 text-[10px]">/{deployed}out {returning > 0 ? `${returning}rtg` : ''}</span>
+                  <span className="text-gray-600 text-xs">/{deployed}out {returning > 0 ? `${returning}rtg` : ''}</span>
                 </span>
               )
             })}
@@ -413,7 +412,7 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
       )}
 
       {/* Task progress + penalty histogram */}
-      <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} tutorialFirst={isTutorialFirst} />
+      <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} greedy={state.config.tacticalMode === 'greedy'} tutorialFirst={isTutorialFirst} />
 
       {/* Task plan — shows drone→task assignments after allocation */}
       {isActive && <TaskPlanPanel mission={mission} callsignMode={callsignMode} />}
@@ -641,18 +640,19 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
 
 // ─── Mission progress section ─────────────────────────────────────────────
 
-function MissionProgressSection({ mission, elapsed, urgency, activeTaskIds, isActive, tutorialFirst }: {
+function MissionProgressSection({ mission, elapsed, urgency, activeTaskIds, isActive, greedy, tutorialFirst }: {
   mission: Mission
   elapsed: number
   urgency: UrgencyLevel
   activeTaskIds: Set<string>
   isActive: boolean
+  greedy: boolean
   tutorialFirst?: boolean
 }) {
   return (
     <div className="mt-2 pt-1.5 border-t border-gray-700/40 space-y-1.5">
       <div data-tutorial={tutorialFirst ? 'first-task-progress' : undefined}>
-        <TaskProgressBar tasks={mission.tasks} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} />
+        <TaskProgressBar tasks={mission.tasks} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} greedy={greedy} />
       </div>
       <div data-tutorial={tutorialFirst ? 'first-penalty' : undefined}>
         <PenaltyHistogram mission={mission} elapsed={elapsed} />
@@ -661,25 +661,36 @@ function MissionProgressSection({ mission, elapsed, urgency, activeTaskIds, isAc
   )
 }
 
-function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive }: {
+function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive, greedy }: {
   tasks: Task[]
   urgency: UrgencyLevel
   activeTaskIds: Set<string>
   isActive: boolean
+  greedy: boolean
 }) {
   const totalValue = tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
   if (totalValue === 0) return null
   const earnedValue = tasks.filter(t => t.status === 'completed').reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
+
+  // In greedy mode only the current step is committed; later tasks are still pending and shown
+  // as "to plan" (yellow). Other modes treat unstarted-but-assigned tasks as chain-queued.
+  const hasUpcoming = greedy && isActive && tasks.some(
+    t => t.status === 'pending' && t.assignedAssetIds.length === 0
+  )
 
   function segBg(t: Task): string {
     if (t.status === 'completed') return 'bg-green-600'
     if (t.status === 'failed')    return 'bg-red-800'
     if (t.status === 'executing') return 'bg-amber-500 animate-pulse'
     if (t.status === 'traveling') {
-      if (isActive && !activeTaskIds.has(t.id) && t.assignedAssetIds.length > 0) return 'bg-blue-950/60'
+      if (isActive && !activeTaskIds.has(t.id) && t.assignedAssetIds.length > 0) {
+        return greedy ? 'bg-yellow-700/60' : 'bg-blue-950/60'   // "to plan" (greedy) vs chain-queued
+      }
       return 'bg-blue-700 animate-pulse'
     }
-    if (isActive && t.assignedAssetIds.length === 0) return 'bg-gray-800 opacity-60'
+    if (isActive && t.assignedAssetIds.length === 0) {
+      return greedy ? 'bg-yellow-700/60' : 'bg-gray-800 opacity-60'   // greedy: "to plan"
+    }
     return 'bg-gray-700'
   }
 
@@ -714,9 +725,9 @@ function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive }: {
                 </span>
               )}
               {showShort && (
-                <div className="flex gap-0.5 mt-px">
+                <div className="flex gap-0.5 mt-0.5">
                   {TASK_DOTS[t.type].map((dot, i) => (
-                    <span key={i} className={`w-1 h-1 rounded-full ${ASSET_DOT_COLOR[dot]} opacity-80`} />
+                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[dot]}`} />
                   ))}
                 </div>
               )}
@@ -730,7 +741,9 @@ function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive }: {
           <LegendDot color="bg-green-600" label="Done" />
           <LegendDot color="bg-blue-700" label="Route" />
           <LegendDot color="bg-amber-500" label="Active" />
-          <LegendDot color="bg-gray-700" label="Pending" />
+          {hasUpcoming
+            ? <LegendDot color="bg-yellow-700/60" label="To plan" />
+            : <LegendDot color="bg-gray-700" label="Pending" />}
         </div>
         <span className="text-gray-500">{totalValue} max</span>
       </div>
@@ -956,6 +969,22 @@ const MAP_ZONE_FILL: Record<string, string> = {
 }
 const MAP_ASSET_COLOR: Record<AssetType, string> = { Blue: '#60a5fa', Red: '#f87171', Green: '#4ade80' }
 
+// Full planned route for a deployed drone: current position → remaining task waypoints → hub.
+// Uses the mission's stored per-drone sequence; falls back to assigned tasks (T5-first order).
+function droneFullPathPoints(asset: Asset, mission: Mission): { x: number; y: number }[] {
+  const seq = mission.droneSequences?.[asset.id]?.length
+    ? mission.droneSequences[asset.id]
+    : mission.tasks.filter(t => t.assignedAssetIds.includes(asset.id)).sort((a, b) => b.type - a.type).map(t => t.id)
+  const pts: { x: number; y: number }[] = [{ x: asset.position.x, y: asset.position.y }]
+  for (const tid of seq) {
+    const t = mission.tasks.find(tt => tt.id === tid)
+    if (!t || t.status === 'completed' || t.status === 'failed') continue
+    pts.push({ x: t.waypoint.x, y: t.waypoint.y })
+  }
+  pts.push({ x: HUB.x, y: HUB.y })
+  return pts
+}
+
 function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionId }: {
   state: GameState
   dispatch: (a: GameAction) => void
@@ -965,6 +994,9 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
   const [grabbing, setGrabbing] = useState(false)
   const [detailLevel, setDetailLevel] = useState<0 | 1 | 2>(0)
+  const [hoverDrone, setHoverDrone] = useState<string | null>(null)
+  const [hoverZone, setHoverZone] = useState<string | null>(null)
+  const [showFullPaths, setShowFullPaths] = useState(!!state.config.fullPathsOnHover)
   const svgRef = useRef<SVGSVGElement>(null)
   const isPanning = useRef(false)
   const hasMoved = useRef(false)
@@ -1075,6 +1107,8 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
                     dispatch({ type: 'OPEN_STRATEGIC', missionId: m.id })
                   }
                 }}
+                onMouseEnter={showFullPaths ? () => setHoverZone(m.id) : undefined}
+                onMouseLeave={showFullPaths ? () => setHoverZone(z => (z === m.id ? null : z)) : undefined}
                 style={{ cursor: isClickable ? 'pointer' : 'default' }}
               >
                 <circle
@@ -1112,6 +1146,38 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
             />
           ))}
 
+        {/* Full planned paths — revealed on hover when the setting is enabled.
+            Hover a drone → that drone's path; hover a mission zone → every drone serving it. */}
+        {showFullPaths && (() => {
+          const ids = hoverDrone
+            ? [hoverDrone]
+            : hoverZone
+              ? state.assets
+                  .filter(a => a.currentMissionId === hoverZone && (a.status === 'deployed' || a.status === 'returning'))
+                  .map(a => a.id)
+              : []
+          return ids.map(id => {
+            const a = state.assets.find(x => x.id === id)
+            if (!a || !a.currentMissionId) return null
+            const m = state.missions.find(mm => mm.id === a.currentMissionId)
+            if (!m) return null
+            const pts = droneFullPathPoints(a, m)
+            if (pts.length < 2) return null
+            const color = MAP_ASSET_COLOR[a.type]
+            return (
+              <g key={`fp-${id}`} style={{ pointerEvents: 'none' }}>
+                <polyline
+                  points={pts.map(p => `${p.x},${p.y}`).join(' ')}
+                  fill="none" stroke={color} strokeWidth={2} strokeDasharray="5 3" opacity={0.95}
+                />
+                {pts.slice(1, -1).map((p, i) => (
+                  <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={color} opacity={0.95} />
+                ))}
+              </g>
+            )
+          })
+        })()}
+
 
         {/* Asset icons — all levels */}
         {state.assets
@@ -1119,7 +1185,13 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
           .map(a => {
             const opacity = a.status === 'returning' ? 0.5 : 1
             return (
-              <g key={a.id} opacity={opacity}>
+              <g key={a.id} opacity={opacity}
+                onMouseEnter={showFullPaths ? () => setHoverDrone(a.id) : undefined}
+                onMouseLeave={showFullPaths ? () => setHoverDrone(d => (d === a.id ? null : d)) : undefined}
+                style={showFullPaths ? { cursor: 'pointer' } : undefined}>
+                {showFullPaths && (
+                  <circle cx={a.position.x} cy={a.position.y} r={10} fill="transparent" />
+                )}
                 <circle cx={a.position.x} cy={a.position.y} r={5}
                   fill={MAP_ASSET_COLOR[a.type]} fillOpacity={0.15} />
                 <image href={DRONE_ICON[a.type]}
@@ -1220,9 +1292,20 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
         </text>
       </g>
 
+      {/* Full-path-on-hover toggle */}
+      <g onClick={() => setShowFullPaths(v => !v)} onPointerDown={e => e.stopPropagation()} style={{ cursor: 'pointer' }}>
+        <rect x="70" y="770" width="78" height="16" rx="3"
+          fill={showFullPaths ? '#1e3a8a' : '#1f2937'} stroke={showFullPaths ? '#3b82f6' : '#374151'} />
+        <text x="109" y="781" textAnchor="middle" fill={showFullPaths ? '#93c5fd' : '#9ca3af'} fontSize="9" fontFamily="sans-serif">
+          Paths: {showFullPaths ? 'on' : 'off'}
+        </text>
+      </g>
+
       {/* Status overlay */}
       <text x="6" y="794" fill="#374151" fontSize="9" fontFamily="sans-serif">
-        Scroll/drag to navigate · click queued zone to allocate
+        {showFullPaths
+          ? 'Scroll/drag to navigate · hover a drone or mission to see its full path'
+          : 'Scroll/drag to navigate · click queued zone to allocate'}
       </text>
     </svg>
   )

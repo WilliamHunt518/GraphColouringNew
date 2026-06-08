@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
 import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP, ALLOCATION_OVERRIDE_STEP, ABORT_EXPLAIN_STEP } from '../utils/tutorialSteps'
+import TutorialText from './TutorialText'
 
 interface Props {
   state: GameState
@@ -281,7 +282,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
           {/* body */}
           <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.65 }}>
             {current?.body.map((para, i) => (
-              <p key={i} style={{ margin: i < (current.body.length - 1) ? '0 0 8px' : 0 }}>{para}</p>
+              <p key={i} style={{ margin: i < (current.body.length - 1) ? '0 0 8px' : 0 }}><TutorialText text={para} /></p>
             ))}
           </div>
           {/* mustInteract hint */}

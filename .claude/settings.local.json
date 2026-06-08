@@ -80,7 +80,20 @@
       "Bash(Select-Object -First 20)",
       "Bash(curl -s http://localhost:5173)",
       "Bash(node *)",
-      "Bash(pdflatex --version)"
+      "Bash(pdflatex --version)",
+      "Bash(node_modules/.bin/esbuild scripts/sim_greedy.ts --bundle --platform=node --format=esm --outfile=scripts/_sim.mjs)",
+      "Bash(where ffmpeg *)",
+      "PowerShell(Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::AllScreens | Select-Object DeviceName, Primary, @{N='Bounds';E={$_.Bounds.ToString\\(\\)}} | Format-Table -AutoSize; \"VirtualLeft=$\\([System.Windows.Forms.SystemInformation]::VirtualScreen.Left\\) Top=$\\([System.Windows.Forms.SystemInformation]::VirtualScreen.Top\\) W=$\\([System.Windows.Forms.SystemInformation]::VirtualScreen.Width\\) H=$\\([System.Windows.Forms.SystemInformation]::VirtualScreen.Height\\)\")",
+      "Bash(ffmpeg -hide_banner -encoders)",
+      "PowerShell(Get-CimInstance *)",
+      "Bash(ffprobe *)",
+      "Bash(ffmpeg -hide_banner -list_devices true -f dshow -i dummy)",
+      "Bash(npx --yes tsx scripts/test-greedy-replan.ts)",
+      "Bash(ffmpeg -version)",
+      "Bash(ffmpeg -y -i InitialAllocEtc.mp4 -i TacAllocAgent.mp4 -i Failure.mp4 -filter_complex \"[0:v]fps=30,settb=AVTB,format=yuv420p[v0];[1:v]fps=30,settb=AVTB,format=yuv420p[v1];[2:v]fps=30,settb=AVTB,format=yuv420p[v2];[v0][v1]xfade=transition=fade:duration=1:offset=271.133008[vx1];[vx1][v2]xfade=transition=fade:duration=1:offset=340.700000[vout];[0:a][1:a]acrossfade=d=1[ax1];[ax1][2:a]acrossfade=d=1[aout]\" -map \"[vout]\" -map \"[aout]\" -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k Combined.mp4)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(tail -5 ffmpeg_combine.log)",
+      "Bash(ls -la Combined.mp4)"
     ]
   }
 }

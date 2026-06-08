@@ -2,10 +2,10 @@ import type { GameState } from '../types'
 
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
 export const TACTICAL_STEP_FIRST = 17
-export const TACTICAL_STEP_LAST  = 46   // tac-deploy2 at index 46 (shifted +2 by abort steps)
+export const TACTICAL_STEP_LAST  = 47   // tac-deploy2 (shifted by the abort steps)
 
 // Step index where agent-introduction phase begins (triggers second mission spawn)
-export const AGENT_INTRO_STEP = 36   // shifted +2 by the two abort steps inserted after failure-lesson
+export const AGENT_INTRO_STEP = 37   // shifted by the abort steps inserted after failure-lesson
 
 // Step index where Tutorial.tsx begins trying to force a drone failure
 export const FAILURE_DEMO_STEP = 29
@@ -17,7 +17,7 @@ export const ALLOCATION_OVERRIDE_STEP = 14
 export const ABORT_EXPLAIN_STEP = 34
 
 // First tactical-window step in PHASE 2 (abort-do) — used to keep TacticalTutorial overlay running
-export const ABORT_DO_STEP = 35
+export const ABORT_DO_STEP = 36
 
 export interface TutorialStep {
   id: string
@@ -125,9 +125,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'drone-types',
     title: 'Three Drone Types',
     body: [
-      'Blue drones are fastest (9 units/s) and handle reconnaissance tasks.',
-      'Red drones are mid-speed (6 units/s) and handle supply drops and precision deliveries.',
-      'Green drones are slowest (4.2 units/s) but carry a thermal camera that some tasks specifically require.',
+      '{blue} drones are fastest (9 units/s) and handle reconnaissance tasks.',
+      '{red} drones are mid-speed (6 units/s) and handle supply drops and precision deliveries.',
+      '{green} drones are slowest (4.2 units/s) but carry a thermal camera that some tasks specifically require.',
     ],
     highlight: 'reserve-strip',
     cardSide: 'bottom',
@@ -152,7 +152,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'mission-card',
     title: 'Reading a Mission Card',
     body: [
-      'Each card shows the mission ID, a category badge (A = Routine through E = Mass Casualty), and task completion status.',
+      'Each card shows the mission ID, a category badge ({catA} Routine through {catE} Mass Casualty), and task completion status.',
       'Higher-category missions score more points but require more varied drone types. The amber border means it is waiting for drone allocation.',
     ],
     highlight: 'first-mission-card',
@@ -241,7 +241,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'allocation-override',
     title: 'Training Team Assigned',
     body: [
-      'For this training mission we have set your drone team to 2 Blue + 1 Red + 1 Green — enough to practise every control in the tactical planner.',
+      'For this training mission we have set your drone team to 2 {blue} + 1 {red} + 1 {green} — enough to practise every control in the tactical planner.',
       'In the real session you always choose your own allocation. Click Next to open the Tactical Planner.',
     ],
     cardSide: 'center',
@@ -345,7 +345,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Check Task Requirements',
     body: [
       'Before assigning drones, look at the task schedule on the right. Each row shows which drone types a task needs to execute — a task cannot start until its requirements are met.',
-      'Tasks that need Green drones are the most constrained — you have fewer of those in the team. Plan those assignments first.',
+      'Tasks that need {green} drones are the most constrained — you have fewer of those in the team. Plan those assignments first.',
     ],
     highlight: 'tac-schedule',
     cardSide: 'left',
@@ -386,7 +386,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Chaining One Drone Through Multiple Tasks',
     body: [
       'A drone can visit more than one task before returning to the hub. Hold Shift while dragging a drone icon onto a second task circle — the drone keeps its current assignment and is added to the new task.',
-      'Example: drag a Blue drone to the first T1 Recce, then Shift+drag the same Blue to a second task. That drone will fly hub → T1 → next task in one trip.',
+      'Example: drag a {blue} drone to the first {T1} Recce, then Shift+drag the same {blue} to a second task. That drone will fly hub → {T1} → next task in one trip.',
       'Practise now: Shift+drag a drone onto a second task twice. The tutorial advances after two successful chains.',
     ],
     highlight: 'tac-svg-container',
@@ -402,7 +402,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Complete the Plan',
     body: [
       'Good — you\'ve practised chaining. Now assign drones to any remaining tasks. Every row in the schedule panel must show at least one drone before you can deploy.',
-      'Check the task types: T1 needs Blue, T3 needs Red, T5 needs Green. Use normal drags for new assignments and Shift+drag to add a drone to an additional task.',
+      'Check the task types: {T1} needs {blue}, {T3} needs {red}, {T5} needs {green}. Use normal drags for new assignments and Shift+drag to add a drone to an additional task.',
       'The tutorial advances automatically once all tasks are covered.',
     ],
     highlight: 'tac-svg-container',
@@ -480,11 +480,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'failure-recovery-explain',
     title: 'Recovery Planner',
     body: [
-      'The planner has switched to recovery mode. The failed drone has been removed from its task — that task is now uncovered and highlighted.',
-      'Your remaining team drones are still available. Drag one onto the uncovered task circle to cover the gap, then click "Reassign ✓" to dispatch.',
+      'The planner has switched to recovery mode. The failed drone has been removed from its task — that task is now uncovered and highlighted on the map.',
+      'Your remaining team drones are still available to cover the gap. Click Next, and on the following step you will reassign one to the open task.',
     ],
+    highlight: 'tac-svg-container',
     cardSide: 'left',
-    noOverlay: true,
+    spotlightPadding: 6,
     inMapWindow: true,
   },
 
@@ -520,26 +521,44 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'abort-explain',
     title: 'When You Cannot Recover',
     body: [
-      'Sometimes a drone failure leaves a task uncoverable — for example, you have sent all your Green drones to other missions and cannot spare one.',
+      'Sometimes a drone failure leaves a task uncoverable — recovery can only draw on the drones already deployed on that mission, not your hub reserve. If the failed drone was the only one of its type, no remaining drone can take over.',
       'In that situation the only option is to abort the mission. Partial task completions are still scored; the remaining tasks are re-queued as a residual mission.',
-      'The tutorial will now put your active mission into an unrecoverable state. Switch to the Tactical Planner to try it.',
+      'The tutorial will now fail your {red} drone, leaving its task uncoverable. Switch to the Tactical Planner to abort the mission.',
     ],
     cardSide: 'center',
   },
 
-  // ── 35. abort-do (MAP WINDOW) — mustInteract: click Abandon ─────────────────
+  // ── 35. abort-select (MAP WINDOW) — re-open the failed mission's recovery plan ──
+  // After the first recovery the planner deselected the mission, so the operator must
+  // click it again to bring up the recovery panel (and its Abandon button).
   {
-    id: 'abort-do',
-    title: 'Abort the Mission',
+    id: 'abort-select',
+    title: 'Reopen the Failed Mission',
     body: [
-      'The mission now has a failure with no drones available to cover it. At the bottom of the recovery panel you will see an "Abort Mission" button.',
-      'Click it to abandon the mission. The tutorial advances automatically.',
+      'Your mission has a fresh drone failure — it is back in the queue with a red border and a "FAIL" badge.',
+      'Click it to reopen its recovery plan. This time you will find the failure cannot be covered.',
     ],
     highlight: 'tac-mission-list',
     cardSide: 'right',
     allowClickThrough: true,
     mustInteract: true,
-    mustInteractHint: 'Click "Abort Mission" at the bottom of the recovery panel.',
+    mustInteractHint: 'Click the red-bordered mission in the queue to open its recovery plan.',
+    inMapWindow: true,
+    noOverlayOnPrimary: true,
+  },
+
+  // ── 36. abort-do (MAP WINDOW) — mustInteract: click Abandon ─────────────────
+  {
+    id: 'abort-do',
+    title: 'Abort the Mission',
+    body: [
+      'Your {red} drone has just failed, and there is no spare {red} drone on this mission to take over its task. The schedule shows that task uncovered, and "Reassign" stays disabled — this mission can no longer be completed.',
+      'Look at the map: the uncovered task is highlighted and the schedule shows "Reassign" disabled. At the bottom of the recovery panel, click the "Abandon Mission" button. Partial completions are still scored and the remaining tasks are re-queued. The tutorial advances automatically.',
+    ],
+    cardSide: 'left',
+    noOverlay: true,
+    mustInteract: true,
+    mustInteractHint: 'Click "Abandon Mission" at the bottom of the recovery panel.',
     autoAdvanceWhen: state => state.missions.some(m => m.status === 'abandoned'),
     inMapWindow: true,
     noOverlayOnPrimary: true,
@@ -591,7 +610,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'strategy-detail',
     title: 'Reading a Strategy Card',
     body: [
-      'Each card shows: the drone composition (e.g. 2 Blue, 1 Red, 1 Green), the estimated completion time for all tasks, and how many drones of each type remain in reserve after deployment.',
+      'Each card shows: the drone composition (e.g. 2 {blue}, 1 {red}, 1 {green}), the estimated completion time for all tasks, and how many drones of each type remain in reserve after deployment.',
     ],
     highlight: 'first-strategy-card',
     cardSide: 'right',
@@ -696,8 +715,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     cardSide: 'left',
     allowClickThrough: true,
     mustInteract: true,
-    autoAdvanceWhen: state =>
-      state.missions.filter(m => m.status === 'active' || m.status === 'completed').length >= 2,
+    // Mission 2 is the only mission awaiting tactical deploy at this point; advancing on
+    // "no mission tacticalPending" detects its deployment regardless of mission 1's fate
+    // (it was abandoned in the abort lesson, so an active/completed count would never reach 2).
+    autoAdvanceWhen: state => !state.missions.some(m => m.tacticalPending),
     inMapWindow: true,
   },
 

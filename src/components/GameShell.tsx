@@ -181,6 +181,7 @@ export default function GameShell({ config }: Props) {
       phase: state.phase,
       pendingBlueprints: state.pendingBlueprints,
       mode: state.config.mode,
+      tacticalMode: state.config.tacticalMode,
       reserve: reserveCount(state.assets),
       callsignMode,
       strategicModal: state.strategicModal,

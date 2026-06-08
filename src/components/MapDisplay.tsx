@@ -207,8 +207,8 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
                       ? 'border-red-500 bg-red-900/40'
                       : 'border-yellow-500 bg-yellow-900/40'
                     : isRecov
-                      ? 'border-red-700/70 bg-red-950/30 hover:bg-red-900/30'
-                      : 'border-yellow-700/60 bg-yellow-950/20 hover:bg-yellow-900/25'
+                      ? 'border-red-500 bg-red-900/40 hover:bg-red-900/50 animate-pulse'
+                      : 'border-yellow-500 bg-yellow-900/40 hover:bg-yellow-900/50 animate-pulse'
                 }`}
               >
                 <div className="flex items-center justify-between gap-1">
@@ -359,11 +359,17 @@ function computeTacticalSuggestion(
   taskOrder: string[],
   tasks: Mission['tasks'],
   assets: Asset[],
+  greedy = false,
 ): Record<string, string[]> {
   const assetById = new Map(assets.map(a => [a.id, a]))
   const freeAt: Record<string, number> = Object.fromEntries(dronePool.map(id => [id, 0]))
   const freePos: Record<string, { x: number; y: number }> = Object.fromEntries(dronePool.map(id => [id, { ...HUB }]))
   const result: Record<string, string[]> = {}
+  // Greedy: engage EVERY drone in the first wave by covering as many tasks as possible in
+  // parallel, one drone per task (no chaining onto future tasks). Tasks the pool can't cover
+  // now stay empty and are filled by replanning as drones free up. Non-greedy keeps the old
+  // behaviour: chain drones through the whole task order.
+  const used = new Set<string>()
 
   for (const tid of taskOrder) {
     const task = tasks.find(t => t.id === tid)
@@ -374,7 +380,7 @@ function computeTacticalSuggestion(
     const tryAssign = (req: { Blue: number; Red: number; Green: number }, baseTime: number): boolean => {
       const pickEarliest = (type: AssetType, n: number) =>
         dronePool
-          .filter(id => assetById.get(id)?.type === type)
+          .filter(id => assetById.get(id)?.type === type && (!greedy || !used.has(id)))
           .sort((a, b) => freeAt[a] - freeAt[b])
           .slice(0, n)
 
@@ -392,6 +398,7 @@ function computeTacticalSuggestion(
       for (const id of picked) {
         freeAt[id] = startTime + baseTime
         freePos[id] = { ...task.waypoint }
+        if (greedy) used.add(id)   // consume-once: one task per drone this wave
       }
       result[tid] = picked
       return true
@@ -499,17 +506,18 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const pending = overrideAllocation ?? mission.pendingAllocation!
   const callsignMode = state.callsignMode
 
-  const [assignments, setAssignments] = useState<Record<string, string[]>>(() => {
-    // Always pre-populate from the greedy suggestion stored in pendingAllocation.
-    // In recovery mode this is the recovery plan; for new missions it's the greedy default.
-    // The operator can drag-drop to override; modifiedFromAgentPlan is computed by diff.
-    const base = Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
-    // Strip the suppressed task slot for tactical-error plans so it stays empty
-    if (!recoveryMode && !readOnly && pending.hasTacticalError && pending.suppressedTaskId) {
-      base[pending.suppressedTaskId] = []
+  // Recovery / read-only views pre-populate from the existing plan stored in pendingAllocation.
+  // A NEW tactical plan starts with empty task slots — the operator either assigns drones
+  // manually (drag/chain) or pulls in the agent's plan via "Suggest". Pre-filling here would
+  // bypass that choice and break the tutorial's manual-assignment practice.
+  function buildInitialAssignments(): Record<string, string[]> {
+    if (recoveryMode || readOnly) {
+      return Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
     }
-    return base
-  })
+    return Object.fromEntries(Object.keys(pending.taskAssignments).map(k => [k, []]))
+  }
+
+  const [assignments, setAssignments] = useState<Record<string, string[]>>(buildInitialAssignments)
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
   const [dragging, setDragging] = useState<{ droneId: string; svgX: number; svgY: number } | null>(null)
@@ -535,7 +543,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const prevKey = useRef(pendingKey)
   useEffect(() => {
     if (prevKey.current !== pendingKey) {
-      setAssignments(Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]])))
+      setAssignments(buildInitialAssignments())
       setDroneChainOrder({})
       prevKey.current = pendingKey
     }
@@ -619,8 +627,11 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const vx = cx - halfW, vy = cy - halfH, vw = halfW * 2, vh = halfH * 2
 
   // Deploy readiness — accepts primary OR substitute composition.
+  // Greedy plans one step ahead, so only the FIRST task must be covered to deploy; the rest
+  // are filled by replanning. Other modes require every task covered.
   // Suppressed task (tactical error) is exempt: it appears allocated so Deploy stays enabled.
-  const canDeploy = pending.taskOrder.every(tid => {
+  const deployCheckTasks = state.tacticalMode === 'greedy' ? pending.taskOrder.slice(0, 1) : pending.taskOrder
+  const canDeploy = deployCheckTasks.every(tid => {
     if (pending.hasTacticalError && tid === pending.suppressedTaskId) return true  // deceptively "complete"
     const task = mission.tasks.find(t => t.id === tid)!
     const prim = TASK_PRIMARY[task.type as TaskType]
@@ -711,12 +722,12 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   function handleReset() {
-    setAssignments(Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]])))
+    setAssignments(buildInitialAssignments())
     setDroneChainOrder({})
   }
 
   function handleSuggest() {
-    const suggestion = computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets)
+    const suggestion = computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets, state.tacticalMode === 'greedy')
     // Re-apply tactical error: keep the same task suppressed even after re-suggesting
     if (pending.hasTacticalError && pending.suppressedTaskId) {
       delete suggestion[pending.suppressedTaskId]
@@ -742,7 +753,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700/50">Tactical View</span>
         )}
         <div className="flex-1" />
-        {!readOnly && <span className="text-xs text-gray-500">Drag → assign · Shift+drag → chain sequence</span>}
+        {!readOnly && <span className="text-xs text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
         {!readOnly && <button onClick={handleReset} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">Reset</button>}
         {!readOnly && !recoveryMode && state.mode === 'agent' &&
           !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
@@ -875,7 +886,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
                 return (
                   <g key={droneId}>
-                    {points.slice(0, 1).map((from, i) => {
+                    {/* First leg only by default; hovering the drone reveals its full chain */}
+                    {points.slice(0, isHighlighted ? -1 : 1).map((from, i) => {
                       const to = points[i + 1]
                       // Perpendicular offset: fan parallel lines arriving at same task
                       let ctrlX = (from.x + to.x) / 2
@@ -1357,6 +1369,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         </button>
         {recoveryMode && missionId && onMapAction && (
           <button
+            data-tutorial="tac-abandon-btn"
             onClick={() => onMapAction({ _mapAction: 'ABANDON_MISSION', missionId })}
             className="w-full py-1.5 bg-transparent hover:bg-red-950/40 border border-red-800/60 hover:border-red-700 rounded text-red-500 hover:text-red-300 text-sm transition-colors"
           >

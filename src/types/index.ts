@@ -17,6 +17,7 @@ export interface StudyConfig {
   tutorialMode: boolean
   skipToFreePlay?: boolean
   numSessions: number
+  fullPathsOnHover?: boolean   // when true, hovering a drone/mission on the operational map reveals full planned paths
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
@@ -187,6 +188,7 @@ export interface MapViewState {
   phase: GamePhase
   pendingBlueprints: MissionBlueprint[]
   mode: Mode
+  tacticalMode: 'plan-all' | 'greedy'
   reserve: AssetRequirement
   callsignMode: 'id' | 'arthurian' | 'nato'
   strategicModal: StrategicModal | null
