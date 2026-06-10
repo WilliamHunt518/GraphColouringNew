@@ -93,7 +93,10 @@
       "Bash(ffmpeg -y -i InitialAllocEtc.mp4 -i TacAllocAgent.mp4 -i Failure.mp4 -filter_complex \"[0:v]fps=30,settb=AVTB,format=yuv420p[v0];[1:v]fps=30,settb=AVTB,format=yuv420p[v1];[2:v]fps=30,settb=AVTB,format=yuv420p[v2];[v0][v1]xfade=transition=fade:duration=1:offset=271.133008[vx1];[vx1][v2]xfade=transition=fade:duration=1:offset=340.700000[vout];[0:a][1:a]acrossfade=d=1[ax1];[ax1][2:a]acrossfade=d=1[aout]\" -map \"[vout]\" -map \"[aout]\" -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k Combined.mp4)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(tail -5 ffmpeg_combine.log)",
-      "Bash(ls -la Combined.mp4)"
+      "Bash(ls -la Combined.mp4)",
+      "PowerShell(npx tsc --noEmit)",
+      "Bash(npx --no-install tsx --version)",
+      "Bash(npx tsx *)"
     ]
   }
 }

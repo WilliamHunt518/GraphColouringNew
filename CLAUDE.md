@@ -46,7 +46,7 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=standard&seed=42
 
 ### Study Design
 
-Three 10-minute sessions. Asset pool (standard): 18 Blue, 9 Red, 3 Green (30 total).
+Three 8-minute (480 s) sessions. Asset pool: 11 Blue, 11 Red, 12 Green (34 total), **uniform across all study scenarios** — only the tactical/strategic weighting (mission size via `CATEGORY_WEIGHTS` + arrival rate via `LAMBDA`) differs between presets. See `FLEET` in `missionGen.ts`.
 
 | Condition | ε_Strategic | ε_Tactical |
 |-----------|------------|------------|
@@ -126,8 +126,8 @@ Tasks execute greedily (T5 first → most constrained).
 | Type  | Speed | Notes |
 |-------|-------|-------|
 | Blue  | 9.0   | Fast, recce-only |
-| Red   | 6.0   | Standard, supply + extract |
-| Green | 4.2   | Slow, required for T5 only |
+| Red   | 6.8   | Standard, supply + extract |
+| Green | 5.4   | Slow specialist, required for T3/T4/T5 |
 
 ## Development Guidelines
 

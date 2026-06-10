@@ -6,6 +6,7 @@ import { buildInitialState, gameReducer, reserveCount } from '../store/gameReduc
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
 import SurveyModal from './SurveyModal'
+import TutorialSummary from './TutorialSummary'
 import Tutorial from './Tutorial'
 import FreePlayOverlay from './FreePlayOverlay'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
@@ -244,6 +245,10 @@ export default function GameShell({ config }: Props) {
   }
 
   if (state.phase === 'survey') {
+    // Tutorial sessions skip the workload/trust surveys — show a recap summary instead.
+    if (config.tutorialMode) {
+      return <TutorialSummary onFinish={() => window.location.assign('/')} />
+    }
     return <SurveyModal state={state} dispatch={dispatch} />
   }
 

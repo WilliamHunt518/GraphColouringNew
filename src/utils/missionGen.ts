@@ -14,8 +14,8 @@ const ZONE_MIN_ZONE = 200   // minimum distance between zone centers
 
 export const ASSET_SPEED: Record<AssetType, number> = {
   Blue: 9.0,
-  Red: 6.0,
-  Green: 4.2,
+  Red: 6.8,
+  Green: 5.4,
 }
 
 /** Base execution time (seconds) per task type, primary composition */
@@ -73,11 +73,11 @@ export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
 // ─── Session duration ─────────────────────────────────────────────────────
 
 export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
-  balanced:  600,
-  strategic: 600,
-  tactical:  600,
-  full:      600,
-  quick:     600,
+  balanced:  480,
+  strategic: 480,
+  tactical:  480,
+  full:      480,
+  quick:     480,
 }
 
 // ─── Complexity parameters ────────────────────────────────────────────────
@@ -260,7 +260,7 @@ function placeZone(
 // ─── Session plan generator ───────────────────────────────────────────────
 
 /**
- * Pre-generates the complete mission schedule for a 600-second session.
+ * Pre-generates the complete mission schedule for a 480-second (8-minute) session.
  * All randomness drawn from the provided SeededRNG so the session is
  * fully reproducible from the seed alone.
  */
@@ -349,15 +349,24 @@ export const CHARGE_INTERVAL = 15
 
 // ─── Asset pool ───────────────────────────────────────────────────────────
 
-// Fleet is slightly Blue-heavy to match average demand: Blue returns fastest (9 u/s) so each Blue
-// covers more missions per hour, meaning you need marginally more of them per unit of total demand.
-// Ratio is small — 10/9/8 keeps utilisation rates nearly equal across all three types.
+// Fleet is slightly Green-heavy: although Green was speed-buffed (5.4 u/s), it is required by
+// T3/T4/T5 and its travel-seconds dominate, so Green is the natural bottleneck — hence one extra
+// Green. The fleet is the SAME for every study scenario; difficulty differences come only from the
+// tactical/strategic weighting (mission size + arrival rate). Sized so each scenario stays "slightly
+// unachievable" — a smart operator (good redundancy + prioritisation) completes nearly all missions
+// in good time, while average play falls short. Tuned via sim/engine.mts (drives the real reducer
+// with failures + recovery). See also ASSET_SPEED above.
+// Uniform fleet across all study scenarios — only the tactical/strategic weighting
+// (mission size via CATEGORY_WEIGHTS + arrival rate via LAMBDA) differs between them.
+// 11B / 11R / 12G keeps every scenario "slightly unachievable" (smart operator ~79–88%
+// of missions). quick stays small for dev. Tuned via sim/engine.mts.
+const STUDY_FLEET: [AssetType, number][] = [['Blue', 11], ['Red', 11], ['Green', 12]]
 const FLEET: Record<Complexity, [AssetType, number][]> = {
-  balanced:  [['Blue', 10], ['Red',  9],  ['Green', 8]],   // ~27 total
-  strategic: [['Blue',  9], ['Red',  8],  ['Green', 7]],   // ~24 — smaller fleet, small missions
-  tactical:  [['Blue', 10], ['Red',  9],  ['Green', 8]],   // ~27 — same size, large missions
-  full:      [['Blue', 12], ['Red', 11],  ['Green', 10]],  // ~33 — stretched by volume + size
-  quick:     [['Blue',  5], ['Red',  5],  ['Green',  5]],
+  balanced:  STUDY_FLEET,
+  strategic: STUDY_FLEET,
+  tactical:  STUDY_FLEET,
+  full:      STUDY_FLEET,
+  quick:     [['Blue', 5], ['Red', 5], ['Green', 5]],
 }
 
 // Arthurian knight callsigns — unique per drone, readable, UK military tradition

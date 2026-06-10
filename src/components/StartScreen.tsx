@@ -3,10 +3,10 @@ import type { Mode, StudyConfig } from '../types'
 import { randomSeed } from '../utils/config'
 
 const COMPLEXITIES = [
-  { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 10B 9R 8G' },
-  { value: 'tactical'  as const, label: 'Tactical Heavy',   desc: 'Low Strategic / High Tactical · few large missions · 10B 9R 8G' },
-  { value: 'strategic' as const, label: 'Strategic Heavy',  desc: 'High Strategic / Low Tactical · many small missions · 9B 8R 7G' },
-  { value: 'full'      as const, label: 'Full Spectrum',    desc: 'High Strategic / High Tactical · frequent large missions · 12B 11R 10G' },
+  { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 11B 11R 12G' },
+  { value: 'tactical'  as const, label: 'Tactical Heavy',   desc: 'Low Strategic / High Tactical · few large missions · 11B 11R 12G' },
+  { value: 'strategic' as const, label: 'Strategic Heavy',  desc: 'High Strategic / Low Tactical · many small missions · 11B 11R 12G' },
+  { value: 'full'      as const, label: 'Full Spectrum',    desc: 'High Strategic / High Tactical · frequent large missions · 11B 11R 12G' },
   { value: 'quick'     as const, label: 'Quick Test',       desc: 'Dev only · 5B 5R 5G' },
 ]
 

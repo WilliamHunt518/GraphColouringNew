@@ -3,7 +3,7 @@ import type { SeededRNG } from './prng'
 import type { TaskComposition } from './missionGen'
 import { TASK_PRIMARY, TASK_SUBSTITUTE, TASK_BASE_TIME, TASK_SUB_BASE_TIME, HUB, ASSET_SPEED, travelTime } from './missionGen'
 
-const SESSION_DURATION = 600
+const SESSION_DURATION = 480
 
 // ─── Virtual-timeline simulator ───────────────────────────────────────────
 
