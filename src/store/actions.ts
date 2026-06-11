@@ -15,6 +15,7 @@ export type GameAction =
       source: 'agent' | 'manual'
       strategyIndex: number | null          // null if manual
       manualAllocation: AssetRequirement | null  // used when source='manual'
+      editedFromStrategy?: string | null    // set when manual was seeded from a strategy card
     }
 
   // ── Tactical confirmation (agent mode — from map sidebar) ────────────────

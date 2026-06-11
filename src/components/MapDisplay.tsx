@@ -146,9 +146,9 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-600">
-            <p className="text-sm">Select a mission from the panel</p>
+            <p className="text-lg">Select a mission from the panel</p>
             {pending.length === 0 && (
-              <p className="text-xs text-gray-700">No missions currently require tactical assignment</p>
+              <p className="text-lg text-gray-700">No missions currently require tactical assignment</p>
             )}
           </div>
         )}
@@ -173,60 +173,80 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
     <div data-tutorial="tac-mission-list" className="flex flex-col w-64 flex-none bg-gray-900 border-r border-gray-800 h-full overflow-hidden">
       {/* Status bar */}
       <div className="flex-none px-3 py-2 border-b border-gray-800 space-y-0.5">
-        <div className="text-xs font-semibold text-gray-400">Session {state.sessionNumber}/{state.numSessions}</div>
-        <div className="text-xs text-gray-500">{active} active · {queued} queued</div>
-        <div className="text-xs">
+        <div className="text-lg font-semibold text-gray-400">Session {state.sessionNumber}/{state.numSessions}</div>
+        <div className="text-lg text-gray-500">{active} active · {queued} queued</div>
+        <div className="text-lg">
           Score: <span className="text-white font-mono font-bold">{state.score}</span>
           <span className="text-red-400 font-mono ml-1">−{state.penaltyAccrued}</span>
         </div>
-        <div className="text-[10px] text-gray-600 font-mono">{formatSeconds(state.elapsed)}</div>
+        <div className="text-sm text-gray-600 font-mono">{formatSeconds(state.elapsed)}</div>
       </div>
 
       {/* Header */}
       <div className="flex-none px-3 pt-2 pb-1">
-        <span className="text-[10px] text-gray-500 uppercase tracking-wider">
-          Pending{pending.length > 0 ? ` (${pending.length})` : ''}
+        <span className="text-sm text-gray-500 uppercase tracking-wider">
+          Pending{(pending.length + queued) > 0 ? ` (${pending.length + queued})` : ''}
         </span>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
-        {pending.length === 0 ? (
-          <p className="text-xs text-gray-700 text-center mt-4">No missions pending</p>
+        {pending.length === 0 && queued === 0 ? (
+          <p className="text-lg text-gray-700 text-center mt-4">No missions pending</p>
         ) : (
-          pending.map(m => {
-            const isRecov = m.failureRecoveryPending
-            const isSelected = m.id === selectedId
-            return (
-              <button
-                key={m.id}
-                onClick={() => { onSelect(m.id); document.dispatchEvent(new CustomEvent('tutorial-mission-selected')) }}
-                className={`w-full text-left px-3 py-2.5 rounded border transition-colors ${
-                  isSelected
-                    ? isRecov
-                      ? 'border-red-500 bg-red-900/40'
-                      : 'border-yellow-500 bg-yellow-900/40'
-                    : isRecov
-                      ? 'border-red-500 bg-red-900/40 hover:bg-red-900/50 animate-pulse'
-                      : 'border-yellow-500 bg-yellow-900/40 hover:bg-yellow-900/50 animate-pulse'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1">
-                  <span className={`font-mono font-bold text-base ${isRecov ? 'text-red-200' : 'text-yellow-200'}`}>{m.id}</span>
-                  {isRecov ? (
-                    <span className="px-1.5 py-0.5 bg-red-900/70 border border-red-600/70 rounded text-[10px] font-bold text-red-300">FAIL</span>
-                  ) : (
-                    <span className="text-[10px] text-yellow-600">{m.pendingAllocation?.dronePool.length ?? 0} drones</span>
+          <>
+            {pending.map(m => {
+              const isRecov = m.failureRecoveryPending
+              const isSelected = m.id === selectedId
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => { onSelect(m.id); document.dispatchEvent(new CustomEvent('tutorial-mission-selected')) }}
+                  className={`relative w-full text-left px-3 py-2.5 rounded border-2 transition-colors ${
+                    isSelected
+                      ? isRecov
+                        ? 'border-red-500 bg-red-900/40'
+                        : 'border-yellow-500 bg-yellow-900/40'
+                      : isRecov
+                        ? 'border-red-500 bg-red-900/30 hover:bg-red-900/50'
+                        : 'border-yellow-500 bg-yellow-900/30 hover:bg-yellow-900/50'
+                  }`}
+                >
+                  {!isSelected && (
+                    <div className={`absolute inset-0 rounded border-2 pointer-events-none animate-pulse ${isRecov ? 'border-red-400/60' : 'border-yellow-400/60'}`} />
                   )}
+                  <div className="flex items-center justify-between gap-1">
+                    <span className={`font-mono font-bold text-lg ${isRecov ? 'text-red-200' : 'text-yellow-200'}`}>{m.id}</span>
+                    {isRecov ? (
+                      <span className="px-1.5 py-0.5 bg-red-900/70 border border-red-600/70 rounded text-sm font-bold text-red-300">FAIL</span>
+                    ) : (
+                      <span className="text-sm text-yellow-600">{m.pendingAllocation?.dronePool.length ?? 0} drones</span>
+                    )}
+                  </div>
+                  <div className={`text-sm mt-0.5 ${isRecov ? 'text-red-400/80' : 'text-yellow-600/80'}`}>
+                    Cat {m.category}
+                    {!isRecov && m.pendingAllocation && ` · ${m.pendingAllocation.taskOrder.length} tasks`}
+                    {isRecov && <span className="ml-1">reassign pending</span>}
+                  </div>
+                </button>
+              )
+            })}
+            {state.missions.filter(m => m.status === 'queued').map(m => (
+              <div
+                key={m.id}
+                className="relative w-full text-left px-3 py-2.5 rounded border-2 border-amber-500/70 bg-amber-950/20"
+              >
+                <div className="absolute inset-0 rounded border-2 border-amber-400/50 pointer-events-none animate-pulse" />
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-mono font-bold text-lg text-amber-200">{m.id}</span>
+                  <span className="px-1.5 py-0.5 bg-amber-900/60 border border-amber-600/60 rounded text-sm font-bold text-amber-300">QUEUE</span>
                 </div>
-                <div className={`text-[11px] mt-0.5 ${isRecov ? 'text-red-400/80' : 'text-yellow-600/80'}`}>
-                  Cat {m.category}
-                  {!isRecov && m.pendingAllocation && ` · ${m.pendingAllocation.taskOrder.length} tasks`}
-                  {isRecov && <span className="ml-1">reassign pending</span>}
+                <div className="text-sm mt-0.5 text-amber-600/80">
+                  Cat {m.category} · awaiting allocation
                 </div>
-              </button>
-            )
-          })
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>
@@ -520,6 +540,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const [assignments, setAssignments] = useState<Record<string, string[]>>(buildInitialAssignments)
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
+  const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
+  const isSuggestLoading = suggestQueue.length > 0
   const [dragging, setDragging] = useState<{ droneId: string; svgX: number; svgY: number } | null>(null)
   const [hoverTask, setHoverTask] = useState<string | null>(null)
   const [hoverDrone, setHoverDrone] = useState<string | null>(null)
@@ -722,6 +744,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   function handleReset() {
+    setSuggestQueue([])
     setAssignments(buildInitialAssignments())
     setDroneChainOrder({})
   }
@@ -732,45 +755,60 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     if (pending.hasTacticalError && pending.suppressedTaskId) {
       delete suggestion[pending.suppressedTaskId]
     }
-    setAssignments(suggestion)
+    // Flatten to one entry per drone, ordered by task priority then drone order within each task
+    const entries: Array<{ taskId: string; droneId: string }> = []
+    for (const tid of pending.taskOrder) {
+      for (const droneId of (suggestion[tid] ?? [])) {
+        entries.push({ taskId: tid, droneId })
+      }
+    }
+    setAssignments({})
     setDroneChainOrder({})
+    setSuggestQueue(entries)
     document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
   }
+
+  // Progressive reveal: add one drone every 2 s until queue is empty
+  useEffect(() => {
+    if (suggestQueue.length === 0) return
+    const timer = window.setTimeout(() => {
+      const [{ taskId, droneId }, ...rest] = suggestQueue
+      setAssignments(prev => ({ ...prev, [taskId]: [...(prev[taskId] ?? []), droneId] }))
+      setSuggestQueue(rest)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [suggestQueue])
 
   return (
     <div className="flex flex-col h-full bg-gray-950">
       {/* Header */}
-      <div data-tutorial="tac-header" className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 flex-none">
-        <button onClick={onBack} className="text-xs text-gray-400 hover:text-white transition-colors">← Back</button>
-        <div className="h-4 w-px bg-gray-700" />
-        <span className="font-mono text-sm text-white font-bold">{mission.id}</span>
-        <span className="text-xs text-gray-400">Cat {mission.category} · {CAT_NAMES[mission.category] ?? ''}</span>
+      <div data-tutorial="tac-header" className="flex items-center gap-4 px-6 py-4 bg-gray-900 border-b border-gray-800 flex-none">
+        <button onClick={onBack} className="text-lg text-gray-400 hover:text-white transition-colors">← Back</button>
+        <div className="h-8 w-px bg-gray-700" />
+        <span className="font-mono text-xl text-white font-bold">{mission.id}</span>
+        <span className="text-lg text-gray-400">Cat {mission.category} · {CAT_NAMES[mission.category] ?? ''}</span>
         {recoveryMode ? (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-red-900/40 text-red-300 border border-red-700/50">⚠ DRONE FAILURE — Reassign</span>
+          <span className="text-lg px-2.5 py-1 rounded bg-red-900/40 text-red-300 border border-red-700/50">⚠ DRONE FAILURE — Reassign</span>
         ) : readOnly ? (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/60 text-gray-400 border border-gray-600/50">View Only</span>
+          <span className="text-lg px-2.5 py-1 rounded bg-gray-700/60 text-gray-400 border border-gray-600/50">View Only</span>
         ) : (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700/50">Tactical View</span>
+          <span className="text-lg px-2.5 py-1 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700/50">Tactical View</span>
         )}
         <div className="flex-1" />
-        {!readOnly && <span className="text-xs text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
-        {!readOnly && <button onClick={handleReset} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">Reset</button>}
+        {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
+        {!readOnly && <button onClick={handleReset} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Reset</button>}
         {!readOnly && !recoveryMode && state.mode === 'agent' &&
           !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
-          <button data-tutorial="tac-suggest-btn" onClick={handleSuggest} className="px-3 py-1.5 bg-purple-800 hover:bg-purple-700 rounded text-purple-200 text-xs transition-colors">Suggest</button>
+          <button data-tutorial="tac-suggest-btn" onClick={handleSuggest} disabled={isSuggestLoading}
+            className="px-4 py-3 bg-purple-800 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed rounded text-purple-200 text-lg transition-colors flex items-center gap-1.5">
+            {isSuggestLoading
+              ? <><span className="w-3 h-3 rounded-full border border-purple-400 border-t-transparent animate-spin inline-block" />Suggesting…</>
+              : 'Suggest'}
+          </button>
         )}
         {!readOnly && !recoveryMode && (
           <button onClick={() => onMapAction({ _mapAction: 'OVERRIDE_TACTICAL', missionId: mission.id })}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-xs transition-colors">Change Team</button>
-        )}
-        {!readOnly && (
-          <button
-            onClick={handleDeploy}
-            disabled={!canDeploy}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-sm font-semibold transition-colors"
-          >
-            Deploy{canDeploy ? ' ✓' : ''}
-          </button>
+            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Abort Mission</button>
         )}
       </div>
 
@@ -1137,6 +1175,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           callsignMode={callsignMode}
           onRemove={removeDrone}
           canDeploy={canDeploy}
+          isSuggestLoading={isSuggestLoading}
           onDeploy={handleDeploy}
           recoveryMode={!!recoveryMode}
           failedDroneId={failedDroneIdRef.current ?? null}
@@ -1151,7 +1190,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, onDeploy, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, isSuggestLoading, onDeploy, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1160,6 +1199,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   callsignMode: CallsignMode
   onRemove: (droneId: string, taskId: string) => void
   canDeploy: boolean
+  isSuggestLoading?: boolean
   onDeploy: () => void
   recoveryMode?: boolean
   failedDroneId?: string | null
@@ -1211,20 +1251,20 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         return (
           <div className="flex-none px-3 py-2 border-b border-red-900/60 bg-red-950/30 space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider">⚠ Drone Failed</span>
+              <span className="text-red-400 text-sm font-bold uppercase tracking-wider">⚠ Drone Failed</span>
               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-red-800/50 bg-red-900/20">
                 <img src={DRONE_ICON[fd.type]} className="w-3.5 h-3.5 flex-none grayscale opacity-50" alt="" />
-                <span className="font-mono text-[10px] text-gray-500 line-through">{getCS(failedDroneId)}</span>
+                <span className="font-mono text-sm text-gray-500 line-through">{getCS(failedDroneId)}</span>
               </div>
             </div>
-            <p className="text-[9px] text-gray-500">Reassign its task using remaining mission drones, or abandon.</p>
+            <p className="text-sm text-gray-500">Reassign its task using remaining mission drones, or abandon.</p>
           </div>
         )
       })()}
       {/* Unassigned reference list */}
       {unassigned.length > 0 && (
         <div data-tutorial="tac-unassigned" className="flex-none p-3 border-b border-gray-800">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">
+          <p className="text-sm text-gray-500 uppercase tracking-wider mb-2">
             Unassigned ({unassigned.length})
           </p>
           <div className="flex flex-wrap gap-1">
@@ -1235,7 +1275,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
                 <div key={id}
                   draggable
                   onDragStart={e => e.dataTransfer.setData('droneId', id)}
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-xs cursor-grab select-none ${ASSET_BG[type]}`}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-lg cursor-grab select-none ${ASSET_BG[type]}`}
                   title="Drag to task on map · hold Shift to chain"
                 >
                   <img src={DRONE_ICON[type]} className="w-3.5 h-3.5 flex-none" alt="" />
@@ -1249,7 +1289,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
 
       {/* Task schedule — sorted by actual execution order */}
       <div data-tutorial="tac-schedule" className="flex-1 overflow-y-auto p-3 space-y-2">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Task Schedule</p>
+        <p className="text-sm text-gray-500 uppercase tracking-wider mb-1">Task Schedule</p>
         {sortedTaskOrder.map((taskId, idx) => {
           const task = tasks.find(t => t.id === taskId)
           if (!task) return null
@@ -1269,28 +1309,28 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
 
           return (
             <div key={taskId}
-              className={`rounded border p-2 text-xs space-y-1.5 ${complete ? 'border-green-800/60 bg-green-950/10' : 'border-gray-700 bg-gray-800/40'}`}
+              className={`rounded border p-2 text-lg space-y-1.5 ${complete ? 'border-green-800/60 bg-green-950/10' : 'border-gray-700 bg-gray-800/40'}`}
             >
               {/* Header */}
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] text-gray-500 font-mono">#{idx + 1}</span>
+                <span className="text-sm text-gray-500 font-mono">#{idx + 1}</span>
                 <img src={TASK_ICON[task.type as TaskType]} className="w-4 h-4 flex-none" alt="" />
                 <span className={`font-medium ${complete ? 'text-green-300' : 'text-gray-200'}`}>
                   {TASK_TYPE_NAMES[task.type]}
                 </span>
-                {complete && <span className="ml-auto text-green-400 text-[10px]">✓</span>}
+                {complete && <span className="ml-auto text-green-400 text-sm">✓</span>}
               </div>
 
               {/* Required composition */}
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-gray-500 w-8">Req:</span>
-                  <span className="text-gray-300 font-mono text-[10px]">{compToLabel(req, baseTime)}</span>
+                  <span className="text-sm text-gray-500 w-8">Req:</span>
+                  <span className="text-gray-300 font-mono text-sm">{compToLabel(req, baseTime)}</span>
                 </div>
                 {sub && (
                   <div className="flex items-center gap-1">
-                    <span className="text-[9px] text-gray-600 w-8">OR:</span>
-                    <span className="text-gray-500 font-mono text-[10px]">{compToLabel(sub, subTime)}</span>
+                    <span className="text-sm text-gray-600 w-8">OR:</span>
+                    <span className="text-gray-500 font-mono text-sm">{compToLabel(sub, subTime)}</span>
                   </div>
                 )}
               </div>
@@ -1305,7 +1345,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
                       return (
                         <div key={id}
                           className={`flex items-center gap-0.5 px-1 py-0.5 rounded border ${ASSET_BG[tp]}`}>
-                          <span className={`font-mono text-[10px] ${ASSET_COLOR_TEXT[tp]}`}>{cs}</span>
+                          <span className={`font-mono text-sm ${ASSET_COLOR_TEXT[tp]}`}>{cs}</span>
                           <button
                             onClick={() => onRemove(id, taskId)}
                             className="ml-0.5 text-red-400 hover:text-red-300 leading-none"
@@ -1317,13 +1357,13 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
                   </div>
                   {/* Status badge for in-progress tasks in recovery */}
                   {recoveryMode && task.status !== 'pending' && (
-                    <div className={`text-[9px] font-mono ${task.status === 'executing' ? 'text-amber-400' : 'text-blue-400'}`}>
+                    <div className={`text-sm font-mono ${task.status === 'executing' ? 'text-amber-400' : 'text-blue-400'}`}>
                       {task.status === 'executing' ? '⟳ executing' : '→ traveling'}
                     </div>
                   )}
                   {/* Comp progress */}
                   {!complete && (
-                    <div className={`font-mono text-[9px] ${meetsPrimRP ? 'text-green-400' : meetsSubRP ? 'text-yellow-400' : 'text-amber-400'}`}>
+                    <div className={`font-mono text-sm ${meetsPrimRP ? 'text-green-400' : meetsSubRP ? 'text-yellow-400' : 'text-amber-400'}`}>
                       {buildCompLabel(counts, req)}
                     </div>
                   )}
@@ -1331,19 +1371,19 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
               )}
 
               {assigned.length === 0 && (
-                <p className="text-gray-600 text-[10px] italic">No drones assigned</p>
+                <p className="text-gray-600 text-sm italic">No drones assigned</p>
               )}
 
               {/* Timing */}
               {tStart !== undefined && (
-                <div className="text-gray-500 text-[9px] font-mono border-t border-gray-700/50 pt-1">
+                <div className="text-gray-500 text-sm font-mono border-t border-gray-700/50 pt-1">
                   Start ~{Math.round(tStart)}s · Done ~{tEnd}s
                 </div>
               )}
 
               {/* Wait times — only shown when comp fully met */}
               {complete && Object.entries(timings.droneWaits[taskId] ?? {}).map(([droneId, wait]) => (
-                <div key={droneId} className="text-[9px] text-orange-400">
+                <div key={droneId} className="text-sm text-orange-400">
                   {getCS(droneId)} waiting {wait} seconds
                 </div>
               ))}
@@ -1355,23 +1395,27 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
       {/* Footer: ETA + Deploy + Abandon */}
       <div className="flex-none p-3 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
-          <div className="text-xs text-gray-400">
+          <div className="text-lg text-gray-400">
             Est. completion: <span className="text-white font-mono font-bold">~{overallETA}s</span>
           </div>
         )}
         <button
           data-tutorial="tac-deploy-btn"
           onClick={onDeploy}
-          disabled={!canDeploy}
-          className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-sm font-semibold transition-colors"
+          disabled={!canDeploy || !!isSuggestLoading}
+          className="w-full py-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-lg font-semibold transition-colors"
         >
-          {recoveryMode ? (canDeploy ? 'Reassign ✓' : 'Reassign (incomplete)') : (canDeploy ? 'Deploy ✓' : 'Deploy (incomplete)')}
+          {recoveryMode
+            ? (canDeploy ? 'Reassign ✓' : 'Reassign (incomplete)')
+            : isSuggestLoading
+              ? 'Deploy (allocation in progress…)'
+              : canDeploy ? 'Deploy ✓' : 'Deploy (incomplete)'}
         </button>
         {recoveryMode && missionId && onMapAction && (
           <button
             data-tutorial="tac-abandon-btn"
             onClick={() => onMapAction({ _mapAction: 'ABANDON_MISSION', missionId })}
-            className="w-full py-1.5 bg-transparent hover:bg-red-950/40 border border-red-800/60 hover:border-red-700 rounded text-red-500 hover:text-red-300 text-sm transition-colors"
+            className="w-full py-1.5 bg-transparent hover:bg-red-950/40 border border-red-800/60 hover:border-red-700 rounded text-red-500 hover:text-red-300 text-lg transition-colors"
           >
             Abandon Mission
           </button>

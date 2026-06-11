@@ -1,7 +1,7 @@
 import { useReducer, useEffect, useRef, useState, useMemo } from 'react'
 
 const LOG = true
-import type { StudyConfig, MapViewState, FreePlayAchievement } from '../types'
+import type { StudyConfig, GameState, MapViewState, FreePlayAchievement } from '../types'
 import { buildInitialState, gameReducer, reserveCount } from '../store/gameReducer'
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
@@ -257,67 +257,103 @@ export default function GameShell({ config }: Props) {
   }
 
   if (state.phase === 'done') {
-    const totalScore = state.completedSessionScores.reduce((a, b) => a + b, 0)
-
-    function buildPayload() {
-      return {
-        participantId: config.participantId,
-        condition: config.condition,
-        mode: config.mode,
-        complexity: config.complexity,
-        seed: config.seed,
-        epsilonStrategic: config.agentErrorRate,
-        epsilonTactical: config.epsilonTactical,
-        sessionScores: state.completedSessionScores,
-        totalScore,
-        sessions: state.events,
-      }
-    }
-
-    function downloadData() {
-      const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: 'application/json' })
-      const url  = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `study_${config.participantId}_${config.condition}_${config.seed}.json`
-      a.click()
-      URL.revokeObjectURL(url)
-    }
-
-    // Auto-download once when the done screen mounts
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => { downloadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
-        <div className="bg-gray-900 rounded-2xl border border-gray-700 p-8 max-w-md w-full space-y-6 text-center">
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Study complete</p>
-            <h2 className="text-2xl font-bold text-white">Thank you</h2>
-            <p className="text-gray-400 text-sm mt-1">Please ask the researcher to download your data.</p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-4 space-y-2 text-left">
-            {state.completedSessionScores.map((s, i) => (
-              <div key={i} className="flex justify-between text-sm text-gray-400">
-                <span>Session {i + 1}</span>
-                <span className="text-white font-mono tabular-nums">{s} pts</span>
-              </div>
-            ))}
-            <div className="flex justify-between text-sm font-bold text-white border-t border-gray-700 pt-2 mt-1">
-              <span>Total</span>
-              <span className="font-mono tabular-nums">{totalScore} pts</span>
-            </div>
-          </div>
-          <div className="space-y-2 text-xs text-gray-600">
-            <p>Participant: {config.participantId} · Condition: {config.condition} · Seed: {config.seed}</p>
-          </div>
-          <button onClick={downloadData} className="w-full py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white text-sm transition-colors">
-            Download Study Data
-          </button>
-        </div>
-      </div>
-    )
+    return <DoneScreen state={state} config={config} />
   }
 
   return null
+}
+
+function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }) {
+  const totalScore = state.completedSessionScores.reduce((a, b) => a + b, 0)
+
+  function buildPayload() {
+    return {
+      participantId: config.participantId,
+      condition: config.condition,
+      mode: config.mode,
+      complexity: config.complexity,
+      seed: config.seed,
+      epsilonStrategic: config.agentErrorRate,
+      epsilonTactical: config.epsilonTactical,
+      sessionScores: state.completedSessionScores,
+      totalScore,
+      sessions: state.events,
+    }
+  }
+
+  function downloadData() {
+    const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: 'application/json' })
+    const url  = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `study_${config.participantId}_${config.condition}_${config.seed}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  useEffect(() => { downloadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const complexityLabel: Record<string, string> = { easy: 'Easy', standard: 'Standard', hard: 'Hard' }
+  const numSessions = state.completedSessionScores.length
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+      <div className="bg-gray-900 rounded-2xl border border-gray-700 p-8 max-w-lg w-full space-y-6 text-center">
+        <div>
+          <div className="text-5xl mb-3">✓</div>
+          <p className="text-xs text-green-400 uppercase tracking-widest mb-2 font-semibold">Study Complete</p>
+          <h2 className="text-2xl font-bold text-white">All sessions finished</h2>
+          <p className="text-gray-400 text-sm mt-2">
+            You have completed all {numSessions} sessions of the <span className="text-white font-semibold">{config.condition}</span> condition
+            ({complexityLabel[config.complexity] ?? config.complexity} complexity).
+          </p>
+        </div>
+
+        {/* Scenario info */}
+        <div className="bg-gray-800/60 rounded-xl border border-gray-700 p-4 text-left space-y-1.5">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Participant</span>
+            <span className="text-white font-mono">{config.participantId}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Condition</span>
+            <span className="text-white font-mono">{config.condition}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Complexity</span>
+            <span className="text-white font-mono">{complexityLabel[config.complexity] ?? config.complexity}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Seed</span>
+            <span className="text-white font-mono">{config.seed}</span>
+          </div>
+        </div>
+
+        {/* Session scores */}
+        <div className="bg-gray-800 rounded-xl p-4 space-y-2 text-left">
+          {state.completedSessionScores.map((s, i) => (
+            <div key={i} className="flex justify-between text-sm text-gray-400">
+              <span>Session {i + 1}</span>
+              <span className="text-white font-mono tabular-nums">{s} pts</span>
+            </div>
+          ))}
+          <div className="flex justify-between text-sm font-bold text-white border-t border-gray-700 pt-2 mt-1">
+            <span>Total</span>
+            <span className="font-mono tabular-nums">{totalScore} pts</span>
+          </div>
+        </div>
+
+        <p className="text-gray-500 text-sm">Please ask the researcher to confirm your data has been saved.</p>
+
+        <div className="space-y-2">
+          <button onClick={downloadData} className="w-full py-3 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white text-sm transition-colors">
+            Download Study Data
+          </button>
+          <button onClick={downloadData} className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 text-xs transition-colors">
+            Download Again
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }

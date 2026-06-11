@@ -1284,6 +1284,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         agentSuggestionWasBad: isBad,
         badSuggestionType: badType,
         assetsChosen: composition,
+        editedFromStrategy: action.editedFromStrategy ?? null,
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
       })
 

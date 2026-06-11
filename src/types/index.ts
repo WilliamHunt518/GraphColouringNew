@@ -268,6 +268,7 @@ export interface StrategicChoiceEvent extends BaseEvent {
   agentSuggestionWasBad: boolean
   badSuggestionType: 'over' | 'under' | null
   assetsChosen: AssetRequirement
+  editedFromStrategy: string | null   // strategy name if manual edit was seeded from a card
   timeRemainingInSession: number
 }
 

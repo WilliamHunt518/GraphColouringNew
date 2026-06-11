@@ -281,13 +281,13 @@ export function generateSessionPlan(
     const n = blueprints.length
     const cappedInterval = n === 0 ? Math.min(interval, 3) : n <= 2 ? Math.min(interval, 60) : interval
     time += cappedInterval
-    if (time > duration) break
+    if (time > duration - 30) break
 
     const category = rng.weightedChoice(CATEGORIES, CATEGORY_WEIGHTS[complexity])
     const taskTypes = buildTaskList(rng, category, complexity)
     // Only check against the last 5 zone centres — earlier missions will have completed
     // and their map space is available again.
-    const zoneCenter = placeZone(rng, usedCenters.slice(-5))
+    const zoneCenter = placeZone(rng, usedCenters)
     usedCenters.push(zoneCenter)
 
     const waypoints: Array<{ x: number; y: number }> = []

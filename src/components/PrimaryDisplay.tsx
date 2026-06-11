@@ -181,6 +181,13 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               >
                 Force Failure
               </button>
+              <button
+                onClick={() => dispatch({ type: 'END_STUDY' })}
+                className="text-xs px-2.5 py-1 rounded bg-gray-700/80 hover:bg-gray-600/80 text-gray-300 border border-gray-600 transition-colors"
+                title="Skip straight to the end screen"
+              >
+                End Study
+              </button>
             </>
           )}
           <span data-tutorial="timer" className="font-mono text-amber-400 font-bold">{formatCountdown(state.elapsed, state.sessionDuration)}</span>
@@ -341,10 +348,10 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
 
   const borderColor = isAllocating ? 'border-blue-500'
     : mission.failureRecoveryPending ? 'border-red-600'
-    : mission.tacticalPending ? 'border-yellow-600'
-    : isQueued  ? 'border-amber-700'
-    : isActive  ? 'border-blue-800'
-    : 'border-gray-800'
+    : mission.tacticalPending ? 'border-yellow-500'
+    : isQueued  ? 'border-amber-500'
+    : isActive  ? 'border-blue-700'
+    : 'border-gray-700'
   const bgColor = isAllocating ? 'bg-blue-950/20'
     : mission.failureRecoveryPending ? 'bg-red-950/20'
     : mission.tacticalPending ? 'bg-yellow-950/10'
@@ -357,7 +364,10 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
     : null
 
   return (
-    <div data-tutorial={isTutorialFirst ? 'first-mission-card' : undefined} className={`rounded-lg border ${borderColor} ${bgColor} p-3 mb-2`}>
+    <div data-tutorial={isTutorialFirst ? 'first-mission-card' : undefined} className={`relative rounded-lg border-2 ${borderColor} ${bgColor} p-3 mb-2`}>
+      {isQueued && !isAllocating && (
+        <div className="absolute inset-0 rounded-lg border-2 border-amber-400/70 animate-pulse pointer-events-none" />
+      )}
       {/* Card header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -435,29 +445,45 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const [manualAlloc, setManualAlloc] = useState<AssetRequirement>(modal.manualAllocation ?? { Blue: 0, Red: 0, Green: 0 })
+  const [editedFromStrategy, setEditedFromStrategy] = useState<string | null>(null)
+  const [loadedCards, setLoadedCards] = useState<Set<number>>(new Set())
   const reserve = reserveCount(state.assets)
   const mission = state.missions.find(m => m.id === modal.missionId)
 
   const showAgentCards = isAgent && !showManual
+  const allCardsLoaded = !showAgentCards || modal.strategies.length === 0 || modal.strategies.every((_, i) => loadedCards.has(i))
+
+  // Fire independent 3–5 s timers for each strategy card when in agent mode
+  useEffect(() => {
+    if (!showAgentCards || modal.strategies.length === 0) return
+    const timers = modal.strategies.map((_, i) => {
+      const delay = 3000 + Math.random() * 2000
+      return window.setTimeout(() => setLoadedCards(prev => new Set([...prev, i])), delay)
+    })
+    return () => timers.forEach(clearTimeout)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleApply() {
     if (showManual || !isAgent) {
-      dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'manual', strategyIndex: null, manualAllocation: manualAlloc })
+      dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'manual', strategyIndex: null, manualAllocation: manualAlloc, editedFromStrategy })
     } else if (selectedIdx !== null) {
       dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'agent', strategyIndex: selectedIdx, manualAllocation: null })
     }
   }
 
   const canApply = showAgentCards
-    ? selectedIdx !== null
+    ? selectedIdx !== null && allCardsLoaded
     : (manualAlloc.Blue + manualAlloc.Red + manualAlloc.Green > 0)
 
   return (
-    <div data-tutorial={isTutorialFirst ? 'first-strategic-panel' : undefined} className="mt-2 border border-gray-700 rounded-lg bg-gray-800/50 p-3 space-y-3">
+    <div data-tutorial={isTutorialFirst ? 'first-strategic-panel' : undefined} className="relative mt-2 border-2 border-blue-600/70 rounded-lg bg-gray-800/50 p-3 space-y-3">
+      {showAgentCards && !allCardsLoaded && (
+        <div className="absolute inset-0 rounded-lg border-2 border-blue-400/60 animate-pulse pointer-events-none" />
+      )}
       {showAgentCards && (
         <div className={`grid grid-cols-2 gap-2${tutorialForceManual ? ' opacity-40 pointer-events-none select-none' : ''}`}>
           {modal.strategies.map((strat, i) => (
-            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} reserve={reserve} onSelect={() => setSelectedIdx(i)} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
+            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} loaded={loadedCards.has(i)} reserve={reserve} onSelect={() => loadedCards.has(i) && setSelectedIdx(i)} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
           ))}
           {modal.strategies.length === 0 && (
             <p className="col-span-2 text-xs text-gray-500 py-2 text-center">
@@ -478,14 +504,14 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
         </div>
       )}
 
-      {/* Toggle: when showing agent cards → big "Set manually instead" button;
+      {/* Toggle: when showing agent cards → "Edit this allocation" (card selected) or "Set manually instead";
           when in manual → small "← Back" link (hidden if tutorialForceManual so user can't undo) */}
       {isAgent && (
         showManual ? (
           !tutorialForceManual && (
             <button
               data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
-              onClick={() => setShowManual(false)}
+              onClick={() => { setShowManual(false); setEditedFromStrategy(null) }}
               className="text-xs text-gray-500 hover:text-gray-300 w-full text-left"
             >
               ← Back to suggestions
@@ -495,12 +521,19 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
           <button
             data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
             onClick={() => {
+              if (selectedIdx !== null) {
+                const strat = modal.strategies[selectedIdx]
+                setManualAlloc({ ...strat.assets })
+                setEditedFromStrategy(strat.name)
+              } else {
+                setEditedFromStrategy(null)
+              }
               setShowManual(true)
               if (tutorialForceManual) document.dispatchEvent(new CustomEvent('tutorial-manual-selected'))
             }}
             className="w-full py-2 px-3 rounded-lg border border-gray-600 bg-gray-800/50 hover:border-gray-400 hover:bg-gray-700/50 text-sm text-gray-400 hover:text-gray-200 transition-colors text-left"
           >
-            Set manually instead
+            {selectedIdx !== null ? 'Edit this allocation' : 'Set manually instead'}
           </button>
         )
       )}
@@ -536,9 +569,20 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   )
 }
 
-function StrategyCard({ strat, selected, onSelect, tutorialId }: { strat: Strategy; selected: boolean; reserve?: AssetRequirement; onSelect: () => void; tutorialId?: string }) {
+function StrategyCard({ strat, selected, loaded, onSelect, tutorialId }: { strat: Strategy; selected: boolean; loaded: boolean; reserve?: AssetRequirement; onSelect: () => void; tutorialId?: string }) {
   const DRONE_COLOR: Record<AssetType, string> = { Blue: 'text-blue-300', Red: 'text-red-300', Green: 'text-green-300' }
   const DRONE_COLOR_DIM: Record<AssetType, string> = { Blue: 'text-blue-400/60', Red: 'text-red-400/60', Green: 'text-green-400/60' }
+
+  if (!loaded) {
+    return (
+      <div data-tutorial={tutorialId}
+        className="text-left p-3 rounded-lg border border-gray-700 bg-gray-800/50 flex flex-col items-center justify-center gap-2 min-h-[120px]">
+        <div className="w-6 h-6 rounded-full border-2 border-gray-600 border-t-blue-400 animate-spin" />
+        <span className="text-xs text-gray-500">Analysing...</span>
+      </div>
+    )
+  }
+
   return (
     <button data-tutorial={tutorialId} onClick={onSelect}
       className={`text-left p-3 rounded-lg border transition-colors ${selected ? 'border-blue-500 bg-blue-900/30' : 'border-gray-600 bg-gray-800 hover:border-gray-400'}`}>
