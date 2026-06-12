@@ -70,6 +70,20 @@ export const TASK_SUB_BASE_TIME: Record<TaskType, number> = {
   5: 45,   // unused (T5 has no sub), kept for type completeness
 }
 
+/**
+ * Sections-by-colour: fraction of task baseTime each drone type must remain present until.
+ * A drone failing AFTER its deadline is a graceful exit (section complete, task continues).
+ * A drone failing BEFORE its deadline triggers the normal recovery flow.
+ * Types with deadline < 1.0 can gracefully exit; deadline = 1.0 types are needed throughout.
+ */
+export const TASK_SECTION_DEADLINES: Record<number, Partial<Record<string, number>>> = {
+  1: { Blue: 1.0 },                           // T1 (1B Recce): solo pass, Blue throughout
+  2: { Blue: 1.0 },                           // T2 (2B Recon): paired sweep, both Blues throughout
+  3: { Red: 0.5, Green: 1.0 },               // T3 (2R+1G Supply): Reds deliver first half, Green guides full
+  4: { Red: 0.5, Green: 1.0 },               // T4 (1R+2G Precision): Red carries first half, Greens place full
+  5: { Blue: 0.33, Red: 0.67, Green: 1.0 }, // T5 (1B+1R+1G S&S): Blue searches, Red supplies, Green extracts
+}
+
 // ─── Session duration ─────────────────────────────────────────────────────
 
 export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
@@ -281,7 +295,7 @@ export function generateSessionPlan(
     const n = blueprints.length
     const cappedInterval = n === 0 ? Math.min(interval, 3) : n <= 2 ? Math.min(interval, 60) : interval
     time += cappedInterval
-    if (time > duration - 30) break
+    if (time > duration - 60) break
 
     const category = rng.weightedChoice(CATEGORIES, CATEGORY_WEIGHTS[complexity])
     const taskTypes = buildTaskList(rng, category, complexity)
@@ -388,23 +402,20 @@ export const ASSET_CALLSIGNS: Record<string, string> = {
   G09: 'Enid',      G10: 'Luned',
 }
 
-// NATO phonetic / aircraft callsigns extended to cover surge/campaign fleet
+// Numbered callsigns by drone class
 export const ASSET_CALLSIGNS_NATO: Record<string, string> = {
-  // Blue — A through R (B01–B18), then aircraft names (B19–B24)
-  B01: 'Alpha',    B02: 'Bravo',    B03: 'Charlie',  B04: 'Delta',    B05: 'Echo',
-  B06: 'Foxtrot',  B07: 'Golf',     B08: 'Hotel',    B09: 'India',    B10: 'Juliet',
-  B11: 'Kilo',     B12: 'Lima',     B13: 'Mike',     B14: 'November', B15: 'Oscar',
-  B16: 'Papa',     B17: 'Quebec',   B18: 'Romeo',
-  B19: 'Lancer',   B20: 'Viper',    B21: 'Raptor',   B22: 'Typhoon',  B23: 'Hornet',
-  B24: 'Phantom',
-  // Red — S through Z + Niner (R01–R09), then callsigns (R10–R12)
-  R01: 'Sierra',   R02: 'Tango',    R03: 'Uniform',  R04: 'Victor',   R05: 'Whiskey',
-  R06: 'X-ray',    R07: 'Yankee',   R08: 'Zulu',     R09: 'Niner',
-  R10: 'Ranger',   R11: 'Spartan',  R12: 'Nomad',
-  // Green — specialist class (G01–G10)
-  G01: 'Jade',     G02: 'Ember',    G03: 'Onyx',     G04: 'Flint',
-  G05: 'Kilo',     G06: 'Lima',     G07: 'Mike',     G08: 'November',
-  G09: 'Oscar',    G10: 'Papa',
+  // Blue — Bravo-1 through Bravo-11
+  B01: 'Bravo-1',   B02: 'Bravo-2',   B03: 'Bravo-3',   B04: 'Bravo-4',   B05: 'Bravo-5',
+  B06: 'Bravo-6',   B07: 'Bravo-7',   B08: 'Bravo-8',   B09: 'Bravo-9',   B10: 'Bravo-10',
+  B11: 'Bravo-11',
+  // Red — Romeo-1 through Romeo-11
+  R01: 'Romeo-1',   R02: 'Romeo-2',   R03: 'Romeo-3',   R04: 'Romeo-4',   R05: 'Romeo-5',
+  R06: 'Romeo-6',   R07: 'Romeo-7',   R08: 'Romeo-8',   R09: 'Romeo-9',   R10: 'Romeo-10',
+  R11: 'Romeo-11',
+  // Green — Golf-1 through Golf-12
+  G01: 'Golf-1',    G02: 'Golf-2',    G03: 'Golf-3',    G04: 'Golf-4',    G05: 'Golf-5',
+  G06: 'Golf-6',    G07: 'Golf-7',    G08: 'Golf-8',    G09: 'Golf-9',    G10: 'Golf-10',
+  G11: 'Golf-11',   G12: 'Golf-12',
 }
 
 export function createInitialAssets(complexity: Complexity): Asset[] {

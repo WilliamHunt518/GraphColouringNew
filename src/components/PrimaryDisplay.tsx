@@ -365,7 +365,7 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
 
   return (
     <div data-tutorial={isTutorialFirst ? 'first-mission-card' : undefined} className={`relative rounded-lg border-2 ${borderColor} ${bgColor} p-3 mb-2`}>
-      {isQueued && !isAllocating && (
+      {isQueued && !isAllocating && !mission.tacticalPending && (
         <div className="absolute inset-0 rounded-lg border-2 border-amber-400/70 animate-pulse pointer-events-none" />
       )}
       {/* Card header */}
@@ -390,7 +390,7 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
           {isActive && eta !== null && (
             <span className="text-xs text-gray-400 font-mono">ETA {formatSeconds(eta)}</span>
           )}
-          {isQueued && !isAllocating && (
+          {isQueued && !isAllocating && !mission.tacticalPending && (
             <button
               data-tutorial={isTutorialFirst ? 'first-allocate-btn' : undefined}
               onClick={() => dispatch({ type: 'OPEN_STRATEGIC', missionId: mission.id })}

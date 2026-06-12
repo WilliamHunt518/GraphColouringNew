@@ -23,7 +23,7 @@ interface Props {
 
 export default function GameShell({ config }: Props) {
   const [state, dispatch] = useReducer(gameReducer, config, buildInitialState)
-  const [callsignMode, setCallsignMode] = useState<CallsignMode>('id')
+  const [callsignMode, setCallsignMode] = useState<CallsignMode>('nato')
   const [showTutorial, setShowTutorial] = useState((config.tutorialMode ?? false) && !config.skipToFreePlay)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [openMissionId, setOpenMissionId] = useState<string | null>(null)

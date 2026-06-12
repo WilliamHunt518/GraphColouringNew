@@ -185,13 +185,13 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
       {/* Header */}
       <div className="flex-none px-3 pt-2 pb-1">
         <span className="text-sm text-gray-500 uppercase tracking-wider">
-          Pending{(pending.length + queued) > 0 ? ` (${pending.length + queued})` : ''}
+          Pending{pending.length > 0 ? ` (${pending.length})` : ''}
         </span>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
-        {pending.length === 0 && queued === 0 ? (
+        {pending.length === 0 ? (
           <p className="text-lg text-gray-700 text-center mt-4">No missions pending</p>
         ) : (
           <>
@@ -231,21 +231,6 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
                 </button>
               )
             })}
-            {state.missions.filter(m => m.status === 'queued').map(m => (
-              <div
-                key={m.id}
-                className="relative w-full text-left px-3 py-2.5 rounded border-2 border-amber-500/70 bg-amber-950/20"
-              >
-                <div className="absolute inset-0 rounded border-2 border-amber-400/50 pointer-events-none animate-pulse" />
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-mono font-bold text-lg text-amber-200">{m.id}</span>
-                  <span className="px-1.5 py-0.5 bg-amber-900/60 border border-amber-600/60 rounded text-sm font-bold text-amber-300">QUEUE</span>
-                </div>
-                <div className="text-sm mt-0.5 text-amber-600/80">
-                  Cat {m.category} · awaiting allocation
-                </div>
-              </div>
-            ))}
           </>
         )}
       </div>
@@ -652,7 +637,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   // Greedy plans one step ahead, so only the FIRST task must be covered to deploy; the rest
   // are filled by replanning. Other modes require every task covered.
   // Suppressed task (tactical error) is exempt: it appears allocated so Deploy stays enabled.
-  const deployCheckTasks = state.tacticalMode === 'greedy' ? pending.taskOrder.slice(0, 1) : pending.taskOrder
+  // Recovery mode always validates all tasks — the greedy "first task only" shortcut doesn't apply
+  const deployCheckTasks = (state.tacticalMode === 'greedy' && !recoveryMode) ? pending.taskOrder.slice(0, 1) : pending.taskOrder
   const canDeploy = deployCheckTasks.every(tid => {
     if (pending.hasTacticalError && tid === pending.suppressedTaskId) return true  // deceptively "complete"
     const task = mission.tasks.find(t => t.id === tid)!
@@ -747,6 +733,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     setSuggestQueue([])
     setAssignments(buildInitialAssignments())
     setDroneChainOrder({})
+  }
+
+  function handleStopSuggest() {
+    setSuggestQueue([])
   }
 
   function handleSuggest() {
@@ -1177,6 +1167,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           canDeploy={canDeploy}
           isSuggestLoading={isSuggestLoading}
           onDeploy={handleDeploy}
+          onStopSuggest={handleStopSuggest}
           recoveryMode={!!recoveryMode}
           failedDroneId={failedDroneIdRef.current ?? null}
           suppressedTaskId={pending.suppressedTaskId}
@@ -1190,7 +1181,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, isSuggestLoading, onDeploy, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1201,6 +1192,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   canDeploy: boolean
   isSuggestLoading?: boolean
   onDeploy: () => void
+  onStopSuggest?: () => void
   recoveryMode?: boolean
   failedDroneId?: string | null
   suppressedTaskId?: string | null
@@ -1392,17 +1384,25 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         })}
       </div>
 
-      {/* Footer: ETA + Deploy + Abandon */}
+      {/* Footer: ETA + Stop Agent + Deploy + Abandon */}
       <div className="flex-none p-3 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
           <div className="text-lg text-gray-400">
             Est. completion: <span className="text-white font-mono font-bold">~{overallETA}s</span>
           </div>
         )}
+        {isSuggestLoading && onStopSuggest && (
+          <button
+            onClick={onStopSuggest}
+            className="w-full py-2 bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700/60 hover:border-amber-600 rounded text-amber-300 hover:text-amber-200 text-lg transition-colors"
+          >
+            Stop Agent — take over
+          </button>
+        )}
         <button
           data-tutorial="tac-deploy-btn"
           onClick={onDeploy}
-          disabled={!canDeploy || !!isSuggestLoading}
+          disabled={!canDeploy}
           className="w-full py-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-lg font-semibold transition-colors"
         >
           {recoveryMode

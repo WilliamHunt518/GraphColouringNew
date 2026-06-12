@@ -89,6 +89,8 @@ export interface Task {
   completionTime: number | null
   useSubstitute: boolean
   recallDelay: number
+  /** Drone types whose sections are already complete (graceful exits). Preserved across recovery re-dispatches. */
+  completedSectionTypes?: string[]
 }
 
 // ─── Missions ─────────────────────────────────────────────────────────────

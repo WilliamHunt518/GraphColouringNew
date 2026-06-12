@@ -8,6 +8,7 @@ import type { GameAction } from './actions'
 import {
   HUB, ASSET_SPEED, TASK_BASE_TIME, TASK_PRIMARY, TASK_SUBSTITUTE,
   TASK_SUB_BASE_TIME, ZONE_RADIUS, CATEGORY_PENALTY_RATE, TASK_WEIGHT,
+  TASK_SECTION_DEADLINES,
   generateSessionPlan, createInitialAssets, travelTime,
   SESSION_DURATION_BY_COMPLEXITY,
 } from '../utils/missionGen'
@@ -608,12 +609,31 @@ function buildManualAssignments(
   for (const [taskId, droneIds] of Object.entries(taskAssignments)) {
     const task = mission.tasks.find(t => t.id === taskId)
     if (!task || droneIds.length === 0 || taskStarts[taskId] === undefined) continue
+    // Guard: only dispatch tasks whose assigned drones meet primary or substitute composition
+    if (!taskMeetsComposition(task, droneIds, assetById)) continue
     const startTime = taskStarts[taskId]
     const baseTime = getManualBaseTime(task, droneIds, assetById)
     const useSubstitute = isUsingSubstitute(task, droneIds, assetById)
     result.push({ taskId, assetIds: droneIds, startTime, travelTime: startTime - elapsed, baseTime, useSubstitute })
   }
   return result
+}
+
+function taskMeetsComposition(task: Task, droneIds: string[], assetById: Map<string, Asset>): boolean {
+  const prim = TASK_PRIMARY[task.type as TaskType]
+  const sub  = TASK_SUBSTITUTE[task.type as TaskType]
+  const done = new Set(task.completedSectionTypes ?? [])
+  const comp: AssetRequirement = { Blue: 0, Red: 0, Green: 0 }
+  for (const id of droneIds) { const a = assetById.get(id); if (a) comp[a.type]++ }
+  // A type whose section is already done doesn't need to be in the new assignment
+  const meetsPrim = (done.has('Blue') || comp.Blue >= prim.Blue) &&
+                    (done.has('Red')  || comp.Red  >= prim.Red)  &&
+                    (done.has('Green')|| comp.Green >= prim.Green)
+  const meetsSub  = !!sub &&
+                    (done.has('Blue') || comp.Blue >= sub.Blue) &&
+                    (done.has('Red')  || comp.Red  >= sub.Red)  &&
+                    (done.has('Green')|| comp.Green >= sub.Green)
+  return meetsPrim || meetsSub
 }
 
 function getManualBaseTime(task: Task, droneIds: string[], assetById: Map<string, Asset>): number {
@@ -810,22 +830,49 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null, replacementAt: elapsed + replacementDelay }
               : a
           )
-          // Revert task to pending, clear its assignment
-          const updatedMissions = s.missions.map(m => {
-            if (m.id !== mission.id) return m
-            return {
-              ...m,
-              droneFailuresFired: m.droneFailuresFired + 1,
-              failedDroneId: failedDrone.id,
-              failureRecoveryPending: true,
-              tasks: m.tasks.map(t =>
-                t.id === failedTask.id
-                  ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
-                  : t
-              ),
-              pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, s.assets, elapsed),
-            }
-          })
+
+          // Sections-by-colour: check if this drone type's section is already complete
+          const sectionDeadline = TASK_SECTION_DEADLINES[failedTask.type as number]?.[failedDrone.type] ?? 1.0
+          const isGracefulExit = sectionDeadline < 1.0 &&
+            failedTask.startTime !== null &&
+            elapsed >= failedTask.startTime + failedTask.baseTime * sectionDeadline
+
+          let updatedMissions: typeof s.missions
+          if (isGracefulExit) {
+            // Section done — drone gracefully exits; task continues without it, no recovery dialog
+            updatedMissions = s.missions.map(m => {
+              if (m.id !== mission.id) return m
+              return {
+                ...m,
+                droneFailuresFired: m.droneFailuresFired + 1,
+                failedDroneId: failedDrone.id,
+                tasks: m.tasks.map(t =>
+                  t.id === failedTask.id ? {
+                    ...t,
+                    assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id),
+                    completedSectionTypes: [...new Set([...(t.completedSectionTypes ?? []), failedDrone.type])],
+                  } : t
+                ),
+              }
+            })
+          } else {
+            // Section incomplete — revert task to pending, offer recovery
+            updatedMissions = s.missions.map(m => {
+              if (m.id !== mission.id) return m
+              return {
+                ...m,
+                droneFailuresFired: m.droneFailuresFired + 1,
+                failedDroneId: failedDrone.id,
+                failureRecoveryPending: true,
+                tasks: m.tasks.map(t =>
+                  t.id === failedTask.id
+                    ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
+                    : t
+                ),
+                pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, s.assets, elapsed),
+              }
+            })
+          }
 
           s = { ...s, assets: updatedAssets, missions: updatedMissions }
           s = logEvent(s, {
@@ -843,6 +890,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // 2. Advance task status based on elapsed time
+      const assetSnap = new Map(s.assets.map(a => [a.id, a]))
       const updatedMissions = s.missions.map(mission => {
         if (mission.status !== 'active') return mission
 
@@ -852,9 +900,34 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             missionChanged = true
             return { ...task, status: 'executing' as const }
           }
-          if (task.status === 'executing' && task.completionTime !== null && elapsed >= task.completionTime) {
-            missionChanged = true
-            return { ...task, status: 'completed' as const }
+          if (task.status === 'executing') {
+            // Sections-by-colour safety net: each drone type must cover its active window
+            if (task.startTime !== null && task.baseTime > 0) {
+              const prog = Math.min(1, (elapsed - task.startTime) / task.baseTime)
+              const sections = TASK_SECTION_DEADLINES[task.type as number] ?? {}
+              const prim = TASK_PRIMARY[task.type as TaskType]
+              const done = new Set(task.completedSectionTypes ?? [])
+              let sectionFail = false
+              for (const [droneType, deadline] of Object.entries(sections) as [string, number][]) {
+                if (done.has(droneType)) continue                    // already recorded as done
+                if (deadline < 1.0 && prog >= deadline) continue    // non-full-duration section passed
+                const required = prim[droneType as AssetType] ?? 0
+                if (required === 0) continue
+                const present = task.assignedAssetIds.filter(id => {
+                  const a = assetSnap.get(id)
+                  return a && a.status !== 'failed' && a.currentTaskId === task.id && a.type === droneType
+                }).length
+                if (present < required) { sectionFail = true; break }
+              }
+              if (sectionFail) {
+                missionChanged = true
+                return { ...task, status: 'failed' as const }
+              }
+            }
+            if (task.completionTime !== null && elapsed >= task.completionTime) {
+              missionChanged = true
+              return { ...task, status: 'completed' as const }
+            }
           }
           return task
         })
@@ -1425,35 +1498,40 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const task = mission.tasks.find(t => t.id === opt.taskId)
         const asset = s.assets.find(a => a.id === opt.redistributeToAssetId)
         if (!task || !asset) return state
-        const currentPos = interpolateAssetPosition(asset, s.elapsed)
-        const tt = travelTime(currentPos, task.waypoint, ASSET_SPEED[asset.type])
-        const startTime = s.elapsed + tt
-        const completionTime = startTime + task.baseTime
-        s = {
-          ...s,
-          assets: s.assets.map(a => a.id === opt.redistributeToAssetId ? {
-            ...a,
-            currentTaskId: task.id,
-            travelFrom: currentPos,
-            targetPosition: { ...task.waypoint },
-            travelStartElapsed: s.elapsed,
-            travelEndElapsed: s.elapsed + tt,
-            availableAt: completionTime + travelTime(task.waypoint, HUB, ASSET_SPEED[a.type]),
-          } : a),
-          missions: s.missions.map(m => m.id === mission.id ? {
-            ...m,
-            failureRecoveryPending: false,
-            pendingRecoveryOptions: null,
-            tasks: m.tasks.map(t => t.id === task.id ? {
-              ...t,
-              status: 'traveling' as const,
-              assignedAssetIds: [...t.assignedAssetIds, opt.redistributeToAssetId!],
-              allocatedAt: s.elapsed,
-              travelTime: tt,
-              startTime,
-              completionTime,
-            } : t),
-          } : m),
+        // Guard: only dispatch if adding this drone satisfies primary or substitute composition
+        const totalIds = [...task.assignedAssetIds.filter(id => id !== opt.redistributeToAssetId), opt.redistributeToAssetId!]
+        const assetByIdR = new Map(s.assets.map(a => [a.id, a]))
+        if (taskMeetsComposition(task, totalIds, assetByIdR)) {
+          const currentPos = interpolateAssetPosition(asset, s.elapsed)
+          const tt = travelTime(currentPos, task.waypoint, ASSET_SPEED[asset.type])
+          const startTime = s.elapsed + tt
+          const completionTime = startTime + task.baseTime
+          s = {
+            ...s,
+            assets: s.assets.map(a => a.id === opt.redistributeToAssetId ? {
+              ...a,
+              currentTaskId: task.id,
+              travelFrom: currentPos,
+              targetPosition: { ...task.waypoint },
+              travelStartElapsed: s.elapsed,
+              travelEndElapsed: s.elapsed + tt,
+              availableAt: completionTime + travelTime(task.waypoint, HUB, ASSET_SPEED[a.type]),
+            } : a),
+            missions: s.missions.map(m => m.id === mission.id ? {
+              ...m,
+              failureRecoveryPending: false,
+              pendingRecoveryOptions: null,
+              tasks: m.tasks.map(t => t.id === task.id ? {
+                ...t,
+                status: 'traveling' as const,
+                assignedAssetIds: totalIds,
+                allocatedAt: s.elapsed,
+                travelTime: tt,
+                startTime,
+                completionTime,
+              } : t),
+            } : m),
+          }
         }
       }
 
@@ -1466,6 +1544,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const task = mission?.tasks.find(t => t.id === action.taskId)
       const asset = state.assets.find(a => a.id === action.newAssetId)
       if (!mission || !task || !asset || asset.status !== 'available') return state
+      // Guard: only dispatch if the total composition (existing + new) meets requirements
+      const totalIdsM = [...task.assignedAssetIds.filter(id => id !== action.newAssetId), action.newAssetId]
+      const assetByIdM = new Map(state.assets.map(a => [a.id, a]))
+      if (!taskMeetsComposition(task, totalIdsM, assetByIdM)) return state
       const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
       const startTime = state.elapsed + tt
       const completionTime = startTime + task.baseTime
@@ -1511,6 +1593,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (task.status !== 'pending') return task
         const assignedIds = action.taskAssignments[task.id] ?? []
         if (assignedIds.length === 0) return task
+
+        // Guard: reject assignments that don't meet primary or substitute composition requirements.
+        const assetById = new Map(newAssets.map(a => [a.id, a]))
+        if (!taskMeetsComposition(task, assignedIds, assetById)) return task
 
         const travelTimes = assignedIds.map(id => {
           const asset = newAssets.find(a => a.id === id)
