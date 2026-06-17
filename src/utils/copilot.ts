@@ -5,6 +5,10 @@ import { TASK_PRIMARY, TASK_SUBSTITUTE, TASK_BASE_TIME, TASK_SUB_BASE_TIME, HUB,
 
 const SESSION_DURATION = 480
 
+// Conservative-strategy top-up parameters (also used in session_start parameter dump)
+export const CONSERVATIVE_TOP_UP = 0.15
+export const CONSERVATIVE_REDUNDANCY_BUFFER = 1
+
 // ─── Virtual-timeline simulator ───────────────────────────────────────────
 
 /**
@@ -229,13 +233,11 @@ export function generateStrategies(
 
   const consMin  = minPool(sorted, consComps)
   const consBase = cap(consMin, reserve)
-  const TOP_UP          = 0.15
   // +1 buffer only for colours that appear in the mission (robust to any single failure of a used colour)
-  const REDUNDANCY_BUFFER = 1
   const consTruePool: AssetRequirement = {
-    Blue:  Math.min(reserve.Blue,  consBase.Blue  + Math.floor((reserve.Blue  - consBase.Blue)  * TOP_UP) + (consBase.Blue  > 0 ? REDUNDANCY_BUFFER : 0)),
-    Red:   Math.min(reserve.Red,   consBase.Red   + Math.floor((reserve.Red   - consBase.Red)   * TOP_UP) + (consBase.Red   > 0 ? REDUNDANCY_BUFFER : 0)),
-    Green: Math.min(reserve.Green, consBase.Green + Math.floor((reserve.Green - consBase.Green) * TOP_UP) + (consBase.Green > 0 ? REDUNDANCY_BUFFER : 0)),
+    Blue:  Math.min(reserve.Blue,  consBase.Blue  + Math.floor((reserve.Blue  - consBase.Blue)  * CONSERVATIVE_TOP_UP) + (consBase.Blue  > 0 ? CONSERVATIVE_REDUNDANCY_BUFFER : 0)),
+    Red:   Math.min(reserve.Red,   consBase.Red   + Math.floor((reserve.Red   - consBase.Red)   * CONSERVATIVE_TOP_UP) + (consBase.Red   > 0 ? CONSERVATIVE_REDUNDANCY_BUFFER : 0)),
+    Green: Math.min(reserve.Green, consBase.Green + Math.floor((reserve.Green - consBase.Green) * CONSERVATIVE_TOP_UP) + (consBase.Green > 0 ? CONSERVATIVE_REDUNDANCY_BUFFER : 0)),
   }
   const consTrueTime = simulatePool(sorted, consComps, consTruePool)
   const consTrueTaskComps = toTaskComps(sorted, consComps, primComps)

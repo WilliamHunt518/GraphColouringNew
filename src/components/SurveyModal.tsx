@@ -30,36 +30,36 @@ const NASA_ITEMS: NASAItem[] = [
   { id: 'frustration',     question: 'How insecure, discouraged, irritated, stressed, or annoyed were you?',          leftLabel: 'Low',     rightLabel: 'High'    },
 ]
 
-const TRUST_CP: LikertItem[] = [
-  { id: 'cp_reliable',       question: 'The Co-Pilot is reliable.' },
-  { id: 'cp_trust',          question: "I trust the Co-Pilot's recommendations." },
-  { id: 'cp_performs',       question: 'The Co-Pilot performs well.' },
-  { id: 'cp_confident',      question: 'I feel confident using the Co-Pilot.' },
-  { id: 'cp_useful',         question: 'The Co-Pilot provides useful guidance.' },
-  { id: 'cp_follow',         question: "I would follow the Co-Pilot's suggestions without hesitation." },
+const TRUST_STRAT: LikertItem[] = [
+  { id: 'strat_reliable',       question: 'The Strategic Agent is reliable.' },
+  { id: 'strat_trust',          question: "I trust the Strategic Agent's recommendations." },
+  { id: 'strat_performs',       question: 'The Strategic Agent performs well.' },
+  { id: 'strat_confident',      question: 'I feel confident using the Strategic Agent.' },
+  { id: 'strat_useful',         question: 'The Strategic Agent provides useful guidance.' },
+  { id: 'strat_follow',         question: "I would follow the Strategic Agent's suggestions without hesitation." },
 ]
 
-const TRUST_MCP: LikertItem[] = [
-  { id: 'mcp_reliable',      question: 'The Meta-Co-Pilot is reliable.' },
-  { id: 'mcp_trust',         question: "I trust the Meta-Co-Pilot's recommendations." },
-  { id: 'mcp_performs',      question: 'The Meta-Co-Pilot performs well.' },
-  { id: 'mcp_confident',     question: 'I feel confident using the Meta-Co-Pilot.' },
-  { id: 'mcp_useful',        question: 'The Meta-Co-Pilot provides useful guidance.' },
-  { id: 'mcp_follow',        question: "I would follow the Meta-Co-Pilot's suggestions without hesitation." },
+const TRUST_TACT: LikertItem[] = [
+  { id: 'tact_reliable',      question: 'The Tactical Agent is reliable.' },
+  { id: 'tact_trust',         question: "I trust the Tactical Agent's recommendations." },
+  { id: 'tact_performs',      question: 'The Tactical Agent performs well.' },
+  { id: 'tact_confident',     question: 'I feel confident using the Tactical Agent.' },
+  { id: 'tact_useful',        question: 'The Tactical Agent provides useful guidance.' },
+  { id: 'tact_follow',        question: "I would follow the Tactical Agent's suggestions without hesitation." },
 ]
 
-const TAM_CP: LikertItem[] = [
-  { id: 'cp_tam_perf',       question: 'Using the Co-Pilot improves my task performance.' },
-  { id: 'cp_tam_useful',     question: 'Using the Co-Pilot is useful for this task.' },
-  { id: 'cp_tam_easy_learn', question: 'Learning to use the Co-Pilot was easy.' },
-  { id: 'cp_tam_easy_use',   question: 'I find the Co-Pilot easy to use overall.' },
+const TAM_STRAT: LikertItem[] = [
+  { id: 'strat_tam_perf',       question: 'Using the Strategic Agent improves my task performance.' },
+  { id: 'strat_tam_useful',     question: 'Using the Strategic Agent is useful for this task.' },
+  { id: 'strat_tam_easy_learn', question: 'Learning to use the Strategic Agent was easy.' },
+  { id: 'strat_tam_easy_use',   question: 'I find the Strategic Agent easy to use overall.' },
 ]
 
-const TAM_MCP: LikertItem[] = [
-  { id: 'mcp_tam_perf',      question: 'Using the Meta-Co-Pilot improves my task performance.' },
-  { id: 'mcp_tam_useful',    question: 'Using the Meta-Co-Pilot is useful for this task.' },
-  { id: 'mcp_tam_easy_learn','question': 'Learning to use the Meta-Co-Pilot was easy.' },
-  { id: 'mcp_tam_easy_use',  question: 'I find the Meta-Co-Pilot easy to use overall.' },
+const TAM_TACT: LikertItem[] = [
+  { id: 'tact_tam_perf',      question: 'Using the Tactical Agent improves my task performance.' },
+  { id: 'tact_tam_useful',    question: 'Using the Tactical Agent is useful for this task.' },
+  { id: 'tact_tam_easy_learn', question: 'Learning to use the Tactical Agent was easy.' },
+  { id: 'tact_tam_easy_use',  question: 'I find the Tactical Agent easy to use overall.' },
 ]
 
 const SURVEY_DEFS: Record<string, SurveyDef> = {
@@ -70,41 +70,41 @@ const SURVEY_DEFS: Record<string, SurveyDef> = {
     type: 'nasa',
     items: NASA_ITEMS,
   },
-  trust_copilot: {
-    name: 'trust_copilot',
-    title: 'Trust in Co-Pilot',
+  trust_strategic: {
+    name: 'trust_strategic',
+    title: 'Trust in Strategic Agent',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
-    items: TRUST_CP,
+    items: TRUST_STRAT,
   },
-  trust_metacopilot: {
-    name: 'trust_metacopilot',
-    title: 'Trust in Meta-Co-Pilot',
+  trust_tactical: {
+    name: 'trust_tactical',
+    title: 'Trust in Tactical Agent',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
-    items: TRUST_MCP,
+    items: TRUST_TACT,
   },
-  tam_copilot: {
-    name: 'tam_copilot',
-    title: 'Co-Pilot — Usability',
+  tam_strategic: {
+    name: 'tam_strategic',
+    title: 'Strategic Agent — Usability',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
-    items: TAM_CP,
+    items: TAM_STRAT,
   },
-  tam_metacopilot: {
-    name: 'tam_metacopilot',
-    title: 'Meta-Co-Pilot — Usability',
+  tam_tactical: {
+    name: 'tam_tactical',
+    title: 'Tactical Agent — Usability',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
-    items: TAM_MCP,
+    items: TAM_TACT,
   },
 }
 
 // Sessions 1 & 2: NASA-TLX + trust scales; session 3: add TAM scales
 const SURVEYS_BY_SESSION: Record<number, string[]> = {
-  1: ['nasa_tlx', 'trust_copilot', 'trust_metacopilot'],
-  2: ['nasa_tlx', 'trust_copilot', 'trust_metacopilot'],
-  3: ['nasa_tlx', 'trust_copilot', 'trust_metacopilot', 'tam_copilot', 'tam_metacopilot'],
+  1: ['nasa_tlx', 'trust_strategic', 'trust_tactical'],
+  2: ['nasa_tlx', 'trust_strategic', 'trust_tactical'],
+  3: ['nasa_tlx', 'trust_strategic', 'trust_tactical', 'tam_strategic', 'tam_tactical'],
 }
 
 function initResponses(def: SurveyDef): Record<string, number> {

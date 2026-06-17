@@ -100,7 +100,7 @@ export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
 // tactical: slow arrivals (few decisions), large missions per arrival
 // strategic: fast arrivals (many decisions), small missions per arrival
 // full: moderate arrivals but large missions — maximum pressure
-const LAMBDA: Record<Complexity, number> = {
+export const LAMBDA: Record<Complexity, number> = {
   balanced:  65,
   strategic: 38,   // high strategic: frequent arrivals → constant reserve decisions
   tactical:  90,   // low strategic: infrequent arrivals → fewer allocation decisions
@@ -112,7 +112,7 @@ const LAMBDA: Record<Complexity, number> = {
 // tactical:  mostly D/E — within-mission planning is the challenge
 // strategic: mostly A/B — reserve allocation frequency is the challenge
 // full:      mostly C/D/E — both axes demanding
-const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
+export const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
   balanced:  [20, 30, 28, 17,  5],
   strategic: [40, 38, 16,  5,  1],  // low tactical: simple missions, lots of them
   tactical:  [ 5, 13, 28, 38, 16],  // high tactical: complex missions, fewer of them
@@ -120,7 +120,7 @@ const CATEGORY_WEIGHTS: Record<Complexity, number[]> = {
   quick:     [35, 30, 20, 12,  3],
 }
 
-const CATEGORIES: MissionCategory[] = ['A', 'B', 'C', 'D', 'E']
+export const CATEGORIES: MissionCategory[] = ['A', 'B', 'C', 'D', 'E']
 
 // ─── Task composition per mission category ────────────────────────────────
 
@@ -324,9 +324,9 @@ export function generateSessionPlan(
   // Schedule multiple drone failures per mission.
   // Each mission gets FAILURE_COUNT failure events staggered over time so that
   // redundancy planning (extra drones in the allocation) is essential.
-  const FAILURE_COUNT = 2   // failures per mission; raise to 3 for higher pressure
-  const FAILURE_GAP   = 60  // minimum seconds between successive failures
-  const FAILURE_JITTER = 30 // random jitter added to each failure time
+  const FAILURE_COUNT = FAILURE_COUNT_CONST
+  const FAILURE_GAP   = FAILURE_GAP_CONST
+  const FAILURE_JITTER = FAILURE_JITTER_CONST
 
   for (let i = 0; i < blueprints.length; i++) {
     const times: number[] = []
@@ -361,6 +361,12 @@ export const TASK_WEIGHT: Record<TaskType, number> = { 1: 10, 2: 20, 3: 30, 4: 4
 /** Penalty is charged at this interval (seconds); each charge = CATEGORY_PENALTY_RATE × CHARGE_INTERVAL. */
 export const CHARGE_INTERVAL = 15
 
+// ─── Drone failure schedule constants ─────────────────────────────────────
+
+export const FAILURE_COUNT_CONST = 2    // failures per mission
+export const FAILURE_GAP_CONST = 60     // minimum seconds between successive failures
+export const FAILURE_JITTER_CONST = 30  // random jitter added to each failure time
+
 // ─── Asset pool ───────────────────────────────────────────────────────────
 
 // Fleet is slightly Green-heavy: although Green was speed-buffed (5.4 u/s), it is required by
@@ -374,8 +380,8 @@ export const CHARGE_INTERVAL = 15
 // (mission size via CATEGORY_WEIGHTS + arrival rate via LAMBDA) differs between them.
 // 11B / 11R / 12G keeps every scenario "slightly unachievable" (smart operator ~79–88%
 // of missions). quick stays small for dev. Tuned via sim/engine.mts.
-const STUDY_FLEET: [AssetType, number][] = [['Blue', 11], ['Red', 11], ['Green', 12]]
-const FLEET: Record<Complexity, [AssetType, number][]> = {
+export const STUDY_FLEET: [AssetType, number][] = [['Blue', 11], ['Red', 11], ['Green', 12]]
+export const FLEET: Record<Complexity, [AssetType, number][]> = {
   balanced:  STUDY_FLEET,
   strategic: STUDY_FLEET,
   tactical:  STUDY_FLEET,

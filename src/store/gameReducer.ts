@@ -11,8 +11,10 @@ import {
   TASK_SECTION_DEADLINES,
   generateSessionPlan, createInitialAssets, travelTime,
   SESSION_DURATION_BY_COMPLEXITY,
+  LAMBDA, CATEGORY_WEIGHTS, CATEGORIES, FLEET,
+  FAILURE_COUNT_CONST, FAILURE_GAP_CONST, FAILURE_JITTER_CONST,
 } from '../utils/missionGen'
-import { generateStrategies } from '../utils/copilot'
+import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
 import { SeededRNG } from '../utils/prng'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
@@ -82,7 +84,8 @@ export function buildInitialState(config: StudyConfig): GameState {
     strategicModal: null,
     trustProbeActive: false,
     nextTrustProbeAt: TRUST_PROBE_INTERVAL,
-    events: [[], [], []],
+    events: Array.from({ length: config.numSessions }, () => []),
+    eventSeq: 0,
   }
 }
 
@@ -90,15 +93,18 @@ export function buildInitialState(config: StudyConfig): GameState {
 
 // Distributive Omit so it works across the discriminated union
 type EventPayload = GameEvent extends infer E
-  ? E extends { timestamp: number; sessionNumber: number; elapsed: number; reserveState: AssetRequirement }
-    ? Omit<E, 'timestamp' | 'sessionNumber' | 'elapsed' | 'reserveState'>
+  ? E extends { seq: number; timestamp: number; wallClock: string; sessionId: string; sessionNumber: number; elapsed: number; reserveState: AssetRequirement }
+    ? Omit<E, 'seq' | 'timestamp' | 'wallClock' | 'sessionId' | 'sessionNumber' | 'elapsed' | 'reserveState'>
     : never
   : never
 
 function logEvent(state: GameState, event: EventPayload): GameState {
   const full: GameEvent = {
     ...event,
+    seq: state.eventSeq,
     timestamp: Math.round(state.elapsed * 1000),
+    wallClock: new Date().toISOString(),
+    sessionId: `${state.config.participantId}_${state.config.seed}_s${state.sessionNumber}`,
     sessionNumber: state.sessionNumber,
     elapsed: state.elapsed,
     reserveState: reserveCount(state.assets),
@@ -106,7 +112,7 @@ function logEvent(state: GameState, event: EventPayload): GameState {
   const idx = state.sessionNumber - 1
   const updated = [...state.events]
   updated[idx] = [...updated[idx], full]
-  return { ...state, events: updated }
+  return { ...state, events: updated, eventSeq: state.eventSeq + 1 }
 }
 
 // ─── Helper: current reserve ──────────────────────────────────────────────
@@ -316,6 +322,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     manualPriorityIds: [],
     tacticalPending: false,
     pendingAllocation: null,
+    tacticalOpenedAtMs: null,
     droneSequences: {},
     droneFailureTimes: bp.droneFailureTimes,
     droneFailuresFired: 0,
@@ -344,6 +351,20 @@ function interpolateAssetPosition(asset: Asset, elapsed: number): { x: number; y
 }
 
 // ─── Helper: compute session score metrics ───────────────────────────────
+
+function buildTaskCompositions(tasks: Task[]): Record<string, { primary: AssetRequirement; substitute: AssetRequirement | null; baseTime: number; subBaseTime: number | null }> {
+  const out: Record<string, { primary: AssetRequirement; substitute: AssetRequirement | null; baseTime: number; subBaseTime: number | null }> = {}
+  for (const t of tasks) {
+    const substitute = TASK_SUBSTITUTE[t.type]
+    out[t.id] = {
+      primary: TASK_PRIMARY[t.type],
+      substitute,
+      baseTime: TASK_BASE_TIME[t.type],
+      subBaseTime: substitute ? TASK_SUB_BASE_TIME[t.type] : null,
+    }
+  }
+  return out
+}
 
 function computeCompletionPoints(missions: Mission[]): number {
   let pts = 0
@@ -539,6 +560,21 @@ function applyTacticalAllocation(
     assets: updatedAssets,
   }
 
+  const agentPlan = pending.taskOrder
+    .filter(tid => (pending.taskAssignments[tid] ?? []).length > 0)
+    .map((tid, order) => {
+      const task = mission.tasks.find(t => t.id === tid)!
+      return { taskId: tid, taskType: task.type, assetIds: pending.taskAssignments[tid], order }
+    })
+  const finalPlan = taskOrder
+    .map((tid, order) => {
+      const asgn = assignments.find(a => a.taskId === tid)
+      if (!asgn) return null
+      const task = mission.tasks.find(t => t.id === tid)!
+      return { taskId: tid, taskType: task.type, assetIds: asgn.assetIds, order }
+    })
+    .filter((x): x is { taskId: string; taskType: TaskType; assetIds: string[]; order: number } => x !== null)
+
   s = logEvent(s, {
     type: 'tactical_confirmed',
     missionId: mission.id,
@@ -549,6 +585,9 @@ function applyTacticalAllocation(
     chainingUsed,
     assetsDeployed: allAssignedIds,
     timeRemainingInSession: Math.max(0, state.sessionDuration - now),
+    latencyMs: mission.tacticalOpenedAtMs !== null ? Math.round(now * 1000) - mission.tacticalOpenedAtMs : 0,
+    agentPlan,
+    finalPlan,
   })
 
   return s
@@ -780,6 +819,43 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       let s: GameState = { ...state, elapsed, sessionStartMs }
 
+      if (state.sessionStartMs === null) {
+        const cfg = state.config
+        s = logEvent(s, {
+          type: 'session_start',
+          participantId: cfg.participantId,
+          condition: cfg.condition,
+          mode: cfg.mode,
+          complexity: cfg.complexity,
+          seed: cfg.seed,
+          epsilonStrategic: cfg.agentErrorRate,
+          epsilonTactical: cfg.epsilonTactical,
+          tacticalMode: cfg.tacticalMode,
+          numSessions: cfg.numSessions,
+          sessionDuration: state.sessionDuration,
+          fleet: FLEET[cfg.complexity].reduce(
+            (acc, [type, count]) => ({ ...acc, [type]: count }),
+            { Blue: 0, Red: 0, Green: 0 } as AssetRequirement,
+          ),
+          assetSpeeds: ASSET_SPEED,
+          taskBaseTime: TASK_BASE_TIME,
+          taskSubBaseTime: TASK_SUB_BASE_TIME,
+          taskPrimary: TASK_PRIMARY,
+          taskSubstitute: TASK_SUBSTITUTE,
+          taskWeight: TASK_WEIGHT,
+          categoryPenaltyRate: CATEGORY_PENALTY_RATE,
+          categoryWeights: Object.fromEntries(
+            CATEGORIES.map((cat, i) => [cat, CATEGORY_WEIGHTS[cfg.complexity][i]])
+          ) as Record<MissionCategory, number>,
+          arrivalLambda: LAMBDA[cfg.complexity],
+          failureCount: FAILURE_COUNT_CONST,
+          failureGap: FAILURE_GAP_CONST,
+          failureJitter: FAILURE_JITTER_CONST,
+          conservativeTopUp: CONSERVATIVE_TOP_UP,
+          conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
+        })
+      }
+
       // 1. Spawn missions whose arrivalTime has passed (suppressed in testing mode)
       const toSpawn = state.config.testingMode ? [] : s.pendingBlueprints.filter(bp => bp.arrivalTime <= elapsed)
       if (toSpawn.length > 0) {
@@ -795,6 +871,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             zoneCenter: m.zoneCenter,
             arrivalTime: m.arrivalTime,
             timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
+            taskCompositions: buildTaskCompositions(m.tasks),
+            scheduledFailureTimes: m.droneFailureTimes,
+            penaltyRate: CATEGORY_PENALTY_RATE[m.category],
+            maxReward: m.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
           })
         }
       }
@@ -960,6 +1040,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               completionTime: elapsed,
             })
           }
+        }
+      }
+
+      // 3a. Mission completion events (check before reassigning s.missions to updatedMissions)
+      for (let mi = 0; mi < updatedMissions.length; mi++) {
+        const oldM = s.missions[mi]
+        const newM = updatedMissions[mi]
+        if (oldM && newM && oldM.status !== 'completed' && newM.status === 'completed') {
+          s = logEvent(s, {
+            type: 'mission_completed',
+            missionId: newM.id,
+            missionCategory: newM.category,
+            completionTime: elapsed,
+            tasksCompleted: newM.tasks.filter(t => t.status === 'completed').length,
+            tasksFailed: newM.tasks.filter(t => t.status === 'failed').length,
+            rewardEarned: newM.tasks.reduce((sum, t) => sum + (t.status === 'completed' ? TASK_WEIGHT[t.type] : 0), 0),
+            penaltyAccrued: computePenaltyAccrued([newM], elapsed),
+          })
         }
       }
 
@@ -1165,6 +1263,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const strategies = state.config.mode === 'agent'
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
+      const openedAtMs = Math.round(state.elapsed * 1000)
       let s: GameState = {
         ...state,
         strategicModal: {
@@ -1172,6 +1271,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           strategies,
           selectedStrategyIndex: null,
           manualAllocation: { Blue: 0, Red: 0, Green: 0 },
+          openedAtMs,
         },
       }
       s = logEvent(s, {
@@ -1179,6 +1279,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missionId: mission.id,
         missionCategory: mission.category,
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        activeMissions: state.missions.filter(m => m.status === 'active').length,
+        currentPenaltyAccrued: state.penaltyAccrued,
         strategiesPresented: strategies.map(st => ({
           name: st.name,
           description: st.description,
@@ -1188,6 +1290,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           reserveAfter: st.reserveAfter,
           speedScore: st.speedScore,
           reserveScore: st.reserveScore,
+          redundancyScore: st.redundancyScore,
           isBadSuggestion: st.isBadSuggestion,
           badSuggestionType: st.badSuggestionType,
         })),
@@ -1197,7 +1300,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── CLOSE_STRATEGIC ──────────────────────────────────────────────────
     case 'CLOSE_STRATEGIC': {
-      return { ...state, strategicModal: null }
+      const modal = state.strategicModal
+      const mission = modal ? state.missions.find(m => m.id === modal.missionId) : undefined
+      if (!modal || !mission) return { ...state, strategicModal: null }
+      const s = logEvent(state, {
+        type: 'strategic_dismissed',
+        missionId: modal.missionId,
+        missionCategory: mission.category,
+        latencyMs: Math.round(state.elapsed * 1000) - modal.openedAtMs,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+      })
+      return { ...s, strategicModal: null }
     }
 
     // ── PICK_STRATEGY ────────────────────────────────────────────────────
@@ -1348,6 +1461,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         suppressedTaskId,
       }
 
+      const diffAssets = (a: AssetRequirement, b: AssetRequirement): AssetRequirement =>
+        ({ Blue: a.Blue - b.Blue, Red: a.Red - b.Red, Green: a.Green - b.Green })
+      const aggressiveCard = modal.strategies.find(st => st.name === 'Aggressive')
+      const conservativeCard = modal.strategies.find(st => st.name === 'Conservative')
+
       let s = logEvent(state, {
         type: 'strategic_choice',
         missionId: mission.id,
@@ -1358,6 +1476,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         badSuggestionType: badType,
         assetsChosen: composition,
         editedFromStrategy: action.editedFromStrategy ?? null,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - now),
+        latencyMs: Math.round(now * 1000) - modal.openedAtMs,
+        deltaVsAggressive: aggressiveCard ? diffAssets(composition, aggressiveCard.trueAssets) : null,
+        deltaVsConservative: conservativeCard ? diffAssets(composition, conservativeCard.trueAssets) : null,
+      })
+
+      const tacticalOpenedAtMs = Math.round(now * 1000)
+      const agentPlanForLog = taskOrder
+        .filter(tid => (taskAssignmentMap[tid] ?? []).length > 0)
+        .map((tid, order) => {
+          const task = mission.tasks.find(t => t.id === tid)!
+          return { taskId: tid, taskType: task.type, assetIds: taskAssignmentMap[tid], order }
+        })
+      s = logEvent(s, {
+        type: 'tactical_opened',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        strategyChosen: strategyName,
+        agentPlan: agentPlanForLog,
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
       })
 
@@ -1370,6 +1507,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           pendingAllocation,
           agentInteraction: action.source === 'agent' ? 'shown' : 'manual',
           chosenStrategyName: strategyName,
+          tacticalOpenedAtMs,
         } : m),
         strategicModal: null,
       }
@@ -1470,11 +1608,34 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const strategies = state.config.mode === 'agent'
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
-      return {
+      const openedAtMs = Math.round(state.elapsed * 1000)
+      let s: GameState = {
         ...state,
         missions: state.missions.map(m => m.id === action.missionId ? { ...m, tacticalPending: false, pendingAllocation: null } : m),
-        strategicModal: { missionId: action.missionId, strategies, selectedStrategyIndex: null, manualAllocation: null },
+        strategicModal: { missionId: action.missionId, strategies, selectedStrategyIndex: null, manualAllocation: null, openedAtMs },
       }
+      s = logEvent(s, {
+        type: 'strategic_modal_opened',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        activeMissions: state.missions.filter(m => m.status === 'active').length,
+        currentPenaltyAccrued: state.penaltyAccrued,
+        strategiesPresented: strategies.map(st => ({
+          name: st.name,
+          description: st.description,
+          displayedAssets: st.assets,
+          trueAssets: st.trueAssets,
+          displayedCompletionTime: st.expectedCompletionTime,
+          reserveAfter: st.reserveAfter,
+          speedScore: st.speedScore,
+          reserveScore: st.reserveScore,
+          redundancyScore: st.redundancyScore,
+          isBadSuggestion: st.isBadSuggestion,
+          badSuggestionType: st.badSuggestionType,
+        })),
+      })
+      return s
     }
 
     // ── ACCEPT_RECOVERY ──────────────────────────────────────────────────
@@ -1641,10 +1802,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       })
 
+      let s = logEvent(state, {
+        type: 'failure_recovery',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        recoveryType: 'manual',
+        wasAgentSuggested: false,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - now),
+      })
+
       return {
-        ...state,
+        ...s,
         assets: newAssets,
-        missions: state.missions.map(m => m.id === action.missionId ? {
+        missions: s.missions.map(m => m.id === action.missionId ? {
           ...m,
           tasks: newTasks,
           failureRecoveryPending: false,
@@ -1947,8 +2117,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── FINISH_SURVEYS ────────────────────────────────────────────────────
     case 'FINISH_SURVEYS': {
-      if (state.sessionNumber < state.config.numSessions) return { ...state, phase: 'between' }
-      return { ...state, phase: 'done' }
+      const toPhase = state.sessionNumber < state.config.numSessions ? 'between' : 'done'
+      const s = logEvent(state, { type: 'phase_change', fromPhase: state.phase, toPhase })
+      return { ...s, phase: toPhase }
     }
 
     // ── NEXT_SESSION ─────────────────────────────────────────────────────
@@ -1956,9 +2127,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== 'between') return state
       const nextSession = state.sessionNumber + 1
       const blueprints = generateSessionPlan(new SeededRNG(state.config.seed ^ nextSession), state.config.complexity)
+      const s = logEvent(state, { type: 'phase_change', fromPhase: state.phase, toPhase: 'playing' })
 
       return {
-        ...state,
+        ...s,
         phase: 'playing',
         sessionNumber: nextSession,
         elapsed: 0,
@@ -1976,7 +2148,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── END_STUDY ────────────────────────────────────────────────────────
     case 'END_STUDY': {
-      return { ...state, phase: 'done' }
+      const s = logEvent(state, { type: 'phase_change', fromPhase: state.phase, toPhase: 'done' })
+      return { ...s, phase: 'done' }
     }
 
     // ── FORCE_MISSION_ARRIVAL (testing mode) ─────────────────────────────
@@ -1998,6 +2171,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         zoneCenter: mission.zoneCenter,
         arrivalTime: mission.arrivalTime,
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        taskCompositions: buildTaskCompositions(mission.tasks),
+        scheduledFailureTimes: mission.droneFailureTimes,
+        penaltyRate: CATEGORY_PENALTY_RATE[mission.category],
+        maxReward: mission.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
       })
       return s
     }
@@ -2159,7 +2336,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // ── FORCE_SESSION_END (testing/tutorial mode) ────────────────────────
     case 'FORCE_SESSION_END': {
       if (!state.config.testingMode) return state
-      return endSession(state)
+      return endSession(state, 'forced')
     }
 
     default:
@@ -2169,7 +2346,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
 // ─── End-session helper ───────────────────────────────────────────────────
 
-function endSession(s: GameState): GameState {
+function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameState {
+  // Inflight before failing tasks below, so we capture what was still in motion
+  const inFlightMissionIds = s.missions
+    .filter(m => m.status === 'queued' || m.status === 'active')
+    .map(m => m.id)
+
   // Fail all incomplete tasks
   const failedMissions = s.missions.map(m => {
     if (m.status === 'completed') return m
@@ -2194,6 +2376,13 @@ function endSession(s: GameState): GameState {
     return choices.length > 0 ? followed / choices.length : 0
   })()
 
+  const tacticalFollowRate = (() => {
+    const plans = evs.filter(e => e.type === 'tactical_confirmed') as Array<{ wasAgentSuggested: boolean; modifiedFromAgentPlan: boolean }>
+    const agentPlans = plans.filter(e => e.wasAgentSuggested)
+    const unmodified = agentPlans.filter(e => !e.modifiedFromAgentPlan).length
+    return agentPlans.length > 0 ? unmodified / agentPlans.length : 0
+  })()
+
   let s2 = logEvent({ ...s, missions: failedMissions, score, penaltyAccrued }, {
     type: 'session_ended',
     score,
@@ -2202,7 +2391,12 @@ function endSession(s: GameState): GameState {
     greenEfficiency: greenEff,
     meanMissionTime: meanTime,
     agentFollowRate,
+    tacticalFollowRate,
+    reason,
+    inFlightMissionIds,
   })
+
+  s2 = logEvent(s2, { type: 'phase_change', fromPhase: s.phase, toPhase: 'survey' })
 
   s2 = {
     ...s2,

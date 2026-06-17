@@ -2,15 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/logs/Pilots/W/study_WillTest-12S_none_59764(2).json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/logs/Pilots/W2/study_W2_none_58214.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/SurveyModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SurveyModal.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/copilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/copilot.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/missionGen.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/missionGen.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -33,18 +30,18 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "TacticalStrategic",
-    "last_opened_file_path": "C:/Users/wh1g17/GraphColouringNew/logs/Pilots/W2",
-    "nodejs_package_manager_path": "npm"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;TacticalStrategic&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/wh1g17/GraphColouringNew/logs/Pilots/W2&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Pilots\W2" />
@@ -233,6 +230,8 @@
       <workItem from="1779969109814" duration="355000" />
       <workItem from="1781187007622" duration="21000" />
       <workItem from="1781262230809" duration="4252000" />
+      <workItem from="1781621599293" duration="2813000" />
+      <workItem from="1781691649337" duration="799000" />
     </task>
     <servers />
   </component>

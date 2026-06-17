@@ -96,7 +96,10 @@
       "Bash(ls -la Combined.mp4)",
       "PowerShell(npx tsc --noEmit)",
       "Bash(npx --no-install tsx --version)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(ls docs/paper)",
+      "Bash(ls analysis *)",
+      "Bash(ls scripts *)"
     ]
   }
 }

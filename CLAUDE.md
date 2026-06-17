@@ -72,7 +72,9 @@ src/
     copilot.ts           # Strategic Agent — Aggressive/Conservative strategy generator with ε_S noise
     metacopilot.ts       # Tactical Agent stub (not yet implemented as a separate module;
                          #   tactical suggestions currently computed inline in gameReducer via greedyAssign)
-    scoring.ts           # Score, green efficiency, follow-rate calculation
+                         # NOTE: there is no separate scoring.ts — computeScore/computeCompletionPoints/
+                         # computePenaltyAccrued/computeGreenEfficiency/computeMeanMissionTime all live
+                         # inline in gameReducer.ts
   store/
     gameReducer.ts       # useReducer state machine
     actions.ts           # Action type union
@@ -87,7 +89,7 @@ src/
 
 ### Data Output
 
-All events logged in-memory. At study end, "Download Data" button exports (also autosaved to localStorage after each session):
+All events logged in-memory, append-only. At study end, "Download Data" button exports (also autosaved to localStorage after each session):
 ```json
 {
   "participantId": "P001",
@@ -99,21 +101,39 @@ All events logged in-memory. At study end, "Download Data" button exports (also 
 }
 ```
 
+Every event carries a `BaseEvent` envelope: a study-wide monotonic `seq`, a
+session-relative `timestamp` (ms), a real `wallClock` (ISO-8601), a deterministic
+`sessionId`, plus `sessionNumber`/`elapsed`/`reserveState`. The first event of every
+session is `session_start`, which dumps every parameter needed to reproduce that
+session from the log alone (seed, complexity, fleet, task compositions/timings,
+penalty rates, failure schedule, agent ε values, etc).
+
 ### Event Types Logged
+
+**Full schema, file:line locations, RQ mapping, and known gaps/discrepancies are
+documented in [`docs/EVENT_LOGGING.md`](docs/EVENT_LOGGING.md) — read that before
+adding or modifying any event.** Quick summary of event types:
 
 | Event | When fired |
 |-------|-----------|
+| `session_start` | First tick of a session — full parameter dump for reproducibility |
+| `phase_change` | Any `GamePhase` transition (playing/survey/between/done) |
 | `mission_arrived` | Mission spawns from blueprint |
-| `strategic_modal_opened` | Strategic Agent modal opens; logs full strategy cards shown to user |
+| `mission_completed` | Mission's last task finishes (completed or failed) |
+| `strategic_modal_opened` | Strategic Agent modal opens; logs full strategy cards shown to user, including true (never-displayed) asset counts |
+| `strategic_dismissed` | Operator closes the Strategic Agent modal without picking a card |
 | `strategic_choice` | Operator picks Aggressive/Conservative/Manual |
-| `tactical_confirmed` | Operator confirms drone→task plan (tactical planner); `modifiedFromAgentPlan` flag records whether they changed the suggestions |
+| `tactical_opened` | Tactical planner becomes available after a strategic choice; logs the agent's suggested plan |
+| `tactical_confirmed` | Operator confirms drone→task plan (tactical planner); `modifiedFromAgentPlan` flag + `agentPlan`/`finalPlan` triples record whether/how they changed the suggestion |
 | `drone_failure` | In-mission drone fails |
-| `failure_recovery` | Recovery option chosen |
+| `failure_recovery` | Recovery option chosen (covers agent-suggested, redistribute, and manual recovery flows) |
 | `task_completed` / `task_failed` | Task state transition |
 | `asset_recalled` | Operator manually recalls a drone |
 | `task_reprioritised` | Operator reorders task queue |
-| `session_ended` | Session summary metrics |
-| `survey_response` | Post-session survey submitted |
+| `mission_abandoned` | Operator abandons a mission with no feasible recovery |
+| `trust_probe` / `trust_probe_dismissed` | Periodic trust/workload probe answered or dismissed |
+| `session_ended` | Session summary metrics, including `reason` (timer/forced) and `tacticalFollowRate` |
+| `survey_response` | NASA-TLX / trust / TAM survey page submitted |
 
 ### Mission Generation
 
@@ -141,12 +161,12 @@ Edit `conditionToEpsilons()` in `src/utils/config.ts`.
 `src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count bundles for a specific mission. ε_S noise perturbs the *displayed* asset counts (not the true values used at deploy).
 
 ### Modifying the Tactical Agent
-Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_T is stored in config but not yet wired to noise injection.
+Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_T **is** wired to noise injection: in `APPLY_STRATEGIC`, with probability `epsilonTactical` one task is silently dropped from the suggested plan (`hasTacticalError`/`suppressedTaskId` on `PendingAllocation`) — the UI still shows it as allocated, but no drone is actually assigned, and the task fails via tactical lockout once every other task in the mission completes.
 
 ## Critical Constraints
 
 1. **All randomness seeded** — pass `SeededRNG` instances everywhere, never call `Math.random()` in game logic
 2. **No backend** — all state in-memory; export is a client-side JSON download
 3. **UI language** — use "Strategic Agent" / "Tactical Agent", never "Co-Pilot", "Meta-Co-Pilot", "AI", or "algorithm"
-4. **Events logged immediately** — every operator action and agent recommendation must be logged with ms timestamp
+4. **Events logged immediately** — every operator action and agent recommendation must be logged with ms timestamp; see [`docs/EVENT_LOGGING.md`](docs/EVENT_LOGGING.md) for the full event schema, envelope fields, and rules for adding new events
 5. **BroadcastChannel host/client** — primary window is host; map window subscribes only; never let client mutate state

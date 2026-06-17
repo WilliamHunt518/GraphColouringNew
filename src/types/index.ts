@@ -10,8 +10,8 @@ export interface StudyConfig {
   mode: Mode
   complexity: Complexity
   seed: number
-  agentErrorRate: number   // epsilonStrategic — error rate for Co-Pilot (strategic tier)
-  epsilonTactical: number  // error rate for Meta-Co-Pilot (tactical tier)
+  agentErrorRate: number   // epsilonStrategic — error rate for Strategic Agent
+  epsilonTactical: number  // error rate for Tactical Agent
   tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
   tutorialMode: boolean
@@ -115,6 +115,7 @@ export interface Mission {
   // Tactical allocation state (agent mode: awaits sidebar confirmation)
   tacticalPending: boolean
   pendingAllocation: PendingAllocation | null
+  tacticalOpenedAtMs: number | null   // session-elapsed ms when the tactical planner opened (for latency)
   // Per-drone task execution order (droneId → ordered taskId[]) — set on tactical confirm
   droneSequences: Record<string, string[]>
   // Drone failure
@@ -169,6 +170,7 @@ export interface StrategicModal {
   strategies: Strategy[]    // length 2 in agent mode, [] in no-agent mode
   selectedStrategyIndex: number | null
   manualAllocation: AssetRequirement | null
+  openedAtMs: number         // session-elapsed ms when the modal opened (for latency)
 }
 
 // ─── Map view state ───────────────────────────────────────────────────────
@@ -226,6 +228,7 @@ export interface GameState {
   nextTrustProbeAt: number
   // Data logging — one array per session
   events: GameEvent[][]
+  eventSeq: number   // monotonically increasing across the whole study (all sessions), never resets
 }
 
 // ─── Blueprints ───────────────────────────────────────────────────────────
@@ -245,10 +248,48 @@ export interface MissionBlueprint {
 
 export interface BaseEvent {
   type: string
-  timestamp: number       // ms from session start
+  seq: number             // strictly increasing across the whole study (all sessions), tie-breaks same-ms events
+  timestamp: number        // ms from session start (monotonic within session)
+  wallClock: string         // ISO-8601 real wall-clock time of emission
+  sessionId: string          // `${participantId}_${seed}_s${sessionNumber}`
   sessionNumber: number
   elapsed: number         // seconds
   reserveState: AssetRequirement
+}
+
+export interface SessionStartEvent extends BaseEvent {
+  type: 'session_start'
+  participantId: string
+  condition: Condition
+  mode: Mode
+  complexity: Complexity
+  seed: number
+  epsilonStrategic: number
+  epsilonTactical: number
+  tacticalMode: 'plan-all' | 'greedy'
+  numSessions: number
+  sessionDuration: number
+  fleet: AssetRequirement
+  assetSpeeds: Record<AssetType, number>
+  taskBaseTime: Record<TaskType, number>
+  taskSubBaseTime: Record<TaskType, number>
+  taskPrimary: Record<TaskType, AssetRequirement>
+  taskSubstitute: Record<TaskType, AssetRequirement | null>
+  taskWeight: Record<TaskType, number>
+  categoryPenaltyRate: Record<MissionCategory, number>
+  categoryWeights: Record<MissionCategory, number>   // weights for this session's complexity
+  arrivalLambda: number                               // mean inter-arrival seconds for this session's complexity
+  failureCount: number
+  failureGap: number
+  failureJitter: number
+  conservativeTopUp: number
+  conservativeRedundancyBuffer: number
+}
+
+export interface PhaseChangeEvent extends BaseEvent {
+  type: 'phase_change'
+  fromPhase: GamePhase
+  toPhase: GamePhase
 }
 
 export interface MissionArrivedEvent extends BaseEvent {
@@ -259,6 +300,21 @@ export interface MissionArrivedEvent extends BaseEvent {
   zoneCenter: { x: number; y: number }
   arrivalTime: number
   timeRemainingInSession: number
+  taskCompositions: Record<string, { primary: AssetRequirement; substitute: AssetRequirement | null; baseTime: number; subBaseTime: number | null }>
+  scheduledFailureTimes: number[]
+  penaltyRate: number
+  maxReward: number
+}
+
+export interface MissionCompletedEvent extends BaseEvent {
+  type: 'mission_completed'
+  missionId: string
+  missionCategory: MissionCategory
+  completionTime: number
+  tasksCompleted: number
+  tasksFailed: number
+  rewardEarned: number
+  penaltyAccrued: number
 }
 
 export interface StrategicChoiceEvent extends BaseEvent {
@@ -272,6 +328,26 @@ export interface StrategicChoiceEvent extends BaseEvent {
   assetsChosen: AssetRequirement
   editedFromStrategy: string | null   // strategy name if manual edit was seeded from a card
   timeRemainingInSession: number
+  latencyMs: number                   // time between modal opening and this choice
+  deltaVsAggressive: AssetRequirement | null    // chosen minus aggressive card (null if no agent cards shown)
+  deltaVsConservative: AssetRequirement | null  // chosen minus conservative card (null if no agent cards shown)
+}
+
+export interface StrategicDismissedEvent extends BaseEvent {
+  type: 'strategic_dismissed'
+  missionId: string
+  missionCategory: MissionCategory
+  latencyMs: number   // time between modal opening and dismissal
+  timeRemainingInSession: number
+}
+
+export interface TacticalOpenedEvent extends BaseEvent {
+  type: 'tactical_opened'
+  missionId: string
+  missionCategory: MissionCategory
+  strategyChosen: 'Aggressive' | 'Conservative' | 'Manual'
+  agentPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
+  timeRemainingInSession: number
 }
 
 export interface TacticalConfirmedEvent extends BaseEvent {
@@ -284,6 +360,9 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   chainingUsed: boolean           // true if any drone was assigned to more than one task
   assetsDeployed: string[]
   timeRemainingInSession: number
+  latencyMs: number               // time between tactical planner opening and confirmation
+  agentPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
+  finalPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
 }
 
 export interface DroneFailureEvent extends BaseEvent {
@@ -344,7 +423,10 @@ export interface SessionEndedEvent extends BaseEvent {
   completionPoints: number
   greenEfficiency: number
   meanMissionTime: number
-  agentFollowRate: number  // fraction of agent suggestions accepted
+  agentFollowRate: number  // fraction of strategic agent suggestions accepted
+  tacticalFollowRate: number  // fraction of tactical agent plans confirmed unmodified
+  reason: 'timer' | 'forced'
+  inFlightMissionIds: string[]  // missions still active/queued when the session ended
 }
 
 export interface StrategicModalOpenedEvent extends BaseEvent {
@@ -352,6 +434,8 @@ export interface StrategicModalOpenedEvent extends BaseEvent {
   missionId: string
   missionCategory: MissionCategory
   timeRemainingInSession: number
+  activeMissions: number          // number of missions in 'active' status at time of opening
+  currentPenaltyAccrued: number   // running penalty total at time of opening
   // What was displayed to the user (strategies array empty in no-agent mode)
   strategiesPresented: Array<{
     name: 'Aggressive' | 'Conservative'
@@ -362,6 +446,7 @@ export interface StrategicModalOpenedEvent extends BaseEvent {
     reserveAfter: AssetRequirement
     speedScore: number
     reserveScore: number
+    redundancyScore: number
     isBadSuggestion: boolean
     badSuggestionType: 'over' | 'under' | null
   }>
@@ -392,9 +477,14 @@ export interface MissionAbandonedEvent extends BaseEvent {
 }
 
 export type GameEvent =
+  | SessionStartEvent
+  | PhaseChangeEvent
   | MissionArrivedEvent
+  | MissionCompletedEvent
   | StrategicModalOpenedEvent
   | StrategicChoiceEvent
+  | StrategicDismissedEvent
+  | TacticalOpenedEvent
   | TacticalConfirmedEvent
   | DroneFailureEvent
   | FailureRecoveryEvent
