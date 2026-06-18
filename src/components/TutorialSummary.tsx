@@ -17,11 +17,11 @@ const RECAP: Recap[] = [
   },
   {
     title: 'Strategic allocation — how many to send',
-    body: 'When you start a mission the Strategic Agent offers an Aggressive and a Conservative strategy: bundles of drone counts with projected ETA, speed, and reserve scores. Pick one, or set the counts yourself.',
+    body: 'When you start a mission the Strategic Assistant offers an Aggressive and a Conservative strategy: bundles of drone counts with projected ETA, speed, and reserve scores. Pick one, or set the counts yourself.',
   },
   {
     title: 'Tactical planning — which drone does what',
-    body: 'Once allocated, the Tactical Agent fills in a drone→task plan in the map planner. Accept it as-is, or drag any drone to a different task to override individual assignments.',
+    body: 'Once allocated, the Tactical Assistant fills in a drone→task plan in the map planner. Accept it as-is, or drag any drone to a different task to override individual assignments.',
   },
   {
     title: 'Failures & recovery',

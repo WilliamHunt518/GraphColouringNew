@@ -4,11 +4,21 @@
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/StartScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/StartScreen.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/SurveyModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/SurveyModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/TacticalTutorial.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/TacticalTutorial.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Tutorial.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Tutorial.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/TutorialSummary.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/TutorialSummary.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/TutorialText.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/TutorialText.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/copilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/copilot.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/debugLog.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/debugLog.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/missionGen.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/missionGen.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/tutorialSteps.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/tutorialSteps.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -231,7 +241,8 @@
       <workItem from="1781187007622" duration="21000" />
       <workItem from="1781262230809" duration="4252000" />
       <workItem from="1781621599293" duration="2813000" />
-      <workItem from="1781691649337" duration="799000" />
+      <workItem from="1781691649337" duration="854000" />
+      <workItem from="1781784006148" duration="4048000" />
     </task>
     <servers />
   </component>

@@ -2,7 +2,7 @@ import type {
   GameState, GameEvent, Asset, Mission, Task,
   AssetType, TaskType, AssetRequirement,
   MissionCategory, TaskComp, RecoveryOption,
-  PendingAllocation, MissionBlueprint,
+  PendingAllocation, MissionBlueprint, Complexity,
 } from '../types'
 import type { GameAction } from './actions'
 import {
@@ -11,7 +11,7 @@ import {
   TASK_SECTION_DEADLINES,
   generateSessionPlan, createInitialAssets, travelTime,
   SESSION_DURATION_BY_COMPLEXITY,
-  LAMBDA, CATEGORY_WEIGHTS, CATEGORIES, FLEET,
+  LAMBDA, CATEGORY_WEIGHTS, CATEGORIES, FLEET, TUTORIAL_FLEET,
   FAILURE_COUNT_CONST, FAILURE_GAP_CONST, FAILURE_JITTER_CONST,
 } from '../utils/missionGen'
 import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
@@ -48,24 +48,54 @@ const TUTORIAL_FIRST_BLUEPRINT: MissionBlueprint = {
   droneFailureTimes: [],
 }
 
+// ─── Tutorial second-mission blueprint (agent-introduction phase) ──────────
+// Fixed 3-task mission: T2 Recon + T2 Recon + T4 Precision Supply.
+// Two T2s push Aggressive's parallel-sum well above its sequential floor while
+// Conservative stays near that floor, so the two strategy cards always show
+// visibly different drone counts — unlike a randomly-drawn single-task mission,
+// where the two formulas can coincide.
+
+const TUTORIAL_SECOND_BLUEPRINT: MissionBlueprint = {
+  id: 'T002',
+  arrivalTime: 0,  // overridden by FORCE_MISSION_ARRIVAL
+  category: 'D',
+  taskTypes: [2, 2, 4],
+  zoneCenter: { x: 700, y: 250 },
+  waypoints: [
+    { x: 684, y: 210 },  // T2 — northwest
+    { x: 730, y: 215 },  // T2 — northeast
+    { x: 705, y: 295 },  // T4 — south
+  ],
+  willFail: false,
+  droneFailureTimes: [],
+}
+
 // ─── Initial state factory ─────────────────────────────────────────────────
 
-export function buildInitialState(config: StudyConfig): GameState {
-  const generated = generateSessionPlan(new SeededRNG(config.seed ^ 1), config.complexity)
-  const blueprints = config.tutorialMode
-    ? [TUTORIAL_FIRST_BLUEPRINT, ...generated]
-    : generated
+// Per-session complexity: sessionComplexities[sessionNumber-1] when set (study builder),
+// otherwise every session falls back to the single config.complexity.
+export function complexityForSession(config: StudyConfig, sessionNumber: number): Complexity {
+  return config.sessionComplexities?.[sessionNumber - 1] ?? config.complexity
+}
 
-  const baseCategories: Record<MissionCategory, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 }
-  const initialForecast = { ...baseCategories }
-  // Default to complexity-appropriate prior
-  switch (config.complexity) {
-    case 'balanced':  Object.assign(initialForecast, { A: 0.20, B: 0.30, C: 0.28, D: 0.17, E: 0.05 }); break
-    case 'strategic': Object.assign(initialForecast, { A: 0.40, B: 0.38, C: 0.16, D: 0.05, E: 0.01 }); break
-    case 'tactical':  Object.assign(initialForecast, { A: 0.03, B: 0.08, C: 0.22, D: 0.42, E: 0.25 }); break
-    case 'full':      Object.assign(initialForecast, { A: 0.05, B: 0.15, C: 0.28, D: 0.32, E: 0.20 }); break
-    case 'quick':     Object.assign(initialForecast, { A: 0.35, B: 0.30, C: 0.20, D: 0.12, E: 0.03 }); break
+function categoryForecastFor(complexity: Complexity): Record<MissionCategory, number> {
+  const forecast: Record<MissionCategory, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 }
+  switch (complexity) {
+    case 'balanced':  Object.assign(forecast, { A: 0.20, B: 0.30, C: 0.28, D: 0.17, E: 0.05 }); break
+    case 'strategic': Object.assign(forecast, { A: 0.40, B: 0.38, C: 0.16, D: 0.05, E: 0.01 }); break
+    case 'tactical':  Object.assign(forecast, { A: 0.03, B: 0.08, C: 0.22, D: 0.42, E: 0.25 }); break
+    case 'full':      Object.assign(forecast, { A: 0.05, B: 0.15, C: 0.28, D: 0.32, E: 0.20 }); break
+    case 'quick':     Object.assign(forecast, { A: 0.35, B: 0.30, C: 0.20, D: 0.12, E: 0.03 }); break
   }
+  return forecast
+}
+
+export function buildInitialState(config: StudyConfig): GameState {
+  const complexity = complexityForSession(config, 1)
+  const generated = generateSessionPlan(new SeededRNG(config.seed ^ 1), complexity)
+  const blueprints = config.tutorialMode
+    ? [TUTORIAL_FIRST_BLUEPRINT, TUTORIAL_SECOND_BLUEPRINT, ...generated]
+    : generated
 
   return {
     config,
@@ -73,14 +103,14 @@ export function buildInitialState(config: StudyConfig): GameState {
     sessionNumber: 1,
     elapsed: 0,
     sessionStartMs: null,
-    assets: createInitialAssets(config.complexity),
+    assets: createInitialAssets(complexity, config.tutorialMode ? TUTORIAL_FLEET : undefined),
     missions: [],
     pendingBlueprints: blueprints,
     score: 0,
     penaltyAccrued: 0,
     completedSessionScores: [],
-    sessionDuration: SESSION_DURATION_BY_COMPLEXITY[config.complexity],
-    categoryForecast: initialForecast,
+    sessionDuration: SESSION_DURATION_BY_COMPLEXITY[complexity],
+    categoryForecast: categoryForecastFor(complexity),
     strategicModal: null,
     trustProbeActive: false,
     nextTrustProbeAt: TRUST_PROBE_INTERVAL,
@@ -821,19 +851,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       if (state.sessionStartMs === null) {
         const cfg = state.config
+        const sessionComplexity = complexityForSession(cfg, state.sessionNumber)
         s = logEvent(s, {
           type: 'session_start',
           participantId: cfg.participantId,
           condition: cfg.condition,
           mode: cfg.mode,
-          complexity: cfg.complexity,
+          complexity: sessionComplexity,
           seed: cfg.seed,
           epsilonStrategic: cfg.agentErrorRate,
           epsilonTactical: cfg.epsilonTactical,
           tacticalMode: cfg.tacticalMode,
           numSessions: cfg.numSessions,
           sessionDuration: state.sessionDuration,
-          fleet: FLEET[cfg.complexity].reduce(
+          fleet: (cfg.tutorialMode ? TUTORIAL_FLEET : FLEET[sessionComplexity]).reduce(
             (acc, [type, count]) => ({ ...acc, [type]: count }),
             { Blue: 0, Red: 0, Green: 0 } as AssetRequirement,
           ),
@@ -845,9 +876,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           taskWeight: TASK_WEIGHT,
           categoryPenaltyRate: CATEGORY_PENALTY_RATE,
           categoryWeights: Object.fromEntries(
-            CATEGORIES.map((cat, i) => [cat, CATEGORY_WEIGHTS[cfg.complexity][i]])
+            CATEGORIES.map((cat, i) => [cat, CATEGORY_WEIGHTS[sessionComplexity][i]])
           ) as Record<MissionCategory, number>,
-          arrivalLambda: LAMBDA[cfg.complexity],
+          arrivalLambda: LAMBDA[sessionComplexity],
           failureCount: FAILURE_COUNT_CONST,
           failureGap: FAILURE_GAP_CONST,
           failureJitter: FAILURE_JITTER_CONST,
@@ -2126,7 +2157,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'NEXT_SESSION': {
       if (state.phase !== 'between') return state
       const nextSession = state.sessionNumber + 1
-      const blueprints = generateSessionPlan(new SeededRNG(state.config.seed ^ nextSession), state.config.complexity)
+      const complexity = complexityForSession(state.config, nextSession)
+      const blueprints = generateSessionPlan(new SeededRNG(state.config.seed ^ nextSession), complexity)
       const s = logEvent(state, { type: 'phase_change', fromPhase: state.phase, toPhase: 'playing' })
 
       return {
@@ -2135,11 +2167,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         sessionNumber: nextSession,
         elapsed: 0,
         sessionStartMs: null,
-        assets: createInitialAssets(state.config.complexity),
+        assets: createInitialAssets(complexity, state.config.tutorialMode ? TUTORIAL_FLEET : undefined),
         missions: [],
         pendingBlueprints: blueprints,
         score: 0,
         penaltyAccrued: 0,
+        sessionDuration: SESSION_DURATION_BY_COMPLEXITY[complexity],
+        categoryForecast: categoryForecastFor(complexity),
         strategicModal: null,
         trustProbeActive: false,
         nextTrustProbeAt: TRUST_PROBE_INTERVAL,

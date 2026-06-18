@@ -44,8 +44,10 @@ export interface TutorialStep {
   inMapWindow?: boolean
   /** inMapWindow steps normally black out the primary window; this suppresses that overlay so the strategic view stays visible */
   noOverlayOnPrimary?: boolean
-  /** StrategicPanel shows agent cards greyed-out and forces manual-only flow */
+  /** StrategicPanel hides agent cards and forces manual-only flow */
   forceManual?: boolean
+  /** StrategicPanel hides the "Set manually instead" toggle so the operator can't leave the agent-card flow */
+  forceAgent?: boolean
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
@@ -66,7 +68,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'session-score',
     title: 'Sessions & Scoring',
     body: [
-      'Each session lasts 10 minutes. When it ends you will answer a short survey before the next one begins.',
+      'Each session lasts 8 minutes. When it ends you will answer a short survey before the next one begins.',
       'Your goal is to maximise your score. Points are earned by completing mission tasks. Waiting too long costs penalty points — so speed matters.',
     ],
     cardSide: 'center',
@@ -112,7 +114,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'reserve',
     title: 'Your Drone Reserve',
     body: [
-      'This strip shows how many drones are available at the hub. The bold number is ready to deploy; smaller text shows how many are deployed on missions or flying back.',
+      'Your reserve holds three drone types — {blue}, {red}, {green} — covered in detail next.',
+      'This strip shows how many drones are available at the hub. The bold number is ready to deploy; the small text shows your total fleet of that type, and how many are currently out on missions.',
       'Watch your reserve — if it runs low you cannot respond to new missions quickly.',
     ],
     highlight: 'reserve-strip',
@@ -125,9 +128,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'drone-types',
     title: 'Three Drone Types',
     body: [
-      '{blue} drones are fastest (9 units/s) and handle reconnaissance tasks.',
-      '{red} drones are mid-speed (6 units/s) and handle supply drops and precision deliveries.',
-      '{green} drones are slowest (4.2 units/s) but carry a thermal camera that some tasks specifically require.',
+      '{blue} drones (9.0 units/s) are your fastest type — used for reconnaissance tasks.',
+      '{red} drones (6.8 units/s) carry and place supplies — used for supply drops and precision deliveries.',
+      '{green} drones (5.4 units/s) are your slowest type, but carry the thermal camera some tasks specifically require.',
     ],
     highlight: 'reserve-strip',
     cardSide: 'bottom',
@@ -202,15 +205,15 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     forceManual: true,
   },
 
-  // ── 12. Panel intro — greyed agent cards, must click manual toggle ───────────
+  // ── 12. Panel intro — agent suggestions hidden, must click manual toggle ─────
   {
     id: 'panel-intro',
     title: 'Manual Allocation',
     body: [
-      'The allocation panel has two modes. The greyed-out cards are agent suggestions — we will cover those on the next mission.',
+      'The allocation panel has two modes. Assistant suggestions are disabled for this first mission — we will cover those on the next one.',
       'Click "Set manually instead" below to switch to manual mode.',
     ],
-    highlight: 'first-strategic-panel',
+    highlight: 'first-manual-toggle',
     cardSide: 'right',
     allowClickThrough: true,
     mustInteract: true,
@@ -241,8 +244,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'allocation-override',
     title: 'Training Team Assigned',
     body: [
-      'For this training mission we have set your drone team to 2 {blue} + 1 {red} + 1 {green} — enough to practise every control in the tactical planner.',
-      'In the real session you always choose your own allocation. Click Next to open the Tactical Planner.',
+      'For this training mission we have set your drone team for you — we will explain why in the Tactical Planner. Click Next to open it.',
     ],
     cardSide: 'center',
   },
@@ -267,9 +269,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
       'The map shows your hub (blue circle), all mission zones (coloured circles), and drone travel routes. Zone colours: amber = queued, blue = active.',
       'Switch to the Tactical Planner window now — it should already be open on your second screen. The tutorial will continue there.',
     ],
-    highlight: 'tactical-btn',
-    cardSide: 'bottom',
-    spotlightPadding: 6,
+    cardSide: 'center',
   },
 
   // ════════════════════ MAP WINDOW STEPS — PHASE 1 (inMapWindow: true) ══════════
@@ -280,6 +280,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'The Tactical Planner',
     body: [
       'Welcome. This window is where you plan exactly which drones do which tasks and in what order before the team departs.',
+      'For this training mission we set your team to 2 {blue} + 1 {red} + 1 {green} so you can practise every control here. In the real session you always choose your own allocation.',
       'Use the Back and Next buttons on this card to navigate.',
     ],
     cardSide: 'center',
@@ -345,7 +346,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Check Task Requirements',
     body: [
       'Before assigning drones, look at the task schedule on the right. Each row shows which drone types a task needs to execute — a task cannot start until its requirements are met.',
-      'Tasks that need {green} drones are the most constrained — you have fewer of those in the team. Plan those assignments first.',
+      '{green} drones are needed by the most task types and are your slowest type — they\'re usually the bottleneck. Plan those assignments first.',
     ],
     highlight: 'tac-schedule',
     cardSide: 'left',
@@ -402,7 +403,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Complete the Plan',
     body: [
       'Good — you\'ve practised chaining. Now assign drones to any remaining tasks. Every row in the schedule panel must show at least one drone before you can deploy.',
-      'Check the task types: {T1} needs {blue}, {T3} needs {red}, {T5} needs {green}. Use normal drags for new assignments and Shift+drag to add a drone to an additional task.',
+      'Check the task types: {T1} Recce needs {blue} drones, {T3} Supply Drop needs {red} drones, {T5} Search & Service needs {green} drones. Use normal drags for new assignments and Shift+drag to add a drone to an additional task.',
       'The tutorial advances automatically once all tasks are covered.',
     ],
     highlight: 'tac-svg-container',
@@ -418,6 +419,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Task Schedule',
     body: [
       'The schedule lists each task with its required drone composition, assigned drones (drag chips here to reassign or click × to remove), and estimated start and end times.',
+      'Counters like "0/1F" mean 0 of 1 required {blue} drones are currently assigned — F/L/C are short for {blue}/{red}/{green}.',
       'A task turns green when its composition requirement is fully met. The footer shows the overall estimated completion time.',
     ],
     highlight: 'tac-schedule',
@@ -509,7 +511,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Why Redundancy Matters',
     body: [
       'Failures like that happen in the real session too. Allocating extra drones above the mission minimum creates a buffer — one failure still leaves the task coverable.',
-      "The Strategic Agent's Aggressive strategy always includes one redundant drone per type. In the manual picker the \"N can fail\" hint shows the same buffer for your own allocation.",
+      "The Strategic Assistant's Aggressive strategy always includes one redundant drone per type. In the manual picker the \"N can fail\" hint shows the same buffer for your own allocation.",
     ],
     cardSide: 'center',
   },
@@ -569,10 +571,11 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 36. Agent intro ───────────────────────────────────────────────────────────
   {
     id: 'agent-intro',
-    title: 'Now Try the Agents',
+    title: 'Now Try the Assistants',
     body: [
       'Good work — you have completed the full manual workflow. A second mission has arrived.',
-      'This time you will use the Strategic Agent to choose the allocation, then let the Tactical Agent plan the assignments in the Tactical Planner.',
+      'Strategic vs Tactical: the Strategic Assistant decides how many drones to commit to a mission overall; the Tactical Assistant then decides which specific drones do which tasks within it.',
+      'This time you will use the Strategic Assistant to choose the allocation, then let the Tactical Assistant plan the assignments in the Tactical Planner.',
     ],
     cardSide: 'center',
   },
@@ -596,13 +599,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 34. Agent panel intro ─────────────────────────────────────────────────────
   {
     id: 'agent-panel-intro',
-    title: 'The Strategic Agent',
+    title: 'The Strategic Assistant',
     body: [
-      'The Strategic Agent offers two pre-computed strategies — Aggressive (more drones, faster mission) and Conservative (fewer drones, preserves your reserve).',
-      'Both meet the mission\'s task requirements. Compare them and choose the one that fits your situation. You can also use "Set manually instead" for full control.',
+      'The Strategic Assistant offers two pre-computed strategies — Aggressive (more drones, faster mission) and Conservative (fewer drones, preserves your reserve).',
+      'Both meet the mission\'s task requirements. Compare them and choose the one that fits your situation.',
     ],
     highlight: 'first-strategic-panel',
     cardSide: 'right',
+    forceAgent: true,
   },
 
   // ── 35. Strategy card details ─────────────────────────────────────────────────
@@ -614,6 +618,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     ],
     highlight: 'first-strategy-card',
     cardSide: 'right',
+    forceAgent: true,
   },
 
   // ── 36. Score bars ────────────────────────────────────────────────────────────
@@ -626,6 +631,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     ],
     highlight: 'first-strategy-card',
     cardSide: 'right',
+    forceAgent: true,
   },
 
   // ── 37. SELECT & DEPLOY with agent (mustInteract) ────────────────────────────
@@ -641,6 +647,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     mustInteract: true,
     autoAdvanceWhen: state => state.missions.filter(m => m.tacticalPending).length >= 1,
     spotlightPadding: 6,
+    forceAgent: true,
   },
 
   // ════════════════════ MAP WINDOW STEPS — PHASE 2 (inMapWindow: true) ══════════
@@ -648,9 +655,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 38. Tactical agent intro card ────────────────────────────────────────────
   {
     id: 'tac-suggest-intro',
-    title: 'The Tactical Agent',
+    title: 'The Tactical Assistant',
     body: [
-      'Mission 2 is waiting for tactical planning. This time, instead of assigning drones manually, you will use the Tactical Agent.',
+      'Mission 2 is waiting for tactical planning. This time, instead of assigning drones manually, you will use the Tactical Assistant.',
       'The agent fills in all drone-to-task assignments automatically. You can then accept the plan or drag to override individual assignments before deploying.',
     ],
     cardSide: 'center',
@@ -675,7 +682,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 41. Click Suggest (mustInteract — advances on tutorial-suggest-clicked) ──
   {
     id: 'tac-suggest',
-    title: 'Let the Tactical Agent Fill the Plan',
+    title: 'Let the Tactical Assistant Fill the Plan',
     body: [
       'Click the "Suggest" button in the planner header. The agent fills in all drone-to-task assignments automatically.',
       'You will see dashed arrows appear on the map and the schedule update.',

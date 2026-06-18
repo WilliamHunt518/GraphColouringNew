@@ -6,8 +6,8 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 A **web-based human-subjects study platform** for research on trust in hierarchical autonomous AI systems. Operators manage a reserve of heterogeneous drone assets and allocate them to incoming search-and-rescue missions. Two AI assistants operate at different decision tiers:
 
-- **Strategic Agent** — fires when the operator initiates allocation of a queued mission. Presents two pre-computed strategy cards (Aggressive / Conservative) showing the **bundle of drone counts** to commit to that mission, projected ETA, speed score, and reserve score. The operator picks one, or dismisses and allocates manually.
-- **Tactical Agent** — fires immediately after strategic allocation is accepted. Presents a **within-mission drone→task assignment plan**: which specific drone IDs are assigned to which tasks, in which execution order. Shown in the tactical planner on the map window. The operator confirms the plan or drag-drops to modify individual assignments.
+- **Strategic Assistant** — fires when the operator initiates allocation of a queued mission. Presents two pre-computed strategy cards (Aggressive / Conservative) showing the **bundle of drone counts** to commit to that mission, projected ETA, speed score, and reserve score. The operator picks one, or dismisses and allocates manually.
+- **Tactical Assistant** — fires immediately after strategic allocation is accepted. Presents a **within-mission drone→task assignment plan**: which specific drone IDs are assigned to which tasks, in which execution order. Shown in the tactical planner on the map window. The operator confirms the plan or drag-drops to modify individual assignments.
 
 These are genuinely different decision levels:
 - **Strategic** = cross-mission resource commitment (how many of each drone type to send)
@@ -47,6 +47,13 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=standard&seed=42
 ### Study Design
 
 Three 8-minute (480 s) sessions. Asset pool: 11 Blue, 11 Red, 12 Green (34 total), **uniform across all study scenarios** — only the tactical/strategic weighting (mission size via `CATEGORY_WEIGHTS` + arrival rate via `LAMBDA`) differs between presets. See `FLEET` in `missionGen.ts`.
+
+**Study builder (per-session complexity):** `StudyConfig.sessionComplexities?: Complexity[]` lets a single
+participant run chain different presets session-to-session (e.g. Strategic Heavy → Tactical Heavy), each
+still followed by the normal survey/between-session flow. `complexityForSession(config, sessionNumber)` in
+`gameReducer.ts` resolves the complexity for a given session, falling back to the single `complexity` field
+when `sessionComplexities` isn't set. StartScreen.tsx shows one complexity picker per session slot once
+"Sessions" > 1.
 
 | Condition | ε_Strategic | ε_Tactical |
 |-----------|------------|------------|
@@ -143,11 +150,17 @@ Tasks execute greedily (T5 first → most constrained).
 
 ### Asset Speeds (units/second)
 
+UI naming: operators see drone types by function, not colour — Blue is shown as "Fast", Red as "Lifter",
+Green as "Camera" (still coloured blue/red/green text). Internal `AssetType` values, event-log fields,
+and code stay `'Blue' | 'Red' | 'Green'` — only the display layer changed (see `ASSET_TYPE_LABEL` and
+`droneLabel()` in `missionGen.ts`). Individual drone IDs (e.g. `B07`) display as `Fast-7` / `Lifter-7` /
+`Camera-7`; composition shorthand uses `F`/`L`/`C` (e.g. `2F + 1L`) instead of `B`/`R`/`G`.
+
 | Type  | Speed | Notes |
 |-------|-------|-------|
-| Blue  | 9.0   | Fast, recce-only |
-| Red   | 6.8   | Standard, supply + extract |
-| Green | 5.4   | Slow specialist, required for T3/T4/T5 |
+| Blue ("Fast")    | 9.0   | Fastest, recce-only |
+| Red ("Lifter")   | 6.8   | Standard, supply + extract |
+| Green ("Camera") | 5.4   | Slowest specialist — required by the most task types (T3/T4/T5), so it's usually the bottleneck despite being the most numerous (12 vs 11/11) |
 
 ## Development Guidelines
 
@@ -167,6 +180,6 @@ Tactical suggestions are currently generated inline in `src/store/gameReducer.ts
 
 1. **All randomness seeded** — pass `SeededRNG` instances everywhere, never call `Math.random()` in game logic
 2. **No backend** — all state in-memory; export is a client-side JSON download
-3. **UI language** — use "Strategic Agent" / "Tactical Agent", never "Co-Pilot", "Meta-Co-Pilot", "AI", or "algorithm"
+3. **UI language** — use "Strategic Assistant" / "Tactical Assistant" (operator-facing UI only — internal identifiers, action types, and logged event fields like `isAgentSuggested`/`wasAgentSuggested`/`modifiedFromAgentPlan` keep "Agent" and are unaffected), never "Co-Pilot", "Meta-Co-Pilot", "AI", or "algorithm"
 4. **Events logged immediately** — every operator action and agent recommendation must be logged with ms timestamp; see [`docs/EVENT_LOGGING.md`](docs/EVENT_LOGGING.md) for the full event schema, envelope fields, and rules for adding new events
 5. **BroadcastChannel host/client** — primary window is host; map window subscribes only; never let client mutate state

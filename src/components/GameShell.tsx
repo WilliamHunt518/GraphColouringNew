@@ -2,7 +2,7 @@ import { useReducer, useEffect, useRef, useState, useMemo } from 'react'
 
 const LOG = true
 import type { StudyConfig, GameState, MapViewState, FreePlayAchievement } from '../types'
-import { buildInitialState, gameReducer, reserveCount } from '../store/gameReducer'
+import { buildInitialState, gameReducer, reserveCount, complexityForSession } from '../store/gameReducer'
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
 import SurveyModal from './SurveyModal'
@@ -15,15 +15,12 @@ const FREE_PLAY_MAX = 300  // seconds
 
 const CHANNEL_NAME = 'sar-study'
 
-type CallsignMode = 'id' | 'arthurian' | 'nato'
-
 interface Props {
   config: StudyConfig
 }
 
 export default function GameShell({ config }: Props) {
   const [state, dispatch] = useReducer(gameReducer, config, buildInitialState)
-  const [callsignMode, setCallsignMode] = useState<CallsignMode>('nato')
   const [showTutorial, setShowTutorial] = useState((config.tutorialMode ?? false) && !config.skipToFreePlay)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [openMissionId, setOpenMissionId] = useState<string | null>(null)
@@ -47,6 +44,14 @@ export default function GameShell({ config }: Props) {
     dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
     dispatch({ type: 'FORCE_MISSION_ARRIVAL' })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Warn before closing/reloading while a study session is in progress (data is in-memory only)
+  useEffect(() => {
+    if (state.phase === 'done') return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [state.phase])
 
   // BroadcastChannel — open once, close on unmount; listen for map→primary actions
   useEffect(() => {
@@ -101,7 +106,7 @@ export default function GameShell({ config }: Props) {
       participantId: config.participantId,
       condition: config.condition,
       mode: config.mode,
-      complexity: config.complexity,
+      complexities: Array.from({ length: config.numSessions }, (_, i) => complexityForSession(config, i + 1)),
       seed: config.seed,
       epsilonStrategic: config.agentErrorRate,
       epsilonTactical: config.epsilonTactical,
@@ -133,7 +138,7 @@ export default function GameShell({ config }: Props) {
     return [
       { id: 'manual_alloc',      label: 'Perform a manual strategic allocation',
         done: evts.some(e => e.type === 'strategic_choice' && (e as any).choiceType === 'manual') },
-      { id: 'agent_alloc',       label: 'Accept a Strategic Agent strategy',
+      { id: 'agent_alloc',       label: 'Accept a Strategic Assistant strategy',
         done: evts.some(e => e.type === 'strategic_choice' && (e as any).choiceType !== 'manual') },
       { id: 'override_tactical', label: 'Override a tactical plan',
         done: evts.some(e => e.type === 'tactical_confirmed' && (e as any).modifiedFromAgentPlan) },
@@ -184,7 +189,6 @@ export default function GameShell({ config }: Props) {
       mode: state.config.mode,
       tacticalMode: state.config.tacticalMode,
       reserve: reserveCount(state.assets),
-      callsignMode,
       strategicModal: state.strategicModal,
       openMissionId,
       tutorialActive: showTutorial,
@@ -194,7 +198,7 @@ export default function GameShell({ config }: Props) {
       freePlaySecondsLeft,
     }
     channelRef.current.postMessage(payload)
-  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, callsignMode, openMissionId, showTutorial, tutorialStep, showFreePlay, freePlayAchievements, freePlaySecondsLeft])
+  }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, openMissionId, showTutorial, tutorialStep, showFreePlay, freePlayAchievements, freePlaySecondsLeft])
 
   // Tick loop — only runs when actively playing
   useEffect(() => {
@@ -212,9 +216,10 @@ export default function GameShell({ config }: Props) {
 
   if (state.phase === 'playing') {
     const tutorialForceManual = showTutorial && (TUTORIAL_STEPS[tutorialStep]?.forceManual ?? false)
+    const tutorialForceAgent = showTutorial && (TUTORIAL_STEPS[tutorialStep]?.forceAgent ?? false)
     return (
       <>
-        <PrimaryDisplay state={state} dispatch={dispatch} callsignMode={callsignMode} setCallsignMode={setCallsignMode} setOpenMissionId={setOpenMissionId} tutorialForceManual={tutorialForceManual} />
+        <PrimaryDisplay state={state} dispatch={dispatch} setOpenMissionId={setOpenMissionId} tutorialForceManual={tutorialForceManual} tutorialForceAgent={tutorialForceAgent} />
         {showTutorial && (
           <Tutorial
             state={state}
@@ -271,7 +276,7 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
       participantId: config.participantId,
       condition: config.condition,
       mode: config.mode,
-      complexity: config.complexity,
+      complexities: sessionComplexities,
       seed: config.seed,
       epsilonStrategic: config.agentErrorRate,
       epsilonTactical: config.epsilonTactical,
@@ -293,8 +298,14 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
 
   useEffect(() => { downloadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const complexityLabel: Record<string, string> = { easy: 'Easy', standard: 'Standard', hard: 'Hard' }
+  const complexityLabel: Record<string, string> = {
+    balanced: 'Balanced', strategic: 'Strategic Heavy', tactical: 'Tactical Heavy', full: 'Full Spectrum', quick: 'Quick Test',
+  }
   const numSessions = state.completedSessionScores.length
+  const sessionComplexities = Array.from({ length: config.numSessions }, (_, i) => complexityForSession(config, i + 1))
+  const complexitySummary = sessionComplexities.every(c => c === sessionComplexities[0])
+    ? (complexityLabel[sessionComplexities[0]] ?? sessionComplexities[0])
+    : sessionComplexities.map(c => complexityLabel[c] ?? c).join(' → ')
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
@@ -305,7 +316,7 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
           <h2 className="text-2xl font-bold text-white">All sessions finished</h2>
           <p className="text-gray-400 text-sm mt-2">
             You have completed all {numSessions} sessions of the <span className="text-white font-semibold">{config.condition}</span> condition
-            ({complexityLabel[config.complexity] ?? config.complexity} complexity).
+            ({complexitySummary} complexity).
           </p>
         </div>
 
@@ -321,7 +332,7 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Complexity</span>
-            <span className="text-white font-mono">{complexityLabel[config.complexity] ?? config.complexity}</span>
+            <span className="text-white font-mono">{complexitySummary}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Seed</span>

@@ -31,35 +31,35 @@ const NASA_ITEMS: NASAItem[] = [
 ]
 
 const TRUST_STRAT: LikertItem[] = [
-  { id: 'strat_reliable',       question: 'The Strategic Agent is reliable.' },
-  { id: 'strat_trust',          question: "I trust the Strategic Agent's recommendations." },
-  { id: 'strat_performs',       question: 'The Strategic Agent performs well.' },
-  { id: 'strat_confident',      question: 'I feel confident using the Strategic Agent.' },
-  { id: 'strat_useful',         question: 'The Strategic Agent provides useful guidance.' },
-  { id: 'strat_follow',         question: "I would follow the Strategic Agent's suggestions without hesitation." },
+  { id: 'strat_reliable',       question: 'The Strategic Assistant is reliable.' },
+  { id: 'strat_trust',          question: "I trust the Strategic Assistant's recommendations." },
+  { id: 'strat_performs',       question: 'The Strategic Assistant performs well.' },
+  { id: 'strat_confident',      question: 'I feel confident using the Strategic Assistant.' },
+  { id: 'strat_useful',         question: 'The Strategic Assistant provides useful guidance.' },
+  { id: 'strat_follow',         question: "I would follow the Strategic Assistant's suggestions without hesitation." },
 ]
 
 const TRUST_TACT: LikertItem[] = [
-  { id: 'tact_reliable',      question: 'The Tactical Agent is reliable.' },
-  { id: 'tact_trust',         question: "I trust the Tactical Agent's recommendations." },
-  { id: 'tact_performs',      question: 'The Tactical Agent performs well.' },
-  { id: 'tact_confident',     question: 'I feel confident using the Tactical Agent.' },
-  { id: 'tact_useful',        question: 'The Tactical Agent provides useful guidance.' },
-  { id: 'tact_follow',        question: "I would follow the Tactical Agent's suggestions without hesitation." },
+  { id: 'tact_reliable',      question: 'The Tactical Assistant is reliable.' },
+  { id: 'tact_trust',         question: "I trust the Tactical Assistant's recommendations." },
+  { id: 'tact_performs',      question: 'The Tactical Assistant performs well.' },
+  { id: 'tact_confident',     question: 'I feel confident using the Tactical Assistant.' },
+  { id: 'tact_useful',        question: 'The Tactical Assistant provides useful guidance.' },
+  { id: 'tact_follow',        question: "I would follow the Tactical Assistant's suggestions without hesitation." },
 ]
 
 const TAM_STRAT: LikertItem[] = [
-  { id: 'strat_tam_perf',       question: 'Using the Strategic Agent improves my task performance.' },
-  { id: 'strat_tam_useful',     question: 'Using the Strategic Agent is useful for this task.' },
-  { id: 'strat_tam_easy_learn', question: 'Learning to use the Strategic Agent was easy.' },
-  { id: 'strat_tam_easy_use',   question: 'I find the Strategic Agent easy to use overall.' },
+  { id: 'strat_tam_perf',       question: 'Using the Strategic Assistant improves my task performance.' },
+  { id: 'strat_tam_useful',     question: 'Using the Strategic Assistant is useful for this task.' },
+  { id: 'strat_tam_easy_learn', question: 'Learning to use the Strategic Assistant was easy.' },
+  { id: 'strat_tam_easy_use',   question: 'I find the Strategic Assistant easy to use overall.' },
 ]
 
 const TAM_TACT: LikertItem[] = [
-  { id: 'tact_tam_perf',      question: 'Using the Tactical Agent improves my task performance.' },
-  { id: 'tact_tam_useful',    question: 'Using the Tactical Agent is useful for this task.' },
-  { id: 'tact_tam_easy_learn', question: 'Learning to use the Tactical Agent was easy.' },
-  { id: 'tact_tam_easy_use',  question: 'I find the Tactical Agent easy to use overall.' },
+  { id: 'tact_tam_perf',      question: 'Using the Tactical Assistant improves my task performance.' },
+  { id: 'tact_tam_useful',    question: 'Using the Tactical Assistant is useful for this task.' },
+  { id: 'tact_tam_easy_learn', question: 'Learning to use the Tactical Assistant was easy.' },
+  { id: 'tact_tam_easy_use',  question: 'I find the Tactical Assistant easy to use overall.' },
 ]
 
 const SURVEY_DEFS: Record<string, SurveyDef> = {
@@ -72,28 +72,28 @@ const SURVEY_DEFS: Record<string, SurveyDef> = {
   },
   trust_strategic: {
     name: 'trust_strategic',
-    title: 'Trust in Strategic Agent',
+    title: 'Trust in Strategic Assistant',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
     items: TRUST_STRAT,
   },
   trust_tactical: {
     name: 'trust_tactical',
-    title: 'Trust in Tactical Agent',
+    title: 'Trust in Tactical Assistant',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
     items: TRUST_TACT,
   },
   tam_strategic: {
     name: 'tam_strategic',
-    title: 'Strategic Agent — Usability',
+    title: 'Strategic Assistant — Usability',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
     items: TAM_STRAT,
   },
   tam_tactical: {
     name: 'tam_tactical',
-    title: 'Tactical Agent — Usability',
+    title: 'Tactical Assistant — Usability',
     subtitle: 'Rate your agreement with each statement (1 = strongly disagree, 7 = strongly agree)',
     type: 'likert',
     items: TAM_TACT,

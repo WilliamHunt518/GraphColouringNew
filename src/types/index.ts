@@ -9,6 +9,7 @@ export interface StudyConfig {
   condition: Condition
   mode: Mode
   complexity: Complexity
+  sessionComplexities?: Complexity[]  // per-session complexity override; falls back to `complexity` for any missing index
   seed: number
   agentErrorRate: number   // epsilonStrategic — error rate for Strategic Agent
   epsilonTactical: number  // error rate for Tactical Agent
@@ -194,7 +195,6 @@ export interface MapViewState {
   mode: Mode
   tacticalMode: 'plan-all' | 'greedy'
   reserve: AssetRequirement
-  callsignMode: 'id' | 'arthurian' | 'nato'
   strategicModal: StrategicModal | null
   openMissionId: string | null
   tutorialActive: boolean

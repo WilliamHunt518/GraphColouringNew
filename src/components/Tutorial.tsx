@@ -281,8 +281,14 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
           <h3 style={{ fontSize: 15, fontWeight: 700, color: '#f8fafc', margin: '0 0 10px', lineHeight: 1.3 }}>{current?.title}</h3>
           {/* body */}
           <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.65 }}>
-            {current?.body.map((para, i) => (
-              <p key={i} style={{ margin: i < (current.body.length - 1) ? '0 0 8px' : 0 }}><TutorialText text={para} /></p>
+            {current && (current.body.length === 1 ? (
+              <p style={{ margin: 0 }}><TutorialText text={current.body[0]} /></p>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: 18, listStyle: 'disc' }}>
+                {current.body.map((para, i) => (
+                  <li key={i} style={{ marginBottom: i < current.body.length - 1 ? 8 : 0 }}><TutorialText text={para} /></li>
+                ))}
+              </ul>
             ))}
           </div>
           {/* mustInteract hint */}

@@ -1,21 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 
 import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAllocation } from '../types'
-import { HUB, ASSET_SPEED, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
+import { HUB, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
-// ─── Types ────────────────────────────────────────────────────────────────
-
-type CallsignMode = 'id' | 'arthurian' | 'nato'
-
 // ─── Helpers ──────────────────────────────────────────────────────────────
-
-function resolveCallsign(assetId: string, mode: CallsignMode): string {
-  if (mode === 'arthurian') return ASSET_CALLSIGNS[assetId] ?? assetId
-  if (mode === 'nato')      return ASSET_CALLSIGNS_NATO[assetId] ?? assetId
-  return assetId
-}
 
 function formatSeconds(s: number): string {
   if (s < 60) return `${Math.round(s)}s`
@@ -36,17 +26,17 @@ function missionEntryAngle(waypoint: { x: number; y: number }, cx: number, cy: n
 
 function buildCompLabel(counts: { Blue: number; Red: number; Green: number }, req: { Blue: number; Red: number; Green: number }): string {
   const parts: string[] = []
-  if (req.Blue > 0)  parts.push(`${counts.Blue}/${req.Blue}B`)
-  if (req.Red > 0)   parts.push(`${counts.Red}/${req.Red}R`)
-  if (req.Green > 0) parts.push(`${counts.Green}/${req.Green}G`)
+  if (req.Blue > 0)  parts.push(`${counts.Blue}/${req.Blue}F`)
+  if (req.Red > 0)   parts.push(`${counts.Red}/${req.Red}L`)
+  if (req.Green > 0) parts.push(`${counts.Green}/${req.Green}C`)
   return parts.join(' ') || '—'
 }
 
 function compToLabel(comp: { Blue: number; Red: number; Green: number }, time: number): string {
   const parts: string[] = []
-  if (comp.Blue > 0) parts.push(`${comp.Blue}B`)
-  if (comp.Red > 0) parts.push(`${comp.Red}R`)
-  if (comp.Green > 0) parts.push(`${comp.Green}G`)
+  if (comp.Blue > 0) parts.push(`${comp.Blue}F`)
+  if (comp.Red > 0) parts.push(`${comp.Red}L`)
+  if (comp.Green > 0) parts.push(`${comp.Green}C`)
   return `${parts.join(' + ')} (${time}s)`
 }
 
@@ -77,6 +67,7 @@ interface Props {
 
 export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTop }: Props) {
   const [tacticalMissionId, setTacticalMissionId] = useState<string | null>(null)
+  const [suggestLoading, setSuggestLoading] = useState(false)
   const channelRef = useRef<BroadcastChannel | null>(null)
 
   useEffect(() => {
@@ -130,6 +121,7 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
         selectedId={tacticalMissionId}
         onSelect={setTacticalMissionId}
         state={state}
+        disabled={suggestLoading}
       />
       <div className="flex-1 min-w-0">
         {tacticalMission ? (
@@ -143,6 +135,7 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
             recoveryReserveIds={recoveryReserveIds}
             failedDroneId={recoveryFailedDroneId}
             readOnly={isReadOnly}
+            onSuggestLoadingChange={setSuggestLoading}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-600">
@@ -160,11 +153,12 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
 
 // ─── Mission queue panel (persistent left sidebar) ────────────────────────
 
-function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
+function MissionQueuePanel({ pending, selectedId, onSelect, state, disabled }: {
   pending: Mission[]
   selectedId: string | null
   onSelect: (id: string) => void
   state: MapViewState
+  disabled?: boolean
 }) {
   const active = state.missions.filter(m => m.status === 'active').length
   const queued = state.missions.filter(m => m.status === 'queued').length
@@ -198,11 +192,14 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state }: {
             {pending.map(m => {
               const isRecov = m.failureRecoveryPending
               const isSelected = m.id === selectedId
+              const isLocked = !!disabled && !isSelected
               return (
                 <button
                   key={m.id}
+                  disabled={isLocked}
+                  title={isLocked ? 'Wait for the current Suggest to finish before switching missions' : undefined}
                   onClick={() => { onSelect(m.id); document.dispatchEvent(new CustomEvent('tutorial-mission-selected')) }}
-                  className={`relative w-full text-left px-3 py-2.5 rounded border-2 transition-colors ${
+                  className={`relative w-full text-left px-3 py-2.5 rounded border-2 transition-colors ${isLocked ? 'opacity-40 cursor-not-allowed' : ''} ${
                     isSelected
                       ? isRecov
                         ? 'border-red-500 bg-red-900/40'
@@ -497,7 +494,7 @@ function buildRecoveryAllocation(mission: Mission, assets: Asset[]): { allocatio
 
 // ─── Tactical planner (SVG + right panel) ────────────────────────────────
 
-function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllocation, recoveryMode, recoveryReserveIds, failedDroneId, readOnly }: {
+function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllocation, recoveryMode, recoveryReserveIds, failedDroneId, readOnly, onSuggestLoadingChange }: {
   mission: Mission
   state: MapViewState
   onBack: () => void
@@ -507,9 +504,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   recoveryReserveIds?: Set<string>
   failedDroneId?: string | null
   readOnly?: boolean
+  onSuggestLoadingChange?: (loading: boolean) => void
 }) {
   const pending = overrideAllocation ?? mission.pendingAllocation!
-  const callsignMode = state.callsignMode
 
   // Recovery / read-only views pre-populate from the existing plan stored in pendingAllocation.
   // A NEW tactical plan starts with empty task slots — the operator either assigns drones
@@ -527,6 +524,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
   const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
   const isSuggestLoading = suggestQueue.length > 0
+  useEffect(() => {
+    onSuggestLoadingChange?.(isSuggestLoading)
+    return () => onSuggestLoadingChange?.(false)
+  }, [isSuggestLoading]) // eslint-disable-line react-hooks/exhaustive-deps
   const [dragging, setDragging] = useState<{ droneId: string; svgX: number; svgY: number } | null>(null)
   const [hoverTask, setHoverTask] = useState<string | null>(null)
   const [hoverDrone, setHoverDrone] = useState<string | null>(null)
@@ -877,7 +878,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   <image href={DRONE_ICON[type]} x={fx - 6} y={fy - 6} width={12} height={12}
                     style={{ pointerEvents: 'none', filter: 'grayscale(1)' }} />
                   <text x={fx} y={fy + 15} textAnchor="middle" fill="#6b7280" fontSize="7" fontFamily="monospace"
-                    style={{ pointerEvents: 'none' }}>{resolveCallsign(fd.id, callsignMode)}</text>
+                    style={{ pointerEvents: 'none' }}>{droneLabel(fd.id)}</text>
                   <line x1={fx - 7} y1={fy - 7} x2={fx + 7} y2={fy + 7} stroke="#ef4444" strokeWidth={1.5} />
                   <line x1={fx + 7} y1={fy - 7} x2={fx - 7} y2={fy + 7} stroke="#ef4444" strokeWidth={1.5} />
                 </g>
@@ -1099,9 +1100,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                         textAnchor="middle" fontSize="7" fontFamily="monospace"
                         style={{ pointerEvents: 'none' }}>
                         {[
-                          req.Blue  > 0 ? { c: counts.Blue,  r: req.Blue,  key: 'B', col: '#60a5fa' } : null,
-                          req.Red   > 0 ? { c: counts.Red,   r: req.Red,   key: 'R', col: '#f87171' } : null,
-                          req.Green > 0 ? { c: counts.Green, r: req.Green, key: 'G', col: '#86efac' } : null,
+                          req.Blue  > 0 ? { c: counts.Blue,  r: req.Blue,  key: 'F', col: '#60a5fa' } : null,
+                          req.Red   > 0 ? { c: counts.Red,   r: req.Red,   key: 'L', col: '#f87171' } : null,
+                          req.Green > 0 ? { c: counts.Green, r: req.Green, key: 'C', col: '#86efac' } : null,
                         ].filter((p): p is { c: number; r: number; key: string; col: string } => p !== null)
                           .map((p, i) => (
                             <tspan key={p.key} fill={
@@ -1119,7 +1120,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                         <text x={task.waypoint.x} y={task.waypoint.y + 42}
                           textAnchor="middle" fill="#6b7280" fontSize="6.5" fontFamily="monospace"
                           style={{ pointerEvents: 'none' }}>
-                          {`OR ${[sub.Blue > 0 ? `${sub.Blue}B` : null, sub.Red > 0 ? `${sub.Red}R` : null, sub.Green > 0 ? `${sub.Green}G` : null].filter(Boolean).join('+')} `}
+                          {`OR ${[sub.Blue > 0 ? `${sub.Blue}F` : null, sub.Red > 0 ? `${sub.Red}L` : null, sub.Green > 0 ? `${sub.Green}C` : null].filter(Boolean).join('+')} `}
                         </text>
                       )}
                     </>
@@ -1134,7 +1135,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               const asset = state.assets.find(a => a.id === droneId)
               const type: AssetType = asset?.type ?? 'Blue'
               const color = ASSET_COLOR[type]
-              const cs = resolveCallsign(droneId, callsignMode)
+              const cs = droneLabel(droneId)
               const isDraggingThis = dragging?.droneId === droneId
               const isHoveredDrone = hoverDrone === droneId
               return (
@@ -1162,7 +1163,6 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           assets={state.assets}
           tasks={mission.tasks}
           timings={timings}
-          callsignMode={callsignMode}
           onRemove={removeDrone}
           canDeploy={canDeploy}
           isSuggestLoading={isSuggestLoading}
@@ -1181,13 +1181,12 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, callsignMode, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
   tasks: Task[]
   timings: { taskStarts: Record<string, number>; droneWaits: Record<string, Record<string, number>> }
-  callsignMode: CallsignMode
   onRemove: (droneId: string, taskId: string) => void
   canDeploy: boolean
   isSuggestLoading?: boolean
@@ -1208,7 +1207,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
   )
 
   function getType(id: string): AssetType { return assets.find(a => a.id === id)?.type ?? 'Blue' }
-  function getCS(id: string): string { return resolveCallsign(id, callsignMode) }
+  function getCS(id: string): string { return droneLabel(id) }
 
   // Sort tasks by actual execution start time; unassigned tasks go to end
   const sortedTaskOrder = [...pending.taskOrder].sort((a, b) => {
@@ -1384,7 +1383,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
         })}
       </div>
 
-      {/* Footer: ETA + Stop Agent + Deploy + Abandon */}
+      {/* Footer: ETA + Stop Assistant + Deploy + Abandon */}
       <div className="flex-none p-3 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
           <div className="text-lg text-gray-400">
@@ -1396,7 +1395,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, call
             onClick={onStopSuggest}
             className="w-full py-2 bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700/60 hover:border-amber-600 rounded text-amber-300 hover:text-amber-200 text-lg transition-colors"
           >
-            Stop Agent — take over
+            Stop Assistant — take over
           </button>
         )}
         <button

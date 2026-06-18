@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { DRONE_ICON, TASK_ICON, CAT_ICON } from '../utils/icons'
+import { ASSET_TYPE_LABEL } from '../utils/missionGen'
 import type { AssetType, MissionCategory } from '../types'
 
 // Inline symbol tokens usable inside tutorial step body text.
-//   {blue} {red} {green}          → drone icon + coloured type label
+//   {blue} {red} {green}          → drone icon + coloured functional label (Fast/Lifter/Camera)
 //   {T1}..{T5}                    → task icon + "T1" label
 //   {catA}..{catE}                → category icon + "Cat A" label
 //
@@ -21,7 +22,7 @@ function DroneChip({ type }: { type: AssetType }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
       <img src={DRONE_ICON[type]} alt="" style={{ width: 16, height: 16, flex: 'none' }} />
-      <span style={{ color: DRONE_TEXT_COLOR[type], fontWeight: 700 }}>{type}</span>
+      <span style={{ color: DRONE_TEXT_COLOR[type], fontWeight: 700 }}>{ASSET_TYPE_LABEL[type]}</span>
     </span>
   )
 }

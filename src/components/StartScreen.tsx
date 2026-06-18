@@ -3,16 +3,16 @@ import type { Mode, StudyConfig } from '../types'
 import { randomSeed } from '../utils/config'
 
 const COMPLEXITIES = [
-  { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 11B 11R 12G' },
-  { value: 'tactical'  as const, label: 'Tactical Heavy',   desc: 'Low Strategic / High Tactical · few large missions · 11B 11R 12G' },
-  { value: 'strategic' as const, label: 'Strategic Heavy',  desc: 'High Strategic / Low Tactical · many small missions · 11B 11R 12G' },
-  { value: 'full'      as const, label: 'Full Spectrum',    desc: 'High Strategic / High Tactical · frequent large missions · 11B 11R 12G' },
-  { value: 'quick'     as const, label: 'Quick Test',       desc: 'Dev only · 5B 5R 5G' },
+  { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 11F 11L 12C' },
+  { value: 'tactical'  as const, label: 'Tactical Heavy',   desc: 'Low Strategic / High Tactical · few large missions · 11F 11L 12C' },
+  { value: 'strategic' as const, label: 'Strategic Heavy',  desc: 'High Strategic / Low Tactical · many small missions · 11F 11L 12C' },
+  { value: 'full'      as const, label: 'Full Spectrum',    desc: 'High Strategic / High Tactical · frequent large missions · 11F 11L 12C' },
+  { value: 'quick'     as const, label: 'Quick Test',       desc: 'Dev only · 5F 5L 5C' },
 ]
 
 const MODES = [
   { value: 'no-agent' as const, label: 'Manual Control', desc: 'All allocations made by operator' },
-  { value: 'agent'    as const, label: 'Agent Assist',   desc: 'Agent suggests strategic & tactical options' },
+  { value: 'agent'    as const, label: 'Assistant Mode', desc: 'Assistant suggests strategic & tactical options' },
 ]
 
 const EPSILON_STEP = 0.05
@@ -56,7 +56,8 @@ interface Props { onStart: (config: StudyConfig) => void }
 
 export default function StartScreen({ onStart }: Props) {
   const [participantId, setParticipantId] = useState('')
-  const [complexity, setComplexity] = useState<StudyConfig['complexity']>('balanced')
+  // One complexity per session slot (study builder) — index 0 doubles as the single-session value.
+  const [sessionComplexities, setSessionComplexities] = useState<StudyConfig['complexity'][]>(['balanced', 'balanced', 'balanced'])
   const [mode, setMode] = useState<Mode>('agent')
   const [epsilonStrategic, setEpsilonStrategic] = useState(0.0)
   const [epsilonTactical, setEpsilonTactical]   = useState(0.0)
@@ -76,7 +77,8 @@ export default function StartScreen({ onStart }: Props) {
       participantId: finalId,
       condition: 'none',
       mode,
-      complexity,
+      complexity: sessionComplexities[0],
+      sessionComplexities: sessionComplexities.slice(0, numSessions),
       seed: seedNum,
       agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
       epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
@@ -123,16 +125,16 @@ export default function StartScreen({ onStart }: Props) {
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-300">
-                Agent Accuracy
-                <span className="ml-2 text-xs text-gray-500 font-normal">how often each agent's suggestion is correct</span>
+                Assistant Accuracy
+                <span className="ml-2 text-xs text-gray-500 font-normal">how often each assistant's suggestion is correct</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <AccuracySpinner label="Strategic Agent" epsilon={epsilonStrategic} onChange={setEpsilonStrategic} />
-                <AccuracySpinner label="Tactical Agent"  epsilon={epsilonTactical}  onChange={setEpsilonTactical} />
+                <AccuracySpinner label="Strategic Assistant" epsilon={epsilonStrategic} onChange={setEpsilonStrategic} />
+                <AccuracySpinner label="Tactical Assistant"  epsilon={epsilonTactical}  onChange={setEpsilonTactical} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-300">Tactical Agent Style</label>
+              <label className="block text-sm font-medium text-gray-300">Tactical Assistant Style</label>
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { value: 'plan-all' as const, label: 'Plan All', desc: 'Full sequence, confirm once' },
@@ -149,18 +151,46 @@ export default function StartScreen({ onStart }: Props) {
           </div>
         )}
 
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-300">Complexity</label>
-          <div className="grid grid-cols-2 gap-2">
-            {COMPLEXITIES.map(cx => (
-              <button key={cx.value} onClick={() => setComplexity(cx.value)}
-                className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${complexity === cx.value ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-400'}`}>
-                <span className="font-medium">{cx.label}</span>
-                <span className="block text-xs mt-0.5 text-gray-400">{cx.desc}</span>
-              </button>
-            ))}
+        {numSessions === 1 ? (
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-300">Complexity</label>
+            <div className="grid grid-cols-2 gap-2">
+              {COMPLEXITIES.map(cx => (
+                <button key={cx.value} onClick={() => setSessionComplexities(prev => [cx.value, prev[1], prev[2]])}
+                  className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${sessionComplexities[0] === cx.value ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-400'}`}>
+                  <span className="font-medium">{cx.label}</span>
+                  <span className="block text-xs mt-0.5 text-gray-400">{cx.desc}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-300">
+              Complexity per session <span className="ml-2 text-xs text-gray-500 font-normal">study builder — chain different presets</span>
+            </label>
+            <div className="space-y-1.5">
+              {Array.from({ length: numSessions }, (_, i) => i).map(i => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-16 flex-none text-xs text-gray-500">Session {i + 1}</span>
+                  <select
+                    value={sessionComplexities[i]}
+                    onChange={e => setSessionComplexities(prev => {
+                      const next = [...prev] as StudyConfig['complexity'][]
+                      next[i] = e.target.value as StudyConfig['complexity']
+                      return next
+                    })}
+                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {COMPLEXITIES.map(cx => (
+                      <option key={cx.value} value={cx.value}>{cx.label}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-300">

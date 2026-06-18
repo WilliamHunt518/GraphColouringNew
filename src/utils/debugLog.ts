@@ -1,5 +1,5 @@
 import type { GameState, AssetRequirement } from '../types'
-import { reserveCount } from '../store/gameReducer'
+import { reserveCount, complexityForSession } from '../store/gameReducer'
 
 // ─── Internal trace log (greedyAssign, etc.) ─────────────────────────────────
 
@@ -43,7 +43,7 @@ export function downloadStudySnapshot(state: GameState): void {
     participantId:    config.participantId,
     condition:        config.condition,
     mode:             config.mode,
-    complexity:       config.complexity,
+    complexity:       complexityForSession(config, state.sessionNumber),
     seed:             config.seed,
     epsilonStrategic: config.agentErrorRate,
     epsilonTactical:  config.epsilonTactical,

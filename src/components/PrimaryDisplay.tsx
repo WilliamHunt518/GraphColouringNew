@@ -6,17 +6,16 @@ import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadStudySnapshot } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
-import { HUB, ASSET_CALLSIGNS, ASSET_CALLSIGNS_NATO, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL, TASK_PRIMARY, TASK_SUBSTITUTE } from '../utils/missionGen'
+import { HUB, droneLabel, ASSET_TYPE_LABEL, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL, TASK_PRIMARY, TASK_SUBSTITUTE } from '../utils/missionGen'
 import { CAT_ICON, TASK_ICON, DRONE_ICON } from '../utils/icons'
 import type { TaskType } from '../types'
 
 interface Props {
   state: GameState
   dispatch: (a: GameAction) => void
-  callsignMode: CallsignMode
-  setCallsignMode: (m: CallsignMode) => void
   setOpenMissionId: (id: string | null) => void
   tutorialForceManual?: boolean
+  tutorialForceAgent?: boolean
 }
 
 // ─── Colour / label helpers ────────────────────────────────────────────────
@@ -73,26 +72,6 @@ function fmtTime(seconds: number): string {
   return `${m}m ${s.toString().padStart(2, '0')}s`
 }
 
-// ─── Callsign mode ────────────────────────────────────────────────────────
-
-type CallsignMode = 'id' | 'arthurian' | 'nato'
-
-function resolveCallsign(assetId: string, mode: CallsignMode): string {
-  if (mode === 'arthurian') return ASSET_CALLSIGNS[assetId] ?? assetId
-  if (mode === 'nato')      return ASSET_CALLSIGNS_NATO[assetId] ?? assetId
-  return assetId
-}
-
-const CALLSIGN_LABELS: Record<CallsignMode, string> = {
-  id: 'ID',
-  arthurian: 'Arthurian',
-  nato: 'NATO',
-}
-
-function nextCallsignMode(m: CallsignMode): CallsignMode {
-  return m === 'id' ? 'arthurian' : m === 'arthurian' ? 'nato' : 'id'
-}
-
 // ─── Penalty helpers ──────────────────────────────────────────────────────
 
 function missionPenaltyAccrued(mission: Mission, elapsed: number): number {
@@ -119,7 +98,7 @@ function penaltyUrgency(penaltyPts: number): UrgencyLevel {
 
 // ─── Top-level ────────────────────────────────────────────────────────────
 
-export default function PrimaryDisplay({ state, dispatch, callsignMode, setCallsignMode, setOpenMissionId, tutorialForceManual }: Props) {
+export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tutorialForceManual, tutorialForceAgent }: Props) {
   const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
@@ -151,7 +130,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               ? 'bg-purple-900/60 text-purple-300 border-purple-700/50'
               : 'bg-gray-800 text-gray-400 border-gray-700'
           }`}>
-            {state.config.mode === 'agent' ? 'Agent Assist' : 'Manual'}
+            {state.config.mode === 'agent' ? 'Assistant Mode' : 'Manual'}
           </span>
           {state.config.testingMode && (
             <span className="text-xs px-2 py-0.5 rounded border uppercase tracking-wide bg-orange-900/60 text-orange-300 border-orange-700/50 font-bold">
@@ -204,17 +183,6 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
             Tactical →
           </button>
           <button
-            onClick={() => setCallsignMode(nextCallsignMode(callsignMode))}
-            className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-              callsignMode !== 'id'
-                ? 'bg-blue-700 text-white border-blue-500'
-                : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
-            }`}
-            title="Cycle callsign display: ID → Arthurian → NATO"
-          >
-            {CALLSIGN_LABELS[callsignMode]}
-          </button>
-          <button
             onClick={() => downloadStudySnapshot(state)}
             className="text-xs px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-500 border border-gray-700 transition-colors"
             title="Download mid-session study snapshot (JSON)"
@@ -233,13 +201,14 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
             <span className="text-xs text-gray-500 uppercase tracking-wider">Reserve</span>
             {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
               const avail = reserve[type]
-              const deployed = state.assets.filter(a => a.type === type && a.status === 'deployed').length
+              const total = state.assets.filter(a => a.type === type).length
               const returning = state.assets.filter(a => a.type === type && a.status === 'returning').length
+              const out = total - avail
               return (
                 <span key={type} className={`flex items-center gap-1.5 text-base ${ASSET_COLORS[type]}`}>
                   <img src={DRONE_ICON[type]} className="w-6 h-6 flex-none" alt="" />
                   <span className="font-mono font-bold">{avail}</span>
-                  <span className="text-gray-600 text-xs">/{deployed}out {returning > 0 ? `${returning}rtg` : ''}</span>
+                  <span className="text-gray-600 text-xs">/{total} ({out} out{returning > 0 ? `, ${returning} rtg` : ''})</span>
                 </span>
               )
             })}
@@ -273,7 +242,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               <section>
                 <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
                 {sortedQueued.map((m, i) => (
-                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} isTutorialFirst={i === 0} tutorialForceManual={i === 0 ? tutorialForceManual : undefined} />
+                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} isTutorialFirst={i === 0} tutorialForceManual={i === 0 ? tutorialForceManual : undefined} tutorialForceAgent={i === 0 ? tutorialForceAgent : undefined} />
                 ))}
               </section>
             )}
@@ -281,7 +250,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               <section className={queued.length > 0 ? 'mt-4' : ''}>
                 <SectionLabel text="Active missions" dot="bg-blue-400" />
                 {sortedActive.map(m => (
-                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} />
                 ))}
               </section>
             )}
@@ -289,7 +258,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
               <section className="mt-4 opacity-60">
                 <SectionLabel text="Completed" dot="bg-gray-500" />
                 {done.slice(-6).map(m => (
-                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} callsignMode={callsignMode} />
+                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} />
                 ))}
               </section>
             )}
@@ -304,7 +273,7 @@ export default function PrimaryDisplay({ state, dispatch, callsignMode, setCalls
 
         {/* Right: embedded operational map */}
         <div data-tutorial="embedded-map" className="flex-1 relative overflow-hidden bg-gray-950">
-          <EmbeddedOperationalMap state={state} dispatch={dispatch} callsignMode={callsignMode} setOpenMissionId={setOpenMissionId} />
+          <EmbeddedOperationalMap state={state} dispatch={dispatch} setOpenMissionId={setOpenMissionId} />
         </div>
       </div>
     </div>
@@ -324,7 +293,7 @@ function SectionLabel({ text, dot }: { text: string; dot: string }) {
 
 // ─── Mission card ─────────────────────────────────────────────────────────
 
-function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, tutorialForceManual }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; callsignMode: CallsignMode; isTutorialFirst?: boolean; tutorialForceManual?: boolean }) {
+function MissionCard({ mission, state, dispatch, isTutorialFirst, tutorialForceManual, tutorialForceAgent }: { mission: Mission; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean; tutorialForceManual?: boolean; tutorialForceAgent?: boolean }) {
   const isQueued    = mission.status === 'queued'
   const isActive    = mission.status === 'active'
   const isCompleted = mission.status === 'completed'
@@ -425,12 +394,12 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
       <MissionProgressSection mission={mission} elapsed={state.elapsed} urgency={urgency} activeTaskIds={activeTaskIds} isActive={isActive} greedy={state.config.tacticalMode === 'greedy'} tutorialFirst={isTutorialFirst} />
 
       {/* Task plan — shows drone→task assignments after allocation */}
-      {isActive && <TaskPlanPanel mission={mission} callsignMode={callsignMode} />}
+      {isActive && <TaskPlanPanel mission={mission} />}
 
 
       {/* Strategic allocation panel */}
       {isAllocating && state.strategicModal && (
-        <StrategicPanel modal={state.strategicModal} state={state} dispatch={dispatch} isTutorialFirst={isTutorialFirst} tutorialForceManual={tutorialForceManual} />
+        <StrategicPanel modal={state.strategicModal} state={state} dispatch={dispatch} isTutorialFirst={isTutorialFirst} tutorialForceManual={tutorialForceManual} tutorialForceAgent={tutorialForceAgent} />
       )}
     </div>
   )
@@ -438,7 +407,7 @@ function MissionCard({ mission, state, dispatch, callsignMode, isTutorialFirst, 
 
 // ─── Strategic panel ──────────────────────────────────────────────────────
 
-function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForceManual }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean; tutorialForceManual?: boolean }) {
+function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForceManual, tutorialForceAgent }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean; tutorialForceManual?: boolean; tutorialForceAgent?: boolean }) {
   const isAgent = state.config.mode === 'agent'
   // Auto-enter manual mode when there are no agent strategies (depleted reserve)
   const [showManual, setShowManual] = useState(!isAgent || modal.strategies.length === 0)
@@ -477,11 +446,16 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
 
   return (
     <div data-tutorial={isTutorialFirst ? 'first-strategic-panel' : undefined} className="relative mt-2 border-2 border-blue-600/70 rounded-lg bg-gray-800/50 p-3 space-y-3">
-      {showAgentCards && !allCardsLoaded && (
+      {showAgentCards && !allCardsLoaded && !tutorialForceManual && (
         <div className="absolute inset-0 rounded-lg border-2 border-blue-400/60 animate-pulse pointer-events-none" />
       )}
-      {showAgentCards && (
-        <div className={`grid grid-cols-2 gap-2${tutorialForceManual ? ' opacity-40 pointer-events-none select-none' : ''}`}>
+      {showAgentCards && tutorialForceManual && (
+        <p className="text-xs text-gray-500 py-2 text-center">
+          Assistant suggestions are disabled for this practice round.
+        </p>
+      )}
+      {showAgentCards && !tutorialForceManual && (
+        <div className="grid grid-cols-2 gap-2">
           {modal.strategies.map((strat, i) => (
             <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} loaded={loadedCards.has(i)} reserve={reserve} onSelect={() => loadedCards.has(i) && setSelectedIdx(i)} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
           ))}
@@ -505,8 +479,9 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
       )}
 
       {/* Toggle: when showing agent cards → "Edit this allocation" (card selected) or "Set manually instead";
-          when in manual → small "← Back" link (hidden if tutorialForceManual so user can't undo) */}
-      {isAgent && (
+          when in manual → small "← Back" link (hidden if tutorialForceManual so user can't undo).
+          Hidden entirely in either direction when tutorialForceAgent locks the operator into the agent-card flow. */}
+      {isAgent && !tutorialForceAgent && (
         showManual ? (
           !tutorialForceManual && (
             <button
@@ -624,7 +599,7 @@ function StrategyCard({ strat, selected, loaded, onSelect, tutorialId }: { strat
         {(() => {
           const parts = (['Blue', 'Red', 'Green'] as AssetType[])
             .filter(t => strat.assets[t] > strat.minimumAssets[t])
-            .map(t => `+${strat.assets[t] - strat.minimumAssets[t]} ${t}`)
+            .map(t => `+${strat.assets[t] - strat.minimumAssets[t]} ${ASSET_TYPE_LABEL[t]}`)
           return parts.length > 0 ? parts.join(' · ') : 'at minimum'
         })()}
       </div>
@@ -655,8 +630,8 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
         const spare = allocation[type] - floor[type]
         return (
           <div key={type} className="flex items-center gap-2">
-            <span className={`text-xs w-20 ${ASSET_COLORS[type]}`}>
-              {type} ({reserve[type]} avail)
+            <span className={`text-xs w-28 ${ASSET_COLORS[type]}`}>
+              {ASSET_TYPE_LABEL[type]} ({reserve[type]} avail)
             </span>
             <button onClick={() => onChange({ ...allocation, [type]: Math.max(0, allocation[type] - 1) })}
               className="w-6 h-6 rounded bg-gray-700 hover:bg-gray-600 text-white font-bold flex items-center justify-center">−</button>
@@ -769,9 +744,9 @@ function TaskProgressBar({ tasks, urgency, activeTaskIds, isActive, greedy }: {
                 </span>
               )}
               {showShort && (
-                <div className="flex gap-0.5 mt-0.5">
+                <div className="flex gap-1 mt-0.5">
                   {TASK_DOTS[t.type].map((dot, i) => (
-                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${ASSET_DOT_COLOR[dot]}`} />
+                    <span key={i} className={`w-2.5 h-2.5 rounded-full ${ASSET_DOT_COLOR[dot]}`} />
                   ))}
                 </div>
               )}
@@ -888,7 +863,7 @@ function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: num
 
 // ─── Co-Pilot task plan ───────────────────────────────────────────────────
 
-function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMode: CallsignMode }) {
+function TaskPlanPanel({ mission }: { mission: Mission }) {
   const [open, setOpen] = useState(false)
 
   const assetChains = new Map<string, Task[]>()
@@ -950,7 +925,7 @@ function TaskPlanPanel({ mission, callsignMode }: { mission: Mission; callsignMo
               <span className={`font-mono font-bold ${
                 assetId.startsWith('B') ? 'text-blue-400' :
                 assetId.startsWith('R') ? 'text-red-400' : 'text-green-400'
-              }`}>{resolveCallsign(assetId, callsignMode)}</span>
+              }`}>{droneLabel(assetId)}</span>
               {chain.map((task, i) => (
                 <span key={task.id} className="flex items-center gap-1">
                   {i > 0 && <span className="text-gray-600">→</span>}
@@ -1029,10 +1004,9 @@ function droneFullPathPoints(asset: Asset, mission: Mission): { x: number; y: nu
   return pts
 }
 
-function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionId }: {
+function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
   state: GameState
   dispatch: (a: GameAction) => void
-  callsignMode: CallsignMode
   setOpenMissionId: (id: string | null) => void
 }) {
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
@@ -1247,7 +1221,7 @@ function EmbeddedOperationalMap({ state, dispatch, callsignMode, setOpenMissionI
                     fill={MAP_ASSET_COLOR[a.type]} fontSize="7" fontFamily="monospace"
                     style={{ pointerEvents: 'none' }}
                   >
-                    {resolveCallsign(a.id, callsignMode)}
+                    {droneLabel(a.id)}
                   </text>
                 )}
               </g>

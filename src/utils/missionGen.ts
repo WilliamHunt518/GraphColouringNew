@@ -369,18 +369,14 @@ export const FAILURE_JITTER_CONST = 30  // random jitter added to each failure t
 
 // ─── Asset pool ───────────────────────────────────────────────────────────
 
-// Fleet is slightly Green-heavy: although Green was speed-buffed (5.4 u/s), it is required by
-// T3/T4/T5 and its travel-seconds dominate, so Green is the natural bottleneck — hence one extra
-// Green. The fleet is the SAME for every study scenario; difficulty differences come only from the
-// tactical/strategic weighting (mission size + arrival rate). Sized so each scenario stays "slightly
-// unachievable" — a smart operator (good redundancy + prioritisation) completes nearly all missions
-// in good time, while average play falls short. Tuned via sim/engine.mts (drives the real reducer
-// with failures + recovery). See also ASSET_SPEED above.
-// Uniform fleet across all study scenarios — only the tactical/strategic weighting
-// (mission size via CATEGORY_WEIGHTS + arrival rate via LAMBDA) differs between them.
-// 11B / 11R / 12G keeps every scenario "slightly unachievable" (smart operator ~79–88%
-// of missions). quick stays small for dev. Tuned via sim/engine.mts.
-export const STUDY_FLEET: [AssetType, number][] = [['Blue', 11], ['Red', 11], ['Green', 12]]
+// Uniform 11/11/11 fleet across every real study scenario — difficulty differences come only
+// from the tactical/strategic weighting (mission size via CATEGORY_WEIGHTS + arrival rate via
+// LAMBDA), not fleet composition. Originally 11B/11R/12G (one extra Green, since Green is required
+// by T3/T4/T5 and is the natural bottleneck on travel time despite being slowest); flattened to
+// 11/11/11 so the reserve is easier for operators to reason about. quick stays small for dev.
+// NOTE: was tuned via sim/engine.mts to keep each scenario "slightly unachievable" (smart operator
+// ~79–88% of missions) — re-run that tuning if this fleet size changes again.
+export const STUDY_FLEET: [AssetType, number][] = [['Blue', 11], ['Red', 11], ['Green', 11]]
 export const FLEET: Record<Complexity, [AssetType, number][]> = {
   balanced:  STUDY_FLEET,
   strategic: STUDY_FLEET,
@@ -389,44 +385,24 @@ export const FLEET: Record<Complexity, [AssetType, number][]> = {
   quick:     [['Blue', 5], ['Red', 5], ['Green', 5]],
 }
 
-// Arthurian knight callsigns — unique per drone, readable, UK military tradition
-export const ASSET_CALLSIGNS: Record<string, string> = {
-  // Blue — fast recce drones (premier Round Table knights, B01–B24)
-  B01: 'Arthur',    B02: 'Lancelot',  B03: 'Galahad',   B04: 'Gawain',    B05: 'Percival',
-  B06: 'Tristram',  B07: 'Bors',      B08: 'Gareth',    B09: 'Gaheris',   B10: 'Kay',
-  B11: 'Bedivere',  B12: 'Lamorak',   B13: 'Geraint',   B14: 'Palamedes', B15: 'Lucan',
-  B16: 'Agravaine', B17: 'Lionel',    B18: 'Ywain',
-  B19: 'Dinadan',   B20: 'Griflet',   B21: 'Sagramore', B22: 'Torre',     B23: 'Pellas',
-  B24: 'Marhalt',
-  // Red — standard supply/extract drones (allied kings and companion knights, R01–R12)
-  R01: 'Ector',     R02: 'Lot',       R03: 'Uriens',    R04: 'Leodegrance', R05: 'Caradoc',
-  R06: 'Bagdemagus',R07: 'Brunor',    R08: 'Safer',     R09: 'Pellinore',
-  R10: 'Colgrevance', R11: 'Meliodas', R12: 'Agglovale',
-  // Green — specialist thermal/precision drones (Arthurian figures, G01–G10)
-  G01: 'Balin',     G02: 'Balan',     G03: 'Elyan',     G04: 'Nimue',
-  G05: 'Merlin',    G06: 'Morgana',   G07: 'Lynette',   G08: 'Elaine',
-  G09: 'Enid',      G10: 'Luned',
+// Smaller fleet for the tutorial — easier to count and reason about while learning the reserve.
+export const TUTORIAL_FLEET: [AssetType, number][] = [['Blue', 6], ['Red', 6], ['Green', 6]]
+
+// Simple functional naming: refer to drone types by what they do, not their colour
+// (still coloured blue/red/green in the UI). Individual drone IDs (e.g. "B07") display
+// as "Fast-7" / "Lifter-7" / "Camera-7".
+export const ASSET_TYPE_LABEL: Record<AssetType, string> = { Blue: 'Fast', Red: 'Lifter', Green: 'Camera' }
+const DRONE_ID_PREFIX_LABEL: Record<string, string> = { B: 'Fast', R: 'Lifter', G: 'Camera' }
+
+export function droneLabel(assetId: string): string {
+  const prefix = DRONE_ID_PREFIX_LABEL[assetId[0]]
+  if (!prefix) return assetId
+  return `${prefix}-${parseInt(assetId.slice(1), 10)}`
 }
 
-// Numbered callsigns by drone class
-export const ASSET_CALLSIGNS_NATO: Record<string, string> = {
-  // Blue — Bravo-1 through Bravo-11
-  B01: 'Bravo-1',   B02: 'Bravo-2',   B03: 'Bravo-3',   B04: 'Bravo-4',   B05: 'Bravo-5',
-  B06: 'Bravo-6',   B07: 'Bravo-7',   B08: 'Bravo-8',   B09: 'Bravo-9',   B10: 'Bravo-10',
-  B11: 'Bravo-11',
-  // Red — Romeo-1 through Romeo-11
-  R01: 'Romeo-1',   R02: 'Romeo-2',   R03: 'Romeo-3',   R04: 'Romeo-4',   R05: 'Romeo-5',
-  R06: 'Romeo-6',   R07: 'Romeo-7',   R08: 'Romeo-8',   R09: 'Romeo-9',   R10: 'Romeo-10',
-  R11: 'Romeo-11',
-  // Green — Golf-1 through Golf-12
-  G01: 'Golf-1',    G02: 'Golf-2',    G03: 'Golf-3',    G04: 'Golf-4',    G05: 'Golf-5',
-  G06: 'Golf-6',    G07: 'Golf-7',    G08: 'Golf-8',    G09: 'Golf-9',    G10: 'Golf-10',
-  G11: 'Golf-11',   G12: 'Golf-12',
-}
-
-export function createInitialAssets(complexity: Complexity): Asset[] {
+export function createInitialAssets(complexity: Complexity, fleetOverride?: [AssetType, number][]): Asset[] {
   const assets: Asset[] = []
-  for (const [type, count] of FLEET[complexity]) {
+  for (const [type, count] of fleetOverride ?? FLEET[complexity]) {
     for (let i = 1; i <= count; i++) {
       const id = `${type[0]}${String(i).padStart(2, '0')}`
       assets.push({
