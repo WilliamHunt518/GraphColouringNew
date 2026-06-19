@@ -77,7 +77,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Override the first mission's drone team when the allocation-override step is entered
+  // Override the first mission's drone team when the tactical-pending step is entered
   useEffect(() => {
     if (overrideTeamFiredRef.current) return
     if (step !== ALLOCATION_OVERRIDE_STEP) return

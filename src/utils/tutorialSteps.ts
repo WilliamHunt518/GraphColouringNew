@@ -1,23 +1,24 @@
 import type { GameState } from '../types'
 
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
-export const TACTICAL_STEP_FIRST = 17
-export const TACTICAL_STEP_LAST  = 47   // tac-deploy2 (shifted by the abort steps)
+export const TACTICAL_STEP_FIRST = 16
+export const TACTICAL_STEP_LAST  = 46   // tac-deploy2 (shifted by the abort steps)
 
 // Step index where agent-introduction phase begins (triggers second mission spawn)
-export const AGENT_INTRO_STEP = 37   // shifted by the abort steps inserted after failure-lesson
+export const AGENT_INTRO_STEP = 36   // shifted by the abort steps inserted after failure-lesson
 
 // Step index where Tutorial.tsx begins trying to force a drone failure
-export const FAILURE_DEMO_STEP = 29
+export const FAILURE_DEMO_STEP = 28
 
-// Step index where Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM
+// Step index where Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM (tactical-pending — the team
+// swap is explained later, in tac-welcome, so no dedicated "team assigned" card is shown here)
 export const ALLOCATION_OVERRIDE_STEP = 14
 
 // Step index where Tutorial.tsx dispatches TUTORIAL_FORCE_ABANDON_SCENARIO (abort-explain is shown here)
-export const ABORT_EXPLAIN_STEP = 34
+export const ABORT_EXPLAIN_STEP = 33
 
 // First tactical-window step in PHASE 2 (abort-do) — used to keep TacticalTutorial overlay running
-export const ABORT_DO_STEP = 36
+export const ABORT_DO_STEP = 35
 
 export interface TutorialStep {
   id: string
@@ -48,6 +49,8 @@ export interface TutorialStep {
   forceManual?: boolean
   /** StrategicPanel hides the "Set manually instead" toggle so the operator can't leave the agent-card flow */
   forceAgent?: boolean
+  /** Next is disabled while the Tactical Assistant's "Suggest" animation is still filling in the plan */
+  waitForSuggest?: boolean
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
@@ -238,18 +241,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     spotlightPadding: 8,
   },
 
-  // ── 14. Allocation override notice (NEW) ─────────────────────────────────────
-  // Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM when this step is entered.
-  {
-    id: 'allocation-override',
-    title: 'Training Team Assigned',
-    body: [
-      'For this training mission we have set your drone team for you — we will explain why in the Tactical Planner. Click Next to open it.',
-    ],
-    cardSide: 'center',
-  },
-
-  // ── 15. Tactical pending ──────────────────────────────────────────────────────
+  // ── 14. Tactical pending ──────────────────────────────────────────────────────
+  // Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM when this step is entered (silently
+  // swaps in the fixed training team — explained to the operator in tac-welcome, below).
   {
     id: 'tactical-pending',
     title: 'Tactical Planning Pending',
@@ -264,9 +258,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 16. Map overview — no "click button" prompt ───────────────────────────────
   {
     id: 'map-overview',
-    title: 'The Operational Map',
+    title: 'The Strategic View',
     body: [
-      'The map shows your hub (blue circle), all mission zones (coloured circles), and drone travel routes. Zone colours: amber = queued, blue = active.',
+      'This panel is your Strategic View: the hub (blue circle), all mission zones (coloured circles), and drone travel routes. Zone colours: amber = queued, blue = active.',
       'Switch to the Tactical Planner window now — it should already be open on your second screen. The tutorial will continue there.',
     ],
     cardSide: 'center',
@@ -346,7 +340,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Check Task Requirements',
     body: [
       'Before assigning drones, look at the task schedule on the right. Each row shows which drone types a task needs to execute — a task cannot start until its requirements are met.',
-      '{green} drones are needed by the most task types and are your slowest type — they\'re usually the bottleneck. Plan those assignments first.',
+      'Different tasks need different combinations of {blue}, {red}, and {green} drones, so check each row before you start dragging.',
     ],
     highlight: 'tac-schedule',
     cardSide: 'left',
@@ -523,9 +517,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'abort-explain',
     title: 'When You Cannot Recover',
     body: [
-      'Sometimes a drone failure leaves a task uncoverable — recovery can only draw on the drones already deployed on that mission, not your hub reserve. If the failed drone was the only one of its type, no remaining drone can take over.',
-      'In that situation the only option is to abort the mission. Partial task completions are still scored; the remaining tasks are re-queued as a residual mission.',
-      'The tutorial will now fail your {red} drone, leaving its task uncoverable. Switch to the Tactical Planner to abort the mission.',
+      'Recovery can only draw on drones already deployed on that mission, not your hub reserve. If the failed drone was the only one of its type, the task can\'t be covered — and the only option is to abort.',
+      'Partial completions still score; remaining tasks re-queue as a residual mission.',
+      'The tutorial will now fail your {red} drone. Switch to the Tactical Planner to abort the mission.',
     ],
     cardSide: 'center',
   },
@@ -554,8 +548,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'abort-do',
     title: 'Abort the Mission',
     body: [
-      'Your {red} drone has just failed, and there is no spare {red} drone on this mission to take over its task. The schedule shows that task uncovered, and "Reassign" stays disabled — this mission can no longer be completed.',
-      'Look at the map: the uncovered task is highlighted and the schedule shows "Reassign" disabled. At the bottom of the recovery panel, click the "Abandon Mission" button. Partial completions are still scored and the remaining tasks are re-queued. The tutorial advances automatically.',
+      'Your {red} drone has failed and there\'s no spare {red} on this mission to cover its task — the schedule shows it uncovered with "Reassign" disabled.',
+      'Click "Abandon Mission" at the bottom of the recovery panel. Partial completions still score and the remaining tasks re-queue automatically.',
     ],
     cardSide: 'left',
     noOverlay: true,
@@ -573,9 +567,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'agent-intro',
     title: 'Now Try the Assistants',
     body: [
-      'Good work — you have completed the full manual workflow. A second mission has arrived.',
-      'Strategic vs Tactical: the Strategic Assistant decides how many drones to commit to a mission overall; the Tactical Assistant then decides which specific drones do which tasks within it.',
-      'This time you will use the Strategic Assistant to choose the allocation, then let the Tactical Assistant plan the assignments in the Tactical Planner.',
+      'Good work — you\'ve completed the full manual workflow. A second mission has arrived.',
+      'Strategic vs Tactical: the Strategic Assistant decides how many drones to commit overall; the Tactical Assistant then decides which specific drones do which tasks. You\'ll use both for this mission.',
     ],
     cardSide: 'center',
   },
@@ -708,6 +701,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     allowClickThrough: true,
     tryIt: true,
     tryItHint: 'Optionally drag to override an assignment, then click Next →.',
+    waitForSuggest: true,
     inMapWindow: true,
   },
 

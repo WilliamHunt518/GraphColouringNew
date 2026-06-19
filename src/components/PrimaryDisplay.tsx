@@ -1011,10 +1011,10 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
 }) {
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 })
   const [grabbing, setGrabbing] = useState(false)
-  const [detailLevel, setDetailLevel] = useState<0 | 1 | 2>(0)
+  const [detailLevel, setDetailLevel] = useState<0 | 1 | 2>(2)
   const [hoverDrone, setHoverDrone] = useState<string | null>(null)
   const [hoverZone, setHoverZone] = useState<string | null>(null)
-  const [showFullPaths, setShowFullPaths] = useState(!!state.config.fullPathsOnHover)
+  const [showFullPaths] = useState(!!state.config.fullPathsOnHover)
   const svgRef = useRef<SVGSVGElement>(null)
   const isPanning = useRef(false)
   const hasMoved = useRef(false)
@@ -1307,15 +1307,6 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
         <rect x="6" y="770" width="60" height="16" rx="3" fill="#1f2937" stroke="#374151" />
         <text x="36" y="781" textAnchor="middle" fill="#9ca3af" fontSize="9" fontFamily="sans-serif">
           {(['Low', 'Mid', 'Full'] as const)[detailLevel]}
-        </text>
-      </g>
-
-      {/* Full-path-on-hover toggle */}
-      <g onClick={() => setShowFullPaths(v => !v)} onPointerDown={e => e.stopPropagation()} style={{ cursor: 'pointer' }}>
-        <rect x="70" y="770" width="78" height="16" rx="3"
-          fill={showFullPaths ? '#1e3a8a' : '#1f2937'} stroke={showFullPaths ? '#3b82f6' : '#374151'} />
-        <text x="109" y="781" textAnchor="middle" fill={showFullPaths ? '#93c5fd' : '#9ca3af'} fontSize="9" fontFamily="sans-serif">
-          Paths: {showFullPaths ? 'on' : 'off'}
         </text>
       </g>
 

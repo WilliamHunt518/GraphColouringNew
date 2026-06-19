@@ -160,7 +160,7 @@ and code stay `'Blue' | 'Red' | 'Green'` — only the display layer changed (see
 |-------|-------|-------|
 | Blue ("Fast")    | 9.0   | Fastest, recce-only |
 | Red ("Lifter")   | 6.8   | Standard, supply + extract |
-| Green ("Camera") | 5.4   | Slowest specialist — required by the most task types (T3/T4/T5), so it's usually the bottleneck despite being the most numerous (12 vs 11/11) |
+| Green ("Camera") | 5.4   | Slowest type — required by T3/T4/T5, same task-type count as Blue (T1/T2/T5) and Red (T3/T4/T5); not specially "most constrained," just slowest to arrive |
 
 ## Development Guidelines
 

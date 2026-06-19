@@ -526,6 +526,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const isSuggestLoading = suggestQueue.length > 0
   useEffect(() => {
     onSuggestLoadingChange?.(isSuggestLoading)
+    // TacticalTutorial lives in a sibling component tree (no shared props) — broadcast via a
+    // DOM event so it can gate the "Next" button until the Suggest animation finishes.
+    document.dispatchEvent(new CustomEvent('tutorial-suggest-loading', { detail: isSuggestLoading }))
     return () => onSuggestLoadingChange?.(false)
   }, [isSuggestLoading]) // eslint-disable-line react-hooks/exhaustive-deps
   const [dragging, setDragging] = useState<{ droneId: string; svgX: number; svgY: number } | null>(null)

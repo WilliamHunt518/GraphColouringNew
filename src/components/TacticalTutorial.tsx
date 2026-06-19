@@ -54,11 +54,21 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
 
 export default function TacticalTutorial({ state, step, onNext, onBack, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
+  const [suggestLoading, setSuggestLoading] = useState(false)
   const chainCountRef        = useRef(0)
   const sawFailurePendingRef = useRef(false)
   const recoveryAdvancedRef  = useRef(false)
 
   const current = TUTORIAL_STEPS[step]
+  const blockedOnSuggest = !!current?.waitForSuggest && suggestLoading
+
+  // Listen for the Tactical Planner's Suggest-animation state (broadcast via DOM event since
+  // MapDisplay and TacticalTutorial are sibling trees with no shared props).
+  useEffect(() => {
+    const handler = (e: Event) => setSuggestLoading(!!(e as CustomEvent<boolean>).detail)
+    document.addEventListener('tutorial-suggest-loading', handler)
+    return () => document.removeEventListener('tutorial-suggest-loading', handler)
+  }, [])
 
   // Primary-window steps: let the map show normally so the user has context.
   // (The primary window already shows a full grey overlay directing them here.)
@@ -132,6 +142,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     const handler = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
       if (current?.mustInteract) return
+      if (blockedOnSuggest) return
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       e.preventDefault()
@@ -140,7 +151,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [step, current, isLastTacStep, onNext, onComplete])
+  }, [step, current, isLastTacStep, blockedOnSuggest, onNext, onComplete])
 
   // Track highlighted element rect
   const refreshSpot = useCallback(() => {
@@ -243,8 +254,8 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
           )}
           {/* tryIt hint */}
           {current.tryIt && !current.mustInteract && (
-            <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontSize: 12, color: '#a5b4fc', lineHeight: 1.5 }}>
-              {current.tryItHint ?? 'Try the highlighted element, then click Next.'}
+            <div style={{ marginTop: 11, padding: '7px 10px', background: blockedOnSuggest ? 'rgba(251,191,36,0.1)' : 'rgba(99,102,241,0.1)', border: blockedOnSuggest ? '1px solid rgba(251,191,36,0.25)' : '1px solid rgba(99,102,241,0.25)', borderRadius: 6, fontSize: 12, color: blockedOnSuggest ? '#fde68a' : '#a5b4fc', lineHeight: 1.5 }}>
+              {blockedOnSuggest ? 'Waiting for the Tactical Assistant to finish assigning drones…' : (current.tryItHint ?? 'Try the highlighted element, then click Next.')}
             </div>
           )}
           {/* navigation */}
@@ -259,7 +270,19 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
                 </button>
               )}
               {!current.mustInteract && (
-                <button onClick={isLastTacStep ? onComplete : onNext} style={{ fontSize: 13, color: '#fff', background: 'linear-gradient(135deg,#6366f1,#4f46e5)', border: 'none', borderRadius: 7, padding: '7px 18px', cursor: 'pointer', fontWeight: 600, lineHeight: 1, fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(99,102,241,0.45)' }}>
+                <button
+                  onClick={isLastTacStep ? onComplete : onNext}
+                  disabled={blockedOnSuggest}
+                  style={{
+                    fontSize: 13, color: '#fff',
+                    background: blockedOnSuggest ? '#334155' : 'linear-gradient(135deg,#6366f1,#4f46e5)',
+                    border: 'none', borderRadius: 7, padding: '7px 18px',
+                    cursor: blockedOnSuggest ? 'not-allowed' : 'pointer',
+                    opacity: blockedOnSuggest ? 0.6 : 1,
+                    fontWeight: 600, lineHeight: 1, fontFamily: 'inherit',
+                    boxShadow: blockedOnSuggest ? 'none' : '0 2px 10px rgba(99,102,241,0.45)',
+                  }}
+                >
                   {isLastTacStep ? 'Finish' : 'Next →'}
                 </button>
               )}
