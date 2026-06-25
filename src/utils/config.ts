@@ -39,6 +39,11 @@ export function parseURLConfig(): StudyConfig | null {
   }
 }
 
+// Canonical study seed. Every participant who doesn't explicitly override the seed
+// (Randomise button or ?seed= URL param) gets this exact run — same mission sequence,
+// zones, task compositions, and failure schedule. Edit here to change the canonical scenario.
+export const STUDY_SEED = 42
+
 export function randomSeed(): number {
   return Math.floor(Math.random() * 99999) + 1
 }

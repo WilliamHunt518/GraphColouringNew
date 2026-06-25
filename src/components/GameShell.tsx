@@ -80,7 +80,7 @@ export default function GameShell({ config }: Props) {
         dispatch({ type: 'APPLY_MANUAL_RECOVERY', missionId: d.missionId, taskId: d.taskId, newAssetId: d.newAssetId })
       }
       if (d._mapAction === 'CONFIRM_FAILURE_RECOVERY' && typeof d.missionId === 'string') {
-        dispatch({ type: 'CONFIRM_FAILURE_RECOVERY', missionId: d.missionId, taskAssignments: d.taskAssignments })
+        dispatch({ type: 'CONFIRM_FAILURE_RECOVERY', missionId: d.missionId, taskAssignments: d.taskAssignments, droneSequences: d.droneSequences })
       }
       if (d._mapAction === 'ABANDON_MISSION' && typeof d.missionId === 'string') {
         dispatch({ type: 'ABANDON_MISSION', missionId: d.missionId })

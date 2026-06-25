@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 
 import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAllocation } from '../types'
-import { HUB, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
+import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
@@ -138,10 +138,10 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
             onSuggestLoadingChange={setSuggestLoading}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-600">
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-300">
             <p className="text-lg">Select a mission from the panel</p>
             {pending.length === 0 && (
-              <p className="text-lg text-gray-700">No missions currently require tactical assignment</p>
+              <p className="text-lg text-gray-400">No missions currently require tactical assignment</p>
             )}
           </div>
         )}
@@ -199,7 +199,7 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state, disabled }: {
                   disabled={isLocked}
                   title={isLocked ? 'Wait for the current Suggest to finish before switching missions' : undefined}
                   onClick={() => { onSelect(m.id); document.dispatchEvent(new CustomEvent('tutorial-mission-selected')) }}
-                  className={`relative w-full text-left px-3 py-2.5 rounded border-2 transition-colors ${isLocked ? 'opacity-40 cursor-not-allowed' : ''} ${
+                  className={`relative w-full text-left px-3 py-2.5 rounded border-2 transition-colors ${isLocked ? 'opacity-60 cursor-not-allowed' : ''} ${
                     isSelected
                       ? isRecov
                         ? 'border-red-500 bg-red-900/40'
@@ -727,7 +727,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
   function handleDeploy() {
     if (recoveryMode) {
-      onMapAction({ _mapAction: 'CONFIRM_FAILURE_RECOVERY', missionId: mission.id, taskAssignments: assignments })
+      onMapAction({ _mapAction: 'CONFIRM_FAILURE_RECOVERY', missionId: mission.id, taskAssignments: assignments, droneSequences })
     } else {
       onMapAction({ _mapAction: 'CONFIRM_TACTICAL', missionId: mission.id, taskAssignments: assignments, droneSequences })
     }
@@ -859,13 +859,20 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               </marker>
             </defs>
 
+            {/* Terrain background — same /map-bg.jpg in world coords as the strategic map.
+                The dynamic viewBox here crops it to this mission zone, so it's a true
+                zoomed-in view of the same landscape, aligned to the strategic map. */}
+            <image href="/map-bg.jpg" x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" />
+            <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="#0b1220" opacity="0.28" />
+
             {/* Zone */}
-            <circle cx={cx} cy={cy} r={r} fill="rgba(29,78,216,0.06)" stroke="#1e40af" strokeWidth="1.5" />
+            <circle cx={cx} cy={cy} r={r} fill="rgba(11,18,32,0.34)" stroke="#3b82f6" strokeWidth="2" />
 
             {/* HUB indicator */}
-            <line x1={cx} y1={cy} x2={hubEdgeX} y2={hubEdgeY} stroke="#374151" strokeWidth="1" strokeDasharray="5 3" />
-            <line x1={hubEdgeX} y1={hubEdgeY} x2={hubLabelX} y2={hubLabelY} stroke="#4b5563" strokeWidth="1" markerEnd="url(#arr-drag)" />
-            <text x={hubLabelX} y={hubLabelY} textAnchor="middle" dy="3" fill="#6b7280" fontSize="8" fontFamily="monospace">HUB</text>
+            <line x1={cx} y1={cy} x2={hubEdgeX} y2={hubEdgeY} stroke="#64748b" strokeWidth="1" strokeDasharray="5 3" />
+            <line x1={hubEdgeX} y1={hubEdgeY} x2={hubLabelX} y2={hubLabelY} stroke="#94a3b8" strokeWidth="1" markerEnd="url(#arr-drag)" />
+            <text x={hubLabelX} y={hubLabelY} textAnchor="middle" dy="3" fill="#cbd5e1" fontSize="8" fontFamily="monospace"
+              style={{ paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">HUB</text>
 
 
             {/* Recovery: failed drone icon (greyed out, informational) */}
@@ -880,8 +887,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   <circle cx={fx} cy={fy} r={9} fill="#1e293b" stroke="#6b7280" strokeWidth={1.5} strokeDasharray="3 2" />
                   <image href={DRONE_ICON[type]} x={fx - 6} y={fy - 6} width={12} height={12}
                     style={{ pointerEvents: 'none', filter: 'grayscale(1)' }} />
-                  <text x={fx} y={fy + 15} textAnchor="middle" fill="#6b7280" fontSize="7" fontFamily="monospace"
-                    style={{ pointerEvents: 'none' }}>{droneLabel(fd.id)}</text>
+                  <text x={fx} y={fy + 15} textAnchor="middle" fill="#cbd5e1" fontSize="7" fontFamily="monospace"
+                    style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">{droneLabel(fd.id)}</text>
                   <line x1={fx - 7} y1={fy - 7} x2={fx + 7} y2={fy + 7} stroke="#ef4444" strokeWidth={1.5} />
                   <line x1={fx + 7} y1={fy - 7} x2={fx - 7} y2={fy + 7} stroke="#ef4444" strokeWidth={1.5} />
                 </g>
@@ -1022,13 +1029,13 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                       style={{ pointerEvents: 'none', opacity: 0.35 }}
                     />
                     <text x={task.waypoint.x} y={task.waypoint.y + 24}
-                      textAnchor="middle" fill="#374151" fontSize="8" fontFamily="sans-serif"
-                      style={{ pointerEvents: 'none' }}>
+                      textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="sans-serif"
+                      style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">
                       {TASK_TYPE_NAMES[task.type]}
                     </text>
                     <text x={task.waypoint.x} y={task.waypoint.y + 33}
-                      textAnchor="middle" fill="#374151" fontSize="7" fontFamily="monospace"
-                      style={{ pointerEvents: 'none' }}>✓ done</text>
+                      textAnchor="middle" fill="#94a3b8" fontSize="7" fontFamily="monospace"
+                      style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">✓ done</text>
                   </g>
                 )
               }
@@ -1088,8 +1095,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                     style={{ pointerEvents: 'none' }}
                   />
                   <text x={task.waypoint.x} y={task.waypoint.y + 21}
-                    textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="sans-serif"
-                    style={{ pointerEvents: 'none' }}>
+                    textAnchor="middle" fill="#cbd5e1" fontSize="8" fontFamily="sans-serif"
+                    style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">
                     {TASK_TYPE_NAMES[task.type]}
                   </text>
                   {complete ? (
@@ -1101,7 +1108,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                       {/* Primary comp — per-type color (B=blue, R=red, G=green) */}
                       <text x={task.waypoint.x} y={task.waypoint.y + 33}
                         textAnchor="middle" fontSize="7" fontFamily="monospace"
-                        style={{ pointerEvents: 'none' }}>
+                        style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">
                         {[
                           req.Blue  > 0 ? { c: counts.Blue,  r: req.Blue,  key: 'F', col: '#60a5fa' } : null,
                           req.Red   > 0 ? { c: counts.Red,   r: req.Red,   key: 'L', col: '#f87171' } : null,
@@ -1121,8 +1128,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                       {/* Alt comp */}
                       {sub && (
                         <text x={task.waypoint.x} y={task.waypoint.y + 42}
-                          textAnchor="middle" fill="#6b7280" fontSize="6.5" fontFamily="monospace"
-                          style={{ pointerEvents: 'none' }}>
+                          textAnchor="middle" fill="#9ca3af" fontSize="6.5" fontFamily="monospace"
+                          style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="1.6" strokeLinejoin="round">
                           {`OR ${[sub.Blue > 0 ? `${sub.Blue}F` : null, sub.Red > 0 ? `${sub.Red}L` : null, sub.Green > 0 ? `${sub.Green}C` : null].filter(Boolean).join('+')} `}
                         </text>
                       )}
@@ -1152,7 +1159,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                     strokeWidth={isDraggingThis || isHoveredDrone ? 2.5 : 1.5} />
                   <image href={DRONE_ICON[type]} x={pos.x - 5} y={pos.y - 5} width={10} height={10} style={{ pointerEvents: 'none' }} />
                   <text x={pos.x} y={pos.y + 14} textAnchor="middle" fill={color} fontSize="6.5" fontFamily="monospace"
-                    style={{ pointerEvents: 'none' }}>{cs}</text>
+                    style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="1.6" strokeLinejoin="round">{cs}</text>
                 </g>
               )
             })}

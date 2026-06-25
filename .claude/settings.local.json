@@ -99,7 +99,28 @@
       "Bash(npx tsx *)",
       "Bash(ls docs/paper)",
       "Bash(ls analysis *)",
-      "Bash(ls scripts *)"
+      "Bash(ls scripts *)",
+      "Bash(ffmpeg -y -ss 30 -i sar_demo_20260622_123050.mp4 -frames:v 1 -q:v 2 /tmp/demo_frame.png -loglevel error)",
+      "Bash(ffmpeg -y -ss 30 -i sar_demo_20260622_123050.mp4 -frames:v 1 -q:v 2 demo_frame.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -vf \"crop=2240:240:0:0\" demo_top_left.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -vf \"crop=2240:240:2240:0\" demo_top_right.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -vf \"crop=2240:1380:0:0,scale=1000:-1\" half_left.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -vf \"crop=2240:1380:2240:0,scale=1000:-1\" half_right.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -vf \"crop=1920:360:0:140\" L_chrome.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -vf \"crop=2560:220:1920:0\" R_chrome.png -loglevel error)",
+      "Bash(ffmpeg -hide_banner -filters)",
+      "Bash(ffmpeg -y -i demo_frame.png -filter_complex_script filter_composite.txt -map \"[v]\" -frames:v 1 composite_preview.png -loglevel error)",
+      "Bash(ffmpeg -y -i composite_preview.png -vf scale=1200:-1 composite_preview_small.png -loglevel error)",
+      "Bash(ffmpeg -y -i demo_frame.png -filter_complex_script filter_composite.txt -map \"[v]\" -frames:v 1 composite_preview2.png -loglevel error)",
+      "Bash(cat \"C:/Users/Work/AppData/Local/Temp/claude/G--Files-Code-GraphColouringNew/afcc8ad7-4c09-42ab-bcfe-ff8393a4eb10/tasks/bmmdurs6s.output\")",
+      "Bash(tail -5 render1.log)",
+      "Bash(ffmpeg -y -i StudyPresentation.mp4 -i sar_demo_20260622_123050.mp4 -filter_complex_script file1_nocrop.txt -map \"[v]\" -map \"[a]\" -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 192k Combined_NoCrop.mp4 -loglevel error -stats)",
+      "Bash(echo \"file1\\(libx264\\) exit=$?\")",
+      "Bash(ps -W)",
+      "Bash(ffmpeg -y -i StudyPresentation.mp4 -i sar_demo_20260622_123050.mp4 -filter_complex_script file1_nocrop.txt -map \"[v]\" -map \"[a]\" -c:v h264_nvenc -preset p5 -tune hq -rc vbr -cq 21 -b:v 0 -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 192k Combined_NoCrop.mp4 -loglevel error -stats)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(ffmpeg -y -ss 600 -i Combined_Cropped.mp4 -frames:v 1 -vf scale=1200:-1 check_crop.png -loglevel error)",
+      "Bash(ffmpeg -y -ss 600 -i Combined_NoCrop.mp4 -frames:v 1 -vf scale=1200:-1 check_nocrop.png -loglevel error)"
     ]
   }
 }

@@ -3,12 +3,17 @@ import type { SeededRNG } from './prng'
 
 // ─── Map constants ────────────────────────────────────────────────────────
 
-export const HUB = { x: 500, y: 400 } as const
-export const MAP_W = 1000
+// World is ~16:9 so it nearly matches typical monitors — the strategic map fills the window
+// (cover/slice), and a near-matching aspect keeps edge-cropping minimal.
+export const MAP_W = 1400
 export const MAP_H = 800
-export const ZONE_RADIUS = 96   // ~20% larger spread of waypoints within a zone
+export const HUB = { x: MAP_W / 2, y: MAP_H / 2 } as const
+export const ZONE_RADIUS = 90   // spread of waypoints within a zone
 const ZONE_MIN_HUB = 120        // ~20% closer to hub — makes asset choice matter more
 const ZONE_MIN_ZONE = 200   // minimum distance between zone centers
+// Keep zone CENTERS this far from the map edges. Combined with the wide world aspect, this
+// keeps whole mission circles inside the cropped viewport on typical monitors.
+export const ZONE_EDGE_MARGIN = 180
 
 // ─── Physics ──────────────────────────────────────────────────────────────
 
@@ -232,7 +237,7 @@ function placeZone(
   rng: SeededRNG,
   existing: Array<{ x: number; y: number }>,
 ): { x: number; y: number } {
-  const margin = ZONE_RADIUS + 10
+  const margin = Math.max(ZONE_RADIUS + 10, ZONE_EDGE_MARGIN)
   // Hard minimum: circles must not visually overlap (slightly tighter than ZONE_MIN_ZONE)
   const noOverlapMin = ZONE_RADIUS * 2 + 4
 

@@ -1779,57 +1779,72 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const mission = state.missions.find(m => m.id === action.missionId)
       if (!mission || !mission.failureRecoveryPending) return state
       const now = state.elapsed
+      const assetById = new Map(state.assets.map(a => [a.id, a]))
 
-      let newAssets = [...state.assets]
+      // Only (re)assign PENDING tasks to drones that are actually available in the reserve.
+      const recoveryTaskAssignments: Record<string, string[]> = {}
+      for (const task of mission.tasks) {
+        if (task.status !== 'pending') continue
+        const ids = (action.taskAssignments[task.id] ?? []).filter(id => assetById.get(id)?.status === 'available')
+        if (ids.length > 0) recoveryTaskAssignments[task.id] = ids
+      }
+
+      // Per-drone sequences: planner chain order (filtered to the pending tasks the drone covers),
+      // falling back to pending-task order when the planner didn't supply sequences. Persisting these
+      // onto the mission is what lets the operational map's hover reveal a reassigned drone's full
+      // remaining path, and lets TICK chain the drone through its tasks in order.
+      const recoverySeqs: Record<string, string[]> = {}
+      const recoveryDroneIds = [...new Set(Object.values(recoveryTaskAssignments).flat())]
+      for (const id of recoveryDroneIds) {
+        const fromAction = action.droneSequences?.[id]
+        const seq = (fromAction && fromAction.length > 0)
+          ? fromAction.filter(tid => (recoveryTaskAssignments[tid] ?? []).includes(id))
+          : Object.keys(recoveryTaskAssignments).filter(tid => recoveryTaskAssignments[tid].includes(id))
+        if (seq.length > 0) recoverySeqs[id] = seq
+      }
+
+      // Reuse the canonical converger so chained (multi-task) reassignments get correct start times.
+      const recoveryAssignments = buildManualAssignments(mission, state.assets, recoveryTaskAssignments, recoverySeqs, now)
+      const asgnByTask = new Map(recoveryAssignments.map(a => [a.taskId, a]))
+
       const newTasks = mission.tasks.map(task => {
-        if (task.status !== 'pending') return task
-        const assignedIds = action.taskAssignments[task.id] ?? []
-        if (assignedIds.length === 0) return task
-
-        // Guard: reject assignments that don't meet primary or substitute composition requirements.
-        const assetById = new Map(newAssets.map(a => [a.id, a]))
-        if (!taskMeetsComposition(task, assignedIds, assetById)) return task
-
-        const travelTimes = assignedIds.map(id => {
-          const asset = newAssets.find(a => a.id === id)
-          if (!asset || asset.status !== 'available') return 0
-          return Math.hypot(task.waypoint.x - HUB.x, task.waypoint.y - HUB.y) / ASSET_SPEED[asset.type]
-        })
-        const startTime = now + Math.max(0, ...travelTimes)
-        const completionTime = startTime + task.baseTime
-
-        for (const droneId of assignedIds) {
-          const assetIdx = newAssets.findIndex(a => a.id === droneId)
-          if (assetIdx < 0) continue
-          const asset = newAssets[assetIdx]
-          if (asset.status !== 'available') continue
-          const tt = Math.hypot(task.waypoint.x - HUB.x, task.waypoint.y - HUB.y) / ASSET_SPEED[asset.type]
-          newAssets[assetIdx] = {
-            ...asset,
-            status: 'deployed' as const,
-            currentMissionId: mission.id,
-            currentTaskId: task.id,
-            travelFrom: { ...HUB },
-            targetPosition: { ...task.waypoint },
-            travelStartElapsed: now,
-            travelEndElapsed: now + tt,
-            availableAt: completionTime + Math.hypot(task.waypoint.x - HUB.x, task.waypoint.y - HUB.y) / ASSET_SPEED[asset.type],
-          }
-        }
-
-        const newAssignedIds = [
-          ...task.assignedAssetIds.filter(id => !assignedIds.includes(id)),
-          ...assignedIds.filter(id => {
-            const asset = newAssets.find(a => a.id === id)
-            return asset?.status === 'deployed' && asset.currentTaskId === task.id
-          }),
-        ]
+        const asgn = asgnByTask.get(task.id)
+        if (!asgn || task.status !== 'pending') return task
         return {
           ...task,
-          assignedAssetIds: newAssignedIds,
-          startTime,
-          completionTime,
           status: 'traveling' as const,
+          assignedAssetIds: [
+            ...task.assignedAssetIds.filter(id => !asgn.assetIds.includes(id)),
+            ...asgn.assetIds,
+          ],
+          allocatedAt: now,
+          travelTime: asgn.travelTime,
+          baseTime: asgn.baseTime,
+          useSubstitute: asgn.useSubstitute,
+          startTime: asgn.startTime,
+          completionTime: asgn.startTime + asgn.baseTime,
+          recallDelay: 0,
+        }
+      })
+
+      // Deploy each reassigned drone to the FIRST task in its sequence; later tasks are picked up
+      // by the sequential chaining in TICK once the current step completes.
+      const newAssets = state.assets.map(asset => {
+        const myAsgns = recoveryAssignments.filter(a => a.assetIds.includes(asset.id))
+        if (myAsgns.length === 0 || asset.status !== 'available') return asset
+        const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
+        const task = newTasks.find(t => t.id === firstAsgn.taskId)!
+        const tt = travelTime(HUB, task.waypoint, ASSET_SPEED[asset.type])
+        return {
+          ...asset,
+          status: 'deployed' as const,
+          currentMissionId: mission.id,
+          currentTaskId: task.id,
+          travelFrom: { ...HUB },
+          targetPosition: { ...task.waypoint },
+          travelStartElapsed: now,
+          travelEndElapsed: now + tt,
+          availableAt: now + tt + firstAsgn.baseTime + travelTime(task.waypoint, HUB, ASSET_SPEED[asset.type]),
         }
       })
 
@@ -1848,6 +1863,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missions: s.missions.map(m => m.id === action.missionId ? {
           ...m,
           tasks: newTasks,
+          droneSequences: { ...m.droneSequences, ...recoverySeqs },
           failureRecoveryPending: false,
           pendingRecoveryOptions: null,
         } : m),

@@ -6,7 +6,7 @@ import type { GameAction } from '../store/actions'
 import { reserveCount } from '../store/gameReducer'
 import { downloadStudySnapshot } from '../utils/debugLog'
 import { previewAllocation } from '../utils/copilot'
-import { HUB, droneLabel, ASSET_TYPE_LABEL, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL, TASK_PRIMARY, TASK_SUBSTITUTE } from '../utils/missionGen'
+import { HUB, MAP_W, MAP_H, droneLabel, ASSET_TYPE_LABEL, CATEGORY_PENALTY_RATE, TASK_WEIGHT, CHARGE_INTERVAL, TASK_PRIMARY, TASK_SUBSTITUTE } from '../utils/missionGen'
 import { CAT_ICON, TASK_ICON, DRONE_ICON } from '../utils/icons'
 import type { TaskType } from '../types'
 
@@ -37,7 +37,7 @@ const CAT_NAME: Record<MissionCategory, string> = {
 }
 
 const TASK_STATUS_STYLE: Record<Task['status'], string> = {
-  pending:   'bg-gray-700 text-gray-400',
+  pending:   'bg-gray-600 text-gray-200',
   traveling: 'bg-blue-800 text-blue-100 animate-pulse',
   executing: 'bg-amber-700 text-amber-100 animate-pulse',
   completed: 'bg-green-800 text-green-100',
@@ -198,7 +198,7 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
         <div className="w-[440px] flex-none flex flex-col overflow-hidden border-r border-gray-800">
           {/* Compact reserve strip */}
           <div data-tutorial="reserve-strip" className="flex-none px-4 py-2.5 border-b border-gray-800 bg-gray-900/50 flex items-center gap-4 flex-wrap">
-            <span className="text-xs text-gray-500 uppercase tracking-wider">Reserve</span>
+            <span className="text-xs text-gray-300 uppercase tracking-wider">Reserve</span>
             {(['Blue', 'Red', 'Green'] as AssetType[]).map(type => {
               const avail = reserve[type]
               const total = state.assets.filter(a => a.type === type).length
@@ -286,7 +286,7 @@ function SectionLabel({ text, dot }: { text: string; dot: string }) {
   return (
     <div className="flex items-center gap-2 mb-2 px-1">
       <span className={`w-1.5 h-1.5 rounded-full ${dot} flex-none`} />
-      <span className="text-xs text-gray-500 uppercase tracking-wider">{text}</span>
+      <span className="text-xs text-gray-400 uppercase tracking-wider">{text}</span>
     </div>
   )
 }
@@ -981,10 +981,11 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
 // ─── Embedded operational map ─────────────────────────────────────────────
 
 const MAP_ZONE_STROKE: Record<string, string> = {
-  queued: '#b45309', active: '#1d4ed8', completed: '#374151', failed: '#7f1d1d',
+  queued: '#f59e0b', active: '#3b82f6', completed: '#6b7280', failed: '#ef4444',
 }
+// Fills tinted darker/denser so zones read as a backing against the terrain map.
 const MAP_ZONE_FILL: Record<string, string> = {
-  queued: 'rgba(120,53,15,0.12)', active: 'rgba(29,78,216,0.10)', completed: 'rgba(55,65,81,0.04)', failed: 'rgba(127,29,29,0.04)',
+  queued: 'rgba(120,53,15,0.34)', active: 'rgba(11,18,32,0.34)', completed: 'rgba(17,24,39,0.30)', failed: 'rgba(127,29,29,0.30)',
 }
 const MAP_ASSET_COLOR: Record<AssetType, string> = { Blue: '#60a5fa', Red: '#f87171', Green: '#4ade80' }
 
@@ -1002,6 +1003,15 @@ function droneFullPathPoints(asset: Asset, mission: Mission): { x: number; y: nu
   }
   pts.push({ x: HUB.x, y: HUB.y })
   return pts
+}
+
+// Constrain pan/zoom so the terrain map always covers the viewport — never zoom out past
+// "cover" (scale 1) or pan so far that the dark backdrop shows at an edge. World is 1000x800.
+function clampView(v: { x: number; y: number; scale: number }) {
+  const scale = Math.min(8, Math.max(1, v.scale))
+  const x = Math.min(0, Math.max(MAP_W * (1 - scale), v.x))
+  const y = Math.min(0, Math.max(MAP_H * (1 - scale), v.y))
+  return { x, y, scale }
 }
 
 function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
@@ -1028,15 +1038,18 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
       const rect = svg.getBoundingClientRect()
+      // Inverse of preserveAspectRatio="xMidYMid slice": world units per pixel = min of the
+      // two axis ratios, measured from the viewport centre.
+      const k = Math.min(MAP_W / rect.width, MAP_H / rect.height)
       const pt = {
-        x: (e.clientX - rect.left) / rect.width * 1000,
-        y: (e.clientY - rect.top) / rect.height * 800,
+        x: MAP_W / 2 + (e.clientX - rect.left - rect.width / 2) * k,
+        y: MAP_H / 2 + (e.clientY - rect.top - rect.height / 2) * k,
       }
       const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2
       setView(v => {
-        const ns = Math.min(8, Math.max(0.25, v.scale * factor))
+        const ns = Math.min(8, Math.max(1, v.scale * factor))
         const ratio = ns / v.scale
-        return { x: pt.x - (pt.x - v.x) * ratio, y: pt.y - (pt.y - v.y) * ratio, scale: ns }
+        return clampView({ x: pt.x - (pt.x - v.x) * ratio, y: pt.y - (pt.y - v.y) * ratio, scale: ns })
       })
     }
     svg.addEventListener('wheel', onWheel, { passive: false })
@@ -1046,11 +1059,13 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
   const gt = `translate(${view.x},${view.y}) scale(${view.scale})`
 
   return (
+    <div className="relative w-full h-full">
     <svg
       ref={svgRef}
-      viewBox="0 0 1000 800"
+      viewBox={`0 0 ${MAP_W} ${MAP_H}`}
+      preserveAspectRatio="xMidYMid slice"
       className="w-full h-full"
-      style={{ cursor: grabbing ? 'grabbing' : 'grab', background: '#030712' }}
+      style={{ cursor: grabbing ? 'grabbing' : 'grab', background: '#0b1220' }}
       onClick={() => {
         LOG && console.log('[PRIMARY] blank SVG click, hasMoved:', hasMoved.current)
         if (!hasMoved.current) setOpenMissionId(null)
@@ -1076,7 +1091,8 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
           }
         }
         const rect = svgRef.current!.getBoundingClientRect()
-        setView(v => ({ ...v, x: v.x + dx * 1000 / rect.width, y: v.y + dy * 800 / rect.height }))
+        const k = Math.min(MAP_W / rect.width, MAP_H / rect.height)
+        setView(v => clampView({ ...v, x: v.x + dx * k, y: v.y + dy * k }))
       }}
       onPointerUp={() => { isPanning.current = false; setGrabbing(false); hasCaptured.current = false }}
     >
@@ -1092,15 +1108,12 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
         </marker>
       </defs>
       <g transform={gt}>
-        {/* Dark background */}
-        <rect width="1000" height="800" fill="#030712" />
-
-        {/* Grid dots */}
-        {Array.from({ length: 20 }, (_, i) => i * 50).flatMap(gx =>
-          Array.from({ length: 16 }, (_, j) => j * 50).map(gy => (
-            <circle key={`${gx},${gy}`} cx={gx} cy={gy} r={0.8} fill="#1f2937" />
-          ))
-        )}
+        {/* Terrain background — same image + world coords as the tactical map so the two
+            views stay aligned (tactical is a zoomed crop of this). Medium-brightness:
+            map clearly visible, dimmed ~28% so overlay elements stay high-contrast. */}
+        <rect width={MAP_W} height={MAP_H} fill="#0b1220" />
+        <image href="/map-bg.jpg" x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" />
+        <rect width={MAP_W} height={MAP_H} fill="#0b1220" opacity="0.28" />
 
         {/* Mission zones */}
         {[...state.missions]
@@ -1136,8 +1149,10 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
                   strokeWidth={isTactical ? '2' : '1.5'}
                   strokeDasharray={isTactical ? '6 3' : undefined}
                 />
-                <text x={m.zoneCenter.x} y={m.zoneCenter.y - 4} textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="monospace">{m.id}</text>
-                <text x={m.zoneCenter.x} y={m.zoneCenter.y + 10} textAnchor="middle" fill="#9ca3af" fontSize="8" fontFamily="sans-serif">Cat {m.category}</text>
+                <text x={m.zoneCenter.x} y={m.zoneCenter.y - 4} textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="monospace"
+                  style={{ paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2.5" strokeLinejoin="round">{m.id}</text>
+                <text x={m.zoneCenter.x} y={m.zoneCenter.y + 10} textAnchor="middle" fill="#e2e8f0" fontSize="8" fontFamily="sans-serif"
+                  style={{ paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">Cat {m.category}</text>
                 {m.failureRecoveryPending && (
                   <text x={m.zoneCenter.x} y={m.zoneCenter.y + 22} textAnchor="middle" fill="#f87171" fontSize="7" fontFamily="sans-serif">FAILURE</text>
                 )}
@@ -1219,7 +1234,7 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
                   <text
                     x={a.position.x + 7} y={a.position.y - 4}
                     fill={MAP_ASSET_COLOR[a.type]} fontSize="7" fontFamily="monospace"
-                    style={{ pointerEvents: 'none' }}
+                    style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="1.6" strokeLinejoin="round"
                   >
                     {droneLabel(a.id)}
                   </text>
@@ -1290,8 +1305,8 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
                 style={{ pointerEvents: 'none' }}
               />
               <text x={t.waypoint.x} y={t.waypoint.y + 8}
-                textAnchor="middle" fill="#6b7280" fontSize="5.5" fontFamily="sans-serif"
-                style={{ pointerEvents: 'none' }}>
+                textAnchor="middle" fill="#cbd5e1" fontSize="5.5" fontFamily="sans-serif"
+                style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="1.6" strokeLinejoin="round">
                 {TASK_FULL[t.type as TaskType]}
               </text>
             </g>
@@ -1302,21 +1317,27 @@ function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
         <text x={HUB.x} y={HUB.y + 22} textAnchor="middle" fill="#60a5fa" fontSize="9" fontFamily="monospace">HUB</text>
       </g>
 
-      {/* Detail level toggle — stopPropagation prevents SVG pan handler from capturing pointer */}
-      <g onClick={() => setDetailLevel(l => ((l + 1) % 3) as 0 | 1 | 2)} onPointerDown={e => e.stopPropagation()} style={{ cursor: 'pointer' }}>
-        <rect x="6" y="770" width="60" height="16" rx="3" fill="#1f2937" stroke="#374151" />
-        <text x="36" y="781" textAnchor="middle" fill="#9ca3af" fontSize="9" fontFamily="sans-serif">
-          {(['Low', 'Mid', 'Full'] as const)[detailLevel]}
-        </text>
-      </g>
-
-      {/* Status overlay */}
-      <text x="6" y="794" fill="#374151" fontSize="9" fontFamily="sans-serif">
-        {showFullPaths
-          ? 'Scroll/drag to navigate · hover a drone or mission to see its full path'
-          : 'Scroll/drag to navigate · click queued zone to allocate'}
-      </text>
     </svg>
+
+    {/* Chrome as HTML overlays — the map uses cover/slice, which crops the SVG's bottom edge
+        on wide screens, so corner chrome lives outside the SVG to stay visible. */}
+    <button
+      onClick={() => setDetailLevel(l => ((l + 1) % 3) as 0 | 1 | 2)}
+      className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-gray-800/80 hover:bg-gray-700/80 border border-gray-600 text-gray-200 text-xs font-medium transition-colors"
+    >
+      {(['Low', 'Mid', 'Full'] as const)[detailLevel]}
+    </button>
+    <span className="absolute bottom-2 left-16 text-gray-300 text-xs pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+      {showFullPaths
+        ? 'Scroll/drag to navigate · hover a drone or mission to see its full path'
+        : 'Scroll/drag to navigate · click queued zone to allocate'}
+    </span>
+
+    {/* Map attribution (OpenTopoMap / OSM, CC-BY-SA) */}
+    <span className="absolute bottom-1 right-2 text-gray-400 text-[10px] pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+      © OpenTopoMap (CC-BY-SA) · © OpenStreetMap
+    </span>
+    </div>
   )
 }
 

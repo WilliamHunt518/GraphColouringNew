@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Mode, StudyConfig } from '../types'
-import { randomSeed } from '../utils/config'
+import { randomSeed, STUDY_SEED } from '../utils/config'
 
 const COMPLEXITIES = [
   { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 11F 11L 12C' },
@@ -62,7 +62,7 @@ export default function StartScreen({ onStart }: Props) {
   const [epsilonStrategic, setEpsilonStrategic] = useState(0.0)
   const [epsilonTactical, setEpsilonTactical]   = useState(0.0)
   const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('greedy')
-  const [seed, setSeed] = useState(String(randomSeed()))
+  const [seed, setSeed] = useState(String(STUDY_SEED))
   const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
   const [fullPathsOnHover, setFullPathsOnHover] = useState(false)

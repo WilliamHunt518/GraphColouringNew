@@ -2,14 +2,22 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/videos/NewDemo/StudyPresentation.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/videos/NewDemo/sar_demo_20260622_123050.mp4" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/PrimaryDisplay.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/TacticalTutorial.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/TacticalTutorial.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Tutorial.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Tutorial.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/tutorialSteps.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/tutorialSteps.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/StartScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/StartScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/actions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/actions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/missionGen.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/missionGen.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,17 +47,17 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;TacticalStrategic&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/wh1g17/GraphColouringNew/logs/Pilots/W2&quot;,
+    &quot;last_opened_file_path&quot;: &quot;G:/Files/Code/GraphColouringNew/videos/NewDemo&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="G:\Files\Code\GraphColouringNew\videos\NewDemo" />
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Pilots\W2" />
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Pilots\W" />
       <recent name="G:\Files\Code\GraphColouringNew\videos" />
       <recent name="G:\Files\Code\GraphColouringNew\logs\manualAddOnline" />
-      <recent name="G:\Files\Code\GraphColouringNew\docs\paper\figs" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\wh1g17\GraphColouringNew" />
@@ -60,6 +68,7 @@
   <component name="RunManager" selected="Python.study_runner">
     <configuration name="demo_study2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -71,6 +80,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/demo_study2.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -82,6 +92,7 @@
     </configuration>
     <configuration name="launch_menu" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -93,6 +104,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/launch_menu.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -104,6 +116,7 @@
     </configuration>
     <configuration name="run_analysis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -115,6 +128,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/analysis/run_analysis.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -126,6 +140,7 @@
     </configuration>
     <configuration name="study_launcher" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -137,6 +152,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_launcher.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -148,6 +164,7 @@
     </configuration>
     <configuration name="study_runner" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -159,6 +176,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_runner.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />

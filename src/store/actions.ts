@@ -25,7 +25,7 @@ export type GameAction =
   // ── Drone failure recovery ───────────────────────────────────────────────
   | { type: 'ACCEPT_RECOVERY'; missionId: string; recoveryType: 'redistribute' }
   | { type: 'APPLY_MANUAL_RECOVERY'; missionId: string; taskId: string; newAssetId: string }
-  | { type: 'CONFIRM_FAILURE_RECOVERY'; missionId: string; taskAssignments: Record<string, string[]> }
+  | { type: 'CONFIRM_FAILURE_RECOVERY'; missionId: string; taskAssignments: Record<string, string[]>; droneSequences?: Record<string, string[]> }
   | { type: 'ABANDON_MISSION'; missionId: string }
 
   // ── In-mission operations ────────────────────────────────────────────────
