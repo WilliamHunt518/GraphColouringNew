@@ -83,9 +83,10 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 | `mission_completed` | Mission's last task transitions to completed/failed in the same tick | `tasksCompleted`, `tasksFailed`, `rewardEarned`, `penaltyAccrued` (computed for that mission only) | `gameReducer.ts:1052` (TICK, before `updatedMissions` is committed to state) |
 | `strategic_modal_opened` | `OPEN_STRATEGIC` or `OVERRIDE_TACTICAL` (re-opens the modal) | Full `strategiesPresented[]` (displayed AND true asset counts, scores incl. `redundancyScore`, bad-suggestion flags), `activeMissions`, `currentPenaltyAccrued` | `gameReducer.ts:1278` (`OPEN_STRATEGIC`), `:1618` (`OVERRIDE_TACTICAL`) |
 | `strategic_dismissed` | `CLOSE_STRATEGIC` (operator closes the modal without picking) | `latencyMs` (open→dismiss) | `gameReducer.ts:1307` |
-| `strategic_choice` | `APPLY_STRATEGIC` (operator picks Aggressive/Conservative/Manual) | `latencyMs`, `deltaVsAggressive`/`deltaVsConservative` (chosen minus each card's true assets), `agentSuggestionWasBad`/`badSuggestionType` | `gameReducer.ts:1470` |
+| `strategic_choice` | `APPLY_STRATEGIC` (operator picks Aggressive/Conservative/Manual) | `latencyMs`, `deltaVsAggressive`/`deltaVsConservative` (chosen minus each card's true assets), `agentSuggestionWasBad`/`badSuggestionType`, `strategyCardCount`, `manualBeforeCardsLoaded`/`cardsLoadedAtManualSwitch` (manual chosen before the 3–5 s card reveal finished = a clue the operator declined the agent) | `gameReducer.ts:1470` |
 | `tactical_opened` | Immediately after `strategic_choice`, when the tactical planner becomes available | `strategyChosen`, `agentPlan[]` (taskId/taskType/assetIds/order as suggested) | `gameReducer.ts:1493` |
-| `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed` | `gameReducer.ts:579` (inside `applyTacticalAllocation()`) |
+| `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `suggestUsedCount` (times "Suggest" clicked before confirming), `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed` | `gameReducer.ts:579` (inside `applyTacticalAllocation()`) |
+| `tactical_suggest_used` | `TACTICAL_SUGGEST` (operator clicks "Suggest" in the tactical planner) | `suggestCountThisMission` (1-based click index this allocation) | `gameReducer.ts` (`TACTICAL_SUGGEST` case) |
 | `drone_failure` | Scheduled in-mission failure fires | `droneId`, `droneType`, `taskId`, `taskType` | `gameReducer.ts:959` (TICK), `:2273`/`:2324` (testing-mode forced failures) |
 | `failure_recovery` | `ACCEPT_RECOVERY`, `APPLY_MANUAL_RECOVERY`, or `CONFIRM_FAILURE_RECOVERY` | `recoveryType` (`reserve`/`redistribute`/`manual`), `wasAgentSuggested` | `gameReducer.ts:1649`, `:1716`, `:1806` |
 | `task_completed` | Task's `completionTime` is reached | `taskType`, `assetsUsed`, `completionTime` | `gameReducer.ts:1035` |
@@ -110,7 +111,14 @@ agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
   `agentSuggestionWasBad` vs `strategic_modal_opened.strategiesPresented[].isBadSuggestion`
   lets you check whether operators selectively reject bad suggestions specifically (not
   just suggestions in general). `tactical_confirmed.modifiedFromAgentPlan` is the
-  tactical-tier analogue.
+  tactical-tier analogue. **Consultation vs. follow are distinct** — the tactical planner
+  starts empty, so an operator can confirm a plan without ever consulting the agent.
+  `tactical_confirmed.suggestUsedCount` (and the `tactical_suggest_used` events) measure
+  whether the agent's tactical plan was ever pulled in (`0` = never consulted), which
+  `modifiedFromAgentPlan`/`wasAgentSuggested` do *not* capture — the latter only reflects
+  whether the *strategic* card was agent-sourced. On the strategic tier,
+  `strategic_choice.manualBeforeCardsLoaded` flags operators who bailed to manual before the
+  cards finished their reveal delay — declining the agent without evaluating it.
 - **RQ3 (deferral by tier × complexity)** — join `strategic_choice`/`tactical_confirmed`
   `latencyMs` and follow/override behavior against `session_start.complexity` and
   `mission_arrived.category` (mission size proxy).

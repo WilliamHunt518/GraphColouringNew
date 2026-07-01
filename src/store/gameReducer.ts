@@ -622,6 +622,7 @@ function applyTacticalAllocation(
     assetsDeployed: allAssignedIds,
     timeRemainingInSession: Math.max(0, state.sessionDuration - now),
     latencyMs: mission.tacticalOpenedAtMs !== null ? Math.round(now * 1000) - mission.tacticalOpenedAtMs : 0,
+    suggestUsedCount: mission.tacticalSuggestCount ?? 0,
     agentPlan,
     finalPlan,
   })
@@ -1517,6 +1518,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         latencyMs: Math.round(now * 1000) - modal.openedAtMs,
         deltaVsAggressive: aggressiveCard ? diffAssets(composition, aggressiveCard.trueAssets) : null,
         deltaVsConservative: conservativeCard ? diffAssets(composition, conservativeCard.trueAssets) : null,
+        strategyCardCount: modal.strategies.length,
+        manualBeforeCardsLoaded: action.source === 'manual' ? (action.manualBeforeCardsLoaded ?? null) : null,
+        cardsLoadedAtManualSwitch: action.source === 'manual' ? (action.cardsLoadedAtManualSwitch ?? null) : null,
       })
 
       const tacticalOpenedAtMs = Math.round(now * 1000)
@@ -1545,9 +1549,33 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           agentInteraction: action.source === 'agent' ? 'shown' : 'manual',
           chosenStrategyName: strategyName,
           tacticalOpenedAtMs,
+          tacticalSuggestCount: 0,
         } : m),
         strategicModal: null,
       }
+      return s
+    }
+
+    // ── TACTICAL_SUGGEST ─────────────────────────────────────────────────
+    // Operator clicked "Suggest" to pull the agent's plan into the (empty) tactical
+    // planner. Logged so consultation of the tactical agent can be measured directly
+    // rather than inferred from modifiedFromAgentPlan (the planner starts blank, so
+    // suggestUsedCount === 0 on a confirm means the agent plan was never consulted).
+    case 'TACTICAL_SUGGEST': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
+      const suggestCountThisMission = (mission.tacticalSuggestCount ?? 0) + 1
+      let s: GameState = {
+        ...state,
+        missions: state.missions.map(m => m.id === mission.id ? { ...m, tacticalSuggestCount: suggestCountThisMission } : m),
+      }
+      s = logEvent(s, {
+        type: 'tactical_suggest_used',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        suggestCountThisMission,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+      })
       return s
     }
 

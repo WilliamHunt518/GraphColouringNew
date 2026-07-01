@@ -16,10 +16,14 @@ export type GameAction =
       strategyIndex: number | null          // null if manual
       manualAllocation: AssetRequirement | null  // used when source='manual'
       editedFromStrategy?: string | null    // set when manual was seeded from a strategy card
+      strategyCardCount?: number            // agent cards this modal offered (for the strategic_choice log)
+      manualBeforeCardsLoaded?: boolean | null   // true if operator switched to manual while ≥1 card was still loading
+      cardsLoadedAtManualSwitch?: number | null  // cards finished loading at the moment manual was chosen
     }
 
   // ── Tactical confirmation (agent mode — from map sidebar) ────────────────
   | { type: 'CONFIRM_TACTICAL'; missionId: string; taskAssignments?: Record<string, string[]>; droneSequences?: Record<string, string[]> }
+  | { type: 'TACTICAL_SUGGEST'; missionId: string }         // operator clicked "Suggest" in the tactical planner
   | { type: 'OVERRIDE_TACTICAL'; missionId: string }        // user wants to edit tactical
 
   // ── Drone failure recovery ───────────────────────────────────────────────

@@ -770,6 +770,11 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     setDroneChainOrder({})
     setSuggestQueue(entries)
     document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
+    // Log that the operator consulted the tactical agent (planner starts empty; this is
+    // the only way the agent's plan enters it). Skip in recovery/read-only/override views.
+    if (!recoveryMode && !readOnly) {
+      onMapAction({ _mapAction: 'TACTICAL_SUGGEST', missionId: mission.id })
+    }
   }
 
   // Progressive reveal: add one drone every 2 s until queue is empty

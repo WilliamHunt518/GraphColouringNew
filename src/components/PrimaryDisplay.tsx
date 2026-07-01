@@ -428,6 +428,10 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   const [manualAlloc, setManualAlloc] = useState<AssetRequirement>(modal.manualAllocation ?? { Blue: 0, Red: 0, Green: 0 })
   const [editedFromStrategy, setEditedFromStrategy] = useState<string | null>(null)
   const [loadedCards, setLoadedCards] = useState<Set<number>>(new Set())
+  // Snapshot of card-load state at the moment the operator switched to manual via the toggle.
+  // A clue they declined the agent: switching before all cards finished their reveal delay.
+  // null until an explicit toggle to manual (stays null for auto-manual when no strategies exist).
+  const [manualSwitchSnapshot, setManualSwitchSnapshot] = useState<{ before: boolean; loaded: number } | null>(null)
   const reserve = reserveCount(state.assets)
   const mission = state.missions.find(m => m.id === modal.missionId)
 
@@ -446,9 +450,13 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
 
   function handleApply() {
     if (showManual || !isAgent) {
-      dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'manual', strategyIndex: null, manualAllocation: manualAlloc, editedFromStrategy })
+      dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'manual', strategyIndex: null, manualAllocation: manualAlloc, editedFromStrategy,
+        strategyCardCount: modal.strategies.length,
+        manualBeforeCardsLoaded: manualSwitchSnapshot?.before ?? null,
+        cardsLoadedAtManualSwitch: manualSwitchSnapshot?.loaded ?? null })
     } else if (selectedIdx !== null) {
-      dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'agent', strategyIndex: selectedIdx, manualAllocation: null })
+      dispatch({ type: 'APPLY_STRATEGIC', missionId: modal.missionId, source: 'agent', strategyIndex: selectedIdx, manualAllocation: null,
+        strategyCardCount: modal.strategies.length })
     }
   }
 
@@ -498,7 +506,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
           !tutorialForceManual && (
             <button
               data-tutorial={isTutorialFirst ? 'first-manual-toggle' : undefined}
-              onClick={() => { setShowManual(false); setEditedFromStrategy(null) }}
+              onClick={() => { setShowManual(false); setEditedFromStrategy(null); setManualSwitchSnapshot(null) }}
               className="text-xs text-gray-500 hover:text-gray-300 w-full text-left"
             >
               ← Back to suggestions
@@ -515,6 +523,8 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
               } else {
                 setEditedFromStrategy(null)
               }
+              // Record whether cards were still loading when the operator chose to go manual.
+              setManualSwitchSnapshot({ before: !allCardsLoaded, loaded: loadedCards.size })
               setShowManual(true)
               if (tutorialForceManual) document.dispatchEvent(new CustomEvent('tutorial-manual-selected'))
             }}

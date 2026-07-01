@@ -131,7 +131,8 @@ adding or modifying any event.** Quick summary of event types:
 | `strategic_dismissed` | Operator closes the Strategic Agent modal without picking a card |
 | `strategic_choice` | Operator picks Aggressive/Conservative/Manual |
 | `tactical_opened` | Tactical planner becomes available after a strategic choice; logs the agent's suggested plan |
-| `tactical_confirmed` | Operator confirms drone→task plan (tactical planner); `modifiedFromAgentPlan` flag + `agentPlan`/`finalPlan` triples record whether/how they changed the suggestion |
+| `tactical_confirmed` | Operator confirms drone→task plan (tactical planner); `modifiedFromAgentPlan` flag + `agentPlan`/`finalPlan` triples record whether/how they changed the suggestion; `suggestUsedCount` records whether the agent plan was ever consulted (planner starts empty) |
+| `tactical_suggest_used` | Operator clicks "Suggest" in the tactical planner to pull in the agent's plan (consultation signal, distinct from following) |
 | `drone_failure` | In-mission drone fails |
 | `failure_recovery` | Recovery option chosen (covers agent-suggested, redistribute, and manual recovery flows) |
 | `task_completed` / `task_failed` | Task state transition |

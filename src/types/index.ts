@@ -119,6 +119,7 @@ export interface Mission {
   tacticalPending: boolean
   pendingAllocation: PendingAllocation | null
   tacticalOpenedAtMs: number | null   // session-elapsed ms when the tactical planner opened (for latency)
+  tacticalSuggestCount?: number       // times the operator clicked "Suggest" in the tactical planner this allocation (0/undefined = agent tactical plan never consulted)
   // Per-drone task execution order (droneId → ordered taskId[]) — set on tactical confirm
   droneSequences: Record<string, string[]>
   // Drone failure
@@ -334,6 +335,9 @@ export interface StrategicChoiceEvent extends BaseEvent {
   latencyMs: number                   // time between modal opening and this choice
   deltaVsAggressive: AssetRequirement | null    // chosen minus aggressive card (null if no agent cards shown)
   deltaVsConservative: AssetRequirement | null  // chosen minus conservative card (null if no agent cards shown)
+  strategyCardCount: number                     // number of agent strategy cards this modal offered
+  manualBeforeCardsLoaded: boolean | null       // true if operator switched to manual while ≥1 card was still loading (a clue they declined the agent); null if not a manual-toggle choice
+  cardsLoadedAtManualSwitch: number | null      // how many cards had finished loading at the moment manual was chosen (null if n/a)
 }
 
 export interface StrategicDismissedEvent extends BaseEvent {
@@ -364,8 +368,17 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   assetsDeployed: string[]
   timeRemainingInSession: number
   latencyMs: number               // time between tactical planner opening and confirmation
+  suggestUsedCount: number        // times the operator clicked "Suggest" before confirming (0 = agent tactical plan never consulted; the planner starts empty)
   agentPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
   finalPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
+}
+
+export interface TacticalSuggestUsedEvent extends BaseEvent {
+  type: 'tactical_suggest_used'
+  missionId: string
+  missionCategory: MissionCategory
+  suggestCountThisMission: number   // 1-based index of this Suggest click within the current tactical allocation
+  timeRemainingInSession: number
 }
 
 export interface DroneFailureEvent extends BaseEvent {
@@ -489,6 +502,7 @@ export type GameEvent =
   | StrategicDismissedEvent
   | TacticalOpenedEvent
   | TacticalConfirmedEvent
+  | TacticalSuggestUsedEvent
   | DroneFailureEvent
   | FailureRecoveryEvent
   | TaskCompletedEvent

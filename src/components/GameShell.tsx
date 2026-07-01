@@ -71,6 +71,9 @@ export default function GameShell({ config }: Props) {
       if (d._mapAction === 'CONFIRM_TACTICAL' && typeof d.missionId === 'string') {
         dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId, taskAssignments: d.taskAssignments, droneSequences: d.droneSequences })
       }
+      if (d._mapAction === 'TACTICAL_SUGGEST' && typeof d.missionId === 'string') {
+        dispatch({ type: 'TACTICAL_SUGGEST', missionId: d.missionId })
+      }
       if (d._mapAction === 'OVERRIDE_TACTICAL' && typeof d.missionId === 'string') {
         dispatch({ type: 'OVERRIDE_TACTICAL', missionId: d.missionId })
       }
@@ -91,7 +94,10 @@ export default function GameShell({ config }: Props) {
       }
       if (d._mapAction === 'APPLY_STRATEGIC' && typeof d.missionId === 'string') {
         dispatch({ type: 'APPLY_STRATEGIC', missionId: d.missionId, source: d.source,
-          strategyIndex: d.strategyIndex ?? null, manualAllocation: d.manualAllocation ?? null })
+          strategyIndex: d.strategyIndex ?? null, manualAllocation: d.manualAllocation ?? null,
+          editedFromStrategy: d.editedFromStrategy ?? null, strategyCardCount: d.strategyCardCount,
+          manualBeforeCardsLoaded: d.manualBeforeCardsLoaded ?? null,
+          cardsLoadedAtManualSwitch: d.cardsLoadedAtManualSwitch ?? null })
       }
       if (d._mapAction === 'CLOSE_STRATEGIC') {
         dispatch({ type: 'CLOSE_STRATEGIC' })
