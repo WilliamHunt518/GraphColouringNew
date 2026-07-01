@@ -78,6 +78,11 @@ export function complexityForSession(config: StudyConfig, sessionNumber: number)
   return config.sessionComplexities?.[sessionNumber - 1] ?? config.complexity
 }
 
+// Fast-test collapses every session to 10s so the whole flow can be walked quickly.
+function sessionDurationFor(config: StudyConfig, complexity: Complexity): number {
+  return config.fastTest ? 10 : SESSION_DURATION_BY_COMPLEXITY[complexity]
+}
+
 function categoryForecastFor(complexity: Complexity): Record<MissionCategory, number> {
   const forecast: Record<MissionCategory, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 }
   switch (complexity) {
@@ -99,7 +104,8 @@ export function buildInitialState(config: StudyConfig): GameState {
 
   return {
     config,
-    phase: 'playing',
+    phase: config.collectDemographics ? 'demographics' : 'playing',
+    demographics: null,
     sessionNumber: 1,
     elapsed: 0,
     sessionStartMs: null,
@@ -109,7 +115,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     score: 0,
     penaltyAccrued: 0,
     completedSessionScores: [],
-    sessionDuration: SESSION_DURATION_BY_COMPLEXITY[complexity],
+    sessionDuration: sessionDurationFor(config, complexity),
     categoryForecast: categoryForecastFor(complexity),
     strategicModal: null,
     trustProbeActive: false,
@@ -2153,6 +2159,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...s, trustProbeActive: false, nextTrustProbeAt: state.elapsed + TRUST_PROBE_INTERVAL }
     }
 
+    // ── SUBMIT_DEMOGRAPHICS ──────────────────────────────────────────────
+    case 'SUBMIT_DEMOGRAPHICS': {
+      if (state.phase !== 'demographics') return state
+      const s = logEvent({ ...state, demographics: action.responses }, {
+        type: 'phase_change', fromPhase: state.phase, toPhase: 'playing',
+      })
+      return { ...s, phase: 'playing' }
+    }
+
     // ── SUBMIT_SURVEY ────────────────────────────────────────────────────
     case 'SUBMIT_SURVEY': {
       return logEvent(state, {
@@ -2188,7 +2203,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pendingBlueprints: blueprints,
         score: 0,
         penaltyAccrued: 0,
-        sessionDuration: SESSION_DURATION_BY_COMPLEXITY[complexity],
+        sessionDuration: sessionDurationFor(state.config, complexity),
         categoryForecast: categoryForecastFor(complexity),
         strategicModal: null,
         trustProbeActive: false,

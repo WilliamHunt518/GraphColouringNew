@@ -32,6 +32,9 @@ export type GameAction =
   | { type: 'RECALL_ASSET'; assetId: string }
   | { type: 'REPRIORITISE_TASK'; missionId: string; taskId: string; direction: 'up' | 'down' | 'top' }
 
+  // ── Demographics (pre-study questionnaire) ───────────────────────────────
+  | { type: 'SUBMIT_DEMOGRAPHICS'; responses: Record<string, string | number> }
+
   // ── Surveys / probes ─────────────────────────────────────────────────────
   | { type: 'SUBMIT_TRUST_PROBE'; trust: number; workload: number }
   | { type: 'SUBMIT_SURVEY'; surveyName: string; responses: Record<string, number> }

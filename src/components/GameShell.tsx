@@ -6,6 +6,7 @@ import { buildInitialState, gameReducer, reserveCount, complexityForSession } fr
 import PrimaryDisplay from './PrimaryDisplay'
 import BetweenSession from './BetweenSession'
 import SurveyModal from './SurveyModal'
+import DemographicsForm from './DemographicsForm'
 import TutorialSummary from './TutorialSummary'
 import Tutorial from './Tutorial'
 import FreePlayOverlay from './FreePlayOverlay'
@@ -110,6 +111,7 @@ export default function GameShell({ config }: Props) {
       seed: config.seed,
       epsilonStrategic: config.agentErrorRate,
       epsilonTactical: config.epsilonTactical,
+      demographics: state.demographics,
       sessionScores: state.completedSessionScores,
       sessions: state.events,
     }
@@ -214,6 +216,10 @@ export default function GameShell({ config }: Props) {
     return () => { if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null } }
   }, [state.phase])
 
+  if (state.phase === 'demographics') {
+    return <DemographicsForm state={state} dispatch={dispatch} />
+  }
+
   if (state.phase === 'playing') {
     const tutorialForceManual = showTutorial && (TUTORIAL_STEPS[tutorialStep]?.forceManual ?? false)
     const tutorialForceAgent = showTutorial && (TUTORIAL_STEPS[tutorialStep]?.forceAgent ?? false)
@@ -280,6 +286,7 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
       seed: config.seed,
       epsilonStrategic: config.agentErrorRate,
       epsilonTactical: config.epsilonTactical,
+      demographics: state.demographics,
       sessionScores: state.completedSessionScores,
       totalScore,
       sessions: state.events,
@@ -315,8 +322,10 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
           <p className="text-xs text-green-400 uppercase tracking-widest mb-2 font-semibold">Study Complete</p>
           <h2 className="text-2xl font-bold text-white">All sessions finished</h2>
           <p className="text-gray-400 text-sm mt-2">
-            You have completed all {numSessions} sessions of the <span className="text-white font-semibold">{config.condition}</span> condition
-            ({complexitySummary} complexity).
+            You have completed all {numSessions} sessions
+            {config.collectDemographics
+              ? '.'
+              : <> of the <span className="text-white font-semibold">{config.condition}</span> condition ({complexitySummary} complexity).</>}
           </p>
         </div>
 
@@ -330,29 +339,33 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
             <span className="text-gray-400">Condition</span>
             <span className="text-white font-mono">{config.condition}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Complexity</span>
-            <span className="text-white font-mono">{complexitySummary}</span>
-          </div>
+          {!config.collectDemographics && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Complexity</span>
+              <span className="text-white font-mono">{complexitySummary}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Seed</span>
             <span className="text-white font-mono">{config.seed}</span>
           </div>
         </div>
 
-        {/* Session scores */}
-        <div className="bg-gray-800 rounded-xl p-4 space-y-2 text-left">
-          {state.completedSessionScores.map((s, i) => (
-            <div key={i} className="flex justify-between text-sm text-gray-400">
-              <span>Session {i + 1}</span>
-              <span className="text-white font-mono tabular-nums">{s} pts</span>
+        {/* Session scores — hidden from participants to avoid biasing */}
+        {!config.collectDemographics && (
+          <div className="bg-gray-800 rounded-xl p-4 space-y-2 text-left">
+            {state.completedSessionScores.map((s, i) => (
+              <div key={i} className="flex justify-between text-sm text-gray-400">
+                <span>Session {i + 1}</span>
+                <span className="text-white font-mono tabular-nums">{s} pts</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm font-bold text-white border-t border-gray-700 pt-2 mt-1">
+              <span>Total</span>
+              <span className="font-mono tabular-nums">{totalScore} pts</span>
             </div>
-          ))}
-          <div className="flex justify-between text-sm font-bold text-white border-t border-gray-700 pt-2 mt-1">
-            <span>Total</span>
-            <span className="font-mono tabular-nums">{totalScore} pts</span>
           </div>
-        </div>
+        )}
 
         <p className="text-gray-500 text-sm">Please ask the researcher to confirm your data has been saved.</p>
 

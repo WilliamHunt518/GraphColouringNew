@@ -115,36 +115,46 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
   }
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden">
-      <MissionQueuePanel
-        pending={pending}
-        selectedId={tacticalMissionId}
-        onSelect={setTacticalMissionId}
-        state={state}
-        disabled={suggestLoading}
-      />
-      <div className="flex-1 min-w-0">
-        {tacticalMission ? (
-          <TacticalPlannerView
-            mission={tacticalMission}
-            state={state}
-            onBack={() => setTacticalMissionId(null)}
-            onMapAction={handleMapAction}
-            overrideAllocation={overrideAlloc}
-            recoveryMode={isRecovery}
-            recoveryReserveIds={recoveryReserveIds}
-            failedDroneId={recoveryFailedDroneId}
-            readOnly={isReadOnly}
-            onSuggestLoadingChange={setSuggestLoading}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-300">
-            <p className="text-lg">Select a mission from the panel</p>
-            {pending.length === 0 && (
-              <p className="text-lg text-gray-400">No missions currently require tactical assignment</p>
-            )}
-          </div>
-        )}
+    <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
+      {/* Tactical frame — amber ring + banner reinforces the within-mission decision tier */}
+      <div className="pointer-events-none fixed inset-0 z-50 border-[5px] border-amber-500/70" />
+      <div className="flex-none flex items-center gap-3 px-5 py-2 bg-amber-950/40 border-b-2 border-amber-700/60">
+        <span className="text-sm font-extrabold uppercase tracking-[0.25em] text-amber-300 px-2.5 py-1 rounded bg-amber-950/70 border border-amber-600/60">
+          Tactical
+        </span>
+        <span className="text-xs text-amber-200/70 uppercase tracking-wide">Within-mission drone → task assignment</span>
+      </div>
+      <div className="flex flex-1 overflow-hidden">
+        <MissionQueuePanel
+          pending={pending}
+          selectedId={tacticalMissionId}
+          onSelect={setTacticalMissionId}
+          state={state}
+          disabled={suggestLoading}
+        />
+        <div className="flex-1 min-w-0">
+          {tacticalMission ? (
+            <TacticalPlannerView
+              mission={tacticalMission}
+              state={state}
+              onBack={() => setTacticalMissionId(null)}
+              onMapAction={handleMapAction}
+              overrideAllocation={overrideAlloc}
+              recoveryMode={isRecovery}
+              recoveryReserveIds={recoveryReserveIds}
+              failedDroneId={recoveryFailedDroneId}
+              readOnly={isReadOnly}
+              onSuggestLoadingChange={setSuggestLoading}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-300">
+              <p className="text-lg">Select a mission from the panel</p>
+              {pending.length === 0 && (
+                <p className="text-lg text-gray-400">No missions currently require tactical assignment</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

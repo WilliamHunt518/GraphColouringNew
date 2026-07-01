@@ -68,6 +68,11 @@ export default function StartScreen({ onStart }: Props) {
   const [fullPathsOnHover, setFullPathsOnHover] = useState(false)
   const [error, setError] = useState('')
 
+  // ── Participant study (2 scenarios + demographics) ──
+  const [scenarioA, setScenarioA] = useState<StudyConfig['complexity']>('strategic')
+  const [scenarioB, setScenarioB] = useState<StudyConfig['complexity']>('tactical')
+  const [studyFastTest, setStudyFastTest] = useState(false)
+
   function handleStart() {
     const seedNum = parseInt(seed, 10)
     if (isNaN(seedNum) || seedNum < 1) { setError('Seed must be a positive integer.'); return }
@@ -87,6 +92,33 @@ export default function StartScreen({ onStart }: Props) {
       tutorialMode: false,
       numSessions,
       fullPathsOnHover,
+    })
+  }
+
+  function handleStartParticipantStudy() {
+    let seedNum = parseInt(seed, 10)
+    if (isNaN(seedNum) || seedNum < 1) {
+      if (!studyFastTest) { setError('Seed must be a positive integer.'); return }
+      seedNum = STUDY_SEED
+    }
+    const finalId = participantId.trim() || `P-${String(randomSeed() % 9000 + 1000)}`
+    setError('')
+    onStart({
+      participantId: finalId,
+      condition: 'none',
+      mode,
+      complexity: scenarioA,
+      sessionComplexities: [scenarioA, scenarioB],
+      seed: seedNum,
+      agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
+      epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
+      tacticalMode: mode === 'agent' ? tacticalMode : 'plan-all',
+      testingMode: false,
+      tutorialMode: false,
+      numSessions: 2,
+      fullPathsOnHover,
+      collectDemographics: true,
+      fastTest: studyFastTest,
     })
   }
 
@@ -237,6 +269,50 @@ export default function StartScreen({ onStart }: Props) {
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
+
+        {/* ── Participant study: demographics → 2 blinded scenarios → surveys ── */}
+        <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-emerald-300">Participant Study</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Background questionnaire, then two scenarios back-to-back (blinded), each followed by its surveys.
+              Uses the Participant ID, Mode and Accuracy set above. Run the tutorial separately.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="block text-xs text-gray-400">Scenario 1</label>
+              <select value={scenarioA} onChange={e => setScenarioA(e.target.value as StudyConfig['complexity'])}
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                {COMPLEXITIES.map(cx => <option key={cx.value} value={cx.value}>{cx.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs text-gray-400">Scenario 2</label>
+              <select value={scenarioB} onChange={e => setScenarioB(e.target.value as StudyConfig['complexity'])}
+                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                {COMPLEXITIES.map(cx => <option key={cx.value} value={cx.value}>{cx.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <input id="study-fast-test" type="checkbox" checked={studyFastTest}
+              onChange={e => setStudyFastTest(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-orange-500" />
+            <label htmlFor="study-fast-test" className="text-sm text-gray-400 cursor-pointer select-none">
+              Fast test <span className="text-gray-600 text-xs">(10s scenarios, no form validation — walk the whole flow quickly)</span>
+            </label>
+          </div>
+          <button onClick={handleStartParticipantStudy}
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-semibold text-sm transition-colors">
+            Begin Participant Study →
+          </button>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-gray-800" />
+          <span className="relative block text-center text-xs text-gray-600 bg-gray-900 px-3 w-fit mx-auto">advanced / single-session</span>
+        </div>
 
         <button onClick={handleStart}
           className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-semibold text-sm transition-colors">

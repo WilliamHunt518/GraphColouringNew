@@ -19,6 +19,8 @@ export interface StudyConfig {
   skipToFreePlay?: boolean
   numSessions: number
   fullPathsOnHover?: boolean   // when true, hovering a drone/mission on the operational map reveals full planned paths
+  collectDemographics?: boolean  // when true, a demographics/experience questionnaire runs before session 1
+  fastTest?: boolean             // dev only: 10s sessions + relaxed form validation, so the full flow can be walked quickly
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
@@ -206,11 +208,12 @@ export interface MapViewState {
 
 // ─── Game state ───────────────────────────────────────────────────────────
 
-export type GamePhase = 'playing' | 'survey' | 'between' | 'done'
+export type GamePhase = 'demographics' | 'playing' | 'survey' | 'between' | 'done'
 
 export interface GameState {
   config: StudyConfig
   phase: GamePhase
+  demographics: Record<string, string | number> | null  // pre-study questionnaire answers (null until submitted / not collected)
   sessionNumber: number
   elapsed: number
   sessionStartMs: number | null

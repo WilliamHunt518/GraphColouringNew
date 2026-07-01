@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function BetweenSession({ state, dispatch }: Props) {
-  const [countdown, setCountdown] = useState(WAIT_SECONDS)
+  const [countdown, setCountdown] = useState(state.config.fastTest ? 3 : WAIT_SECONDS)
 
   useEffect(() => {
     if (countdown <= 0) return
@@ -23,16 +23,26 @@ export default function BetweenSession({ state, dispatch }: Props) {
   const nextSession = completedSession + 1
   const prevScore = state.completedSessionScores[completedSession - 1] ?? 0
 
+  const hideScore = state.config.collectDemographics ?? false
+
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-gray-900 rounded-2xl border border-gray-700 p-8 space-y-6 text-center">
-        <div>
-          <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Session {completedSession} complete</p>
-          <p className="text-4xl font-bold text-white">{prevScore}</p>
-          <p className="text-sm text-gray-500 mt-1">points</p>
-        </div>
-
-        <hr className="border-gray-700" />
+        {hideScore ? (
+          <div>
+            <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Session {completedSession} complete</p>
+            <p className="text-sm text-gray-500 mt-1">Take a short break.</p>
+          </div>
+        ) : (
+          <>
+            <div>
+              <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Session {completedSession} complete</p>
+              <p className="text-4xl font-bold text-white">{prevScore}</p>
+              <p className="text-sm text-gray-500 mt-1">points</p>
+            </div>
+            <hr className="border-gray-700" />
+          </>
+        )}
 
         <div className="space-y-1">
           <p className="text-gray-400 text-sm">Session {nextSession} starts in</p>

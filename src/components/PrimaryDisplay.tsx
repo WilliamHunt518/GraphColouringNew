@@ -118,9 +118,14 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
+      {/* Strategic frame — cyan ring around the whole window reinforces the cross-mission decision tier */}
+      <div className="pointer-events-none fixed inset-0 z-50 border-[5px] border-cyan-500/70" />
       {/* Header */}
-      <header data-tutorial="header" className="flex items-center justify-between px-5 py-2.5 bg-gray-900 border-b border-gray-800 flex-none">
+      <header data-tutorial="header" className="flex items-center justify-between px-5 py-2.5 bg-gray-900 border-b-2 border-cyan-800/60 flex-none">
         <div className="flex items-center gap-4">
+          <span className="text-sm font-extrabold uppercase tracking-[0.25em] text-cyan-300 px-2.5 py-1 rounded bg-cyan-950/70 border border-cyan-600/60">
+            Strategic
+          </span>
           <span className="font-bold text-white">SAR Command</span>
           <span className="text-xs text-gray-400 uppercase tracking-wide">
             Session {state.sessionNumber} / {state.config.numSessions}
@@ -159,6 +164,13 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
                 title="Force a drone failure on an active mission"
               >
                 Force Failure
+              </button>
+              <button
+                onClick={() => dispatch({ type: 'FORCE_SESSION_END' })}
+                className="text-xs px-2.5 py-1 rounded bg-gray-700/80 hover:bg-gray-600/80 text-gray-300 border border-gray-600 transition-colors"
+                title="End this session now and go to the surveys"
+              >
+                End Session
               </button>
               <button
                 onClick={() => dispatch({ type: 'END_STUDY' })}
