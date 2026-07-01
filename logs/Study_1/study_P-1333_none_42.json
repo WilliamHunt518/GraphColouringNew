@@ -1,0 +1,7236 @@
+{
+  "participantId": "P-1333",
+  "condition": "none",
+  "mode": "agent",
+  "complexities": [
+    "tactical",
+    "strategic"
+  ],
+  "seed": 42,
+  "epsilonStrategic": 0,
+  "epsilonTactical": 0,
+  "demographics": {
+    "age": 24,
+    "gender": "Male",
+    "education": "Postgraduate / master’s",
+    "field": "Robotics",
+    "gaming_frequency": "Occasionally",
+    "sim_experience": "Moderate",
+    "strategy_experience": "Moderate",
+    "drone_experience": "Moderate",
+    "autonomy_experience": "Extensive",
+    "command_experience": "A little",
+    "understand_role": "Strongly agree",
+    "understand_missions": "Strongly agree",
+    "understand_strategic": "Strongly agree",
+    "understand_tactical": "Strongly agree",
+    "understand_scoring": "Agree"
+  },
+  "sessionScores": [
+    22,
+    0
+  ],
+  "totalScore": 22,
+  "sessions": [
+    [
+      {
+        "type": "phase_change",
+        "fromPhase": "demographics",
+        "toPhase": "playing",
+        "seq": 0,
+        "timestamp": 0,
+        "wallClock": "2026-07-01T11:14:51.793Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 0,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "session_start",
+        "participantId": "P-1333",
+        "condition": "none",
+        "mode": "agent",
+        "complexity": "tactical",
+        "seed": 42,
+        "epsilonStrategic": 0,
+        "epsilonTactical": 0,
+        "tacticalMode": "greedy",
+        "numSessions": 2,
+        "sessionDuration": 480,
+        "fleet": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        },
+        "assetSpeeds": {
+          "Blue": 9,
+          "Red": 6.8,
+          "Green": 5.4
+        },
+        "taskBaseTime": {
+          "1": 10,
+          "2": 15,
+          "3": 25,
+          "4": 30,
+          "5": 45
+        },
+        "taskSubBaseTime": {
+          "1": 10,
+          "2": 38,
+          "3": 62,
+          "4": 75,
+          "5": 45
+        },
+        "taskPrimary": {
+          "1": {
+            "Blue": 1,
+            "Red": 0,
+            "Green": 0
+          },
+          "2": {
+            "Blue": 2,
+            "Red": 0,
+            "Green": 0
+          },
+          "3": {
+            "Blue": 0,
+            "Red": 2,
+            "Green": 1
+          },
+          "4": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 2
+          },
+          "5": {
+            "Blue": 1,
+            "Red": 1,
+            "Green": 1
+          }
+        },
+        "taskSubstitute": {
+          "1": null,
+          "2": {
+            "Blue": 1,
+            "Red": 0,
+            "Green": 0
+          },
+          "3": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 1
+          },
+          "4": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 1
+          },
+          "5": null
+        },
+        "taskWeight": {
+          "1": 10,
+          "2": 20,
+          "3": 30,
+          "4": 40,
+          "5": 50
+        },
+        "categoryPenaltyRate": {
+          "A": 0.05,
+          "B": 0.1,
+          "C": 0.15,
+          "D": 0.25,
+          "E": 0.4
+        },
+        "categoryWeights": {
+          "A": 5,
+          "B": 13,
+          "C": 28,
+          "D": 38,
+          "E": 16
+        },
+        "arrivalLambda": 90,
+        "failureCount": 2,
+        "failureGap": 60,
+        "failureJitter": 30,
+        "conservativeTopUp": 0.15,
+        "conservativeRedundancyBuffer": 1,
+        "seq": 1,
+        "timestamp": 0,
+        "wallClock": "2026-07-01T11:14:51.810Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 0,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M001",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M001-T1",
+            "type": 3
+          },
+          {
+            "id": "M001-T2",
+            "type": 3
+          },
+          {
+            "id": "M001-T3",
+            "type": 5
+          },
+          {
+            "id": "M001-T4",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 241.4768166281283,
+          "y": 207.87480981089175
+        },
+        "arrivalTime": 3,
+        "timeRemainingInSession": 476.996,
+        "taskCompositions": {
+          "M001-T1": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M001-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M001-T3": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          },
+          "M001-T4": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          47.84277370898053,
+          110.9250289038755
+        ],
+        "penaltyRate": 0.15,
+        "maxReward": 160,
+        "seq": 2,
+        "timestamp": 3004,
+        "wallClock": "2026-07-01T11:14:54.807Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 3.004,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M002",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M002-T1",
+            "type": 1
+          },
+          {
+            "id": "M002-T2",
+            "type": 2
+          },
+          {
+            "id": "M002-T3",
+            "type": 3
+          },
+          {
+            "id": "M002-T4",
+            "type": 3
+          },
+          {
+            "id": "M002-T5",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 713.1474166549742,
+          "y": 578.9295314066112
+        },
+        "arrivalTime": 4.198169815545596,
+        "timeRemainingInSession": 475.797,
+        "taskCompositions": {
+          "M002-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M002-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M002-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M002-T4": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M002-T5": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          44.575582563411444,
+          102.30503000551835
+        ],
+        "penaltyRate": 0.25,
+        "maxReward": 140,
+        "seq": 3,
+        "timestamp": 4203,
+        "wallClock": "2026-07-01T11:14:56.007Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 4.203,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M003",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M003-T1",
+            "type": 1
+          },
+          {
+            "id": "M003-T2",
+            "type": 2
+          },
+          {
+            "id": "M003-T3",
+            "type": 3
+          },
+          {
+            "id": "M003-T4",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 1035.1139242202044,
+          "y": 577.3429812584072
+        },
+        "arrivalTime": 9.332867372262447,
+        "timeRemainingInSession": 470.664,
+        "taskCompositions": {
+          "M003-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M003-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M003-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M003-T4": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          56.03905811207369,
+          107.37476842012256
+        ],
+        "penaltyRate": 0.15,
+        "maxReward": 110,
+        "seq": 4,
+        "timestamp": 9336,
+        "wallClock": "2026-07-01T11:15:01.140Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 9.336,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "timeRemainingInSession": 469.563,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 3,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 6,
+              "Green": 4
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 6,
+              "Green": 4
+            },
+            "displayedCompletionTime": 138.99042324490773,
+            "reserveAfter": {
+              "Blue": 9,
+              "Red": 5,
+              "Green": 7
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.6666666666666666,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 4,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 4,
+              "Green": 3
+            },
+            "displayedCompletionTime": 177.03266284804695,
+            "reserveAfter": {
+              "Blue": 8,
+              "Red": 7,
+              "Green": 8
+            },
+            "speedScore": 0,
+            "reserveScore": 0.2777777777777778,
+            "redundancyScore": 0.6,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 5,
+        "timestamp": 10437,
+        "wallClock": "2026-07-01T11:15:02.256Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 10.437,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "choiceType": "aggressive",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 4
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 463.314,
+        "latencyMs": 6249,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": -1,
+          "Red": 2,
+          "Green": 1
+        },
+        "seq": 6,
+        "timestamp": 16686,
+        "wallClock": "2026-07-01T11:15:08.497Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 16.686,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "strategyChosen": "Aggressive",
+        "agentPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B01",
+              "R01",
+              "G01"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 463.314,
+        "seq": 7,
+        "timestamp": 16686,
+        "wallClock": "2026-07-01T11:15:08.497Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 16.686,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 457.914,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 9,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 2
+            },
+            "displayedCompletionTime": 117.125042723916,
+            "reserveAfter": {
+              "Blue": 5,
+              "Red": 2,
+              "Green": 5
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.4444444444444444,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 2
+            },
+            "displayedCompletionTime": 117.125042723916,
+            "reserveAfter": {
+              "Blue": 5,
+              "Red": 2,
+              "Green": 5
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.4444444444444444,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 8,
+        "timestamp": 22086,
+        "wallClock": "2026-07-01T11:15:13.905Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 22.086,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M004",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M004-T1",
+            "type": 1
+          },
+          {
+            "id": "M004-T2",
+            "type": 1
+          },
+          {
+            "id": "M004-T3",
+            "type": 2
+          },
+          {
+            "id": "M004-T4",
+            "type": 2
+          },
+          {
+            "id": "M004-T5",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 935.6110619567335,
+          "y": 326.5320482477546
+        },
+        "arrivalTime": 25.041146373924537,
+        "timeRemainingInSession": 454.947,
+        "taskCompositions": {
+          "M004-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M004-T2": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M004-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M004-T4": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M004-T5": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          48.36823447141796,
+          102.77690515620634
+        ],
+        "penaltyRate": 0.25,
+        "maxReward": 110,
+        "seq": 9,
+        "timestamp": 25053,
+        "wallClock": "2026-07-01T11:15:16.858Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 25.053,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "timeRemainingInSession": 454.415,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 11,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 5,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 5,
+              "Green": 3
+            },
+            "displayedCompletionTime": 75.24531967416407,
+            "reserveAfter": {
+              "Blue": 5,
+              "Red": 0,
+              "Green": 4
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.5833333333333334,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 3,
+              "Green": 2
+            },
+            "displayedCompletionTime": 110.60826216045014,
+            "reserveAfter": {
+              "Blue": 5,
+              "Red": 2,
+              "Green": 5
+            },
+            "speedScore": 0,
+            "reserveScore": 0.3571428571428571,
+            "redundancyScore": 0.4444444444444444,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 10,
+        "timestamp": 25585,
+        "wallClock": "2026-07-01T11:15:17.401Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 25.585,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "choiceType": "manual",
+        "wasAgentSuggestion": false,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 3,
+          "Green": 1
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 434.014,
+        "latencyMs": 20401,
+        "deltaVsAggressive": {
+          "Blue": -2,
+          "Red": -2,
+          "Green": -2
+        },
+        "deltaVsConservative": {
+          "Blue": -2,
+          "Red": 0,
+          "Green": -1
+        },
+        "seq": 11,
+        "timestamp": 45986,
+        "wallClock": "2026-07-01T11:15:37.804Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 45.986,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "strategyChosen": "Manual",
+        "agentPlan": [
+          {
+            "taskId": "M002-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B03",
+              "R07",
+              "G05"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 434.014,
+        "seq": 12,
+        "timestamp": 45986,
+        "wallClock": "2026-07-01T11:15:37.804Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 45.986,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "timeRemainingInSession": 429.198,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 31,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 2,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 2,
+              "Green": 2
+            },
+            "displayedCompletionTime": 155.31884727431225,
+            "reserveAfter": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 4
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.375,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 2,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 2,
+              "Green": 2
+            },
+            "displayedCompletionTime": 155.31884727431225,
+            "reserveAfter": {
+              "Blue": 4,
+              "Red": 0,
+              "Green": 4
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.2857142857142857,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 13,
+        "timestamp": 50802,
+        "wallClock": "2026-07-01T11:15:42.615Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 50.802,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 3,
+          "Red": 2,
+          "Green": 2
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 421.332,
+        "latencyMs": 7866,
+        "deltaVsAggressive": {
+          "Blue": -1,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 14,
+        "timestamp": 58668,
+        "wallClock": "2026-07-01T11:15:50.480Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 58.668,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M003-T4",
+            "taskType": 5,
+            "assetIds": [
+              "B05",
+              "R10",
+              "G06"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 421.332,
+        "seq": 15,
+        "timestamp": 58668,
+        "wallClock": "2026-07-01T11:15:50.480Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 58.668,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B01",
+          "R01",
+          "G01"
+        ],
+        "timeRemainingInSession": 409.249,
+        "latencyMs": 54065,
+        "agentPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B01",
+              "R01",
+              "G01"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B01",
+              "R01",
+              "G01"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 16,
+        "timestamp": 70751,
+        "wallClock": "2026-07-01T11:16:02.568Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 70.751,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 5,
+          "Green": 7
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "wasAgentSuggested": false,
+        "modifiedFromAgentPlan": true,
+        "changedTaskIds": [
+          "M002-T5"
+        ],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B03",
+          "R09",
+          "G05"
+        ],
+        "timeRemainingInSession": 327.302,
+        "latencyMs": 106712,
+        "agentPlan": [
+          {
+            "taskId": "M002-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B03",
+              "R07",
+              "G05"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M002-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B03",
+              "R09",
+              "G05"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 17,
+        "timestamp": 152698,
+        "wallClock": "2026-07-01T11:17:24.514Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 152.698,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 6
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "droneId": "R05",
+        "droneType": "Red",
+        "taskId": "M001-T2",
+        "taskType": 3,
+        "timeRemainingInSession": 325.558,
+        "seq": 18,
+        "timestamp": 154442,
+        "wallClock": "2026-07-01T11:17:26.248Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 154.442,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 6
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 321.669,
+        "seq": 19,
+        "timestamp": 158331,
+        "wallClock": "2026-07-01T11:17:30.147Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 158.331,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 6
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "droneId": "B02",
+        "droneType": "Blue",
+        "taskId": "M001-T4",
+        "taskType": 5,
+        "timeRemainingInSession": 315.919,
+        "seq": 20,
+        "timestamp": 164081,
+        "wallClock": "2026-07-01T11:17:35.888Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 164.081,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 2,
+          "Green": 6
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B05",
+          "R10",
+          "G06"
+        ],
+        "timeRemainingInSession": 314.084,
+        "latencyMs": 107248,
+        "agentPlan": [
+          {
+            "taskId": "M003-T4",
+            "taskType": 5,
+            "assetIds": [
+              "B05",
+              "R10",
+              "G06"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M003-T4",
+            "taskType": 5,
+            "assetIds": [
+              "B05",
+              "R10",
+              "G06"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 21,
+        "timestamp": 165916,
+        "wallClock": "2026-07-01T11:17:37.732Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 165.916,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 0,
+          "Green": 4
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "droneId": "B04",
+        "droneType": "Blue",
+        "taskId": "M002-T2",
+        "taskType": 2,
+        "timeRemainingInSession": 310.398,
+        "seq": 22,
+        "timestamp": 169602,
+        "wallClock": "2026-07-01T11:17:41.410Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 169.602,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 0,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T1",
+        "taskType": 3,
+        "assetsUsed": [
+          "R03",
+          "R04",
+          "G03"
+        ],
+        "completionTime": 200.518,
+        "seq": 23,
+        "timestamp": 200518,
+        "wallClock": "2026-07-01T11:18:12.325Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 200.518,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 273.533,
+        "seq": 24,
+        "timestamp": 206467,
+        "wallClock": "2026-07-01T11:18:18.283Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 206.467,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M002",
+        "missionCategory": "D",
+        "droneId": "B03",
+        "droneType": "Blue",
+        "taskId": "M002-T5",
+        "taskType": 5,
+        "timeRemainingInSession": 273.507,
+        "seq": 25,
+        "timestamp": 206493,
+        "wallClock": "2026-07-01T11:18:18.303Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 206.493,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "droneId": "B06",
+        "droneType": "Blue",
+        "taskId": "M003-T2",
+        "taskType": 2,
+        "timeRemainingInSession": 272.47900000000004,
+        "seq": 26,
+        "timestamp": 207521,
+        "wallClock": "2026-07-01T11:18:19.330Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 207.521,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T3",
+        "taskType": 5,
+        "assetsUsed": [
+          "B01",
+          "R01",
+          "G01"
+        ],
+        "completionTime": 209.742,
+        "seq": 27,
+        "timestamp": 209742,
+        "wallClock": "2026-07-01T11:18:21.548Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 209.742,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "timeRemainingInSession": 262.533,
+        "activeMissions": 3,
+        "currentPenaltyAccrued": 172,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 6,
+              "Red": 1,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 6,
+              "Red": 1,
+              "Green": 2
+            },
+            "displayedCompletionTime": 95.3471248472741,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 2
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.5555555555555556,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 1,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 1,
+              "Green": 2
+            },
+            "displayedCompletionTime": 99.52874206730603,
+            "reserveAfter": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 2
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "redundancyScore": 0.3333333333333333,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 28,
+        "timestamp": 217467,
+        "wallClock": "2026-07-01T11:18:29.291Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 217.467,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "choiceType": "aggressive",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 6,
+          "Red": 1,
+          "Green": 2
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 253.618,
+        "latencyMs": 8915,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 29,
+        "timestamp": 226382,
+        "wallClock": "2026-07-01T11:18:38.202Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 226.382,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "strategyChosen": "Aggressive",
+        "agentPlan": [
+          {
+            "taskId": "M004-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B02",
+              "R05",
+              "G08"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 253.618,
+        "seq": 30,
+        "timestamp": 226382,
+        "wallClock": "2026-07-01T11:18:38.202Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 226.382,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T5",
+        "taskType": 5,
+        "assetsUsed": [
+          "R09",
+          "G05"
+        ],
+        "completionTime": 227.947,
+        "seq": 31,
+        "timestamp": 227947,
+        "wallClock": "2026-07-01T11:18:39.756Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 227.947,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 1,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B02",
+          "R05",
+          "G08"
+        ],
+        "timeRemainingInSession": 245.659,
+        "latencyMs": 7959,
+        "agentPlan": [
+          {
+            "taskId": "M004-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B02",
+              "R05",
+              "G08"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M004-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B02",
+              "R05",
+              "G08"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 32,
+        "timestamp": 234341,
+        "wallClock": "2026-07-01T11:18:46.162Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 234.341,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M003",
+        "taskId": "M003-T4",
+        "reason": "mission_abandoned",
+        "seq": 33,
+        "timestamp": 253943,
+        "wallClock": "2026-07-01T11:19:05.764Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 253.943,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M003",
+        "taskId": "M003-T2",
+        "reason": "mission_abandoned",
+        "seq": 34,
+        "timestamp": 253943,
+        "wallClock": "2026-07-01T11:19:05.764Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 253.943,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M003",
+        "taskId": "M003-T1",
+        "reason": "mission_abandoned",
+        "seq": 35,
+        "timestamp": 253943,
+        "wallClock": "2026-07-01T11:19:05.764Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 253.943,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "mission_abandoned",
+        "missionId": "M003",
+        "missionCategory": "C",
+        "completedTaskCount": 0,
+        "remainingTaskCount": 3,
+        "seq": 36,
+        "timestamp": 253943,
+        "wallClock": "2026-07-01T11:19:05.764Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 253.943,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "droneId": "B11",
+        "droneType": "Blue",
+        "taskId": "M004-T1",
+        "taskType": 1,
+        "timeRemainingInSession": 222.086,
+        "seq": 37,
+        "timestamp": 257914,
+        "wallClock": "2026-07-01T11:19:09.724Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 257.914,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 214.872,
+        "seq": 38,
+        "timestamp": 265128,
+        "wallClock": "2026-07-01T11:19:16.944Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 265.128,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T3",
+        "taskType": 3,
+        "assetsUsed": [
+          "R07",
+          "R08",
+          "G05"
+        ],
+        "completionTime": 275.595,
+        "seq": 39,
+        "timestamp": 275595,
+        "wallClock": "2026-07-01T11:19:27.402Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 275.595,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T3",
+        "taskType": 2,
+        "assetsUsed": [
+          "B04",
+          "B08"
+        ],
+        "completionTime": 277.174,
+        "seq": 40,
+        "timestamp": 277174,
+        "wallClock": "2026-07-01T11:19:28.983Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 277.174,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 202.005,
+        "seq": 41,
+        "timestamp": 277995,
+        "wallClock": "2026-07-01T11:19:29.814Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 277.995,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "droneId": "B09",
+        "droneType": "Blue",
+        "taskId": "M004-T4",
+        "taskType": 2,
+        "timeRemainingInSession": 201.98000000000002,
+        "seq": 42,
+        "timestamp": 278020,
+        "wallClock": "2026-07-01T11:19:29.831Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 278.02,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M004",
+        "missionCategory": "D",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 197.356,
+        "seq": 43,
+        "timestamp": 282644,
+        "wallClock": "2026-07-01T11:19:34.461Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 282.644,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T2",
+        "taskType": 1,
+        "assetsUsed": [
+          "B08"
+        ],
+        "completionTime": 293.612,
+        "seq": 44,
+        "timestamp": 293612,
+        "wallClock": "2026-07-01T11:19:45.417Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 293.612,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T1",
+        "taskType": 1,
+        "assetsUsed": [
+          "B04"
+        ],
+        "completionTime": 294.878,
+        "seq": 45,
+        "timestamp": 294878,
+        "wallClock": "2026-07-01T11:19:46.685Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 294.878,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003-R",
+        "missionCategory": "C",
+        "timeRemainingInSession": 184.25599999999997,
+        "activeMissions": 3,
+        "currentPenaltyAccrued": 223,
+        "strategiesPresented": [],
+        "seq": 46,
+        "timestamp": 295744,
+        "wallClock": "2026-07-01T11:19:47.562Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 295.744,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 2
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M003-R",
+        "missionCategory": "C",
+        "choiceType": "manual",
+        "wasAgentSuggestion": false,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 1,
+          "Green": 1
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 168.635,
+        "latencyMs": 15621,
+        "deltaVsAggressive": null,
+        "deltaVsConservative": null,
+        "seq": 47,
+        "timestamp": 311365,
+        "wallClock": "2026-07-01T11:20:03.181Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 311.365,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 2,
+          "Green": 2
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M003-R",
+        "missionCategory": "C",
+        "strategyChosen": "Manual",
+        "agentPlan": [
+          {
+            "taskId": "M003-R-T1",
+            "taskType": 5,
+            "assetIds": [
+              "B03",
+              "R10",
+              "G10"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 168.635,
+        "seq": 48,
+        "timestamp": 311365,
+        "wallClock": "2026-07-01T11:20:03.181Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 311.365,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 2,
+          "Green": 2
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T4",
+        "taskType": 3,
+        "assetsUsed": [
+          "R07",
+          "R08",
+          "G05"
+        ],
+        "completionTime": 317.845,
+        "seq": 49,
+        "timestamp": 317845,
+        "wallClock": "2026-07-01T11:20:09.654Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 317.845,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 2,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004",
+        "taskId": "M004-T5",
+        "taskType": 5,
+        "assetsUsed": [
+          "B02",
+          "R05",
+          "G08"
+        ],
+        "completionTime": 329.692,
+        "seq": 50,
+        "timestamp": 329692,
+        "wallClock": "2026-07-01T11:20:21.500Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 329.692,
+        "reserveState": {
+          "Blue": 6,
+          "Red": 2,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M003-R",
+        "missionCategory": "C",
+        "wasAgentSuggested": false,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "G10",
+          "R10",
+          "B03"
+        ],
+        "timeRemainingInSession": 141.724,
+        "latencyMs": 26911,
+        "agentPlan": [
+          {
+            "taskId": "M003-R-T1",
+            "taskType": 5,
+            "assetIds": [
+              "B03",
+              "R10",
+              "G10"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M003-R-T1",
+            "taskType": 5,
+            "assetIds": [
+              "G10",
+              "R10",
+              "B03"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 51,
+        "timestamp": 338276,
+        "wallClock": "2026-07-01T11:20:30.094Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 338.276,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M005",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M005-T1",
+            "type": 1
+          },
+          {
+            "id": "M005-T2",
+            "type": 1
+          },
+          {
+            "id": "M005-T3",
+            "type": 2
+          },
+          {
+            "id": "M005-T4",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 580.2578201517463,
+          "y": 328.85990087874234
+        },
+        "arrivalTime": 372.8655792645426,
+        "timeRemainingInSession": 107.12599999999998,
+        "taskCompositions": {
+          "M005-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M005-T2": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M005-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M005-T4": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          35.99547057179734,
+          93.01081205718219
+        ],
+        "penaltyRate": 0.15,
+        "maxReward": 60,
+        "seq": 52,
+        "timestamp": 372874,
+        "wallClock": "2026-07-01T11:21:04.682Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 372.874,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M003-R",
+        "missionCategory": "C",
+        "droneId": "B05",
+        "droneType": "Blue",
+        "taskId": "M003-R-T2",
+        "taskType": 2,
+        "timeRemainingInSession": 100.12200000000001,
+        "seq": 53,
+        "timestamp": 379878,
+        "wallClock": "2026-07-01T11:21:11.686Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 379.878,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "timeRemainingInSession": 93.892,
+        "activeMissions": 4,
+        "currentPenaltyAccrued": 264,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 49.81597621881515,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 3
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0.5,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 76.37961416860762,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 3
+            },
+            "speedScore": 0,
+            "reserveScore": 1,
+            "redundancyScore": 0.3333333333333333,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 54,
+        "timestamp": 386108,
+        "wallClock": "2026-07-01T11:21:17.931Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 386.108,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 0
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 86.88799999999998,
+        "latencyMs": 7004,
+        "deltaVsAggressive": {
+          "Blue": -1,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 55,
+        "timestamp": 393112,
+        "wallClock": "2026-07-01T11:21:24.936Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 393.112,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M005-T3",
+            "taskType": 2,
+            "assetIds": [
+              "B06",
+              "B07"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 86.88799999999998,
+        "seq": 56,
+        "timestamp": 393112,
+        "wallClock": "2026-07-01T11:21:24.936Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 393.112,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M006",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M006-T1",
+            "type": 3
+          },
+          {
+            "id": "M006-T2",
+            "type": 3
+          },
+          {
+            "id": "M006-T3",
+            "type": 3
+          },
+          {
+            "id": "M006-T4",
+            "type": 5
+          },
+          {
+            "id": "M006-T5",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 356.6472073830664,
+          "y": 548.7806065380573
+        },
+        "arrivalTime": 404.52967259527304,
+        "timeRemainingInSession": 75.45999999999998,
+        "taskCompositions": {
+          "M006-T1": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M006-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M006-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M006-T4": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          },
+          "M006-T5": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          50.981588596478105,
+          96.6664884891361
+        ],
+        "penaltyRate": 0.25,
+        "maxReward": 190,
+        "seq": 57,
+        "timestamp": 404540,
+        "wallClock": "2026-07-01T11:21:36.348Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 404.54,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M003-R",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 71.031,
+        "seq": 58,
+        "timestamp": 408969,
+        "wallClock": "2026-07-01T11:21:40.788Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 408.969,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B06",
+          "B07"
+        ],
+        "timeRemainingInSession": 58.89299999999997,
+        "latencyMs": 27995,
+        "agentPlan": [
+          {
+            "taskId": "M005-T3",
+            "taskType": 2,
+            "assetIds": [
+              "B06",
+              "B07"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M005-T3",
+            "taskType": 2,
+            "assetIds": [
+              "B06",
+              "B07"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 59,
+        "timestamp": 421107,
+        "wallClock": "2026-07-01T11:21:52.926Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 421.107,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "timeRemainingInSession": 53.303,
+        "activeMissions": 5,
+        "currentPenaltyAccrued": 291,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 1,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 1,
+              "Green": 2
+            },
+            "displayedCompletionTime": 415.3460756888562,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 1
+            },
+            "speedScore": 1,
+            "reserveScore": 0.30000000000000004,
+            "redundancyScore": 0.4,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 60,
+        "timestamp": 426697,
+        "wallClock": "2026-07-01T11:21:58.520Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 426.697,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 1,
+          "Green": 2
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 47.21100000000001,
+        "latencyMs": 6092,
+        "deltaVsAggressive": null,
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 61,
+        "timestamp": 432789,
+        "wallClock": "2026-07-01T11:22:04.607Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 432.789,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M006-T4",
+            "taskType": 5,
+            "assetIds": [
+              "B05",
+              "R11",
+              "G06"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 47.21100000000001,
+        "seq": 62,
+        "timestamp": 432789,
+        "wallClock": "2026-07-01T11:22:04.607Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 432.789,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "droneId": "B09",
+        "droneType": "Blue",
+        "taskId": "M005-T4",
+        "taskType": 2,
+        "timeRemainingInSession": 42.653999999999996,
+        "seq": 63,
+        "timestamp": 437346,
+        "wallClock": "2026-07-01T11:22:09.154Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 437.346,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 1,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M006",
+        "missionCategory": "D",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B05",
+          "R11",
+          "G06"
+        ],
+        "timeRemainingInSession": 36.93799999999999,
+        "latencyMs": 10273,
+        "agentPlan": [
+          {
+            "taskId": "M006-T4",
+            "taskType": 5,
+            "assetIds": [
+              "B05",
+              "R11",
+              "G06"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M006-T4",
+            "taskType": 5,
+            "assetIds": [
+              "B05",
+              "R11",
+              "G06"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 64,
+        "timestamp": 443062,
+        "wallClock": "2026-07-01T11:22:14.881Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 443.062,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 25.898000000000025,
+        "seq": 65,
+        "timestamp": 454102,
+        "wallClock": "2026-07-01T11:22:25.924Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 454.102,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T3",
+        "taskType": 2,
+        "assetsUsed": [
+          "B06",
+          "B07"
+        ],
+        "completionTime": 455.37,
+        "seq": 66,
+        "timestamp": 455370,
+        "wallClock": "2026-07-01T11:22:27.178Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 455.37,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003-R",
+        "taskId": "M003-R-T1",
+        "taskType": 5,
+        "assetsUsed": [
+          "G10",
+          "R10",
+          "B03"
+        ],
+        "completionTime": 455.415,
+        "seq": 67,
+        "timestamp": 455415,
+        "wallClock": "2026-07-01T11:22:27.222Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 455.415,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "droneId": "B06",
+        "droneType": "Blue",
+        "taskId": "M005-T4",
+        "taskType": 2,
+        "timeRemainingInSession": 9.978000000000009,
+        "seq": 68,
+        "timestamp": 470022,
+        "wallClock": "2026-07-01T11:22:41.830Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 470.022,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M005",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 0.09500000000002728,
+        "seq": 69,
+        "timestamp": 479905,
+        "wallClock": "2026-07-01T11:22:51.713Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 479.905,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "session_ended",
+        "score": 22,
+        "penaltyAccrued": 328,
+        "completionPoints": 350,
+        "greenEfficiency": 0.6633906633906634,
+        "meanMissionTime": 0,
+        "agentFollowRate": 0.7142857142857143,
+        "tacticalFollowRate": 1,
+        "reason": "timer",
+        "inFlightMissionIds": [
+          "M001",
+          "M002",
+          "M004",
+          "M003-R",
+          "M005",
+          "M006"
+        ],
+        "seq": 70,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:22:51.816Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "phase_change",
+        "fromPhase": "playing",
+        "toPhase": "survey",
+        "seq": 71,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:22:51.816Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "nasa_tlx",
+        "responses": {
+          "mental_demand": 13,
+          "physical_demand": 10,
+          "temporal_demand": 11,
+          "performance": 15,
+          "effort": 12,
+          "frustration": 10
+        },
+        "seq": 72,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:23:24.410Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "trust_strategic",
+        "responses": {
+          "strat_reliable": 6,
+          "strat_trust": 6,
+          "strat_performs": 6,
+          "strat_confident": 6,
+          "strat_useful": 6,
+          "strat_follow": 6
+        },
+        "seq": 73,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:23:46.455Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "trust_tactical",
+        "responses": {
+          "tact_reliable": 5,
+          "tact_trust": 5,
+          "tact_performs": 6,
+          "tact_confident": 4,
+          "tact_useful": 5,
+          "tact_follow": 6
+        },
+        "seq": 74,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:24:07.605Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "phase_change",
+        "fromPhase": "survey",
+        "toPhase": "between",
+        "seq": 75,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:24:07.605Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "phase_change",
+        "fromPhase": "between",
+        "toPhase": "playing",
+        "seq": 76,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:24:39.783Z",
+        "sessionId": "P-1333_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      }
+    ],
+    [
+      {
+        "type": "session_start",
+        "participantId": "P-1333",
+        "condition": "none",
+        "mode": "agent",
+        "complexity": "strategic",
+        "seed": 42,
+        "epsilonStrategic": 0,
+        "epsilonTactical": 0,
+        "tacticalMode": "greedy",
+        "numSessions": 2,
+        "sessionDuration": 480,
+        "fleet": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        },
+        "assetSpeeds": {
+          "Blue": 9,
+          "Red": 6.8,
+          "Green": 5.4
+        },
+        "taskBaseTime": {
+          "1": 10,
+          "2": 15,
+          "3": 25,
+          "4": 30,
+          "5": 45
+        },
+        "taskSubBaseTime": {
+          "1": 10,
+          "2": 38,
+          "3": 62,
+          "4": 75,
+          "5": 45
+        },
+        "taskPrimary": {
+          "1": {
+            "Blue": 1,
+            "Red": 0,
+            "Green": 0
+          },
+          "2": {
+            "Blue": 2,
+            "Red": 0,
+            "Green": 0
+          },
+          "3": {
+            "Blue": 0,
+            "Red": 2,
+            "Green": 1
+          },
+          "4": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 2
+          },
+          "5": {
+            "Blue": 1,
+            "Red": 1,
+            "Green": 1
+          }
+        },
+        "taskSubstitute": {
+          "1": null,
+          "2": {
+            "Blue": 1,
+            "Red": 0,
+            "Green": 0
+          },
+          "3": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 1
+          },
+          "4": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 1
+          },
+          "5": null
+        },
+        "taskWeight": {
+          "1": 10,
+          "2": 20,
+          "3": 30,
+          "4": 40,
+          "5": 50
+        },
+        "categoryPenaltyRate": {
+          "A": 0.05,
+          "B": 0.1,
+          "C": 0.15,
+          "D": 0.25,
+          "E": 0.4
+        },
+        "categoryWeights": {
+          "A": 40,
+          "B": 38,
+          "C": 16,
+          "D": 5,
+          "E": 1
+        },
+        "arrivalLambda": 38,
+        "failureCount": 2,
+        "failureGap": 60,
+        "failureJitter": 30,
+        "conservativeTopUp": 0.15,
+        "conservativeRedundancyBuffer": 1,
+        "seq": 77,
+        "timestamp": 0,
+        "wallClock": "2026-07-01T11:24:39.802Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 0,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M001",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M001-T1",
+            "type": 1
+          },
+          {
+            "id": "M001-T2",
+            "type": 1
+          },
+          {
+            "id": "M001-T3",
+            "type": 2
+          },
+          {
+            "id": "M001-T4",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 900.7014161534607,
+          "y": 332.8952312283218
+        },
+        "arrivalTime": 3,
+        "timeRemainingInSession": 476.992,
+        "taskCompositions": {
+          "M001-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M001-T2": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M001-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M001-T4": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          41.18980422383174,
+          107.2920553595759
+        ],
+        "penaltyRate": 0.15,
+        "maxReward": 60,
+        "seq": 78,
+        "timestamp": 3008,
+        "wallClock": "2026-07-01T11:24:42.804Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 3.008,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "timeRemainingInSession": 471.993,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 1,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 6,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 6,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 37.902067964858595,
+            "reserveAfter": {
+              "Blue": 5,
+              "Red": 11,
+              "Green": 11
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0.6666666666666666,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "displayedCompletionTime": 59.4420096780743,
+            "reserveAfter": {
+              "Blue": 7,
+              "Red": 10,
+              "Green": 10
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "redundancyScore": 0.6666666666666666,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 79,
+        "timestamp": 8007,
+        "wallClock": "2026-07-01T11:24:47.813Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 8.007,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M002",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M002-T1",
+            "type": 1
+          },
+          {
+            "id": "M002-T2",
+            "type": 2
+          },
+          {
+            "id": "M002-T3",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 1133.458330500871,
+          "y": 391.52377433143556
+        },
+        "arrivalTime": 9.629412111069977,
+        "timeRemainingInSession": 470.359,
+        "taskCompositions": {
+          "M002-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M002-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M002-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          35.096682293806225,
+          119.39955396344885
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 50,
+        "seq": 80,
+        "timestamp": 9641,
+        "wallClock": "2026-07-01T11:24:49.438Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 9.641,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "timeRemainingInSession": 465.692,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 2,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 5,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 5,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 62.57684626126734,
+            "reserveAfter": {
+              "Blue": 6,
+              "Red": 11,
+              "Green": 11
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0.6,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 4,
+              "Red": 1,
+              "Green": 1
+            },
+            "displayedCompletionTime": 80.75910320240611,
+            "reserveAfter": {
+              "Blue": 7,
+              "Red": 10,
+              "Green": 10
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "redundancyScore": 0.6666666666666666,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 81,
+        "timestamp": 14308,
+        "wallClock": "2026-07-01T11:24:54.115Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 14.308,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M003",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M003-T1",
+            "type": 3
+          },
+          {
+            "id": "M003-T2",
+            "type": 3
+          },
+          {
+            "id": "M003-T3",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 698.7877776660025,
+          "y": 270.55715582333505
+        },
+        "arrivalTime": 14.91986896792724,
+        "timeRemainingInSession": 465.076,
+        "taskCompositions": {
+          "M003-T1": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M003-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M003-T3": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          30.31985311070457,
+          108.18821420660242
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 110,
+        "seq": 82,
+        "timestamp": 14924,
+        "wallClock": "2026-07-01T11:24:54.722Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 14.924,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 4,
+          "Red": 1,
+          "Green": 1
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 459.126,
+        "latencyMs": 6566,
+        "deltaVsAggressive": {
+          "Blue": -1,
+          "Red": 1,
+          "Green": 1
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 83,
+        "timestamp": 20874,
+        "wallClock": "2026-07-01T11:25:00.686Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 20.874,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M002-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B01",
+              "B02"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 459.126,
+        "seq": 84,
+        "timestamp": 20874,
+        "wallClock": "2026-07-01T11:25:00.686Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 20.874,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "timeRemainingInSession": 456.193,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 5,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 6,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 6,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 37.902067964858595,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 10,
+              "Green": 10
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0.6666666666666666,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 1,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 1,
+              "Green": 1
+            },
+            "displayedCompletionTime": 76.29133284129516,
+            "reserveAfter": {
+              "Blue": 4,
+              "Red": 9,
+              "Green": 9
+            },
+            "speedScore": 0,
+            "reserveScore": 0,
+            "redundancyScore": 0.6,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 85,
+        "timestamp": 23807,
+        "wallClock": "2026-07-01T11:25:03.610Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 23.807,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B01",
+          "B02"
+        ],
+        "timeRemainingInSession": 447.361,
+        "latencyMs": 11765,
+        "agentPlan": [
+          {
+            "taskId": "M002-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B01",
+              "B02"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M002-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B01",
+              "B02"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 86,
+        "timestamp": 32639,
+        "wallClock": "2026-07-01T11:25:12.448Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 32.639,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 10,
+          "Green": 10
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "choiceType": "manual",
+        "wasAgentSuggestion": false,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 0
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 441.057,
+        "latencyMs": 15136,
+        "deltaVsAggressive": {
+          "Blue": -3,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": -1,
+          "Green": -1
+        },
+        "seq": 87,
+        "timestamp": 38943,
+        "wallClock": "2026-07-01T11:25:18.749Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 38.943,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 10,
+          "Green": 10
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "strategyChosen": "Manual",
+        "agentPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 2,
+            "assetIds": [
+              "B05",
+              "B06"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 441.057,
+        "seq": 88,
+        "timestamp": 38943,
+        "wallClock": "2026-07-01T11:25:18.750Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 38.943,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 10,
+          "Green": 10
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "timeRemainingInSession": 438.93,
+        "activeMissions": 1,
+        "currentPenaltyAccrued": 15,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 3
+            },
+            "displayedCompletionTime": 69.82922151008815,
+            "reserveAfter": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 7
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.6,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 4,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 4,
+              "Green": 3
+            },
+            "displayedCompletionTime": 80.44470157030833,
+            "reserveAfter": {
+              "Blue": 2,
+              "Red": 6,
+              "Green": 7
+            },
+            "speedScore": 0,
+            "reserveScore": 0.0714285714285714,
+            "redundancyScore": 0.5555555555555556,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 89,
+        "timestamp": 41070,
+        "wallClock": "2026-07-01T11:25:20.881Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 41.07,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 10,
+          "Green": 10
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 4,
+          "Green": 3
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 431.827,
+        "latencyMs": 7103,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": -1,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 90,
+        "timestamp": 48173,
+        "wallClock": "2026-07-01T11:25:27.985Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 48.173,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 10,
+          "Green": 10
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M003-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B08",
+              "R02",
+              "G02"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 431.827,
+        "seq": 91,
+        "timestamp": 48173,
+        "wallClock": "2026-07-01T11:25:27.985Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 48.173,
+        "reserveState": {
+          "Blue": 7,
+          "Red": 10,
+          "Green": 10
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B08",
+          "R02",
+          "G02"
+        ],
+        "timeRemainingInSession": 423.54200000000003,
+        "latencyMs": 8285,
+        "agentPlan": [
+          {
+            "taskId": "M003-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B08",
+              "R02",
+              "G02"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M003-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B08",
+              "R02",
+              "G02"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 92,
+        "timestamp": 56458,
+        "wallClock": "2026-07-01T11:25:36.272Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 56.458,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "wasAgentSuggested": false,
+        "modifiedFromAgentPlan": true,
+        "changedTaskIds": [
+          "M001-T3"
+        ],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B06"
+        ],
+        "timeRemainingInSession": 408.321,
+        "latencyMs": 32736,
+        "agentPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 2,
+            "assetIds": [
+              "B05",
+              "B06"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 2,
+            "assetIds": [
+              "B06"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 93,
+        "timestamp": 71679,
+        "wallClock": "2026-07-01T11:25:51.486Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 71.679,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "droneId": "B03",
+        "droneType": "Blue",
+        "taskId": "M002-T3",
+        "taskType": 2,
+        "timeRemainingInSession": 404.835,
+        "seq": 94,
+        "timestamp": 75165,
+        "wallClock": "2026-07-01T11:25:54.965Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 75.165,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "droneId": "R03",
+        "droneType": "Red",
+        "taskId": "M003-T1",
+        "taskType": 3,
+        "timeRemainingInSession": 400.445,
+        "seq": 95,
+        "timestamp": 79555,
+        "wallClock": "2026-07-01T11:25:59.357Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 79.555,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M002",
+        "missionCategory": "B",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 393.062,
+        "seq": 96,
+        "timestamp": 86938,
+        "wallClock": "2026-07-01T11:26:06.746Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 86.938,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "droneId": "B06",
+        "droneType": "Blue",
+        "taskId": "M001-T3",
+        "taskType": 2,
+        "timeRemainingInSession": 388.879,
+        "seq": 97,
+        "timestamp": 91121,
+        "wallClock": "2026-07-01T11:26:10.924Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 91.121,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T2",
+        "taskType": 2,
+        "assetsUsed": [
+          "B01",
+          "B02"
+        ],
+        "completionTime": 91.261,
+        "seq": 98,
+        "timestamp": 91261,
+        "wallClock": "2026-07-01T11:26:11.060Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 91.261,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 381.062,
+        "seq": 99,
+        "timestamp": 98938,
+        "wallClock": "2026-07-01T11:26:18.794Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 98.938,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M004",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M004-T1",
+            "type": 1
+          },
+          {
+            "id": "M004-T2",
+            "type": 4
+          },
+          {
+            "id": "M004-T3",
+            "type": 4
+          }
+        ],
+        "zoneCenter": {
+          "x": 921.9709241762757,
+          "y": 596.8628556281328
+        },
+        "arrivalTime": 100.71793174271966,
+        "timeRemainingInSession": 379.28,
+        "taskCompositions": {
+          "M004-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M004-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M004-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          }
+        },
+        "scheduledFailureTimes": [
+          58.558339602313936,
+          118.65784748923033
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 90,
+        "seq": 100,
+        "timestamp": 100720,
+        "wallClock": "2026-07-01T11:26:20.521Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 100.72,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 371.33,
+        "seq": 101,
+        "timestamp": 108670,
+        "wallClock": "2026-07-01T11:26:28.481Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 108.67,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M001",
+        "taskId": "M001-T4",
+        "taskType": 2,
+        "assetsUsed": [
+          "B05",
+          "B07"
+        ],
+        "completionTime": 108.838,
+        "seq": 102,
+        "timestamp": 108838,
+        "wallClock": "2026-07-01T11:26:28.636Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 108.838,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M002",
+        "taskId": "M002-T1",
+        "taskType": 1,
+        "assetsUsed": [
+          "B01"
+        ],
+        "completionTime": 110.238,
+        "seq": 103,
+        "timestamp": 110238,
+        "wallClock": "2026-07-01T11:26:30.037Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 110.238,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M005",
+        "category": "A",
+        "tasks": [
+          {
+            "id": "M005-T1",
+            "type": 1
+          },
+          {
+            "id": "M005-T2",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 496.6885775513947,
+          "y": 193.01027425564826
+        },
+        "arrivalTime": 110.339119378437,
+        "timeRemainingInSession": 369.65,
+        "taskCompositions": {
+          "M005-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M005-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          54.20507562579587,
+          104.54277495620772
+        ],
+        "penaltyRate": 0.05,
+        "maxReward": 30,
+        "seq": 104,
+        "timestamp": 110350,
+        "wallClock": "2026-07-01T11:26:30.149Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 110.35,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "timeRemainingInSession": 366.214,
+        "activeMissions": 3,
+        "currentPenaltyAccrued": 40,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 59.0610101991071,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 6,
+              "Green": 7
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 1
+            },
+            "displayedCompletionTime": 59.0610101991071,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 6,
+              "Green": 6
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.3333333333333333,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 105,
+        "timestamp": 113786,
+        "wallClock": "2026-07-01T11:26:33.597Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 113.786,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "droneId": "B05",
+        "droneType": "Blue",
+        "taskId": "M001-T3",
+        "taskType": 2,
+        "timeRemainingInSession": 363.749,
+        "seq": 106,
+        "timestamp": 116251,
+        "wallClock": "2026-07-01T11:26:36.050Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 116.251,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 0,
+          "Green": 1
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 359.078,
+        "latencyMs": 7136,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 107,
+        "timestamp": 120922,
+        "wallClock": "2026-07-01T11:26:40.734Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 120.922,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M005-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B03",
+              "B10"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 359.078,
+        "seq": 108,
+        "timestamp": 120922,
+        "wallClock": "2026-07-01T11:26:40.734Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 120.922,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 6,
+          "Green": 7
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M003",
+        "missionCategory": "B",
+        "droneId": "B08",
+        "droneType": "Blue",
+        "taskId": "M003-T3",
+        "taskType": 5,
+        "timeRemainingInSession": 356.86,
+        "seq": 109,
+        "timestamp": 123140,
+        "wallClock": "2026-07-01T11:26:42.940Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 123.14,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004",
+        "missionCategory": "B",
+        "timeRemainingInSession": 353.93,
+        "activeMissions": 3,
+        "currentPenaltyAccrued": 43,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 1,
+              "Red": 2,
+              "Green": 4
+            },
+            "trueAssets": {
+              "Blue": 1,
+              "Red": 2,
+              "Green": 4
+            },
+            "displayedCompletionTime": 89.15786561027568,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 5,
+              "Green": 2
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.42857142857142855,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 1,
+              "Red": 2,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 1,
+              "Red": 2,
+              "Green": 3
+            },
+            "displayedCompletionTime": 136.24824946151756,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 5,
+              "Green": 3
+            },
+            "speedScore": 0,
+            "reserveScore": 0.2142857142857143,
+            "redundancyScore": 0.3333333333333333,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 110,
+        "timestamp": 126070,
+        "wallClock": "2026-07-01T11:26:45.887Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 126.07,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M003",
+        "taskId": "M003-T3",
+        "taskType": 5,
+        "assetsUsed": [
+          "R02",
+          "G02"
+        ],
+        "completionTime": 126.303,
+        "seq": 111,
+        "timestamp": 126303,
+        "wallClock": "2026-07-01T11:26:46.103Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 126.303,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M004",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 1,
+          "Red": 2,
+          "Green": 3
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 345.047,
+        "latencyMs": 8883,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": -1
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 112,
+        "timestamp": 134953,
+        "wallClock": "2026-07-01T11:26:54.762Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 134.953,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M004",
+        "missionCategory": "B",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M004-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R03",
+              "G06",
+              "G07"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 345.047,
+        "seq": 113,
+        "timestamp": 134953,
+        "wallClock": "2026-07-01T11:26:54.762Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 134.953,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M001",
+        "missionCategory": "C",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 335.731,
+        "seq": 114,
+        "timestamp": 144269,
+        "wallClock": "2026-07-01T11:27:04.076Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 144.269,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M006",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M006-T1",
+            "type": 1
+          },
+          {
+            "id": "M006-T2",
+            "type": 4
+          },
+          {
+            "id": "M006-T3",
+            "type": 4
+          }
+        ],
+        "zoneCenter": {
+          "x": 342.92747957631946,
+          "y": 372.6994614582509
+        },
+        "arrivalTime": 148.0006153224245,
+        "timeRemainingInSession": 331.998,
+        "taskCompositions": {
+          "M006-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M006-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M006-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          }
+        },
+        "scheduledFailureTimes": [
+          41.239999753888696,
+          92.8924824949354
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 90,
+        "seq": 115,
+        "timestamp": 148002,
+        "wallClock": "2026-07-01T11:27:07.802Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 148.002,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 7,
+          "Green": 7
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M004",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "R03",
+          "G06",
+          "G07"
+        ],
+        "timeRemainingInSession": 313.93100000000004,
+        "latencyMs": 31116,
+        "agentPlan": [
+          {
+            "taskId": "M004-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R03",
+              "G06",
+              "G07"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M004-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R03",
+              "G06",
+              "G07"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 116,
+        "timestamp": 166069,
+        "wallClock": "2026-07-01T11:27:25.876Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 166.069,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "changedTaskIds": [
+          "M005-T2"
+        ],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B10"
+        ],
+        "timeRemainingInSession": 298.131,
+        "latencyMs": 60947,
+        "agentPlan": [
+          {
+            "taskId": "M005-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B03",
+              "B10"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M005-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B10"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 117,
+        "timestamp": 181869,
+        "wallClock": "2026-07-01T11:27:41.681Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 181.869,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M006",
+        "missionCategory": "B",
+        "timeRemainingInSession": 290.71500000000003,
+        "activeMissions": 5,
+        "currentPenaltyAccrued": 77,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 2,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 2,
+              "Green": 3
+            },
+            "displayedCompletionTime": 138.44838060586903,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 3,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.42857142857142855,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 2,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 2,
+              "Green": 3
+            },
+            "displayedCompletionTime": 138.44838060586903,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 3,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.42857142857142855,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 118,
+        "timestamp": 189285,
+        "wallClock": "2026-07-01T11:27:49.096Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 189.285,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M004",
+        "missionCategory": "B",
+        "droneId": "B06",
+        "droneType": "Blue",
+        "taskId": "M004-T1",
+        "taskType": 1,
+        "timeRemainingInSession": 273.848,
+        "seq": 119,
+        "timestamp": 206152,
+        "wallClock": "2026-07-01T11:28:05.952Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 206.152,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "droneId": "B10",
+        "droneType": "Blue",
+        "taskId": "M005-T2",
+        "taskType": 2,
+        "timeRemainingInSession": 271.66700000000003,
+        "seq": 120,
+        "timestamp": 208333,
+        "wallClock": "2026-07-01T11:28:08.135Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 208.333,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M006",
+        "missionCategory": "B",
+        "choiceType": "manual",
+        "wasAgentSuggestion": false,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 1,
+          "Red": 2,
+          "Green": 3
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 269.866,
+        "latencyMs": 20849,
+        "deltaVsAggressive": {
+          "Blue": -1,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": -1,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 121,
+        "timestamp": 210134,
+        "wallClock": "2026-07-01T11:28:09.949Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 210.134,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M006",
+        "missionCategory": "B",
+        "strategyChosen": "Manual",
+        "agentPlan": [
+          {
+            "taskId": "M006-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R07",
+              "G09",
+              "G10"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 269.866,
+        "seq": 122,
+        "timestamp": 210134,
+        "wallClock": "2026-07-01T11:28:09.949Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 210.134,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M007",
+        "category": "A",
+        "tasks": [
+          {
+            "id": "M007-T1",
+            "type": 1
+          },
+          {
+            "id": "M007-T2",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 188.93361305817962,
+          "y": 579.0756504237652
+        },
+        "arrivalTime": 222.3244200742063,
+        "timeRemainingInSession": 257.66700000000003,
+        "taskCompositions": {
+          "M007-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M007-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          41.70503478962928,
+          106.11324368510395
+        ],
+        "penaltyRate": 0.05,
+        "maxReward": 30,
+        "seq": 123,
+        "timestamp": 222333,
+        "wallClock": "2026-07-01T11:28:22.137Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 222.333,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M008",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M008-T1",
+            "type": 1
+          },
+          {
+            "id": "M008-T2",
+            "type": 2
+          },
+          {
+            "id": "M008-T3",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 556.3521010242403,
+          "y": 435.9090523701161
+        },
+        "arrivalTime": 225.70815241487333,
+        "timeRemainingInSession": 254.284,
+        "taskCompositions": {
+          "M008-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M008-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M008-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          33.51126935100183,
+          101.87360086245462
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 50,
+        "seq": 124,
+        "timestamp": 225716,
+        "wallClock": "2026-07-01T11:28:25.517Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 225.716,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M005",
+        "taskId": "M005-T1",
+        "taskType": 1,
+        "assetsUsed": [
+          "B03"
+        ],
+        "completionTime": 225.867,
+        "seq": 125,
+        "timestamp": 225867,
+        "wallClock": "2026-07-01T11:28:25.671Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 225.867,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M009",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M009-T1",
+            "type": 1
+          },
+          {
+            "id": "M009-T2",
+            "type": 2
+          },
+          {
+            "id": "M009-T3",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 223.46829326823354,
+          "y": 201.27145681530237
+        },
+        "arrivalTime": 228.29515090728248,
+        "timeRemainingInSession": 251.701,
+        "taskCompositions": {
+          "M009-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M009-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M009-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          36.24860401265323,
+          117.17189161805436
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 50,
+        "seq": 126,
+        "timestamp": 228299,
+        "wallClock": "2026-07-01T11:28:28.100Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 228.299,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_completed",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "completionTime": 233.555,
+        "tasksCompleted": 1,
+        "tasksFailed": 1,
+        "rewardEarned": 10,
+        "penaltyAccrued": 7,
+        "seq": 127,
+        "timestamp": 233555,
+        "wallClock": "2026-07-01T11:28:33.355Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 233.555,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M006",
+        "missionCategory": "B",
+        "wasAgentSuggested": false,
+        "modifiedFromAgentPlan": true,
+        "changedTaskIds": [
+          "M006-T2"
+        ],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "R07",
+          "G09"
+        ],
+        "timeRemainingInSession": 242.551,
+        "latencyMs": 27315,
+        "agentPlan": [
+          {
+            "taskId": "M006-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R07",
+              "G09",
+              "G10"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M006-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R07",
+              "G09"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 128,
+        "timestamp": 237449,
+        "wallClock": "2026-07-01T11:28:37.263Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 237.449,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M010",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M010-T1",
+            "type": 3
+          },
+          {
+            "id": "M010-T2",
+            "type": 3
+          },
+          {
+            "id": "M010-T3",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 682.6684631966054,
+          "y": 612.3589068371803
+        },
+        "arrivalTime": 237.93327539906957,
+        "timeRemainingInSession": 242.05,
+        "taskCompositions": {
+          "M010-T1": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M010-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M010-T3": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          30.090507238637656,
+          109.22673638211563
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 110,
+        "seq": 129,
+        "timestamp": 237950,
+        "wallClock": "2026-07-01T11:28:37.752Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 237.95,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M004",
+        "taskId": "M004-T2",
+        "reason": "mission_abandoned",
+        "seq": 130,
+        "timestamp": 253821,
+        "wallClock": "2026-07-01T11:28:53.634Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 253.821,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M004",
+        "taskId": "M004-T1",
+        "reason": "mission_abandoned",
+        "seq": 131,
+        "timestamp": 253821,
+        "wallClock": "2026-07-01T11:28:53.634Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 253.821,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "mission_abandoned",
+        "missionId": "M004",
+        "missionCategory": "B",
+        "completedTaskCount": 0,
+        "remainingTaskCount": 2,
+        "seq": 132,
+        "timestamp": 253821,
+        "wallClock": "2026-07-01T11:28:53.634Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 253.821,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M011",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M011-T1",
+            "type": 1
+          },
+          {
+            "id": "M011-T2",
+            "type": 2
+          },
+          {
+            "id": "M011-T3",
+            "type": 3
+          },
+          {
+            "id": "M011-T4",
+            "type": 3
+          },
+          {
+            "id": "M011-T5",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 1153.5461452044547,
+          "y": 592.2786880470812
+        },
+        "arrivalTime": 256.90625987650947,
+        "timeRemainingInSession": 223.079,
+        "taskCompositions": {
+          "M011-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M011-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M011-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M011-T4": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M011-T5": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          33.302443355787545,
+          112.35766424797475
+        ],
+        "penaltyRate": 0.25,
+        "maxReward": 140,
+        "seq": 133,
+        "timestamp": 256921,
+        "wallClock": "2026-07-01T11:28:56.724Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 256.921,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M005",
+        "missionCategory": "A",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 220.94099999999997,
+        "seq": 134,
+        "timestamp": 259059,
+        "wallClock": "2026-07-01T11:28:58.877Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 259.059,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "timeRemainingInSession": 215.433,
+        "activeMissions": 4,
+        "currentPenaltyAccrued": 122,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 67.85202259565722,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 3,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0.3333333333333333,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 67.85202259565722,
+            "reserveAfter": {
+              "Blue": 1,
+              "Red": 3,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0.3333333333333333,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 135,
+        "timestamp": 264567,
+        "wallClock": "2026-07-01T11:29:04.399Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 264.567,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M006",
+        "missionCategory": "B",
+        "droneId": "B05",
+        "droneType": "Blue",
+        "taskId": "M006-T1",
+        "taskType": 1,
+        "timeRemainingInSession": 212.152,
+        "seq": 136,
+        "timestamp": 267848,
+        "wallClock": "2026-07-01T11:29:07.657Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 267.848,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 0
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 0
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 207.48200000000003,
+        "latencyMs": 7951,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 137,
+        "timestamp": 272518,
+        "wallClock": "2026-07-01T11:29:12.334Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 272.518,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M007-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B06",
+              "B08"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 207.48200000000003,
+        "seq": 138,
+        "timestamp": 272518,
+        "wallClock": "2026-07-01T11:29:12.334Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 272.518,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "timeRemainingInSession": 201.106,
+        "activeMissions": 4,
+        "currentPenaltyAccrued": 135,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 1,
+              "Red": 3,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 1,
+              "Red": 3,
+              "Green": 1
+            },
+            "displayedCompletionTime": 215.18566990034535,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.2,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 139,
+        "timestamp": 278894,
+        "wallClock": "2026-07-01T11:29:18.717Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 278.894,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M004-R",
+        "missionCategory": "B",
+        "timeRemainingInSession": 196.74,
+        "activeMissions": 4,
+        "currentPenaltyAccrued": 139,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 1,
+              "Red": 2,
+              "Green": 1
+            },
+            "trueAssets": {
+              "Blue": 1,
+              "Red": 2,
+              "Green": 1
+            },
+            "displayedCompletionTime": 134.15786561027568,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 0
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.25,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 140,
+        "timestamp": 283260,
+        "wallClock": "2026-07-01T11:29:23.077Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 283.26,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M004-R",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 1,
+          "Red": 2,
+          "Green": 1
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 189.51,
+        "latencyMs": 7230,
+        "deltaVsAggressive": null,
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 141,
+        "timestamp": 290490,
+        "wallClock": "2026-07-01T11:29:30.310Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 290.49,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M004-R",
+        "missionCategory": "B",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M004-R-T1",
+            "taskType": 4,
+            "assetIds": [
+              "R09",
+              "G05"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 189.51,
+        "seq": 142,
+        "timestamp": 290490,
+        "wallClock": "2026-07-01T11:29:30.310Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 290.49,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "timeRemainingInSession": 187.034,
+        "activeMissions": 4,
+        "currentPenaltyAccrued": 147,
+        "strategiesPresented": [],
+        "seq": 143,
+        "timestamp": 292966,
+        "wallClock": "2026-07-01T11:29:32.782Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 292.966,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 1
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M012",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M012-T1",
+            "type": 1
+          },
+          {
+            "id": "M012-T2",
+            "type": 2
+          },
+          {
+            "id": "M012-T3",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 472.86788845434785,
+          "y": 619.4849459081888
+        },
+        "arrivalTime": 295.2518761121214,
+        "timeRemainingInSession": 184.735,
+        "taskCompositions": {
+          "M012-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M012-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M012-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          58.7946969922632,
+          117.059329461772
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 50,
+        "seq": 144,
+        "timestamp": 295265,
+        "wallClock": "2026-07-01T11:29:35.066Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 295.265,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 4,
+          "Green": 1
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M013",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M013-T1",
+            "type": 1
+          },
+          {
+            "id": "M013-T2",
+            "type": 2
+          },
+          {
+            "id": "M013-T3",
+            "type": 2
+          }
+        ],
+        "zoneCenter": {
+          "x": 1194.0164019539952,
+          "y": 181.92361381836236
+        },
+        "arrivalTime": 307.0520564652427,
+        "timeRemainingInSession": 172.93099999999998,
+        "taskCompositions": {
+          "M013-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M013-T2": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          },
+          "M013-T3": {
+            "primary": {
+              "Blue": 2,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "baseTime": 15,
+            "subBaseTime": 38
+          }
+        },
+        "scheduledFailureTimes": [
+          37.25417861016467,
+          113.9524569036439
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 50,
+        "seq": 145,
+        "timestamp": 307069,
+        "wallClock": "2026-07-01T11:29:46.871Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 307.069,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 5,
+          "Green": 2
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M014",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M014-T1",
+            "type": 1
+          },
+          {
+            "id": "M014-T2",
+            "type": 4
+          },
+          {
+            "id": "M014-T3",
+            "type": 4
+          }
+        ],
+        "zoneCenter": {
+          "x": 791.9253331742774,
+          "y": 477.1345131623847
+        },
+        "arrivalTime": 328.8682284440956,
+        "timeRemainingInSession": 151.123,
+        "taskCompositions": {
+          "M014-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M014-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M014-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          }
+        },
+        "scheduledFailureTimes": [
+          45.76474950648844,
+          102.99636704614386
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 90,
+        "seq": 146,
+        "timestamp": 328877,
+        "wallClock": "2026-07-01T11:30:08.683Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 328.877,
+        "reserveState": {
+          "Blue": 5,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M004-R",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": true,
+        "changedTaskIds": [
+          "M004-R-T1"
+        ],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "R10",
+          "G05"
+        ],
+        "timeRemainingInSession": 145.23700000000002,
+        "latencyMs": 44273,
+        "agentPlan": [
+          {
+            "taskId": "M004-R-T1",
+            "taskType": 4,
+            "assetIds": [
+              "R09",
+              "G05"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M004-R-T1",
+            "taskType": 4,
+            "assetIds": [
+              "R10",
+              "G05"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 147,
+        "timestamp": 334763,
+        "wallClock": "2026-07-01T11:30:14.565Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 334.763,
+        "reserveState": {
+          "Blue": 4,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B06",
+          "B08"
+        ],
+        "timeRemainingInSession": 139.11900000000003,
+        "latencyMs": 68363,
+        "agentPlan": [
+          {
+            "taskId": "M007-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B06",
+              "B08"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M007-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B06",
+              "B08"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 148,
+        "timestamp": 340881,
+        "wallClock": "2026-07-01T11:30:20.684Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 340.881,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M006",
+        "taskId": "M006-T3",
+        "taskType": 4,
+        "assetsUsed": [
+          "R08",
+          "G10",
+          "G11"
+        ],
+        "completionTime": 343.347,
+        "seq": 149,
+        "timestamp": 343347,
+        "wallClock": "2026-07-01T11:30:23.151Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 343.347,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M006",
+        "taskId": "M006-T1",
+        "reason": "mission_abandoned",
+        "seq": 150,
+        "timestamp": 351551,
+        "wallClock": "2026-07-01T11:30:31.370Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 351.551,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_abandoned",
+        "missionId": "M006",
+        "missionCategory": "B",
+        "completedTaskCount": 1,
+        "remainingTaskCount": 1,
+        "seq": 151,
+        "timestamp": 351551,
+        "wallClock": "2026-07-01T11:30:31.370Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 351.551,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M009",
+        "missionCategory": "B",
+        "timeRemainingInSession": 123.11599999999999,
+        "activeMissions": 5,
+        "currentPenaltyAccrued": 231,
+        "strategiesPresented": [
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "trueAssets": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "displayedCompletionTime": 165.77156951372686,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 3,
+              "Green": 3
+            },
+            "speedScore": 1,
+            "reserveScore": 1,
+            "redundancyScore": 0,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 152,
+        "timestamp": 356884,
+        "wallClock": "2026-07-01T11:30:36.713Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 356.884,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M009",
+        "missionCategory": "B",
+        "choiceType": "conservative",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 1,
+          "Red": 0,
+          "Green": 0
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 117.96199999999999,
+        "latencyMs": 5154,
+        "deltaVsAggressive": null,
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "seq": 153,
+        "timestamp": 362038,
+        "wallClock": "2026-07-01T11:30:41.859Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 362.038,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M009",
+        "missionCategory": "B",
+        "strategyChosen": "Conservative",
+        "agentPlan": [
+          {
+            "taskId": "M009-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B05"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 117.96199999999999,
+        "seq": 154,
+        "timestamp": 362038,
+        "wallClock": "2026-07-01T11:30:41.859Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 362.038,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M009",
+        "missionCategory": "B",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B05"
+        ],
+        "timeRemainingInSession": 110.23200000000003,
+        "latencyMs": 7730,
+        "agentPlan": [
+          {
+            "taskId": "M009-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B05"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M009-T2",
+            "taskType": 2,
+            "assetIds": [
+              "B05"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 155,
+        "timestamp": 369768,
+        "wallClock": "2026-07-01T11:30:49.583Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 369.768,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "timeRemainingInSession": 106.93900000000002,
+        "activeMissions": 6,
+        "currentPenaltyAccrued": 253,
+        "strategiesPresented": [],
+        "seq": 156,
+        "timestamp": 373061,
+        "wallClock": "2026-07-01T11:30:52.894Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 373.061,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M004-R",
+        "taskId": "M004-R-T2",
+        "taskType": 1,
+        "assetsUsed": [
+          "B11"
+        ],
+        "completionTime": 384.837,
+        "seq": 157,
+        "timestamp": 384837,
+        "wallClock": "2026-07-01T11:31:04.640Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 384.837,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "droneId": "B10",
+        "droneType": "Blue",
+        "taskId": "M007-T1",
+        "taskType": 1,
+        "timeRemainingInSession": 87.97899999999998,
+        "seq": 158,
+        "timestamp": 392021,
+        "wallClock": "2026-07-01T11:31:11.824Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 392.021,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M013",
+        "missionCategory": "B",
+        "timeRemainingInSession": 87.92700000000002,
+        "activeMissions": 6,
+        "currentPenaltyAccrued": 274,
+        "strategiesPresented": [],
+        "seq": 159,
+        "timestamp": 392073,
+        "wallClock": "2026-07-01T11:31:11.929Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 392.073,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "mission_completed",
+        "missionId": "M004-R",
+        "missionCategory": "B",
+        "completionTime": 393.966,
+        "tasksCompleted": 1,
+        "tasksFailed": 1,
+        "rewardEarned": 10,
+        "penaltyAccrued": 20,
+        "seq": 160,
+        "timestamp": 393966,
+        "wallClock": "2026-07-01T11:31:13.769Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 393.966,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 3,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M014",
+        "missionCategory": "B",
+        "timeRemainingInSession": 74.79000000000002,
+        "activeMissions": 5,
+        "currentPenaltyAccrued": 289,
+        "strategiesPresented": [],
+        "seq": 161,
+        "timestamp": 405210,
+        "wallClock": "2026-07-01T11:31:25.046Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 405.21,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M007",
+        "taskId": "M007-T2",
+        "taskType": 2,
+        "assetsUsed": [
+          "B06",
+          "B08"
+        ],
+        "completionTime": 408.734,
+        "seq": 162,
+        "timestamp": 408734,
+        "wallClock": "2026-07-01T11:31:28.535Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 408.734,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 5,
+          "Green": 3
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M014",
+        "missionCategory": "B",
+        "choiceType": "manual",
+        "wasAgentSuggestion": false,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 0,
+          "Red": 1,
+          "Green": 2
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 66.34800000000001,
+        "latencyMs": 8442,
+        "deltaVsAggressive": null,
+        "deltaVsConservative": null,
+        "seq": 163,
+        "timestamp": 413652,
+        "wallClock": "2026-07-01T11:31:33.469Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 413.652,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M014",
+        "missionCategory": "B",
+        "strategyChosen": "Manual",
+        "agentPlan": [
+          {
+            "taskId": "M014-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R03",
+              "G06",
+              "G07"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 66.34800000000001,
+        "seq": 164,
+        "timestamp": 413652,
+        "wallClock": "2026-07-01T11:31:33.469Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 413.652,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_completed",
+        "missionId": "M007",
+        "taskId": "M007-T1",
+        "taskType": 1,
+        "assetsUsed": [
+          "B06"
+        ],
+        "completionTime": 426.378,
+        "seq": 165,
+        "timestamp": 426378,
+        "wallClock": "2026-07-01T11:31:46.179Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 426.378,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 6,
+          "Green": 6
+        }
+      },
+      {
+        "type": "mission_completed",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "completionTime": 426.378,
+        "tasksCompleted": 2,
+        "tasksFailed": 0,
+        "rewardEarned": 30,
+        "penaltyAccrued": 10,
+        "seq": 166,
+        "timestamp": 426378,
+        "wallClock": "2026-07-01T11:31:46.179Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 426.378,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 6,
+          "Green": 6
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M009",
+        "missionCategory": "B",
+        "droneId": "B05",
+        "droneType": "Blue",
+        "taskId": "M009-T2",
+        "taskType": 2,
+        "timeRemainingInSession": 47.172000000000025,
+        "seq": 167,
+        "timestamp": 432828,
+        "wallClock": "2026-07-01T11:31:52.635Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 432.828,
+        "reserveState": {
+          "Blue": 1,
+          "Red": 6,
+          "Green": 6
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M014",
+        "missionCategory": "B",
+        "wasAgentSuggested": false,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "G06",
+          "R03",
+          "G07"
+        ],
+        "timeRemainingInSession": 43.829999999999984,
+        "latencyMs": 22518,
+        "agentPlan": [
+          {
+            "taskId": "M014-T2",
+            "taskType": 4,
+            "assetIds": [
+              "R03",
+              "G06",
+              "G07"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M014-T2",
+            "taskType": 4,
+            "assetIds": [
+              "G06",
+              "R03",
+              "G07"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 168,
+        "timestamp": 436170,
+        "wallClock": "2026-07-01T11:31:55.987Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 436.17,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M009",
+        "taskId": "M009-T2",
+        "reason": "mission_abandoned",
+        "seq": 169,
+        "timestamp": 440304,
+        "wallClock": "2026-07-01T11:32:00.130Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 440.304,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M009",
+        "taskId": "M009-T3",
+        "reason": "mission_abandoned",
+        "seq": 170,
+        "timestamp": 440304,
+        "wallClock": "2026-07-01T11:32:00.130Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 440.304,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M009",
+        "taskId": "M009-T1",
+        "reason": "mission_abandoned",
+        "seq": 171,
+        "timestamp": 440304,
+        "wallClock": "2026-07-01T11:32:00.130Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 440.304,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "mission_abandoned",
+        "missionId": "M009",
+        "missionCategory": "B",
+        "completedTaskCount": 0,
+        "remainingTaskCount": 3,
+        "seq": 172,
+        "timestamp": 440304,
+        "wallClock": "2026-07-01T11:32:00.130Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 440.304,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "failure_recovery",
+        "missionId": "M007",
+        "missionCategory": "A",
+        "recoveryType": "manual",
+        "wasAgentSuggested": false,
+        "timeRemainingInSession": 35.136000000000024,
+        "seq": 173,
+        "timestamp": 444864,
+        "wallClock": "2026-07-01T11:32:04.681Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 444.864,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "timeRemainingInSession": 29.51600000000002,
+        "activeMissions": 4,
+        "currentPenaltyAccrued": 340,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 3
+            },
+            "displayedCompletionTime": 167.36009590002098,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 0,
+              "Green": 1
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.5,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 3,
+              "Green": 2
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 3,
+              "Green": 2
+            },
+            "displayedCompletionTime": 167.36009590002098,
+            "reserveAfter": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 2
+            },
+            "speedScore": 1,
+            "reserveScore": 0.3571428571428571,
+            "redundancyScore": 0.2857142857142857,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 174,
+        "timestamp": 450484,
+        "wallClock": "2026-07-01T11:32:10.319Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 450.484,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "drone_failure",
+        "missionId": "M014",
+        "missionCategory": "B",
+        "droneId": "R03",
+        "droneType": "Red",
+        "taskId": "M014-T2",
+        "taskType": 4,
+        "timeRemainingInSession": 23.696000000000026,
+        "seq": 175,
+        "timestamp": 456304,
+        "wallClock": "2026-07-01T11:32:16.106Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 456.304,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "choiceType": "aggressive",
+        "wasAgentSuggestion": true,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 3
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 22.226,
+        "latencyMs": 7290,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 0
+        },
+        "deltaVsConservative": {
+          "Blue": 0,
+          "Red": 2,
+          "Green": 1
+        },
+        "seq": 176,
+        "timestamp": 457774,
+        "wallClock": "2026-07-01T11:32:17.593Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 457.774,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "strategyChosen": "Aggressive",
+        "agentPlan": [
+          {
+            "taskId": "M011-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B10",
+              "R06",
+              "G08"
+            ],
+            "order": 0
+          }
+        ],
+        "timeRemainingInSession": 22.226,
+        "seq": 177,
+        "timestamp": 457774,
+        "wallClock": "2026-07-01T11:32:17.593Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 457.774,
+        "reserveState": {
+          "Blue": 2,
+          "Red": 5,
+          "Green": 4
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M011",
+        "missionCategory": "D",
+        "wasAgentSuggested": true,
+        "modifiedFromAgentPlan": false,
+        "changedTaskIds": [],
+        "chainingUsed": false,
+        "assetsDeployed": [
+          "B10",
+          "R06",
+          "G08"
+        ],
+        "timeRemainingInSession": 6.593999999999994,
+        "latencyMs": 15632,
+        "agentPlan": [
+          {
+            "taskId": "M011-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B10",
+              "R06",
+              "G08"
+            ],
+            "order": 0
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M011-T5",
+            "taskType": 5,
+            "assetIds": [
+              "B10",
+              "R06",
+              "G08"
+            ],
+            "order": 0
+          }
+        ],
+        "seq": 178,
+        "timestamp": 473406,
+        "wallClock": "2026-07-01T11:32:33.227Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 473.406,
+        "reserveState": {
+          "Blue": 0,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "session_ended",
+        "score": 0,
+        "penaltyAccrued": 402,
+        "completionPoints": 190,
+        "greenEfficiency": 0.7700205338809035,
+        "meanMissionTime": 65.46200000000002,
+        "agentFollowRate": 0.7272727272727273,
+        "tacticalFollowRate": 0.75,
+        "reason": "timer",
+        "inFlightMissionIds": [
+          "M001",
+          "M002",
+          "M003",
+          "M008",
+          "M010",
+          "M011",
+          "M012",
+          "M013",
+          "M014",
+          "M006-R",
+          "M009-R"
+        ],
+        "seq": 179,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:32:39.814Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "phase_change",
+        "fromPhase": "playing",
+        "toPhase": "survey",
+        "seq": 180,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:32:39.814Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "nasa_tlx",
+        "responses": {
+          "mental_demand": 17,
+          "physical_demand": 13,
+          "temporal_demand": 17,
+          "performance": 9,
+          "effort": 14,
+          "frustration": 15
+        },
+        "seq": 181,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:33:07.907Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "trust_strategic",
+        "responses": {
+          "strat_reliable": 6,
+          "strat_trust": 6,
+          "strat_performs": 6,
+          "strat_confident": 6,
+          "strat_useful": 6,
+          "strat_follow": 6
+        },
+        "seq": 182,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:33:18.824Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "survey_response",
+        "surveyName": "trust_tactical",
+        "responses": {
+          "tact_reliable": 5,
+          "tact_trust": 5,
+          "tact_performs": 5,
+          "tact_confident": 5,
+          "tact_useful": 6,
+          "tact_follow": 3
+        },
+        "seq": 183,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:33:36.180Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 1
+        }
+      },
+      {
+        "type": "phase_change",
+        "fromPhase": "survey",
+        "toPhase": "done",
+        "seq": 184,
+        "timestamp": 480000,
+        "wallClock": "2026-07-01T11:33:36.180Z",
+        "sessionId": "P-1333_42_s2",
+        "sessionNumber": 2,
+        "elapsed": 480,
+        "reserveState": {
+          "Blue": 3,
+          "Red": 0,
+          "Green": 1
+        }
+      }
+    ]
+  ]
+}

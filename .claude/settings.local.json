@@ -120,7 +120,9 @@
       "Bash(ffmpeg -y -i StudyPresentation.mp4 -i sar_demo_20260622_123050.mp4 -filter_complex_script file1_nocrop.txt -map \"[v]\" -map \"[a]\" -c:v h264_nvenc -preset p5 -tune hq -rc vbr -cq 21 -b:v 0 -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 192k Combined_NoCrop.mp4 -loglevel error -stats)",
       "Bash(echo \"exit=$?\")",
       "Bash(ffmpeg -y -ss 600 -i Combined_Cropped.mp4 -frames:v 1 -vf scale=1200:-1 check_crop.png -loglevel error)",
-      "Bash(ffmpeg -y -ss 600 -i Combined_NoCrop.mp4 -frames:v 1 -vf scale=1200:-1 check_nocrop.png -loglevel error)"
+      "Bash(ffmpeg -y -ss 600 -i Combined_NoCrop.mp4 -frames:v 1 -vf scale=1200:-1 check_nocrop.png -loglevel error)",
+      "PowerShell(& \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 30)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 50)"
     ]
   }
 }

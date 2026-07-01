@@ -90,7 +90,11 @@ $out = Join-Path $env:USERPROFILE "Videos\sar_demo_$ts.mp4"
 $canvasW = ($areas | Measure-Object -Property Width -Sum).Sum
 $venc = if ($canvasW -gt 4096) { 'hevc_nvenc' } else { 'h264_nvenc' }
 
-$ffArgs += @('-filter_complex', $filter, '-map', '[v]')
+if ($areas.Count -eq 1) {
+  $ffArgs += @('-map', '0:v')
+} else {
+  $ffArgs += @('-filter_complex', $filter, '-map', '[v]')
+}
 if ($micDevice) {
   $ffArgs += @('-map', "$($areas.Count):a", '-c:a','aac','-b:a','192k')
 }
@@ -105,7 +109,9 @@ Write-Host "  $out"
 Write-Host "Press  q  in this window to stop." -ForegroundColor Yellow
 Write-Host ""
 
+$ErrorActionPreference = 'Continue'
 & ffmpeg -y @ffArgs
+$ErrorActionPreference = 'Stop'
 
 Write-Host ""
 Write-Host "Saved: $out" -ForegroundColor Green
