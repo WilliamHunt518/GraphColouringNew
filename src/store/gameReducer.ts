@@ -12,7 +12,7 @@ import {
   generateSessionPlan, createInitialAssets, travelTime,
   SESSION_DURATION_BY_COMPLEXITY,
   LAMBDA, CATEGORY_WEIGHTS, CATEGORIES, FLEET, TUTORIAL_FLEET,
-  FAILURE_COUNT_CONST, FAILURE_GAP_CONST, FAILURE_JITTER_CONST,
+  FAILURE_COUNT_CONST, FAILURE_GAP_CONST, FAILURE_JITTER_CONST, FAILURE_PROB_CONST,
 } from '../utils/missionGen'
 import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
 import { SeededRNG } from '../utils/prng'
@@ -889,6 +889,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           failureCount: FAILURE_COUNT_CONST,
           failureGap: FAILURE_GAP_CONST,
           failureJitter: FAILURE_JITTER_CONST,
+          failureProb: FAILURE_PROB_CONST,
           conservativeTopUp: CONSERVATIVE_TOP_UP,
           conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
         })
@@ -1354,19 +1355,51 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // ── PICK_STRATEGY ────────────────────────────────────────────────────
     case 'PICK_STRATEGY': {
       if (!state.strategicModal) return state
-      return {
+      const modal = state.strategicModal
+      let s: GameState = {
         ...state,
-        strategicModal: { ...state.strategicModal, selectedStrategyIndex: action.strategyIndex },
+        strategicModal: { ...modal, selectedStrategyIndex: action.strategyIndex },
       }
+      // Deliberation signal: which card the operator highlighted, and when. Toggling between
+      // Aggressive/Conservative before applying shows they engaged with both options.
+      const mission = state.missions.find(m => m.id === modal.missionId)
+      const name = modal.strategies[action.strategyIndex]?.name
+      if (mission && (name === 'Aggressive' || name === 'Conservative')) {
+        s = logEvent(s, {
+          type: 'strategic_card_previewed',
+          missionId: modal.missionId,
+          missionCategory: mission.category,
+          strategyIndex: action.strategyIndex,
+          strategyName: name,
+          latencyMs: Math.round(state.elapsed * 1000) - modal.openedAtMs,
+          timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        })
+      }
+      return s
     }
 
     // ── EDIT_MANUAL ──────────────────────────────────────────────────────
     case 'EDIT_MANUAL': {
       if (!state.strategicModal) return state
-      return {
+      const modal = state.strategicModal
+      let s: GameState = {
         ...state,
-        strategicModal: { ...state.strategicModal, manualAllocation: action.allocation },
+        strategicModal: { ...modal, manualAllocation: action.allocation },
       }
+      // Deliberation signal: the running manual drone counts + when each adjustment happened, so
+      // the manual-build path and effort (number of edits, time spent) are recoverable.
+      const mission = state.missions.find(m => m.id === modal.missionId)
+      if (mission) {
+        s = logEvent(s, {
+          type: 'manual_allocation_edited',
+          missionId: modal.missionId,
+          missionCategory: mission.category,
+          allocation: action.allocation,
+          latencyMs: Math.round(state.elapsed * 1000) - modal.openedAtMs,
+          timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        })
+      }
+      return s
     }
 
     // ── APPLY_STRATEGIC ──────────────────────────────────────────────────
@@ -1577,6 +1610,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
       return s
+    }
+
+    // ── TACTICAL_ASSIGN_CHANGED (logging only — captures each drag while building a plan) ──
+    case 'TACTICAL_ASSIGN_CHANGED': {
+      const mission = state.missions.find(m => m.id === action.missionId)
+      if (!mission) return state
+      const droneType = state.assets.find(a => a.id === action.droneId)?.type ?? null
+      const taskType = action.taskId
+        ? (mission.tasks.find(t => t.id === action.taskId)?.type ?? null)
+        : null
+      return logEvent(state, {
+        type: 'tactical_assignment_changed',
+        missionId: mission.id,
+        missionCategory: mission.category,
+        op: action.op,
+        droneId: action.droneId,
+        droneType,
+        taskId: action.taskId,
+        taskType,
+        recoveryMode: action.recoveryMode,
+        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+      })
     }
 
     // ── CONFIRM_TACTICAL ─────────────────────────────────────────────────

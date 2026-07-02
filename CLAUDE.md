@@ -46,7 +46,12 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=standard&seed=42
 
 ### Study Design
 
-Three 8-minute (480 s) sessions. Asset pool: 11 Blue, 11 Red, 12 Green (34 total), **uniform across all study scenarios** — only the tactical/strategic weighting (mission size via `CATEGORY_WEIGHTS` + arrival rate via `LAMBDA`) differs between presets. See `FLEET` in `missionGen.ts`.
+Three 8-minute (480 s) sessions. Asset pool: 11 Blue, 11 Red, 11 Green (33 total), **uniform across all study scenarios** — only the tactical/strategic weighting (mission size via `CATEGORY_WEIGHTS` + arrival rate via `LAMBDA`) differs between presets. See `FLEET` in `missionGen.ts`.
+
+**Scenario tuning versions and participant associations are tracked in
+[`docs/SCENARIOS.md`](docs/SCENARIOS.md)** — read/update it whenever the speeds, fleet, failure
+rate, arrival rates, or mission-size mix change, so collected data is never pooled across
+incompatible parameter sets.
 
 **Study builder (per-session complexity):** `StudyConfig.sessionComplexities?: Complexity[]` lets a single
 participant run chain different presets session-to-session (e.g. Strategic Heavy → Tactical Heavy), each
@@ -133,6 +138,9 @@ adding or modifying any event.** Quick summary of event types:
 | `tactical_opened` | Tactical planner becomes available after a strategic choice; logs the agent's suggested plan |
 | `tactical_confirmed` | Operator confirms drone→task plan (tactical planner); `modifiedFromAgentPlan` flag + `agentPlan`/`finalPlan` triples record whether/how they changed the suggestion; `suggestUsedCount` records whether the agent plan was ever consulted (planner starts empty) |
 | `tactical_suggest_used` | Operator clicks "Suggest" in the tactical planner to pull in the agent's plan (consultation signal, distinct from following) |
+| `strategic_card_previewed` | Operator highlights an Aggressive/Conservative card in the strategic modal before applying (deliberation/dwell signal) |
+| `manual_allocation_edited` | Operator adjusts a manual drone count in the strategic modal (manual-build effort/path signal) |
+| `tactical_assignment_changed` | Each drone→task drag while building/editing a tactical (or recovery) plan — assign/chain/remove/unassign; full path-construction signal |
 | `drone_failure` | In-mission drone fails |
 | `failure_recovery` | Recovery option chosen (covers agent-suggested, redistribute, and manual recovery flows) |
 | `task_completed` / `task_failed` | Task state transition |
@@ -145,7 +153,8 @@ adding or modifying any event.** Quick summary of event types:
 
 ### Mission Generation
 
-Poisson inter-arrivals: Easy λ=120s, Medium λ=75s, Hard λ=45s.
+Poisson inter-arrivals; mean `LAMBDA` per complexity (v2): balanced 65s, strategic 38s,
+tactical 78s, full 50s (see `missionGen.ts` / `docs/SCENARIOS.md`).
 Zone: circle r=80, ≥150 units from hub (500,400), ≥200 units from other active zones.
 Tasks execute greedily (T5 first → most constrained).
 
@@ -157,11 +166,14 @@ and code stay `'Blue' | 'Red' | 'Green'` — only the display layer changed (see
 `droneLabel()` in `missionGen.ts`). Individual drone IDs (e.g. `B07`) display as `Fast-7` / `Lifter-7` /
 `Camera-7`; composition shorthand uses `F`/`L`/`C` (e.g. `2F + 1L`) instead of `B`/`R`/`G`.
 
+Speeds are **v2** (compressed spread 1.22×, faster overall — see `docs/SCENARIOS.md`). Raw speed
+numbers are no longer shown to participants (the tutorial says only fastest/standard/slowest).
+
 | Type  | Speed | Notes |
 |-------|-------|-------|
-| Blue ("Fast")    | 9.0   | Fastest, recce-only |
-| Red ("Lifter")   | 6.8   | Standard, supply + extract |
-| Green ("Camera") | 5.4   | Slowest type — required by T3/T4/T5, same task-type count as Blue (T1/T2/T5) and Red (T3/T4/T5); not specially "most constrained," just slowest to arrive |
+| Blue ("Fast")    | 11.0  | Fastest, recce-only |
+| Red ("Lifter")   | 10.0  | Standard, supply + extract |
+| Green ("Camera") | 9.0   | Slowest type — required by T3/T4/T5, same task-type count as Blue (T1/T2/T5) and Red (T3/T4/T5); the compressed spread means Green is no longer the demand bottleneck |
 
 ## Development Guidelines
 

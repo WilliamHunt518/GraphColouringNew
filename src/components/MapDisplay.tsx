@@ -680,6 +680,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
   // Unified move/chain handler — maintains droneChainOrder so sequences follow assignment order
   function moveDrone(droneId: string, taskId: string, chain: boolean) {
+    if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_ASSIGN_CHANGED', missionId: mission.id, op: chain ? 'chain' : 'assign', droneId, taskId, recoveryMode })
     setAssignments(prev => {
       if (!chain) {
         const next = Object.fromEntries(
@@ -708,6 +709,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   function removeDrone(droneId: string, taskId: string) {
+    if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_ASSIGN_CHANGED', missionId: mission.id, op: 'remove', droneId, taskId, recoveryMode })
     setAssignments(prev => ({
       ...prev,
       [taskId]: (prev[taskId] ?? []).filter(id => id !== droneId),
@@ -719,6 +721,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   function unassignDrone(droneId: string) {
+    if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_ASSIGN_CHANGED', missionId: mission.id, op: 'unassign', droneId, taskId: null, recoveryMode })
     setAssignments(prev =>
       Object.fromEntries(
         Object.entries(prev).map(([tid, ids]) => [tid, ids.filter(id => id !== droneId)])

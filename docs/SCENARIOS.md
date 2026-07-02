@@ -1,0 +1,127 @@
+# Scenario Parameter Versions
+
+This file is the human-readable record of the scenario tuning constants used to collect study
+data. Every session also embeds these values in its `session_start` event (see
+[`EVENT_LOGGING.md`](EVENT_LOGGING.md)), so any log is self-describing; this file exists to make
+the version boundaries and their participant associations explicit, and to explain *why* each
+version changed.
+
+All constants live in `src/utils/missionGen.ts` unless noted. Difficulty was tuned with the
+`sim/*.mts` harnesses (`achievability.mts`, `engine.mts`, `whatif.mts`, `demand.mts`).
+
+---
+
+## v1 (pilot)
+
+> **Participant P-1333** (`logs/Study_1/study_P-1333_none_42.json`, condition `none`, seed 42,
+> sessions `strategic` → `tactical`) was collected under **v1**. **Do not pool P-1333 with v2+
+> data** — the fleet speeds, failure rate, arrival rates and mission-size mix all differ.
+
+### Fleet & speeds
+| Type | Speed (units/s) | Study fleet | Tutorial fleet |
+|------|-----------------|-------------|----------------|
+| Blue ("Fast")   | 9.0 | 11 | 6 |
+| Red ("Lifter")  | 6.8 | 11 | 6 |
+| Green ("Camera")| 5.4 | 11 | 6 |
+
+Blue/Green speed spread: **1.67×**. Tutorial exposed raw `units/s` numbers to participants.
+
+### Failure schedule
+`FAILURE_COUNT_CONST = 2`, `FAILURE_GAP_CONST = 60`, `FAILURE_JITTER_CONST = 30`.
+**All scheduled failures fire** (no inclusion gate) → **2.0 failures/mission**. Failure 1 ≈ 30–60 s
+after arrival, failure 2 ≈ 90–120 s.
+
+### Arrivals & mission mix
+Mean inter-arrival `LAMBDA` (s) and category weights `[A,B,C,D,E]`:
+
+| Complexity | LAMBDA | CATEGORY_WEIGHTS |
+|------------|--------|------------------|
+| balanced   | 65 | `[20,30,28,17,5]` |
+| strategic  | 38 | `[40,38,16,5,1]` |
+| tactical   | 90 | `[5,13,28,38,16]` |
+| full       | 50 | `[5,15,28,32,20]` |
+| quick      | 42 | `[35,30,20,12,3]` |
+
+Archetype weights `[blue,red,green,mixed] = [35,28,22,15]`. Session duration 480 s (arrivals stop
+at 420 s).
+
+### Task rules (unchanged in v2)
+- `TASK_PRIMARY`: T1 `1B` · T2 `2B` · T3 `2R+1G` · T4 `1R+2G` · T5 `1B+1R+1G`
+- `TASK_SUBSTITUTE`: T1 `null` · T2 `1B` · T3 `1R+1G` · T4 `1R+1G` · T5 `null`
+- `TASK_BASE_TIME` (s): `{1:10, 2:15, 3:25, 4:30, 5:45}`
+- `TASK_SUB_BASE_TIME` (s): `{1:10, 2:38, 3:62, 4:75, 5:45}`
+- `TASK_WEIGHT`: `{1:10, 2:20, 3:30, 4:40, 5:50}`
+- `CATEGORY_PENALTY_RATE`: `{A:0.05, B:0.10, C:0.15, D:0.25, E:0.40}`
+
+### Measured v1 load (analytic demand model, drone-seconds demand ÷ supply)
+Travel is ~77% of all demand in every scenario.
+
+| Scenario  | Blue util | Red util | Green util | Total |
+|-----------|-----------|----------|------------|-------|
+| tactical  | 31% | 40% | 44% | 38% |
+| balanced  | 34% | 43% | 47% | 41% |
+| strategic | 48% | 58% | 64% | 57% |
+| full      | 57% | 71% | 79% | 69% |
+
+**Known problems (motivating v2):** per-colour demand runs Green > Red > Blue everywhere (Blues
+idle, Green the bottleneck), and Strategic carries ~1.5× the total load of Tactical rather than
+matching it.
+
+---
+
+## v2 (current)
+
+Goals: equal per-colour demand within each scenario; equal total demand across Tactical and
+Strategic (identities preserved); ~25% fewer failures; faster + compressed travel; no raw speed
+units in the tutorial; a competent operator still meaningfully challenged.
+
+### What changed vs v1
+| Parameter | v1 | v2 |
+|-----------|----|----|
+| `ASSET_SPEED` | 9.0 / 6.8 / 5.4 (spread 1.67×) | **11.0 / 10.0 / 9.0** (spread 1.22×) |
+| Archetype weights `[blue,red,green,mixed]` | `[35,28,22,15]` | **`[38,26,21,15]`** |
+| `LAMBDA.tactical` | 90 | **78** (strategic 38, balanced 65, full 50 unchanged) |
+| Failures | 2.0/mission (all fire) | **E[1.5]/mission** via `FAILURE_PROB_CONST = 0.75` gate |
+| Tutorial | showed `9.0 units/s` etc. | qualitative "fastest / standard / slowest" only |
+| Fleet | 11/11/11 | 11/11/11 (unchanged) |
+| `TASK_*`, `CATEGORY_WEIGHTS`, penalties | — | unchanged |
+
+The compressed speed spread removes Green's travel penalty (travel drops from 77% to ~70% of
+demand), which alone collapsed the old Green > Red > Blue imbalance; the small blue archetype bump
+finishes flattening it; the `LAMBDA.tactical` cut raises Tactical's (previously lighter) load to
+match Strategic.
+
+### Achieved metrics
+Failure gate: **1.50 scheduled failures/mission** (6% of missions 0 / ~38% one / ~56% two).
+
+Per-colour demand (`sim/demand.mts`, 400 seeds) — spread ≤ ~2 pts, parity ✅:
+
+| Scenario  | Blue | Red | Green | spread | total | missions | tasks |
+|-----------|------|-----|-------|--------|-------|----------|-------|
+| tactical  | 44% | 46% | 46% | 1.9 pts | 46% | 7.3 | 32.6 |
+| strategic | 49% | 49% | 48% | 1.3 pts | 49% | 12.7 | 37.0 |
+| balanced  | 40% | 39% | 39% | 0.7 pts | 39% | 8.2 | 29.2 |
+| full      | 60% | 61% | 61% | 0.9 pts | 61% | 9.7 | 43.6 |
+
+Tactical/Strategic total-demand ratio = **0.93** (within ±10%). Tactical stays "few, big" (4.5
+tasks/mission, λ 78) vs Strategic "many, small" (2.9 tasks/mission, λ 38) — identities intact.
+
+Difficulty (`sim/engine.mts`, 80 seeds; `sim/achievability.mts`, 200 seeds):
+
+| Scenario  | SMART completion | LEAN | greedy DES | per-colour ρ (balanced) |
+|-----------|------------------|------|------------|--------------------------|
+| tactical  | **84%** | 72% | 73% | ~0.42 |
+| strategic | **83%** | 76% | 64% | ~0.46 |
+
+A competent operator finds Tactical and Strategic **equally hard (~83–84%)** — the target
+"appropriately difficult, between the v1 levels." They still *fail differently* for weak play:
+Strategic overwhelms a naive operator via arrival queueing (max queue 3.1, p95 wait 108 s), while
+Tactical punishes poor within-mission redundancy/planning — preserving the two decision-tier
+identities. (Note: average ρ ≈ 0.42–0.46 reads "comfortable," but peak fleet use is 93–100% during
+clusters, which is where the difficulty actually lives — SMART completion, not mean ρ, is the
+governing difficulty measure here.)
+
+### Re-tuning
+`npx tsx sim/demand.mts` (fast colour-balance + parity loop) → `npx tsx sim/achievability.mts` and
+`npx tsx sim/engine.mts --seeds=80` (difficulty). Adjust speeds/archetype for colour balance,
+`LAMBDA`/`CATEGORY_WEIGHTS` for level + parity.

@@ -24,6 +24,14 @@ export type GameAction =
   // ── Tactical confirmation (agent mode — from map sidebar) ────────────────
   | { type: 'CONFIRM_TACTICAL'; missionId: string; taskAssignments?: Record<string, string[]>; droneSequences?: Record<string, string[]> }
   | { type: 'TACTICAL_SUGGEST'; missionId: string }         // operator clicked "Suggest" in the tactical planner
+  | {                                                        // one drone→task manipulation while building/editing a tactical plan (logging only, no state change)
+      type: 'TACTICAL_ASSIGN_CHANGED'
+      missionId: string
+      op: 'assign' | 'chain' | 'remove' | 'unassign'
+      droneId: string
+      taskId: string | null
+      recoveryMode: boolean
+    }
   | { type: 'OVERRIDE_TACTICAL'; missionId: string }        // user wants to edit tactical
 
   // ── Drone failure recovery ───────────────────────────────────────────────

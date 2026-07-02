@@ -131,9 +131,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'drone-types',
     title: 'Three Drone Types',
     body: [
-      '{blue} drones (9.0 units/s) are your fastest type — used for reconnaissance tasks.',
-      '{red} drones (6.8 units/s) carry and place supplies — used for supply drops and precision deliveries.',
-      '{green} drones (5.4 units/s) are your slowest type, but carry the thermal camera some tasks specifically require.',
+      '{blue} drones are your fastest type — used for reconnaissance tasks.',
+      '{red} drones carry and place supplies — used for supply drops and precision deliveries.',
+      '{green} drones are your slowest type, but carry the thermal camera some tasks specifically require.',
     ],
     highlight: 'reserve-strip',
     cardSide: 'bottom',

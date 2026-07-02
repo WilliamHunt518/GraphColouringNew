@@ -286,6 +286,7 @@ export interface SessionStartEvent extends BaseEvent {
   failureCount: number
   failureGap: number
   failureJitter: number
+  failureProb: number    // inclusion prob per scheduled failure (E[failures]/mission = count × prob)
   conservativeTopUp: number
   conservativeRedundancyBuffer: number
 }
@@ -378,6 +379,46 @@ export interface TacticalSuggestUsedEvent extends BaseEvent {
   missionId: string
   missionCategory: MissionCategory
   suggestCountThisMission: number   // 1-based index of this Suggest click within the current tactical allocation
+  timeRemainingInSession: number
+}
+
+// Deliberation-level events inside the strategic modal — capture the path to a choice, not just
+// the final choice. Each is timestamped (envelope) so per-card dwell time and manual-build effort
+// are recoverable. Verbose by design (one per click); filter by type for analysis.
+export interface StrategicCardPreviewedEvent extends BaseEvent {
+  type: 'strategic_card_previewed'
+  missionId: string
+  missionCategory: MissionCategory
+  strategyIndex: number                          // which card was selected/highlighted
+  strategyName: 'Aggressive' | 'Conservative'    // agent cards are always ordered Aggressive, Conservative
+  latencyMs: number                              // time since the strategic modal opened
+  timeRemainingInSession: number
+}
+
+export interface ManualAllocationEditedEvent extends BaseEvent {
+  type: 'manual_allocation_edited'
+  missionId: string
+  missionCategory: MissionCategory
+  allocation: AssetRequirement                   // the manual drone counts after this edit
+  latencyMs: number                              // time since the strategic modal opened
+  timeRemainingInSession: number
+}
+
+// Every individual drone→task manipulation in the tactical planner, as the operator builds/edits a
+// plan (distinct from the final tactical_confirmed). Timestamped, so the whole construction path —
+// order of assignment, backtracking, chaining, per-step think time — is replayable. Emitted from
+// the three user-driven mutators only (the "Suggest" auto-fill and reset write assignments
+// directly and do not log). Covers both initial build and failure-recovery reassignment.
+export interface TacticalAssignmentChangedEvent extends BaseEvent {
+  type: 'tactical_assignment_changed'
+  missionId: string
+  missionCategory: MissionCategory
+  op: 'assign' | 'chain' | 'remove' | 'unassign' // assign=move drone onto a task; chain=add as an extra task for a drone already assigned; remove=drop from one task; unassign=clear from all tasks
+  droneId: string
+  droneType: AssetType | null                    // resolved from the fleet (null if unknown)
+  taskId: string | null                          // null for 'unassign'
+  taskType: TaskType | null                      // resolved from the mission (null for 'unassign' or if unknown)
+  recoveryMode: boolean                          // true if this drag was in the failure-recovery planner
   timeRemainingInSession: number
 }
 
@@ -503,6 +544,9 @@ export type GameEvent =
   | TacticalOpenedEvent
   | TacticalConfirmedEvent
   | TacticalSuggestUsedEvent
+  | StrategicCardPreviewedEvent
+  | ManualAllocationEditedEvent
+  | TacticalAssignmentChangedEvent
   | DroneFailureEvent
   | FailureRecoveryEvent
   | TaskCompletedEvent

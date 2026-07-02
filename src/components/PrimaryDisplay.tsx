@@ -438,11 +438,11 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   const showAgentCards = isAgent && !showManual
   const allCardsLoaded = !showAgentCards || modal.strategies.length === 0 || modal.strategies.every((_, i) => loadedCards.has(i))
 
-  // Fire independent 3–5 s timers for each strategy card when in agent mode
+  // Fire independent 4–5 s timers for each strategy card when in agent mode
   useEffect(() => {
     if (!showAgentCards || modal.strategies.length === 0) return
     const timers = modal.strategies.map((_, i) => {
-      const delay = 3000 + Math.random() * 2000
+      const delay = 4000 + Math.random() * 1000
       return window.setTimeout(() => setLoadedCards(prev => new Set([...prev, i])), delay)
     })
     return () => timers.forEach(clearTimeout)

@@ -87,6 +87,9 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 | `tactical_opened` | Immediately after `strategic_choice`, when the tactical planner becomes available | `strategyChosen`, `agentPlan[]` (taskId/taskType/assetIds/order as suggested) | `gameReducer.ts:1493` |
 | `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `suggestUsedCount` (times "Suggest" clicked before confirming), `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed` | `gameReducer.ts:579` (inside `applyTacticalAllocation()`) |
 | `tactical_suggest_used` | `TACTICAL_SUGGEST` (operator clicks "Suggest" in the tactical planner) | `suggestCountThisMission` (1-based click index this allocation) | `gameReducer.ts` (`TACTICAL_SUGGEST` case) |
+| `strategic_card_previewed` | `PICK_STRATEGY` (operator highlights an Aggressive/Conservative card in the strategic modal, before applying) | `strategyIndex`, `strategyName`, `latencyMs` (since modal opened) | `gameReducer.ts` (`PICK_STRATEGY` case) |
+| `manual_allocation_edited` | `EDIT_MANUAL` (operator adjusts a manual drone count in the strategic modal) | `allocation` (running counts after this edit), `latencyMs` (since modal opened) | `gameReducer.ts` (`EDIT_MANUAL` case) |
+| `tactical_assignment_changed` | `TACTICAL_ASSIGN_CHANGED` (each drone→task drag while building/editing a tactical or recovery plan; relayed from the map window via `_mapAction`) | `op` (`assign`/`chain`/`remove`/`unassign`), `droneId`, `droneType`, `taskId`, `taskType`, `recoveryMode` | `gameReducer.ts` (`TACTICAL_ASSIGN_CHANGED` case) |
 | `drone_failure` | Scheduled in-mission failure fires | `droneId`, `droneType`, `taskId`, `taskType` | `gameReducer.ts:959` (TICK), `:2273`/`:2324` (testing-mode forced failures) |
 | `failure_recovery` | `ACCEPT_RECOVERY`, `APPLY_MANUAL_RECOVERY`, or `CONFIRM_FAILURE_RECOVERY` | `recoveryType` (`reserve`/`redistribute`/`manual`), `wasAgentSuggested` | `gameReducer.ts:1649`, `:1716`, `:1806` |
 | `task_completed` | Task's `completionTime` is reached | `taskType`, `assetsUsed`, `completionTime` | `gameReducer.ts:1035` |
@@ -118,7 +121,14 @@ agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
   `modifiedFromAgentPlan`/`wasAgentSuggested` do *not* capture — the latter only reflects
   whether the *strategic* card was agent-sourced. On the strategic tier,
   `strategic_choice.manualBeforeCardsLoaded` flags operators who bailed to manual before the
-  cards finished their reveal delay — declining the agent without evaluating it.
+  cards finished their reveal delay — declining the agent without evaluating it. Finer-grained
+  deliberation is captured by `strategic_card_previewed` (each Aggressive/Conservative highlight,
+  with `latencyMs` → per-card dwell time and A↔C toggling = engagement with both options) and
+  `manual_allocation_edited` (each manual count adjustment → manual-build effort and time), so the
+  *path* to a choice is recoverable, not just the final `strategic_choice`. On the tactical tier,
+  `tactical_assignment_changed` does the same for within-mission planning — every drone→task drag
+  (assign/chain/remove/unassign), timestamped, so the order of construction, backtracking, and
+  chaining behaviour are fully replayable, not just the `tactical_confirmed` end state.
 - **RQ3 (deferral by tier × complexity)** — join `strategic_choice`/`tactical_confirmed`
   `latencyMs` and follow/override behavior against `session_start.complexity` and
   `mission_arrived.category` (mission size proxy).
@@ -137,7 +147,19 @@ pass — either because they need new UI instrumentation, cross-window architect
 changes, or are a larger feature than a logging fix. Flagging them here so they aren't
 silently forgotten:
 
-- **Pre-study demographics survey** and **post-study open-response survey** — not built.
+- **Pre-study demographics** — now IMPLEMENTED (`SUBMIT_DEMOGRAPHICS` logs a timestamped event and
+  sets `state.demographics`). **Post-study open-response survey** — still not built.
+- **Tactical planner intermediate drags** — now IMPLEMENTED as `tactical_assignment_changed`: each
+  drone→task manipulation is relayed from the map window over the existing `_mapAction` channel
+  (the map window stays a pure client — it sends an intent, the host reducer logs it, no client
+  state mutation, so CLAUDE.md #5 holds). Replays the full build path; `tactical_confirmed` still
+  records the final plan.
+- **Per-card reveal timestamps** — the strategic cards reveal on a 4–5 s delay driven by
+  `Math.random()` in `PrimaryDisplay.tsx` (not the seeded RNG), so the exact moment each card
+  became visible is neither reproducible nor logged. `strategic_choice.cardsLoadedAtManualSwitch`
+  gives a count but not per-card times; computing "latency from card-appearance to choice" exactly
+  would need the reveal to dispatch an action (or be seeded). Choice latency is still measured from
+  modal-open (`latencyMs`). Deliberately left minor per researcher.
 - **Cross-window attention/focus tracking** (`panel_focus_change` or similar) — blocked
   by the architectural rule that the map window (`?view=map`) is a BroadcastChannel
   *client* and must never mutate shared state (see `CLAUDE.md` constraint #5). Doing

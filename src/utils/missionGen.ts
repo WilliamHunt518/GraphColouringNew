@@ -18,9 +18,9 @@ export const ZONE_EDGE_MARGIN = 180
 // ─── Physics ──────────────────────────────────────────────────────────────
 
 export const ASSET_SPEED: Record<AssetType, number> = {
-  Blue: 9.0,
-  Red: 6.8,
-  Green: 5.4,
+  Blue: 11.0,
+  Red: 10.0,
+  Green: 9.0,
 }
 
 /** Base execution time (seconds) per task type, primary composition */
@@ -108,7 +108,7 @@ export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
 export const LAMBDA: Record<Complexity, number> = {
   balanced:  65,
   strategic: 38,   // high strategic: frequent arrivals → constant reserve decisions
-  tactical:  90,   // low strategic: infrequent arrivals → fewer allocation decisions
+  tactical:  78,   // low strategic: infrequent (but larger) arrivals; tuned so total load ≈ strategic
   full:      50,   // high on both axes: frequent and large
   quick:     42,
 }
@@ -131,13 +131,13 @@ export const CATEGORIES: MissionCategory[] = ['A', 'B', 'C', 'D', 'E']
 
 // Task type demands: T1=1B  T2=2B  T3=2R+1G  T4=1R+2G  T5=1B+1R+1G
 //
-// Archetypes weight toward one drone type per mission, breaking the old
-// always-equal demand pattern. Over many missions the aggregate demand is
-// approximately Blue > Red > Green, matching fleet composition.
+// Archetypes weight each mission toward one drone type. The weights below are tuned (v2, see
+// docs/SCENARIOS.md) so that aggregate drone-seconds of demand are ~EQUAL across Blue/Red/Green
+// against the uniform 11/11/11 fleet — per-colour utilisation spread ≤ ~2 pts in every scenario
+// (verify with `npx tsx sim/demand.mts`). The blue weight is raised because Blue is otherwise the
+// slackest colour once the compressed speed spread (11/10/9) removes Green's travel penalty.
 //
-// Archetype probabilities [blue, red, green, mixed] = [35, 28, 22, 15]
-// Avg per category:  A≈1.7B/1.6R/1.4G  B≈2.6B/2.3R/2.0G  C≈3.5B/2.8R/2.7G
-//                    D≈4.1B/4.2R/3.7G   E≈5.3B/4.9R/4.5G
+// Archetype probabilities [blue, red, green, mixed] = [38, 26, 21, 15]
 
 function buildTaskList(rng: SeededRNG, category: MissionCategory, complexity: Complexity): TaskType[] {
   if (complexity === 'quick') {
@@ -152,7 +152,7 @@ function buildTaskList(rng: SeededRNG, category: MissionCategory, complexity: Co
 
   const archetype = rng.weightedChoice(
     ['blue', 'red', 'green', 'mixed'],
-    [35, 28, 22, 15],
+    [38, 26, 21, 15],
   )
 
   switch (category) {
@@ -326,20 +326,26 @@ export function generateSessionPlan(
     })
   }
 
-  // Schedule multiple drone failures per mission.
-  // Each mission gets FAILURE_COUNT failure events staggered over time so that
-  // redundancy planning (extra drones in the allocation) is essential.
+  // Schedule drone failures per mission. Each mission gets up to FAILURE_COUNT staggered failure
+  // events so redundancy planning (extra drones in the allocation) matters. Each scheduled failure
+  // is then included only with probability FAILURE_PROB, so the expected rate is
+  // FAILURE_COUNT × FAILURE_PROB failures/mission (currently 2 × 0.75 = 1.5) — missions end up with
+  // 0/1/2 failures, giving natural variety while cutting the overall failure load. The RNG is the
+  // same seeded stream, so the schedule stays fully reproducible.
   const FAILURE_COUNT = FAILURE_COUNT_CONST
   const FAILURE_GAP   = FAILURE_GAP_CONST
   const FAILURE_JITTER = FAILURE_JITTER_CONST
+  const FAILURE_PROB   = FAILURE_PROB_CONST
 
   for (let i = 0; i < blueprints.length; i++) {
     const times: number[] = []
     for (let f = 0; f < FAILURE_COUNT; f++) {
-      // Failure 1 ≈ 30–60s, failure 2 ≈ 90–120s, etc.
-      times.push(30 + f * FAILURE_GAP + rng.randFloat(0, FAILURE_JITTER))
+      // Failure 1 ≈ 30–60s, failure 2 ≈ 90–120s, etc. Draw the time first (keeps the stream
+      // aligned regardless of inclusion) then gate on FAILURE_PROB.
+      const t = 30 + f * FAILURE_GAP + rng.randFloat(0, FAILURE_JITTER)
+      if (rng.randFloat(0, 1) < FAILURE_PROB) times.push(t)
     }
-    blueprints[i] = { ...blueprints[i], willFail: true, droneFailureTimes: times }
+    blueprints[i] = { ...blueprints[i], willFail: times.length > 0, droneFailureTimes: times }
   }
 
   return blueprints
@@ -368,19 +374,21 @@ export const CHARGE_INTERVAL = 15
 
 // ─── Drone failure schedule constants ─────────────────────────────────────
 
-export const FAILURE_COUNT_CONST = 2    // failures per mission
+export const FAILURE_COUNT_CONST = 2    // max failures scheduled per mission
 export const FAILURE_GAP_CONST = 60     // minimum seconds between successive failures
 export const FAILURE_JITTER_CONST = 30  // random jitter added to each failure time
+export const FAILURE_PROB_CONST = 0.75  // inclusion prob per scheduled failure → E[1.5]/mission
 
 // ─── Asset pool ───────────────────────────────────────────────────────────
 
 // Uniform 11/11/11 fleet across every real study scenario — difficulty differences come only
 // from the tactical/strategic weighting (mission size via CATEGORY_WEIGHTS + arrival rate via
-// LAMBDA), not fleet composition. Originally 11B/11R/12G (one extra Green, since Green is required
-// by T3/T4/T5 and is the natural bottleneck on travel time despite being slowest); flattened to
-// 11/11/11 so the reserve is easier for operators to reason about. quick stays small for dev.
-// NOTE: was tuned via sim/engine.mts to keep each scenario "slightly unachievable" (smart operator
-// ~79–88% of missions) — re-run that tuning if this fleet size changes again.
+// LAMBDA), not fleet composition. quick stays small for dev.
+// NOTE (v2 tuning, docs/SCENARIOS.md): with the compressed speeds (11/10/9) and balanced archetype
+// weights, per-colour demand is equal (fleet needn't be Green-heavy any more), and λ_tactical was
+// lowered to 78 so tactical and strategic carry ~equal total load and reach ~equal difficulty
+// (SMART operator ~83–85% of missions in both). Re-run sim/demand.mts + sim/engine.mts if any of
+// speeds / fleet / LAMBDA / CATEGORY_WEIGHTS / archetype weights change.
 export const STUDY_FLEET: [AssetType, number][] = [['Blue', 11], ['Red', 11], ['Green', 11]]
 export const FLEET: Record<Complexity, [AssetType, number][]> = {
   balanced:  STUDY_FLEET,

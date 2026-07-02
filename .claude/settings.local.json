@@ -122,7 +122,9 @@
       "Bash(ffmpeg -y -ss 600 -i Combined_Cropped.mp4 -frames:v 1 -vf scale=1200:-1 check_crop.png -loglevel error)",
       "Bash(ffmpeg -y -ss 600 -i Combined_NoCrop.mp4 -frames:v 1 -vf scale=1200:-1 check_nocrop.png -loglevel error)",
       "PowerShell(& \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 30)",
-      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 50)"
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 50)",
+      "Bash(sed \"s#'../../../../../../G:/Files/Code/GraphColouringNew/src/utils/missionGen.ts'#'../src/utils/missionGen.ts'#; s#'../../../../../../G:/Files/Code/GraphColouringNew/src/types/index.ts'#'../src/types/index.ts'#\" \"C:/Users/Work/AppData/Local/Temp/claude/G--Files-Code-GraphColouringNew/9c7f4df1-0492-40f6-bf00-e164024d20c9/scratchpad/demand.mts\")",
+      "Bash(rm -f sim/_demand_tmp.mts)"
     ]
   }
 }
