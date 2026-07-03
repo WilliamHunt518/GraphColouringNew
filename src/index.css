@@ -6,12 +6,29 @@
   box-sizing: border-box;
 }
 
+html, body { height: 100%; }
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   background: #030712;
   color: #f9fafb;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Per-window UI zoom ───────────────────────────────────────────────────
+   Rather than CSS `zoom` on the document (which enlarges the viewport-pinned
+   map layout past the window edge and clips it), we give the app a *logical*
+   viewport of size 100%/zoom and scale it back up to fill the real window.
+   Net: everything gets larger but fit-to-viewport layouts (the map) still fit
+   — no crop, no pan. Driven by --ui-zoom, set per-window in windowZoom.ts. */
+#root {
+  width: calc(100% / var(--ui-zoom, 1));
+  height: calc(100% / var(--ui-zoom, 1));
+  transform: scale(var(--ui-zoom, 1));
+  transform-origin: top left;
+  overflow-x: hidden;
+  overflow-y: auto;   /* tall form/survey screens can still scroll when zoomed in */
 }
 
 /* Custom scrollbar for dark theme */

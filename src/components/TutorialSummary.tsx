@@ -35,7 +35,7 @@ const RECAP: Recap[] = [
 
 export default function TutorialSummary({ onFinish }: Props) {
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6 overflow-y-auto">
+    <div className="min-h-full bg-gray-950 flex items-center justify-center p-6 overflow-y-auto">
       <div className="bg-gray-900 rounded-2xl border border-gray-700 p-8 max-w-2xl w-full space-y-6 my-6">
         <div className="text-center">
           <p className="text-xs text-indigo-400 uppercase tracking-widest mb-2">Tutorial complete</p>

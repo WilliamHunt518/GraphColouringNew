@@ -117,7 +117,7 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
     .reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
+    <div className="h-full flex flex-col bg-gray-950 text-white overflow-hidden">
       {/* Strategic frame — cyan ring around the whole window reinforces the cross-mission decision tier */}
       <div className="pointer-events-none fixed inset-0 z-50 border-[5px] border-cyan-500/70" />
       {/* Header */}

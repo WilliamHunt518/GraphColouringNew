@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import StartScreen from './components/StartScreen'
 import GameShell from './components/GameShell'
 import MapWindowClient from './components/MapWindowClient'
+import ZoomControls from './components/ZoomControls'
 import type { StudyConfig } from './types'
 import { parseURLConfig } from './utils/config'
 
@@ -17,6 +18,10 @@ export default function App() {
     if (urlConfig) setConfig(urlConfig)
   }, [])
 
-  if (!config) return <StartScreen onStart={setConfig} />
-  return <GameShell config={config} />
+  return (
+    <>
+      {!config ? <StartScreen onStart={setConfig} /> : <GameShell config={config} />}
+      <ZoomControls />
+    </>
+  )
 }

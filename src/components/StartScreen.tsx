@@ -123,7 +123,7 @@ export default function StartScreen({ onStart }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-full bg-gray-950 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl p-8 space-y-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-white tracking-tight">SAR Command Platform</h1>

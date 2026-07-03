@@ -5,6 +5,7 @@ import type { MapViewState } from '../types'
 import MapDisplay from './MapDisplay'
 import TacticalTutorial from './TacticalTutorial'
 import FreePlayOverlay from './FreePlayOverlay'
+import ZoomControls from './ZoomControls'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
 const CHANNEL_NAME = 'sar-study'
@@ -42,11 +43,12 @@ export default function MapWindowClient() {
 
   if (!viewState) {
     return (
-      <div className="h-screen bg-gray-950 flex items-center justify-center">
+      <div className="h-full bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="text-gray-500 text-lg">Waiting for primary window…</div>
           <div className="text-gray-700 text-sm">Open the study in the main window, then start a session.</div>
         </div>
+        <ZoomControls />
       </div>
     )
   }
@@ -67,6 +69,7 @@ export default function MapWindowClient() {
           onComplete={() => sendTutorialAction('COMPLETE')}
         />
       )}
+      <ZoomControls />
       {viewState.freePlayActive && (
         <FreePlayOverlay
           achievements={viewState.freePlayAchievements}

@@ -128,7 +128,7 @@ export default function DemographicsForm({ state, dispatch }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-full bg-gray-950 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl overflow-hidden flex flex-col">
 
         {/* Header */}

@@ -26,7 +26,7 @@ export default function BetweenSession({ state, dispatch }: Props) {
   const hideScore = state.config.collectDemographics ?? false
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-full bg-gray-950 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-gray-900 rounded-2xl border border-gray-700 p-8 space-y-6 text-center">
         {hideScore ? (
           <div>

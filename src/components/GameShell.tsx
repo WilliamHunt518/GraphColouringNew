@@ -325,7 +325,7 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
     : sessionComplexities.map(c => complexityLabel[c] ?? c).join(' → ')
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-full bg-gray-950 flex items-center justify-center p-6">
       <div className="bg-gray-900 rounded-2xl border border-gray-700 p-8 max-w-lg w-full space-y-6 text-center">
         <div>
           <div className="text-5xl mb-3">✓</div>

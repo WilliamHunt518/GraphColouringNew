@@ -115,7 +115,7 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
+    <div className="flex flex-col h-full bg-gray-950 overflow-hidden">
       {/* Tactical frame — amber ring + banner reinforces the within-mission decision tier */}
       <div className="pointer-events-none fixed inset-0 z-50 border-[5px] border-amber-500/70" />
       <div className="flex-none flex items-center gap-3 px-5 py-2 bg-amber-950/40 border-b-2 border-amber-700/60">
