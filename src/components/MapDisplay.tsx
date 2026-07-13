@@ -856,8 +856,17 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
             }}
             onPointerUp={e => {
               if (!dragging) return
-              if (hoverTask) moveDrone(dragging.droneId, hoverTask, e.shiftKey)
-              else unassignDrone(dragging.droneId)
+              if (hoverTask) {
+                moveDrone(dragging.droneId, hoverTask, e.shiftKey)
+              } else if (e.shiftKey) {
+                // Shift+drag to empty space: back out only the final hop of this drone's path.
+                const seq = droneSequences[dragging.droneId] ?? []
+                const last = seq[seq.length - 1]
+                if (last) removeDrone(dragging.droneId, last)
+              } else {
+                // Normal drag to empty space: clear the drone's whole path.
+                unassignDrone(dragging.droneId)
+              }
               setDragging(null)
               setHoverTask(null)
             }}
@@ -1429,7 +1438,9 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
         <button
           data-tutorial="tac-deploy-btn"
           onClick={onDeploy}
-          disabled={!canDeploy}
+          // While the assistant is still revealing its plan, hold Deploy until it finishes — the
+          // operator can click "Stop Assistant" to take over early. Matches the tutorial's behaviour.
+          disabled={!canDeploy || (!recoveryMode && isSuggestLoading)}
           className="w-full py-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-lg font-semibold transition-colors"
         >
           {recoveryMode

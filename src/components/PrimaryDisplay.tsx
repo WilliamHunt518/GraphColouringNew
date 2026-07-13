@@ -103,7 +103,7 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
   const done    = state.missions.filter(m => m.status === 'completed' || m.status === 'failed' || m.status === 'abandoned')
-  const reserve = reserveCount(state.assets)
+  const reserve = reserveCount(state.assets, state.missions)
 
   function sortByScore(missions: Mission[]) {
     const totalPts = (m: Mission) => m.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
@@ -432,7 +432,9 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   // A clue they declined the agent: switching before all cards finished their reveal delay.
   // null until an explicit toggle to manual (stays null for auto-manual when no strategies exist).
   const [manualSwitchSnapshot, setManualSwitchSnapshot] = useState<{ before: boolean; loaded: number } | null>(null)
-  const reserve = reserveCount(state.assets)
+  // Exclude drones already committed to another mission's pending plan, so the ± picker maxes
+  // match what can actually be deployed on this mission.
+  const reserve = reserveCount(state.assets, state.missions)
   const mission = state.missions.find(m => m.id === modal.missionId)
 
   const showAgentCards = isAgent && !showManual

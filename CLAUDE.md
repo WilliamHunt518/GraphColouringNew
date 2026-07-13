@@ -9,6 +9,8 @@ A **web-based human-subjects study platform** for research on trust in hierarchi
 - **Strategic Assistant** — fires when the operator initiates allocation of a queued mission. Presents two pre-computed strategy cards (Aggressive / Conservative) showing the **bundle of drone counts** to commit to that mission, projected ETA, speed score, and reserve score. The operator picks one, or dismisses and allocates manually.
 - **Tactical Assistant** — fires immediately after strategic allocation is accepted. Presents a **within-mission drone→task assignment plan**: which specific drone IDs are assigned to which tasks, in which execution order. Shown in the tactical planner on the map window. The operator confirms the plan or drag-drops to modify individual assignments.
 
+**Workflow note (v2.1):** on strategic allocation the committed team **sets off toward the mission zone immediately** and loiters at the zone edge until the tactical plan is confirmed (drones are then assigned to tasks from their current position). So the tactical step can be done at leisure while the drones are already en route; if they arrive first they wait for instructions. Committed drones leave the reserve the moment they are allocated (`launchToLoiter` in `gameReducer.ts`).
+
 These are genuinely different decision levels:
 - **Strategic** = cross-mission resource commitment (how many of each drone type to send)
 - **Tactical** = within-mission execution planning (which specific drones do which tasks)
@@ -153,8 +155,8 @@ adding or modifying any event.** Quick summary of event types:
 
 ### Mission Generation
 
-Poisson inter-arrivals; mean `LAMBDA` per complexity (v2): balanced 65s, strategic 38s,
-tactical 78s, full 50s (see `missionGen.ts` / `docs/SCENARIOS.md`).
+Poisson inter-arrivals; mean `LAMBDA` per complexity (v2.1): balanced 62s, strategic 37s,
+tactical 75s, full 48s (see `missionGen.ts` / `docs/SCENARIOS.md`).
 Zone: circle r=80, ≥150 units from hub (500,400), ≥200 units from other active zones.
 Tasks execute greedily (T5 first → most constrained).
 

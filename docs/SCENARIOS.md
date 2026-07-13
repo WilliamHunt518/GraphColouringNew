@@ -125,3 +125,59 @@ governing difficulty measure here.)
 `npx tsx sim/demand.mts` (fast colour-balance + parity loop) → `npx tsx sim/achievability.mts` and
 `npx tsx sim/engine.mts --seeds=80` (difficulty). Adjust speeds/archetype for colour balance,
 `LAMBDA`/`CATEGORY_WEIGHTS` for level + parity.
+
+---
+
+## v2.1 (current)
+
+Two coupled changes: a workflow change that made missions slightly *easier*, and a small arrival-rate
+bump to compensate. Task rules, speeds, fleet, failures, archetype/category weights are all unchanged
+from v2 — **only `LAMBDA` changed** — so v2 and v2.1 remain broadly comparable, but the version bump is
+recorded here for provenance.
+
+### What changed vs v2
+| Parameter | v2 | v2.1 |
+|-----------|----|------|
+| Workflow (`gameReducer.ts`) | Committed team waited at the hub until the tactical plan was confirmed, then flew out. | **On strategic allocation the committed team sets off toward the mission zone immediately** and loiters at the zone edge until a tactical plan is confirmed (drones assigned from their current position). Reserve drops the moment they are committed. |
+| `LAMBDA` | balanced 65 · strategic 38 · tactical 78 · full 50 | **balanced 62 · strategic 37 · tactical 75 · full 48** (≈5% more arrivals) |
+
+Rationale: pre-positioning the drones during the tactical-planning window removes the post-confirm
+hub→zone travel from the critical path, shortening completion times and freeing drones sooner — a
+throughput easing not captured by the auto-operator harnesses (they confirm tactical instantly). The
+uniform-ish `LAMBDA` cut restores the intended load. A larger (~8%) cut was rejected because strategic
+is far more arrival-sensitive than tactical and it broke the tac≈strat difficulty parity.
+
+### Achieved metrics (with the v2.1 workflow active in the harnesses)
+Per-colour demand (`sim/demand.mts`, 300 seeds) — spread ≤ ~3 pts, parity ✅:
+
+| Scenario  | Blue | Red | Green | spread | total | missions | tasks |
+|-----------|------|-----|-------|--------|-------|----------|-------|
+| tactical  | 45% | 47% | 47% | 2.9 pts | 46% | 7.3 | 32.9 |
+| strategic | 51% | 52% | 50% | 1.5 pts | 51% | 13.1 | 38.1 |
+| balanced  | 41% | 41% | 41% | 0.3 pts | 41% | 8.5 | 30.0 |
+| full      | 61% | 64% | 62% | 2.3 pts | 62% | 9.9 | 44.4 |
+
+Tactical/Strategic total-demand ratio = **0.91** (within ±10%).
+
+Difficulty (`sim/engine.mts`, 80 seeds), SMART (redundant/Aggressive) completion. The numbers below
+are **after the failure-freeze bug fix** (see note): a mid-mission drone failure used to leave the
+task half-staffed with its remaining drones stuck on it forever (greedy replan only fills empty
+tasks) and the manual recovery planner offered on-mission drones that the confirm handler then
+rejected — both froze missions and depressed completion. With that fixed, missions no longer stall:
+
+| Scenario  | v2.1 SMART | mean completion |
+|-----------|-----------|-----------------|
+| tactical  | **89%** | 103 s |
+| strategic | **87%** | 95 s |
+| balanced  | 88% | 95 s |
+| full      | **80%** | 120 s |
+
+Tactical ≈ Strategic parity preserved (~87–89%). Completion sits a little higher than the old
+~83% target because that figure was measured with the freeze bug artificially failing ~1 mission in
+6; the SMART auto-operator also over-allocates and recovers perfectly, so real operators land lower.
+
+**Failure-freeze fix (`gameReducer.ts`):** on a non-graceful drone failure the task's *remaining*
+drones are now released back to loitering and the task's `assignedAssetIds` cleared, so it is cleanly
+re-coverable (greedy replan re-covers it; a half-staffed pending task no longer freezes). And
+`CONFIRM_FAILURE_RECOVERY` now accepts the mission's own deployed (loitering) drones — the exact pool
+the recovery planner offers — instead of only hub-reserve `available` drones.

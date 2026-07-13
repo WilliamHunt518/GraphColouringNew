@@ -93,8 +93,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'timer',
     title: 'Session Timer',
     body: [
-      'The amber countdown shows time remaining in the session. When it reaches zero the session ends and a brief survey appears.',
-      'Any mission not completed by the end of the session will not score further points, so time pressure is real.',
+      'The amber countdown shows the time remaining in the session.',
     ],
     highlight: 'timer',
     cardSide: 'bottom',
@@ -229,8 +228,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'manual-picker',
     title: 'Set Your Allocation & Deploy',
     body: [
-      'Check the task bars to see what drone types each task requires. Use the ± buttons to set your allocation — the number after the slash is your available reserve.',
-      'The ETA preview updates as you adjust. When you are happy, click "Deploy" to commit the team. The tutorial will advance automatically.',
+      'Check the task bars to see what drone types each task requires. A sensible minimum here is 1 {blue} + 2 {red} + 1 {green} — enough to cover every task at full speed. A second {blue} would let the two {T1} Recce tasks run in parallel instead of one after another.',
+      'Use the ± buttons to set your allocation — the number after the slash is your available reserve. The ETA preview updates as you adjust. When you are happy, click "Deploy" to commit the team. The tutorial will advance automatically.',
     ],
     highlight: 'first-mission-card',
     cardSide: 'right',
@@ -248,8 +247,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tactical-pending',
     title: 'Tactical Planning Pending',
     body: [
-      'The mission is now waiting for a tactical plan. A drone team has been committed but the drones have not yet departed — you still need to confirm which drone goes to which task.',
-      'This is handled in the Tactical Planner. You can review and modify the plan before the drones leave.',
+      'Your committed team is already on its way to the mission zone — but they still need instructions on which drone handles which task.',
+      'You give those instructions in the Tactical Planner. If the drones arrive before you finish planning, they simply hold at the zone edge and wait.',
     ],
     highlight: 'first-tactical-pending',
     cardSide: 'right',
@@ -258,10 +257,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 16. Map overview — no "click button" prompt ───────────────────────────────
   {
     id: 'map-overview',
-    title: 'The Strategic View',
+    title: 'The Strategic Map',
     body: [
-      'This panel is your Strategic View: the hub (blue circle), all mission zones (coloured circles), and drone travel routes. Zone colours: amber = queued, blue = active.',
-      'Switch to the Tactical Planner window now — it should already be open on your second screen. The tutorial will continue there.',
+      'A quick recap of the strategic map: the hub (blue circle), all mission zones (coloured circles), and drone travel routes. Zone colours: amber = queued, blue = active.',
+      'Click Next, then follow the tutorial on the Tactical Planner screen — it should already be open on your second screen.',
     ],
     cardSide: 'center',
   },
@@ -273,7 +272,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tac-welcome',
     title: 'The Tactical Planner',
     body: [
-      'Welcome. This window is where you plan exactly which drones do which tasks and in what order before the team departs.',
+      'Welcome. This window is where you plan exactly which drones do which tasks and in what order before they begin work at the zone.',
       'For this training mission we set your team to 2 {blue} + 1 {red} + 1 {green} so you can practise every control here. In the real session you always choose your own allocation.',
       'Use the Back and Next buttons on this card to navigate.',
     ],
@@ -287,7 +286,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Mission Queue',
     body: [
       'This left panel lists missions that are waiting for tactical planning (yellow border) or have a drone failure needing recovery (red border).',
-      'Click a mission to open its plan in the main area.',
     ],
     highlight: 'tac-mission-list',
     cardSide: 'right',
@@ -352,8 +350,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tac-unassigned',
     title: 'Your Available Drones',
     body: [
-      'This panel lists drones that have not yet been assigned to any task. Each chip shows the drone type icon and its callsign.',
-      'Cross-reference with the task schedule below to plan which drones to assign where. Drag a chip onto a task circle on the map to assign it.',
+      'This panel lists drones that have not yet been assigned to any task — each chip shows the drone type icon and its callsign.',
     ],
     highlight: 'tac-unassigned',
     cardSide: 'left',
@@ -415,6 +412,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
       'The schedule lists each task with its required drone composition, assigned drones (drag chips here to reassign or click × to remove), and estimated start and end times.',
       'Counters like "0/1F" mean 0 of 1 required {blue} drones are currently assigned — F/L/C are short for {blue}/{red}/{green}.',
       'A task turns green when its composition requirement is fully met. The footer shows the overall estimated completion time.',
+      'One drone can cover the work of two, just slower: {T3} normally wants two {red} + one {green}, but with only one {red} a single {red} + {green} still completes it — much more slowly.',
     ],
     highlight: 'tac-schedule',
     cardSide: 'left',
@@ -426,8 +424,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tac-deploy',
     title: 'Deploy the Mission',
     body: [
-      'When you are satisfied with the assignments, click "Deploy ✓" to dispatch the drones. They will depart from the hub and navigate to their tasks.',
-      'You have now completed the full manual workflow. Once deployed, we will demo a drone failure — then you will try both AI agents.',
+      'When you are satisfied with the assignments, click "Deploy ✓" to send the drones to their tasks — they move from the zone edge straight to work.',
+      'You have now completed the full manual workflow. Once deployed, we will demo a drone failure.',
     ],
     highlight: 'tac-deploy-btn',
     cardSide: 'left',

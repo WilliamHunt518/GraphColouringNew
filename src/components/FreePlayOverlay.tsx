@@ -5,6 +5,7 @@ interface Props {
   achievements: FreePlayAchievement[]
   secondsLeft: number
   onSkip: () => void
+  canFinish?: boolean  // false until the free-play minimum has elapsed — suppresses auto-close
   readOnly?: boolean  // map window — no skip button
 }
 
@@ -14,14 +15,14 @@ function fmt(s: number) {
   return `${m}:${String(sec).padStart(2, '0')}`
 }
 
-export default function FreePlayOverlay({ achievements, secondsLeft, onSkip, readOnly }: Props) {
+export default function FreePlayOverlay({ achievements, secondsLeft, onSkip, canFinish = true, readOnly }: Props) {
   const allDone = achievements.length > 0 && achievements.every(a => a.done)
   const prevAllDone = useRef(false)
   const [flashDone, setFlashDone] = useState(false)
 
-  // Flash "All done!" then auto-close after 2 s
+  // Flash "All done!" then auto-close after 2 s — but only once the free-play minimum has elapsed.
   useEffect(() => {
-    if (allDone && !prevAllDone.current) {
+    if (allDone && canFinish && !prevAllDone.current) {
       prevAllDone.current = true
       setFlashDone(true)
       if (!readOnly) {
@@ -29,7 +30,7 @@ export default function FreePlayOverlay({ achievements, secondsLeft, onSkip, rea
         return () => clearTimeout(t)
       }
     }
-  }, [allDone, onSkip, readOnly])
+  }, [allDone, canFinish, onSkip, readOnly])
 
   return (
     <div style={{

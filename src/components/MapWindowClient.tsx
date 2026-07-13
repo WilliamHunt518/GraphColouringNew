@@ -74,6 +74,7 @@ export default function MapWindowClient() {
         <FreePlayOverlay
           achievements={viewState.freePlayAchievements}
           secondsLeft={viewState.freePlaySecondsLeft}
+          canFinish={viewState.freePlayCanFinish}
           onSkip={() => {}}
           readOnly
         />

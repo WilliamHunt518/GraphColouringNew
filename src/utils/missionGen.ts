@@ -106,10 +106,10 @@ export const SESSION_DURATION_BY_COMPLEXITY: Record<Complexity, number> = {
 // strategic: fast arrivals (many decisions), small missions per arrival
 // full: moderate arrivals but large missions — maximum pressure
 export const LAMBDA: Record<Complexity, number> = {
-  balanced:  65,
-  strategic: 38,   // high strategic: frequent arrivals → constant reserve decisions
-  tactical:  78,   // low strategic: infrequent (but larger) arrivals; tuned so total load ≈ strategic
-  full:      50,   // high on both axes: frequent and large
+  balanced:  62,
+  strategic: 37,   // high strategic: frequent arrivals → constant reserve decisions
+  tactical:  75,   // low strategic: infrequent (but larger) arrivals; tuned so total load ≈ strategic
+  full:      48,   // high on both axes: frequent and large
   quick:     42,
 }
 
@@ -259,21 +259,42 @@ function placeZone(
     if (existing.some(z => dist(pt, z) < noOverlapMin)) continue
     return pt
   }
-  // Last resort: find the candidate that maximises minimum clearance from existing zones
-  let bestPt: { x: number; y: number } = { x: HUB.x, y: HUB.y - ZONE_MIN_HUB - 30 }
-  let bestDist = 0
-  for (let a = 0; a < 72; a++) {
-    const angle = (a / 72) * Math.PI * 2
-    for (let rr = ZONE_MIN_HUB; rr <= 350; rr += 30) {
+  // Last resort: scan a fine polar grid. A non-overlapping spot (clearance ≥ noOverlapMin) always
+  // wins when one exists. When the map is genuinely saturated and we must overlap, prefer overlapping
+  // the earliest-arriving zone (lowest index in `existing` — most likely already completed by the
+  // time this later mission spawns) rather than a recent/active one.
+  const ANGLES = 144
+  type Cand = { pt: { x: number; y: number }; overlapping: boolean; clearance: number; earliestConflict: number }
+  let best: Cand | null = null
+  const isBetter = (c: Cand, b: Cand | null): boolean => {
+    if (!b) return true
+    if (c.overlapping !== b.overlapping) return !c.overlapping           // non-overlapping wins
+    if (!c.overlapping) return c.clearance > b.clearance                 // both clear: more room
+    if (c.earliestConflict !== b.earliestConflict)                       // both overlap: prefer older
+      return c.earliestConflict < b.earliestConflict
+    return c.clearance > b.clearance
+  }
+  for (let a = 0; a < ANGLES; a++) {
+    const angle = (a / ANGLES) * Math.PI * 2
+    for (let rr = ZONE_MIN_HUB; rr <= 380; rr += 15) {
       const pt = {
         x: Math.min(MAP_W - margin, Math.max(margin, HUB.x + Math.cos(angle) * rr)),
         y: Math.min(MAP_H - margin, Math.max(margin, HUB.y + Math.sin(angle) * rr)),
       }
-      const minD = existing.length === 0 ? noOverlapMin : Math.min(...existing.map(z => dist(pt, z)))
-      if (minD > bestDist) { bestDist = minD; bestPt = pt }
+      let clearance = noOverlapMin, earliestConflict = Infinity
+      if (existing.length > 0) {
+        clearance = Infinity
+        for (let idx = 0; idx < existing.length; idx++) {
+          const d = dist(pt, existing[idx])
+          if (d < clearance) clearance = d
+          if (d < noOverlapMin && idx < earliestConflict) earliestConflict = idx
+        }
+      }
+      const cand: Cand = { pt, overlapping: earliestConflict !== Infinity, clearance, earliestConflict }
+      if (isBetter(cand, best)) best = cand
     }
   }
-  return bestPt
+  return best ? best.pt : { x: HUB.x, y: HUB.y - ZONE_MIN_HUB - 30 }
 }
 
 // ─── Session plan generator ───────────────────────────────────────────────
@@ -287,10 +308,13 @@ export function generateSessionPlan(
   rng: SeededRNG,
   complexity: Complexity,
   duration = SESSION_DURATION_BY_COMPLEXITY[complexity],
+  seedCenters: Array<{ x: number; y: number }> = [],
 ): MissionBlueprint[] {
   const lambda = LAMBDA[complexity]
   const blueprints: MissionBlueprint[] = []
-  const usedCenters: Array<{ x: number; y: number }> = []
+  // Seed the keep-out with any pre-placed zone centres (e.g. fixed tutorial missions) so generated
+  // zones never land on top of them.
+  const usedCenters: Array<{ x: number; y: number }> = [...seedCenters]
   let time = 0
   let seq = 0
 
@@ -304,8 +328,8 @@ export function generateSessionPlan(
 
     const category = rng.weightedChoice(CATEGORIES, CATEGORY_WEIGHTS[complexity])
     const taskTypes = buildTaskList(rng, category, complexity)
-    // Only check against the last 5 zone centres — earlier missions will have completed
-    // and their map space is available again.
+    // Check against every zone centre placed so far (finished zones stay drawn on the map, so
+    // they remain part of the keep-out) to avoid visual overlap.
     const zoneCenter = placeZone(rng, usedCenters)
     usedCenters.push(zoneCenter)
 

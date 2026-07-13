@@ -205,6 +205,7 @@ export interface MapViewState {
   freePlayActive: boolean
   freePlayAchievements: FreePlayAchievement[]
   freePlaySecondsLeft: number
+  freePlayCanFinish: boolean
 }
 
 // ─── Game state ───────────────────────────────────────────────────────────

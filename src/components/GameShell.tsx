@@ -12,7 +12,8 @@ import Tutorial from './Tutorial'
 import FreePlayOverlay from './FreePlayOverlay'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 
-const FREE_PLAY_MAX = 300  // seconds
+const FREE_PLAY_MIN = 300  // seconds — free play always runs at least this long
+const FREE_PLAY_MAX = 480  // seconds — hard cap so slow finishers can still complete the checklist
 
 const CHANNEL_NAME = 'sar-study'
 
@@ -35,6 +36,7 @@ export default function GameShell({ config }: Props) {
   const lastOpenMissionIdRef = useRef<string | null>(null)
   const prevPendingRef = useRef<Set<string>>(new Set())
   const lastTutorialRef = useRef<{ active: boolean; step: number }>({ active: false, step: -1 })
+  const lastMissionSigRef = useRef<string>('')
 
   // Skip directly to free play when flag is set (testing shortcut)
   useEffect(() => {
@@ -163,30 +165,39 @@ export default function GameShell({ config }: Props) {
     ? Math.max(0, FREE_PLAY_MAX - (state.elapsed - freePlayStartAt))
     : FREE_PLAY_MAX
 
-  // Auto-end free play when all achieved OR timed out
+  // Free play runs for a minimum of FREE_PLAY_MIN before checklist completion can end it.
+  const freePlayMinElapsed = freePlayStartAt !== null && state.elapsed >= freePlayStartAt + FREE_PLAY_MIN
+
+  // Auto-end free play when the hard cap is hit, OR the checklist is complete past the minimum
   useEffect(() => {
     if (!showFreePlay || freePlayStartAt === null) return
     const allDone = freePlayAchievements.every(a => a.done)
     const timedOut = state.elapsed >= freePlayStartAt + FREE_PLAY_MAX
-    if (allDone || timedOut) {
+    if (timedOut || (allDone && freePlayMinElapsed)) {
       setShowFreePlay(false)
       dispatch({ type: 'FORCE_SESSION_END' })
     }
-  }, [showFreePlay, freePlayStartAt, freePlayAchievements, state.elapsed, dispatch])
+  }, [showFreePlay, freePlayStartAt, freePlayAchievements, freePlayMinElapsed, state.elapsed, dispatch])
 
-  // Broadcast map state ~10fps, or immediately when strategic modal / openMissionId / tutorial changes
+  // Broadcast map state ~10fps, or immediately when strategic modal / openMissionId / tutorial /
+  // mission status changes (so allocate/deploy/reassign/failure transitions reach the map instantly).
   useEffect(() => {
     if (!channelRef.current) return
     const modalChanged   = state.strategicModal !== lastStrategicModalRef.current
     const openChanged    = openMissionId !== lastOpenMissionIdRef.current
     const tutChanged     = showTutorial !== lastTutorialRef.current.active || tutorialStep !== lastTutorialRef.current.step
-    if (!modalChanged && !openChanged && !tutChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
+    // Signature of the per-mission flags that drive the map window's view (status + pending flags).
+    // These change only on real transitions, not every tick, so bypassing the throttle here is cheap.
+    const missionSig = state.missions.map(m => `${m.id}:${m.status}:${m.tacticalPending ? 1 : 0}:${m.failureRecoveryPending ? 1 : 0}`).join('|')
+    const missionSigChanged = missionSig !== lastMissionSigRef.current
+    if (!modalChanged && !openChanged && !tutChanged && !missionSigChanged && Math.abs(state.elapsed - lastBroadcastElapsed.current) < 0.1 && state.elapsed !== 0) return
 
     LOG && console.log('[SHELL] broadcasting — openMissionId:', openMissionId)
     lastBroadcastElapsed.current = state.elapsed
     lastStrategicModalRef.current = state.strategicModal
     lastOpenMissionIdRef.current = openMissionId
     lastTutorialRef.current = { active: showTutorial, step: tutorialStep }
+    lastMissionSigRef.current = missionSig
 
     const payload: MapViewState = {
       assets: state.assets,
@@ -200,7 +211,7 @@ export default function GameShell({ config }: Props) {
       pendingBlueprints: state.pendingBlueprints,
       mode: state.config.mode,
       tacticalMode: state.config.tacticalMode,
-      reserve: reserveCount(state.assets),
+      reserve: reserveCount(state.assets, state.missions),
       strategicModal: state.strategicModal,
       openMissionId,
       tutorialActive: showTutorial,
@@ -208,6 +219,7 @@ export default function GameShell({ config }: Props) {
       freePlayActive: showFreePlay,
       freePlayAchievements,
       freePlaySecondsLeft,
+      freePlayCanFinish: freePlayMinElapsed,
     }
     channelRef.current.postMessage(payload)
   }, [state.elapsed, state.assets, state.missions, state.score, state.phase, state.sessionNumber, state.pendingBlueprints, state.strategicModal, state.config.mode, openMissionId, showTutorial, tutorialStep, showFreePlay, freePlayAchievements, freePlaySecondsLeft])
@@ -258,6 +270,7 @@ export default function GameShell({ config }: Props) {
           <FreePlayOverlay
             achievements={freePlayAchievements}
             secondsLeft={freePlaySecondsLeft}
+            canFinish={freePlayMinElapsed}
             onSkip={() => { setShowFreePlay(false); dispatch({ type: 'FORCE_SESSION_END' }) }}
           />
         )}
