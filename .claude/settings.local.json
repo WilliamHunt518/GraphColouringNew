@@ -124,7 +124,8 @@
       "PowerShell(& \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 30)",
       "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\wh1g17\\\\GraphColouringNew\\\\scripts\\\\record-screens.ps1\" 2>&1 | Select-Object -First 50)",
       "Bash(sed \"s#'../../../../../../G:/Files/Code/GraphColouringNew/src/utils/missionGen.ts'#'../src/utils/missionGen.ts'#; s#'../../../../../../G:/Files/Code/GraphColouringNew/src/types/index.ts'#'../src/types/index.ts'#\" \"C:/Users/Work/AppData/Local/Temp/claude/G--Files-Code-GraphColouringNew/9c7f4df1-0492-40f6-bf00-e164024d20c9/scratchpad/demand.mts\")",
-      "Bash(rm -f sim/_demand_tmp.mts)"
+      "Bash(rm -f sim/_demand_tmp.mts)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

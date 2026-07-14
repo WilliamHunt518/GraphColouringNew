@@ -15,6 +15,7 @@ import {
   FAILURE_COUNT_CONST, FAILURE_GAP_CONST, FAILURE_JITTER_CONST, FAILURE_PROB_CONST,
 } from '../utils/missionGen'
 import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
+import { findSchedulingCycle } from '../utils/scheduling'
 import { SeededRNG } from '../utils/prng'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
@@ -684,8 +685,17 @@ function applyTacticalAllocation(
 
 /**
  * Computes task start times respecting the user's per-drone chain order.
- * Uses 3-pass iteration so multi-drone tasks (where each drone's arrival
- * depends on the previous task in its sequence) converge correctly.
+ * Uses bounded relaxation (taskStarts only ever grows) so multi-drone, multi-hop
+ * chains — where a task's true start depends on a drone that's still finishing an
+ * earlier task, whose own start was itself raised by a THIRD drone — converge to a
+ * consistent fixed point rather than an under-estimate from a single naive sweep.
+ *
+ * Cross-drone chain cycles (e.g. Blue chained task1→task2 while Red is chained
+ * task2→task1) can never reach quorum — each task ends up waiting on a drone that
+ * is itself waiting on the other task to finish, so relaxation would never settle.
+ * Those tasks are detected via findSchedulingCycle and dropped before solving; they
+ * come back out of this function unassigned (same as any other unschedulable task)
+ * rather than being given a bogus, inconsistent start time.
  */
 function buildManualAssignments(
   mission: Mission,
@@ -695,13 +705,25 @@ function buildManualAssignments(
   elapsed: number,
 ): TaskAssignment[] {
   const assetById = new Map(assets.map(a => [a.id, a]))
+
+  const droppedCycleTasks = new Set<string>()
+  for (let cyc = findSchedulingCycle(taskAssignments, droneSequences); cyc; cyc = findSchedulingCycle(taskAssignments, droneSequences)) {
+    for (const tid of cyc) droppedCycleTasks.add(tid)
+    taskAssignments = Object.fromEntries(Object.entries(taskAssignments).filter(([tid]) => !cyc.includes(tid)))
+    droneSequences = Object.fromEntries(Object.entries(droneSequences).map(([id, seq]) => [id, seq.filter(tid => !cyc!.includes(tid))]))
+  }
+  if (droppedCycleTasks.size > 0) {
+    debugLog('buildManualAssignments: dropping cyclically-dependent tasks (unschedulable)', { taskIds: [...droppedCycleTasks] })
+  }
+
   const allDroneIds = [...new Set(Object.values(taskAssignments).flat())]
 
-  // Iteratively converge task start times.
-  // Pass N uses taskStarts from pass N-1 to compute drone departure times.
+  // Relaxation: taskStarts only ever grows, so this converges within (task count) passes
+  // for the acyclic graph left after cycle-stripping above.
   const taskStarts: Record<string, number> = {}
+  const maxPasses = Object.keys(taskAssignments).length + 1
 
-  for (let pass = 0; pass < 3; pass++) {
+  for (let pass = 0; pass < maxPasses; pass++) {
     // Reset per-drone state at start of each pass. A drone that already set off toward the zone
     // (deployed/loitering) starts its travel from its current position, not the hub.
     const droneFreeAt: Record<string, number> = {}
@@ -712,10 +734,8 @@ function buildManualAssignments(
       dronePos[id] = (a && a.status === 'deployed') ? interpolateAssetPosition(a, elapsed) : { ...HUB }
     }
 
-    // Reset task starts for re-computation this pass
-    for (const taskId of Object.keys(taskAssignments)) delete taskStarts[taskId]
-
     // Forward-sweep each drone's sequence, accumulating max arrivals per task
+    let changed = false
     for (const droneId of allDroneIds) {
       const asset = assetById.get(droneId)
       if (!asset) continue
@@ -726,13 +746,17 @@ function buildManualAssignments(
         const task = mission.tasks.find(t => t.id === taskId)
         if (!task) continue
         const arrival = droneFreeAt[droneId] + travelTime(dronePos[droneId], task.waypoint, speed)
-        taskStarts[taskId] = Math.max(taskStarts[taskId] ?? arrival, arrival)
+        const prevStart = taskStarts[taskId]
+        const nextStart = prevStart === undefined ? arrival : Math.max(prevStart, arrival)
+        if (nextStart !== prevStart) changed = true
+        taskStarts[taskId] = nextStart
         // Drone departs after the task finishes (using updated taskStart from this pass)
         const baseTime = getManualBaseTime(task, taskAssignments[taskId] ?? [], assetById)
         droneFreeAt[droneId] = taskStarts[taskId] + baseTime
         dronePos[droneId] = { ...task.waypoint }
       }
     }
+    if (!changed) break
   }
 
   // Build TaskAssignment records from converged start times
@@ -1223,13 +1247,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           newStatus = 'available'
         }
 
-        // When task completes: redirect to next sequential task, or return to hub
+        // When task completes (or fails, e.g. via the sections-by-colour safety net): redirect
+        // to next sequential task, or return to hub. A failed task never becomes 'completed', so
+        // without also matching 'failed' here a drone still assigned to it would sit with
+        // currentTaskId pointed at a dead task forever — this is what used to orphan drones.
         if (asset.status === 'deployed' && asset.currentTaskId) {
           const currentMission = s.missions.find(m => m.id === asset.currentMissionId)
           const task = currentMission?.tasks.find(t => t.id === asset.currentTaskId)
 
-          const recallReady = task?.status === 'completed' &&
-            elapsed >= (task.completionTime ?? 0) + task.recallDelay
+          const recallReady = task?.status === 'failed' ||
+            (task?.status === 'completed' && elapsed >= (task.completionTime ?? 0) + task.recallDelay)
 
           if (recallReady) {
             // Find next task using per-drone sequence (respects user's chain order)

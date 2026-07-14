@@ -4,6 +4,7 @@ import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAl
 import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
+import { findSchedulingCycle } from '../utils/scheduling'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -532,6 +533,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const [assignments, setAssignments] = useState<Record<string, string[]>>(buildInitialAssignments)
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
+  const [chainWarning, setChainWarning] = useState<string | null>(null)
   const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
   const isSuggestLoading = suggestQueue.length > 0
   useEffect(() => {
@@ -678,8 +680,37 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     prevCanDeployRef.current = canDeploy
   }, [canDeploy])
 
+  // Would chaining droneId onto taskId as its NEXT stop create a cross-drone dependency cycle
+  // (e.g. Blue chained task1→task2 while Red is chained task2→task1)? Only chaining (adding a
+  // 2nd+ stop) can introduce a new edge into the dependency graph — a plain assign always resets
+  // that drone to a single-task chain first, which can't itself close a cycle.
+  function wouldCreateCycle(droneId: string, taskId: string): boolean {
+    const nextAssignments: Record<string, string[]> = {
+      ...assignments,
+      [taskId]: (assignments[taskId] ?? []).includes(droneId) ? (assignments[taskId] ?? []) : [...(assignments[taskId] ?? []), droneId],
+    }
+    const existingChain = droneChainOrder[droneId] ?? []
+    const nextChainOrder: Record<string, string[]> = {
+      ...droneChainOrder,
+      [droneId]: existingChain.includes(taskId) ? existingChain : [...existingChain, taskId],
+    }
+    const nextSequences: Record<string, string[]> = {}
+    for (const id of pending.dronePool) {
+      const userOrder = nextChainOrder[id]
+      nextSequences[id] = (userOrder && userOrder.length > 0)
+        ? userOrder.filter(tid => (nextAssignments[tid] ?? []).includes(id))
+        : pending.taskOrder.filter(tid => (nextAssignments[tid] ?? []).includes(id))
+    }
+    return findSchedulingCycle(nextAssignments, nextSequences) !== null
+  }
+
   // Unified move/chain handler — maintains droneChainOrder so sequences follow assignment order
   function moveDrone(droneId: string, taskId: string, chain: boolean) {
+    if (chain && wouldCreateCycle(droneId, taskId)) {
+      setChainWarning("Can't chain there — that drone and another would end up waiting on each other, so neither task could ever start.")
+      window.setTimeout(() => setChainWarning(null), 3500)
+      return
+    }
     if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_ASSIGN_CHANGED', missionId: mission.id, op: chain ? 'chain' : 'assign', droneId, taskId, recoveryMode })
     setAssignments(prev => {
       if (!chain) {
@@ -807,7 +838,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           <span className="text-lg px-2.5 py-1 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700/50">Tactical View</span>
         )}
         <div className="flex-1" />
-        {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
+        {!readOnly && chainWarning && (
+          <span className="text-lg px-2.5 py-1 rounded bg-red-900/40 text-red-300 border border-red-700/50">⚠ {chainWarning}</span>
+        )}
+        {!readOnly && !chainWarning && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
         {!readOnly && <button onClick={handleReset} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Reset</button>}
         {!readOnly && !recoveryMode && state.mode === 'agent' &&
           !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
