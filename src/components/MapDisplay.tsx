@@ -4,7 +4,6 @@ import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAl
 import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
-import { findSchedulingCycle } from '../utils/scheduling'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -226,7 +225,7 @@ function MissionQueuePanel({ pending, selectedId, onSelect, state, disabled }: {
                   <div className="flex items-center justify-between gap-1">
                     <span className={`font-mono font-bold text-lg ${isRecov ? 'text-red-200' : 'text-yellow-200'}`}>{m.id}</span>
                     {isRecov ? (
-                      <span className="px-1.5 py-0.5 bg-red-900/70 border border-red-600/70 rounded text-sm font-bold text-red-300">FAIL</span>
+                      <span className="px-1.5 py-0.5 bg-red-900/70 border border-red-600/70 rounded text-sm font-bold text-red-300">{m.recoveryReason === 'lockout' ? 'LOCKOUT' : 'FAIL'}</span>
                     ) : (
                       <span className="text-sm text-yellow-600">{m.pendingAllocation?.dronePool.length ?? 0} drones</span>
                     )}
@@ -533,7 +532,6 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const [assignments, setAssignments] = useState<Record<string, string[]>>(buildInitialAssignments)
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
-  const [chainWarning, setChainWarning] = useState<string | null>(null)
   const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
   const isSuggestLoading = suggestQueue.length > 0
   useEffect(() => {
@@ -680,37 +678,11 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     prevCanDeployRef.current = canDeploy
   }, [canDeploy])
 
-  // Would chaining droneId onto taskId as its NEXT stop create a cross-drone dependency cycle
-  // (e.g. Blue chained task1→task2 while Red is chained task2→task1)? Only chaining (adding a
-  // 2nd+ stop) can introduce a new edge into the dependency graph — a plain assign always resets
-  // that drone to a single-task chain first, which can't itself close a cycle.
-  function wouldCreateCycle(droneId: string, taskId: string): boolean {
-    const nextAssignments: Record<string, string[]> = {
-      ...assignments,
-      [taskId]: (assignments[taskId] ?? []).includes(droneId) ? (assignments[taskId] ?? []) : [...(assignments[taskId] ?? []), droneId],
-    }
-    const existingChain = droneChainOrder[droneId] ?? []
-    const nextChainOrder: Record<string, string[]> = {
-      ...droneChainOrder,
-      [droneId]: existingChain.includes(taskId) ? existingChain : [...existingChain, taskId],
-    }
-    const nextSequences: Record<string, string[]> = {}
-    for (const id of pending.dronePool) {
-      const userOrder = nextChainOrder[id]
-      nextSequences[id] = (userOrder && userOrder.length > 0)
-        ? userOrder.filter(tid => (nextAssignments[tid] ?? []).includes(id))
-        : pending.taskOrder.filter(tid => (nextAssignments[tid] ?? []).includes(id))
-    }
-    return findSchedulingCycle(nextAssignments, nextSequences) !== null
-  }
-
-  // Unified move/chain handler — maintains droneChainOrder so sequences follow assignment order
+  // Unified move/chain handler — maintains droneChainOrder so sequences follow assignment order.
+  // Deadlocking chains (e.g. Fast task1→task2 while Lifter task2→task1) are intentionally NOT
+  // blocked here — the operator is free to build any plan; a genuine deadlock is detected and
+  // failed live in the reducer (findSchedulingCycle in TICK) once the drones are actually stuck.
   function moveDrone(droneId: string, taskId: string, chain: boolean) {
-    if (chain && wouldCreateCycle(droneId, taskId)) {
-      setChainWarning("Can't chain there — that drone and another would end up waiting on each other, so neither task could ever start.")
-      window.setTimeout(() => setChainWarning(null), 3500)
-      return
-    }
     if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_ASSIGN_CHANGED', missionId: mission.id, op: chain ? 'chain' : 'assign', droneId, taskId, recoveryMode })
     setAssignments(prev => {
       if (!chain) {
@@ -838,10 +810,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           <span className="text-lg px-2.5 py-1 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700/50">Tactical View</span>
         )}
         <div className="flex-1" />
-        {!readOnly && chainWarning && (
-          <span className="text-lg px-2.5 py-1 rounded bg-red-900/40 text-red-300 border border-red-700/50">⚠ {chainWarning}</span>
-        )}
-        {!readOnly && !chainWarning && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
+        {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
         {!readOnly && <button onClick={handleReset} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Reset</button>}
         {!readOnly && !recoveryMode && state.mode === 'agent' &&
           !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
@@ -1240,6 +1209,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           onDeploy={handleDeploy}
           onStopSuggest={handleStopSuggest}
           recoveryMode={!!recoveryMode}
+          recoveryReason={mission.recoveryReason}
           failedDroneId={failedDroneIdRef.current ?? null}
           suppressedTaskId={pending.suppressedTaskId}
           missionId={mission.id}
@@ -1252,7 +1222,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, recoveryReason, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1264,6 +1234,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
   onDeploy: () => void
   onStopSuggest?: () => void
   recoveryMode?: boolean
+  recoveryReason?: 'drone_failure' | 'lockout'
   failedDroneId?: string | null
   suppressedTaskId?: string | null
   missionId?: string
@@ -1306,8 +1277,15 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
 
   return (
     <div data-tutorial="tac-right-panel" className="w-[560px] flex-none border-l border-gray-800 bg-gray-900 flex flex-col overflow-hidden">
-      {/* Failure banner */}
-      {recoveryMode && failedDroneId && (() => {
+      {/* Help-needed banner: scheduling lockout (no failed drone) */}
+      {recoveryMode && recoveryReason === 'lockout' && (
+        <div className="flex-none px-3 py-2 border-b border-red-900/60 bg-red-950/30 space-y-1">
+          <span className="text-red-400 text-sm font-bold uppercase tracking-wider">⚠ Lockout — help needed</span>
+          <p className="text-sm text-gray-500">These drones deadlocked (each waiting on the other). Re-assign them in a workable order, or abandon.</p>
+        </div>
+      )}
+      {/* Help-needed banner: drone failure */}
+      {recoveryMode && recoveryReason !== 'lockout' && failedDroneId && (() => {
         const fd = assets.find(a => a.id === failedDroneId)
         if (!fd) return null
         return (

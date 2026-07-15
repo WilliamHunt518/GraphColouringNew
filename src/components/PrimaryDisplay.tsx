@@ -283,9 +283,9 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
           </div>
         </div>
 
-        {/* Right: embedded operational map */}
+        {/* Right: embedded strategic map */}
         <div data-tutorial="embedded-map" className="flex-1 relative overflow-hidden bg-gray-950">
-          <EmbeddedOperationalMap state={state} dispatch={dispatch} setOpenMissionId={setOpenMissionId} />
+          <EmbeddedStrategicMap state={state} dispatch={dispatch} setOpenMissionId={setOpenMissionId} />
         </div>
       </div>
     </div>
@@ -310,6 +310,7 @@ function MissionCard({ mission, state, dispatch, isTutorialFirst, tutorialForceM
   const isActive    = mission.status === 'active'
   const isCompleted = mission.status === 'completed'
   const isFailed    = mission.status === 'failed'
+  const isAbandoned = mission.status === 'abandoned'
   const isAllocating = state.strategicModal?.missionId === mission.id
 
   const completedTasks = mission.tasks.filter(t => t.status === 'completed').length
@@ -332,12 +333,14 @@ function MissionCard({ mission, state, dispatch, isTutorialFirst, tutorialForceM
     : mission.tacticalPending ? 'border-yellow-500'
     : isQueued  ? 'border-amber-500'
     : isActive  ? 'border-blue-700'
+    : isFailed  ? 'border-red-700'
     : 'border-gray-700'
   const bgColor = isAllocating ? 'bg-blue-950/20'
     : mission.failureRecoveryPending ? 'bg-red-950/20'
     : mission.tacticalPending ? 'bg-yellow-950/10'
     : isQueued  ? 'bg-amber-950/20'
     : isActive  ? 'bg-blue-950/10'
+    : isFailed  ? 'bg-red-950/25'
     : 'bg-gray-900/40'
 
   const eta = isActive
@@ -365,7 +368,8 @@ function MissionCard({ mission, state, dispatch, isTutorialFirst, tutorialForceM
             </span>
           )}
           {isCompleted && <span className="text-xs text-green-400">complete</span>}
-          {isFailed && <span className="text-xs text-red-400">failed</span>}
+          {isFailed && <span className="text-xs font-bold text-red-400">✕ failed</span>}
+          {isAbandoned && <span className="text-xs text-amber-400">abandoned</span>}
         </div>
         <div className="flex items-center gap-2 flex-none">
           {isActive && eta !== null && (
@@ -386,12 +390,21 @@ function MissionCard({ mission, state, dispatch, isTutorialFirst, tutorialForceM
         </div>
       </div>
 
-      {/* Drone failure banner */}
+      {/* Help-needed banner (drone failure or scheduling lockout) */}
       {mission.failureRecoveryPending && (
         <div className="mb-2 px-2 py-1.5 bg-red-900/40 border border-red-700/50 rounded text-xs text-red-300 flex items-center gap-2">
-          <span className="font-bold">DRONE FAILURE</span>
-          {mission.failedDroneId && <span className="text-red-400">{mission.failedDroneId} lost</span>}
-          <span className="text-gray-500">— recovery required</span>
+          {mission.recoveryReason === 'lockout' ? (
+            <>
+              <span className="font-bold">⚠ LOCKOUT</span>
+              <span className="text-gray-500">— drones stuck, re-plan the allocation</span>
+            </>
+          ) : (
+            <>
+              <span className="font-bold">DRONE FAILURE</span>
+              {mission.failedDroneId && <span className="text-red-400">{mission.failedDroneId} lost</span>}
+              <span className="text-gray-500">— recovery required</span>
+            </>
+          )}
         </div>
       )}
 
@@ -1002,7 +1015,7 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
   )
 }
 
-// ─── Embedded operational map ─────────────────────────────────────────────
+// ─── Embedded strategic map ─────────────────────────────────────────────
 
 const MAP_ZONE_STROKE: Record<string, string> = {
   queued: '#f59e0b', active: '#3b82f6', completed: '#6b7280', failed: '#ef4444',
@@ -1038,7 +1051,7 @@ function clampView(v: { x: number; y: number; scale: number }) {
   return { x, y, scale }
 }
 
-function EmbeddedOperationalMap({ state, dispatch, setOpenMissionId }: {
+function EmbeddedStrategicMap({ state, dispatch, setOpenMissionId }: {
   state: GameState
   dispatch: (a: GameAction) => void
   setOpenMissionId: (id: string | null) => void

@@ -66,6 +66,7 @@ export default function StartScreen({ onStart }: Props) {
   const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
   const [fullPathsOnHover, setFullPathsOnHover] = useState(false)
+  const [fixLockouts, setFixLockouts] = useState(true)
   const [error, setError] = useState('')
 
   // ── Participant study (2 scenarios + demographics) ──
@@ -92,6 +93,7 @@ export default function StartScreen({ onStart }: Props) {
       tutorialMode: false,
       numSessions,
       fullPathsOnHover,
+      fixLockouts,
     })
   }
 
@@ -117,6 +119,7 @@ export default function StartScreen({ onStart }: Props) {
       tutorialMode: false,
       numSessions: 2,
       fullPathsOnHover,
+      fixLockouts,
       collectDemographics: true,
       fastTest: studyFastTest,
     })
@@ -265,6 +268,15 @@ export default function StartScreen({ onStart }: Props) {
             className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500" />
           <label htmlFor="full-paths" className="text-sm text-gray-400 cursor-pointer select-none">
             Full paths on hover <span className="text-gray-600 text-xs">(hover a drone or mission on the map to reveal its full planned route)</span>
+          </label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input id="fix-lockouts" type="checkbox" checked={fixLockouts}
+            onChange={e => setFixLockouts(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500" />
+          <label htmlFor="fix-lockouts" className="text-sm text-gray-400 cursor-pointer select-none">
+            Fix lockouts <span className="text-gray-600 text-xs">(on = the agent silently reroutes a stuck deadlock so every task completes; off = flag it red "help needed" for the operator to re-plan, like a drone failure. Default on.)</span>
           </label>
         </div>
 

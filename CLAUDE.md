@@ -24,7 +24,7 @@ Study uses a **2×2 between-subjects design** manipulating the accuracy of each 
 
 - **React 18 + Vite 5 + TypeScript** — SPA, no backend
 - **Tailwind CSS v3** — layout and styling
-- **SVG** — operational map (asset animation, mission zones, routes)
+- **SVG** — strategic map (asset animation, mission zones, routes)
 - **BroadcastChannel API** — two-window state sync for dual-monitor setup
 - All randomness seeded via Mulberry32 PRNG (`src/utils/prng.ts`) — same seed → same session
 
@@ -96,7 +96,7 @@ src/
     StartScreen.tsx      # Researcher setup: participantId, condition, complexity, seed
     GameShell.tsx        # Session wrapper, clock, broadcast sync, localStorage autosave
     PrimaryDisplay.tsx   # Reserve panel + mission queue + Strategic Agent modal
-    MapDisplay.tsx       # SVG operational map + tactical planner
+    MapDisplay.tsx       # SVG strategic map + tactical planner
     SurveyModal.tsx      # NASA-TLX, trust, TAM surveys
     BetweenSession.tsx   # 30s inter-session screen
 ```
@@ -191,10 +191,25 @@ Edit `conditionToEpsilons()` in `src/utils/config.ts`.
 ### Modifying the Tactical Agent
 Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_T **is** wired to noise injection: in `APPLY_STRATEGIC`, with probability `epsilonTactical` one task is silently dropped from the suggested plan (`hasTacticalError`/`suppressedTaskId` on `PendingAllocation`) — the UI still shows it as allocated, but no drone is actually assigned, and the task fails via tactical lockout once every other task in the mission completes.
 
+### Scheduling deadlocks (cross-drone chain cycles)
+A chained tactical plan can deadlock: e.g. Fast is chained task1→task2 while Lifter is chained task2→task1, so each task waits on a drone that is itself waiting on the other task. The operator/agent is **not** prevented from building such a plan (no build-time validation blocks it). Instead the drones fly out, and a **live** detector in `gameReducer.ts` TICK (step 3c, `findSchedulingCycle` in `src/utils/scheduling.ts`) waits until the cycle's drones have physically arrived and are sitting idle (genuinely stuck) before acting. This is distinct from the ε_T `tactical_lockout` mechanism above.
+
+`StudyConfig.fixLockouts` (default **true** = auto-fix; StartScreen "Fix lockouts" checkbox, ticked by default, or `?fixLockouts=0` for help-needed) chooses the response. Either way a `lockout_detected` event is logged (with `resolution`):
+- **true (auto-fix)** — the agent repairs it silently with **zero failures**: `rerouteDeadlock` reorders the conflicting drones' visit order over the cyclic tasks onto one canonical order (most-constrained first), making the dependency graph acyclic, then reschedules the not-yet-started tasks and redirects the freed drones. `resolution: 'rerouted'`.
+- **false (help needed)** — surfaced to the operator like a drone failure (a lockout is the same class of event: "something's wrong, the operator must deal with it"). The stuck drones are freed (loiter on-mission), the deadlocked tasks revert to `pending`, and the mission is flagged `failureRecoveryPending` with `recoveryReason: 'lockout'` (red "⚠ Lockout — help needed" banner). The operator re-plans a workable allocation via the **same recovery planner** as a drone failure (`CONFIRM_FAILURE_RECOVERY`), or abandons. Greedy replan is paused for the mission (`applyGreedyReplan` skips `recoveryReason === 'lockout'`) so the operator — not the agent — resolves it. `resolution: 'help_needed'`. The mission only fails if the operator abandons it or the session ends unresolved.
+
+**Greedy vs plan-all:** in **greedy** `tacticalMode` the AGENT's baseline is committed one step at a time (collapsed in `APPLY_STRATEGIC`) and greedy replan fills tasks the operator left unassigned; but an operator-drawn path longer than one hop is **preserved** by `CONFIRM_TACTICAL` (not trimmed). So a deadlock can form in either mode whenever the operator explicitly chains drones into a cycle.
+
+**Dispatch order matters:** a drone flies to the **first task in its own chain sequence** (`pickFirstAssignment`), not the earliest-start-time task. This is essential for deadlocks to be physically real: two drones chained into a cycle must set off to *different* tasks. (Earlier code used lowest start time, which for a cyclic plan's inconsistent start times sent both shared drones to the *same* task, silently dissolving the deadlock so it could spuriously complete.)
+
+**The agent never deadlocks (by construction), and how to change that:** `greedyAssign` routes every drone from the hub in one global task order, so its plans are always acyclic — only the *operator* can build a lockout today. If you want the Tactical Assistant to make lockout mistakes *organically* (an ordering-blind planner, emergent — not a "make it dumb" parameter), the full design/rationale/implementation-sketch is in [`docs/FUTURE_NAIVE_TACTICAL_AGENT.md`](docs/FUTURE_NAIVE_TACTICAL_AGENT.md).
+
+**Signalling:** a lockout-abandoned mission sets `Mission.abandonedReason = 'lockout'` and the mission card shows a red "✕ failed · lockout"; an operator `ABANDON_MISSION` sets `'operator'` and shows a muted amber "abandoned". Without this, `abandoned` missions had no status label and read like a quiet completion.
+
 ## Critical Constraints
 
 1. **All randomness seeded** — pass `SeededRNG` instances everywhere, never call `Math.random()` in game logic
 2. **No backend** — all state in-memory; export is a client-side JSON download
-3. **UI language** — use "Strategic Assistant" / "Tactical Assistant" (operator-facing UI only — internal identifiers, action types, and logged event fields like `isAgentSuggested`/`wasAgentSuggested`/`modifiedFromAgentPlan` keep "Agent" and are unaffected), never "Co-Pilot", "Meta-Co-Pilot", "AI", or "algorithm"
+3. **UI language** — use "Strategic Assistant" / "Tactical Assistant" (operator-facing UI only — internal identifiers, action types, and logged event fields like `isAgentSuggested`/`wasAgentSuggested`/`modifiedFromAgentPlan` keep "Agent" and are unaffected), never "Co-Pilot", "Meta-Co-Pilot", "AI", or "algorithm". **Never call the main map "operational map"** (anywhere — UI, comments, docs, code identifiers): it is the **strategic map**; the only map/planner terms are "strategic" and "tactical".
 4. **Events logged immediately** — every operator action and agent recommendation must be logged with ms timestamp; see [`docs/EVENT_LOGGING.md`](docs/EVENT_LOGGING.md) for the full event schema, envelope fields, and rules for adding new events
 5. **BroadcastChannel host/client** — primary window is host; map window subscribes only; never let client mutate state

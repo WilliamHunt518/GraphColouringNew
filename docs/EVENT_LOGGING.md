@@ -93,10 +93,11 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 | `drone_failure` | Scheduled in-mission failure fires | `droneId`, `droneType`, `taskId`, `taskType` | `gameReducer.ts:959` (TICK), `:2273`/`:2324` (testing-mode forced failures) |
 | `failure_recovery` | `ACCEPT_RECOVERY`, `APPLY_MANUAL_RECOVERY`, or `CONFIRM_FAILURE_RECOVERY` | `recoveryType` (`reserve`/`redistribute`/`manual`), `wasAgentSuggested` | `gameReducer.ts:1649`, `:1716`, `:1806` |
 | `task_completed` | Task's `completionTime` is reached | `taskType`, `assetsUsed`, `completionTime` | `gameReducer.ts:1035` |
-| `task_failed` | Task fails (section-deadline miss, recall, abandon, session end, tactical lockout) | `reason` | `gameReducer.ts:1084`, `:1917`, `:1981` |
+| `task_failed` | Task fails (section-deadline miss, recall, abandon, session end, tactical lockout) | `reason` (`asset_recalled`/`session_ended`/`drone_failure`/`tactical_lockout`/`scheduling_deadlock`/`mission_abandoned`) | `gameReducer.ts:1084`, `:1917`, `:1981` |
+| `lockout_detected` | Live cross-drone scheduling deadlock detected + acted on (TICK step 3c) | `taskIds`, `droneIds`, `resolution` (`rerouted` when `fixLockouts` on = agent auto-fix; `help_needed` when off = surfaced to operator for recovery) | `gameReducer.ts` step 3c |
 | `asset_recalled` | Operator manually recalls a drone | `assetId`, `missionId`, `taskId` | `gameReducer.ts:1960` |
 | `task_reprioritised` | Operator reorders the task queue | `taskId`, `newPosition` | `gameReducer.ts:2067`, `:2089` |
-| `mission_abandoned` | `ABANDON_MISSION` | `completedTaskCount`, `remainingTaskCount` | `gameReducer.ts:1925` |
+| `mission_abandoned` | `ABANDON_MISSION`, or a stuck scheduling deadlock when `fixLockouts` is off (TICK step 3c) | `completedTaskCount`, `remainingTaskCount` | `gameReducer.ts:1925`, step 3c |
 | `trust_probe` / `trust_probe_dismissed` | Periodic trust/workload probe answered or dismissed | `trust`, `workload` | `gameReducer.ts:2099`, `:2105` |
 | `survey_response` | Any NASA-TLX / trust / TAM survey page submitted | `surveyName`, `responses` (raw Likert/slider values) | `gameReducer.ts:2112` |
 | `session_ended` | Session timer expires, or `FORCE_SESSION_END` (testing/tutorial) | `score`, `penaltyAccrued`, `completionPoints`, `greenEfficiency`, `meanMissionTime`, `agentFollowRate`, `tacticalFollowRate`, `reason` (`'timer'`\|`'forced'`), `inFlightMissionIds` | `gameReducer.ts:2387` inside `endSession(s, reason)` |
@@ -114,7 +115,12 @@ agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
   `agentSuggestionWasBad` vs `strategic_modal_opened.strategiesPresented[].isBadSuggestion`
   lets you check whether operators selectively reject bad suggestions specifically (not
   just suggestions in general). `tactical_confirmed.modifiedFromAgentPlan` is the
-  tactical-tier analogue. **Consultation vs. follow are distinct** — the tactical planner
+  tactical-tier analogue: it is **true only when the operator changed the drones on a task the
+  agent actually suggested** (compared over `pending.taskAssignments` keys). In **greedy** mode
+  the agent commits only the first step, so filling in the remaining steps does NOT flip this
+  flag — only altering the agent's committed step does. `changedTaskIds` lists exactly those
+  altered agent tasks; anything the operator adds beyond the agent's suggestion is visible by
+  diffing `agentPlan[]` vs `finalPlan[]`. **Consultation vs. follow are distinct** — the tactical planner
   starts empty, so an operator can confirm a plan without ever consulting the agent.
   `tactical_confirmed.suggestUsedCount` (and the `tactical_suggest_used` events) measure
   whether the agent's tactical plan was ever pulled in (`0` = never consulted), which

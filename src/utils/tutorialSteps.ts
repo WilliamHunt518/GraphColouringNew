@@ -2,10 +2,10 @@ import type { GameState } from '../types'
 
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
 export const TACTICAL_STEP_FIRST = 16
-export const TACTICAL_STEP_LAST  = 46   // tac-deploy2 (shifted by the abort steps)
+export const TACTICAL_STEP_LAST  = 47   // tac-deploy2 (shifted by lockout-explain inserted before agent-intro)
 
 // Step index where agent-introduction phase begins (triggers second mission spawn)
-export const AGENT_INTRO_STEP = 36   // shifted by the abort steps inserted after failure-lesson
+export const AGENT_INTRO_STEP = 37   // shifted by lockout-explain inserted before agent-intro
 
 // Step index where Tutorial.tsx begins trying to force a drone failure
 export const FAILURE_DEMO_STEP = 28
@@ -556,6 +556,20 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     autoAdvanceWhen: state => state.missions.some(m => m.status === 'abandoned'),
     inMapWindow: true,
     noOverlayOnPrimary: true,
+  },
+
+  // ── Lockout awareness (PRIMARY) — chaining deadlocks + help-needed recovery ──
+  // Grouped with the "when things go wrong" lessons: shown right after the two drone-failure
+  // demos (recovery + abort), before the agent introduction. A lockout surfaces exactly like a
+  // drone failure, so it belongs next to them. Primary-window (not inMapWindow) explanatory card.
+  {
+    id: 'lockout-explain',
+    title: 'Watch Out: Deadlocks',
+    body: [
+      'One more way things can go wrong — this time from your own plan. If you chain two drones so each waits on the other, neither task can start. For example a {red} chained "Task A → Task B" together with a {green} chained "Task B → Task A" — Task A is still missing the {green} (stuck over at Task B), and Task B is still missing the {red} (stuck over at Task A). The team locks up.',
+      'If that happens the mission turns red and flags "Lockout — help needed", exactly like the drone failures you just handled. Open its recovery plan and re-assign the drones in a workable order — the easy fix is to have both visit the tasks in the same order — or abandon the mission.',
+    ],
+    cardSide: 'center',
   },
 
   // ════════════════ AGENT INTRODUCTION — STRATEGIC (back in primary) ════════════

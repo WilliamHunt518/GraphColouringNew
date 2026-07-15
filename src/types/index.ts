@@ -15,10 +15,11 @@ export interface StudyConfig {
   epsilonTactical: number  // error rate for Tactical Agent
   tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
+  fixLockouts?: boolean  // default true: a scheduling deadlock is auto-resolved (one task fails, rest freed & rescheduled). When false, every task in the deadlock fails as a lockout with no rescue.
   tutorialMode: boolean
   skipToFreePlay?: boolean
   numSessions: number
-  fullPathsOnHover?: boolean   // when true, hovering a drone/mission on the operational map reveals full planned paths
+  fullPathsOnHover?: boolean   // when true, hovering a drone/mission on the strategic map reveals full planned paths
   collectDemographics?: boolean  // when true, a demographics/experience questionnaire runs before session 1
   fastTest?: boolean             // dev only: 10s sessions + relaxed form validation, so the full flow can be walked quickly
 }
@@ -128,11 +129,13 @@ export interface Mission {
   failedDroneId: string | null
   // Failure recovery state
   failureRecoveryPending: boolean
+  recoveryReason?: 'drone_failure' | 'lockout'  // why help is needed (a drone died vs a scheduling deadlock the operator must re-plan around)
   pendingRecoveryOptions: RecoveryOption[] | null
   // Tactical agent error tracking
   tacticallySuppressedTaskId: string | null   // set after Deploy when tactical error was active
   // Abandon tracking
-  abandonedAt: number | null     // elapsed (s) when operator abandoned; null = not abandoned
+  abandonedAt: number | null     // elapsed (s) when abandoned; null = not abandoned
+  abandonedReason?: 'operator' | 'lockout'  // why the mission was abandoned (operator gave up vs unbreakable scheduling deadlock)
   isResidual: boolean            // true if this mission was re-queued from an abandoned one
   needsGreedyReplan: boolean     // true when greedy mode is active; auto-replans after each task
 }
@@ -272,6 +275,7 @@ export interface SessionStartEvent extends BaseEvent {
   epsilonStrategic: number
   epsilonTactical: number
   tacticalMode: 'plan-all' | 'greedy'
+  fixLockouts: boolean
   numSessions: number
   sessionDuration: number
   fleet: AssetRequirement
@@ -456,7 +460,16 @@ export interface TaskFailedEvent extends BaseEvent {
   type: 'task_failed'
   missionId: string
   taskId: string
-  reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout' | 'mission_abandoned'
+  reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout' | 'scheduling_deadlock' | 'mission_abandoned'
+}
+
+export interface LockoutDetectedEvent extends BaseEvent {
+  type: 'lockout_detected'
+  missionId: string
+  missionCategory: MissionCategory
+  taskIds: string[]                          // the cyclically-deadlocked tasks
+  droneIds: string[]                         // drones caught in the cycle
+  resolution: 'rerouted' | 'help_needed'     // agent auto-fixed (fixLockouts on) vs surfaced to the operator (off)
 }
 
 export interface AssetRecalledEvent extends BaseEvent {
@@ -552,6 +565,7 @@ export type GameEvent =
   | FailureRecoveryEvent
   | TaskCompletedEvent
   | TaskFailedEvent
+  | LockoutDetectedEvent
   | AssetRecalledEvent
   | TaskReprioritisedEvent
   | SessionEndedEvent

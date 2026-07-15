@@ -532,6 +532,20 @@ function buildRecoveryOptions(
   }]
 }
 
+// Which task should a drone fly to FIRST? The first task in its own chain sequence — this honours
+// the operator's ordering, which matters for deadlocks: if two drones are chained into a cycle
+// (Fast t1→t2, Lifter t2→t1) they must set off to DIFFERENT tasks so the deadlock is physically
+// real. Falling back to earliest start time would send both to the same task (the cyclic plan's
+// start times are inconsistent), silently dissolving the deadlock the operator built. Only when a
+// drone has no explicit sequence do we fall back to earliest start.
+function pickFirstAssignment(myAsgns: TaskAssignment[], seq: string[] | undefined): TaskAssignment {
+  if (seq && seq.length) {
+    const firstTid = seq.find(tid => myAsgns.some(a => a.taskId === tid))
+    if (firstTid) return myAsgns.find(a => a.taskId === firstTid)!
+  }
+  return myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
+}
+
 // ─── Helper: apply tactical allocation ────────────────────────────────────
 
 function applyTacticalAllocation(
@@ -624,7 +638,7 @@ function applyTacticalAllocation(
     // Travel starts from wherever the drone actually is now — the hub if idle, or its current
     // in-flight/loiter position if it already set off toward the zone.
     const origin = loiteringHere ? interpolateAssetPosition(asset, now) : { ...HUB }
-    const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
+    const firstAsgn = pickFirstAssignment(myAsgns, droneSequences[asset.id])
     const task = updatedTasks.find(t => t.id === firstAsgn.taskId)!
     const tt = travelTime(origin, task.waypoint, ASSET_SPEED[asset.type])
     return {
@@ -690,12 +704,15 @@ function applyTacticalAllocation(
  * earlier task, whose own start was itself raised by a THIRD drone — converge to a
  * consistent fixed point rather than an under-estimate from a single naive sweep.
  *
- * Cross-drone chain cycles (e.g. Blue chained task1→task2 while Red is chained
- * task2→task1) can never reach quorum — each task ends up waiting on a drone that
- * is itself waiting on the other task to finish, so relaxation would never settle.
- * Those tasks are detected via findSchedulingCycle and dropped before solving; they
- * come back out of this function unassigned (same as any other unschedulable task)
- * rather than being given a bogus, inconsistent start time.
+ * NOTE on cross-drone chain cycles (e.g. Blue chained task1→task2 while Red is chained
+ * task2→task1): these never reach a consistent fixed point — each task waits on a drone
+ * that is itself waiting on the other task — so relaxation just keeps inflating their
+ * starts until the pass cap. We deliberately DON'T reject them here: the operator/agent
+ * is allowed to build a deadlocking plan. The inflated (finite) start means the drones
+ * still fly out and then sit idle at the zone; the live deadlock detector in TICK
+ * (findSchedulingCycle on the running mission) is what notices they're genuinely stuck
+ * and fails one task to break it. Keeping this pure/schedule-only avoids second-guessing
+ * the operator at build time.
  */
 function buildManualAssignments(
   mission: Mission,
@@ -706,20 +723,11 @@ function buildManualAssignments(
 ): TaskAssignment[] {
   const assetById = new Map(assets.map(a => [a.id, a]))
 
-  const droppedCycleTasks = new Set<string>()
-  for (let cyc = findSchedulingCycle(taskAssignments, droneSequences); cyc; cyc = findSchedulingCycle(taskAssignments, droneSequences)) {
-    for (const tid of cyc) droppedCycleTasks.add(tid)
-    taskAssignments = Object.fromEntries(Object.entries(taskAssignments).filter(([tid]) => !cyc.includes(tid)))
-    droneSequences = Object.fromEntries(Object.entries(droneSequences).map(([id, seq]) => [id, seq.filter(tid => !cyc!.includes(tid))]))
-  }
-  if (droppedCycleTasks.size > 0) {
-    debugLog('buildManualAssignments: dropping cyclically-dependent tasks (unschedulable)', { taskIds: [...droppedCycleTasks] })
-  }
-
   const allDroneIds = [...new Set(Object.values(taskAssignments).flat())]
 
   // Relaxation: taskStarts only ever grows, so this converges within (task count) passes
-  // for the acyclic graph left after cycle-stripping above.
+  // for an acyclic dependency graph; a deadlocking (cyclic) plan just runs to the cap with
+  // inflated starts, and is caught live in TICK rather than here.
   const taskStarts: Record<string, number> = {}
   const maxPasses = Object.keys(taskAssignments).length + 1
 
@@ -772,6 +780,110 @@ function buildManualAssignments(
     result.push({ taskId, assetIds: droneIds, startTime, travelTime: startTime - elapsed, baseTime, useSubstitute })
   }
   return result
+}
+
+/**
+ * Recomputes start times for a set of not-yet-started tasks (their drones idle and free)
+ * from the drones' CURRENT positions. Used after a scheduling deadlock is broken: the
+ * surviving tasks in the cycle were carrying inflated/stale starts computed while the
+ * cycle was unresolved, so the freed drones would otherwise wait far too long. Only
+ * 'traveling'/'pending' tasks are touched — anything already executing/completed/failed
+ * is left exactly as-is.
+ */
+function rescheduleTasks(mission: Mission, assets: Asset[], taskIds: string[], elapsed: number): Task[] {
+  const taskAssignments: Record<string, string[]> = {}
+  for (const tid of taskIds) {
+    const t = mission.tasks.find(x => x.id === tid)
+    if (t && (t.status === 'traveling' || t.status === 'pending') && t.assignedAssetIds.length > 0) {
+      taskAssignments[tid] = t.assignedAssetIds
+    }
+  }
+  if (Object.keys(taskAssignments).length === 0) return mission.tasks
+
+  const seqs: Record<string, string[]> = {}
+  for (const [id, seq] of Object.entries(mission.droneSequences ?? {})) {
+    const f = seq.filter(tid => taskAssignments[tid])
+    if (f.length) seqs[id] = f
+  }
+
+  const fresh = buildManualAssignments(mission, assets, taskAssignments, seqs, elapsed)
+  const byId = new Map(fresh.map(a => [a.taskId, a]))
+  return mission.tasks.map(t => {
+    const a = byId.get(t.id)
+    if (!a || (t.status !== 'traveling' && t.status !== 'pending')) return t
+    return {
+      ...t,
+      status: 'traveling' as const,
+      startTime: a.startTime,
+      completionTime: a.startTime + a.baseTime,
+      baseTime: a.baseTime,
+      travelTime: Math.max(0, a.startTime - elapsed),
+      useSubstitute: a.useSubstitute,
+    }
+  })
+}
+
+/**
+ * Repairs a scheduling deadlock WITHOUT failing anything (fixLockouts = on). The cyclic tasks'
+ * drones disagree on visit order (e.g. Fast t1→t2, Lifter t2→t1); we reorder just those tasks
+ * onto ONE canonical order (most-constrained task first) so every drone visits the shared tasks
+ * in the same direction — the dependency graph becomes acyclic. Then the not-yet-started tasks are
+ * rescheduled from the drones' current positions and each freed drone is redirected to the first
+ * task in its new order. Every task keeps its drones — nothing is dropped, nothing fails.
+ */
+function rerouteDeadlock(
+  mission: Mission,
+  assets: Asset[],
+  cycleTaskIds: string[],
+  elapsed: number,
+): { tasks: Task[]; assets: Asset[]; droneSequences: Record<string, string[]> } {
+  const cyc = new Set(cycleTaskIds)
+  const rank = new Map<string, number>()
+  ;[...mission.tasks]
+    .filter(t => cyc.has(t.id))
+    .sort((a, b) => (b.type - a.type) || (a.id < b.id ? -1 : 1))   // most-constrained first, then stable by id
+    .forEach((t, i) => rank.set(t.id, i))
+
+  // Reorder ONLY the cyclic-task slots of each drone's sequence onto the canonical order.
+  const newSeqs: Record<string, string[]> = {}
+  for (const [id, seq] of Object.entries(mission.droneSequences ?? {})) {
+    const ordered = seq.filter(t => cyc.has(t)).sort((a, b) => rank.get(a)! - rank.get(b)!)
+    let k = 0
+    newSeqs[id] = seq.map(t => cyc.has(t) ? ordered[k++] : t)
+  }
+
+  const notStartedIds = mission.tasks
+    .filter(t => (t.status === 'traveling' || t.status === 'pending') && t.assignedAssetIds.length > 0)
+    .map(t => t.id)
+  const tasks = rescheduleTasks({ ...mission, droneSequences: newSeqs }, assets, notStartedIds, elapsed)
+
+  // Redirect each deployed, non-executing drone to the first not-yet-finished task in its new order.
+  const taskById = new Map(tasks.map(t => [t.id, t]))
+  const newAssets = assets.map(asset => {
+    if (asset.currentMissionId !== mission.id || asset.status !== 'deployed') return asset
+    const cur = asset.currentTaskId ? taskById.get(asset.currentTaskId) : undefined
+    if (cur && cur.status === 'executing') return asset   // never yank a drone off a running task
+    const seq = newSeqs[asset.id] ?? []
+    const firstTid = seq.find(tid => {
+      const t = taskById.get(tid)
+      return t && t.status !== 'completed' && t.status !== 'failed'
+    })
+    if (!firstTid || firstTid === asset.currentTaskId) return asset
+    const target = taskById.get(firstTid)!
+    const pos = interpolateAssetPosition(asset, elapsed)
+    const tt = travelTime(pos, target.waypoint, ASSET_SPEED[asset.type])
+    return {
+      ...asset,
+      currentTaskId: firstTid,
+      position: pos,
+      travelFrom: { ...pos },
+      targetPosition: { ...target.waypoint },
+      travelStartElapsed: elapsed,
+      travelEndElapsed: elapsed + tt,
+    }
+  })
+
+  return { tasks, assets: newAssets, droneSequences: newSeqs }
 }
 
 function taskMeetsComposition(task: Task, droneIds: string[], assetById: Map<string, Asset>): boolean {
@@ -850,6 +962,9 @@ export function applyGreedyReplan(state: GameState, elapsed: number): GameState 
 
   for (const mission of state.missions) {
     if (mission.status !== 'active') continue
+    // A lockout awaiting operator recovery is the operator's to fix — don't let greedy replan
+    // silently re-fill the reverted tasks and dissolve the "help needed" state.
+    if (mission.failureRecoveryPending && mission.recoveryReason === 'lockout') continue
 
     const free = assets.filter(a =>
       a.currentMissionId === mission.id && a.status === 'deployed' && a.currentTaskId === null)
@@ -948,6 +1063,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           epsilonStrategic: cfg.agentErrorRate,
           epsilonTactical: cfg.epsilonTactical,
           tacticalMode: cfg.tacticalMode,
+          fixLockouts: cfg.fixLockouts !== false,
           numSessions: cfg.numSessions,
           sessionDuration: state.sessionDuration,
           fleet: (cfg.tutorialMode ? TUTORIAL_FLEET : FLEET[sessionComplexity]).reduce(
@@ -1218,6 +1334,99 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           taskId: suppTask.id,
           reason: 'tactical_lockout',
         })
+      }
+
+      // 3c. Live scheduling-deadlock detection (runs on the ACTUAL running mission, not at
+      // build time). A cross-drone chain cycle — Fast chained task1→task2 while Lifter is
+      // chained task2→task1 — leaves each task waiting on a drone that is itself waiting on
+      // the other task, so no drone can ever make progress. We deliberately let the operator/
+      // agent commit such a plan and let the drones fly out; only once the cycle's drones have
+      // physically ARRIVED and are sitting idle (deadlocked — not merely idle for any reason,
+      // and not while one is still en route or actively executing) do we act.
+      //
+      // config.fixLockouts (default true) chooses what "act" means:
+      //  • true  — the agent repairs it silently: reroute the conflicting drone chains onto one
+      //            consistent order so the graph is acyclic, reschedule and redirect. Every task
+      //            still completes and nothing fails.
+      //  • false — surface it to the operator as "help needed" (same class as a drone failure): free
+      //            the stuck drones, revert the deadlocked tasks to pending, and flag the mission for
+      //            recovery so the operator re-plans a good allocation. Greedy replan is paused for the
+      //            mission (see applyGreedyReplan) so the operator — not the agent — resolves it.
+      const fixLockouts = state.config.fixLockouts !== false   // default ON: agent auto-reroutes
+      for (const mission of s.missions) {
+        if (mission.status !== 'active' || mission.failureRecoveryPending) continue
+        const incomplete = mission.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')
+        const taskAssignments: Record<string, string[]> = {}
+        for (const t of incomplete) if (t.assignedAssetIds.length > 0) taskAssignments[t.id] = t.assignedAssetIds
+        const seqs: Record<string, string[]> = {}
+        for (const [id, seq] of Object.entries(mission.droneSequences ?? {})) {
+          const f = seq.filter(tid => taskAssignments[tid])
+          if (f.length) seqs[id] = f
+        }
+        const cyc = findSchedulingCycle(taskAssignments, seqs)
+        if (!cyc) continue
+
+        // Require every drone forming the cycle to have arrived at its waypoint and be idle
+        // (not executing) — i.e. genuinely stuck because of the cycle, per the brief.
+        const cycleDrones = [...new Set(cyc.flatMap(tid => taskAssignments[tid] ?? []))]
+        const stuck = cycleDrones.length > 0 && cycleDrones.every(id => {
+          const a = s.assets.find(x => x.id === id)
+          if (!a || a.status !== 'deployed') return false
+          if (elapsed < (a.travelEndElapsed ?? Infinity)) return false     // still travelling to its waypoint
+          const t = mission.tasks.find(tt => tt.id === a.currentTaskId)
+          return !t || t.status !== 'executing'                            // not actively working a task
+        })
+        if (!stuck) continue
+
+        if (fixLockouts) {
+          // Repair: reroute so every task still completes; nothing fails.
+          const { tasks, assets: reroutedAssets, droneSequences } = rerouteDeadlock(mission, s.assets, cyc, elapsed)
+          s = {
+            ...s,
+            assets: reroutedAssets,
+            missions: s.missions.map(m => m.id === mission.id ? { ...mission, tasks, droneSequences } : m),
+          }
+          s = logEvent(s, {
+            type: 'lockout_detected', missionId: mission.id, missionCategory: mission.category,
+            taskIds: cyc, droneIds: cycleDrones, resolution: 'rerouted',
+          })
+        } else {
+          // Help needed: surface it like a drone failure. Free the stuck cycle drones (loiter on-
+          // mission at their slots so they stay available for reassignment), revert the deadlocked
+          // tasks to pending, and flag the mission for operator recovery.
+          const cycTaskSet = new Set(cyc)
+          const cycleDroneSet = new Set(cycleDrones)
+          s = {
+            ...s,
+            assets: s.assets.map(a => {
+              if (!cycleDroneSet.has(a.id) || a.status !== 'deployed') return a
+              const slot = loiterSlot(mission, a.id)
+              const pos = interpolateAssetPosition(a, elapsed)
+              const tt = travelTime(pos, slot, ASSET_SPEED[a.type])
+              return {
+                ...a, currentTaskId: null, position: pos, travelFrom: { ...pos }, targetPosition: slot,
+                travelStartElapsed: elapsed, travelEndElapsed: elapsed + tt, availableAt: elapsed + tt,
+              }
+            }),
+            missions: s.missions.map(m => m.id === mission.id ? {
+              ...m,
+              failureRecoveryPending: true,
+              recoveryReason: 'lockout' as const,
+              failedDroneId: null,
+              pendingRecoveryOptions: [],
+              droneSequences: Object.fromEntries(
+                Object.entries(m.droneSequences ?? {}).map(([id, seq]) => [id, seq.filter(t => !cycTaskSet.has(t))]),
+              ),
+              tasks: m.tasks.map(t => cycTaskSet.has(t.id)
+                ? { ...t, status: 'pending' as const, assignedAssetIds: [], startTime: null, completionTime: null, allocatedAt: null }
+                : t),
+            } : m),
+          }
+          s = logEvent(s, {
+            type: 'lockout_detected', missionId: mission.id, missionCategory: mission.category,
+            taskIds: cyc, droneIds: cycleDrones, resolution: 'help_needed',
+          })
+        }
       }
 
       // 4. Update asset availability and positions
@@ -1741,20 +1950,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const pending = mission.pendingAllocation
       const isGreedy = state.config.tacticalMode === 'greedy'
-      // Greedy commits only ONE step: keep just the first task's assignment (and that task in
-      // each drone's sequence). Remaining tasks are filled by the greedy replanner in TICK as
-      // each step completes — the committed plan never contains future steps.
-      const firstTid = pending.taskOrder[0]
+      // Commit exactly what the operator confirmed — including any multi-hop chains they drew.
+      // "Greedy" applies to the AGENT, not the operator: the agent's suggested baseline is already
+      // collapsed to a single first step in APPLY_STRATEGIC, and greedy replan (needsGreedyReplan)
+      // later fills only the tasks the operator left UNASSIGNED as drones free up. An operator-
+      // specified path longer than one hop is always honoured and never trimmed here.
       const ta: Record<string, string[]> | undefined = action.taskAssignments
-        ? (isGreedy
-            ? (action.taskAssignments[firstTid] ? { [firstTid]: action.taskAssignments[firstTid] } : {})
-            : action.taskAssignments)
-        : undefined
-      const droneSeqs = action.droneSequences
-        ? (isGreedy
-            ? Object.fromEntries(Object.entries(action.droneSequences).map(([id, seq]) => [id, seq.filter(t => t === firstTid)]))
-            : action.droneSequences)
-        : {}
+      const droneSeqs = action.droneSequences ?? {}
       let assignments: TaskAssignment[]
 
       const userProvidedAssignments = !!ta
@@ -1769,23 +1971,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       if (assignments.length === 0) return state
 
-      // modifiedFromAgentPlan: true if the user's assignments differ from the greedy suggestion stored in pending
-      const taskAssignmentsEqual = (a: Record<string, string[]>, b: Record<string, string[]>) => {
-        const keysA = Object.keys(a).sort(), keysB = Object.keys(b).sort()
-        if (keysA.join() !== keysB.join()) return false
-        return keysA.every(k => [...(a[k] ?? [])].sort().join() === [...(b[k] ?? [])].sort().join())
-      }
-      const modifiedFromAgentPlan = userProvidedAssignments &&
-        !taskAssignmentsEqual(ta!, pending.taskAssignments)
-
-      // Per-task diff: which task IDs had drone assignments changed from the greedy suggestion
+      // modifiedFromAgentPlan / changedTaskIds: did the operator alter the drones on any task the
+      // AGENT actually suggested? Compare ONLY over the agent's own task keys (pending.taskAssignments).
+      // In greedy the agent's committed baseline is a single first step, so steps the operator adds
+      // beyond it are expected greedy workflow — NOT an override — and must not count. In plan-all the
+      // agent suggests every task, so the same comparison naturally spans the whole plan.
+      const norm = (ids: string[] | undefined) => [...(ids ?? [])].sort().join()
       const changedTaskIds = userProvidedAssignments
-        ? Object.keys(ta!).filter(tid => {
-            const before = [...(pending.taskAssignments[tid] ?? [])].sort().join()
-            const after  = [...(ta![tid]  ?? [])].sort().join()
-            return before !== after
-          })
+        ? Object.keys(pending.taskAssignments).filter(tid => norm(pending.taskAssignments[tid]) !== norm(ta![tid]))
         : []
+      const modifiedFromAgentPlan = changedTaskIds.length > 0
 
       // chainingUsed: true if any drone appears in more than one task's assignment list
       const chainingUsed = userProvidedAssignments
@@ -1991,7 +2186,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // Per-drone sequences: planner chain order (filtered to the pending tasks the drone covers),
       // falling back to pending-task order when the planner didn't supply sequences. Persisting these
-      // onto the mission is what lets the operational map's hover reveal a reassigned drone's full
+      // onto the mission is what lets the strategic map's hover reveal a reassigned drone's full
       // remaining path, and lets TICK chain the drone through its tasks in order.
       const recoverySeqs: Record<string, string[]> = {}
       const recoveryDroneIds = [...new Set(Object.values(recoveryTaskAssignments).flat())]
@@ -2032,7 +2227,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const newAssets = state.assets.map(asset => {
         const myAsgns = recoveryAssignments.filter(a => a.assetIds.includes(asset.id))
         if (myAsgns.length === 0 || !recoverable(asset.id)) return asset
-        const firstAsgn = myAsgns.reduce((min, a) => a.startTime < min.startTime ? a : min)
+        const firstAsgn = pickFirstAssignment(myAsgns, recoverySeqs[asset.id])
         const task = newTasks.find(t => t.id === firstAsgn.taskId)!
         // Travel from where the drone actually is — its loiter/current position if already on-mission,
         // else the hub.
@@ -2182,7 +2377,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const updatedMissions = s.missions.map(m =>
         m.id === mission.id
-          ? { ...m, status: 'abandoned' as const, abandonedAt: elapsed, failureRecoveryPending: false, pendingRecoveryOptions: null }
+          ? { ...m, status: 'abandoned' as const, abandonedAt: elapsed, abandonedReason: 'operator' as const, failureRecoveryPending: false, pendingRecoveryOptions: null }
           : m
       )
 

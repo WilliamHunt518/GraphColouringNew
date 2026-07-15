@@ -29,13 +29,14 @@ export function parseURLConfig(): StudyConfig | null {
   const tacticalMode: StudyConfig['tacticalMode'] = p.get('tacticalMode') === 'plan-all' ? 'plan-all' : 'greedy'
   const testingMode = p.get('test') === '1'
   const fullPathsOnHover = p.get('fullpaths') === '1'
+  const fixLockouts = p.get('fixLockouts') !== '0'   // default ON (auto-fix); ?fixLockouts=0 for help-needed
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
     agentErrorRate, epsilonTactical, tacticalMode, testingMode, tutorialMode: false, numSessions,
-    fullPathsOnHover,
+    fullPathsOnHover, fixLockouts,
   }
 }
 
