@@ -68,6 +68,16 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const current = TUTORIAL_STEPS[step]
   const isLast  = step === TUTORIAL_STEPS.length - 1
 
+  // Skip the lockout-explain step when auto-fix is on — lockouts never surface to the
+  // operator in that mode, so the "help needed" explanation doesn't apply.
+  const advanceStep = (from: number, dir: 1 | -1) => {
+    let idx = from + dir
+    while (idx > 0 && idx < TUTORIAL_STEPS.length - 1 && TUTORIAL_STEPS[idx]?.id === 'lockout-explain' && state.config.fixLockouts) {
+      idx += dir
+    }
+    return Math.max(0, Math.min(TUTORIAL_STEPS.length - 1, idx))
+  }
+
   // Spawn first demo mission at tutorial start
   useEffect(() => {
     if (missionForcedRef.current) return
@@ -170,14 +180,14 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     if (autoFiredRef.current.has(step)) return
     if (current.autoAdvanceWhen(state)) {
       autoFiredRef.current.add(step)
-      setTimeout(() => onStep(Math.min(step + 1, TUTORIAL_STEPS.length - 1)), current?.autoAdvanceDelay ?? 500)
+      setTimeout(() => onStep(advanceStep(step, 1)), current?.autoAdvanceDelay ?? 500)
     }
   }, [state, step, current, onStep])
 
   // Advance panel-intro step when user clicks "Set manually instead"
   useEffect(() => {
     if (current?.id !== 'panel-intro') return
-    const handler = () => onStep(Math.min(step + 1, TUTORIAL_STEPS.length - 1))
+    const handler = () => onStep(advanceStep(step, 1))
     document.addEventListener('tutorial-manual-selected', handler)
     return () => document.removeEventListener('tutorial-manual-selected', handler)
   }, [step, current, onStep])
@@ -194,7 +204,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       e.preventDefault()
       if (isLast) onComplete()
-      else onStep(step + 1)
+      else onStep(advanceStep(step, 1))
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -310,13 +320,13 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
             </button>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {step > 0 && (
-                <button onClick={() => onStep(step - 1)} style={{ fontSize: 13, color: '#94a3b8', background: 'rgba(30,41,59,0.9)', border: '1px solid #334155', borderRadius: 7, padding: '7px 14px', cursor: 'pointer', lineHeight: 1, fontFamily: 'inherit' }}>
+                <button onClick={() => onStep(advanceStep(step, -1))} style={{ fontSize: 13, color: '#94a3b8', background: 'rgba(30,41,59,0.9)', border: '1px solid #334155', borderRadius: 7, padding: '7px 14px', cursor: 'pointer', lineHeight: 1, fontFamily: 'inherit' }}>
                   ← Back
                 </button>
               )}
               {/* No Next button for mustInteract steps */}
               {!current?.mustInteract && (
-                <button onClick={isLast ? onComplete : () => onStep(step + 1)} style={{ fontSize: 13, color: '#fff', background: 'linear-gradient(135deg,#6366f1,#4f46e5)', border: 'none', borderRadius: 7, padding: '7px 18px', cursor: 'pointer', fontWeight: 600, lineHeight: 1, fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(99,102,241,0.45)' }}>
+                <button onClick={isLast ? onComplete : () => onStep(advanceStep(step, 1))} style={{ fontSize: 13, color: '#fff', background: 'linear-gradient(135deg,#6366f1,#4f46e5)', border: 'none', borderRadius: 7, padding: '7px 18px', cursor: 'pointer', fontWeight: 600, lineHeight: 1, fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(99,102,241,0.45)' }}>
                   {isLast ? 'Finish' : 'Next →'}
                 </button>
               )}
