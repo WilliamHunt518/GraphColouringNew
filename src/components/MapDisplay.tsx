@@ -4,6 +4,8 @@ import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAl
 import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
+import { computeTacticalSuggestion, computeRecoverySuggestion } from '../utils/tacticalSuggest'
+import { tasksInCycles } from '../utils/scheduling'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -364,63 +366,31 @@ function computeDronePositions(
   return positions
 }
 
-// ─── Tactical suggestion (greedy assign, mirrors reducer logic) ───────────
-
-function computeTacticalSuggestion(
+// Physically-present drones per task: a freed lockout drone is parked at the task waypoint it
+// deadlocked on, so matching each drone to its nearest task waypoint tells us who actually reached
+// where. Used to surface the "right now" allocation (distinct from the planned assignment) both on
+// the map and in the right panel during a lockout recovery.
+function computePresentByTask(
   dronePool: string[],
   taskOrder: string[],
-  tasks: Mission['tasks'],
+  tasks: Task[],
   assets: Asset[],
-  greedy = false,
-): Record<string, string[]> {
-  const assetById = new Map(assets.map(a => [a.id, a]))
-  const freeAt: Record<string, number> = Object.fromEntries(dronePool.map(id => [id, 0]))
-  const freePos: Record<string, { x: number; y: number }> = Object.fromEntries(dronePool.map(id => [id, { ...HUB }]))
-  const result: Record<string, string[]> = {}
-  // Greedy: engage EVERY drone in the first wave by covering as many tasks as possible in
-  // parallel, one drone per task (no chaining onto future tasks). Tasks the pool can't cover
-  // now stay empty and are filled by replanning as drones free up. Non-greedy keeps the old
-  // behaviour: chain drones through the whole task order.
-  const used = new Set<string>()
-
-  for (const tid of taskOrder) {
-    const task = tasks.find(t => t.id === tid)
-    if (!task) continue
-    const prim = TASK_PRIMARY[task.type as TaskType]
-    const sub = TASK_SUBSTITUTE[task.type as TaskType]
-
-    const tryAssign = (req: { Blue: number; Red: number; Green: number }, baseTime: number): boolean => {
-      const pickEarliest = (type: AssetType, n: number) =>
-        dronePool
-          .filter(id => assetById.get(id)?.type === type && (!greedy || !used.has(id)))
-          .sort((a, b) => freeAt[a] - freeAt[b])
-          .slice(0, n)
-
-      const blues = pickEarliest('Blue', req.Blue)
-      const reds = pickEarliest('Red', req.Red)
-      const greens = pickEarliest('Green', req.Green)
-      if (blues.length < req.Blue || reds.length < req.Red || greens.length < req.Green) return false
-
-      const picked = [...blues, ...reds, ...greens]
-      const startTime = Math.max(...picked.map(id => {
-        const asset = assetById.get(id)!
-        const tt = Math.hypot(freePos[id].x - task.waypoint.x, freePos[id].y - task.waypoint.y) / ASSET_SPEED[asset.type]
-        return freeAt[id] + tt
-      }))
-      for (const id of picked) {
-        freeAt[id] = startTime + baseTime
-        freePos[id] = { ...task.waypoint }
-        if (greedy) used.add(id)   // consume-once: one task per drone this wave
-      }
-      result[tid] = picked
-      return true
+): Record<string, { Blue: number; Red: number; Green: number }> {
+  const out: Record<string, { Blue: number; Red: number; Green: number }> = {}
+  const pts = taskOrder
+    .map(tid => { const t = tasks.find(x => x.id === tid); return t ? { tid, wp: t.waypoint } : null })
+    .filter((x): x is { tid: string; wp: { x: number; y: number } } => x !== null)
+  for (const id of dronePool) {
+    const a = assets.find(x => x.id === id)
+    if (!a) continue
+    let best: { tid: string; d: number } | null = null
+    for (const { tid, wp } of pts) {
+      const d = Math.hypot(a.position.x - wp.x, a.position.y - wp.y)
+      if (!best || d < best.d) best = { tid, d }
     }
-
-    if (!tryAssign(prim, TASK_BASE_TIME[task.type as TaskType])) {
-      if (sub) tryAssign(sub, TASK_SUB_BASE_TIME[task.type as TaskType])
-    }
+    if (best && best.d < 20) (out[best.tid] ??= { Blue: 0, Red: 0, Green: 0 })[a.type]++
   }
-  return result
+  return out
 }
 
 // ─── Active-mission view-only allocation ─────────────────────────────────
@@ -518,21 +488,41 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 }) {
   const pending = overrideAllocation ?? mission.pendingAllocation!
 
-  // Recovery / read-only views pre-populate from the existing plan stored in pendingAllocation.
-  // A NEW tactical plan starts with empty task slots — the operator either assigns drones
-  // manually (drag/chain) or pulls in the agent's plan via "Suggest". Pre-filling here would
-  // bypass that choice and break the tutorial's manual-assignment practice.
+  // Recovery / read-only views pre-populate from the existing plan stored in pendingAllocation —
+  // including a LOCKOUT recovery, which loads the CURRENT (deadlocked) plan so the operator sees
+  // and edits what actually deadlocked. It's kept legible (not read as auto-fixed) by the "now"
+  // present indicators and a red "!" on every task still stuck waiting for drones. A NEW tactical
+  // plan starts empty so the operator assigns manually or via "Suggest".
+  const startsEmpty = !recoveryMode && !readOnly
   function buildInitialAssignments(): Record<string, string[]> {
-    if (recoveryMode || readOnly) {
+    if (!startsEmpty) {
       return Object.fromEntries(Object.entries(pending.taskAssignments).map(([k, v]) => [k, [...v]]))
     }
     return Object.fromEntries(Object.keys(pending.taskAssignments).map(k => [k, []]))
   }
 
+  // Lockout recovery seeds the chain order from the mission's existing (cyclic) sequences, so the
+  // planner shows the ACTUAL deadlocked plan — the cycle is then detectable and Deploy is blocked
+  // until the operator breaks it. Every other flow starts with no explicit order (canonical fallback).
+  function buildInitialChainOrder(): Record<string, string[]> {
+    if (!(recoveryMode && mission.recoveryReason === 'lockout')) return {}
+    const poolSet = new Set(pending.dronePool)
+    const taskSet = new Set(pending.taskOrder)
+    const out: Record<string, string[]> = {}
+    for (const [id, seq] of Object.entries(mission.droneSequences ?? {})) {
+      if (!poolSet.has(id)) continue
+      const f = seq.filter(t => taskSet.has(t))
+      if (f.length > 0) out[id] = f
+    }
+    return out
+  }
+
   const [assignments, setAssignments] = useState<Record<string, string[]>>(buildInitialAssignments)
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
-  const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>({})
+  const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>(buildInitialChainOrder)
   const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
+  // Recovery only: whether the operator consulted the agent's fix via "Suggest" before confirming.
+  const [recoverySuggestUsed, setRecoverySuggestUsed] = useState(false)
   const isSuggestLoading = suggestQueue.length > 0
   useEffect(() => {
     onSuggestLoadingChange?.(isSuggestLoading)
@@ -565,7 +555,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   useEffect(() => {
     if (prevKey.current !== pendingKey) {
       setAssignments(buildInitialAssignments())
-      setDroneChainOrder({})
+      setDroneChainOrder(buildInitialChainOrder())
+      setRecoverySuggestUsed(false)
       prevKey.current = pendingKey
     }
   }, [pendingKey])
@@ -636,6 +627,20 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     [pending.dronePool, droneSequences, assignments, state.assets, mission.tasks]
   )
 
+  // Lockout recovery: which tasks in the CURRENT plan are genuinely blocking each other (on a
+  // dependency cycle)? Only these get the red "!" — a task merely starved of drones stuck upstream
+  // (e.g. an S&S waiting on a Blue that isn't itself contended) is NOT flagged. While any cycle
+  // remains the deadlock is unresolved and Deploy stays blocked until the operator breaks it (by
+  // reordering drones or clicking Suggest). The planner is seeded with the actual deadlocked order,
+  // so a freshly-opened lockout starts blocked; this is what stops it reading as "already fixed",
+  // and because it's derived from the live plan, breaking the cycle clears the flags immediately.
+  const lockoutRecovery = !!recoveryMode && mission.recoveryReason === 'lockout'
+  const cycleTasks = useMemo(
+    () => lockoutRecovery ? tasksInCycles(assignments, droneSequences) : new Set<string>(),
+    [lockoutRecovery, assignments, droneSequences]
+  )
+  const hasUnresolvedDeadlock = cycleTasks.size > 0
+
   // ViewBox: tight around zone + all drone icons (dynamic margin)
   const maxDroneExtent = Object.values(dronePositions).reduce(
     (max, pos) => Math.max(max, Math.hypot(pos.x - cx, pos.y - cy)),
@@ -653,7 +658,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   // Suppressed task (tactical error) is exempt: it appears allocated so Deploy stays enabled.
   // Recovery mode always validates all tasks — the greedy "first task only" shortcut doesn't apply
   const deployCheckTasks = (state.tacticalMode === 'greedy' && !recoveryMode) ? pending.taskOrder.slice(0, 1) : pending.taskOrder
-  const canDeploy = deployCheckTasks.every(tid => {
+  const canDeploy = !hasUnresolvedDeadlock && deployCheckTasks.every(tid => {
     if (pending.hasTacticalError && tid === pending.suppressedTaskId) return true  // deceptively "complete"
     const task = mission.tasks.find(t => t.id === tid)!
     const prim = TASK_PRIMARY[task.type as TaskType]
@@ -668,6 +673,13 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     const meetsSub = !!sub && counts.Blue >= sub.Blue && counts.Red >= sub.Red && counts.Green >= sub.Green
     return meetsPrim || meetsSub
   })
+
+  // Lockout recovery only: which drones are physically parked at each task "right now". Shown
+  // alongside the planned composition so the operator can read the deadlock's real state.
+  const presentByTask = useMemo(
+    () => lockoutRecovery ? computePresentByTask(pending.dronePool, pending.taskOrder, mission.tasks, state.assets) : {},
+    [lockoutRecovery, pending.dronePool, pending.taskOrder, mission.tasks, state.assets]
+  )
 
   // Fire tutorial-plan-complete on the rising edge of canDeploy
   const prevCanDeployRef = useRef(false)
@@ -743,7 +755,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
   function handleDeploy() {
     if (recoveryMode) {
-      onMapAction({ _mapAction: 'CONFIRM_FAILURE_RECOVERY', missionId: mission.id, taskAssignments: assignments, droneSequences })
+      onMapAction({ _mapAction: 'CONFIRM_FAILURE_RECOVERY', missionId: mission.id, taskAssignments: assignments, droneSequences, wasAgentSuggested: recoverySuggestUsed })
     } else {
       onMapAction({ _mapAction: 'CONFIRM_TACTICAL', missionId: mission.id, taskAssignments: assignments, droneSequences })
     }
@@ -752,7 +764,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   function handleReset() {
     setSuggestQueue([])
     setAssignments(buildInitialAssignments())
-    setDroneChainOrder({})
+    setDroneChainOrder(buildInitialChainOrder())   // lockout: restores the shown (deadlocked) order
+    setRecoverySuggestUsed(false)
   }
 
   function handleStopSuggest() {
@@ -760,7 +773,36 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   function handleSuggest() {
-    const suggestion = computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets, state.tacticalMode === 'greedy')
+    // Lockout: if the current allocation already staffs every pending task (the usual deadlock case
+    // — tasks fully staffed, just cyclically ordered), BUILD ON IT: keep the exact assignment and
+    // only untangle the order (clear chain order → canonical → acyclic), rather than reassigning
+    // from scratch. Falls through to a full re-plan only if the current allocation is incomplete.
+    if (lockoutRecovery) {
+      const pendingIds = pending.taskOrder.filter(tid => mission.tasks.find(t => t.id === tid)?.status === 'pending')
+      const meetsComp = (tid: string) => {
+        const task = mission.tasks.find(t => t.id === tid)!
+        const prim = TASK_PRIMARY[task.type as TaskType]
+        const sub = TASK_SUBSTITUTE[task.type as TaskType]
+        const c = { Blue: 0, Red: 0, Green: 0 }
+        for (const id of (assignments[tid] ?? [])) c[(state.assets.find(a => a.id === id)?.type ?? 'Blue') as AssetType]++
+        const mp = c.Blue >= prim.Blue && c.Red >= prim.Red && c.Green >= prim.Green
+        const ms = !!sub && c.Blue >= sub.Blue && c.Red >= sub.Red && c.Green >= sub.Green
+        return mp || ms
+      }
+      if (pendingIds.length > 0 && pendingIds.every(meetsComp)) {
+        setDroneChainOrder({})            // untangle in place — canonical order is acyclic
+        setRecoverySuggestUsed(true)
+        document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
+        return
+      }
+    }
+
+    const greedy = state.tacticalMode === 'greedy'
+    // Recovery: the agent only re-plans the tasks still needing coverage using the idle drones.
+    // Normal tactical: the agent plans the whole mission from the committed pool.
+    const suggestion = recoveryMode
+      ? computeRecoverySuggestion(mission, pending, state.assets)
+      : computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets, greedy)
     // Re-apply tactical error: keep the same task suppressed even after re-suggesting
     if (pending.hasTacticalError && pending.suppressedTaskId) {
       delete suggestion[pending.suppressedTaskId]
@@ -772,12 +814,32 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         entries.push({ taskId: tid, droneId })
       }
     }
-    setAssignments({})
-    setDroneChainOrder({})
+    if (recoveryMode) {
+      // Keep the current plan for tasks the agent doesn't re-plan (in-progress tasks); only the
+      // tasks it fixes are cleared, then re-revealed progressively. Preserves "show the current
+      // plan" while swapping in the agent's proposed fix for the broken part.
+      // NOTE: do NOT strip suggested drones from the kept tasks — a chained recovery legitimately
+      // reuses the same drone across several tasks (that's the whole point of chaining), so a
+      // shared drone must be allowed to appear on both a kept task and a re-planned one. Stripping
+      // it wiped kept tasks that shared drones with the fix, leaving them empty and undeployable.
+      const suggestedTasks = new Set(entries.map(e => e.taskId))
+      const suggestedDrones = new Set(entries.map(e => e.droneId))
+      setAssignments(prev => Object.fromEntries(
+        Object.entries(prev).filter(([tid]) => !suggestedTasks.has(tid))
+      ))
+      setDroneChainOrder(prev => Object.fromEntries(
+        Object.entries(prev).filter(([id]) => !suggestedDrones.has(id))
+      ))
+      setRecoverySuggestUsed(true)
+    } else {
+      setAssignments({})
+      setDroneChainOrder({})
+    }
     setSuggestQueue(entries)
     document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
     // Log that the operator consulted the tactical agent (planner starts empty; this is
-    // the only way the agent's plan enters it). Skip in recovery/read-only/override views.
+    // the only way the agent's plan enters it). Skip in recovery/read-only/override views —
+    // recovery consultation is recorded via wasAgentSuggested on the failure_recovery event.
     if (!recoveryMode && !readOnly) {
       onMapAction({ _mapAction: 'TACTICAL_SUGGEST', missionId: mission.id })
     }
@@ -812,7 +874,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         <div className="flex-1" />
         {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
         {!readOnly && <button onClick={handleReset} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Reset</button>}
-        {!readOnly && !recoveryMode && state.mode === 'agent' &&
+        {!readOnly && state.mode === 'agent' &&
           !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
           <button data-tutorial="tac-suggest-btn" onClick={handleSuggest} disabled={isSuggestLoading}
             className="px-4 py-3 bg-purple-800 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed rounded text-purple-200 text-lg transition-colors flex items-center gap-1.5">
@@ -1035,6 +1097,16 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               const complete = isSuppressed ? true : (meetsPrimComp || meetsSubComp)
               const isHovered = hoverTask === task.id && !!dragging
 
+              // Lockout recovery: the physically-present ("now") composition is shown for every
+              // pending deadlock task, but the red "!" flag goes ONLY on tasks that are genuinely
+              // blocking each other (on a dependency cycle) — not a task merely starved of drones
+              // stuck upstream. `isBlocking` is derived from the live plan, so breaking the cycle
+              // (reorder / Suggest) clears it right away.
+              const presentComp = (lockoutRecovery && task.status === 'pending')
+                ? (presentByTask[task.id] ?? { Blue: 0, Red: 0, Green: 0 })
+                : null
+              const isBlocking = lockoutRecovery && cycleTasks.has(task.id)
+
               // Completed tasks — always greyed out
               if (task.status === 'completed') {
                 const R_RING = 14, circ_c = 2 * Math.PI * R_RING
@@ -1103,13 +1175,15 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                   )}
                   <circle
                     cx={task.waypoint.x} cy={task.waypoint.y} r={isHovered ? 14 : 11}
-                    fill={complete ? 'rgba(16,185,129,0.15)'
+                    fill={isBlocking ? 'rgba(220,38,38,0.14)'
+                      : complete ? 'rgba(16,185,129,0.15)'
                       : recoveryStatusLabel ? 'rgba(245,158,11,0.08)'
                       : isHovered ? 'rgba(59,130,246,0.25)' : 'rgba(15,23,42,0.9)'}
-                    stroke={complete ? '#10b981'
+                    stroke={isBlocking ? '#dc2626'
+                      : complete ? '#10b981'
                       : recoveryStatusLabel ? '#f59e0b'
                       : isHovered ? '#3b82f6' : '#475569'}
-                    strokeWidth={isHovered ? 2 : 1.5}
+                    strokeWidth={isHovered || isBlocking ? 2 : 1.5}
                   />
                   {recoveryStatusLabel && (
                     <text x={task.waypoint.x + 10} y={task.waypoint.y - 8}
@@ -1129,7 +1203,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                     style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">
                     {TASK_TYPE_NAMES[task.type]}
                   </text>
-                  {complete ? (
+                  {/* A blocking deadlocked task never reads as complete — even though its PLANNED
+                      comp is met, it's part of the cycle, so show the composition (+ red styling),
+                      not a green ✓. */}
+                  {complete && !isBlocking ? (
                     <text x={task.waypoint.x} y={task.waypoint.y + 33}
                       textAnchor="middle" fill="#4ade80" fontSize="7" fontFamily="monospace"
                       style={{ pointerEvents: 'none' }}>✓</text>
@@ -1155,8 +1232,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                             </tspan>
                           ))}
                       </text>
-                      {/* Alt comp */}
-                      {sub && (
+                      {/* Alt comp — hidden during lockout recovery (the "now" line takes its place) */}
+                      {sub && !presentComp && (
                         <text x={task.waypoint.x} y={task.waypoint.y + 42}
                           textAnchor="middle" fill="#9ca3af" fontSize="6.5" fontFamily="monospace"
                           style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="1.6" strokeLinejoin="round">
@@ -1164,6 +1241,41 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                         </text>
                       )}
                     </>
+                  )}
+                  {/* Lockout recovery: "right now" present-at-site composition under the plan text.
+                      Each type keeps its OWN drone colour (F=blue, L=red, C=green) so it's clear which
+                      is which; an understocked type is prefixed with "!" to show what's actually
+                      missing. The OR line is hidden (above), so this sits at y+42. */}
+                  {presentComp && (() => {
+                    const parts = [
+                      req.Blue  > 0 ? { c: presentComp.Blue,  r: req.Blue,  key: 'F', col: '#60a5fa' } : null,
+                      req.Red   > 0 ? { c: presentComp.Red,   r: req.Red,   key: 'L', col: '#f87171' } : null,
+                      req.Green > 0 ? { c: presentComp.Green, r: req.Green, key: 'C', col: '#86efac' } : null,
+                    ].filter((p): p is { c: number; r: number; key: string; col: string } => p !== null)
+                    return (
+                      <text x={task.waypoint.x} y={task.waypoint.y + 42}
+                        textAnchor="middle" fontSize="6.5" fontFamily="monospace"
+                        style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="1.6" strokeLinejoin="round">
+                        <tspan fill="#94a3b8">now </tspan>
+                        {parts.map((p, i) => {
+                          const missing = p.c < p.r
+                          return (
+                            <tspan key={p.key} fill={p.col} fontWeight={missing ? 'bold' : 'normal'}>
+                              {i > 0 ? ' ' : ''}{missing ? '!' : ''}{p.c}/{p.r}{p.key}
+                            </tspan>
+                          )
+                        })}
+                      </text>
+                    )
+                  })()}
+                  {/* Blocking flag: this task is part of the deadlock cycle (mutually blocking) */}
+                  {isBlocking && (
+                    <g style={{ pointerEvents: 'none' }}>
+                      <circle cx={task.waypoint.x + 11} cy={task.waypoint.y - 11} r={5}
+                        fill="#dc2626" stroke="#0b1220" strokeWidth={0.8} />
+                      <text x={task.waypoint.x + 11} y={task.waypoint.y - 11} textAnchor="middle"
+                        dominantBaseline="central" fill="#fff" fontSize="7.5" fontWeight="bold" fontFamily="sans-serif">!</text>
+                    </g>
                   )}
                 </g>
               )
@@ -1210,6 +1322,8 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           onStopSuggest={handleStopSuggest}
           recoveryMode={!!recoveryMode}
           recoveryReason={mission.recoveryReason}
+          deadlockUnresolved={hasUnresolvedDeadlock}
+          cycleTasks={cycleTasks}
           failedDroneId={failedDroneIdRef.current ?? null}
           suppressedTaskId={pending.suppressedTaskId}
           missionId={mission.id}
@@ -1222,7 +1336,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
 // ─── Tactical right panel ─────────────────────────────────────────────────
 
-function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, recoveryReason, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
+function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRemove, canDeploy, isSuggestLoading, onDeploy, onStopSuggest, recoveryMode, recoveryReason, deadlockUnresolved, cycleTasks, failedDroneId, suppressedTaskId, missionId, onMapAction }: {
   pending: PendingAllocation
   assignments: Record<string, string[]>
   assets: Asset[]
@@ -1235,6 +1349,8 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
   onStopSuggest?: () => void
   recoveryMode?: boolean
   recoveryReason?: 'drone_failure' | 'lockout'
+  deadlockUnresolved?: boolean
+  cycleTasks?: Set<string>
   failedDroneId?: string | null
   suppressedTaskId?: string | null
   missionId?: string
@@ -1250,6 +1366,12 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
 
   function getType(id: string): AssetType { return assets.find(a => a.id === id)?.type ?? 'Blue' }
   function getCS(id: string): string { return droneLabel(id) }
+
+  // Physically-present drones per task ("Present at site: 2/2 L · 0/1 C") — lockout recovery only,
+  // so the operator can see which drones actually reached which task and what's still missing.
+  const presentByTask = (recoveryMode && recoveryReason === 'lockout')
+    ? computePresentByTask(pending.dronePool, pending.taskOrder, tasks, assets)
+    : {}
 
   // Sort tasks by actual execution start time; unassigned tasks go to end
   const sortedTaskOrder = [...pending.taskOrder].sort((a, b) => {
@@ -1281,7 +1403,10 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
       {recoveryMode && recoveryReason === 'lockout' && (
         <div className="flex-none px-3 py-2 border-b border-red-900/60 bg-red-950/30 space-y-1">
           <span className="text-red-400 text-sm font-bold uppercase tracking-wider">⚠ Lockout — help needed</span>
-          <p className="text-sm text-gray-500">These drones deadlocked (each waiting on the other). Re-assign them in a workable order, or abandon.</p>
+          <p className="text-sm text-gray-500">These drones deadlocked (each waiting on the other). The current — still broken — plan is shown below. Change it into a workable order (drag drones to reorder) or click <span className="text-purple-300 font-medium">Suggest</span> for a fix, then Reassign. Or abandon.</p>
+          {deadlockUnresolved && (
+            <p className="text-sm font-semibold text-red-400">Still deadlocked — Reassign is disabled until the cycle is broken.</p>
+          )}
         </div>
       )}
       {/* Help-needed banner: drone failure */}
@@ -1297,7 +1422,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
                 <span className="font-mono text-sm text-gray-500 line-through">{getCS(failedDroneId)}</span>
               </div>
             </div>
-            <p className="text-sm text-gray-500">Reassign its task using remaining mission drones, or abandon.</p>
+            <p className="text-sm text-gray-500">Reassign its task using remaining mission drones (or click <span className="text-purple-300 font-medium">Suggest</span> for a fix), or abandon.</p>
           </div>
         )
       })()}
@@ -1374,6 +1499,33 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
                   </div>
                 )}
               </div>
+
+              {/* Present-at-site (lockout recovery): drones physically at this task, each in its own
+                  drone colour with a "!" prefix on an understocked type. A red "!" pill + "blocking"
+                  appears only when the task is part of the deadlock cycle (mutually blocking). */}
+              {recoveryMode && recoveryReason === 'lockout' && task.status === 'pending' && (() => {
+                const present = presentByTask[taskId] ?? { Blue: 0, Red: 0, Green: 0 }
+                const isBlocking = !!cycleTasks?.has(taskId)
+                const parts = [
+                  req.Blue  > 0 ? { c: present.Blue,  r: req.Blue,  key: 'F', cls: 'text-blue-400' } : null,
+                  req.Red   > 0 ? { c: present.Red,   r: req.Red,   key: 'L', cls: 'text-red-400' } : null,
+                  req.Green > 0 ? { c: present.Green, r: req.Green, key: 'C', cls: 'text-green-400' } : null,
+                ].filter((p): p is { c: number; r: number; key: string; cls: string } => p !== null)
+                return (
+                  <div className="flex items-center gap-1.5">
+                    {isBlocking && (
+                      <span className="inline-flex items-center justify-center w-4 h-4 flex-none rounded-full bg-red-600 text-white text-xs font-bold leading-none">!</span>
+                    )}
+                    <span className="text-sm text-gray-500">Present now:</span>
+                    <span className="font-mono text-sm">
+                      {parts.map((p, i) => (
+                        <span key={p.key} className={`${p.cls} ${p.c < p.r ? 'font-bold' : ''}`}>{i > 0 ? ' ' : ''}{p.c < p.r ? '!' : ''}{p.c}/{p.r}{p.key}</span>
+                      ))}
+                    </span>
+                    {isBlocking && <span className="text-sm text-red-400/80">blocking</span>}
+                  </div>
+                )
+              })()}
 
               {/* Assigned drones */}
               {assigned.length > 0 && (
@@ -1456,7 +1608,7 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
           className="w-full py-8 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded text-white text-lg font-semibold transition-colors"
         >
           {recoveryMode
-            ? (canDeploy ? 'Reassign ✓' : 'Reassign (incomplete)')
+            ? (canDeploy ? 'Reassign ✓' : deadlockUnresolved ? 'Reassign (still deadlocked)' : 'Reassign (incomplete)')
             : isSuggestLoading
               ? 'Deploy (allocation in progress…)'
               : canDeploy ? 'Deploy ✓' : 'Deploy (incomplete)'}

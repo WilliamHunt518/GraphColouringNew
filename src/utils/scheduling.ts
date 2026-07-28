@@ -7,14 +7,12 @@
 // to finish — neither can ever reach quorum. This is a cycle in the directed
 // graph of "task depends on task" edges induced by every drone's sequence.
 
-/**
- * Builds the task-depends-on-task graph from per-drone sequences and returns the
- * task IDs forming a cycle (in cycle order), or null if the graph is acyclic.
- */
-export function findSchedulingCycle(
+// Builds the task-depends-on-task graph: an edge t_{i-1} → t_i for every consecutive pair in a
+// drone's sequence (t_i can't start until that drone finishes t_{i-1}).
+function buildDependencyGraph(
   taskAssignments: Record<string, string[]>,
   droneSequences: Record<string, string[]>,
-): string[] | null {
+): Map<string, Set<string>> {
   const graph = new Map<string, Set<string>>()
   const ensure = (id: string) => {
     if (!graph.has(id)) graph.set(id, new Set())
@@ -27,6 +25,45 @@ export function findSchedulingCycle(
       graph.get(seq[i - 1])!.add(seq[i])
     }
   }
+  return graph
+}
+
+/**
+ * Returns the SET of task IDs that lie on SOME dependency cycle — i.e. the tasks that are
+ * genuinely blocking each other (a task can reach itself in the graph). A task that merely waits
+ * on a busy drone but isn't part of a mutual-wait cycle (e.g. a downstream task starved of drones
+ * that are stuck upstream) is NOT included — it will free up once the real cycle is broken.
+ */
+export function tasksInCycles(
+  taskAssignments: Record<string, string[]>,
+  droneSequences: Record<string, string[]>,
+): Set<string> {
+  const graph = buildDependencyGraph(taskAssignments, droneSequences)
+  const result = new Set<string>()
+  for (const start of graph.keys()) {
+    // Can `start` reach itself by following edges? If so it's on a cycle.
+    const seen = new Set<string>()
+    const stack = [...(graph.get(start) ?? [])]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n === start) { result.add(start); break }
+      if (seen.has(n)) continue
+      seen.add(n)
+      for (const m of graph.get(n) ?? []) stack.push(m)
+    }
+  }
+  return result
+}
+
+/**
+ * Builds the task-depends-on-task graph from per-drone sequences and returns the
+ * task IDs forming a cycle (in cycle order), or null if the graph is acyclic.
+ */
+export function findSchedulingCycle(
+  taskAssignments: Record<string, string[]>,
+  droneSequences: Record<string, string[]>,
+): string[] | null {
+  const graph = buildDependencyGraph(taskAssignments, droneSequences)
 
   const WHITE = 0, GRAY = 1, BLACK = 2
   const color = new Map<string, number>()

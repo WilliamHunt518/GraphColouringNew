@@ -61,12 +61,12 @@ export default function StartScreen({ onStart }: Props) {
   const [mode, setMode] = useState<Mode>('agent')
   const [epsilonStrategic, setEpsilonStrategic] = useState(0.0)
   const [epsilonTactical, setEpsilonTactical]   = useState(0.0)
-  const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('greedy')
+  const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('plan-all')
   const [seed, setSeed] = useState(String(STUDY_SEED))
   const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
   const [fullPathsOnHover, setFullPathsOnHover] = useState(false)
-  const [fixLockouts, setFixLockouts] = useState(true)
+  const [fixLockouts, setFixLockouts] = useState(false)
   const [error, setError] = useState('')
 
   // ── Participant study (2 scenarios + demographics) ──
@@ -276,7 +276,7 @@ export default function StartScreen({ onStart }: Props) {
             onChange={e => setFixLockouts(e.target.checked)}
             className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500" />
           <label htmlFor="fix-lockouts" className="text-sm text-gray-400 cursor-pointer select-none">
-            Fix lockouts <span className="text-gray-600 text-xs">(on = the agent silently reroutes a stuck deadlock so every task completes; off = flag it red "help needed" for the operator to re-plan, like a drone failure. Default on.)</span>
+            Fix lockouts <span className="text-gray-600 text-xs">(on = the agent silently reroutes a stuck deadlock so every task completes; off = flag it red "help needed" for the operator to re-plan, like a drone failure. Default off.)</span>
           </label>
         </div>
 

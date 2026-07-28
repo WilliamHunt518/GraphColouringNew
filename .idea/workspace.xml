@@ -2,8 +2,75 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/debug/sar_snapshot_P-7021_s1_105s_1785235597996.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-a37e90aee1b8297ff" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ab611113032650819" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/EVENT_LOGGING.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/EVENT_LOGGING.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/FUTURE_NAIVE_TACTICAL_AGENT.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/FUTURE_NAIVE_TACTICAL_AGENT.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/ScopeOfAutonomy-2.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/ScopeOfAutonomy-2.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/1.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/2.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/3.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/3.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/4.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/4.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/5.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/5.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/6.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/6.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/figs/7.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/figs/7.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/main.tex" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/main.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/paper/tactical_agent_revised.tex" beforeDir="false" afterPath="$PROJECT_DIR$/docs/OLD-DRAFTS-DO-NOT-USE/paper/tactical_agent_revised.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_160948.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_160951.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_160954.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_161014.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_161216.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_161409.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_161957.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_162411.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_163228.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_163734.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_164036.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_164429.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_164514.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260414_164520.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_102606.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_103208.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_103225.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_103302.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_103317.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_103429.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_104312.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_104329.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_104452.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_104559.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_105219.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_105235.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_110019.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_111504.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260415_112101.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260417_113329.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260417_113348.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260417_114327.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260417_114341.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260417_114350.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_113356.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_114239.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_114409.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_114415.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_121042.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_121317.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_121639.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260420_122031.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260422_093840.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/debug/session_20260423_144645.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test-scheduling-deadlock.ts" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test-scheduling-deadlock.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/GameShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/GameShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/MapDisplay.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/MapDisplay.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/StartScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/StartScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/actions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/actions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/scheduling.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/scheduling.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,25 +92,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;TacticalStrategic&quot;,
-    &quot;last_opened_file_path&quot;: &quot;G:/Files/Code/GraphColouringNew/logs/manualAddOnline&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "TacticalStrategic",
+    "last_opened_file_path": "G:/Files/Code/GraphColouringNew/logs/debug",
+    "nodejs_package_manager_path": "npm"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="G:\Files\Code\GraphColouringNew\logs\debug" />
       <recent name="G:\Files\Code\GraphColouringNew\logs\manualAddOnline" />
       <recent name="G:\Files\Code\GraphColouringNew\logs\Pilots" />
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Study_1" />
       <recent name="G:\Files\Code\GraphColouringNew\videos\NewDemo" />
-      <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Pilots\W2" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\wh1g17\GraphColouringNew" />
@@ -54,6 +121,7 @@
   <component name="RunManager" selected="Python.study_runner">
     <configuration name="demo_study2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -65,6 +133,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/demo_study2.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -76,6 +145,7 @@
     </configuration>
     <configuration name="launch_menu" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -87,6 +157,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/launch_menu.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -98,6 +169,7 @@
     </configuration>
     <configuration name="run_analysis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -109,6 +181,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/analysis/run_analysis.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -120,6 +193,7 @@
     </configuration>
     <configuration name="study_launcher" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -131,6 +205,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_launcher.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -142,6 +217,7 @@
     </configuration>
     <configuration name="study_runner" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -153,6 +229,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_runner.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />

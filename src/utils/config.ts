@@ -26,10 +26,10 @@ export function parseURLConfig(): StudyConfig | null {
 
   const agentErrorRate  = parseEpsilon(p.get('eps_s'), 0.0)
   const epsilonTactical = parseEpsilon(p.get('eps_t'), 0.0)
-  const tacticalMode: StudyConfig['tacticalMode'] = p.get('tacticalMode') === 'plan-all' ? 'plan-all' : 'greedy'
+  const tacticalMode: StudyConfig['tacticalMode'] = p.get('tacticalMode') === 'greedy' ? 'greedy' : 'plan-all'
   const testingMode = p.get('test') === '1'
   const fullPathsOnHover = p.get('fullpaths') === '1'
-  const fixLockouts = p.get('fixLockouts') !== '0'   // default ON (auto-fix); ?fixLockouts=0 for help-needed
+  const fixLockouts = p.get('fixLockouts') === '1'   // default OFF (help-needed); ?fixLockouts=1 for auto-fix
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
 

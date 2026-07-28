@@ -1,0 +1,1576 @@
+{
+  "snapshotTime": "2026-07-28T10:46:37.996Z",
+  "snapshotType": "mid_session",
+  "participantId": "P-7021",
+  "condition": "none",
+  "mode": "agent",
+  "complexity": "balanced",
+  "seed": 42,
+  "epsilonStrategic": 0,
+  "epsilonTactical": 0,
+  "testingMode": false,
+  "sessionNumber": 1,
+  "elapsed": 104.7,
+  "score": 0,
+  "penaltyAccrued": 49,
+  "sessionScores": [],
+  "liveSession": {
+    "elapsed": 104.7,
+    "score": 0,
+    "penaltyAccrued": 49,
+    "reserve": {
+      "Blue": 9,
+      "Red": 9,
+      "Green": 9
+    },
+    "effectiveReserve": {
+      "Blue": 9,
+      "Red": 9,
+      "Green": 9
+    },
+    "missions": [
+      {
+        "id": "M001",
+        "category": "B",
+        "status": "abandoned",
+        "allocationTime": 17.2,
+        "completionTime": null,
+        "agentInteraction": "overridden",
+        "chosenStrategy": "Manual",
+        "tacticalPending": false,
+        "failureRecoveryPending": false,
+        "tacticallySuppressedTaskId": null,
+        "tasks": [
+          {
+            "id": "M001-T3",
+            "type": 5,
+            "status": "pending",
+            "assignedAssetIds": [
+              "R02",
+              "R01",
+              "G02",
+              "G01",
+              "B02"
+            ],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T1",
+            "type": 3,
+            "status": "pending",
+            "assignedAssetIds": [
+              "R02",
+              "R01",
+              "G02",
+              "G01"
+            ],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-T2",
+            "type": 3,
+            "status": "traveling",
+            "assignedAssetIds": [
+              "R02",
+              "R01",
+              "G02",
+              "G01"
+            ],
+            "startTime": 724.4,
+            "completionTime": 749.4
+          }
+        ]
+      },
+      {
+        "id": "M002",
+        "category": "D",
+        "status": "queued",
+        "allocationTime": null,
+        "completionTime": null,
+        "agentInteraction": "none",
+        "chosenStrategy": null,
+        "tacticalPending": false,
+        "failureRecoveryPending": false,
+        "tacticallySuppressedTaskId": null,
+        "tasks": [
+          {
+            "id": "M002-T1",
+            "type": 1,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M002-T2",
+            "type": 4,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M002-T3",
+            "type": 4,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M002-T4",
+            "type": 4,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M002-T5",
+            "type": 5,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          }
+        ]
+      },
+      {
+        "id": "M003",
+        "category": "C",
+        "status": "queued",
+        "allocationTime": null,
+        "completionTime": null,
+        "agentInteraction": "none",
+        "chosenStrategy": null,
+        "tacticalPending": false,
+        "failureRecoveryPending": false,
+        "tacticallySuppressedTaskId": null,
+        "tasks": [
+          {
+            "id": "M003-T1",
+            "type": 1,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M003-T2",
+            "type": 4,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M003-T3",
+            "type": 4,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M003-T4",
+            "type": 4,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          }
+        ]
+      },
+      {
+        "id": "M001-R",
+        "category": "B",
+        "status": "queued",
+        "allocationTime": null,
+        "completionTime": null,
+        "agentInteraction": "none",
+        "chosenStrategy": null,
+        "tacticalPending": false,
+        "failureRecoveryPending": false,
+        "tacticallySuppressedTaskId": null,
+        "tasks": [
+          {
+            "id": "M001-R-T1",
+            "type": 5,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-R-T2",
+            "type": 3,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          },
+          {
+            "id": "M001-R-T3",
+            "type": 3,
+            "status": "pending",
+            "assignedAssetIds": [],
+            "startTime": null,
+            "completionTime": null
+          }
+        ]
+      }
+    ],
+    "assets": [
+      {
+        "id": "B01",
+        "type": "Blue",
+        "status": "returning",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B02",
+        "type": "Blue",
+        "status": "returning",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B03",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B04",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B05",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B06",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B07",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B08",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B09",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B10",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "B11",
+        "type": "Blue",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R01",
+        "type": "Red",
+        "status": "returning",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R02",
+        "type": "Red",
+        "status": "returning",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R03",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R04",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R05",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R06",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R07",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R08",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R09",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R10",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "R11",
+        "type": "Red",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G01",
+        "type": "Green",
+        "status": "returning",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G02",
+        "type": "Green",
+        "status": "returning",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G03",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G04",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G05",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G06",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G07",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G08",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G09",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G10",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      },
+      {
+        "id": "G11",
+        "type": "Green",
+        "status": "available",
+        "currentMissionId": null,
+        "currentTaskId": null,
+        "failedAt": null
+      }
+    ]
+  },
+  "sessions": [
+    [
+      {
+        "type": "session_start",
+        "participantId": "P-7021",
+        "condition": "none",
+        "mode": "agent",
+        "complexity": "balanced",
+        "seed": 42,
+        "epsilonStrategic": 0,
+        "epsilonTactical": 0,
+        "tacticalMode": "plan-all",
+        "fixLockouts": false,
+        "numSessions": 1,
+        "sessionDuration": 480,
+        "fleet": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        },
+        "assetSpeeds": {
+          "Blue": 11,
+          "Red": 10,
+          "Green": 9
+        },
+        "taskBaseTime": {
+          "1": 10,
+          "2": 15,
+          "3": 25,
+          "4": 30,
+          "5": 45
+        },
+        "taskSubBaseTime": {
+          "1": 10,
+          "2": 38,
+          "3": 62,
+          "4": 75,
+          "5": 45
+        },
+        "taskPrimary": {
+          "1": {
+            "Blue": 1,
+            "Red": 0,
+            "Green": 0
+          },
+          "2": {
+            "Blue": 2,
+            "Red": 0,
+            "Green": 0
+          },
+          "3": {
+            "Blue": 0,
+            "Red": 2,
+            "Green": 1
+          },
+          "4": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 2
+          },
+          "5": {
+            "Blue": 1,
+            "Red": 1,
+            "Green": 1
+          }
+        },
+        "taskSubstitute": {
+          "1": null,
+          "2": {
+            "Blue": 1,
+            "Red": 0,
+            "Green": 0
+          },
+          "3": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 1
+          },
+          "4": {
+            "Blue": 0,
+            "Red": 1,
+            "Green": 1
+          },
+          "5": null
+        },
+        "taskWeight": {
+          "1": 10,
+          "2": 20,
+          "3": 30,
+          "4": 40,
+          "5": 50
+        },
+        "categoryPenaltyRate": {
+          "A": 0.05,
+          "B": 0.1,
+          "C": 0.15,
+          "D": 0.25,
+          "E": 0.4
+        },
+        "categoryWeights": {
+          "A": 20,
+          "B": 30,
+          "C": 28,
+          "D": 17,
+          "E": 5
+        },
+        "arrivalLambda": 62,
+        "failureCount": 2,
+        "failureGap": 60,
+        "failureJitter": 30,
+        "failureProb": 0.75,
+        "conservativeTopUp": 0.15,
+        "conservativeRedundancyBuffer": 1,
+        "seq": 0,
+        "timestamp": 0,
+        "wallClock": "2026-07-28T10:44:53.275Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 0,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M001",
+        "category": "B",
+        "tasks": [
+          {
+            "id": "M001-T1",
+            "type": 3
+          },
+          {
+            "id": "M001-T2",
+            "type": 3
+          },
+          {
+            "id": "M001-T3",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 241.4768166281283,
+          "y": 207.87480981089175
+        },
+        "arrivalTime": 3,
+        "timeRemainingInSession": 476.997,
+        "taskCompositions": {
+          "M001-T1": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M001-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 2,
+              "Green": 1
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 25,
+            "subBaseTime": 62
+          },
+          "M001-T3": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          30.9369613439776,
+          90.06754396017641
+        ],
+        "penaltyRate": 0.1,
+        "maxReward": 110,
+        "seq": 1,
+        "timestamp": 3003,
+        "wallClock": "2026-07-28T10:44:56.275Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 3.003,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_modal_opened",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "timeRemainingInSession": 475.739,
+        "activeMissions": 0,
+        "currentPenaltyAccrued": 0,
+        "strategiesPresented": [
+          {
+            "name": "Aggressive",
+            "description": "Maximum parallel deployment — all tasks run simultaneously for minimum mission time. At least one spare drone per type deployed as a failure buffer.",
+            "displayedAssets": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 2,
+              "Red": 5,
+              "Green": 3
+            },
+            "displayedCompletionTime": 101.39425394694464,
+            "reserveAfter": {
+              "Blue": 9,
+              "Red": 6,
+              "Green": 8
+            },
+            "speedScore": 1,
+            "reserveScore": 0,
+            "redundancyScore": 0.6,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          },
+          {
+            "name": "Conservative",
+            "description": "Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.",
+            "displayedAssets": {
+              "Blue": 3,
+              "Red": 4,
+              "Green": 3
+            },
+            "trueAssets": {
+              "Blue": 3,
+              "Red": 4,
+              "Green": 3
+            },
+            "displayedCompletionTime": 124.8827463814282,
+            "reserveAfter": {
+              "Blue": 8,
+              "Red": 7,
+              "Green": 8
+            },
+            "speedScore": 0,
+            "reserveScore": 0.0714285714285714,
+            "redundancyScore": 0.6,
+            "isBadSuggestion": false,
+            "badSuggestionType": null
+          }
+        ],
+        "seq": 2,
+        "timestamp": 4261,
+        "wallClock": "2026-07-28T10:44:57.535Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 4.261,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "strategic_choice",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "choiceType": "manual",
+        "wasAgentSuggestion": false,
+        "agentSuggestionWasBad": false,
+        "badSuggestionType": null,
+        "assetsChosen": {
+          "Blue": 2,
+          "Red": 2,
+          "Green": 2
+        },
+        "editedFromStrategy": null,
+        "timeRemainingInSession": 472.115,
+        "latencyMs": 3624,
+        "deltaVsAggressive": {
+          "Blue": 0,
+          "Red": -3,
+          "Green": -1
+        },
+        "deltaVsConservative": {
+          "Blue": -1,
+          "Red": -2,
+          "Green": -1
+        },
+        "strategyCardCount": 2,
+        "manualBeforeCardsLoaded": true,
+        "cardsLoadedAtManualSwitch": 0,
+        "seq": 3,
+        "timestamp": 7885,
+        "wallClock": "2026-07-28T10:45:01.162Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 7.885,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_opened",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "strategyChosen": "Manual",
+        "agentPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B01",
+              "R01",
+              "G01"
+            ],
+            "order": 0
+          },
+          {
+            "taskId": "M001-T1",
+            "taskType": 3,
+            "assetIds": [
+              "R02",
+              "R01",
+              "G02"
+            ],
+            "order": 1
+          },
+          {
+            "taskId": "M001-T2",
+            "taskType": 3,
+            "assetIds": [
+              "R01",
+              "R02",
+              "G01"
+            ],
+            "order": 2
+          }
+        ],
+        "timeRemainingInSession": 472.115,
+        "seq": 4,
+        "timestamp": 7885,
+        "wallClock": "2026-07-28T10:45:01.162Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 7.885,
+        "reserveState": {
+          "Blue": 11,
+          "Red": 11,
+          "Green": 11
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "assign",
+        "droneId": "R02",
+        "droneType": "Red",
+        "taskId": "M001-T2",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 469.955,
+        "seq": 5,
+        "timestamp": 10045,
+        "wallClock": "2026-07-28T10:45:03.932Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 10.045,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "R02",
+        "droneType": "Red",
+        "taskId": "M001-T3",
+        "taskType": 5,
+        "recoveryMode": false,
+        "timeRemainingInSession": 468.872,
+        "seq": 6,
+        "timestamp": 11128,
+        "wallClock": "2026-07-28T10:45:04.766Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 11.128,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "R02",
+        "droneType": "Red",
+        "taskId": "M001-T1",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 468.872,
+        "seq": 7,
+        "timestamp": 11128,
+        "wallClock": "2026-07-28T10:45:05.888Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 11.128,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "assign",
+        "droneId": "R01",
+        "droneType": "Red",
+        "taskId": "M001-T2",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 466.865,
+        "seq": 8,
+        "timestamp": 13135,
+        "wallClock": "2026-07-28T10:45:06.923Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 13.135,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "R01",
+        "droneType": "Red",
+        "taskId": "M001-T3",
+        "taskType": 5,
+        "recoveryMode": false,
+        "timeRemainingInSession": 466.865,
+        "seq": 9,
+        "timestamp": 13135,
+        "wallClock": "2026-07-28T10:45:07.668Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 13.135,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "R01",
+        "droneType": "Red",
+        "taskId": "M001-T1",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 466.865,
+        "seq": 10,
+        "timestamp": 13135,
+        "wallClock": "2026-07-28T10:45:08.696Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 13.135,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "assign",
+        "droneId": "G02",
+        "droneType": "Green",
+        "taskId": "M001-T1",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 466.865,
+        "seq": 11,
+        "timestamp": 13135,
+        "wallClock": "2026-07-28T10:45:09.652Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 13.135,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "G02",
+        "droneType": "Green",
+        "taskId": "M001-T3",
+        "taskType": 5,
+        "recoveryMode": false,
+        "timeRemainingInSession": 462.83,
+        "seq": 12,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:10.552Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "G02",
+        "droneType": "Green",
+        "taskId": "M001-T2",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 462.83,
+        "seq": 13,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:11.328Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "assign",
+        "droneId": "G01",
+        "droneType": "Green",
+        "taskId": "M001-T1",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 462.83,
+        "seq": 14,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:12.262Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "G01",
+        "droneType": "Green",
+        "taskId": "M001-T3",
+        "taskType": 5,
+        "recoveryMode": false,
+        "timeRemainingInSession": 462.83,
+        "seq": 15,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:13.326Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "chain",
+        "droneId": "G01",
+        "droneType": "Green",
+        "taskId": "M001-T2",
+        "taskType": 3,
+        "recoveryMode": false,
+        "timeRemainingInSession": 462.83,
+        "seq": 16,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:14.092Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_assignment_changed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "op": "assign",
+        "droneId": "B02",
+        "droneType": "Blue",
+        "taskId": "M001-T3",
+        "taskType": 5,
+        "recoveryMode": false,
+        "timeRemainingInSession": 462.83,
+        "seq": 17,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:15.004Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "tactical_confirmed",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "wasAgentSuggested": false,
+        "modifiedFromAgentPlan": true,
+        "changedTaskIds": [
+          "M001-T3",
+          "M001-T1",
+          "M001-T2"
+        ],
+        "chainingUsed": true,
+        "assetsDeployed": [
+          "R02",
+          "R01",
+          "G02",
+          "G01",
+          "B02"
+        ],
+        "timeRemainingInSession": 462.83,
+        "latencyMs": 9285,
+        "suggestUsedCount": 0,
+        "agentPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 5,
+            "assetIds": [
+              "B01",
+              "R01",
+              "G01"
+            ],
+            "order": 0
+          },
+          {
+            "taskId": "M001-T1",
+            "taskType": 3,
+            "assetIds": [
+              "R02",
+              "R01",
+              "G02"
+            ],
+            "order": 1
+          },
+          {
+            "taskId": "M001-T2",
+            "taskType": 3,
+            "assetIds": [
+              "R01",
+              "R02",
+              "G01"
+            ],
+            "order": 2
+          }
+        ],
+        "finalPlan": [
+          {
+            "taskId": "M001-T3",
+            "taskType": 5,
+            "assetIds": [
+              "R02",
+              "R01",
+              "G02",
+              "G01",
+              "B02"
+            ],
+            "order": 0
+          },
+          {
+            "taskId": "M001-T1",
+            "taskType": 3,
+            "assetIds": [
+              "R02",
+              "R01",
+              "G02",
+              "G01"
+            ],
+            "order": 1
+          },
+          {
+            "taskId": "M001-T2",
+            "taskType": 3,
+            "assetIds": [
+              "R02",
+              "R01",
+              "G02",
+              "G01"
+            ],
+            "order": 2
+          }
+        ],
+        "seq": 18,
+        "timestamp": 17170,
+        "wallClock": "2026-07-28T10:45:15.627Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 17.17,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M002",
+        "category": "D",
+        "tasks": [
+          {
+            "id": "M002-T1",
+            "type": 1
+          },
+          {
+            "id": "M002-T2",
+            "type": 4
+          },
+          {
+            "id": "M002-T3",
+            "type": 4
+          },
+          {
+            "id": "M002-T4",
+            "type": 4
+          },
+          {
+            "id": "M002-T5",
+            "type": 5
+          }
+        ],
+        "zoneCenter": {
+          "x": 826.6830156929791,
+          "y": 616.7905725352466
+        },
+        "arrivalTime": 37.20994191546568,
+        "timeRemainingInSession": 442.78499999999997,
+        "taskCompositions": {
+          "M002-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M002-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M002-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M002-T4": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M002-T5": {
+            "primary": {
+              "Blue": 1,
+              "Red": 1,
+              "Green": 1
+            },
+            "substitute": null,
+            "baseTime": 45,
+            "subBaseTime": null
+          }
+        },
+        "scheduledFailureTimes": [
+          37.29298020713031,
+          97.18001311412081
+        ],
+        "penaltyRate": 0.25,
+        "maxReward": 180,
+        "seq": 19,
+        "timestamp": 37215,
+        "wallClock": "2026-07-28T10:45:30.488Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 37.215,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "lockout_detected",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "taskIds": [
+          "M001-T3",
+          "M001-T1"
+        ],
+        "droneIds": [
+          "R02",
+          "R01",
+          "G02",
+          "G01",
+          "B02"
+        ],
+        "resolution": "help_needed",
+        "seq": 20,
+        "timestamp": 74838,
+        "wallClock": "2026-07-28T10:46:08.113Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 74.838,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "mission_arrived",
+        "missionId": "M003",
+        "category": "C",
+        "tasks": [
+          {
+            "id": "M003-T1",
+            "type": 1
+          },
+          {
+            "id": "M003-T2",
+            "type": 4
+          },
+          {
+            "id": "M003-T3",
+            "type": 4
+          },
+          {
+            "id": "M003-T4",
+            "type": 4
+          }
+        ],
+        "zoneCenter": {
+          "x": 379.57227459177375,
+          "y": 512.5203355029225
+        },
+        "arrivalTime": 81.71804534531569,
+        "timeRemainingInSession": 397.834,
+        "taskCompositions": {
+          "M003-T1": {
+            "primary": {
+              "Blue": 1,
+              "Red": 0,
+              "Green": 0
+            },
+            "substitute": null,
+            "baseTime": 10,
+            "subBaseTime": null
+          },
+          "M003-T2": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M003-T3": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          },
+          "M003-T4": {
+            "primary": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 2
+            },
+            "substitute": {
+              "Blue": 0,
+              "Red": 1,
+              "Green": 1
+            },
+            "baseTime": 30,
+            "subBaseTime": 75
+          }
+        },
+        "scheduledFailureTimes": [],
+        "penaltyRate": 0.15,
+        "maxReward": 130,
+        "seq": 21,
+        "timestamp": 82166,
+        "wallClock": "2026-07-28T10:46:15.438Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 82.166,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M001",
+        "taskId": "M001-T3",
+        "reason": "mission_abandoned",
+        "seq": 22,
+        "timestamp": 96285,
+        "wallClock": "2026-07-28T10:46:34.814Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 96.285,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M001",
+        "taskId": "M001-T1",
+        "reason": "mission_abandoned",
+        "seq": 23,
+        "timestamp": 96285,
+        "wallClock": "2026-07-28T10:46:34.814Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 96.285,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "task_failed",
+        "missionId": "M001",
+        "taskId": "M001-T2",
+        "reason": "mission_abandoned",
+        "seq": 24,
+        "timestamp": 96285,
+        "wallClock": "2026-07-28T10:46:34.814Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 96.285,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      },
+      {
+        "type": "mission_abandoned",
+        "missionId": "M001",
+        "missionCategory": "B",
+        "completedTaskCount": 0,
+        "remainingTaskCount": 3,
+        "seq": 25,
+        "timestamp": 96285,
+        "wallClock": "2026-07-28T10:46:34.814Z",
+        "sessionId": "P-7021_42_s1",
+        "sessionNumber": 1,
+        "elapsed": 96.285,
+        "reserveState": {
+          "Blue": 9,
+          "Red": 9,
+          "Green": 9
+        }
+      }
+    ]
+  ],
+  "debugTrace": [
+    "[2026-07-28T10:45:01.162Z] greedyAssign result {\"committed\":{\"Blue\":2,\"Red\":2,\"Green\":2},\"taskCount\":3,\"assigned\":3,\"tasks\":[{\"taskId\":\"M001-T3\",\"assetIds\":[\"B01\",\"R01\",\"G01\"],\"startTime\":64},{\"taskId\":\"M001-T1\",\"assetIds\":[\"R02\",\"R01\",\"G02\"],\"startTime\":117},{\"taskId\":\"M001-T2\",\"assetIds\":[\"R01\",\"R02\",\"G01\"],\"startTime\":154}]}",
+    "[2026-07-28T10:45:01.162Z] greedyAssign result {\"committed\":{\"Blue\":2,\"Red\":2,\"Green\":2},\"taskCount\":3,\"assigned\":3,\"tasks\":[{\"taskId\":\"M001-T3\",\"assetIds\":[\"B01\",\"R01\",\"G01\"],\"startTime\":64},{\"taskId\":\"M001-T1\",\"assetIds\":[\"R02\",\"R01\",\"G02\"],\"startTime\":117},{\"taskId\":\"M001-T2\",\"assetIds\":[\"R01\",\"R02\",\"G01\"],\"startTime\":154}]}"
+  ]
+}

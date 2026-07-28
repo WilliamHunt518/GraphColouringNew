@@ -1391,21 +1391,43 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             taskIds: cyc, droneIds: cycleDrones, resolution: 'rerouted',
           })
         } else {
-          // Help needed: surface it like a drone failure. Free the stuck cycle drones (loiter on-
-          // mission at their slots so they stay available for reassignment), revert the deadlocked
-          // tasks to pending, and flag the mission for operator recovery.
-          const cycTaskSet = new Set(cyc)
+          // Help needed: surface it like a drone failure. Free the stuck cycle drones (currentTaskId
+          // cleared so they can be reassigned) but LEAVE THEM PARKED AT THEIR CURRENT POSITION — the
+          // task waypoint they deadlocked on — rather than flying them back to a loiter slot. This
+          // makes the lockout legible: the operator can see which drones physically reached which
+          // task (so a task can be "2/2 Red present, 0/2 Green present"), which is the crux of the
+          // deadlock. Revert the deadlocked tasks to pending BUT keep their assignedAssetIds so the
+          // recovery planner shows the current (deadlocked) plan rather than a blank slate.
+          //
+          // Crucially, the cycle drones are usually SHARED (chained) with other not-yet-finished
+          // tasks in the same mission. Freeing them orphans those tasks — a task left "traveling"
+          // whose drones are no longer heading to it can never complete, and the recovery Suggest
+          // couldn't fill it (its drones looked busy). So also revert EVERY non-completed,
+          // non-executing task that shares a freed drone, and park all of their drones too. Tasks
+          // actively executing (drones on-site working) are left untouched.
           const cycleDroneSet = new Set(cycleDrones)
+          const affectedTaskSet = new Set<string>(cyc)
+          for (const t of mission.tasks) {
+            if (t.status === 'completed' || t.status === 'failed' || t.status === 'executing') continue
+            if (t.assignedAssetIds.some(id => cycleDroneSet.has(id))) affectedTaskSet.add(t.id)
+          }
+          // Park every drone belonging to an affected task (except any actively executing a task we
+          // are NOT reverting), so the whole broken chain is freed for a clean re-plan.
+          const freedDroneSet = new Set<string>()
+          for (const t of mission.tasks) {
+            if (!affectedTaskSet.has(t.id)) continue
+            for (const id of t.assignedAssetIds) freedDroneSet.add(id)
+          }
           s = {
             ...s,
             assets: s.assets.map(a => {
-              if (!cycleDroneSet.has(a.id) || a.status !== 'deployed') return a
-              const slot = loiterSlot(mission, a.id)
+              if (!freedDroneSet.has(a.id) || a.status !== 'deployed') return a
+              const cur = mission.tasks.find(tt => tt.id === a.currentTaskId)
+              if (cur && cur.status === 'executing' && !affectedTaskSet.has(cur.id)) return a  // leave active workers
               const pos = interpolateAssetPosition(a, elapsed)
-              const tt = travelTime(pos, slot, ASSET_SPEED[a.type])
               return {
-                ...a, currentTaskId: null, position: pos, travelFrom: { ...pos }, targetPosition: slot,
-                travelStartElapsed: elapsed, travelEndElapsed: elapsed + tt, availableAt: elapsed + tt,
+                ...a, currentTaskId: null, position: pos, travelFrom: { ...pos }, targetPosition: { ...pos },
+                travelStartElapsed: elapsed, travelEndElapsed: elapsed, availableAt: elapsed,
               }
             }),
             missions: s.missions.map(m => m.id === mission.id ? {
@@ -1414,11 +1436,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               recoveryReason: 'lockout' as const,
               failedDroneId: null,
               pendingRecoveryOptions: [],
-              droneSequences: Object.fromEntries(
-                Object.entries(m.droneSequences ?? {}).map(([id, seq]) => [id, seq.filter(t => !cycTaskSet.has(t))]),
-              ),
-              tasks: m.tasks.map(t => cycTaskSet.has(t.id)
-                ? { ...t, status: 'pending' as const, assignedAssetIds: [], startTime: null, completionTime: null, allocatedAt: null }
+              // Keep the existing (cyclic) droneSequences intact — the recovery planner seeds its
+              // chain order from them so it shows the ACTUAL deadlocked plan, detects the cycle, and
+              // blocks Deploy until the operator breaks it (reorder or Suggest). They're inert while
+              // the mission is recovery-pending (detector + greedy replan both skip it) and get
+              // overridden by the operator's revised plan on CONFIRM_FAILURE_RECOVERY.
+              tasks: m.tasks.map(t => affectedTaskSet.has(t.id)
+                ? { ...t, status: 'pending' as const, startTime: null, completionTime: null, allocatedAt: null }
                 : t),
             } : m),
           }
@@ -2208,10 +2232,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return {
           ...task,
           status: 'traveling' as const,
-          assignedAssetIds: [
-            ...task.assignedAssetIds.filter(id => !asgn.assetIds.includes(id)),
-            ...asgn.assetIds,
-          ],
+          // Replace outright: a recovered pending task is rebuilt from the operator's revised plan,
+          // so any drone the operator dropped must not linger. (Harmless for the drone-failure flow
+          // where the task was blanked, but the lockout flow now keeps the pre-deadlock ids that the
+          // operator may have removed — merging would silently re-add them.)
+          assignedAssetIds: [...asgn.assetIds],
           allocatedAt: now,
           travelTime: asgn.travelTime,
           baseTime: asgn.baseTime,
@@ -2252,7 +2277,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missionId: mission.id,
         missionCategory: mission.category,
         recoveryType: 'manual',
-        wasAgentSuggested: false,
+        // True when the operator pulled in the agent's plan via "Suggest" in the recovery planner
+        // (they may still have edited it afterwards — this only records that the agent was consulted).
+        wasAgentSuggested: action.wasAgentSuggested ?? false,
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
       })
 

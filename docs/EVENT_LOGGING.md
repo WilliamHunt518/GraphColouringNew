@@ -5,8 +5,10 @@ agent recommendation during a study session. It exists so that a future engineer
 or Claude) can extend the event log correctly without re-deriving the design decisions
 behind it.
 
-Read this alongside `CLAUDE.md` (architecture overview) and `docs/paper/` (the
-study design write-up — see "Known code-vs-paper discrepancies" below, some of it is stale).
+Read this alongside `CLAUDE.md` (architecture overview). (An earlier study-design write-up
+lived in `docs/paper/`; it has been archived to `docs/OLD-DRAFTS-DO-NOT-USE/paper/` and is
+**deprecated** — ignore it unless specifically revisiting old drafts. Newer drafts will be
+added separately when ready.)
 
 ## Why this exists
 
@@ -140,7 +142,9 @@ agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
   `mission_arrived.category` (mission size proxy).
 - **RQ4 (observation of failures / override quality / automation bias)** —
   `drone_failure` → `failure_recovery` pairs (`wasAgentSuggested` flags whether the
-  recovery option taken was the agent-suggested one) plus `mission_abandoned` for cases
+  recovery used the agent's plan — either a pre-computed `ACCEPT_RECOVERY` option, or the
+  recovery planner's "Suggest" button in a `CONFIRM_FAILURE_RECOVERY`; also set on
+  `lockout_detected` → `failure_recovery` pairs when `fixLockouts` is off) plus `mission_abandoned` for cases
   where no recovery was feasible. `strategic_modal_opened.strategiesPresented[].trueAssets`
   vs `displayedAssets` lets you compute whether an operator's choice tracked the *true*
   (correct) allocation or the *displayed* (possibly perturbed) one — the key signal for
@@ -188,7 +192,8 @@ silently forgotten:
 
 ## Known code-vs-paper discrepancies (still true as of this writing)
 
-The original audit also flagged places where the codebase and `docs/paper/` disagree.
+The original audit also flagged places where the codebase and the (now-archived,
+deprecated) `docs/OLD-DRAFTS-DO-NOT-USE/paper/` draft disagree.
 These are **not** logging gaps — they're real behavioral differences worth knowing about
 before trusting the paper's description of the system:
 

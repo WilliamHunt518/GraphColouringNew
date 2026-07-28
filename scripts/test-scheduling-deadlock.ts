@@ -111,8 +111,10 @@ const tick = (s: GameState, elapsedSec: number) =>
   const m0 = s.missions[0]
   check('OFF: mission NOT auto-abandoned (still active)', m0.status === 'active')
   check('OFF: flagged for recovery with reason=lockout', m0.failureRecoveryPending === true && m0.recoveryReason === 'lockout')
-  check('OFF: deadlocked tasks reverted to pending (unassigned)',
-    m0.tasks.every(t => t.status === 'pending' && t.assignedAssetIds.length === 0))
+  check('OFF: deadlocked tasks reverted to pending but KEEP their plan (shown, not wiped)',
+    m0.tasks.every(t => t.status === 'pending') &&
+    m0.tasks.find(t => t.id === 't5a')!.assignedAssetIds.slice().sort().join() === ['B1', 'R1', 'G1'].sort().join() &&
+    m0.tasks.find(t => t.id === 't5b')!.assignedAssetIds.slice().sort().join() === ['B1', 'R1', 'G2'].sort().join())
   check('OFF: stuck drones freed on-mission (no current task, still loitering here)',
     s.assets.filter(a => ['B1', 'R1', 'G1', 'G2'].includes(a.id))
       .every(a => a.currentTaskId === null && a.currentMissionId === 'M1' && a.status === 'deployed'))
@@ -129,6 +131,52 @@ const tick = (s: GameState, elapsedSec: number) =>
   for (let e = 4; e <= 300 && s.missions[0].status === 'active'; e++) s = tick(s, e)
   check('OFF: after operator re-plan, both tasks complete', s.missions[0].tasks.every(t => t.status === 'completed'))
   check('OFF: mission completed (operator fixed the lockout)', s.missions[0].status === 'completed')
+}
+
+// ── OFF + orphaned shared task: a 3rd task sharing the cycle's drones must also revert. ──
+// Reproduces the P-7021 snapshot bug: cycle was [t5a,t5b] but a traveling task tc shared the same
+// Blue+Red. Freeing them orphaned tc, and recovery Suggest left tc unstaffed → forced abandon.
+{
+  const WP_C = { x: 690, y: 470 }
+  const mission3: Mission = {
+    ...deadlockMission(),
+    tasks: [
+      t5('t5a', WP_A, ['B1', 'R1', 'G1']),
+      t5('t5b', WP_B, ['B1', 'R1', 'G2']),
+      // tc: a THIRD task, still "traveling", that shares the cycle's B1+R1 (chained after the cycle)
+      t5('tc', WP_C, ['B1', 'R1', 'G3']),
+    ],
+    droneSequences: { B1: ['t5a', 't5b', 'tc'], R1: ['t5b', 't5a', 'tc'], G1: ['t5a'], G2: ['t5b'], G3: ['tc'] },
+  } as unknown as Mission
+  let s: GameState = {
+    ...buildInitialState({ ...config, fixLockouts: false }),
+    config: { ...config, fixLockouts: false },
+    phase: 'playing', sessionStartMs: 0, elapsed: 0,
+    missions: [mission3],
+    assets: [
+      drone('B1', 'Blue', WP_A, 't5a'), drone('R1', 'Red', WP_B, 't5b'),
+      drone('G1', 'Green', WP_A, 't5a'), drone('G2', 'Green', WP_B, 't5b'),
+      drone('G3', 'Green', WP_C, 'tc'),
+    ],
+  }
+  s = tick(s, 3)
+  const m = s.missions[0]
+  check('orphan: ALL three tasks reverted to pending (incl. the shared traveling task tc)',
+    m.tasks.every(t => t.status === 'pending'))
+  check('orphan: tc keeps its plan shown (not wiped)',
+    m.tasks.find(t => t.id === 'tc')!.assignedAssetIds.slice().sort().join() === ['B1', 'R1', 'G3'].sort().join())
+  check('orphan: tc-only drone G3 also freed/parked',
+    s.assets.find(a => a.id === 'G3')!.currentTaskId === null)
+
+  // Operator (or Suggest) re-plans all three in one canonical chain and confirms.
+  s = gameReducer(s, {
+    type: 'CONFIRM_FAILURE_RECOVERY', missionId: 'M1',
+    taskAssignments: { t5a: ['B1', 'R1', 'G1'], t5b: ['B1', 'R1', 'G2'], tc: ['B1', 'R1', 'G3'] },
+    droneSequences: { B1: ['t5a', 't5b', 'tc'], R1: ['t5a', 't5b', 'tc'], G1: ['t5a'], G2: ['t5b'], G3: ['tc'] },
+  } as any)
+  for (let e = 4; e <= 400 && s.missions[0].status === 'active'; e++) s = tick(s, e)
+  check('orphan: after re-plan, ALL three tasks complete', s.missions[0].tasks.every(t => t.status === 'completed'))
+  check('orphan: mission completed (no forced abandon)', s.missions[0].status === 'completed')
 }
 
 // ── Negative 1: same deadlock but drones still EN ROUTE (not arrived) → must NOT act yet. ──
