@@ -81,7 +81,9 @@ function missionPenaltyAccrued(mission: Mission, elapsed: number): number {
   let penalty = 0
   for (const t of mission.tasks) {
     const taskRate = rate * TASK_WEIGHT[t.type] / totalWeight
-    const endTime = t.completionTime ?? elapsed
+    // Mirrors computePenaltyAccrued in gameReducer: only a genuinely completed task stops accruing;
+    // completionTime on anything else is a planned time the task never reached.
+    const endTime = t.status === 'completed' ? (t.completionTime ?? elapsed) : elapsed
     penalty += taskRate * Math.max(0, endTime - mission.arrivalTime)
   }
   return Math.round(penalty)
@@ -453,11 +455,13 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   const showAgentCards = isAgent && !showManual
   const allCardsLoaded = !showAgentCards || modal.strategies.length === 0 || modal.strategies.every((_, i) => loadedCards.has(i))
 
-  // Fire independent 4–5 s timers for each strategy card when in agent mode
+  // Fire the independent per-card reveal timers when in agent mode. The delays are drawn from the
+  // seeded RNG in the reducer (OPEN_STRATEGIC) and logged, so the forced wait is both reproducible
+  // and subtractable from strategic_choice.latencyMs.
   useEffect(() => {
     if (!showAgentCards || modal.strategies.length === 0) return
     const timers = modal.strategies.map((_, i) => {
-      const delay = 4000 + Math.random() * 1000
+      const delay = modal.cardRevealDelaysMs?.[i] ?? 4500
       return window.setTimeout(() => setLoadedCards(prev => new Set([...prev, i])), delay)
     })
     return () => timers.forEach(clearTimeout)
@@ -492,7 +496,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
       {showAgentCards && !tutorialForceManual && (
         <div className="grid grid-cols-2 gap-2">
           {modal.strategies.map((strat, i) => (
-            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} loaded={loadedCards.has(i)} reserve={reserve} onSelect={() => loadedCards.has(i) && setSelectedIdx(i)} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
+            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} loaded={loadedCards.has(i)} reserve={reserve} onSelect={() => { if (!loadedCards.has(i)) return; setSelectedIdx(i); dispatch({ type: 'PICK_STRATEGY', strategyIndex: i }) }} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
           ))}
           {modal.strategies.length === 0 && (
             <p className="col-span-2 text-xs text-gray-500 py-2 text-center">
@@ -508,7 +512,13 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
             allocation={manualAlloc}
             reserve={reserve}
             tasks={mission?.tasks ?? []}
-            onChange={setManualAlloc}
+            // Keep the local copy authoritative for Deploy, but mirror each ± into the reducer so the
+            // manual-build path (every intermediate count + its timestamp) is logged.
+            onChange={a => {
+              setManualAlloc(a)
+              const changed = a.Blue !== manualAlloc.Blue || a.Red !== manualAlloc.Red || a.Green !== manualAlloc.Green
+              if (changed) dispatch({ type: 'EDIT_MANUAL', allocation: a })   // skip ± clicks that hit a cap (no state change)
+            }}
           />
         </div>
       )}
@@ -818,8 +828,12 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: number }) {
   const rate = CATEGORY_PENALTY_RATE[mission.category]
-  const isDone = mission.completionTime !== null
-  const waitSecs = Math.max(0, (mission.completionTime ?? elapsed) - mission.arrivalTime)
+  // "Done" = nothing is still accruing, i.e. every task actually completed. A mission whose last
+  // task failed also reaches status 'completed' (and gets a completionTime), but its failed tasks
+  // keep accruing penalty, so the bars must keep growing with them.
+  const isDone = mission.tasks.length > 0 && mission.tasks.every(t => t.status === 'completed')
+  const accrualEnd = isDone ? (mission.completionTime ?? elapsed) : elapsed
+  const waitSecs = Math.max(0, accrualEnd - mission.arrivalTime)
   const numBars = Math.floor(waitSecs / CHARGE_INTERVAL)
   const partialFrac = isDone ? 0 : (waitSecs % CHARGE_INTERVAL) / CHARGE_INTERVAL
 
@@ -829,7 +843,8 @@ function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: num
     if (totalWeight === 0) return 0
     let pending = 0
     for (const t of mission.tasks) {
-      if (t.completionTime === null || t.completionTime > atElapsed) pending += TASK_WEIGHT[t.type]
+      const doneBy = t.status === 'completed' && t.completionTime !== null && t.completionTime <= atElapsed
+      if (!doneBy) pending += TASK_WEIGHT[t.type]
     }
     return pending / totalWeight
   }
@@ -838,7 +853,7 @@ function PenaltyHistogram({ mission, elapsed }: { mission: Mission; elapsed: num
     totalWeight > 0
       ? mission.tasks.reduce((sum, t) => {
           const taskRate = rate * TASK_WEIGHT[t.type] / totalWeight
-          const endTime = t.completionTime ?? elapsed
+          const endTime = t.status === 'completed' ? (t.completionTime ?? elapsed) : elapsed
           return sum + taskRate * Math.max(0, endTime - mission.arrivalTime)
         }, 0)
       : 0

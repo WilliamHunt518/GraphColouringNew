@@ -28,6 +28,17 @@ function hashId(id: string): number {
   return id.split('').reduce((acc, c, i) => (acc ^ (c.charCodeAt(0) * (i + 7))) >>> 0, 0)
 }
 
+// Simulated "Analysing…" reveal delay (ms) per strategy card. Deploy stays gated until every card
+// has resolved, so this is a forced wait baked into strategic_choice.latencyMs — it is drawn from
+// the seeded RNG (never Math.random) so a session replays identically, and logged on
+// strategic_modal_opened / strategic_choice so it can be subtracted post hoc.
+const CARD_REVEAL_MIN_MS = 4000
+const CARD_REVEAL_SPAN_MS = 1000
+function drawCardRevealDelays(seed: number, missionId: string, count: number): number[] {
+  const rng = new SeededRNG((seed ^ hashId(missionId) ^ 0x5ea1) >>> 0)
+  return Array.from({ length: count }, () => Math.round(CARD_REVEAL_MIN_MS + rng.next() * CARD_REVEAL_SPAN_MS))
+}
+
 // ─── Tutorial first-mission blueprint ─────────────────────────────────────
 // Fixed 4-task mission: T1 Recce + T1 Recce + T3 Supply + T5 Search & Service
 // Uses all three drone types; the two T1s naturally demonstrate chaining.
@@ -136,7 +147,7 @@ export function buildInitialState(config: StudyConfig): GameState {
 // Distributive Omit so it works across the discriminated union
 type EventPayload = GameEvent extends infer E
   ? E extends { seq: number; timestamp: number; wallClock: string; sessionId: string; sessionNumber: number; elapsed: number; reserveState: AssetRequirement }
-    ? Omit<E, 'seq' | 'timestamp' | 'wallClock' | 'sessionId' | 'sessionNumber' | 'elapsed' | 'reserveState'>
+    ? Omit<E, 'seq' | 'timestamp' | 'wallClock' | 'sessionId' | 'sessionNumber' | 'elapsed' | 'reserveState' | 'reserveStateAvailable'>
     : never
   : never
 
@@ -150,6 +161,9 @@ function logEvent(state: GameState, event: EventPayload): GameState {
     sessionNumber: state.sessionNumber,
     elapsed: state.elapsed,
     reserveState: reserveCount(state.assets),
+    // What the operator actually sees in the reserve panel / allocation picker: the same
+    // pending-adjusted call the UI makes (PrimaryDisplay `reserveCount(state.assets, state.missions)`).
+    reserveStateAvailable: reserveCount(state.assets, state.missions),
   } as GameEvent
   const idx = state.sessionNumber - 1
   const updated = [...state.events]
@@ -465,7 +479,11 @@ function computePenaltyAccrued(missions: Mission[], elapsed: number): number {
     const missionRate = CATEGORY_PENALTY_RATE[m.category]
     for (const t of m.tasks) {
       const taskRate = missionRate * TASK_WEIGHT[t.type] / totalWeight
-      const endTime = t.completionTime ?? elapsed
+      // A task stops accruing only when it is genuinely COMPLETED. `completionTime` is a PLANNED
+      // finish time from the moment a task is scheduled, so a traveling/executing task — or one
+      // killed mid-execution (drone failure, section safety-net, tactical lockout, session end) —
+      // must be charged against live `elapsed`, not against a future time it never reached.
+      const endTime = t.status === 'completed' ? (t.completionTime ?? elapsed) : elapsed
       penalty += taskRate * Math.max(0, endTime - m.arrivalTime)
     }
   }
@@ -1288,6 +1306,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               completionTime: elapsed,
             })
           }
+          // The sections-by-colour safety net in step 2 is the only place a task fails in this pass:
+          // a required drone type is no longer present for its section window, which today only
+          // happens after a drone failure. It used to fail the task silently — the most common
+          // failure mode in a session produced no event at all.
+          if (oldT && newT && oldT.status !== 'failed' && newT.status === 'failed') {
+            s = logEvent(s, {
+              type: 'task_failed',
+              missionId: newM.id,
+              taskId: newT.id,
+              reason: 'drone_failure',
+            })
+          }
         }
       }
 
@@ -1296,11 +1326,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const oldM = s.missions[mi]
         const newM = updatedMissions[mi]
         if (oldM && newM && oldM.status !== 'completed' && newM.status === 'completed') {
+          // A mission reaches 'completed' once every task is completed OR failed, so this event
+          // also fires for missions that finished with nothing done. Record which shape it was.
+          const nDone = newM.tasks.filter(t => t.status === 'completed').length
           s = logEvent(s, {
             type: 'mission_completed',
             missionId: newM.id,
             missionCategory: newM.category,
             completionTime: elapsed,
+            outcome: nDone === 0 ? 'none_completed' : nDone === newM.tasks.length ? 'all_completed' : 'partial',
             tasksCompleted: newM.tasks.filter(t => t.status === 'completed').length,
             tasksFailed: newM.tasks.filter(t => t.status === 'failed').length,
             rewardEarned: newM.tasks.reduce((sum, t) => sum + (t.status === 'completed' ? TASK_WEIGHT[t.type] : 0), 0),
@@ -1634,6 +1668,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
       const openedAtMs = Math.round(state.elapsed * 1000)
+      const cardRevealDelaysMs = drawCardRevealDelays(state.config.seed, mission.id, strategies.length)
       let s: GameState = {
         ...state,
         strategicModal: {
@@ -1642,6 +1677,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           selectedStrategyIndex: null,
           manualAllocation: { Blue: 0, Red: 0, Green: 0 },
           openedAtMs,
+          cardRevealDelaysMs,
         },
       }
       s = logEvent(s, {
@@ -1651,7 +1687,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
         activeMissions: state.missions.filter(m => m.status === 'active').length,
         currentPenaltyAccrued: state.penaltyAccrued,
-        strategiesPresented: strategies.map(st => ({
+        strategiesPresented: strategies.map((st, i) => ({
           name: st.name,
           description: st.description,
           displayedAssets: st.assets,
@@ -1663,6 +1699,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           redundancyScore: st.redundancyScore,
           isBadSuggestion: st.isBadSuggestion,
           badSuggestionType: st.badSuggestionType,
+          revealDelayMs: cardRevealDelaysMs[i] ?? 0,
         })),
       })
       return s
@@ -1885,6 +1922,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         strategyCardCount: modal.strategies.length,
         manualBeforeCardsLoaded: action.source === 'manual' ? (action.manualBeforeCardsLoaded ?? null) : null,
         cardsLoadedAtManualSwitch: action.source === 'manual' ? (action.cardsLoadedAtManualSwitch ?? null) : null,
+        // Forced wait vs deliberation: an agent-card choice could not Deploy until the last card
+        // resolved; a manual allocation was never gated. deliberationMs = latencyMs − deployEnabledAtMs.
+        cardRevealDelaysMs: modal.cardRevealDelaysMs ?? [],
+        deployEnabledAtMs: action.source === 'agent' ? Math.max(0, ...(modal.cardRevealDelaysMs ?? [])) : 0,
       })
 
       const tacticalOpenedAtMs = Math.round(now * 1000)
@@ -2050,10 +2091,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
         : []
       const openedAtMs = Math.round(state.elapsed * 1000)
+      const cardRevealDelaysMs = drawCardRevealDelays(state.config.seed, mission.id, strategies.length)
       let s: GameState = {
         ...state,
         missions: state.missions.map(m => m.id === action.missionId ? { ...m, tacticalPending: false, pendingAllocation: null } : m),
-        strategicModal: { missionId: action.missionId, strategies, selectedStrategyIndex: null, manualAllocation: null, openedAtMs },
+        strategicModal: { missionId: action.missionId, strategies, selectedStrategyIndex: null, manualAllocation: null, openedAtMs, cardRevealDelaysMs },
       }
       s = logEvent(s, {
         type: 'strategic_modal_opened',
@@ -2062,7 +2104,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
         activeMissions: state.missions.filter(m => m.status === 'active').length,
         currentPenaltyAccrued: state.penaltyAccrued,
-        strategiesPresented: strategies.map(st => ({
+        strategiesPresented: strategies.map((st, i) => ({
           name: st.name,
           description: st.description,
           displayedAssets: st.assets,
@@ -2074,6 +2116,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           redundancyScore: st.redundancyScore,
           isBadSuggestion: st.isBadSuggestion,
           badSuggestionType: st.badSuggestionType,
+          revealDelayMs: cardRevealDelaysMs[i] ?? 0,
         })),
       })
       return s
@@ -2885,7 +2928,28 @@ function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameSta
     return agentPlans.length > 0 ? unmodified / agentPlans.length : 0
   })()
 
-  let s2 = logEvent({ ...s, missions: failedMissions, score, penaltyAccrued }, {
+  // Log every task the session end just failed. Without this the stream ends with tasks that
+  // simply never resolved, and "failed at the buzzer" is indistinguishable from "never logged".
+  // Abandoned missions are skipped: their outstanding tasks already got a task_failed
+  // ('mission_abandoned') when the operator gave up, and re-logging them here would double-count.
+  let sEnd: GameState = { ...s, missions: failedMissions, score, penaltyAccrued }
+  for (let mi = 0; mi < s.missions.length; mi++) {
+    const before = s.missions[mi]
+    const after = failedMissions[mi]
+    if (before.status === 'abandoned') continue
+    for (let ti = 0; ti < before.tasks.length; ti++) {
+      if (before.tasks[ti].status !== 'failed' && after.tasks[ti].status === 'failed') {
+        sEnd = logEvent(sEnd, {
+          type: 'task_failed',
+          missionId: after.id,
+          taskId: after.tasks[ti].id,
+          reason: 'session_ended',
+        })
+      }
+    }
+  }
+
+  let s2 = logEvent(sEnd, {
     type: 'session_ended',
     score,
     penaltyAccrued,

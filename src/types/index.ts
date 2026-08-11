@@ -178,6 +178,7 @@ export interface StrategicModal {
   selectedStrategyIndex: number | null
   manualAllocation: AssetRequirement | null
   openedAtMs: number         // session-elapsed ms when the modal opened (for latency)
+  cardRevealDelaysMs: number[]  // per-card simulated "Analysing…" reveal delay (ms), drawn from the seeded RNG at open; Deploy is gated until all cards resolve
 }
 
 // ─── Map view state ───────────────────────────────────────────────────────
@@ -262,7 +263,8 @@ export interface BaseEvent {
   sessionId: string          // `${participantId}_${seed}_s${sessionNumber}`
   sessionNumber: number
   elapsed: number         // seconds
-  reserveState: AssetRequirement
+  reserveState: AssetRequirement           // raw hub inventory: every asset with status 'available'
+  reserveStateAvailable: AssetRequirement  // reserve as DISPLAYED to the operator: hub-available MINUS drones already committed to other missions' pending tactical plans (reserveCount(assets, missions))
 }
 
 export interface SessionStartEvent extends BaseEvent {
@@ -325,6 +327,9 @@ export interface MissionCompletedEvent extends BaseEvent {
   tasksFailed: number
   rewardEarned: number
   penaltyAccrued: number
+  // A mission reaches this event once every task is completed OR failed, so "completed" alone does
+  // not mean it went well. Separates the three terminal shapes for analysis.
+  outcome: 'all_completed' | 'partial' | 'none_completed'
 }
 
 export interface StrategicChoiceEvent extends BaseEvent {
@@ -344,6 +349,10 @@ export interface StrategicChoiceEvent extends BaseEvent {
   strategyCardCount: number                     // number of agent strategy cards this modal offered
   manualBeforeCardsLoaded: boolean | null       // true if operator switched to manual while ≥1 card was still loading (a clue they declined the agent); null if not a manual-toggle choice
   cardsLoadedAtManualSwitch: number | null      // how many cards had finished loading at the moment manual was chosen (null if n/a)
+  // Decomposition of latencyMs into forced wait vs operator deliberation:
+  //   deliberationMs = latencyMs − deployEnabledAtMs
+  cardRevealDelaysMs: number[]                  // the per-card "Analysing…" reveal delays drawn for this modal (same order as the cards)
+  deployEnabledAtMs: number                     // ms after modal open at which Deploy became enabled on the path actually taken: max(cardRevealDelaysMs) for an agent-card choice, 0 for a manual choice (manual allocation is never gated)
 }
 
 export interface StrategicDismissedEvent extends BaseEvent {
@@ -520,6 +529,7 @@ export interface StrategicModalOpenedEvent extends BaseEvent {
     redundancyScore: number
     isBadSuggestion: boolean
     badSuggestionType: 'over' | 'under' | null
+    revealDelayMs: number                    // simulated "Analysing…" delay before THIS card became readable/selectable
   }>
 }
 
