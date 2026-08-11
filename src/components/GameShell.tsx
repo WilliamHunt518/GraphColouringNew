@@ -74,7 +74,7 @@ export default function GameShell({ config }: Props) {
         dispatch({ type: 'CONFIRM_TACTICAL', missionId: d.missionId, taskAssignments: d.taskAssignments, droneSequences: d.droneSequences })
       }
       if (d._mapAction === 'TACTICAL_SUGGEST' && typeof d.missionId === 'string') {
-        dispatch({ type: 'TACTICAL_SUGGEST', missionId: d.missionId })
+        dispatch({ type: 'TACTICAL_SUGGEST', missionId: d.missionId, recoveryMode: !!d.recoveryMode })
       }
       if (d._mapAction === 'TACTICAL_ASSIGN_CHANGED' && typeof d.missionId === 'string') {
         dispatch({ type: 'TACTICAL_ASSIGN_CHANGED', missionId: d.missionId, op: d.op,

@@ -2,7 +2,7 @@ import type {
   GameState, GameEvent, Asset, Mission, Task,
   AssetType, TaskType, AssetRequirement,
   MissionCategory, TaskComp, RecoveryOption,
-  PendingAllocation, MissionBlueprint, Complexity,
+  PendingAllocation, MissionBlueprint, Complexity, EventContext,
 } from '../types'
 import type { GameAction } from './actions'
 import {
@@ -23,6 +23,14 @@ import type { StudyConfig } from '../types'
 // ─── Constants ────────────────────────────────────────────────────────────
 
 const TRUST_PROBE_INTERVAL = 90  // seconds
+// Cadence of the periodic full-state dump (state_snapshot). 10 s over an 8-minute session is
+// ~48 snapshots — enough to reconstruct the screen at any moment (including long idle stretches
+// where no operator action fires an event) without dominating the log.
+const STATE_SNAPSHOT_INTERVAL = 10  // seconds
+
+// Build identifier stamped into session_start, so collected data can be tied to a code version.
+// Bump when the scoring, mission generation, or agent behaviour changes (see docs/SCENARIOS.md).
+const APP_VERSION = 'v2.1-logging3'
 
 function hashId(id: string): number {
   return id.split('').reduce((acc, c, i) => (acc ^ (c.charCodeAt(0) * (i + 7))) >>> 0, 0)
@@ -137,6 +145,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     strategicModal: null,
     trustProbeActive: false,
     nextTrustProbeAt: TRUST_PROBE_INTERVAL,
+    nextSnapshotAt: 0,   // first snapshot on the opening tick, then every STATE_SNAPSHOT_INTERVAL
     events: Array.from({ length: config.numSessions }, () => []),
     eventSeq: 0,
   }
@@ -147,9 +156,47 @@ export function buildInitialState(config: StudyConfig): GameState {
 // Distributive Omit so it works across the discriminated union
 type EventPayload = GameEvent extends infer E
   ? E extends { seq: number; timestamp: number; wallClock: string; sessionId: string; sessionNumber: number; elapsed: number; reserveState: AssetRequirement }
-    ? Omit<E, 'seq' | 'timestamp' | 'wallClock' | 'sessionId' | 'sessionNumber' | 'elapsed' | 'reserveState' | 'reserveStateAvailable'>
+    ? Omit<E, 'seq' | 'timestamp' | 'wallClock' | 'sessionId' | 'sessionNumber' | 'elapsed' | 'reserveState' | 'reserveStateAvailable' | 'context'>
     : never
   : never
+
+// Situational context stamped on every event, so "how many X when Y happened" is answerable from
+// a single event rather than by replaying the session. Cheap: pure counting over current state.
+function buildContext(state: GameState): EventContext {
+  const c: EventContext = {
+    score: state.score,
+    penaltyAccrued: state.penaltyAccrued,
+    missionsQueued: 0, missionsActive: 0, missionsCompleted: 0, missionsFailed: 0, missionsAbandoned: 0,
+    tasksPending: 0, tasksTraveling: 0, tasksExecuting: 0, tasksCompletedTotal: 0, tasksFailedTotal: 0,
+    dronesAvailable: 0, dronesDeployed: 0, dronesReturning: 0, dronesFailed: 0,
+    tacticalPendingMissionIds: [],
+    recoveryPendingMissionIds: [],
+    strategicModalMissionId: state.strategicModal?.missionId ?? null,
+  }
+  for (const m of state.missions) {
+    if (m.status === 'queued') c.missionsQueued++
+    else if (m.status === 'active') c.missionsActive++
+    else if (m.status === 'completed') c.missionsCompleted++
+    else if (m.status === 'failed') c.missionsFailed++
+    else if (m.status === 'abandoned') c.missionsAbandoned++
+    if (m.tacticalPending) c.tacticalPendingMissionIds.push(m.id)
+    if (m.failureRecoveryPending) c.recoveryPendingMissionIds.push(m.id)
+    for (const t of m.tasks) {
+      if (t.status === 'pending') c.tasksPending++
+      else if (t.status === 'traveling') c.tasksTraveling++
+      else if (t.status === 'executing') c.tasksExecuting++
+      else if (t.status === 'completed') c.tasksCompletedTotal++
+      else if (t.status === 'failed') c.tasksFailedTotal++
+    }
+  }
+  for (const a of state.assets) {
+    if (a.status === 'available') c.dronesAvailable++
+    else if (a.status === 'deployed') c.dronesDeployed++
+    else if (a.status === 'returning') c.dronesReturning++
+    else if (a.status === 'failed') c.dronesFailed++
+  }
+  return c
+}
 
 function logEvent(state: GameState, event: EventPayload): GameState {
   const full: GameEvent = {
@@ -164,6 +211,7 @@ function logEvent(state: GameState, event: EventPayload): GameState {
     // What the operator actually sees in the reserve panel / allocation picker: the same
     // pending-adjusted call the UI makes (PrimaryDisplay `reserveCount(state.assets, state.missions)`).
     reserveStateAvailable: reserveCount(state.assets, state.missions),
+    context: buildContext(state),
   } as GameEvent
   const idx = state.sessionNumber - 1
   const updated = [...state.events]
@@ -490,6 +538,30 @@ function computePenaltyAccrued(missions: Mission[], elapsed: number): number {
   return Math.round(penalty)
 }
 
+// task_failed payload builder — used by all five failure paths so they log the same detail.
+// The bare {missionId, taskId, reason} of the original made it impossible to ask what was lost
+// (reward forgone, how far the task had got, which drones were on it) without a full replay.
+function taskFailedPayload(
+  mission: Mission,
+  task: Task,
+  reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout' | 'scheduling_deadlock' | 'mission_abandoned',
+  elapsed: number,
+) {
+  return {
+    type: 'task_failed' as const,
+    missionId: mission.id,
+    missionCategory: mission.category,
+    taskId: task.id,
+    taskType: task.type,
+    reason,
+    statusBefore: task.status,
+    assignedAssetIds: [...task.assignedAssetIds],
+    startTime: task.startTime,
+    rewardForgone: TASK_WEIGHT[task.type],
+    waitFromMissionArrival: Math.max(0, elapsed - mission.arrivalTime),
+  }
+}
+
 function computeScore(missions: Mission[], elapsed: number): { score: number; penaltyAccrued: number } {
   const completion = computeCompletionPoints(missions)
   const penalty = computePenaltyAccrued(missions, elapsed)
@@ -518,6 +590,89 @@ function computeMeanMissionTime(missions: Mission[]): number {
   if (completed.length === 0) return 0
   const sum = completed.reduce((acc, m) => acc + (m.completionTime! - m.allocationTime!), 0)
   return sum / completed.length
+}
+
+// recovery_opened payload — what the operator was actually shown when a mission asked for help.
+// `feasibleWithOnMissionDrones` is the key RQ4 discriminator: it separates "operator failed to fix
+// a fixable problem" from "nothing could have been done", which the resolution event alone can't.
+function recoveryOpenedPayload(
+  mission: Mission,
+  assets: Asset[],
+  missions: Mission[],
+  reason: 'drone_failure' | 'lockout',
+  failedDroneId: string | null,
+  affectedTasks: Task[],
+  elapsed: number,
+  sessionDuration: number,
+) {
+  const failedDrone = failedDroneId ? assets.find(a => a.id === failedDroneId) : undefined
+  // Drones already at the zone and not mid-task — exactly what the recovery planner offers.
+  const onMission = assets.filter(a =>
+    a.currentMissionId === mission.id && a.status === 'deployed' &&
+    mission.tasks.find(t => t.id === a.currentTaskId)?.status !== 'executing'
+  )
+  const byId = new Map(assets.map(a => [a.id, a]))
+  const pool = onMission.map(a => a.id)
+  const feasible = affectedTasks.every(t => taskMeetsComposition(t, pool, byId))
+  return {
+    type: 'recovery_opened' as const,
+    missionId: mission.id,
+    missionCategory: mission.category,
+    recoveryReason: reason,
+    failedDroneId,
+    failedDroneType: failedDrone?.type ?? null,
+    affectedTaskIds: affectedTasks.map(t => t.id),
+    affectedTaskTypes: affectedTasks.map(t => t.type),
+    onMissionDroneIds: pool,
+    reserveAvailable: reserveCount(assets, missions),
+    feasibleWithOnMissionDrones: feasible,
+    tasksRemaining: mission.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed').length,
+    timeRemainingInSession: Math.max(0, sessionDuration - elapsed),
+  }
+}
+
+// Full-state dump for state_snapshot. Positions are interpolated to `elapsed` (the stored
+// `position` only updates on tick) and rounded — sub-pixel precision is noise here.
+function buildStateSnapshot(state: GameState, elapsed: number) {
+  return {
+    type: 'state_snapshot' as const,
+    missions: state.missions.map(m => ({
+      id: m.id,
+      category: m.category,
+      status: m.status,
+      arrivalTime: m.arrivalTime,
+      allocationTime: m.allocationTime,
+      completionTime: m.completionTime,
+      chosenStrategyName: m.chosenStrategyName,
+      agentInteraction: m.agentInteraction,
+      tacticalPending: m.tacticalPending,
+      failureRecoveryPending: m.failureRecoveryPending,
+      recoveryReason: m.recoveryReason ?? null,
+      penaltyAccruedSoFar: computePenaltyAccrued([m], elapsed),
+      tasks: m.tasks.map(t => ({
+        id: t.id,
+        type: t.type,
+        status: t.status,
+        assignedAssetIds: [...t.assignedAssetIds],
+        startTime: t.startTime,
+        completionTime: t.completionTime,
+        useSubstitute: t.useSubstitute,
+      })),
+      droneSequences: m.droneSequences,
+    })),
+    assets: state.assets.map(a => {
+      const p = interpolateAssetPosition(a, elapsed)
+      return {
+        id: a.id,
+        type: a.type,
+        status: a.status,
+        currentMissionId: a.currentMissionId,
+        currentTaskId: a.currentTaskId,
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+      }
+    }),
+  }
 }
 
 // ─── Helper: build recovery options ───────────────────────────────────────
@@ -694,6 +849,13 @@ function applyTacticalAllocation(
     })
     .filter((x): x is { taskId: string; taskType: TaskType; assetIds: string[]; order: number } => x !== null)
 
+  // Override quality (RQ4): the committed plan's projected finish, directly comparable with the
+  // agent's own estimate. `unassignedTaskIds` is the operator-visible failure mode that matters —
+  // a task committed with no drones can never complete.
+  const assignedTaskIds = new Set(assignments.map(a => a.taskId))
+  const droneUseCount = new Map<string, number>()
+  for (const a of assignments) for (const id of a.assetIds) droneUseCount.set(id, (droneUseCount.get(id) ?? 0) + 1)
+
   s = logEvent(s, {
     type: 'tactical_confirmed',
     missionId: mission.id,
@@ -708,6 +870,23 @@ function applyTacticalAllocation(
     suggestUsedCount: mission.tacticalSuggestCount ?? 0,
     agentPlan,
     finalPlan,
+    agentProjectedCompletion: pending.expectedCompletionTime,
+    finalProjectedCompletion: assignments.length > 0
+      ? Math.max(...assignments.map(a => a.startTime + a.baseTime))
+      : 0,
+    plannedTasks: assignments.map(a => ({
+      taskId: a.taskId,
+      taskType: mission.tasks.find(t => t.id === a.taskId)!.type,
+      assetIds: a.assetIds,
+      startTime: a.startTime,
+      baseTime: a.baseTime,
+      useSubstitute: a.useSubstitute,
+    })),
+    unassignedTaskIds: mission.tasks
+      .filter(t => t.status !== 'completed' && t.status !== 'failed' && !assignedTaskIds.has(t.id))
+      .map(t => t.id),
+    substituteTaskIds: assignments.filter(a => a.useSubstitute).map(a => a.taskId),
+    chainedDroneIds: [...droneUseCount.entries()].filter(([, n]) => n > 1).map(([id]) => id),
   })
 
   return s
@@ -1105,6 +1284,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           failureProb: FAILURE_PROB_CONST,
           conservativeTopUp: CONSERVATIVE_TOP_UP,
           conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
+          snapshotIntervalSec: STATE_SNAPSHOT_INTERVAL,
+          trustProbeIntervalSec: TRUST_PROBE_INTERVAL,
+          // Provenance: which build and what screen produced this data. Guarded because the
+          // reducer also runs headless under node in sim/ (no window).
+          appVersion: APP_VERSION,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'headless',
+          viewport: typeof window !== 'undefined'
+            ? { width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio }
+            : null,
         })
       }
 
@@ -1231,6 +1419,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             taskType: failedTask.type,
             timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
           })
+          // A graceful exit needs no operator action, so only the non-graceful branch opens recovery.
+          if (!isGracefulExit) {
+            const recM = s.missions.find(m => m.id === mission.id)!
+            const recTask = recM.tasks.find(t => t.id === failedTask.id)
+            s = logEvent(s, recoveryOpenedPayload(recM, s.assets, s.missions, 'drone_failure',
+              failedDrone.id, recTask ? [recTask] : [], elapsed, state.sessionDuration))
+            s = { ...s, missions: s.missions.map(m => m.id === mission.id
+              ? { ...m, recoveryReason: 'drone_failure' as const, recoveryOpenedAtMs: Math.round(elapsed * 1000) }
+              : m) }
+          }
           break  // at most one new failure per tick
         }
       }
@@ -1300,10 +1498,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             s = logEvent(s, {
               type: 'task_completed',
               missionId: newM.id,
+              missionCategory: newM.category,
               taskId: newT.id,
               taskType: newT.type,
               assetsUsed: newT.assignedAssetIds,
-              completionTime: elapsed,
+              // The TASK's own completion time — this is what scoring charges against. Logging
+              // `elapsed` here instead made the penalty impossible to reconstruct from the log
+              // whenever ticks were coarse (they diverge by the tick gap).
+              completionTime: newT.completionTime ?? elapsed,
+              detectedAtElapsed: elapsed,
+              startTime: newT.startTime,
+              travelTime: newT.travelTime,
+              baseTime: newT.baseTime,
+              useSubstitute: newT.useSubstitute,
+              rewardEarned: TASK_WEIGHT[newT.type],
+              waitFromMissionArrival: Math.max(0, (newT.completionTime ?? elapsed) - newM.arrivalTime),
             })
           }
           // The sections-by-colour safety net in step 2 is the only place a task fails in this pass:
@@ -1311,12 +1520,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           // happens after a drone failure. It used to fail the task silently — the most common
           // failure mode in a session produced no event at all.
           if (oldT && newT && oldT.status !== 'failed' && newT.status === 'failed') {
-            s = logEvent(s, {
-              type: 'task_failed',
-              missionId: newM.id,
-              taskId: newT.id,
-              reason: 'drone_failure',
-            })
+            s = logEvent(s, taskFailedPayload(newM, oldT, 'drone_failure', elapsed))
           }
         }
       }
@@ -1339,6 +1543,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             tasksFailed: newM.tasks.filter(t => t.status === 'failed').length,
             rewardEarned: newM.tasks.reduce((sum, t) => sum + (t.status === 'completed' ? TASK_WEIGHT[t.type] : 0), 0),
             penaltyAccrued: computePenaltyAccrued([newM], elapsed),
+            arrivalTime: newM.arrivalTime,
+            allocationTime: newM.allocationTime,
+            timeToAllocate: newM.allocationTime !== null ? newM.allocationTime - newM.arrivalTime : null,
+            durationFromAllocation: newM.allocationTime !== null ? elapsed - newM.allocationTime : null,
+            maxReward: newM.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
+            chosenStrategyName: newM.chosenStrategyName,
+            agentInteraction: newM.agentInteraction,
+            hadTacticalError: newM.tacticallySuppressedTaskId !== null,
+            suppressedTaskId: newM.tacticallySuppressedTaskId,
+            droneFailureCount: newM.droneFailuresFired,
           })
         }
       }
@@ -1362,12 +1576,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             tasks: m.tasks.map(t => t.id === suppTask.id ? { ...t, status: 'failed' as const } : t),
           } : m),
         }
-        s = logEvent(s, {
-          type: 'task_failed',
-          missionId: mission.id,
-          taskId: suppTask.id,
-          reason: 'tactical_lockout',
-        })
+        s = logEvent(s, taskFailedPayload(mission, suppTask, 'tactical_lockout', elapsed))
       }
 
       // 3c. Live scheduling-deadlock detection (runs on the ACTUAL running mission, not at
@@ -1484,6 +1693,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             type: 'lockout_detected', missionId: mission.id, missionCategory: mission.category,
             taskIds: cyc, droneIds: cycleDrones, resolution: 'help_needed',
           })
+          const lockM = s.missions.find(m => m.id === mission.id)!
+          s = logEvent(s, recoveryOpenedPayload(lockM, s.assets, s.missions, 'lockout', null,
+            lockM.tasks.filter(t => affectedTaskSet.has(t.id)), elapsed, state.sessionDuration))
+          s = { ...s, missions: s.missions.map(m => m.id === mission.id
+            ? { ...m, recoveryOpenedAtMs: Math.round(elapsed * 1000) } : m) }
         }
       }
 
@@ -1633,6 +1847,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // 5. Recalculate score (snapshot — penalty grows continuously)
       const { score: newScore, penaltyAccrued: newPenalty } = computeScore(s.missions, elapsed)
       s = { ...s, score: newScore, penaltyAccrued: newPenalty }
+
+      // 5b. Periodic full-state dump. Emitted on a fixed elapsed-time grid (not wall clock) so it
+      // stays deterministic and so a throttled/backgrounded tab can't silently skip one. Runs after
+      // the score update so the snapshot and its envelope agree.
+      if (elapsed >= s.nextSnapshotAt) {
+        s = logEvent(s, buildStateSnapshot(s, elapsed))
+        // Advance past any grid points a long tick jumped over, so we don't emit a burst.
+        const missed = Math.floor((elapsed - s.nextSnapshotAt) / STATE_SNAPSHOT_INTERVAL) + 1
+        s = { ...s, nextSnapshotAt: s.nextSnapshotAt + missed * STATE_SNAPSHOT_INTERVAL }
+      }
 
       // 6. Trust probe
       if (!s.trustProbeActive && elapsed >= s.nextTrustProbeAt) {
@@ -1942,6 +2166,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         strategyChosen: strategyName,
         agentPlan: agentPlanForLog,
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
+        // The ε_T draw for this mission, logged whether or not it ever manifests as a failed task.
+        hasTacticalError,
+        suppressedTaskId,
+        dronePool,
+        agentProjectedCompletion: expectedCompletionTime,
+        unassignedTaskIds: mission.tasks.filter(t => (taskAssignmentMap[t.id] ?? []).length === 0).map(t => t.id),
       })
 
       // Both modes: set tacticalPending for tactical assignment step. The committed team also sets
@@ -1970,7 +2200,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // suggestUsedCount === 0 on a confirm means the agent plan was never consulted).
     case 'TACTICAL_SUGGEST': {
       const mission = state.missions.find(m => m.id === action.missionId)
-      if (!mission || !mission.tacticalPending || !mission.pendingAllocation) return state
+      if (!mission) return state
+      // Recovery-planner Suggest fires while the mission is ACTIVE and recovery-pending, not
+      // tactical-pending, so the pending-allocation guard only applies to the initial planner.
+      const isRecovery = !!action.recoveryMode
+      if (!isRecovery && (!mission.tacticalPending || !mission.pendingAllocation)) return state
+      if (isRecovery && !mission.failureRecoveryPending) return state
       const suggestCountThisMission = (mission.tacticalSuggestCount ?? 0) + 1
       let s: GameState = {
         ...state,
@@ -1982,6 +2217,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missionCategory: mission.category,
         suggestCountThisMission,
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        recoveryMode: isRecovery,
       })
       return s
     }
@@ -2136,6 +2372,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         recoveryType: action.recoveryType,
         wasAgentSuggested: true,
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        recoveryReason: mission.recoveryReason ?? null,
+        latencyMs: mission.recoveryOpenedAtMs != null ? Math.round(state.elapsed * 1000) - mission.recoveryOpenedAtMs : 0,
+        repairedTaskIds: opt.taskId ? [opt.taskId] : [],
+        repairedAssignments: opt.taskId && opt.redistributeToAssetId
+          ? [{ taskId: opt.taskId, assetIds: [opt.redistributeToAssetId] }] : [],
+        tasksStillUnassigned: mission.tasks
+          .filter(t => t.status === 'pending' && t.id !== opt.taskId && t.assignedAssetIds.length === 0)
+          .map(t => t.id),
       })
 
       if (action.recoveryType === 'redistribute' && opt.redistributeToAssetId) {
@@ -2203,6 +2447,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         recoveryType: 'manual',
         wasAgentSuggested: false,
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+        recoveryReason: mission.recoveryReason ?? null,
+        latencyMs: mission.recoveryOpenedAtMs != null ? Math.round(state.elapsed * 1000) - mission.recoveryOpenedAtMs : 0,
+        repairedTaskIds: [task.id],
+        repairedAssignments: [{ taskId: task.id, assetIds: totalIdsM }],
+        tasksStillUnassigned: mission.tasks
+          .filter(t => t.status === 'pending' && t.id !== task.id && t.assignedAssetIds.length === 0)
+          .map(t => t.id),
       })
       s = {
         ...s,
@@ -2324,6 +2575,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // (they may still have edited it afterwards — this only records that the agent was consulted).
         wasAgentSuggested: action.wasAgentSuggested ?? false,
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
+        recoveryReason: mission.recoveryReason ?? null,
+        latencyMs: mission.recoveryOpenedAtMs != null ? Math.round(now * 1000) - mission.recoveryOpenedAtMs : 0,
+        repairedTaskIds: Object.keys(recoveryTaskAssignments),
+        repairedAssignments: Object.entries(recoveryTaskAssignments).map(([taskId, assetIds]) => ({ taskId, assetIds })),
+        // Pending tasks the operator's fix still leaves with nobody on them — these can never complete,
+        // so this is the direct measure of an incomplete recovery.
+        tasksStillUnassigned: mission.tasks
+          .filter(t => t.status === 'pending' && (recoveryTaskAssignments[t.id] ?? []).length === 0)
+          .map(t => t.id),
       })
 
       return {
@@ -2429,12 +2689,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // Log task_failed for every task that won't carry over to the residual
       for (const t of incompleteTasks) {
-        s = logEvent(s, {
-          type: 'task_failed',
-          missionId: mission.id,
-          taskId: t.id,
-          reason: 'mission_abandoned',
-        })
+        s = logEvent(s, taskFailedPayload(mission, t, 'mission_abandoned', elapsed))
       }
 
       s = logEvent(s, {
@@ -2494,7 +2749,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return { ...s, assets: updatedAssets }
       }
 
-      s = logEvent(s, { type: 'task_failed', missionId, taskId, reason: 'asset_recalled' })
+      const recallMission = s.missions.find(m => m.id === missionId)
+      if (recallMission && currentTask) {
+        s = logEvent(s, taskFailedPayload(recallMission, currentTask, 'asset_recalled', elapsed))
+      }
 
       const updatedMissions = s.missions.map(m => {
         if (m.id !== missionId) return m
@@ -2671,6 +2929,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         strategicModal: null,
         trustProbeActive: false,
         nextTrustProbeAt: TRUST_PROBE_INTERVAL,
+        nextSnapshotAt: 0,
       }
     }
 
@@ -2875,7 +3134,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         taskType: failedTask.type,
         timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
       })
-      return s
+      const fdM = s.missions.find(m => m.id === mission.id)!
+      const fdTask = fdM.tasks.find(t => t.id === failedTask.id)
+      s = logEvent(s, recoveryOpenedPayload(fdM, s.assets, s.missions, 'drone_failure',
+        failedDrone.id, fdTask ? [fdTask] : [], state.elapsed, state.sessionDuration))
+      return { ...s, missions: s.missions.map(m => m.id === mission.id
+        ? { ...m, recoveryReason: 'drone_failure' as const, recoveryOpenedAtMs: Math.round(state.elapsed * 1000) } : m) }
     }
 
     // ── FORCE_SESSION_END (testing/tutorial mode) ────────────────────────
@@ -2939,12 +3203,8 @@ function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameSta
     if (before.status === 'abandoned') continue
     for (let ti = 0; ti < before.tasks.length; ti++) {
       if (before.tasks[ti].status !== 'failed' && after.tasks[ti].status === 'failed') {
-        sEnd = logEvent(sEnd, {
-          type: 'task_failed',
-          missionId: after.id,
-          taskId: after.tasks[ti].id,
-          reason: 'session_ended',
-        })
+        // `before.tasks[ti]` so statusBefore/assignedAssetIds reflect what it was doing at the buzzer
+        sEnd = logEvent(sEnd, taskFailedPayload(before, before.tasks[ti], 'session_ended', s.elapsed))
       }
     }
   }

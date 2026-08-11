@@ -130,6 +130,7 @@ export interface Mission {
   // Failure recovery state
   failureRecoveryPending: boolean
   recoveryReason?: 'drone_failure' | 'lockout'  // why help is needed (a drone died vs a scheduling deadlock the operator must re-plan around)
+  recoveryOpenedAtMs?: number | null            // session-elapsed ms when help-needed was raised (for failure_recovery latency)
   pendingRecoveryOptions: RecoveryOption[] | null
   // Tactical agent error tracking
   tacticallySuppressedTaskId: string | null   // set after Deploy when tactical error was active
@@ -235,6 +236,7 @@ export interface GameState {
   strategicModal: StrategicModal | null
   trustProbeActive: boolean
   nextTrustProbeAt: number
+  nextSnapshotAt: number   // elapsed (s) at which the next state_snapshot is due
   // Data logging — one array per session
   events: GameEvent[][]
   eventSeq: number   // monotonically increasing across the whole study (all sessions), never resets
@@ -255,6 +257,35 @@ export interface MissionBlueprint {
 
 // ─── Events (data logging) ────────────────────────────────────────────────
 
+/**
+ * Situational context stamped on EVERY event. Exists so that "how many X were there when Y
+ * happened?" is answerable from the event alone, without replaying the whole session — the
+ * operator's load at the moment of any decision is the covariate RQ3 (deferral by tier ×
+ * complexity) needs, and RQ2/RQ4 both want to know what else was competing for attention when
+ * a suggestion was accepted, overridden, or a failure was handled.
+ */
+export interface EventContext {
+  score: number                    // running score at log time
+  penaltyAccrued: number           // running penalty at log time
+  missionsQueued: number           // arrived, not yet allocated
+  missionsActive: number
+  missionsCompleted: number
+  missionsFailed: number
+  missionsAbandoned: number
+  tasksPending: number             // across all non-terminal missions
+  tasksTraveling: number
+  tasksExecuting: number
+  tasksCompletedTotal: number
+  tasksFailedTotal: number
+  dronesAvailable: number          // status 'available' (raw hub inventory)
+  dronesDeployed: number
+  dronesReturning: number
+  dronesFailed: number
+  tacticalPendingMissionIds: string[]   // awaiting a tactical plan confirmation
+  recoveryPendingMissionIds: string[]   // awaiting failure/lockout recovery
+  strategicModalMissionId: string | null  // strategic modal open on this mission (null = closed)
+}
+
 export interface BaseEvent {
   type: string
   seq: number             // strictly increasing across the whole study (all sessions), tie-breaks same-ms events
@@ -265,6 +296,7 @@ export interface BaseEvent {
   elapsed: number         // seconds
   reserveState: AssetRequirement           // raw hub inventory: every asset with status 'available'
   reserveStateAvailable: AssetRequirement  // reserve as DISPLAYED to the operator: hub-available MINUS drones already committed to other missions' pending tactical plans (reserveCount(assets, missions))
+  context: EventContext                    // world state at log time — see EventContext
 }
 
 export interface SessionStartEvent extends BaseEvent {
@@ -296,6 +328,12 @@ export interface SessionStartEvent extends BaseEvent {
   failureProb: number    // inclusion prob per scheduled failure (E[failures]/mission = count × prob)
   conservativeTopUp: number
   conservativeRedundancyBuffer: number
+  snapshotIntervalSec: number   // cadence of state_snapshot events
+  trustProbeIntervalSec: number // cadence at which the trust/workload probe is scheduled
+  // Build/runtime provenance — "which code version and what screen produced this data"
+  appVersion: string
+  userAgent: string
+  viewport: { width: number; height: number; devicePixelRatio: number } | null
 }
 
 export interface PhaseChangeEvent extends BaseEvent {
@@ -330,6 +368,18 @@ export interface MissionCompletedEvent extends BaseEvent {
   // A mission reaches this event once every task is completed OR failed, so "completed" alone does
   // not mean it went well. Separates the three terminal shapes for analysis.
   outcome: 'all_completed' | 'partial' | 'none_completed'
+  // Mission-level outcome joined to the decisions that produced it, so RQ1/RQ2 don't need a
+  // multi-event join to ask "did agent-followed allocations outperform manual ones?"
+  arrivalTime: number
+  allocationTime: number | null       // when the strategic choice was applied
+  timeToAllocate: number | null       // allocationTime − arrivalTime (operator's queueing delay)
+  durationFromAllocation: number | null  // completionTime − allocationTime (execution efficiency)
+  maxReward: number                   // sum of TASK_WEIGHT over all tasks (reward if perfect)
+  chosenStrategyName: 'Aggressive' | 'Conservative' | 'Manual' | null
+  agentInteraction: 'none' | 'shown' | 'followed' | 'overridden' | 'manual'
+  hadTacticalError: boolean           // ε_T suppressed a task in this mission's plan
+  suppressedTaskId: string | null
+  droneFailureCount: number           // in-mission failures that fired before it ended
 }
 
 export interface StrategicChoiceEvent extends BaseEvent {
@@ -370,6 +420,14 @@ export interface TacticalOpenedEvent extends BaseEvent {
   strategyChosen: 'Aggressive' | 'Conservative' | 'Manual'
   agentPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
   timeRemainingInSession: number
+  // ε_Tactical realisation for THIS mission. Previously recoverable only if the error manifested
+  // (as a later task_failed/'tactical_lockout'), which made "was an error injected but harmless?"
+  // unanswerable — needed to separate agent accuracy from operator detection in RQ2/RQ4.
+  hasTacticalError: boolean
+  suppressedTaskId: string | null
+  dronePool: string[]                  // drones committed by the strategic step — what the operator has to plan with
+  agentProjectedCompletion: number     // agent's estimated finish (absolute elapsed s)
+  unassignedTaskIds: string[]          // mission tasks the agent's plan left with no drones (includes any suppressed task)
 }
 
 export interface TacticalConfirmedEvent extends BaseEvent {
@@ -386,6 +444,14 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   suggestUsedCount: number        // times the operator clicked "Suggest" before confirming (0 = agent tactical plan never consulted; the planner starts empty)
   agentPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
   finalPlan: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; order: number }>
+  // Override QUALITY (RQ4): was the operator's plan actually better than the agent's, and what did
+  // it cost? Projected completions are directly comparable — same units, same scheduler.
+  agentProjectedCompletion: number      // agent's estimate (absolute elapsed s)
+  finalProjectedCompletion: number      // committed plan's projected finish (max task start+base)
+  plannedTasks: Array<{ taskId: string; taskType: TaskType; assetIds: string[]; startTime: number; baseTime: number; useSubstitute: boolean }>
+  unassignedTaskIds: string[]           // mission tasks committed with NO drones — these can never complete
+  substituteTaskIds: string[]           // tasks committed on the slower substitute composition
+  chainedDroneIds: string[]             // drones committed to more than one task
 }
 
 export interface TacticalSuggestUsedEvent extends BaseEvent {
@@ -394,6 +460,11 @@ export interface TacticalSuggestUsedEvent extends BaseEvent {
   missionCategory: MissionCategory
   suggestCountThisMission: number   // 1-based index of this Suggest click within the current tactical allocation
   timeRemainingInSession: number
+  // Consultation in the RECOVERY planner used to be recorded only as `wasAgentSuggested` on the
+  // eventual failure_recovery — component state that is reset whenever the mission's pending pool
+  // changes (e.g. another task completes mid-recovery), silently losing the fact. Logging the click
+  // itself makes consultation a fact in the stream rather than a derived UI flag.
+  recoveryMode: boolean
 }
 
 // Deliberation-level events inside the strategic modal — capture the path to a choice, not just
@@ -454,22 +525,108 @@ export interface FailureRecoveryEvent extends BaseEvent {
   recoveryType: 'reserve' | 'redistribute' | 'manual'
   wasAgentSuggested: boolean
   timeRemainingInSession: number
+  // Pairs with recovery_opened: what the operator actually did about it, and how long they took.
+  recoveryReason: 'drone_failure' | 'lockout' | null
+  latencyMs: number                   // recovery_opened → resolution
+  repairedTaskIds: string[]           // tasks that got drones back
+  repairedAssignments: Array<{ taskId: string; assetIds: string[] }>
+  tasksStillUnassigned: string[]      // pending tasks left with no drones after the fix
+}
+
+/**
+ * Fired when a mission enters the "help needed" state — a drone failed, or a scheduling deadlock
+ * was surfaced to the operator. The audit flagged this as a gap: `failure_recovery` only recorded
+ * the RESOLUTION, so there was no record of what the operator was shown or how long they sat on it.
+ * RQ4 needs both halves (observation of failures, and the quality of the response).
+ */
+export interface RecoveryOpenedEvent extends BaseEvent {
+  type: 'recovery_opened'
+  missionId: string
+  missionCategory: MissionCategory
+  recoveryReason: 'drone_failure' | 'lockout'
+  failedDroneId: string | null
+  failedDroneType: AssetType | null
+  affectedTaskIds: string[]                    // tasks reverted to pending / needing drones
+  affectedTaskTypes: TaskType[]
+  onMissionDroneIds: string[]                  // idle drones already at the zone (what the planner offers)
+  reserveAvailable: AssetRequirement           // hub drones free at that moment
+  feasibleWithOnMissionDrones: boolean         // could the affected tasks be re-staffed from the mission's own subswarm?
+  tasksRemaining: number                       // not yet completed/failed in this mission
+  timeRemainingInSession: number
+}
+
+/**
+ * Periodic full-state dump. Not tied to any operator action — it exists so any question of the
+ * form "what did the screen look like at time T?" is answerable for arbitrary T, including
+ * intervals where the operator did nothing at all (an important signal in itself: idle time,
+ * unattended queues, drones loitering unused). Interval is `snapshotIntervalSec` in session_start.
+ */
+export interface StateSnapshotEvent extends BaseEvent {
+  type: 'state_snapshot'
+  missions: Array<{
+    id: string
+    category: MissionCategory
+    status: MissionStatus
+    arrivalTime: number
+    allocationTime: number | null
+    completionTime: number | null
+    chosenStrategyName: 'Aggressive' | 'Conservative' | 'Manual' | null
+    agentInteraction: 'none' | 'shown' | 'followed' | 'overridden' | 'manual'
+    tacticalPending: boolean
+    failureRecoveryPending: boolean
+    recoveryReason: 'drone_failure' | 'lockout' | null
+    penaltyAccruedSoFar: number
+    tasks: Array<{
+      id: string
+      type: TaskType
+      status: TaskStatus
+      assignedAssetIds: string[]
+      startTime: number | null
+      completionTime: number | null
+      useSubstitute: boolean
+    }>
+    droneSequences: Record<string, string[]>
+  }>
+  assets: Array<{
+    id: string
+    type: AssetType
+    status: AssetStatus
+    currentMissionId: string | null
+    currentTaskId: string | null
+    x: number
+    y: number
+  }>
 }
 
 export interface TaskCompletedEvent extends BaseEvent {
   type: 'task_completed'
   missionId: string
+  missionCategory: MissionCategory
   taskId: string
   taskType: TaskType
   assetsUsed: string[]
-  completionTime: number
+  completionTime: number        // the TASK's own completion time (what scoring charges against) — not the tick that noticed it
+  detectedAtElapsed: number     // elapsed when the tick observed the completion; equals completionTime to within one frame unless the sim clock was throttled
+  startTime: number | null      // when execution began
+  travelTime: number            // wait from allocation to execution start
+  baseTime: number              // execution duration actually used (substitute compositions are slower)
+  useSubstitute: boolean        // true if the task ran on the substitute composition rather than the primary
+  rewardEarned: number          // TASK_WEIGHT for this task type
+  waitFromMissionArrival: number  // completionTime − mission.arrivalTime; the quantity penalty is charged on
 }
 
 export interface TaskFailedEvent extends BaseEvent {
   type: 'task_failed'
   missionId: string
+  missionCategory: MissionCategory
   taskId: string
+  taskType: TaskType
   reason: 'asset_recalled' | 'session_ended' | 'drone_failure' | 'tactical_lockout' | 'scheduling_deadlock' | 'mission_abandoned'
+  statusBefore: TaskStatus         // what the task was doing when it died (pending = never dispatched)
+  assignedAssetIds: string[]       // drones on it at the moment of failure
+  startTime: number | null         // null if it never started executing
+  rewardForgone: number            // TASK_WEIGHT that will now never be earned
+  waitFromMissionArrival: number   // elapsed − mission.arrivalTime
 }
 
 export interface LockoutDetectedEvent extends BaseEvent {
@@ -583,3 +740,5 @@ export type GameEvent =
   | TrustProbeDismissedEvent
   | SurveyResponseEvent
   | MissionAbandonedEvent
+  | RecoveryOpenedEvent
+  | StateSnapshotEvent

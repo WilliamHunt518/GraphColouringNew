@@ -69,7 +69,24 @@ them yourself in a call site:
 | `sessionId` | `string` | derived, see above |
 | `sessionNumber` | `number` | `state.sessionNumber` |
 | `elapsed` | `number` | `state.elapsed` (seconds) |
-| `reserveState` | `AssetRequirement` | snapshot of available drones by type at log time |
+| `reserveState` | `AssetRequirement` | RAW hub inventory — every asset with `status === 'available'` |
+| `reserveStateAvailable` | `AssetRequirement` | reserve as DISPLAYED to the operator: hub-available minus drones committed to other missions' pending tactical plans. Same call the UI makes (`reserveCount(assets, missions)`). Usually equals `reserveState`, because `launchToLoiter` flies committed drones out immediately; they diverge only for a pool drone that becomes available again while its mission is still tactical-pending |
+| `context` | `EventContext` | world state at log time — see below |
+
+### `context` (envelope)
+
+Stamped on every event so **"how many X were there when Y happened?" is answerable from the
+event alone**, without replaying the session. Counts are the operator's load at the moment of
+the decision — the covariate RQ3 wants, and the "what else was competing for attention"
+qualifier RQ2/RQ4 want.
+
+`score`, `penaltyAccrued`, `missionsQueued/Active/Completed/Failed/Abandoned`,
+`tasksPending/Traveling/Executing/CompletedTotal/FailedTotal`,
+`dronesAvailable/Deployed/Returning/Failed`, `tacticalPendingMissionIds[]`,
+`recoveryPendingMissionIds[]`, `strategicModalMissionId`.
+
+Invariants worth asserting in analysis: the four drone counts sum to the fleet size, and
+`dronesAvailable === reserveState.Blue + .Red + .Green`.
 
 `logEvent(state, payload)` takes a payload that **omits** these envelope fields (see
 the `EventPayload` distributive-omit type just above it) and returns a new `GameState`
@@ -82,25 +99,27 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 | `session_start` | First tick of a session (`sessionStartMs` transitions null→set) | Full parameter dump: condition/seed/fleet/task tables/penalty rates/category weights/arrival λ/failure schedule constants/conservative-strategy constants — see `SessionStartEvent` | `gameReducer.ts:825` (TICK) |
 | `phase_change` | Any `GamePhase` transition (`playing`↔`survey`↔`between`↔`done`) | `fromPhase`, `toPhase` | `FINISH_SURVEYS` (2121), `NEXT_SESSION` (2130), `END_STUDY` (2151), `endSession()` (2399, → `'survey'`) |
 | `mission_arrived` | Mission spawns (real spawn in TICK, or `FORCE_MISSION_ARRIVAL` in testing mode) | `taskCompositions` (primary+substitute comp/baseTime per task), `scheduledFailureTimes`, `penaltyRate`, `maxReward` | `gameReducer.ts:867` (TICK spawn loop), `:2167` (`FORCE_MISSION_ARRIVAL`) |
-| `mission_completed` | Mission's last task transitions to completed/failed in the same tick | `tasksCompleted`, `tasksFailed`, `rewardEarned`, `penaltyAccrued` (computed for that mission only) | `gameReducer.ts:1052` (TICK, before `updatedMissions` is committed to state) |
+| `mission_completed` | Mission's last task transitions to completed/failed in the same tick | `tasksCompleted`, `tasksFailed`, `rewardEarned`, `penaltyAccrued` (that mission only), `outcome` (`all_completed`/`partial`/`none_completed` — **a mission reaches this event once every task is completed OR failed, so `completed` alone does not mean it went well**), plus the decisions that produced it: `arrivalTime`, `allocationTime`, `timeToAllocate`, `durationFromAllocation`, `maxReward`, `chosenStrategyName`, `agentInteraction`, `hadTacticalError`, `suppressedTaskId`, `droneFailureCount` | `gameReducer.ts` TICK step 3a (before `updatedMissions` is committed to state) |
 | `strategic_modal_opened` | `OPEN_STRATEGIC` or `OVERRIDE_TACTICAL` (re-opens the modal) | Full `strategiesPresented[]` (displayed AND true asset counts, scores incl. `redundancyScore`, bad-suggestion flags), `activeMissions`, `currentPenaltyAccrued` | `gameReducer.ts:1278` (`OPEN_STRATEGIC`), `:1618` (`OVERRIDE_TACTICAL`) |
 | `strategic_dismissed` | `CLOSE_STRATEGIC` (operator closes the modal without picking) | `latencyMs` (open→dismiss) | `gameReducer.ts:1307` |
 | `strategic_choice` | `APPLY_STRATEGIC` (operator picks Aggressive/Conservative/Manual) | `latencyMs`, `deltaVsAggressive`/`deltaVsConservative` (chosen minus each card's true assets), `agentSuggestionWasBad`/`badSuggestionType`, `strategyCardCount`, `manualBeforeCardsLoaded`/`cardsLoadedAtManualSwitch` (manual chosen before the 3–5 s card reveal finished = a clue the operator declined the agent) | `gameReducer.ts:1470` |
-| `tactical_opened` | Immediately after `strategic_choice`, when the tactical planner becomes available | `strategyChosen`, `agentPlan[]` (taskId/taskType/assetIds/order as suggested) | `gameReducer.ts:1493` |
-| `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `suggestUsedCount` (times "Suggest" clicked before confirming), `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed` | `gameReducer.ts:579` (inside `applyTacticalAllocation()`) |
-| `tactical_suggest_used` | `TACTICAL_SUGGEST` (operator clicks "Suggest" in the tactical planner) | `suggestCountThisMission` (1-based click index this allocation) | `gameReducer.ts` (`TACTICAL_SUGGEST` case) |
+| `tactical_opened` | Immediately after `strategic_choice`, when the tactical planner becomes available | `strategyChosen`, `agentPlan[]` (taskId/taskType/assetIds/order as suggested), **`hasTacticalError`/`suppressedTaskId` (the ε_T draw for this mission — logged whether or not it ever manifests)**, `dronePool`, `agentProjectedCompletion`, `unassignedTaskIds` | `gameReducer.ts` (`APPLY_STRATEGIC`) |
+| `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `suggestUsedCount`, `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed`, plus override-quality fields: `agentProjectedCompletion` vs `finalProjectedCompletion` (directly comparable — same scheduler, same units), `plannedTasks[]` (per-task start/base/substitute), `unassignedTaskIds` (**committed with no drones ⇒ can never complete**), `substituteTaskIds`, `chainedDroneIds` | `gameReducer.ts` (inside `applyTacticalAllocation()`) |
+| `tactical_suggest_used` | `TACTICAL_SUGGEST` (operator clicks "Suggest" in the tactical **or recovery** planner) | `suggestCountThisMission` (1-based click index this allocation), `recoveryMode` | `gameReducer.ts` (`TACTICAL_SUGGEST` case) |
 | `strategic_card_previewed` | `PICK_STRATEGY` (operator highlights an Aggressive/Conservative card in the strategic modal, before applying) | `strategyIndex`, `strategyName`, `latencyMs` (since modal opened) | `gameReducer.ts` (`PICK_STRATEGY` case) |
 | `manual_allocation_edited` | `EDIT_MANUAL` (operator adjusts a manual drone count in the strategic modal) | `allocation` (running counts after this edit), `latencyMs` (since modal opened) | `gameReducer.ts` (`EDIT_MANUAL` case) |
 | `tactical_assignment_changed` | `TACTICAL_ASSIGN_CHANGED` (each drone→task drag while building/editing a tactical or recovery plan; relayed from the map window via `_mapAction`) | `op` (`assign`/`chain`/`remove`/`unassign`), `droneId`, `droneType`, `taskId`, `taskType`, `recoveryMode` | `gameReducer.ts` (`TACTICAL_ASSIGN_CHANGED` case) |
 | `drone_failure` | Scheduled in-mission failure fires | `droneId`, `droneType`, `taskId`, `taskType` | `gameReducer.ts:959` (TICK), `:2273`/`:2324` (testing-mode forced failures) |
-| `failure_recovery` | `ACCEPT_RECOVERY`, `APPLY_MANUAL_RECOVERY`, or `CONFIRM_FAILURE_RECOVERY` | `recoveryType` (`reserve`/`redistribute`/`manual`), `wasAgentSuggested` | `gameReducer.ts:1649`, `:1716`, `:1806` |
-| `task_completed` | Task's `completionTime` is reached | `taskType`, `assetsUsed`, `completionTime` | `gameReducer.ts:1035` |
-| `task_failed` | Task fails (section-deadline miss, recall, abandon, session end, tactical lockout) | `reason` (`asset_recalled`/`session_ended`/`drone_failure`/`tactical_lockout`/`scheduling_deadlock`/`mission_abandoned`) | `gameReducer.ts:1084`, `:1917`, `:1981` |
+| `failure_recovery` | `ACCEPT_RECOVERY`, `APPLY_MANUAL_RECOVERY`, or `CONFIRM_FAILURE_RECOVERY` | `recoveryType` (`reserve`/`redistribute`/`manual`), `wasAgentSuggested`, `recoveryReason`, `latencyMs` (paired back to `recovery_opened`), `repairedTaskIds`, `repairedAssignments[]`, `tasksStillUnassigned` (**pending tasks the fix leaves with nobody on them** — an incomplete recovery) | `gameReducer.ts` (three recovery cases) |
+| `task_completed` | Task's `completionTime` is reached | `taskType`, `assetsUsed`, `completionTime` (**the task's own completion time — what scoring charges against**, not the tick that noticed it), `detectedAtElapsed` (the tick that noticed; equal to within a frame unless the sim clock was throttled), `startTime`, `travelTime`, `baseTime`, `useSubstitute`, `rewardEarned`, `waitFromMissionArrival` | `gameReducer.ts` TICK step 3 |
+| `task_failed` | Task fails (section safety net, recall, abandon, session end, tactical lockout) | `reason` (`asset_recalled`/`session_ended`/`drone_failure`/`tactical_lockout`/`scheduling_deadlock`/`mission_abandoned`), `taskType`, `statusBefore` (what it was doing when it died — `pending` means never dispatched), `assignedAssetIds`, `startTime`, `rewardForgone`, `waitFromMissionArrival`. All five sites go through `taskFailedPayload()` so they log identically | `gameReducer.ts` (TICK step 3 / 3b, `ABANDON_MISSION`, `RECALL_ASSET`, `endSession`) |
 | `lockout_detected` | Live cross-drone scheduling deadlock detected + acted on (TICK step 3c) | `taskIds`, `droneIds`, `resolution` (`rerouted` when `fixLockouts` on = agent auto-fix; `help_needed` when off = surfaced to operator for recovery) | `gameReducer.ts` step 3c |
 | `asset_recalled` | Operator manually recalls a drone | `assetId`, `missionId`, `taskId` | `gameReducer.ts:1960` |
 | `task_reprioritised` | Operator reorders the task queue | `taskId`, `newPosition` | `gameReducer.ts:2067`, `:2089` |
 | `mission_abandoned` | `ABANDON_MISSION`, or a stuck scheduling deadlock when `fixLockouts` is off (TICK step 3c) | `completedTaskCount`, `remainingTaskCount` | `gameReducer.ts:1925`, step 3c |
-| `trust_probe` / `trust_probe_dismissed` | Periodic trust/workload probe answered or dismissed | `trust`, `workload` | `gameReducer.ts:2099`, `:2105` |
+| `state_snapshot` | Every `STATE_SNAPSHOT_INTERVAL` (10 s) of elapsed time, on a fixed grid | Full dump: every mission (status/times/strategy/interaction/recovery flags/per-mission penalty so far/all tasks with status+drones+times/`droneSequences`) and every drone (status/mission/task/interpolated x,y). Emitted on an elapsed-time grid so a coarse or throttled tick can't skip one, and a long tick emits at most one catch-up rather than a burst | `gameReducer.ts` TICK step 5b |
+| `recovery_opened` | A mission enters "help needed" — drone failure (non-graceful) or a surfaced lockout | `recoveryReason`, `failedDroneId`/`failedDroneType`, `affectedTaskIds`/`affectedTaskTypes`, `onMissionDroneIds` (what the recovery planner offers), `reserveAvailable`, `feasibleWithOnMissionDrones`, `tasksRemaining` | TICK failure handler, TICK step 3c (lockout), `FORCE_DRONE_FAILURE` |
+| `trust_probe` / `trust_probe_dismissed` | Periodic trust/workload probe answered or dismissed | `trust`, `workload` | `gameReducer.ts:2099`, `:2105` — **NOTE: currently unreachable, see Known gaps** |
 | `survey_response` | Any NASA-TLX / trust / TAM survey page submitted | `surveyName`, `responses` (raw Likert/slider values) | `gameReducer.ts:2112` |
 | `session_ended` | Session timer expires, or `FORCE_SESSION_END` (testing/tutorial) | `score`, `penaltyAccrued`, `completionPoints`, `greenEfficiency`, `meanMissionTime`, `agentFollowRate`, `tacticalFollowRate`, `reason` (`'timer'`\|`'forced'`), `inFlightMissionIds` | `gameReducer.ts:2387` inside `endSession(s, reason)` |
 
@@ -113,6 +132,12 @@ agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
 - **RQ1 (performance benefit)** — `session_ended` (score/penalty/completion/green
   efficiency/mean mission time) compared across condition (HH/LH/HL/LL), joined with
   `session_start.epsilonStrategic/epsilonTactical` to confirm the realised condition.
+  At mission granularity, `mission_completed` now carries its own outcome AND the decisions that
+  produced it (`chosenStrategyName`, `agentInteraction`, `outcome`, `timeToAllocate`,
+  `durationFromAllocation`, `rewardEarned` vs `maxReward`), so "did agent-followed allocations
+  outperform manual ones?" is a single-event query rather than a multi-event join. Scoring is
+  exactly reconstructible from the log: penalty accrues to `task_completed.completionTime` for
+  completed tasks and to `session_ended.elapsed` for anything still unfinished.
 - **RQ2 (selective use)** — `strategic_choice.wasAgentSuggestion` /
   `agentSuggestionWasBad` vs `strategic_modal_opened.strategiesPresented[].isBadSuggestion`
   lets you check whether operators selectively reject bad suggestions specifically (not
@@ -141,6 +166,17 @@ agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
   `latencyMs` and follow/override behavior against `session_start.complexity` and
   `mission_arrived.category` (mission size proxy).
 - **RQ4 (observation of failures / override quality / automation bias)** —
+  the failure loop is now logged in three parts: `drone_failure`/`lockout_detected` (it happened)
+  → `recovery_opened` (**what the operator was shown**: affected tasks, the drones the planner
+  offered, reserve, and `feasibleWithOnMissionDrones` — which separates "failed to fix a fixable
+  problem" from "nothing could be done") → `failure_recovery` (what they did, with `latencyMs`
+  from the opening and `tasksStillUnassigned` for an incomplete fix). Override *quality* at the
+  tactical tier is `tactical_confirmed.agentProjectedCompletion` vs `finalProjectedCompletion`
+  (was the override actually better?) plus `unassignedTaskIds` (did the override strand a task?).
+  `tactical_opened.hasTacticalError` records the ε_T draw per mission **whether or not it ever
+  manifests**, which is what separates agent accuracy from operator detection — previously an
+  injected error was only visible if it happened to surface as a later `task_failed`.
+  Original pairing detail:
   `drone_failure` → `failure_recovery` pairs (`wasAgentSuggested` flags whether the
   recovery used the agent's plan — either a pre-computed `ACCEPT_RECOVERY` option, or the
   recovery planner's "Suggest" button in a `CONFIRM_FAILURE_RECOVERY`; also set on
@@ -164,12 +200,12 @@ silently forgotten:
   (the map window stays a pure client — it sends an intent, the host reducer logs it, no client
   state mutation, so CLAUDE.md #5 holds). Replays the full build path; `tactical_confirmed` still
   records the final plan.
-- **Per-card reveal timestamps** — the strategic cards reveal on a 4–5 s delay driven by
-  `Math.random()` in `PrimaryDisplay.tsx` (not the seeded RNG), so the exact moment each card
-  became visible is neither reproducible nor logged. `strategic_choice.cardsLoadedAtManualSwitch`
-  gives a count but not per-card times; computing "latency from card-appearance to choice" exactly
-  would need the reveal to dispatch an action (or be seeded). Choice latency is still measured from
-  modal-open (`latencyMs`). Deliberately left minor per researcher.
+- **Per-card reveal timestamps** — now IMPLEMENTED. The 4–5 s reveal delay is drawn from the seeded
+  RNG (`drawCardRevealDelays`, seeded per mission id) and logged per card as
+  `strategic_modal_opened.strategiesPresented[].revealDelayMs`, with
+  `strategic_choice.cardRevealDelaysMs` + `deployEnabledAtMs` recording the gate. So
+  `latencyMs − deployEnabledAtMs` = operator deliberation, net of the forced wait.
+  `deployEnabledAtMs` is 0 for a manual choice (manual allocation was never gated).
 - **Cross-window attention/focus tracking** (`panel_focus_change` or similar) — blocked
   by the architectural rule that the map window (`?view=map`) is a BroadcastChannel
   *client* and must never mutate shared state (see `CLAUDE.md` constraint #5). Doing
@@ -179,11 +215,34 @@ silently forgotten:
   just a missing log.
 - **`infeasibleAttempted` flag** (operator attempts an allocation that's infeasible) —
   needs UI instrumentation in `PrimaryDisplay.tsx`/`MapDisplay.tsx`, not just a reducer event.
-- **Standalone `recovery_opened` event** — currently `failure_recovery` only fires on
-  the *resolution* of a recovery, not when the options are first presented. Low priority
-  since `drone_failure` already timestamps when recovery became necessary.
-- **Git/build provenance in the export** — the downloaded JSON doesn't embed a commit
-  hash or build identifier. Useful for "which code version produced this data" audits.
+- **Standalone `recovery_opened` event** — now IMPLEMENTED (see the inventory). Fires for both
+  the drone-failure and surfaced-lockout paths, and `failure_recovery.latencyMs` pairs back to it.
+- **Git/build provenance in the export** — partially addressed: `session_start` now carries
+  `appVersion` (a hand-maintained constant, `APP_VERSION` in `gameReducer.ts` — bump it when
+  scoring/generation/agent behaviour changes), `userAgent`, and `viewport`. A real git commit hash
+  would need a Vite `define` injection at build time; still outstanding.
+
+### Reachable-but-dead instrumentation (declared, never fires)
+
+These event types and enum members exist in the schema but no UI path dispatches them. They are
+**not** logging bugs — each needs a UI/design decision, so they are listed rather than silently
+"fixed" with logging that could never fire:
+
+- **`trust_probe` / `trust_probe_dismissed`** — the reducer schedules the probe on a 90 s cadence
+  (`TRUST_PROBE_INTERVAL`, `state.trustProbeActive`) but `TrustProbeModal.tsx` is never imported or
+  rendered, so no probe is ever shown or answered. This is the study's only *in-session* trust
+  measure; mounting it is a study-design decision (it interrupts the operator, which also feeds
+  into the NASA-TLX workload rating), not a logging change.
+- **`asset_recalled`** and `task_failed`/`'asset_recalled'` — `RECALL_ASSET` is fully implemented in
+  the reducer but dispatched from nowhere.
+- **`task_reprioritised`** — `REPRIORITISE_TASK` is implemented and `GameShell` relays a
+  `REPRIORITISE_TOP` map action, but `MapDisplay` binds the prop as `_onReprioritiseTop` and never
+  calls it.
+- **`failure_recovery.recoveryType` `'reserve'` / `'redistribute'`**, and `RecoveryOption.type
+  'reserve'` — `ACCEPT_RECOVERY`/`APPLY_MANUAL_RECOVERY` are only reachable via BroadcastChannel
+  messages the map window never posts, so in practice every recovery logs `'manual'`.
+- **`task_failed`/`'scheduling_deadlock'`** — the lockout path logs `lockout_detected` plus
+  `'mission_abandoned'`/`'session_ended'` failures instead.
 - **True random UUIDs for `sessionId`** — currently deterministic
   (`participantId_seed_sN`), which means re-running the exact same participant/seed/session
   combination (e.g., a researcher testing the same URL twice) produces a colliding
@@ -227,4 +286,25 @@ before trusting the paper's description of the system:
    reproducible from the log alone.
 5. Run `npx tsc --noEmit -p .` — the `EventPayload` distributive-omit type in
    `gameReducer.ts` will fail to compile if your new event type doesn't extend
-   `BaseEvent` correctly, which catches most mistakes here.
+   `BaseEvent` correctly, which catches most mistakes here. If you add an envelope field, add it
+   to that `Omit<...>` list too, or every call site will demand it.
+6. Prefer logging a **fact at the moment it happens** over deriving it later from component
+   state. Recovery-planner "Suggest" consultation was originally carried only as
+   `wasAgentSuggested` on the resolution event — React state that gets reset whenever the
+   mission's pending pool changes (another task completing mid-recovery), which silently lost the
+   consultation. It now emits `tactical_suggest_used` with `recoveryMode: true` on the click.
+
+## Log volume
+
+With `state_snapshot` at 10 s, expect roughly **0.5–1 MB per 8-minute session** (an observed
+3-minute single-mission session was 79 KB; it scales with concurrent missions). Two consequences:
+
+- The end-of-session `localStorage` autosave in `GameShell.tsx` is wrapped in a `try/catch` that
+  silently ignores quota errors. Three large sessions plus the ~5 MB origin quota is not a
+  comfortable margin — if you raise the snapshot rate or session length, verify the backup still
+  writes rather than assuming it did.
+- The export is a client-side JSON download, so file size itself is not a constraint.
+
+Snapshots are emitted on an **elapsed-time grid**, not per tick: a coarse or throttled tick
+(a backgrounded primary window throttles `requestAnimationFrame`, which pauses the sim clock)
+emits at most one catch-up snapshot rather than a burst.

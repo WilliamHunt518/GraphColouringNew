@@ -792,6 +792,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
       if (pendingIds.length > 0 && pendingIds.every(meetsComp)) {
         setDroneChainOrder({})            // untangle in place — canonical order is acyclic
         setRecoverySuggestUsed(true)
+        if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_SUGGEST', missionId: mission.id, recoveryMode: true })
         document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
         return
       }
@@ -837,11 +838,11 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     }
     setSuggestQueue(entries)
     document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
-    // Log that the operator consulted the tactical agent (planner starts empty; this is
-    // the only way the agent's plan enters it). Skip in recovery/read-only/override views —
-    // recovery consultation is recorded via wasAgentSuggested on the failure_recovery event.
-    if (!recoveryMode && !readOnly) {
-      onMapAction({ _mapAction: 'TACTICAL_SUGGEST', missionId: mission.id })
+    // Log that the operator consulted the tactical agent (the planner starts empty; this is the
+    // only way the agent's plan enters it). Recovery consultation is logged here too: relying on
+    // `recoverySuggestUsed` alone lost it whenever the pending pool changed mid-recovery.
+    if (!readOnly) {
+      onMapAction({ _mapAction: 'TACTICAL_SUGGEST', missionId: mission.id, recoveryMode })
     }
   }
 
