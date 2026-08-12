@@ -12,6 +12,14 @@
 #        record-screens.bat -Mic none        (record video only)
 #
 #  Stop the recording by clicking this window and pressing  q  (clean finish).
+#
+#  IF THIS FAILS ON A DIFFERENT MACHINE, read docs/RECORDING.md first.
+#  It has the diagnostic commands and the ranked failure modes. The most likely
+#  one is the encoder: the NVENC choice below (~line 91) is not guarded, so on a
+#  machine without an NVIDIA GPU ffmpeg dies immediately with "Cannot load
+#  nvcuda.dll". The doc carries a ready-to-paste probe-and-fall-back block.
+#  Note that `ffmpeg -encoders` does NOT tell you what works — it lists what the
+#  build was compiled with. Use the runtime probe in the doc.
 # ============================================================================
 param([string]$Mic = '')
 

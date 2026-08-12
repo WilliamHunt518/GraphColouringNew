@@ -44,6 +44,24 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=standard&seed=42
 - Primary window: `http://localhost:5173/` (default view)
 - Map window: `http://localhost:5173/?view=map` — receives state via BroadcastChannel
 
+**Note:** the primary window drives the simulation clock from `requestAnimationFrame`, so it must
+stay **visible**. If it is minimised or hidden behind another window the browser throttles rAF and
+the session clock stalls (the map window keeps its last broadcast state and looks frozen). On a
+single screen, put the two windows side by side rather than tabbed.
+
+## Screen + mic recording
+
+`scripts\record-screens.bat` records all monitors + cursor + mic to one MP4. Geometry and mic are
+auto-detected; `-Mic "<substring>"` forces a device, `-Mic none` records video only. Press `q` to
+stop cleanly.
+
+**It is environment-dependent and was developed on a different machine than the study is run on
+(desktop w/ HyperX mic + NVIDIA GPU vs laptop).** If it fails on the study machine, read
+[`docs/RECORDING.md`](docs/RECORDING.md) — it has the three diagnostic commands, the ranked failure
+modes with `file:line` references, and a ready-to-paste patch for the most likely one (no NVIDIA
+GPU ⇒ the hard-coded NVENC encoder fails and needs a fallback). Do not diagnose the encoder with
+`ffmpeg -encoders`; it lists compiled support, not usable hardware.
+
 ## Architecture
 
 ### Study Design
