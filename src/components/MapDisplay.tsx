@@ -715,7 +715,14 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         document.dispatchEvent(new CustomEvent('tutorial-drone-assigned'))
         return { ...prev, [droneId]: [taskId] }
       } else {
-        const existing = prev[droneId] ?? []
+        // Seed from the drone's CURRENT effective sequence when it has no explicit chain order
+        // yet — the same fallback `droneSequences` uses. "Suggest" fills `assignments` without
+        // ever touching `droneChainOrder`, so chaining a Suggest-placed drone used to rewrite its
+        // whole sequence as just [taskId], silently dropping the task it was already on:
+        // buildManualAssignments only schedules tasks that appear in some drone's sequence, so
+        // that task was committed with no start time and never dispatched (the planner still
+        // showed it staffed and Deploy stayed enabled).
+        const existing = prev[droneId] ?? pending.taskOrder.filter(tid => (assignments[tid] ?? []).includes(droneId))
         if (existing.includes(taskId)) return prev
         document.dispatchEvent(new CustomEvent('tutorial-drone-chained'))
         return { ...prev, [droneId]: [...existing, taskId] }
