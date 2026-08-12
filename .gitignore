@@ -11,3 +11,9 @@ study_data_*.json
 .DS_Store
 Thumbs.db
 api_key.txt
+
+# Synthetic pilot cohort — regenerate deterministically with
+#   npx tsx sim/pilot-run.mts --participants=24
+# The exports are ~3 MB each; the generated report and summary are committed instead.
+logs/Pilots/auto/study_P-SIM*.json
+logs/Pilots/auto/figs/
