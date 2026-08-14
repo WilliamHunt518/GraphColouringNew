@@ -7,6 +7,7 @@ import type { GameState, Asset, Mission } from '../types'
 export interface TutorialGateState {
   assets: Asset[]
   missions: Mission[]
+  strategicModal: { missionId: string } | null
 }
 
 /** The mission currently flagged for failure/lockout recovery, if any. */
@@ -266,6 +267,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     allowClickThrough: true,
     mustInteract: true,
     autoAdvanceWhen: state => state.missions.some(m => m.tacticalPending),
+    unsatisfiableWhen: s => !s.strategicModal && !s.missions.some(m => m.tacticalPending),
+    unsatisfiableHint: 'The allocation panel is closed and nothing was committed — click Next, or re-open it from the mission card.',
     forceManual: true,
     spotlightPadding: 8,
   },
@@ -695,6 +698,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     allowClickThrough: true,
     mustInteract: true,
     autoAdvanceWhen: state => state.missions.filter(m => m.tacticalPending).length >= 1,
+    // Safety net: if the allocation panel is gone and nothing was committed, this step's action
+    // can no longer be performed — its spotlight target does not exist either.
+    unsatisfiableWhen: s => !s.strategicModal && !s.missions.some(m => m.tacticalPending),
+    unsatisfiableHint: 'The allocation panel is closed and nothing was committed — click Next, or re-open it from the mission card.',
     spotlightPadding: 6,
     forceAgent: true,
   },

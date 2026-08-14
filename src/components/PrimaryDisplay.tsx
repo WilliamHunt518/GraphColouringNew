@@ -126,11 +126,13 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
   // lesson means the mission it just spawned: the abort lesson leaves a residual behind that sorts
   // first, and the spotlight overlay blocks every other card — so "Allocate the Second Mission"
   // pointed at the 1-task residual and the operator could not reach the intended mission at all.
+  // "Newest" is resolved by SPAWN ORDER (state.missions is append-only), not arrivalTime: two
+  // missions forced into the same tick share an arrivalTime, and a `>` comparison then silently
+  // kept the older one.
+  const newestQueued = [...state.missions].reverse().find(m => m.status === 'queued')
   const tutorialAnchorId = sortedQueued.length === 0
     ? null
-    : (tutorialAnchorNewest
-        ? sortedQueued.reduce((best, m) => (m.arrivalTime > best.arrivalTime ? m : best)).id
-        : sortedQueued[0].id)
+    : (tutorialAnchorNewest ? (newestQueued?.id ?? sortedQueued[0].id) : sortedQueued[0].id)
 
   const completionPoints = state.missions.flatMap(m => m.tasks)
     .filter(t => t.status === 'completed')
@@ -464,6 +466,8 @@ function MissionCard({ mission, state, dispatch, isTutorialFirst, tutorialForceM
 // ─── Strategic panel ──────────────────────────────────────────────────────
 
 function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForceManual, tutorialForceAgent }: { modal: StrategicModal; state: GameState; dispatch: (a: GameAction) => void; isTutorialFirst?: boolean; tutorialForceManual?: boolean; tutorialForceAgent?: boolean }) {
+  // Those two flags mark exactly the tutorial steps that require this panel to stay open.
+  const tutorialLockPanel = !!tutorialForceManual || !!tutorialForceAgent
   const isAgent = state.config.mode === 'agent'
   // Auto-enter manual mode when there are no agent strategies (depleted reserve)
   const [showManual, setShowManual] = useState(!isAgent || modal.strategies.length === 0)
@@ -597,7 +601,13 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
           className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 rounded text-white text-sm font-semibold transition-colors">
           {showAgentCards ? 'Deploy Selected' : 'Deploy'}
         </button>
-        {confirmCancel ? (
+        {/* Dismissing is hidden while a tutorial step depends on this panel staying open (the same
+            steps that already lock the operator into the manual or agent flow). Dismissing there
+            closed the panel out from under the lesson: the step's spotlight target disappeared and
+            "Select a Strategy & Deploy" could never be satisfied, or the operator carried on and
+            allocated a different mission by hand — completing the step without ever choosing a
+            strategy, which is the whole point of that lesson. */}
+        {!tutorialLockPanel && (confirmCancel ? (
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-amber-400">Mission stays unallocated.</span>
             <button onClick={() => dispatch({ type: 'CLOSE_STRATEGIC' })}
@@ -614,7 +624,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-sm transition-colors">
             Cancel
           </button>
-        )}
+        ))}
       </div>
     </div>
   )
