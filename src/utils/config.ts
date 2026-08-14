@@ -40,6 +40,20 @@ export function parseURLConfig(): StudyConfig | null {
   }
 }
 
+/**
+ * Single source of truth for the lockout policy.
+ *
+ * Default is OFF = "help needed": a scheduling deadlock is surfaced to the operator in red and
+ * they re-plan or abandon it. `?fixLockouts=1` (or the StartScreen checkbox) turns on the agent's
+ * silent reroute. Both real entry points already set the flag explicitly; this helper only decides
+ * what an OMITTED flag means, and it used to disagree in three places — `gameReducer` read
+ * `!== false` (auto-fix ON), `Tutorial.tsx` read it as plain-falsy (auto-fix OFF), and the
+ * `session_start` log recorded the reducer's reading, so the log could contradict the behaviour.
+ */
+export function isFixLockouts(cfg: { fixLockouts?: boolean }): boolean {
+  return cfg.fixLockouts === true
+}
+
 // Canonical study seed. Every participant who doesn't explicitly override the seed
 // (Randomise button or ?seed= URL param) gets this exact run — same mission sequence,
 // zones, task compositions, and failure schedule. Edit here to change the canonical scenario.

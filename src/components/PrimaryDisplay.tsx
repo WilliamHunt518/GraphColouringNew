@@ -16,6 +16,8 @@ interface Props {
   setOpenMissionId: (id: string | null) => void
   tutorialForceManual?: boolean
   tutorialForceAgent?: boolean
+  /** Anchor the tutorial spotlight on the NEWEST queued mission rather than the topmost one. */
+  tutorialAnchorNewest?: boolean
 }
 
 // ─── Colour / label helpers ────────────────────────────────────────────────
@@ -100,7 +102,7 @@ function penaltyUrgency(penaltyPts: number): UrgencyLevel {
 
 // ─── Top-level ────────────────────────────────────────────────────────────
 
-export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tutorialForceManual, tutorialForceAgent }: Props) {
+export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tutorialForceManual, tutorialForceAgent, tutorialAnchorNewest }: Props) {
   const [sortMode, setSortMode] = useState<'arrival' | 'score'>('arrival')
   const queued  = state.missions.filter(m => m.status === 'queued')
   const active  = state.missions.filter(m => m.status === 'active')
@@ -113,6 +115,22 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
   }
   const sortedQueued = sortMode === 'score' ? sortByScore(queued) : queued
   const sortedActive = sortMode === 'score' ? sortByScore(active) : active
+
+  // A queued mission whose team is already committed and flying is still `status: 'queued'` —
+  // it only turns active once the tactical plan is confirmed. Listing it under "awaiting
+  // allocation" contradicted its own card, which reads "Tactical allocation pending".
+  const awaitingAlloc     = sortedQueued.filter(m => !m.tacticalPending)
+  const awaitingTactical  = sortedQueued.filter(m => m.tacticalPending)
+
+  // Which queued card the tutorial spotlight attaches to. Normally the topmost one, but the agent
+  // lesson means the mission it just spawned: the abort lesson leaves a residual behind that sorts
+  // first, and the spotlight overlay blocks every other card — so "Allocate the Second Mission"
+  // pointed at the 1-task residual and the operator could not reach the intended mission at all.
+  const tutorialAnchorId = sortedQueued.length === 0
+    ? null
+    : (tutorialAnchorNewest
+        ? sortedQueued.reduce((best, m) => (m.arrivalTime > best.arrivalTime ? m : best)).id
+        : sortedQueued[0].id)
 
   const completionPoints = state.missions.flatMap(m => m.tasks)
     .filter(t => t.status === 'completed')
@@ -252,11 +270,22 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
                 </button>
               </div>
             )}
-            {queued.length > 0 && (
+            {awaitingAlloc.length > 0 && (
               <section>
                 <SectionLabel text="Incoming — awaiting allocation" dot="bg-amber-400" />
-                {sortedQueued.map((m, i) => (
-                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} isTutorialFirst={i === 0} tutorialForceManual={i === 0 ? tutorialForceManual : undefined} tutorialForceAgent={i === 0 ? tutorialForceAgent : undefined} />
+                {awaitingAlloc.map(m => {
+                  const anchored = m.id === tutorialAnchorId
+                  return (
+                    <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} isTutorialFirst={anchored} tutorialForceManual={anchored ? tutorialForceManual : undefined} tutorialForceAgent={anchored ? tutorialForceAgent : undefined} />
+                  )
+                })}
+              </section>
+            )}
+            {awaitingTactical.length > 0 && (
+              <section className={awaitingAlloc.length > 0 ? 'mt-4' : ''}>
+                <SectionLabel text="Committed — awaiting tactical plan" dot="bg-yellow-400" />
+                {awaitingTactical.map(m => (
+                  <MissionCard key={m.id} mission={m} state={state} dispatch={dispatch} isTutorialFirst={m.id === tutorialAnchorId} />
                 ))}
               </section>
             )}
@@ -695,9 +724,17 @@ function ManualCountPicker({ allocation, reserve, tasks, onChange }: {
         )
       })}
       <div className="text-xs text-gray-400">
+        {/* An infinite ETA means this allocation cannot finish the mission at all. That happens
+            whenever a required type is missing from the allocation — including the opening state
+            where nothing has been picked yet — so say what is actually wrong rather than blaming
+            other missions. */}
         {eta < Infinity
           ? <>ETA: <span className="text-white">{fmtTime(eta)}</span></>
-          : <span className="text-red-400">Waiting for other missions to complete</span>
+          : <span className="text-red-400">
+              {allocation.Blue + allocation.Red + allocation.Green === 0
+                ? 'Add drones to see an ETA'
+                : "This team can't cover every task"}
+            </span>
         }
       </div>
     </div>

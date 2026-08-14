@@ -1,4 +1,24 @@
-import type { GameState } from '../types'
+import type { GameState, Asset, Mission } from '../types'
+
+/**
+ * The slice of state a step gate may inspect. Deliberately structural so the same predicate
+ * works from the primary window (`GameState`) and the tactical window (`MapViewState`).
+ */
+export interface TutorialGateState {
+  assets: Asset[]
+  missions: Mission[]
+}
+
+/** The mission currently flagged for failure/lockout recovery, if any. */
+function recoveringMission(s: TutorialGateState): Mission | undefined {
+  return s.missions.find(m => m.failureRecoveryPending)
+}
+
+/** Drones still deployed on that mission — the only pool a recovery plan may draw on. */
+function hasRecoveryDrones(s: TutorialGateState): boolean {
+  const m = recoveringMission(s)
+  return !!m && s.assets.some(a => a.currentMissionId === m.id && a.status === 'deployed')
+}
 
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
 export const TACTICAL_STEP_FIRST = 16
@@ -38,6 +58,16 @@ export interface TutorialStep {
   autoAdvanceWhen?: (state: GameState) => boolean
   /** Delay in ms before auto-advancing (default 500) */
   autoAdvanceDelay?: number
+  /**
+   * Escape hatch for `mustInteract` steps: returns true when the required action has become
+   * IMPOSSIBLE in the current state (the mission was abandoned, the recovery pool is empty, the
+   * demo failure can no longer fire…). The tutorial then shows a Next button plus
+   * `unsatisfiableHint` instead of trapping the operator on a step with no way forward.
+   * Keep these conservative — only true when the step genuinely cannot be completed.
+   */
+  unsatisfiableWhen?: (state: TutorialGateState) => boolean
+  /** Replaces the mustInteract hint once `unsatisfiableWhen` fires. */
+  unsatisfiableHint?: string
   spotlightPadding?: number
   /** Suppress ALL dim/spotlight overlay — card floats freely, full UI visible and interactive */
   noOverlay?: boolean
@@ -311,8 +341,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tac-header',
     title: 'Planner Header',
     body: [
-      'The header shows the mission ID, category, and mode. The buttons on the right let you Reset assignments, ask the agent to re-Suggest, change the drone team (Change Team), or deploy.',
-      '"Drag → assign · Shift+drag → chain" summarises the controls — we will practise these shortly.',
+      'The header shows the mission ID, category, and mode. The buttons on the right let you Reset the assignments, ask the Tactical Assistant to Suggest a plan, or Abort Mission. Deploy sits at the foot of the schedule panel on the right.',
+      '"Drag → assign · Shift+drag → chain · hover a drone for its full path" summarises the controls — we will practise these shortly.',
     ],
     highlight: 'tac-header',
     cardSide: 'bottom',
@@ -451,6 +481,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     mustInteractHint: 'Waiting for the failure to trigger — this step advances automatically.',
     autoAdvanceWhen: state => state.missions.some(m => m.failureRecoveryPending),
     autoAdvanceDelay: 1200,
+    // If the mission finished before the demo failure landed, no failure can ever arrive.
+    unsatisfiableWhen: s => !s.missions.some(m => m.status === 'active' || m.failureRecoveryPending),
+    unsatisfiableHint: 'The mission finished before the fault could trigger — click Next to carry on.',
   },
 
   // ── 30. failure-tac-view (TACTICAL inMapWindow, primary stays visible) ─────────
@@ -458,13 +491,15 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'failure-tac-view',
     title: 'Mission Failure Alert',
     body: [
-      'Mission 1 now has a red border and a "FAIL" badge in the queue. Click it to open its recovery plan.',
+      'Your mission now has a red border and a "FAIL" badge in the queue. Click it to open its recovery plan.',
     ],
     highlight: 'tac-mission-list',
     cardSide: 'right',
     allowClickThrough: true,
     mustInteract: true,
     mustInteractHint: 'Click the red-bordered mission in the queue to continue.',
+    unsatisfiableWhen: s => !s.missions.some(m => m.failureRecoveryPending),
+    unsatisfiableHint: 'There is no mission awaiting recovery any more — click Next to carry on.',
     inMapWindow: true,
     noOverlayOnPrimary: true,
   },
@@ -488,12 +523,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'failure-recovery-do',
     title: 'Reassign Now',
     body: [
-      'Drag an available drone onto the uncovered task circle, then click "Reassign ✓". The tutorial advances automatically once recovery is confirmed.',
+      'Drag an available drone onto the uncovered task circle — or click "Suggest" to let the Tactical Assistant propose a fix — then click "Reassign ✓". The tutorial advances automatically once recovery is confirmed.',
     ],
     cardSide: 'left',
     noOverlay: true,
     mustInteract: true,
-    mustInteractHint: 'Drag a drone to the uncovered task, then click "Reassign ✓".',
+    mustInteractHint: 'Drag a drone to the uncovered task (or click "Suggest"), then click "Reassign ✓".',
+    // Recovery may draw only on drones still deployed on that mission. If they have all finished
+    // and flown home there is nothing to drag and nothing for Suggest to place — the step cannot
+    // be completed and the operator would otherwise be stuck with only "Abandon Mission".
+    unsatisfiableWhen: s => !hasRecoveryDrones(s),
+    unsatisfiableHint: 'No drones from this mission are still on station, so the task cannot be covered — click Next, or abandon the mission.',
     inMapWindow: true,
   },
 
@@ -503,7 +543,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Why Redundancy Matters',
     body: [
       'Failures like that happen in the real session too. Allocating extra drones above the mission minimum creates a buffer — one failure still leaves the task coverable.',
-      "The Strategic Assistant's Aggressive strategy always includes one redundant drone per type. In the manual picker the \"N can fail\" hint shows the same buffer for your own allocation.",
+      "The Strategic Assistant's Aggressive strategy always includes one redundant drone per type. The manual picker shows the same buffer for your own allocation next to each row — \"1 can fail\" when you have a spare, \"no spare\" when you are on the bare minimum.",
     ],
     cardSide: 'center',
   },
@@ -537,6 +577,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     allowClickThrough: true,
     mustInteract: true,
     mustInteractHint: 'Click the red-bordered mission in the queue to open its recovery plan.',
+    unsatisfiableWhen: s => !s.missions.some(m => m.failureRecoveryPending),
+    unsatisfiableHint: 'No mission is awaiting recovery (the earlier one was already resolved or abandoned) — click Next to carry on.',
     inMapWindow: true,
     noOverlayOnPrimary: true,
   },
@@ -554,6 +596,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     mustInteract: true,
     mustInteractHint: 'Click "Abandon Mission" at the bottom of the recovery panel.',
     autoAdvanceWhen: state => state.missions.some(m => m.status === 'abandoned'),
+    unsatisfiableWhen: s => !s.missions.some(m => m.failureRecoveryPending),
+    unsatisfiableHint: 'There is no mission left to abort — click Next to carry on.',
     inMapWindow: true,
     noOverlayOnPrimary: true,
   },
@@ -662,7 +706,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tac-suggest-intro',
     title: 'The Tactical Assistant',
     body: [
-      'Mission 2 is waiting for tactical planning. This time, instead of assigning drones manually, you will use the Tactical Assistant.',
+      'The mission you just allocated is waiting for tactical planning. This time, instead of assigning drones manually, you will use the Tactical Assistant.',
       'The agent fills in all drone-to-task assignments automatically. You can then accept the plan or drag to override individual assignments before deploying.',
     ],
     cardSide: 'center',
@@ -672,15 +716,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // ── 40. Select mission 2 in the tactical queue ───────────────────────────────
   {
     id: 'tac-select-m2',
-    title: 'Select Mission 2',
+    title: 'Select the New Mission',
     body: [
-      'Mission 2 is waiting in the queue with a yellow border. Click it to open its plan in the planner.',
+      'The mission you just allocated is waiting in the queue with a yellow border. Click it to open its plan in the planner.',
     ],
     highlight: 'tac-mission-list',
     cardSide: 'right',
     allowClickThrough: true,
     mustInteract: true,
-    mustInteractHint: 'Click mission 2 in the queue to continue.',
+    mustInteractHint: 'Click the yellow-bordered mission in the queue to continue.',
+    unsatisfiableWhen: s => !s.missions.some(m => m.tacticalPending),
+    unsatisfiableHint: 'No mission is waiting for tactical planning — click Next to carry on.',
     inMapWindow: true,
   },
 

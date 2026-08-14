@@ -23,8 +23,8 @@ function clamp(min: number, val: number, max: number) {
   return Math.max(min, Math.min(max, val))
 }
 
-function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: number) {
-  const centeredTop  = clamp(MARGIN, (vh - CARD_H_EST) / 2, vh - CARD_H_EST - MARGIN)
+function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: number, cardH: number) {
+  const centeredTop  = clamp(MARGIN, (vh - cardH) / 2, vh - cardH - MARGIN)
   const centeredLeft = clamp(MARGIN, (vw - CARD_W)    / 2, vw - CARD_W    - MARGIN)
   if (side === 'center') return { top: centeredTop, left: centeredLeft }
   if (!spot) {
@@ -41,19 +41,23 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
     if (left < MARGIN) left = spot.right + GAP
   } else if (side === 'bottom') {
     top = spot.bottom + GAP; left = spot.left
-    if (top + CARD_H_EST > vh - MARGIN) top = spot.top - CARD_H_EST - GAP
+    if (top + cardH > vh - MARGIN) top = spot.top - cardH - GAP
   } else {
-    top = spot.top - CARD_H_EST - GAP; left = spot.left
+    top = spot.top - cardH - GAP; left = spot.left
     if (top < MARGIN) top = spot.bottom + GAP
   }
   return {
-    top:  clamp(MARGIN, top,  vh - CARD_H_EST - MARGIN),
+    top:  clamp(MARGIN, top,  vh - cardH - MARGIN),
     left: clamp(MARGIN, left, vw - CARD_W - MARGIN),
   }
 }
 
 export default function TacticalTutorial({ state, step, onNext, onBack, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
+  // Measured card height — see the same note in Tutorial.tsx; the fixed estimate let tall
+  // cards run off the bottom of the viewport.
+  const [cardH, setCardH] = useState(CARD_H_EST)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const [suggestLoading, setSuggestLoading] = useState(false)
   const chainCountRef        = useRef(0)
   const sawFailurePendingRef = useRef(false)
@@ -61,6 +65,11 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
 
   const current = TUTORIAL_STEPS[step]
   const blockedOnSuggest = !!current?.waitForSuggest && suggestLoading
+  // Same escape hatch as the primary window: a mustInteract step whose action has become
+  // impossible (no mission awaiting recovery, no drones left to reassign…) gets a Next button
+  // rather than trapping the operator with only "Skip tutorial".
+  const stuck = !!current?.mustInteract && !!current.unsatisfiableWhen && current.unsatisfiableWhen(state)
+  const gated = !!current?.mustInteract && !stuck
 
   // Listen for the Tactical Planner's Suggest-animation state (broadcast via DOM event since
   // MapDisplay and TacticalTutorial are sibling trees with no shared props).
@@ -70,9 +79,11 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     return () => document.removeEventListener('tutorial-suggest-loading', handler)
   }, [])
 
-  // Primary-window steps: let the map show normally so the user has context.
-  // (The primary window already shows a full grey overlay directing them here.)
-  if (!current?.inMapWindow) return null
+  // Primary-window steps render nothing here (the primary window shows a grey overlay directing
+  // the operator back). The bail-out happens at the END of the component, after every hook: an
+  // early return here would change the hook count between renders the moment the step crosses
+  // between windows, which React rejects outright.
+  const inMapWindow = !!current?.inMapWindow
 
   // Hide Back at the start of each tactical phase (when the preceding step is in the primary window)
   const isFirstTacStep = !(TUTORIAL_STEPS[step - 1]?.inMapWindow ?? false)
@@ -141,7 +152,8 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
-      if (current?.mustInteract) return
+      if (!inMapWindow) return
+      if (gated) return
       if (blockedOnSuggest) return
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
@@ -151,11 +163,11 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [step, current, isLastTacStep, blockedOnSuggest, onNext, onComplete])
+  }, [step, current, inMapWindow, isLastTacStep, gated, blockedOnSuggest, onNext, onComplete])
 
   // Track highlighted element rect
   const refreshSpot = useCallback(() => {
-    if (!current.highlight) { setSpot(null); return }
+    if (!current?.highlight) { setSpot(null); return }
     const el = document.querySelector(`[data-tutorial="${current.highlight}"]`)
     if (!el) { setSpot(null); return }
     const r   = el.getBoundingClientRect()
@@ -166,25 +178,45 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
       right:  Math.min(window.innerWidth,  r.right  + pad),
       bottom: Math.min(window.innerHeight, r.bottom + pad),
     })
-  }, [current.highlight, current.spotlightPadding])
+  }, [current?.highlight, current?.spotlightPadding])
 
   useEffect(() => {
     refreshSpot()
-    const el = current.highlight
+    const el = current?.highlight
       ? document.querySelector(`[data-tutorial="${current.highlight}"]`) : null
     const ro = new ResizeObserver(refreshSpot)
     if (el) ro.observe(el)
     window.addEventListener('resize', refreshSpot)
-    return () => { ro.disconnect(); window.removeEventListener('resize', refreshSpot) }
+    // Panels appear and disappear underneath the planner (recovery mode, Suggest filling the
+    // schedule), so re-measure on DOM changes too — otherwise the ring is left pointing at a
+    // stale rectangle, or at nothing.
+    const mo = new MutationObserver(refreshSpot)
+    mo.observe(document.body, { childList: true, subtree: true })
+    return () => { ro.disconnect(); mo.disconnect(); window.removeEventListener('resize', refreshSpot) }
   }, [refreshSpot])
+
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const measure = () => setCardH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [step, current?.id, inMapWindow])
+
+  if (!inMapWindow) return null
 
   const vw  = window.innerWidth
   const vh  = window.innerHeight
   const pct = ((step + 1) / TUTORIAL_STEPS.length) * 100
-  const cardPos = computeCardPos(spot, current.cardSide ?? 'center', vw, vh)
+  const cardPos = computeCardPos(spot, current.cardSide ?? 'center', vw, vh, cardH)
 
   const isTryIt = !!(current.tryIt && !current.mustInteract)
-  const dimOnly = isTryIt ? 'none' : 'auto'
+  // As in the primary window: a spotlight whose target isn't rendered must not leave the operator
+  // behind a full-screen blocking overlay.
+  const spotMissing = !!current.highlight && !spot
+  const dimOnly = (isTryIt || spotMissing) ? 'none' : 'auto'
 
   const portal = (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
@@ -212,7 +244,7 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
       ))}
 
       {/* Card */}
-      <div style={{
+      <div ref={cardRef} style={{
         position: 'fixed', top: cardPos.top, left: cardPos.left, width: CARD_W,
         zIndex: 9001, pointerEvents: 'auto', fontFamily: 'inherit',
       }}>
@@ -246,10 +278,12 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
               </ul>
             )}
           </div>
-          {/* mustInteract hint */}
+          {/* mustInteract hint — or, once the action has become impossible, why we're moving on */}
           {current.mustInteract && (
-            <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 6, fontSize: 12, color: '#fde68a', lineHeight: 1.5 }}>
-              {current.mustInteractHint ?? 'Perform the highlighted action to continue.'}
+            <div style={{ marginTop: 11, padding: '7px 10px', background: stuck ? 'rgba(148,163,184,0.10)' : 'rgba(251,191,36,0.1)', border: stuck ? '1px solid rgba(148,163,184,0.25)' : '1px solid rgba(251,191,36,0.25)', borderRadius: 6, fontSize: 12, color: stuck ? '#cbd5e1' : '#fde68a', lineHeight: 1.5 }}>
+              {stuck
+                ? (current.unsatisfiableHint ?? 'This step can no longer be completed — click Next to carry on.')
+                : (current.mustInteractHint ?? 'Perform the highlighted action to continue.')}
             </div>
           )}
           {/* tryIt hint */}
@@ -264,12 +298,15 @@ export default function TacticalTutorial({ state, step, onNext, onBack, onComple
               Skip tutorial
             </button>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {!isFirstTacStep && (
+              {/* Back is normally hidden at the start of a tactical phase (it would jump the
+                  operator back to the other window). Keep it when the step is gated and offers no
+                  Next, so there is always at least one way off the card besides Skip. */}
+              {(!isFirstTacStep || gated) && (
                 <button onClick={onBack} style={{ fontSize: 13, color: '#94a3b8', background: 'rgba(30,41,59,0.9)', border: '1px solid #334155', borderRadius: 7, padding: '7px 14px', cursor: 'pointer', lineHeight: 1, fontFamily: 'inherit' }}>
                   ← Back
                 </button>
               )}
-              {!current.mustInteract && (
+              {!gated && (
                 <button
                   onClick={isLastTacStep ? onComplete : onNext}
                   disabled={blockedOnSuggest}

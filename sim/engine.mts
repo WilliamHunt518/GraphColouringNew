@@ -136,6 +136,11 @@ function baseConfig(complexity: Complexity, seed: number): StudyConfig {
     participantId: 'SIM', condition: 'none', mode: 'agent', complexity, seed,
     agentErrorRate: 0, epsilonTactical: 0, tacticalMode: 'greedy',
     testingMode: false, tutorialMode: false, numSessions: 1,
+    // Explicit: this harness has no operator to answer a "help needed" lockout, so it keeps the
+    // agent's silent reroute. It used to get this implicitly from the reducer's old default for an
+    // omitted flag; that default is now OFF, matching the study. Calibration figures in
+    // docs/SCENARIOS.md were produced with auto-fix on, so pin it here to stay comparable.
+    fixLockouts: true,
   } as StudyConfig
 }
 

@@ -45,9 +45,15 @@ http://localhost:5173/?pid=P001&condition=HH&complexity=standard&seed=42
 - Map window: `http://localhost:5173/?view=map` — receives state via BroadcastChannel
 
 **Note:** the primary window drives the simulation clock from `requestAnimationFrame`, so it must
-stay **visible**. If it is minimised or hidden behind another window the browser throttles rAF and
-the session clock stalls (the map window keeps its last broadcast state and looks frozen). On a
-single screen, put the two windows side by side rather than tabbed.
+stay **visible**. If it is minimised or hidden behind another window the browser suspends rAF and
+the session pauses (the map window keeps its last broadcast state and looks frozen). On a single
+screen, put the two windows side by side rather than tabbed.
+
+`elapsed` is derived from the wall clock, so a suspended tick loop used to replay the whole gap in
+a single frame when the window came back — drones teleported, tasks completed and penalty accrued
+unseen. `MAX_TICK_GAP_MS` in `gameReducer.ts` now caps how much simulated time one TICK may
+advance and pushes `sessionStartMs` forward by the remainder, turning a stall into a genuine pause.
+The cap sits above every step size the headless harnesses use, so they are unaffected.
 
 ## Screen + mic recording
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
 import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP, ALLOCATION_OVERRIDE_STEP, ABORT_EXPLAIN_STEP } from '../utils/tutorialSteps'
+import { isFixLockouts } from '../utils/config'
 import TutorialText from './TutorialText'
 
 interface Props {
@@ -24,8 +25,8 @@ function clamp(min: number, val: number, max: number) {
   return Math.max(min, Math.min(max, val))
 }
 
-function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: number) {
-  const centeredTop  = clamp(MARGIN, (vh - CARD_H_EST) / 2, vh - CARD_H_EST - MARGIN)
+function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: number, cardH: number) {
+  const centeredTop  = clamp(MARGIN, (vh - cardH) / 2, vh - cardH - MARGIN)
   const centeredLeft = clamp(MARGIN, (vw - CARD_W)    / 2, vw - CARD_W    - MARGIN)
   if (side === 'center') return { top: centeredTop, left: centeredLeft }
   if (!spot) {
@@ -43,19 +44,23 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
     if (left < MARGIN) left = spot.right + GAP
   } else if (side === 'bottom') {
     top = spot.bottom + GAP; left = spot.left
-    if (top + CARD_H_EST > vh - MARGIN) top = spot.top - CARD_H_EST - GAP
+    if (top + cardH > vh - MARGIN) top = spot.top - cardH - GAP
   } else {
-    top = spot.top - CARD_H_EST - GAP; left = spot.left
+    top = spot.top - cardH - GAP; left = spot.left
     if (top < MARGIN) top = spot.bottom + GAP
   }
   return {
-    top:  clamp(MARGIN, top,  vh - CARD_H_EST - MARGIN),
+    top:  clamp(MARGIN, top,  vh - cardH - MARGIN),
     left: clamp(MARGIN, left, vw - CARD_W - MARGIN),
   }
 }
 
 export default function Tutorial({ state, dispatch, step, onStep, onComplete }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
+  // Measured card height. CARD_H_EST alone under-estimated the taller cards, so they were
+  // positioned as if short and ran off the bottom of the viewport with Back/Skip unreachable.
+  const [cardH, setCardH] = useState(CARD_H_EST)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const [failureHoldExpired, setFailureHoldExpired] = useState(false)
   const autoFiredRef           = useRef(new Set<number>())
   const missionForcedRef       = useRef(false)
@@ -68,12 +73,26 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const current = TUTORIAL_STEPS[step]
   const isLast  = step === TUTORIAL_STEPS.length - 1
 
+  // A mustInteract step whose action has become impossible (mission gone, recovery pool empty…)
+  // is downgraded to a normal step so the operator always has a way forward.
+  const stuck = !!current?.mustInteract && !!current.unsatisfiableWhen && current.unsatisfiableWhen(state)
+  const gated = !!current?.mustInteract && !stuck
+
   // Skip the lockout-explain step when auto-fix is on — lockouts never surface to the
   // operator in that mode, so the "help needed" explanation doesn't apply.
   const advanceStep = (from: number, dir: 1 | -1) => {
     let idx = from + dir
-    while (idx > 0 && idx < TUTORIAL_STEPS.length - 1 && TUTORIAL_STEPS[idx]?.id === 'lockout-explain' && state.config.fixLockouts) {
+    while (idx > 0 && idx < TUTORIAL_STEPS.length - 1 && TUTORIAL_STEPS[idx]?.id === 'lockout-explain' && isFixLockouts(state.config)) {
       idx += dir
+    }
+    // Going back, step over any mustInteract step whose action is ALREADY done (its
+    // autoAdvanceWhen is satisfied). Landing on one showed a "do this now" card for something
+    // that cannot be done again — e.g. "click Allocate" with the panel already open — and the
+    // spotlight target no longer existed, which blanked the screen behind a blocking overlay.
+    while (dir === -1 && idx > 0) {
+      const s = TUTORIAL_STEPS[idx]
+      if (!s?.mustInteract || !s.autoAdvanceWhen?.(state)) break
+      idx -= 1
     }
     return Math.max(0, Math.min(TUTORIAL_STEPS.length - 1, idx))
   }
@@ -174,6 +193,16 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     return () => { ro.disconnect(); mo.disconnect(); window.removeEventListener('resize', refreshSpot) }
   }, [refreshSpot])
 
+  // Re-arm auto-advance whenever a step is (re-)entered. Without this the guard below was
+  // permanent for the whole session: stepping Back onto an already-fired step left it unable to
+  // advance again, with no Next button (mustInteract) — a dead end escapable only via Skip.
+  const prevStepRef = useRef(step)
+  useEffect(() => {
+    if (prevStepRef.current === step) return
+    prevStepRef.current = step
+    autoFiredRef.current.delete(step)
+  }, [step])
+
   // Auto-advance based on game state
   useEffect(() => {
     if (!current?.autoAdvanceWhen) return
@@ -198,7 +227,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     if (current?.inMapWindow) return
     const handler = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
-      if (current?.mustInteract) return
+      if (gated) return
       // Don't fire when focus is inside an input/button (let normal behaviour run)
       const tag = (e.target as HTMLElement)?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
@@ -208,7 +237,18 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [step, current, isLast, onComplete, onStep])
+  }, [step, current, isLast, gated, onComplete, onStep])
+
+  // Re-measure whenever the card content changes.
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const measure = () => setCardH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [step, current?.id])
 
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -232,13 +272,17 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     )
   }
 
-  const cardPos = computeCardPos(spot, current?.cardSide ?? 'center', vw, vh)
+  const cardPos = computeCardPos(spot, current?.cardSide ?? 'center', vw, vh, cardH)
 
   // tryIt steps: dim only — whole interface stays interactive
   // mustInteract steps: only the spotlight is interactive (allowClickThrough handles opening it)
   // regular steps: everything blocked
   const isTryIt = !!(current?.tryIt && !current?.mustInteract)
-  const dimOnly = isTryIt ? 'none' : 'auto'
+  // A step that asks for a spotlight whose element isn't on screen would otherwise fall through to
+  // a FULL-SCREEN blocking dim — the entire app becomes unclickable with nothing highlighted.
+  // Never block in that case: dim for focus, but let every control through.
+  const spotMissing = !!current?.highlight && !current.inMapWindow && !spot
+  const dimOnly = (isTryIt || spotMissing) ? 'none' : 'auto'
 
   const portal = (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, pointerEvents: 'none' }}>
@@ -267,7 +311,7 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
       ))}
 
       {/* Tutorial card */}
-      <div style={{
+      <div ref={cardRef} style={{
         position: 'fixed', top: cardPos.top, left: cardPos.left, width: CARD_W,
         zIndex: 9001, pointerEvents: 'auto', fontFamily: 'inherit',
       }}>
@@ -301,10 +345,12 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
               </ul>
             ))}
           </div>
-          {/* mustInteract hint */}
+          {/* mustInteract hint — or, once the action has become impossible, why we're moving on */}
           {current?.mustInteract && (
-            <div style={{ marginTop: 11, padding: '7px 10px', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 6, fontSize: 12, color: '#fde68a', lineHeight: 1.5 }}>
-              {current.mustInteractHint ?? 'Perform the highlighted action above to continue.'}
+            <div style={{ marginTop: 11, padding: '7px 10px', background: stuck ? 'rgba(148,163,184,0.10)' : 'rgba(251,191,36,0.1)', border: stuck ? '1px solid rgba(148,163,184,0.25)' : '1px solid rgba(251,191,36,0.25)', borderRadius: 6, fontSize: 12, color: stuck ? '#cbd5e1' : '#fde68a', lineHeight: 1.5 }}>
+              {stuck
+                ? (current.unsatisfiableHint ?? 'This step can no longer be completed — click Next to carry on.')
+                : (current.mustInteractHint ?? 'Perform the highlighted action above to continue.')}
             </div>
           )}
           {/* tryIt hint */}
@@ -324,8 +370,8 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
                   ← Back
                 </button>
               )}
-              {/* No Next button for mustInteract steps */}
-              {!current?.mustInteract && (
+              {/* No Next button for mustInteract steps — unless the action is unsatisfiable */}
+              {!gated && (
                 <button onClick={isLast ? onComplete : () => onStep(advanceStep(step, 1))} style={{ fontSize: 13, color: '#fff', background: 'linear-gradient(135deg,#6366f1,#4f46e5)', border: 'none', borderRadius: 7, padding: '7px 18px', cursor: 'pointer', fontWeight: 600, lineHeight: 1, fontFamily: 'inherit', boxShadow: '0 2px 10px rgba(99,102,241,0.45)' }}>
                   {isLast ? 'Finish' : 'Next →'}
                 </button>

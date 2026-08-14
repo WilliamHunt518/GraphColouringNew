@@ -128,6 +128,29 @@ governing difficulty measure here.)
 
 ---
 
+## Build tag `v2.1-logging4` — tutorial + clock fixes (no scenario parameters changed)
+
+`APP_VERSION` bump only; **no** scenario parameter moved, so all v2.1 calibration below still
+stands and data collected under `v2.1-logging3` remains poolable. Recorded here because two of the
+changes touch the reducer:
+
+- **`MAX_TICK_GAP_MS` (2000 ms).** `elapsed` is wall-clock derived and the tick loop is driven by
+  `requestAnimationFrame`, which the browser suspends when the primary window is hidden. The first
+  frame back used to apply the whole gap at once, teleporting drones and completing tasks unseen.
+  A single TICK now advances at most 2 s of simulated time and `sessionStartMs` absorbs the rest.
+  The cap sits above every harness step size (250/500/1000 ms), and `sim/pilot-run.mts` reproduces
+  its previous scores exactly.
+- **`fixLockouts` default.** An omitted flag now means **help-needed** (matching CLAUDE.md,
+  StartScreen and `?fixLockouts=1`), read everywhere through `isFixLockouts()`. It previously meant
+  auto-fix inside the reducer while `Tutorial.tsx` read it the other way, and `session_start` logged
+  the reducer's reading. Both study entry points always set it explicitly, so no collected data is
+  affected; `sim/engine.mts` now pins `fixLockouts: true` to keep the calibration figures below
+  comparable.
+- Tutorial session length is now 45 min (`TUTORIAL_SESSION_DURATION`) so the walkthrough cannot
+  outlast its own clock. Study sessions are untouched.
+
+---
+
 ## v2.1 (current)
 
 Two coupled changes: a workflow change that made missions slightly *easier*, and a small arrival-rate

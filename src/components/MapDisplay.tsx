@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import type { MapViewState, Asset, Mission, AssetType, TaskType, Task, PendingAllocation } from '../types'
 import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIME, TASK_SUBSTITUTE, TASK_SUB_BASE_TIME } from '../utils/missionGen'
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
-import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
 import { computeTacticalSuggestion, computeRecoverySuggestion } from '../utils/tacticalSuggest'
 import { tasksInCycles } from '../utils/scheduling'
 
@@ -710,24 +709,27 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         return { ...prev, [taskId]: [...(prev[taskId] ?? []), droneId] }
       }
     })
+    // Seed from the drone's CURRENT effective sequence when it has no explicit chain order
+    // yet — the same fallback `droneSequences` uses. "Suggest" fills `assignments` without
+    // ever touching `droneChainOrder`, so chaining a Suggest-placed drone used to rewrite its
+    // whole sequence as just [taskId], silently dropping the task it was already on:
+    // buildManualAssignments only schedules tasks that appear in some drone's sequence, so
+    // that task was committed with no start time and never dispatched (the planner still
+    // showed it staffed and Deploy stayed enabled).
+    const existingSeq = droneChainOrder[droneId] ?? pending.taskOrder.filter(tid => (assignments[tid] ?? []).includes(droneId))
+    const chainIsNoop = chain && existingSeq.includes(taskId)
     setDroneChainOrder(prev => {
-      if (!chain) {
-        document.dispatchEvent(new CustomEvent('tutorial-drone-assigned'))
-        return { ...prev, [droneId]: [taskId] }
-      } else {
-        // Seed from the drone's CURRENT effective sequence when it has no explicit chain order
-        // yet — the same fallback `droneSequences` uses. "Suggest" fills `assignments` without
-        // ever touching `droneChainOrder`, so chaining a Suggest-placed drone used to rewrite its
-        // whole sequence as just [taskId], silently dropping the task it was already on:
-        // buildManualAssignments only schedules tasks that appear in some drone's sequence, so
-        // that task was committed with no start time and never dispatched (the planner still
-        // showed it staffed and Deploy stayed enabled).
-        const existing = prev[droneId] ?? pending.taskOrder.filter(tid => (assignments[tid] ?? []).includes(droneId))
-        if (existing.includes(taskId)) return prev
-        document.dispatchEvent(new CustomEvent('tutorial-drone-chained'))
-        return { ...prev, [droneId]: [...existing, taskId] }
-      }
+      if (!chain) return { ...prev, [droneId]: [taskId] }
+      const existing = prev[droneId] ?? pending.taskOrder.filter(tid => (assignments[tid] ?? []).includes(droneId))
+      if (existing.includes(taskId)) return prev
+      return { ...prev, [droneId]: [...existing, taskId] }
     })
+    // Tutorial signals are dispatched OUTSIDE the state updater. React re-invokes updater
+    // functions (StrictMode does it every render in dev), so a dispatch placed inside fired
+    // 2–4× per drag: `tac-manual` then advanced two steps and skipped the whole `tac-chain`
+    // lesson, and `tac-chain` was satisfied by a single Shift+drag instead of two.
+    if (!chain) document.dispatchEvent(new CustomEvent('tutorial-drone-assigned'))
+    else if (!chainIsNoop) document.dispatchEvent(new CustomEvent('tutorial-drone-chained'))
   }
 
   function removeDrone(droneId: string, taskId: string) {
@@ -882,8 +884,11 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         <div className="flex-1" />
         {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
         {!readOnly && <button onClick={handleReset} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Reset</button>}
-        {!readOnly && state.mode === 'agent' &&
-          !(state.tutorialActive && TUTORIAL_STEPS[state.tutorialStep]?.id === 'failure-recovery-do') && (
+        {/* Suggest stays available in every mode, including the tutorial's recovery step. It used
+            to be hidden there to force manual practice, but the recovery panel's own copy tells the
+            operator to "click Suggest for a fix" — and when the surviving drones have already flown
+            home there is nothing to drag, so hiding it left the step unsatisfiable. */}
+        {!readOnly && state.mode === 'agent' && (
           <button data-tutorial="tac-suggest-btn" onClick={handleSuggest} disabled={isSuggestLoading}
             className="px-4 py-3 bg-purple-800 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed rounded text-purple-200 text-lg transition-colors flex items-center gap-1.5">
             {isSuggestLoading
@@ -1146,6 +1151,36 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
                     <text x={task.waypoint.x} y={task.waypoint.y + 33}
                       textAnchor="middle" fill="#94a3b8" fontSize="7" fontFamily="monospace"
                       style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">✓ done</text>
+                  </g>
+                )
+              }
+
+              // Failed tasks — greyed out like completed ones, but red. Without this branch they
+              // fell through to the normal pending rendering and were drawn as an ordinary
+              // uncovered task with a "0/2L 0/1C" composition badge, so the map claimed drones
+              // were still needed for work the schedule panel had already written off.
+              if (task.status === 'failed') {
+                return (
+                  <g key={task.id}>
+                    <circle
+                      cx={task.waypoint.x} cy={task.waypoint.y} r={11}
+                      fill="rgba(239,68,68,0.06)" stroke="#7f1d1d"
+                      strokeWidth={1} opacity={0.6}
+                    />
+                    <image
+                      href={TASK_ICON[task.type as TaskType]}
+                      x={task.waypoint.x - 6.5} y={task.waypoint.y - 6.5}
+                      width={13} height={13}
+                      style={{ pointerEvents: 'none', opacity: 0.3 }}
+                    />
+                    <text x={task.waypoint.x} y={task.waypoint.y + 24}
+                      textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="sans-serif"
+                      style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">
+                      {TASK_TYPE_NAMES[task.type]}
+                    </text>
+                    <text x={task.waypoint.x} y={task.waypoint.y + 33}
+                      textAnchor="middle" fill="#f87171" fontSize="7" fontFamily="monospace"
+                      style={{ pointerEvents: 'none', paintOrder: 'stroke' }} stroke="#0b1220" strokeWidth="2" strokeLinejoin="round">✕ failed</text>
                   </g>
                 )
               }
@@ -1592,8 +1627,10 @@ function TacticalRightPanel({ pending, assignments, assets, tasks, timings, onRe
         })}
       </div>
 
-      {/* Footer: ETA + Stop Assistant + Deploy + Abandon */}
-      <div className="flex-none p-3 border-t border-gray-800 space-y-2">
+      {/* Footer: ETA + Stop Assistant + Deploy + Abandon.
+          The floating ZoomControls widget is pinned to the window's bottom-right corner and sat on
+          top of the Deploy button's right-hand end, so leave room for it. */}
+      <div className="flex-none p-3 pb-14 border-t border-gray-800 space-y-2">
         {overallETA !== null && (
           <div className="text-lg text-gray-400">
             Est. completion: <span className="text-white font-mono font-bold">~{overallETA}s</span>

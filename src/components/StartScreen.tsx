@@ -343,11 +343,16 @@ export default function StartScreen({ onStart }: Props) {
             mode: 'agent',
             complexity: 'balanced',
             seed: 77777,
-            agentErrorRate: 0.10,
-            epsilonTactical: 0.10,
+            // Both assistants are perfect in training. The tutorial is where participants form
+            // their trust priors, so demonstrating a 10%-wrong assistant here would confound the
+            // manipulation; the study itself runs at eps = 0 too.
+            agentErrorRate: 0,
+            epsilonTactical: 0,
             tacticalMode: 'plan-all',
             testingMode: true,
             tutorialMode: true,
+            // Explicit so the lockout lesson matches the behaviour the session would produce.
+            fixLockouts: false,
             numSessions: 1,
           })}
           className="w-full py-3 bg-indigo-700 hover:bg-indigo-600 rounded-lg text-white font-semibold text-sm transition-colors"
@@ -361,11 +366,12 @@ export default function StartScreen({ onStart }: Props) {
             mode: 'agent',
             complexity: 'balanced',
             seed: 77777,
-            agentErrorRate: 0.10,
-            epsilonTactical: 0.10,
+            agentErrorRate: 0,
+            epsilonTactical: 0,
             tacticalMode: 'greedy',
             testingMode: true,
             tutorialMode: true,
+            fixLockouts: false,
             skipToFreePlay: true,
             numSessions: 1,
             fullPathsOnHover: true,

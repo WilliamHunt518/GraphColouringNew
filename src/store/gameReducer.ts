@@ -17,6 +17,7 @@ import {
 import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
 import { findSchedulingCycle } from '../utils/scheduling'
 import { SeededRNG } from '../utils/prng'
+import { isFixLockouts } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
@@ -30,7 +31,12 @@ const STATE_SNAPSHOT_INTERVAL = 10  // seconds
 
 // Build identifier stamped into session_start, so collected data can be tied to a code version.
 // Bump when the scoring, mission generation, or agent behaviour changes (see docs/SCENARIOS.md).
-const APP_VERSION = 'v2.1-logging3'
+const APP_VERSION = 'v2.1-logging4'
+
+// Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
+// the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
+// hidden-window gap in one frame.
+const MAX_TICK_GAP_MS = 2000
 
 function hashId(id: string): number {
   return id.split('').reduce((acc, c, i) => (acc ^ (c.charCodeAt(0) * (i + 7))) >>> 0, 0)
@@ -99,8 +105,17 @@ export function complexityForSession(config: StudyConfig, sessionNumber: number)
 }
 
 // Fast-test collapses every session to 10s so the whole flow can be walked quickly.
+// The tutorial runs on the same clock as a real session but takes as long as the operator needs to
+// read ~49 cards, so an 8-minute budget always expired mid-walkthrough — the header sat at 0:00
+// and the score drifted deeply negative while the "Session Timer" and "Your Score" steps were
+// still being explained. Give it a budget it will not exhaust, so the countdown still demonstrates
+// the concept truthfully.
+const TUTORIAL_SESSION_DURATION = 45 * 60
+
 function sessionDurationFor(config: StudyConfig, complexity: Complexity): number {
-  return config.fastTest ? 10 : SESSION_DURATION_BY_COMPLEXITY[complexity]
+  if (config.fastTest) return 10
+  if (config.tutorialMode) return TUTORIAL_SESSION_DURATION
+  return SESSION_DURATION_BY_COMPLEXITY[complexity]
 }
 
 function categoryForecastFor(complexity: Complexity): Record<MissionCategory, number> {
@@ -134,6 +149,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     sessionNumber: 1,
     elapsed: 0,
     sessionStartMs: null,
+    lastTickMs: null,
     assets: createInitialAssets(complexity, config.tutorialMode ? TUTORIAL_FLEET : undefined),
     missions: [],
     pendingBlueprints: blueprints,
@@ -1240,12 +1256,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== 'playing') return state
 
       // Initialise wall-clock reference on first tick
-      const sessionStartMs = state.sessionStartMs ?? action.nowMs
+      let sessionStartMs = state.sessionStartMs ?? action.nowMs
+      // Absorb stalls. `elapsed` is derived from the wall clock, but the tick loop is driven by
+      // requestAnimationFrame, which the browser SUSPENDS whenever the primary window is hidden
+      // or minimised. The clock kept running regardless, so the first frame after the window came
+      // back applied the entire gap in a single tick: drones teleported across the map, tasks
+      // completed and penalty accrued with the operator seeing none of it (measured: elapsed
+      // jumped 1s → 4m34s in one frame, taking a just-deployed mission to complete). Capping the
+      // per-tick advance and pushing the session origin forward turns that into a pause instead —
+      // the session still runs for its full simulated duration.
+      // The cap sits above every deliberate step size used by the headless harnesses
+      // (sim/pilot-run 250ms, sim/engine 500ms, scripts/test-chain-after-suggest 1000ms) so they
+      // are unaffected.
+      const lastTickMs = state.lastTickMs ?? action.nowMs
+      const gapMs = action.nowMs - lastTickMs
+      if (gapMs > MAX_TICK_GAP_MS) sessionStartMs += gapMs - MAX_TICK_GAP_MS
+
       const rawElapsed = (action.nowMs - sessionStartMs) / 1000
       const elapsed = state.config.testingMode ? rawElapsed : Math.min(state.sessionDuration, rawElapsed)
       const isGreedy = state.config.tacticalMode === 'greedy'
 
-      let s: GameState = { ...state, elapsed, sessionStartMs }
+      let s: GameState = { ...state, elapsed, sessionStartMs, lastTickMs: action.nowMs }
 
       if (state.sessionStartMs === null) {
         const cfg = state.config
@@ -1260,7 +1291,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           epsilonStrategic: cfg.agentErrorRate,
           epsilonTactical: cfg.epsilonTactical,
           tacticalMode: cfg.tacticalMode,
-          fixLockouts: cfg.fixLockouts !== false,
+          fixLockouts: isFixLockouts(cfg),
           numSessions: cfg.numSessions,
           sessionDuration: state.sessionDuration,
           fleet: (cfg.tutorialMode ? TUTORIAL_FLEET : FLEET[sessionComplexity]).reduce(
@@ -1587,7 +1618,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // physically ARRIVED and are sitting idle (deadlocked — not merely idle for any reason,
       // and not while one is still en route or actively executing) do we act.
       //
-      // config.fixLockouts (default true) chooses what "act" means:
+      // config.fixLockouts (default OFF — see isFixLockouts) chooses what "act" means:
       //  • true  — the agent repairs it silently: reroute the conflicting drone chains onto one
       //            consistent order so the graph is acyclic, reschedule and redirect. Every task
       //            still completes and nothing fails.
@@ -1595,7 +1626,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       //            the stuck drones, revert the deadlocked tasks to pending, and flag the mission for
       //            recovery so the operator re-plans a good allocation. Greedy replan is paused for the
       //            mission (see applyGreedyReplan) so the operator — not the agent — resolves it.
-      const fixLockouts = state.config.fixLockouts !== false   // default ON: agent auto-reroutes
+      const fixLockouts = isFixLockouts(state.config)
       for (const mission of s.missions) {
         if (mission.status !== 'active' || mission.failureRecoveryPending) continue
         const incomplete = mission.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')
@@ -2919,6 +2950,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         sessionNumber: nextSession,
         elapsed: 0,
         sessionStartMs: null,
+        lastTickMs: null,
         assets: createInitialAssets(complexity, state.config.tutorialMode ? TUTORIAL_FLEET : undefined),
         missions: [],
         pendingBlueprints: blueprints,

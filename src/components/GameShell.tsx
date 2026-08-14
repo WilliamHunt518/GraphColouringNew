@@ -10,7 +10,7 @@ import DemographicsForm from './DemographicsForm'
 import TutorialSummary from './TutorialSummary'
 import Tutorial from './Tutorial'
 import FreePlayOverlay from './FreePlayOverlay'
-import { TUTORIAL_STEPS } from '../utils/tutorialSteps'
+import { TUTORIAL_STEPS, AGENT_INTRO_STEP } from '../utils/tutorialSteps'
 
 const FREE_PLAY_MIN = 300  // seconds — free play always runs at least this long
 const FREE_PLAY_MAX = 480  // seconds — hard cap so slow finishers can still complete the checklist
@@ -247,7 +247,7 @@ export default function GameShell({ config }: Props) {
     const tutorialForceAgent = showTutorial && (TUTORIAL_STEPS[tutorialStep]?.forceAgent ?? false)
     return (
       <>
-        <PrimaryDisplay state={state} dispatch={dispatch} setOpenMissionId={setOpenMissionId} tutorialForceManual={tutorialForceManual} tutorialForceAgent={tutorialForceAgent} />
+        <PrimaryDisplay state={state} dispatch={dispatch} setOpenMissionId={setOpenMissionId} tutorialForceManual={tutorialForceManual} tutorialForceAgent={tutorialForceAgent} tutorialAnchorNewest={showTutorial && tutorialStep >= AGENT_INTRO_STEP} />
         {showTutorial && (
           <Tutorial
             state={state}

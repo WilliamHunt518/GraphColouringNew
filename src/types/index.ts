@@ -15,7 +15,12 @@ export interface StudyConfig {
   epsilonTactical: number  // error rate for Tactical Agent
   tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
-  fixLockouts?: boolean  // default true: a scheduling deadlock is auto-resolved (one task fails, rest freed & rescheduled). When false, every task in the deadlock fails as a lockout with no rescue.
+  // Scheduling-deadlock policy. Default (omitted or false) is "help needed": the lockout is
+  // surfaced to the operator in red, the stuck drones are freed and parked, and they re-plan or
+  // abandon. When true the agent silently reroutes the cyclic chains and nothing fails.
+  // Read it through isFixLockouts() in utils/config — never inline, the fallback used to differ
+  // between the reducer, the tutorial, and the session_start log.
+  fixLockouts?: boolean
   tutorialMode: boolean
   skipToFreePlay?: boolean
   numSessions: number
@@ -224,6 +229,8 @@ export interface GameState {
   sessionNumber: number
   elapsed: number
   sessionStartMs: number | null
+  /** `nowMs` of the previous TICK, used to detect and absorb stalls (see MAX_TICK_GAP_MS). */
+  lastTickMs: number | null
   assets: Asset[]
   missions: Mission[]
   pendingBlueprints: MissionBlueprint[]
