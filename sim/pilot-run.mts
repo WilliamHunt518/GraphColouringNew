@@ -41,7 +41,7 @@ function makeConfig(pid: string, seed: number): StudyConfig {
     epsilonTactical: 0,       // epsilon_Tactical
     tacticalMode: 'plan-all',
     testingMode: false,
-    fixLockouts: false,
+    fixLockouts: true,        // matches the study default (agent reroutes a deadlock silently)
     tutorialMode: false,
     numSessions: 2,
   }

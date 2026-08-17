@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import type { GameState } from '../types'
 import type { GameAction } from '../store/actions'
 import { TUTORIAL_STEPS, AGENT_INTRO_STEP, FAILURE_DEMO_STEP, ALLOCATION_OVERRIDE_STEP, ABORT_EXPLAIN_STEP } from '../utils/tutorialSteps'
-import { isFixLockouts } from '../utils/config'
 import TutorialText from './TutorialText'
 
 interface Props {
@@ -12,6 +11,8 @@ interface Props {
   step: number
   onStep: (s: number) => void
   onComplete: () => void
+  /** Has the operator switched the allocation panel to manual mode? Latched in GameShell. */
+  manualSelected: boolean
 }
 
 interface SpotRect { top: number; left: number; right: number; bottom: number }
@@ -55,7 +56,7 @@ function computeCardPos(spot: SpotRect | null, side: string, vw: number, vh: num
   }
 }
 
-export default function Tutorial({ state, dispatch, step, onStep, onComplete }: Props) {
+export default function Tutorial({ state, dispatch, step, onStep, onComplete, manualSelected }: Props) {
   const [spot, setSpot] = useState<SpotRect | null>(null)
   // Measured card height. CARD_H_EST alone under-estimated the taller cards, so they were
   // positioned as if short and ran off the bottom of the viewport with Back/Skip unreachable.
@@ -78,13 +79,8 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
   const stuck = !!current?.mustInteract && !!current.unsatisfiableWhen && current.unsatisfiableWhen(state)
   const gated = !!current?.mustInteract && !stuck
 
-  // Skip the lockout-explain step when auto-fix is on — lockouts never surface to the
-  // operator in that mode, so the "help needed" explanation doesn't apply.
   const advanceStep = (from: number, dir: 1 | -1) => {
     let idx = from + dir
-    while (idx > 0 && idx < TUTORIAL_STEPS.length - 1 && TUTORIAL_STEPS[idx]?.id === 'lockout-explain' && isFixLockouts(state.config)) {
-      idx += dir
-    }
     // Going back, step over any mustInteract step whose action is ALREADY done (its
     // autoAdvanceWhen is satisfied). Landing on one showed a "do this now" card for something
     // that cannot be done again — e.g. "click Allocate" with the panel already open — and the
@@ -216,13 +212,15 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     }
   }, [state, step, current, onStep])
 
-  // Advance panel-intro step when user clicks "Set manually instead"
+  // Advance panel-intro once the panel is in manual mode. Reads GameShell's latched flag rather
+  // than listening for the click itself: the click can land while 'allocate' is still the current
+  // step (it auto-advances the moment the panel opens), and a missed event left the operator on
+  // "click Set manually instead" with manual mode already on, the toggle gone, and no Next.
   useEffect(() => {
     if (current?.id !== 'panel-intro') return
-    const handler = () => onStep(advanceStep(step, 1))
-    document.addEventListener('tutorial-manual-selected', handler)
-    return () => document.removeEventListener('tutorial-manual-selected', handler)
-  }, [step, current, onStep])
+    if (!manualSelected) return
+    onStep(advanceStep(step, 1))
+  }, [manualSelected, step, current, onStep])   // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // Spacebar advances non-mustInteract steps

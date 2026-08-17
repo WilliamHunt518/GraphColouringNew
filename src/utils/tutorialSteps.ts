@@ -32,28 +32,9 @@ function canReassign(s: TutorialGateState): boolean {
   return !!m && hasRecoveryDrones(s) && recoveryFeasible(m, s.assets)
 }
 
-// First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
-export const TACTICAL_STEP_FIRST = 16
-export const TACTICAL_STEP_LAST  = 47   // tac-deploy2 (shifted by lockout-explain inserted before agent-intro)
-
-// Step index where agent-introduction phase begins (triggers second mission spawn)
-export const AGENT_INTRO_STEP = 37   // shifted by lockout-explain inserted before agent-intro
-
-// Step index where Tutorial.tsx begins trying to force a drone failure
-export const FAILURE_DEMO_STEP = 28
-
-// TACTICAL_AGENT_STEP — first step of the Tactical Assistant lesson — is derived from the step
-// list at the bottom of this file.
-
-// Step index where Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM (tactical-pending — the team
-// swap is explained later, in tac-welcome, so no dedicated "team assigned" card is shown here)
-export const ALLOCATION_OVERRIDE_STEP = 14
-
-// Step index where Tutorial.tsx dispatches TUTORIAL_FORCE_ABANDON_SCENARIO (abort-explain is shown here)
-export const ABORT_EXPLAIN_STEP = 33
-
-// First tactical-window step in PHASE 2 (abort-do) — used to keep TacticalTutorial overlay running
-export const ABORT_DO_STEP = 35
+// The step-index constants other modules key off (TACTICAL_STEP_FIRST, AGENT_INTRO_STEP, …) are
+// derived from the step list by id at the bottom of this file. They used to be hardcoded numbers
+// and drifted every time a step was inserted or removed.
 
 export interface TutorialStep {
   id: string
@@ -622,19 +603,11 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     noOverlayOnPrimary: true,
   },
 
-  // ── Lockout awareness (PRIMARY) — chaining deadlocks + help-needed recovery ──
-  // Grouped with the "when things go wrong" lessons: shown right after the two drone-failure
-  // demos (recovery + abort), before the agent introduction. A lockout surfaces exactly like a
-  // drone failure, so it belongs next to them. Primary-window (not inMapWindow) explanatory card.
-  {
-    id: 'lockout-explain',
-    title: 'Watch Out: Deadlocks',
-    body: [
-      'One more way things can go wrong — this time from your own plan. If you chain two drones so each waits on the other, neither task can start. For example a {red} chained "Task A → Task B" together with a {green} chained "Task B → Task A" — Task A is still missing the {green} (stuck over at Task B), and Task B is still missing the {red} (stuck over at Task A). The team locks up.',
-      'If that happens the mission turns red and flags "Lockout — help needed", exactly like the drone failures you just handled. Open its recovery plan and re-assign the drones in a workable order — the easy fix is to have both visit the tasks in the same order — or abandon the mission.',
-    ],
-    cardSide: 'center',
-  },
+  // No lockout lesson here by design. A chained plan CAN deadlock (two drones each waiting on the
+  // task the other is holding), but `fixLockouts` defaults ON, so the agent silently reroutes it
+  // and every task still completes — a participant never sees the "help needed" state, and warning
+  // them about something they cannot encounter would just add noise. If the flag is ever turned off
+  // for a study arm, this is where that lesson belongs (see CLAUDE.md's deadlock section).
 
   // ════════════════ AGENT INTRODUCTION — STRATEGIC (back in primary) ════════════
 
@@ -817,9 +790,39 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ]
 
+// ─── Step indices, derived by id ──────────────────────────────────────────
+// Never hardcode these — inserting or removing a step must not require hand-renumbering.
+
+function stepIndex(id: string): number {
+  const i = TUTORIAL_STEPS.findIndex(s => s.id === id)
+  if (i < 0) throw new Error(`tutorialSteps: no step with id "${id}"`)
+  return i
+}
+
+/**
+ * Last map-window step. TacticalTutorial uses it to decide whether to show "Finish" — which window
+ * a step belongs to is decided by its own `inMapWindow` flag, not by an index range.
+ */
+export const TACTICAL_STEP_LAST = stepIndex('tac-deploy2')
+
+/** Agent-introduction phase begins — also triggers the second mission spawn. */
+export const AGENT_INTRO_STEP = stepIndex('agent-intro')
+
+/** Where Tutorial.tsx starts trying to force the (recoverable) demo drone failure. */
+export const FAILURE_DEMO_STEP = stepIndex('failure-incoming')
+
+/**
+ * Where Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM. The team swap is explained later, in
+ * tac-welcome, so no dedicated "team assigned" card is shown at this step.
+ */
+export const ALLOCATION_OVERRIDE_STEP = stepIndex('tactical-pending')
+
+/** Where Tutorial.tsx dispatches TUTORIAL_FORCE_ABANDON_SCENARIO. */
+export const ABORT_EXPLAIN_STEP = stepIndex('abort-explain')
+
 /**
  * First step of the Tactical Assistant lesson. Everything before it is the manual workflow —
  * including the drone-failure recovery — so the planner hides its "Suggest" button until here
  * rather than offering a shortcut past the practice the tutorial is asking for.
  */
-export const TACTICAL_AGENT_STEP = TUTORIAL_STEPS.findIndex(s => s.id === 'tac-suggest-intro')
+export const TACTICAL_AGENT_STEP = stepIndex('tac-suggest-intro')

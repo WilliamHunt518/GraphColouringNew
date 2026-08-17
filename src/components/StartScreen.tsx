@@ -66,7 +66,7 @@ export default function StartScreen({ onStart }: Props) {
   const [numSessions, setNumSessions] = useState(1)
   const [testingMode, setTestingMode] = useState(false)
   const [fullPathsOnHover, setFullPathsOnHover] = useState(false)
-  const [fixLockouts, setFixLockouts] = useState(false)
+  const [fixLockouts, setFixLockouts] = useState(true)
   const [error, setError] = useState('')
 
   // ── Participant study (2 scenarios + demographics) ──
@@ -276,7 +276,7 @@ export default function StartScreen({ onStart }: Props) {
             onChange={e => setFixLockouts(e.target.checked)}
             className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500" />
           <label htmlFor="fix-lockouts" className="text-sm text-gray-400 cursor-pointer select-none">
-            Fix lockouts <span className="text-gray-600 text-xs">(on = the agent silently reroutes a stuck deadlock so every task completes; off = flag it red "help needed" for the operator to re-plan, like a drone failure. Default off.)</span>
+            Fix lockouts <span className="text-gray-600 text-xs">(on = the agent silently reroutes a stuck deadlock so every task completes; off = flag it red "help needed" for the operator to re-plan, like a drone failure. Default on — the tutorial teaches no lockout lesson, so leave it on unless you are deliberately studying that path.)</span>
           </label>
         </div>
 
@@ -351,8 +351,9 @@ export default function StartScreen({ onStart }: Props) {
             tacticalMode: 'plan-all',
             testingMode: true,
             tutorialMode: true,
-            // Explicit so the lockout lesson matches the behaviour the session would produce.
-            fixLockouts: false,
+            // Explicit so training matches the behaviour a session would produce: a scheduling
+            // deadlock is rerouted by the agent, never surfaced, which is why no step teaches one.
+            fixLockouts: true,
             numSessions: 1,
           })}
           className="w-full py-3 bg-indigo-700 hover:bg-indigo-600 rounded-lg text-white font-semibold text-sm transition-colors"
@@ -371,7 +372,7 @@ export default function StartScreen({ onStart }: Props) {
             tacticalMode: 'greedy',
             testingMode: true,
             tutorialMode: true,
-            fixLockouts: false,
+            fixLockouts: true,
             skipToFreePlay: true,
             numSessions: 1,
             fullPathsOnHover: true,

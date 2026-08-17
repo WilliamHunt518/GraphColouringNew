@@ -24,7 +24,7 @@ const config: StudyConfig = {
   participantId: 'TUT', condition: 'none', mode: 'agent', complexity: 'balanced',
   seed: 42, agentErrorRate: 0, epsilonTactical: 0, tacticalMode: 'plan-all',
   testingMode: true,        // suppresses the scheduled failure roll, so only the scripted ones fire
-  tutorialMode: true, fixLockouts: false, numSessions: 1,
+  tutorialMode: true, numSessions: 1,
 }
 
 const tick = (s: GameState, sec: number) => gameReducer(s, { type: 'TICK', nowMs: sec * 1000 } as any)

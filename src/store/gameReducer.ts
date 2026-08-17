@@ -18,7 +18,7 @@ import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER
 import { findSchedulingCycle } from '../utils/scheduling'
 import { onMissionDrones, taskCoverableBy, unfinishedTasks } from '../utils/coverage'
 import { SeededRNG } from '../utils/prng'
-import { isFixLockouts, isGuidedTutorial } from '../utils/config'
+import { isFixLockouts } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
@@ -1700,7 +1700,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // physically ARRIVED and are sitting idle (deadlocked — not merely idle for any reason,
       // and not while one is still en route or actively executing) do we act.
       //
-      // config.fixLockouts (default OFF — see isFixLockouts) chooses what "act" means:
+      // config.fixLockouts (default ON — see isFixLockouts) chooses what "act" means:
       //  • true  — the agent repairs it silently: reroute the conflicting drone chains onto one
       //            consistent order so the graph is acyclic, reschedule and redirect. Every task
       //            still completes and nothing fails.
@@ -1708,10 +1708,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       //            the stuck drones, revert the deadlocked tasks to pending, and flag the mission for
       //            recovery so the operator re-plans a good allocation. Greedy replan is paused for the
       //            mission (see applyGreedyReplan) so the operator — not the agent — resolves it.
-      //
-      // The guided tutorial always takes the reroute branch — see isGuidedTutorial: an accidental
-      // deadlock in the chaining practice would otherwise pre-empt the scripted failure demo.
-      const fixLockouts = isFixLockouts(state.config) || isGuidedTutorial(state.config)
+      //            Not what the study runs (?fixLockouts=0 opts in), so no tutorial step covers it.
+      const fixLockouts = isFixLockouts(state.config)
       for (const mission of s.missions) {
         if (mission.status !== 'active' || mission.failureRecoveryPending) continue
         const incomplete = mission.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')

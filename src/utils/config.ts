@@ -29,7 +29,7 @@ export function parseURLConfig(): StudyConfig | null {
   const tacticalMode: StudyConfig['tacticalMode'] = p.get('tacticalMode') === 'greedy' ? 'greedy' : 'plan-all'
   const testingMode = p.get('test') === '1'
   const fullPathsOnHover = p.get('fullpaths') === '1'
-  const fixLockouts = p.get('fixLockouts') === '1'   // default OFF (help-needed); ?fixLockouts=1 for auto-fix
+  const fixLockouts = p.get('fixLockouts') !== '0'   // default ON (agent auto-fix); ?fixLockouts=0 for help-needed
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
 
@@ -43,29 +43,19 @@ export function parseURLConfig(): StudyConfig | null {
 /**
  * Single source of truth for the lockout policy.
  *
- * Default is OFF = "help needed": a scheduling deadlock is surfaced to the operator in red and
- * they re-plan or abandon it. `?fixLockouts=1` (or the StartScreen checkbox) turns on the agent's
- * silent reroute. Both real entry points already set the flag explicitly; this helper only decides
- * what an OMITTED flag means, and it used to disagree in three places — `gameReducer` read
- * `!== false` (auto-fix ON), `Tutorial.tsx` read it as plain-falsy (auto-fix OFF), and the
- * `session_start` log recorded the reducer's reading, so the log could contradict the behaviour.
+ * Default is ON = the agent silently reroutes a scheduling deadlock so every task still completes
+ * and nothing fails. A participant therefore cannot end up in a stuck-deadlock state, which is why
+ * the tutorial does not teach one — see the note on `fixLockouts` in CLAUDE.md. `?fixLockouts=0`
+ * (or unticking the StartScreen checkbox) restores the "help needed" branch, which surfaces the
+ * lockout in red for the operator to re-plan or abandon; it is still fully implemented and tested
+ * (`scripts/test-scheduling-deadlock.ts` covers both), just not what the study runs.
+ *
+ * Read the flag through here, never inline: the fallback for an omitted flag used to disagree
+ * between the reducer, the tutorial, and the `session_start` log, so the log could contradict the
+ * behaviour.
  */
 export function isFixLockouts(cfg: { fixLockouts?: boolean }): boolean {
-  return cfg.fixLockouts === true
-}
-
-/**
- * Is this the guided walkthrough (not free play, not a study session)?
- *
- * The tutorial is a scripted sequence — a forced drone failure the operator recovers from, then a
- * forced unrecoverable one they must abandon. A scheduling deadlock built during the chaining
- * practice hijacked that script: it flags the mission for recovery, so the tutorial's failure demo
- * never fires and the recovery lesson narrates a drone fault the operator never had. Lockouts are
- * therefore auto-rerouted for the duration of the walkthrough; the `lockout-explain` step still
- * teaches what one looks like in the real session, where the flag is off.
- */
-export function isGuidedTutorial(cfg: { tutorialMode: boolean; skipToFreePlay?: boolean }): boolean {
-  return cfg.tutorialMode && !cfg.skipToFreePlay
+  return cfg.fixLockouts !== false
 }
 
 // Canonical study seed. Every participant who doesn't explicitly override the seed

@@ -218,9 +218,9 @@ Tactical suggestions are currently generated inline in `src/store/gameReducer.ts
 ### Scheduling deadlocks (cross-drone chain cycles)
 A chained tactical plan can deadlock: e.g. Fast is chained task1→task2 while Lifter is chained task2→task1, so each task waits on a drone that is itself waiting on the other task. The operator/agent is **not** prevented from building such a plan (no build-time validation blocks it). Instead the drones fly out, and a **live** detector in `gameReducer.ts` TICK (step 3c, `findSchedulingCycle` in `src/utils/scheduling.ts`) waits until the cycle's drones have physically arrived and are sitting idle (genuinely stuck) before acting. This is distinct from the ε_T `tactical_lockout` mechanism above.
 
-`StudyConfig.fixLockouts` (default **false** = help-needed; StartScreen "Fix lockouts" checkbox, **unticked** by default, or `?fixLockouts=1` for auto-fix) chooses the response. (The default tactical mode is also **plan-all**, `?tacticalMode=greedy` to override.) Either way a `lockout_detected` event is logged (with `resolution`):
-- **true (auto-fix)** — the agent repairs it silently with **zero failures**: `rerouteDeadlock` reorders the conflicting drones' visit order over the cyclic tasks onto one canonical order (most-constrained first), making the dependency graph acyclic, then reschedules the not-yet-started tasks and redirects the freed drones. `resolution: 'rerouted'`.
-- **false (help needed, DEFAULT)** — surfaced to the operator like a drone failure (a lockout is the same class of event: "something's wrong, the operator must deal with it"). The stuck drones are freed (`currentTaskId` cleared) but **left parked at the task waypoint they deadlocked on** (not flown back to a loiter slot) so the operator can see which drones physically reached which task — the recovery planner shows a per-task **"Present: …"** line (both in the right panel and, in lockout recovery only, a **"now X/Y"** line under the planned composition on the strategic-map task badge), computed by matching drone positions to the nearest task waypoint (`computePresentByTask`), making the deadlock's real state legible. The deadlocked tasks revert to `pending` **but keep their `assignedAssetIds`** and the mission's **cyclic `droneSequences` are left intact**; the recovery planner **loads that current (deadlocked) plan including its cyclic chain order** (`buildInitialChainOrder` seeds `droneChainOrder` from the sequences) so the operator sees and edits exactly what deadlocked. Critically, the planner re-runs `tasksInCycles` on the live plan and **blocks Deploy/Reassign while any dependency cycle remains** (`hasUnresolvedDeadlock` = `cycleTasks.size > 0` → `canDeploy` false, red "Still deadlocked" banner + "Reassign (still deadlocked)"). This is what stops a lockout reading as "already fixed": the operator must actually break the cycle — drag drones into a consistent order, or click **Suggest** — before it will deploy. Because the flags are derived from the *live* plan, breaking the cycle clears them **immediately** (no need to physically move drones first).
+`StudyConfig.fixLockouts` (default **true** = auto-fix; StartScreen "Fix lockouts" checkbox, **ticked** by default, or `?fixLockouts=0` for help-needed) chooses the response. (The default tactical mode is also **plan-all**, `?tacticalMode=greedy` to override.) Either way a `lockout_detected` event is logged (with `resolution`):
+- **true (auto-fix, DEFAULT — what the study runs)** — the agent repairs it silently with **zero failures**: `rerouteDeadlock` reorders the conflicting drones' visit order over the cyclic tasks onto one canonical order (most-constrained first), making the dependency graph acyclic, then reschedules the not-yet-started tasks and redirects the freed drones. `resolution: 'rerouted'`. **Because this is the default, a participant can never reach a stuck deadlock — which is why the tutorial has no lockout lesson** (there was a `lockout-explain` step; it was removed rather than warn people about a state they cannot encounter). Everything below about the help-needed branch is still live code, still tested, but off the study path — restore the lesson if a study arm ever turns the flag off.
+- **false (help needed, `?fixLockouts=0`)** — surfaced to the operator like a drone failure (a lockout is the same class of event: "something's wrong, the operator must deal with it"). The stuck drones are freed (`currentTaskId` cleared) but **left parked at the task waypoint they deadlocked on** (not flown back to a loiter slot) so the operator can see which drones physically reached which task — the recovery planner shows a per-task **"Present: …"** line (both in the right panel and, in lockout recovery only, a **"now X/Y"** line under the planned composition on the strategic-map task badge), computed by matching drone positions to the nearest task waypoint (`computePresentByTask`), making the deadlock's real state legible. The deadlocked tasks revert to `pending` **but keep their `assignedAssetIds`** and the mission's **cyclic `droneSequences` are left intact**; the recovery planner **loads that current (deadlocked) plan including its cyclic chain order** (`buildInitialChainOrder` seeds `droneChainOrder` from the sequences) so the operator sees and edits exactly what deadlocked. Critically, the planner re-runs `tasksInCycles` on the live plan and **blocks Deploy/Reassign while any dependency cycle remains** (`hasUnresolvedDeadlock` = `cycleTasks.size > 0` → `canDeploy` false, red "Still deadlocked" banner + "Reassign (still deadlocked)"). This is what stops a lockout reading as "already fixed": the operator must actually break the cycle — drag drones into a consistent order, or click **Suggest** — before it will deploy. Because the flags are derived from the *live* plan, breaking the cycle clears them **immediately** (no need to physically move drones first).
 
 Per-task cues on the strategic-map badge:
 - The **red "!" badge** (and red circle, and suppressed green ✓) goes ONLY on tasks that are genuinely *mutually blocking* — i.e. on a dependency cycle per `tasksInCycles` (`isBlocking`). A task merely *starved* of drones stuck upstream (e.g. an S&S waiting on drones held by two deadlocked Supply Drops) is **not** flagged — it frees up once the real cycle breaks.
@@ -234,26 +234,28 @@ Per-task cues on the strategic-map badge:
 
 **The agent never deadlocks (by construction):** `greedyAssign` routes every drone from the hub in one global task order, so its plans are always acyclic — only the *operator* can build a lockout today. (An earlier, **abandoned** idea to make the Tactical Assistant deadlock *organically* via an ordering-blind planner is archived and **not** being pursued — see `docs/OLD-DRAFTS-DO-NOT-USE/FUTURE_NAIVE_TACTICAL_AGENT.md`, which should be ignored unless you are specifically revisiting that old proposal.)
 
-**The guided tutorial always auto-fixes (reroutes) lockouts** — `isFixLockouts(cfg) || isGuidedTutorial(cfg)` in the TICK detector. The walkthrough is a scripted sequence (forced recoverable failure → forced unrecoverable failure → abandon), and a deadlock built during the chaining practice hijacks it: the mission flags for recovery, so `TUTORIAL_FORCE_FAILURE` never fires and the recovery lesson narrates a drone fault that never happened. `lockout-explain` still teaches what a lockout looks like in the real session, where the flag is off. `isGuidedTutorial` is false for "Skip to Free Play", which behaves like a session.
-
 **Signalling:** a lockout-abandoned mission sets `Mission.abandonedReason = 'lockout'` and the mission card shows a red "✕ failed · lockout"; an operator `ABANDON_MISSION` sets `'operator'` and shows a muted amber "abandoned". Without this, `abandoned` missions had no status label and read like a quiet completion.
 
 ## Tutorial (guided walkthrough)
 
-49 steps in `src/utils/tutorialSteps.ts`, rendered by `Tutorial.tsx` (primary window) and
+48 steps in `src/utils/tutorialSteps.ts`, rendered by `Tutorial.tsx` (primary window) and
 `TacticalTutorial.tsx` (map window). It teaches the **manual workflow first** — allocate, plan,
 deploy, recover from a failure by hand — and only then the two assistants. Accordingly the tactical
-planner **hides its "Suggest" button** until `TACTICAL_AGENT_STEP` (the `tac-suggest-intro` step,
-derived from the step list), so the manual lessons can't be short-circuited.
+planner **hides its "Suggest" button** until `TACTICAL_AGENT_STEP` (the `tac-suggest-intro` step),
+so the manual lessons can't be short-circuited.
+
+Every step index other modules key off (`AGENT_INTRO_STEP`, `FAILURE_DEMO_STEP`,
+`TACTICAL_AGENT_STEP`, …) is **derived from the step list by id** at the foot of the file — never
+hardcode one. They used to be literal numbers and silently desynced whenever a step moved.
 
 The failure demo is scripted in two acts, and each act's lesson card asserts something about the
 state, so the reducer has to guarantee it (`scripts/test-tutorial-failure-demo.ts` pins both):
 
-- `TUTORIAL_FORCE_FAILURE` (step 32 "Reassign Now") fails a drone whose loss leaves **every**
-  remaining task coverable by the surviving subswarm — so "Reassign ✓" is genuinely reachable.
-  Not `FORCE_DRONE_FAILURE`, which takes the first executing drone and could take the training
-  team's only Lifter.
-- `TUTORIAL_FORCE_ABANDON_SCENARIO` (step 36 "Abort the Mission") fails a drone whose loss leaves
+- `TUTORIAL_FORCE_FAILURE` (`failure-recovery-do`, "Reassign Now") fails a drone whose loss leaves
+  **every** remaining task coverable by the surviving subswarm — so "Reassign ✓" is genuinely
+  reachable. Not `FORCE_DRONE_FAILURE`, which takes the first executing drone and could take the
+  training team's only Lifter.
+- `TUTORIAL_FORCE_ABANDON_SCENARIO` (`abort-do`, "Abort the Mission") fails a drone whose loss leaves
   some remaining task **uncoverable**, so "Reassign" really is disabled and abandoning is the only
   way out. If no such drone exists it declines to fire and the step's `unsatisfiableWhen` offers
   Next rather than staging a dead end the operator could trivially fix.

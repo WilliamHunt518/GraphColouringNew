@@ -8,8 +8,10 @@
 // So t5a waits on R1 (busy with t5b) and t5b waits on B1 (busy with t5a) — neither can ever start.
 // The drones have already flown out and are sitting idle at their first waypoints (deadlocked).
 //
-// fixLockouts ON (default): reroute both drones onto one order → BOTH tasks complete, NOTHING fails.
-// fixLockouts OFF:          fail the WHOLE mission (abandoned) on lockout grounds.
+// fixLockouts ON (the default, and what the study runs): reroute both drones onto one order → BOTH
+//                          tasks complete, NOTHING fails.
+// fixLockouts OFF (?fixLockouts=0): surface it as "help needed" for the operator to re-plan.
+// Both branches are passed explicitly here, so this test is unaffected by the default.
 import { buildInitialState, gameReducer } from '../src/store/gameReducer'
 import type { GameState, StudyConfig, Mission, Task, Asset } from '../src/types'
 

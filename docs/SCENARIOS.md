@@ -140,14 +140,30 @@ changes touch the reducer:
   A single TICK now advances at most 2 s of simulated time and `sessionStartMs` absorbs the rest.
   The cap sits above every harness step size (250/500/1000 ms), and `sim/pilot-run.mts` reproduces
   its previous scores exactly.
-- **`fixLockouts` default.** An omitted flag now means **help-needed** (matching CLAUDE.md,
-  StartScreen and `?fixLockouts=1`), read everywhere through `isFixLockouts()`. It previously meant
+- **`fixLockouts` is now one helper, `isFixLockouts()`, read everywhere.** It previously meant
   auto-fix inside the reducer while `Tutorial.tsx` read it the other way, and `session_start` logged
-  the reducer's reading. Both study entry points always set it explicitly, so no collected data is
-  affected; `sim/engine.mts` now pins `fixLockouts: true` to keep the calibration figures below
-  comparable.
+  the reducer's reading — so the log could contradict the behaviour.
 - Tutorial session length is now 45 min (`TUTORIAL_SESSION_DURATION`) so the walkthrough cannot
   outlast its own clock. Study sessions are untouched.
+
+### `fixLockouts` default → auto-fix (study decision, same build tag)
+
+An omitted flag, the StartScreen checkbox, and a URL with no `fixLockouts` param now all mean
+**auto-fix**: a scheduling deadlock is silently rerouted by the agent, every task still completes,
+and the operator is never shown the "help needed" state. `?fixLockouts=0` opts back into it.
+
+Rationale: only the operator can build a deadlock (agent plans are acyclic by construction), and
+leaving it surfaced meant a participant could land in a red recovery state that the tutorial had to
+spend a step warning them about. With auto-fix on, they cannot reach it, so the `lockout-explain`
+step was removed. Recovery-from-lockout is therefore **not** an operator decision the study
+measures; `lockout_detected` still logs (with `resolution: 'rerouted'`) so a participant who built
+one is still identifiable in the data.
+
+Scoring impact: none for any plan without a cycle, which is every plan the harnesses build —
+`sim/pilot-run.mts` reproduces its previous scores exactly after being switched to `true`. For a
+participant who does build a cycle the mission now completes instead of stalling, which is a
+*difficulty* change relative to data collected before this flip; check the flag in `session_start`
+before pooling such a session.
 
 ---
 

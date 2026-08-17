@@ -26,6 +26,17 @@ export default function GameShell({ config }: Props) {
   const [showTutorial, setShowTutorial] = useState((config.tutorialMode ?? false) && !config.skipToFreePlay)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [openMissionId, setOpenMissionId] = useState<string | null>(null)
+  // Latch for the tutorial's panel-intro step ("click Set manually instead"). The click lands on
+  // the PREVIOUS step ('allocate', which auto-advances the instant the panel opens), so a listener
+  // owned by the step itself can miss the event and strand the operator: manual mode is already on,
+  // the toggle is gone, and a mustInteract step has no Next. Listening here — mounted for the whole
+  // session — cannot miss it, and the flag stays set so re-entering the step just moves on.
+  const [manualSelected, setManualSelected] = useState(false)
+  useEffect(() => {
+    const onManual = () => setManualSelected(true)
+    document.addEventListener('tutorial-manual-selected', onManual)
+    return () => document.removeEventListener('tutorial-manual-selected', onManual)
+  }, [])
   const [showFreePlay, setShowFreePlay] = useState(false)
   const [freePlayStartAt, setFreePlayStartAt] = useState<number | null>(null)
   const [freePlayEventStart, setFreePlayEventStart] = useState(0)
@@ -254,6 +265,7 @@ export default function GameShell({ config }: Props) {
             dispatch={dispatch}
             step={tutorialStep}
             onStep={setTutorialStep}
+            manualSelected={manualSelected}
             onComplete={() => {
               setShowTutorial(false)
               if (config.tutorialMode) {

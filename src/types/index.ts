@@ -15,11 +15,12 @@ export interface StudyConfig {
   epsilonTactical: number  // error rate for Tactical Agent
   tacticalMode: 'plan-all' | 'greedy'
   testingMode: boolean
-  // Scheduling-deadlock policy. Default (omitted or false) is "help needed": the lockout is
-  // surfaced to the operator in red, the stuck drones are freed and parked, and they re-plan or
-  // abandon. When true the agent silently reroutes the cyclic chains and nothing fails.
-  // Read it through isFixLockouts() in utils/config — never inline, the fallback used to differ
-  // between the reducer, the tutorial, and the session_start log.
+  // Scheduling-deadlock policy. Default (omitted or true) is auto-fix: the agent silently reroutes
+  // the cyclic chains, every task still completes, and nothing is surfaced — so a participant can
+  // never reach a stuck deadlock, which is why the tutorial teaches no lockout lesson. Explicit
+  // false restores "help needed" (surfaced in red, drones freed and parked, operator re-plans or
+  // abandons). Read it through isFixLockouts() in utils/config — never inline, the fallback used to
+  // differ between the reducer, the tutorial, and the session_start log.
   fixLockouts?: boolean
   tutorialMode: boolean
   skipToFreePlay?: boolean
