@@ -155,7 +155,10 @@ export default function Tutorial({ state, dispatch, step, onStep, onComplete }: 
     )
     if (hasDeployed) {
       failureDemoFiredRef.current = true
-      dispatch({ type: 'FORCE_DRONE_FAILURE' })
+      // Not FORCE_DRONE_FAILURE: that picks the first executing drone, which may be the team's
+      // only Red — stranding a supply drop and leaving the recovery lesson with nothing to do
+      // but abandon. TUTORIAL_FORCE_FAILURE picks one the operator can actually recover from.
+      dispatch({ type: 'TUTORIAL_FORCE_FAILURE' })
     } else if (!failureTryTimerRef.current) {
       // Drones may not have departed yet — retry in 1 s
       failureTryTimerRef.current = setTimeout(() => {

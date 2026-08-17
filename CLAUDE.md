@@ -234,7 +234,33 @@ Per-task cues on the strategic-map badge:
 
 **The agent never deadlocks (by construction):** `greedyAssign` routes every drone from the hub in one global task order, so its plans are always acyclic — only the *operator* can build a lockout today. (An earlier, **abandoned** idea to make the Tactical Assistant deadlock *organically* via an ordering-blind planner is archived and **not** being pursued — see `docs/OLD-DRAFTS-DO-NOT-USE/FUTURE_NAIVE_TACTICAL_AGENT.md`, which should be ignored unless you are specifically revisiting that old proposal.)
 
+**The guided tutorial always auto-fixes (reroutes) lockouts** — `isFixLockouts(cfg) || isGuidedTutorial(cfg)` in the TICK detector. The walkthrough is a scripted sequence (forced recoverable failure → forced unrecoverable failure → abandon), and a deadlock built during the chaining practice hijacks it: the mission flags for recovery, so `TUTORIAL_FORCE_FAILURE` never fires and the recovery lesson narrates a drone fault that never happened. `lockout-explain` still teaches what a lockout looks like in the real session, where the flag is off. `isGuidedTutorial` is false for "Skip to Free Play", which behaves like a session.
+
 **Signalling:** a lockout-abandoned mission sets `Mission.abandonedReason = 'lockout'` and the mission card shows a red "✕ failed · lockout"; an operator `ABANDON_MISSION` sets `'operator'` and shows a muted amber "abandoned". Without this, `abandoned` missions had no status label and read like a quiet completion.
+
+## Tutorial (guided walkthrough)
+
+49 steps in `src/utils/tutorialSteps.ts`, rendered by `Tutorial.tsx` (primary window) and
+`TacticalTutorial.tsx` (map window). It teaches the **manual workflow first** — allocate, plan,
+deploy, recover from a failure by hand — and only then the two assistants. Accordingly the tactical
+planner **hides its "Suggest" button** until `TACTICAL_AGENT_STEP` (the `tac-suggest-intro` step,
+derived from the step list), so the manual lessons can't be short-circuited.
+
+The failure demo is scripted in two acts, and each act's lesson card asserts something about the
+state, so the reducer has to guarantee it (`scripts/test-tutorial-failure-demo.ts` pins both):
+
+- `TUTORIAL_FORCE_FAILURE` (step 32 "Reassign Now") fails a drone whose loss leaves **every**
+  remaining task coverable by the surviving subswarm — so "Reassign ✓" is genuinely reachable.
+  Not `FORCE_DRONE_FAILURE`, which takes the first executing drone and could take the training
+  team's only Lifter.
+- `TUTORIAL_FORCE_ABANDON_SCENARIO` (step 36 "Abort the Mission") fails a drone whose loss leaves
+  some remaining task **uncoverable**, so "Reassign" really is disabled and abandoning is the only
+  way out. If no such drone exists it declines to fire and the step's `unsatisfiableWhen` offers
+  Next rather than staging a dead end the operator could trivially fix.
+
+Coverage is decided by `src/utils/coverage.ts`, which mirrors the planner's Deploy/Reassign gate
+(primary or substitute composition) — the same predicate backs the `unsatisfiableWhen` gates, so a
+step never demands an action the UI won't allow.
 
 ## Critical Constraints
 

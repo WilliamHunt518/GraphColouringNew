@@ -54,6 +54,20 @@ export function isFixLockouts(cfg: { fixLockouts?: boolean }): boolean {
   return cfg.fixLockouts === true
 }
 
+/**
+ * Is this the guided walkthrough (not free play, not a study session)?
+ *
+ * The tutorial is a scripted sequence — a forced drone failure the operator recovers from, then a
+ * forced unrecoverable one they must abandon. A scheduling deadlock built during the chaining
+ * practice hijacked that script: it flags the mission for recovery, so the tutorial's failure demo
+ * never fires and the recovery lesson narrates a drone fault the operator never had. Lockouts are
+ * therefore auto-rerouted for the duration of the walkthrough; the `lockout-explain` step still
+ * teaches what one looks like in the real session, where the flag is off.
+ */
+export function isGuidedTutorial(cfg: { tutorialMode: boolean; skipToFreePlay?: boolean }): boolean {
+  return cfg.tutorialMode && !cfg.skipToFreePlay
+}
+
 // Canonical study seed. Every participant who doesn't explicitly override the seed
 // (Randomise button or ?seed= URL param) gets this exact run — same mission sequence,
 // zones, task compositions, and failure schedule. Edit here to change the canonical scenario.

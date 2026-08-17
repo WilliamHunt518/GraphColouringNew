@@ -1,4 +1,5 @@
 import type { GameState, Asset, Mission } from '../types'
+import { recoveryFeasible } from './coverage'
 
 /**
  * The slice of state a step gate may inspect. Deliberately structural so the same predicate
@@ -21,6 +22,16 @@ function hasRecoveryDrones(s: TutorialGateState): boolean {
   return !!m && s.assets.some(a => a.currentMissionId === m.id && a.status === 'deployed')
 }
 
+/**
+ * Can the operator actually complete a reassignment on the mission awaiting recovery? False when
+ * the subswarm can no longer cover some remaining task — "Reassign" stays disabled however they
+ * drag, so a step that demands one has to let them past instead.
+ */
+function canReassign(s: TutorialGateState): boolean {
+  const m = recoveringMission(s)
+  return !!m && hasRecoveryDrones(s) && recoveryFeasible(m, s.assets)
+}
+
 // First tactical-window step index (steps ≥ this are shown in TacticalTutorial)
 export const TACTICAL_STEP_FIRST = 16
 export const TACTICAL_STEP_LAST  = 47   // tac-deploy2 (shifted by lockout-explain inserted before agent-intro)
@@ -30,6 +41,9 @@ export const AGENT_INTRO_STEP = 37   // shifted by lockout-explain inserted befo
 
 // Step index where Tutorial.tsx begins trying to force a drone failure
 export const FAILURE_DEMO_STEP = 28
+
+// TACTICAL_AGENT_STEP — first step of the Tactical Assistant lesson — is derived from the step
+// list at the bottom of this file.
 
 // Step index where Tutorial.tsx dispatches TUTORIAL_OVERRIDE_TEAM (tactical-pending — the team
 // swap is explained later, in tac-welcome, so no dedicated "team assigned" card is shown here)
@@ -344,7 +358,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'tac-header',
     title: 'Planner Header',
     body: [
-      'The header shows the mission ID, category, and mode. The buttons on the right let you Reset the assignments, ask the Tactical Assistant to Suggest a plan, or Abort Mission. Deploy sits at the foot of the schedule panel on the right.',
+      'The header shows the mission ID, category, and mode. The buttons on the right let you Reset the assignments or Abort Mission. Deploy sits at the foot of the schedule panel on the right.',
+      'A third button, Suggest, asks the Tactical Assistant to fill the plan for you. It appears later — you will plan this mission by hand first.',
       '"Drag → assign · Shift+drag → chain · hover a drone for its full path" summarises the controls — we will practise these shortly.',
     ],
     highlight: 'tac-header',
@@ -526,17 +541,19 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'failure-recovery-do',
     title: 'Reassign Now',
     body: [
-      'Drag an available drone onto the uncovered task circle — or click "Suggest" to let the Tactical Assistant propose a fix — then click "Reassign ✓". The tutorial advances automatically once recovery is confirmed.',
+      'Drag an available drone from the zone edge onto the uncovered task circle, then click "Reassign ✓". The tutorial advances automatically once recovery is confirmed.',
+      'This is still the manual workflow — the Tactical Assistant comes later. Its "Suggest" button is hidden for this step so you get the practice.',
     ],
     cardSide: 'left',
     noOverlay: true,
     mustInteract: true,
-    mustInteractHint: 'Drag a drone to the uncovered task (or click "Suggest"), then click "Reassign ✓".',
+    mustInteractHint: 'Drag a drone onto the uncovered task, then click "Reassign ✓".',
     // Recovery may draw only on drones still deployed on that mission. If they have all finished
-    // and flown home there is nothing to drag and nothing for Suggest to place — the step cannot
-    // be completed and the operator would otherwise be stuck with only "Abandon Mission".
-    unsatisfiableWhen: s => !hasRecoveryDrones(s),
-    unsatisfiableHint: 'No drones from this mission are still on station, so the task cannot be covered — click Next, or abandon the mission.',
+    // and flown home, or the survivors can no longer cover a remaining task, "Reassign" stays
+    // disabled — the step cannot be completed and the operator would otherwise be stuck with
+    // only "Abandon Mission".
+    unsatisfiableWhen: s => !canReassign(s),
+    unsatisfiableHint: 'This mission\'s remaining drones can no longer cover every task, so Reassign stays disabled — click Next, or abandon the mission.',
     inMapWindow: true,
   },
 
@@ -560,7 +577,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     body: [
       'Recovery can only draw on drones already deployed on that mission, not your hub reserve. If the failed drone was the only one of its type, the task can\'t be covered — and the only option is to abort.',
       'Partial completions still score; remaining tasks re-queue as a residual mission.',
-      'The tutorial will now fail your {red} drone. Switch to the Tactical Planner to abort the mission.',
+      'The tutorial will now fail the one drone this mission cannot do without. Switch to the Tactical Planner to abort it.',
     ],
     cardSide: 'center',
   },
@@ -591,7 +608,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'abort-do',
     title: 'Abort the Mission',
     body: [
-      'Your {red} drone has failed and there\'s no spare {red} on this mission to cover its task — the schedule shows it uncovered with "Reassign" disabled.',
+      'A drone has failed and no survivor on this mission can take over its task — the schedule shows that task uncovered and "Reassign" is disabled.',
       'Click "Abandon Mission" at the bottom of the recovery panel. Partial completions still score and the remaining tasks re-queue automatically.',
     ],
     cardSide: 'left',
@@ -799,3 +816,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     cardSide: 'center',
   },
 ]
+
+/**
+ * First step of the Tactical Assistant lesson. Everything before it is the manual workflow —
+ * including the drone-failure recovery — so the planner hides its "Suggest" button until here
+ * rather than offering a shortcut past the practice the tutorial is asking for.
+ */
+export const TACTICAL_AGENT_STEP = TUTORIAL_STEPS.findIndex(s => s.id === 'tac-suggest-intro')

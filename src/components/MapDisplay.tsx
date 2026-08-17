@@ -5,6 +5,7 @@ import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIM
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { computeTacticalSuggestion, computeRecoverySuggestion } from '../utils/tacticalSuggest'
 import { tasksInCycles } from '../utils/scheduling'
+import { TACTICAL_AGENT_STEP } from '../utils/tutorialSteps'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -487,6 +488,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 }) {
   const pending = overrideAllocation ?? mission.pendingAllocation!
 
+  // See the header below: no "Suggest" until the tutorial's Tactical Assistant lesson.
+  const hideSuggestForTutorial = state.tutorialActive && state.tutorialStep < TACTICAL_AGENT_STEP
+
   // Recovery / read-only views pre-populate from the existing plan stored in pendingAllocation —
   // including a LOCKOUT recovery, which loads the CURRENT (deadlocked) plan so the operator sees
   // and edits what actually deadlocked. It's kept legible (not read as auto-fixed) by the "now"
@@ -884,11 +888,12 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
         <div className="flex-1" />
         {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
         {!readOnly && <button onClick={handleReset} className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 text-lg transition-colors">Reset</button>}
-        {/* Suggest stays available in every mode, including the tutorial's recovery step. It used
-            to be hidden there to force manual practice, but the recovery panel's own copy tells the
-            operator to "click Suggest for a fix" — and when the surviving drones have already flown
-            home there is nothing to drag, so hiding it left the step unsatisfiable. */}
-        {!readOnly && state.mode === 'agent' && (
+        {/* The tutorial teaches the manual workflow first — planning, deploying, and recovering
+            from a drone failure by hand — and only then introduces the Tactical Assistant. Offering
+            Suggest during that phase hands the operator a shortcut past the practice being asked
+            for, so it is hidden until the assistant's own lesson begins. Steps that could otherwise
+            strand the operator (nothing left to drag) carry an unsatisfiableWhen gate instead. */}
+        {!readOnly && state.mode === 'agent' && !hideSuggestForTutorial && (
           <button data-tutorial="tac-suggest-btn" onClick={handleSuggest} disabled={isSuggestLoading}
             className="px-4 py-3 bg-purple-800 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed rounded text-purple-200 text-lg transition-colors flex items-center gap-1.5">
             {isSuggestLoading

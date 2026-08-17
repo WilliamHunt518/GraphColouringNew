@@ -58,6 +58,7 @@ export type GameAction =
   | { type: 'FORCE_DRONE_FAILURE' }
   | { type: 'FORCE_SESSION_END' }
   | { type: 'TUTORIAL_OVERRIDE_TEAM' }          // replace Mission 1 team with 2B+1R+1G for chaining practice
+  | { type: 'TUTORIAL_FORCE_FAILURE' }           // fail a drone the operator CAN recover from (first failure demo)
   | { type: 'TUTORIAL_FORCE_ABANDON_SCENARIO' }  // set first active mission into unrecoverable failure so operator must abandon
 
   // ── Session flow ─────────────────────────────────────────────────────────

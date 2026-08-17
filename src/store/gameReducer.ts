@@ -16,8 +16,9 @@ import {
 } from '../utils/missionGen'
 import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
 import { findSchedulingCycle } from '../utils/scheduling'
+import { onMissionDrones, taskCoverableBy, unfinishedTasks } from '../utils/coverage'
 import { SeededRNG } from '../utils/prng'
-import { isFixLockouts } from '../utils/config'
+import { isFixLockouts, isGuidedTutorial } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
@@ -719,6 +720,87 @@ function buildRecoveryOptions(
     expectedTimeImpact: otherDrone ? 60 : 0,
     feasible: otherDrone !== undefined,
   }]
+}
+
+/**
+ * Fail `failedDrone` on `mission` and open the recovery planner. Shared by the tutorial's two
+ * scripted failures; mirrors the scheduled-failure branch in TICK.
+ *
+ * The drone's own task — plus any `alsoRevertTaskIds` the caller has determined are now
+ * uncoverable — revert to pending and their OTHER drones are released back to loitering rather
+ * than left half-staffing a stalled task (see the TICK handler for why a half-staffed pending task
+ * freezes). `elapsed` positions are left alone; the released drones simply fly to their loiter slot.
+ */
+function applyForcedDroneFailure(
+  state: GameState,
+  mission: Mission,
+  failedDrone: Asset,
+  alsoRevertTaskIds: string[] = [],
+): GameState {
+  const wanted = new Set<string>(alsoRevertTaskIds)
+  if (failedDrone.currentTaskId) wanted.add(failedDrone.currentTaskId)
+  // A chained drone is booked on later tasks too. Leaving those "traveling" behind a dead drone
+  // strands them silently — they never start, and the recovery planner doesn't show them as
+  // uncovered because they still hold an assignment. Revert them with the rest (same reasoning as
+  // the lockout branch in TICK); anything already executing has its drones on site and is left be.
+  for (const t of mission.tasks) {
+    if (t.status !== 'executing' && t.assignedAssetIds.includes(failedDrone.id)) wanted.add(t.id)
+  }
+  const revertTasks = mission.tasks.filter(
+    t => wanted.has(t.id) && t.status !== 'completed' && t.status !== 'failed'
+  )
+  // The task the failure is reported against: the one the drone was working, else the first
+  // task its loss strands.
+  const failedTask = revertTasks.find(t => t.id === failedDrone.currentTaskId) ?? revertTasks[0]
+  if (!failedTask) return state
+
+  const revertIds = new Set(revertTasks.map(t => t.id))
+  const releaseSet = new Set(
+    revertTasks.flatMap(t => t.assignedAssetIds).filter(id => id !== failedDrone.id)
+  )
+  const elapsed = state.elapsed
+
+  const updatedAssets = state.assets.map(a => {
+    if (a.id === failedDrone.id) {
+      return { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null }
+    }
+    if (releaseSet.has(a.id)) {
+      const slot = loiterSlot(mission, a.id)
+      const tt = travelTime(a.position, slot, ASSET_SPEED[a.type])
+      return { ...a, currentTaskId: null, travelFrom: { ...a.position }, targetPosition: slot,
+        travelStartElapsed: elapsed, travelEndElapsed: elapsed + tt, availableAt: elapsed + tt }
+    }
+    return a
+  })
+
+  const updatedMissions = state.missions.map(m => m.id === mission.id ? {
+    ...m,
+    droneFailuresFired: m.droneFailuresFired + 1,
+    failedDroneId: failedDrone.id,
+    failureRecoveryPending: true,
+    recoveryReason: 'drone_failure' as const,
+    recoveryOpenedAtMs: Math.round(elapsed * 1000),
+    tasks: m.tasks.map(t => revertIds.has(t.id)
+      ? { ...t, status: 'pending' as const, assignedAssetIds: [], startTime: null, completionTime: null }
+      : t),
+    pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, updatedAssets, elapsed),
+  } : m)
+
+  let s: GameState = { ...state, assets: updatedAssets, missions: updatedMissions }
+  s = logEvent(s, {
+    type: 'drone_failure',
+    missionId: mission.id,
+    missionCategory: mission.category,
+    droneId: failedDrone.id,
+    droneType: failedDrone.type,
+    taskId: failedTask.id,
+    taskType: failedTask.type,
+    timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
+  })
+  const recM = s.missions.find(m => m.id === mission.id)!
+  s = logEvent(s, recoveryOpenedPayload(recM, s.assets, s.missions, 'drone_failure', failedDrone.id,
+    recM.tasks.filter(t => revertIds.has(t.id)), elapsed, state.sessionDuration))
+  return s
 }
 
 // Which task should a drone fly to FIRST? The first task in its own chain sequence — this honours
@@ -1626,7 +1708,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       //            the stuck drones, revert the deadlocked tasks to pending, and flag the mission for
       //            recovery so the operator re-plans a good allocation. Greedy replan is paused for the
       //            mission (see applyGreedyReplan) so the operator — not the agent — resolves it.
-      const fixLockouts = isFixLockouts(state.config)
+      //
+      // The guided tutorial always takes the reroute branch — see isGuidedTutorial: an accidental
+      // deadlock in the chaining practice would otherwise pre-empt the scripted failure demo.
+      const fixLockouts = isFixLockouts(state.config) || isGuidedTutorial(state.config)
       for (const mission of s.missions) {
         if (mission.status !== 'active' || mission.failureRecoveryPending) continue
         const incomplete = mission.tasks.filter(t => t.status !== 'completed' && t.status !== 'failed')
@@ -3044,67 +3129,62 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    // ── TUTORIAL_FORCE_FAILURE ───────────────────────────────────────────
+    // First act of the failure demo: a fault the operator CAN fix, so the recovery lesson
+    // ("drag a drone onto the uncovered task, then Reassign") is actually performable. Picks a
+    // drone whose loss leaves every remaining task coverable by the rest of the subswarm —
+    // failing the team's only Red would strand a supply drop and leave nothing but Abandon.
+    case 'TUTORIAL_FORCE_FAILURE': {
+      const mission = state.missions.find(m => m.status === 'active' && !m.failureRecoveryPending)
+      if (!mission) return state
+      const working = state.assets.filter(
+        a => a.currentMissionId === mission.id && a.status === 'deployed' && a.currentTaskId
+      )
+      if (working.length === 0) return state
+      const pool = onMissionDrones(mission, state.assets)
+      const recoverable = working.filter(d => {
+        const survivors = pool.filter(a => a.id !== d.id)
+        return unfinishedTasks(mission).every(t => taskCoverableBy(t, survivors))
+      })
+      // Prefer a drone that is actually working (the on-screen story is clearer). If no failure
+      // is recoverable at all, still fire one — the demo has to happen for the tutorial to move
+      // on, and the recovery step's unsatisfiableWhen gate offers Next when it can't be fixed.
+      const executing = (list: Asset[]) => list.find(
+        d => mission.tasks.find(t => t.id === d.currentTaskId)?.status === 'executing'
+      )
+      const failedDrone = executing(recoverable) ?? recoverable[0] ?? executing(working) ?? working[0]
+      return applyForcedDroneFailure(state, mission, failedDrone)
+    }
+
     // ── TUTORIAL_FORCE_ABANDON_SCENARIO ─────────────────────────────────
-    // Fails the mission's Red drone so its task becomes genuinely uncoverable:
-    // failure recovery only draws from the deployed subswarm, which now has no Red
-    // to spare. With no feasible recovery the operator's only option is to abandon.
+    // Second act: a fault that genuinely cannot be recovered, so "Abandon Mission" is the only
+    // way out and the abort lesson tells the truth. Recovery may only draw on the deployed
+    // subswarm, so we need a drone whose loss leaves some remaining task short of a type no
+    // survivor can supply (typically the training team's single Red on a supply drop).
     case 'TUTORIAL_FORCE_ABANDON_SCENARIO': {
       const mission = state.missions.find(m => m.status === 'active' && !m.failureRecoveryPending)
       if (!mission) return state
 
-      // Prefer the Red drone (the training mission has only one) so the Red-requiring
-      // task is left with no substitute in the subswarm. Fall back to any deployed drone.
-      const deployed = state.assets.filter(
-        a => a.currentMissionId === mission.id && a.status === 'deployed' && a.currentTaskId
-      )
-      const failedDrone = deployed.find(a => a.type === 'Red') ?? deployed[0]
-
-      // No deployed drone with a task yet — fall back to the bare unrecoverable flag.
-      if (!failedDrone) {
-        return {
-          ...state,
-          missions: state.missions.map(m => m.id === mission.id ? {
-            ...m,
-            failureRecoveryPending: true,
-            failedDroneId: null,
-            pendingRecoveryOptions: [],
-          } : m),
-        }
+      const pool = onMissionDrones(mission, state.assets)
+      const remaining = unfinishedTasks(mission)
+      // Red first: the training team carries exactly one, so it reads as the obvious dead end.
+      const candidates = [...pool].sort((a, b) => (a.type === 'Red' ? 0 : 1) - (b.type === 'Red' ? 0 : 1))
+      let failedDrone: Asset | undefined
+      let strandedTasks: Task[] = []
+      for (const d of candidates) {
+        const survivors = pool.filter(a => a.id !== d.id)
+        const stranded = remaining.filter(t => !taskCoverableBy(t, survivors))
+        if (stranded.length === 0) continue
+        failedDrone = d
+        strandedTasks = stranded
+        break
       }
+      // Nothing left that failing one drone can strand (e.g. only paired-Blue recce tasks remain).
+      // Rather than stage a "you cannot recover" lesson the operator could trivially recover from,
+      // leave the mission alone — abort-select/abort-do detect the missing failure and offer Next.
+      if (!failedDrone) return state
 
-      const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
-      const updatedAssets = state.assets.map(a =>
-        a.id === failedDrone.id
-          ? { ...a, status: 'failed' as const, failedAt: state.elapsed, currentMissionId: null, currentTaskId: null }
-          : a
-      )
-      const updatedMissions = state.missions.map(m => {
-        if (m.id !== mission.id) return m
-        return {
-          ...m,
-          droneFailuresFired: m.droneFailuresFired + 1,
-          failedDroneId: failedDrone.id,
-          failureRecoveryPending: true,
-          tasks: m.tasks.map(t =>
-            t.id === failedTask.id
-              ? { ...t, status: 'pending' as const, assignedAssetIds: t.assignedAssetIds.filter(id => id !== failedDrone.id), startTime: null, completionTime: null }
-              : t
-          ),
-          pendingRecoveryOptions: [],   // empty = no feasible recovery, operator must abandon
-        }
-      })
-      let s: GameState = { ...state, assets: updatedAssets, missions: updatedMissions }
-      s = logEvent(s, {
-        type: 'drone_failure',
-        missionId: mission.id,
-        missionCategory: mission.category,
-        droneId: failedDrone.id,
-        droneType: failedDrone.type,
-        taskId: failedTask.id,
-        taskType: failedTask.type,
-        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
-      })
-      return s
+      return applyForcedDroneFailure(state, mission, failedDrone, strandedTasks.map(t => t.id))
     }
 
     // ── FORCE_DRONE_FAILURE (testing mode) ───────────────────────────────
@@ -3124,54 +3204,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Prefer an executing drone; fall back to any deployed drone with a task (may still be traveling)
       const candidateDrones = executingDrones.length > 0 ? executingDrones : deployedDrones
       if (candidateDrones.length === 0) return state
-      const failedDrone = candidateDrones[0]
-      const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
-      // Release the failed task's remaining drones back to loitering so it can be re-covered cleanly
-      // (see the scheduled-failure handler in TICK for why a half-staffed pending task freezes).
-      const releaseIds = failedTask.assignedAssetIds.filter(id => id !== failedDrone.id)
-      const releaseSet = new Set(releaseIds)
-      const updatedAssets = state.assets.map(a => {
-        if (a.id === failedDrone.id) return { ...a, status: 'failed' as const, failedAt: state.elapsed, currentMissionId: null, currentTaskId: null }
-        if (releaseSet.has(a.id)) {
-          const slot = loiterSlot(mission, a.id)
-          const tt = travelTime(a.position, slot, ASSET_SPEED[a.type])
-          return { ...a, currentTaskId: null, travelFrom: { ...a.position }, targetPosition: slot,
-            travelStartElapsed: state.elapsed, travelEndElapsed: state.elapsed + tt, availableAt: state.elapsed + tt }
-        }
-        return a
-      })
-      const updatedMissions = state.missions.map(m => {
-        if (m.id !== mission.id) return m
-        return {
-          ...m,
-          droneFailuresFired: m.droneFailuresFired + 1,
-          failedDroneId: failedDrone.id,
-          failureRecoveryPending: true,
-          tasks: m.tasks.map(t =>
-            t.id === failedTask.id
-              ? { ...t, status: 'pending' as const, assignedAssetIds: [], startTime: null, completionTime: null }
-              : t
-          ),
-          pendingRecoveryOptions: buildRecoveryOptions(m, failedTask, failedDrone.id, updatedAssets, state.elapsed),
-        }
-      })
-      let s: GameState = { ...state, assets: updatedAssets, missions: updatedMissions }
-      s = logEvent(s, {
-        type: 'drone_failure',
-        missionId: mission.id,
-        missionCategory: mission.category,
-        droneId: failedDrone.id,
-        droneType: failedDrone.type,
-        taskId: failedTask.id,
-        taskType: failedTask.type,
-        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
-      })
-      const fdM = s.missions.find(m => m.id === mission.id)!
-      const fdTask = fdM.tasks.find(t => t.id === failedTask.id)
-      s = logEvent(s, recoveryOpenedPayload(fdM, s.assets, s.missions, 'drone_failure',
-        failedDrone.id, fdTask ? [fdTask] : [], state.elapsed, state.sessionDuration))
-      return { ...s, missions: s.missions.map(m => m.id === mission.id
-        ? { ...m, recoveryReason: 'drone_failure' as const, recoveryOpenedAtMs: Math.round(state.elapsed * 1000) } : m) }
+      return applyForcedDroneFailure(state, mission, candidateDrones[0])
     }
 
     // ── FORCE_SESSION_END (testing/tutorial mode) ────────────────────────
