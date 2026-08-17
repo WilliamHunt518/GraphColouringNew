@@ -1,5 +1,10 @@
 # Scenario Parameter Versions
 
+> Looking for "what was true of the build we ran the study on" (lockouts, assistant accuracy,
+> session flow)? That is [`STUDY_BUILD.md`](STUDY_BUILD.md), tagged `study-v1.0` in git. **This**
+> file versions only the scenario *numbers* — speeds, fleet, arrival rates, mission mix. The
+> `study-v1.0` build ships scenario set **v2.1**.
+
 This file is the human-readable record of the scenario tuning constants used to collect study
 data. Every session also embeds these values in its `session_start` event (see
 [`EVENT_LOGGING.md`](EVENT_LOGGING.md)), so any log is self-describing; this file exists to make
@@ -128,10 +133,12 @@ governing difficulty measure here.)
 
 ---
 
-## Build tag `v2.1-logging4` — tutorial + clock fixes (no scenario parameters changed)
+## Build tag `study-v1.0` (was `v2.1-logging4`) — tutorial + clock fixes (no scenario parameters changed)
 
 `APP_VERSION` bump only; **no** scenario parameter moved, so all v2.1 calibration below still
-stands and data collected under `v2.1-logging3` remains poolable. Recorded here because two of the
+stands and data collected under `v2.1-logging3` remains poolable. The build was renamed from
+`v2.1-logging4` to `study-v1.0` when it was declared the study build — same numbers, and the
+per-build decisions now live in [`STUDY_BUILD.md`](STUDY_BUILD.md). Recorded here because these
 changes touch the reducer:
 
 - **`MAX_TICK_GAP_MS` (2000 ms).** `elapsed` is wall-clock derived and the tick loop is driven by

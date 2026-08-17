@@ -217,10 +217,12 @@ silently forgotten:
   needs UI instrumentation in `PrimaryDisplay.tsx`/`MapDisplay.tsx`, not just a reducer event.
 - **Standalone `recovery_opened` event** — now IMPLEMENTED (see the inventory). Fires for both
   the drone-failure and surfaced-lockout paths, and `failure_recovery.latencyMs` pairs back to it.
-- **Git/build provenance in the export** — partially addressed: `session_start` now carries
-  `appVersion` (a hand-maintained constant, `APP_VERSION` in `gameReducer.ts` — bump it when
-  scoring/generation/agent behaviour changes), `userAgent`, and `viewport`. A real git commit hash
-  would need a Vite `define` injection at build time; still outstanding.
+- **Git/build provenance in the export** — mostly addressed: `session_start` carries `appVersion`
+  (a hand-maintained constant, `APP_VERSION` in `gameReducer.ts`), `userAgent`, and `viewport`.
+  `appVersion` is kept **identical to a git tag** (`study-v1.0`), so `git show <appVersion>` gives
+  the exact code — see [`STUDY_BUILD.md`](STUDY_BUILD.md), which also records what each build
+  decided (lockouts, ε, session flow). Bump both together. A true commit hash would still need a
+  Vite `define` injection at build time; outstanding, but the tag makes it largely redundant.
 
 ### Reachable-but-dead instrumentation (declared, never fires)
 

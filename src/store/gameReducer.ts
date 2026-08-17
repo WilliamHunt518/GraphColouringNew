@@ -31,8 +31,12 @@ const TRUST_PROBE_INTERVAL = 90  // seconds
 const STATE_SNAPSHOT_INTERVAL = 10  // seconds
 
 // Build identifier stamped into session_start, so collected data can be tied to a code version.
-// Bump when the scoring, mission generation, or agent behaviour changes (see docs/SCENARIOS.md).
-const APP_VERSION = 'v2.1-logging4'
+// Kept identical to the git tag: `git show study-v1.0` is exactly what a session logging
+// "study-v1.0" ran. Note this is the BUILD version — distinct from the scenario parameter-set
+// versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
+// Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
+// behaviour, or any of the decisions recorded there changes — then tag the commit to match.
+const APP_VERSION = 'study-v1.0'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
