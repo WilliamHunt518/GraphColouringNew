@@ -36,7 +36,7 @@ const STATE_SNAPSHOT_INTERVAL = 10  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.0'
+const APP_VERSION = 'study-v1.1'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -1447,21 +1447,51 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const nextFailTime = mission.droneFailureTimes[mission.droneFailuresFired]
           if (elapsed < mission.arrivalTime + nextFailTime) continue
 
-          // Pick a random deployed drone on this mission that is currently executing
-          const executingDrones = s.assets.filter(
-            a => a.currentMissionId === mission.id && (a.status === 'deployed') &&
-              mission.tasks.find(t => t.id === a.currentTaskId)?.status === 'executing'
+          // Pick a random deployed drone on this mission — travelling to loiter, travelling
+          // to a task, or already executing all count equally, so the chance of failing is
+          // uniform per drone and proportionate only to how many are currently committed
+          // (not skewed toward whichever type/task happens to reach "executing" first, which
+          // previously favoured Blue: fastest + first-dispatched to the short T1/T2 tasks).
+          const eligibleDrones = s.assets.filter(
+            a => a.currentMissionId === mission.id && a.status === 'deployed'
           )
-          if (executingDrones.length === 0) continue  // no executing drones yet, wait
+          if (eligibleDrones.length === 0) continue  // nothing deployed yet, wait
 
           // Seeded random pick — seed varies by fired count so each failure picks a different drone
           const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11 ^ mission.droneFailuresFired)
-          const failedDrone = executingDrones[failRng.randInt(0, executingDrones.length - 1)]
-          const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId)!
+          const failedDrone = eligibleDrones[failRng.randInt(0, eligibleDrones.length - 1)]
+          const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId) ?? null
 
           // Mark drone as failed; schedule replacement arrival at hub in 30–45 s
           const replaceRng = new SeededRNG(s.config.seed ^ 0x4E3B ^ mission.droneFailuresFired)
           const replacementDelay = 30 + replaceRng.randFloat(0, 15)
+
+          if (failedTask === null) {
+            // Drone was still loitering — never dispatched to a task (e.g. an Aggressive/
+            // Conservative buffer spare the operator hadn't used, or the whole team pre-tactical-
+            // confirm). Nothing to recover: it's simply one fewer drone in the committed pool.
+            const updatedAssets = s.assets.map(a => a.id === failedDrone.id
+              ? { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null, replacementAt: elapsed + replacementDelay }
+              : a)
+            s = {
+              ...s,
+              assets: updatedAssets,
+              missions: s.missions.map(m => m.id === mission.id
+                ? { ...m, droneFailuresFired: m.droneFailuresFired + 1, failedDroneId: failedDrone.id }
+                : m),
+            }
+            s = logEvent(s, {
+              type: 'drone_failure',
+              missionId: mission.id,
+              missionCategory: mission.category,
+              droneId: failedDrone.id,
+              droneType: failedDrone.type,
+              taskId: null,
+              taskType: null,
+              timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
+            })
+            break  // at most one new failure per tick
+          }
 
           // Sections-by-colour: check if this drone type's section is already complete
           const sectionDeadline = TASK_SECTION_DEADLINES[failedTask.type as number]?.[failedDrone.type] ?? 1.0
@@ -1480,9 +1510,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               return { ...a, status: 'failed' as const, failedAt: elapsed, currentMissionId: null, currentTaskId: null, replacementAt: elapsed + replacementDelay }
             }
             if (releaseSet.has(a.id)) {
+              // Use the live interpolated position, not the stale snapshot field — a released
+              // drone may still be mid-flight toward the task (not just already arrived), now
+              // that failures can hit a task before every assigned drone has landed on it.
+              const pos = interpolateAssetPosition(a, elapsed)
               const slot = loiterSlot(mission, a.id)
-              const tt = travelTime(a.position, slot, ASSET_SPEED[a.type])
-              return { ...a, currentTaskId: null, travelFrom: { ...a.position }, targetPosition: slot,
+              const tt = travelTime(pos, slot, ASSET_SPEED[a.type])
+              return { ...a, position: pos, currentTaskId: null, travelFrom: { ...pos }, targetPosition: slot,
                 travelStartElapsed: elapsed, travelEndElapsed: elapsed + tt, availableAt: elapsed + tt }
             }
             return a
@@ -2166,16 +2200,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           dronePool = [...avB, ...avR, ...avG].map(a => a.id)
           if (dronePool.length === 0) return state
         }
-        // Greedy: commit the WHOLE team (assigned drones + any redundant spares in the
-        // composition) to the mission so every committed drone flies to the zone edge and
-        // waits — spares provide quick failure cover. Other modes keep the assigned subset.
-        if (state.config.tacticalMode === 'greedy') {
-          const full: string[] = []
-          for (const type of ['Blue', 'Red', 'Green'] as AssetType[]) {
-            full.push(...available.filter(a => a.type === type).slice(0, composition[type]).map(a => a.id))
-          }
-          dronePool = [...new Set([...dronePool, ...full])]
+        // Commit the WHOLE composition (assigned drones + any redundant spares) to the mission,
+        // not just the subset greedyAssign actually put on a task — greedyAssign reuses a drone
+        // across tasks as it frees up, so a composition's "spare per type" buffer (e.g. Aggressive's
+        // stated failure buffer) can otherwise never be assigned to anything and silently vanish
+        // from the pool: never launched, never shown in the tactical planner, contradicting what
+        // the strategy card told the operator it was committing. Every committed drone flies to
+        // the zone edge and waits, same as the manual branch below already does correctly.
+        const full: string[] = []
+        for (const type of ['Blue', 'Red', 'Green'] as AssetType[]) {
+          full.push(...available.filter(a => a.type === type).slice(0, composition[type]).map(a => a.id))
         }
+        dronePool = [...new Set([...dronePool, ...full])]
         taskAssignmentMap = Object.fromEntries(assignments.map(a => [a.taskId, a.assetIds]))
         expectedCompletionTime = assignments.length > 0
           ? Math.max(...assignments.map(a => a.startTime + a.baseTime))

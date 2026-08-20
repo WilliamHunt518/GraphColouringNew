@@ -521,8 +521,8 @@ export interface DroneFailureEvent extends BaseEvent {
   missionCategory: MissionCategory
   droneId: string
   droneType: AssetType
-  taskId: string
-  taskType: TaskType
+  taskId: string | null   // null when the drone hadn't reached (or been dispatched to) a task yet
+  taskType: TaskType | null
   timeRemainingInSession: number
 }
 

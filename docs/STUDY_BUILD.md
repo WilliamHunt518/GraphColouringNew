@@ -113,6 +113,48 @@ then introduces the assistants; the planner's "Suggest" button is hidden until t
 scripted failures: one the operator can recover from, one they cannot (so the abort lesson is
 truthful). Fleet is 6/6/6 rather than 11/11/11, to be easier to count while learning.
 
+### 8. `study-v1.1` — even failure targeting, and strategic commitments actually deploy in full
+
+Found while auditing a pilot log (`Ramis` / P-1622) where drone failures looked Blue-heavy and a
+strategic card's promised drone count didn't match what showed up in the tactical planner. Both
+were real, reproducible bugs in `APPLY_STRATEGIC`/TICK, not artifacts of that session:
+
+- **Failure targeting was implicitly biased toward Blue.** The scheduled-failure picker
+  (`gameReducer.ts` TICK step 1b) drew uniformly from drones that were already `executing` a task,
+  excluding anything still `traveling`. Blue is the fastest type and is the sole/primary type on
+  the short T1/T2 tasks, so it reached "executing" well before the 30–60s failure-check window
+  while slower Red/Green (assigned to longer-travel T3/T4) were often still in transit and
+  therefore ineligible. Net effect in one pilot session: 11 of 13 failures were Blue against a
+  uniform 11/11/11 fleet. **Fixed:** the pool is now every drone with `status === 'deployed'` on
+  the mission — loitering, travelling, or executing all count equally, so failure chance is
+  uniform per drone and proportionate only to the number currently committed. A drone that fails
+  before ever being dispatched to a task (still loitering, e.g. an unused Aggressive/Conservative
+  buffer spare) logs `drone_failure` with `taskId`/`taskType` both `null` and needs no recovery —
+  see `EVENT_LOGGING.md`. Also fixed in the same pass: the "release co-assigned drones back to
+  loitering" step (same TICK block) used the stale `asset.position` snapshot instead of
+  `interpolateAssetPosition`, which only happened to be correct before because a released drone was
+  always one that had already physically arrived at the task; now that a still-travelling drone's
+  co-assignee can be released too, the live interpolated position is required.
+- **A strategy card's promised team didn't fully deploy.** `APPLY_STRATEGIC` (agent branch) built
+  `dronePool` — the set of drones that actually launch and become assignable in the tactical
+  planner — from `assignments.flatMap(a => a.assetIds)`, i.e. only drones `greedyAssign` put on a
+  task. But `greedyAssign` reuses a drone across tasks as it frees up, so a composition's "spare
+  per type" buffer (Aggressive's card literally says "at least one spare drone per type deployed as
+  a failure buffer") could go entirely unused by any task and silently never make it into
+  `dronePool` — never launched, never shown in the tactical planner, contradicting both the card
+  and `reserveAfter`. Confirmed in the pilot log: 9 of 14 agent-suggested strategic choices in one
+  session under-delivered by exactly the unused buffer drone(s) (mostly the second committed Blue).
+  **Fixed:** the agent branch now always unions in the full committed composition, the same thing
+  the manual branch already did correctly (manual choices in the log never showed this mismatch).
+  Pinned by `scripts/test-strategy-deploys-what-it-shows.ts`.
+- **Consequence for the data:** both bugs were present in every `study-v1.0` session, so real
+  redundancy delivered was sometimes less than what the strategy card/UI claimed, and failures
+  under-sampled Red/Green. `sim/engine.mts` (20 seeds/scenario) shows the fix is a net positive for
+  achievable score/completion (e.g. balanced SMART 514→554, strategic SMART 542→630) — expected,
+  since previously-phantom buffer drones now actually provide cover. **Do not pool `study-v1.0` and
+  `study-v1.1` sessions on redundancy-use or per-colour-failure axes without accounting for this;
+  check `session_start.appVersion` before pooling.**
+
 ---
 
 ## Reproducing a session from its log
