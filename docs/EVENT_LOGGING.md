@@ -98,7 +98,7 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 |---|---|---|---|
 | `session_start` | First tick of a session (`sessionStartMs` transitions null→set) | Full parameter dump: condition/seed/fleet/task tables/penalty rates/category weights/arrival λ/failure schedule constants/conservative-strategy constants — see `SessionStartEvent` | `gameReducer.ts:825` (TICK) |
 | `phase_change` | Any `GamePhase` transition (`playing`↔`survey`↔`between`↔`done`) | `fromPhase`, `toPhase` | `FINISH_SURVEYS` (2121), `NEXT_SESSION` (2130), `END_STUDY` (2151), `endSession()` (2399, → `'survey'`) |
-| `mission_arrived` | Mission spawns (real spawn in TICK, or `FORCE_MISSION_ARRIVAL` in testing mode) | `taskCompositions` (primary+substitute comp/baseTime per task), `scheduledFailureTimes`, `penaltyRate`, `maxReward` | `gameReducer.ts:867` (TICK spawn loop), `:2167` (`FORCE_MISSION_ARRIVAL`) |
+| `mission_arrived` | Mission spawns (real spawn in TICK, `FORCE_MISSION_ARRIVAL` in testing mode, **or a residual mission re-queued by `ABANDON_MISSION`**) | `taskCompositions` (primary+substitute comp/baseTime per task), `scheduledFailureTimes`, `penaltyRate`, `maxReward`, `isResidual`/`parentMissionId` (**a residual is not new demand — exclude it from arrival denominators, see § Abandonment**) | all three sites share `missionArrivedPayload()` — TICK spawn loop, `FORCE_MISSION_ARRIVAL`, `ABANDON_MISSION` |
 | `mission_completed` | Mission's last task transitions to completed/failed in the same tick | `tasksCompleted`, `tasksFailed`, `rewardEarned`, `penaltyAccrued` (that mission only), `outcome` (`all_completed`/`partial`/`none_completed` — **a mission reaches this event once every task is completed OR failed, so `completed` alone does not mean it went well**), plus the decisions that produced it: `arrivalTime`, `allocationTime`, `timeToAllocate`, `durationFromAllocation`, `maxReward`, `chosenStrategyName`, `agentInteraction`, `hadTacticalError`, `suppressedTaskId`, `droneFailureCount` | `gameReducer.ts` TICK step 3a (before `updatedMissions` is committed to state) |
 | `strategic_modal_opened` | `OPEN_STRATEGIC` or `OVERRIDE_TACTICAL` (re-opens the modal) | Full `strategiesPresented[]` (displayed AND true asset counts, scores incl. `redundancyScore`, bad-suggestion flags), `activeMissions`, `currentPenaltyAccrued` | `gameReducer.ts:1278` (`OPEN_STRATEGIC`), `:1618` (`OVERRIDE_TACTICAL`) |
 | `strategic_dismissed` | `CLOSE_STRATEGIC` (operator closes the modal without picking) | `latencyMs` (open→dismiss) | `gameReducer.ts:1307` |
@@ -112,20 +112,72 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 | `drone_failure` | Scheduled in-mission failure fires | `droneId`, `droneType`, `taskId`, `taskType` — **both null** when the failed drone hadn't reached (or been dispatched to) a task yet, i.e. it was still loitering | `gameReducer.ts:959` (TICK), `:2273`/`:2324` (testing-mode forced failures) |
 | `failure_recovery` | `ACCEPT_RECOVERY`, `APPLY_MANUAL_RECOVERY`, or `CONFIRM_FAILURE_RECOVERY` | `recoveryType` (`reserve`/`redistribute`/`manual`), `wasAgentSuggested`, `recoveryReason`, `latencyMs` (paired back to `recovery_opened`), `repairedTaskIds`, `repairedAssignments[]`, `tasksStillUnassigned` (**pending tasks the fix leaves with nobody on them** — an incomplete recovery) | `gameReducer.ts` (three recovery cases) |
 | `task_completed` | Task's `completionTime` is reached | `taskType`, `assetsUsed`, `completionTime` (**the task's own completion time — what scoring charges against**, not the tick that noticed it), `detectedAtElapsed` (the tick that noticed; equal to within a frame unless the sim clock was throttled), `startTime`, `travelTime`, `baseTime`, `useSubstitute`, `rewardEarned`, `waitFromMissionArrival` | `gameReducer.ts` TICK step 3 |
-| `task_failed` | Task fails (section safety net, recall, abandon, session end, tactical lockout) | `reason` (`asset_recalled`/`session_ended`/`drone_failure`/`tactical_lockout`/`scheduling_deadlock`/`mission_abandoned`), `taskType`, `statusBefore` (what it was doing when it died — `pending` means never dispatched), `assignedAssetIds`, `startTime`, `rewardForgone`, `waitFromMissionArrival`. All five sites go through `taskFailedPayload()` so they log identically | `gameReducer.ts` (TICK step 3 / 3b, `ABANDON_MISSION`, `RECALL_ASSET`, `endSession`) |
+| `task_failed` | Task is genuinely lost (section safety net, recall, session end, tactical lockout) | `reason` (`asset_recalled`/`session_ended`/`drone_failure`/`tactical_lockout`/`scheduling_deadlock`/`mission_abandoned`), `taskType`, `statusBefore` (what it was doing when it died — `pending` means never dispatched), `assignedAssetIds`, `startTime`, `rewardForgone`, `waitFromMissionArrival`, `missionWasAllocated` (**false ⇒ the operator never took this mission on; this is the dominant shape of `session_ended` failures**), `missionStatusBefore`. All sites go through `taskFailedPayload()` so they log identically | `gameReducer.ts` (TICK step 3 / 3b, `RECALL_ASSET`, `endSession`; `ABANDON_MISSION` only for work with no residual copy) |
+| `task_requeued` | `ABANDON_MISSION` — an incomplete task moves to the residual mission | `residualMissionId`/`residualTaskId` (**join key: a later `task_completed` uses the residual id**), `statusBefore`, `assignedAssetIds`, `rewardDeferred`, `executionProgress` (seconds already executed, preserved), `remainingBaseTime`, `waitFromMissionArrival`. **Not a failure** — see § Abandonment | `gameReducer.ts` (`ABANDON_MISSION`) |
 | `lockout_detected` | Live cross-drone scheduling deadlock detected + acted on (TICK step 3c) | `taskIds`, `droneIds`, `resolution` (`rerouted` when `fixLockouts` on = agent auto-fix; `help_needed` when off = surfaced to operator for recovery) | `gameReducer.ts` step 3c |
 | `asset_recalled` | Operator manually recalls a drone | `assetId`, `missionId`, `taskId` | `gameReducer.ts:1960` |
 | `task_reprioritised` | Operator reorders the task queue | `taskId`, `newPosition` | `gameReducer.ts:2067`, `:2089` |
-| `mission_abandoned` | `ABANDON_MISSION`, or a stuck scheduling deadlock when `fixLockouts` is off (TICK step 3c) | `completedTaskCount`, `remainingTaskCount` | `gameReducer.ts:1925`, step 3c |
+| `mission_abandoned` | `ABANDON_MISSION`, or a stuck scheduling deadlock when `fixLockouts` is off (TICK step 3c) | `completedTaskCount`, `remainingTaskCount`, `residualMissionId`, `carriedTaskIds`, `rewardCarriedOver` (**still winnable via the residual**), `rewardLost` (genuinely forgone — normally 0) | `gameReducer.ts` (`ABANDON_MISSION`), step 3c |
 | `state_snapshot` | Every `STATE_SNAPSHOT_INTERVAL` (10 s) of elapsed time, on a fixed grid | Full dump: every mission (status/times/strategy/interaction/recovery flags/per-mission penalty so far/all tasks with status+drones+times/`droneSequences`) and every drone (status/mission/task/interpolated x,y). Emitted on an elapsed-time grid so a coarse or throttled tick can't skip one, and a long tick emits at most one catch-up rather than a burst | `gameReducer.ts` TICK step 5b |
 | `recovery_opened` | A mission enters "help needed" — drone failure (non-graceful) or a surfaced lockout | `recoveryReason`, `failedDroneId`/`failedDroneType`, `affectedTaskIds`/`affectedTaskTypes`, `onMissionDroneIds` (what the recovery planner offers), `reserveAvailable`, `feasibleWithOnMissionDrones`, `tasksRemaining` | TICK failure handler, TICK step 3c (lockout), `FORCE_DRONE_FAILURE` |
 | `trust_probe` / `trust_probe_dismissed` | Periodic trust/workload probe answered or dismissed | `trust`, `workload` | `gameReducer.ts:2099`, `:2105` — **NOTE: currently unreachable, see Known gaps** |
 | `survey_response` | Any NASA-TLX / trust / TAM survey page submitted | `surveyName`, `responses` (raw Likert/slider values) | `gameReducer.ts:2112` |
-| `session_ended` | Session timer expires, or `FORCE_SESSION_END` (testing/tutorial) | `score`, `penaltyAccrued`, `completionPoints`, `greenEfficiency`, `meanMissionTime`, `agentFollowRate`, `tacticalFollowRate`, `reason` (`'timer'`\|`'forced'`), `inFlightMissionIds` | `gameReducer.ts:2387` inside `endSession(s, reason)` |
+| `session_ended` | Session timer expires, or `FORCE_SESSION_END` (testing/tutorial) | `score`, `penaltyAccrued`, `completionPoints`, `greenEfficiency`, `meanMissionTime`, `agentFollowRate`, `tacticalFollowRate`, `reason` (`'timer'`\|`'forced'`), `inFlightMissionIds`, `taskOutcomes` (`completed`/`failed`/`requeued`/`failuresByReason`/`failedOnNeverAllocatedMissions` — the headline ledger, so nobody has to re-derive it) | `gameReducer.ts` inside `endSession(s, reason)` |
 
 `agentFollowRate` = fraction of `strategic_choice` events with `wasAgentSuggestion: true`
 out of all `strategic_choice` events that session. `tacticalFollowRate` = fraction of
 agent-suggested `tactical_confirmed` events with `modifiedFromAgentPlan: false`.
+
+## Abandonment: re-queued work is not lost work
+
+**Read this before counting failures.** Abandoning a mission does not destroy its outstanding
+work. Every task that is still `pending`/`traveling`/`executing` is copied into a **residual
+mission** (`<parent>-R`, with partial execution progress preserved) which re-enters the queue and
+can be allocated and completed like any other. In practice most residuals do get finished.
+
+The log therefore records an abandonment as a **transfer**, not a loss:
+
+| What happened | Event |
+|---|---|
+| Task moves to the residual | `task_requeued` (`taskId` → `residualTaskId`) |
+| Task had no residual copy — genuinely gone | `task_failed` with `reason: 'mission_abandoned'` |
+| The mission itself | `mission_abandoned` with `carriedTaskIds`, `rewardCarriedOver`, `rewardLost` |
+| The residual joins the queue | `mission_arrived` with `isResidual: true`, `parentMissionId` |
+
+Rules that follow from this, and that `sim/log-audit.mts` enforces:
+
+- **Never count `task_requeued` as a failure.** It was logged as `task_failed` until
+  2026-08-21, which made every abandonment read as mass task loss — a log would show three
+  tasks "failed" for 130 forgone points while those same three completed under the residual two
+  minutes later. If you are reading logs collected before that date, subtract them by hand.
+- **Follow the work by `residualTaskId`.** Task ids change at the boundary
+  (`M002-T2` → `M002-R-T1`), so per-task-id joins across an abandonment need this hop.
+- **Exclude residual arrivals from "what arrived".** Their tasks and reward were already
+  counted under the parent, so including them double-counts demand and makes
+  `reward_capture`/`task_rate` wrong. `scripts/study_report.py` filters on `isResidual`.
+  Their *completions* do belong in the numerator — that is the same original work getting done.
+- **The parent stops accruing penalty at `abandonedAt`**; the residual accrues from its own
+  `arrivalTime` (the same instant). Charging both double-billed one piece of outstanding work.
+- **An abandoned mission keeps `status: 'abandoned'` to the end of the session**, and its tasks
+  are not swept into failures by `endSession` — their resolution is the `task_requeued`.
+
+## Reading `task_failed` without over-reading it
+
+Two structural sources produce most failures, and neither means the operator lost live work:
+
+1. **`reason: 'session_ended'` on a mission that was never allocated.** At the buzzer every
+   unfinished task of every unfinished mission is failed, including missions still sitting in
+   the queue untouched. `missionWasAllocated: false` marks these; `session_ended.taskOutcomes
+   .failedOnNeverAllocatedMissions` totals them. This is a *throughput/triage* signal (the
+   operator could not get to it), not an execution failure.
+2. **`reason: 'drone_failure'`** covers the section safety-net: a task whose required drone type
+   is no longer present for its section window. It fires for the drone that failed *and* for any
+   task that lost a chained drone as a knock-on.
+
+A mission still in flight when the timer ran out is relabelled `completed` in the final state if
+any of its tasks finished, but fires **no** `mission_completed` event. That pair — status
+`completed`, no event — is legitimate only for missions listed in
+`session_ended.inFlightMissionIds`; the audit harness checks exactly that.
 
 ## Mapping to research questions
 
@@ -243,8 +295,18 @@ These event types and enum members exist in the schema but no UI path dispatches
 - **`failure_recovery.recoveryType` `'reserve'` / `'redistribute'`**, and `RecoveryOption.type
   'reserve'` — `ACCEPT_RECOVERY`/`APPLY_MANUAL_RECOVERY` are only reachable via BroadcastChannel
   messages the map window never posts, so in practice every recovery logs `'manual'`.
+  (`ACCEPT_RECOVERY` used to log its `failure_recovery` *before* the composition guard that can
+  reject the redistribution, so a rejected click still produced a "repaired" record while the
+  mission stayed in help-needed — and the operator could click again, and again. It now logs only
+  when the redistribution is actually applied, and `buildRecoveryOptions` marks an option
+  `feasible` only if the resulting composition satisfies the task, i.e. only if that guard will
+  accept it. Dead in the shipped UI, but `sim/engine.mts` drives this path, where the old shape
+  emitted **1310 phantom recoveries for 7 real failures** in one seed.)
+- **`task_failed`/`'mission_abandoned'`** — now fires only for work an abandonment leaves with no
+  residual copy. Under current residual rules every incomplete task carries over, so this reason
+  is effectively unreachable; the branch is kept so the log stays correct if those rules change.
 - **`task_failed`/`'scheduling_deadlock'`** — the lockout path logs `lockout_detected` plus
-  `'mission_abandoned'`/`'session_ended'` failures instead.
+  `'session_ended'` failures (and `task_requeued` if the operator abandons) instead.
 - **True random UUIDs for `sessionId`** — currently deterministic
   (`participantId_seed_sN`), which means re-running the exact same participant/seed/session
   combination (e.g., a researcher testing the same URL twice) produces a colliding
@@ -295,6 +357,18 @@ before trusting the paper's description of the system:
    `wasAgentSuggested` on the resolution event — React state that gets reset whenever the
    mission's pending pool changes (another task completing mid-recovery), which silently lost the
    consultation. It now emits `tactical_suggest_used` with `recoveryMode: true` on the click.
+7. **Log the event only once the state change has actually been applied**, on the far side of any
+   guard that can reject it. Optimistically logging first produces records of things that never
+   happened (`ACCEPT_RECOVERY`, above) — the worst kind of log error, because it is invisible
+   until someone diffs the log against the state.
+8. **Name the event after what happened, not after the code path that emitted it.** Re-queued
+   work was logged as `task_failed` because the abandon handler was the failure handler; the
+   schema then asserted something false about the world. When a new situation is not really an
+   instance of an existing event, add a type.
+9. Verify with `npx tsx sim/log-audit.mts --seeds=10 --complexity=<preset>` — it drives the real
+   reducer headlessly and diffs the emitted log against the reducer's own final state (one
+   resolution event per task, event counts vs state counts, score/penalty reconciliation,
+   monotonic `seq`). It should report `ISSUES: 0` on every preset.
 
 ## Log volume
 

@@ -36,7 +36,7 @@ const STATE_SNAPSHOT_INTERVAL = 10  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.1'
+const APP_VERSION = 'study-v1.2'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -552,11 +552,38 @@ function computePenaltyAccrued(missions: Mission[], elapsed: number): number {
       // finish time from the moment a task is scheduled, so a traveling/executing task — or one
       // killed mid-execution (drone failure, section safety-net, tactical lockout, session end) —
       // must be charged against live `elapsed`, not against a future time it never reached.
-      const endTime = t.status === 'completed' ? (t.completionTime ?? elapsed) : elapsed
+      //
+      // An ABANDONED mission's clock stops at `abandonedAt`: every one of its incomplete tasks is
+      // re-queued into a residual mission that starts accruing from that same instant, so charging
+      // the parent against live `elapsed` too billed the operator twice for one piece of
+      // outstanding work (and kept an abandoned mission's penalty visibly climbing forever).
+      const cutoff = m.status === 'abandoned' && m.abandonedAt !== null ? m.abandonedAt : elapsed
+      const endTime = t.status === 'completed' ? (t.completionTime ?? cutoff) : cutoff
       penalty += taskRate * Math.max(0, endTime - m.arrivalTime)
     }
   }
   return Math.round(penalty)
+}
+
+// mission_arrived payload builder — used by the timed spawn, the testing-mode force, and the
+// residual re-queue on abandonment, so all three announce a mission with identical detail. The
+// residual passes `parentMissionId`; everything else is organic new demand.
+function missionArrivedPayload(mission: Mission, sessionDuration: number, parentMissionId: string | null = null) {
+  return {
+    type: 'mission_arrived' as const,
+    missionId: mission.id,
+    category: mission.category,
+    tasks: mission.tasks.map(t => ({ id: t.id, type: t.type })),
+    zoneCenter: mission.zoneCenter,
+    arrivalTime: mission.arrivalTime,
+    timeRemainingInSession: Math.max(0, sessionDuration - mission.arrivalTime),
+    taskCompositions: buildTaskCompositions(mission.tasks),
+    scheduledFailureTimes: mission.droneFailureTimes,
+    penaltyRate: CATEGORY_PENALTY_RATE[mission.category],
+    maxReward: mission.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
+    isResidual: parentMissionId !== null,
+    parentMissionId,
+  }
 }
 
 // task_failed payload builder — used by all five failure paths so they log the same detail.
@@ -580,6 +607,11 @@ function taskFailedPayload(
     startTime: task.startTime,
     rewardForgone: TASK_WEIGHT[task.type],
     waitFromMissionArrival: Math.max(0, elapsed - mission.arrivalTime),
+    // Most 'session_ended' failures are tasks of missions the operator never took on at all; without
+    // this the two very different stories ("never allocated" vs "cut off mid-flight") are
+    // indistinguishable without joining against strategic_choice.
+    missionWasAllocated: mission.allocationTime !== null,
+    missionStatusBefore: mission.status,
   }
 }
 
@@ -705,12 +737,22 @@ function buildRecoveryOptions(
   assets: Asset[],
   _elapsed: number,
 ): RecoveryOption[] {
-  // Only redistribution — operators must fix failures with their deployed subswarm
+  // Only redistribution — operators must fix failures with their deployed subswarm.
+  // The candidate must be one that ACCEPT_RECOVERY will actually accept: its guard requires the
+  // resulting composition to satisfy the task, so test that here rather than offering any spare
+  // drone as "feasible" and having the dispatch silently reject it.
+  const byId = new Map(assets.map(a => [a.id, a]))
+  const satisfies = (droneId: string) => taskMeetsComposition(
+    failedTask,
+    [...failedTask.assignedAssetIds.filter(id => id !== droneId && id !== failedDroneId), droneId],
+    byId,
+  )
   const otherDrone = assets.find(a =>
     a.currentMissionId === mission.id &&
     a.id !== failedDroneId &&
     a.status === 'deployed' &&
-    mission.tasks.find(t => t.id === a.currentTaskId)?.status !== 'executing'
+    mission.tasks.find(t => t.id === a.currentTaskId)?.status !== 'executing' &&
+    satisfies(a.id)
   )
   return [{
     type: 'redistribute',
@@ -1420,19 +1462,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         s = { ...s, pendingBlueprints: s.pendingBlueprints.filter(bp => bp.arrivalTime > elapsed) }
         for (const m of newMissions) {
           s = { ...s, missions: [...s.missions, m] }
-          s = logEvent(s, {
-            type: 'mission_arrived',
-            missionId: m.id,
-            category: m.category,
-            tasks: m.tasks.map(t => ({ id: t.id, type: t.type })),
-            zoneCenter: m.zoneCenter,
-            arrivalTime: m.arrivalTime,
-            timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
-            taskCompositions: buildTaskCompositions(m.tasks),
-            scheduledFailureTimes: m.droneFailureTimes,
-            penaltyRate: CATEGORY_PENALTY_RATE[m.category],
-            maxReward: m.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
-          })
+          s = logEvent(s, missionArrivedPayload(m, state.sessionDuration))
         }
       }
 
@@ -2519,22 +2549,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const opt = mission.pendingRecoveryOptions.find(o => o.type === action.recoveryType)
       if (!opt || !opt.feasible) return state
 
-      let s = logEvent(state, {
-        type: 'failure_recovery',
-        missionId: mission.id,
-        missionCategory: mission.category,
-        recoveryType: action.recoveryType,
-        wasAgentSuggested: true,
-        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
-        recoveryReason: mission.recoveryReason ?? null,
-        latencyMs: mission.recoveryOpenedAtMs != null ? Math.round(state.elapsed * 1000) - mission.recoveryOpenedAtMs : 0,
-        repairedTaskIds: opt.taskId ? [opt.taskId] : [],
-        repairedAssignments: opt.taskId && opt.redistributeToAssetId
-          ? [{ taskId: opt.taskId, assetIds: [opt.redistributeToAssetId] }] : [],
-        tasksStillUnassigned: mission.tasks
-          .filter(t => t.status === 'pending' && t.id !== opt.taskId && t.assignedAssetIds.length === 0)
-          .map(t => t.id),
-      })
+      // NOTE: the failure_recovery event is logged only once the redistribution has actually been
+      // applied (below). Logging it up front recorded a "repaired" event for every click that the
+      // composition guard then rejected, leaving the mission still asking for help while the log
+      // claimed it had been fixed — and an operator can click a rejected option repeatedly.
+      let s = state
 
       if (action.recoveryType === 'redistribute' && opt.redistributeToAssetId) {
         // Redirect an existing drone to the failed task
@@ -2545,6 +2564,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const totalIds = [...task.assignedAssetIds.filter(id => id !== opt.redistributeToAssetId), opt.redistributeToAssetId!]
         const assetByIdR = new Map(s.assets.map(a => [a.id, a]))
         if (taskMeetsComposition(task, totalIds, assetByIdR)) {
+          s = logEvent(s, {
+            type: 'failure_recovery',
+            missionId: mission.id,
+            missionCategory: mission.category,
+            recoveryType: action.recoveryType,
+            wasAgentSuggested: true,
+            timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
+            recoveryReason: mission.recoveryReason ?? null,
+            latencyMs: mission.recoveryOpenedAtMs != null ? Math.round(state.elapsed * 1000) - mission.recoveryOpenedAtMs : 0,
+            repairedTaskIds: opt.taskId ? [opt.taskId] : [],
+            repairedAssignments: [{ taskId: task.id, assetIds: totalIds }],
+            tasksStillUnassigned: mission.tasks
+              .filter(t => t.status === 'pending' && t.id !== opt.taskId && t.assignedAssetIds.length === 0)
+              .map(t => t.id),
+          })
           const currentPos = interpolateAssetPosition(asset, s.elapsed)
           const tt = travelTime(currentPos, task.waypoint, ASSET_SPEED[asset.type])
           const startTime = s.elapsed + tt
@@ -2781,14 +2815,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         t => t.status === 'pending' || t.status === 'traveling' || t.status === 'executing'
       )
 
-      // Build residual mission if there is anything left to do
+      // Build residual mission if there is anything left to do.
+      // `carryOver` records parent-task → residual-task so the log can say where each piece of work
+      // WENT rather than claiming it was lost.
       let residualMission: Mission | null = null
+      const carryOver: Array<{ task: Task; residualTaskId: string; execSoFar: number; remainingBase: number }> = []
       if (incompleteTasks.length > 0) {
         const residualTasks: Task[] = incompleteTasks.map((t, i) => {
           const execSoFar = t.status === 'executing' && t.startTime !== null
             ? Math.max(0, elapsed - t.startTime)
             : 0
           const remainingBase = Math.max(5, t.baseTime - execSoFar)
+          carryOver.push({ task: t, residualTaskId: `${mission.id}-R-T${i + 1}`, execSoFar, remainingBase })
           return {
             ...t,
             id: `${mission.id}-R-T${i + 1}`,
@@ -2841,8 +2879,32 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       let s: GameState = state
 
-      // Log task_failed for every task that won't carry over to the residual
-      for (const t of incompleteTasks) {
+      // Abandoning does NOT destroy the outstanding work: every incomplete task is re-queued into the
+      // residual and is very often completed later. So each carried task gets a `task_requeued`
+      // naming its residual id, and only a task with no residual copy is logged as a real failure.
+      // (This loop used to fire task_failed for the carried tasks — the log then reported an
+      // abandonment as mass task loss while the same tasks were finishing minutes later.)
+      const carriedIds = new Set(carryOver.map(c => c.task.id))
+      for (const c of carryOver) {
+        s = logEvent(s, {
+          type: 'task_requeued' as const,
+          missionId: mission.id,
+          missionCategory: mission.category,
+          taskId: c.task.id,
+          taskType: c.task.type,
+          residualMissionId: `${mission.id}-R`,
+          residualTaskId: c.residualTaskId,
+          statusBefore: c.task.status,
+          assignedAssetIds: [...c.task.assignedAssetIds],
+          rewardDeferred: TASK_WEIGHT[c.task.type],
+          executionProgress: Math.round(c.execSoFar * 10) / 10,
+          remainingBaseTime: c.remainingBase,
+          waitFromMissionArrival: Math.max(0, elapsed - mission.arrivalTime),
+        })
+      }
+      // Defensive: if residual-building rules ever stop carrying a task, it really is lost — log it.
+      const lostTasks = incompleteTasks.filter(t => !carriedIds.has(t.id))
+      for (const t of lostTasks) {
         s = logEvent(s, taskFailedPayload(mission, t, 'mission_abandoned', elapsed))
       }
 
@@ -2852,7 +2914,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missionCategory: mission.category,
         completedTaskCount: mission.tasks.filter(t => t.status === 'completed').length,
         remainingTaskCount: incompleteTasks.length,
+        residualMissionId: residualMission ? residualMission.id : null,
+        carriedTaskIds: carryOver.map(c => c.task.id),
+        rewardCarriedOver: carryOver.reduce((sum, c) => sum + TASK_WEIGHT[c.task.type], 0),
+        rewardLost: lostTasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
       })
+
+      // Announce the residual like any other arrival. Without this its later strategic_choice /
+      // tactical_confirmed / task_completed events referred to a mission that never appeared in the
+      // log, and task/reward denominators built from mission_arrived silently omitted it.
+      if (residualMission) {
+        s = logEvent(s, missionArrivedPayload(residualMission, s.sessionDuration, mission.id))
+      }
 
       const updatedMissions = s.missions.map(m =>
         m.id === mission.id
@@ -3105,19 +3178,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pendingBlueprints: state.pendingBlueprints.slice(1),
         missions: [...state.missions, mission],
       }
-      s = logEvent(s, {
-        type: 'mission_arrived',
-        missionId: mission.id,
-        category: mission.category,
-        tasks: mission.tasks.map(t => ({ id: t.id, type: t.type })),
-        zoneCenter: mission.zoneCenter,
-        arrivalTime: mission.arrivalTime,
-        timeRemainingInSession: Math.max(0, state.sessionDuration - state.elapsed),
-        taskCompositions: buildTaskCompositions(mission.tasks),
-        scheduledFailureTimes: mission.droneFailureTimes,
-        penaltyRate: CATEGORY_PENALTY_RATE[mission.category],
-        maxReward: mission.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
-      })
+      s = logEvent(s, missionArrivedPayload(mission, state.sessionDuration))
       return s
     }
 
@@ -3264,9 +3325,13 @@ function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameSta
     .filter(m => m.status === 'queued' || m.status === 'active')
     .map(m => m.id)
 
-  // Fail all incomplete tasks
+  // Fail all incomplete tasks.
+  // An ABANDONED mission is left exactly as it was: it already reached a terminal state the operator
+  // chose, its leftovers live on in the residual mission, and its tasks are excluded from the sweep
+  // so they are neither re-failed nor re-counted. Overwriting its status here also made the final
+  // state contradict the mission_abandoned event (abandoned missions came out as 'failed'/'completed').
   const failedMissions = s.missions.map(m => {
-    if (m.status === 'completed') return m
+    if (m.status === 'completed' || m.status === 'abandoned') return m
     const tasks = m.tasks.map(t =>
       t.status === 'pending' || t.status === 'traveling' || t.status === 'executing'
         ? { ...t, status: 'failed' as const }
@@ -3297,8 +3362,8 @@ function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameSta
 
   // Log every task the session end just failed. Without this the stream ends with tasks that
   // simply never resolved, and "failed at the buzzer" is indistinguishable from "never logged".
-  // Abandoned missions are skipped: their outstanding tasks already got a task_failed
-  // ('mission_abandoned') when the operator gave up, and re-logging them here would double-count.
+  // Abandoned missions are skipped: their outstanding tasks were re-queued into a residual mission
+  // and already logged as task_requeued, so failing them here would count one piece of work twice.
   let sEnd: GameState = { ...s, missions: failedMissions, score, penaltyAccrued }
   for (let mi = 0; mi < s.missions.length; mi++) {
     const before = s.missions[mi]
@@ -3312,6 +3377,26 @@ function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameSta
     }
   }
 
+  // Task ledger over the WHOLE session (sEnd already holds this session's session_ended-time
+  // failures), so the headline counts are in the log rather than left to be re-derived — which is
+  // where "everything failed" readings came from.
+  const finalEvents = sEnd.events[idx] ?? []
+  const failuresByReason: Record<string, number> = {}
+  let failedOnNeverAllocated = 0
+  for (const e of finalEvents as Array<{ type: string; reason?: string; missionWasAllocated?: boolean }>) {
+    if (e.type !== 'task_failed') continue
+    const r = e.reason ?? 'unknown'
+    failuresByReason[r] = (failuresByReason[r] ?? 0) + 1
+    if (e.missionWasAllocated === false) failedOnNeverAllocated++
+  }
+  const taskOutcomes = {
+    completed: finalEvents.filter((e: { type: string }) => e.type === 'task_completed').length,
+    failed: finalEvents.filter((e: { type: string }) => e.type === 'task_failed').length,
+    requeued: finalEvents.filter((e: { type: string }) => e.type === 'task_requeued').length,
+    failuresByReason,
+    failedOnNeverAllocatedMissions: failedOnNeverAllocated,
+  }
+
   let s2 = logEvent(sEnd, {
     type: 'session_ended',
     score,
@@ -3323,6 +3408,7 @@ function endSession(s: GameState, reason: 'timer' | 'forced' = 'timer'): GameSta
     tacticalFollowRate,
     reason,
     inFlightMissionIds,
+    taskOutcomes,
   })
 
   s2 = logEvent(s2, { type: 'phase_change', fromPhase: s.phase, toPhase: 'survey' })

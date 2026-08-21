@@ -362,6 +362,13 @@ export interface MissionArrivedEvent extends BaseEvent {
   scheduledFailureTimes: number[]
   penaltyRate: number
   maxReward: number
+  // A residual mission is the re-queued remainder of one the operator abandoned. It arrives like any
+  // other mission (and must be announced, or its later task/strategic events reference a mission the
+  // log never introduced) but it is NOT new demand: its tasks were already counted in the parent's
+  // `maxReward`/`tasks`. Analysis must exclude residuals from arrival denominators or every "share of
+  // available reward" figure is wrong. See docs/EVENT_LOGGING.md § Abandonment.
+  isResidual: boolean
+  parentMissionId: string | null
 }
 
 export interface MissionCompletedEvent extends BaseEvent {
@@ -635,6 +642,32 @@ export interface TaskFailedEvent extends BaseEvent {
   startTime: number | null         // null if it never started executing
   rewardForgone: number            // TASK_WEIGHT that will now never be earned
   waitFromMissionArrival: number   // elapsed − mission.arrivalTime
+  // Whether the mission had ever been allocated when this task died. The single biggest source of
+  // `reason: 'session_ended'` failures is missions that were never allocated at all, and separating
+  // "never started" from "in flight at the buzzer" previously needed a cross-reference to
+  // strategic_choice. `false` + statusBefore 'pending' = the operator never took this mission on.
+  missionWasAllocated: boolean
+  missionStatusBefore: MissionStatus
+}
+
+// A task that moved to a re-queued (residual) mission when the operator abandoned its parent.
+// This is deliberately NOT a task_failed: nothing was lost — the work is re-queued and is very often
+// completed later under the residual's task id. Emitting task_failed here (as this used to) made
+// abandonment look like mass task loss in every log. Join on residualTaskId to follow the work.
+export interface TaskRequeuedEvent extends BaseEvent {
+  type: 'task_requeued'
+  missionId: string                // the abandoned parent
+  missionCategory: MissionCategory
+  taskId: string                   // id under the parent
+  taskType: TaskType
+  residualMissionId: string        // the mission it moved to
+  residualTaskId: string           // its id under the residual — what a later task_completed will use
+  statusBefore: TaskStatus         // what it was doing when the parent was abandoned
+  assignedAssetIds: string[]       // drones on it at that moment (all released back to the hub)
+  rewardDeferred: number           // TASK_WEIGHT still winnable via the residual
+  executionProgress: number        // seconds of execution already done and preserved in the residual
+  remainingBaseTime: number        // execution time the residual copy still needs
+  waitFromMissionArrival: number   // elapsed − parent mission.arrivalTime
 }
 
 export interface LockoutDetectedEvent extends BaseEvent {
@@ -672,6 +705,16 @@ export interface SessionEndedEvent extends BaseEvent {
   tacticalFollowRate: number  // fraction of tactical agent plans confirmed unmodified
   reason: 'timer' | 'forced'
   inFlightMissionIds: string[]  // missions still active/queued when the session ended
+  // Top-line task ledger, so the headline counts never have to be reconstructed by scanning (and
+  // mis-binning) the event stream. requeued tasks are NOT failures; failuresByReason breaks the
+  // failures down, and `neverAllocated` is the share of them whose mission was never taken on.
+  taskOutcomes: {
+    completed: number
+    failed: number
+    requeued: number
+    failuresByReason: Record<string, number>
+    failedOnNeverAllocatedMissions: number
+  }
 }
 
 export interface StrategicModalOpenedEvent extends BaseEvent {
@@ -720,6 +763,13 @@ export interface MissionAbandonedEvent extends BaseEvent {
   missionCategory: MissionCategory
   completedTaskCount: number
   remainingTaskCount: number
+  // Where the remainder went. Every incomplete task is re-queued into the residual, so
+  // `rewardLost` is normally 0 and `carriedTaskIds.length === remainingTaskCount`; the split is
+  // logged explicitly so "abandoned" is never read as "this reward is gone".
+  residualMissionId: string | null   // null only if nothing was left to re-queue
+  carriedTaskIds: string[]           // parent task ids that moved to the residual
+  rewardCarriedOver: number          // TASK_WEIGHT still winnable through the residual
+  rewardLost: number                 // TASK_WEIGHT genuinely forgone (tasks with no residual copy)
 }
 
 export type GameEvent =
@@ -740,6 +790,7 @@ export type GameEvent =
   | FailureRecoveryEvent
   | TaskCompletedEvent
   | TaskFailedEvent
+  | TaskRequeuedEvent
   | LockoutDetectedEvent
   | AssetRecalledEvent
   | TaskReprioritisedEvent

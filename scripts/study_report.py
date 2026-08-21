@@ -89,7 +89,14 @@ def session_metrics(ev):
     o['epsS'], o['epsT'] = ss['epsilonStrategic'], ss['epsilonTactical']
     o['lambda'], o['fleet'] = ss['arrivalLambda'], ss['fleet']
 
-    arrived = by(ev, 'mission_arrived')
+    # Residual missions (the re-queued remainder of an abandoned one) are announced with
+    # mission_arrived so their later events resolve, but they are NOT new demand — their tasks and
+    # reward were already counted under the parent. Every "what arrived" denominator therefore uses
+    # organic arrivals only, or reward_capture/task_rate double-count the same work.
+    all_arrived = by(ev, 'mission_arrived')
+    arrived = [e for e in all_arrived if not e.get('isResidual')]
+    residual = [e for e in all_arrived if e.get('isResidual')]
+    o['residual_missions'] = len(residual)
     o['missions_arrived'] = len(arrived)
     o['reward_available'] = sum(e['maxReward'] for e in arrived)
     # Cost of delay per point at stake: a mission's penalty rate divided by the reward it offers.
@@ -102,12 +109,24 @@ def session_metrics(ev):
     o['tasks_arrived'] = sum(len(e['tasks']) for e in arrived)
     o['tasks_completed'] = len(by(ev, 'task_completed'))
     o['tasks_failed'] = len(by(ev, 'task_failed'))
+    # Re-queued, NOT lost: work that moved to a residual when its mission was abandoned. Counted
+    # separately so abandonment never inflates the failure count (it used to log these as failures).
+    o['tasks_requeued'] = len(by(ev, 'task_requeued'))
+    # Of the failures, how many were on missions the operator never allocated at all — the dominant
+    # shape of end-of-session failures, and a completely different story from losing live work.
+    o['tasks_failed_unallocated'] = sum(1 for e in by(ev, 'task_failed')
+                                        if e.get('missionWasAllocated') is False)
 
-    mc = by(ev, 'mission_completed')
+    residual_ids = {e['missionId'] for e in residual}
+    mc = [e for e in by(ev, 'mission_completed') if e['missionId'] not in residual_ids]
     o['outcomes'] = {'all_completed': 0, 'partial': 0, 'none_completed': 0}
     for e in mc: o['outcomes'][e['outcome']] += 1
     o['missions_finished'] = len(mc)
-    o['abandoned'] = len(by(ev, 'mission_abandoned'))
+    o['residuals_finished'] = sum(1 for e in by(ev, 'mission_completed') if e['missionId'] in residual_ids)
+    ab = by(ev, 'mission_abandoned')
+    o['abandoned'] = len(ab)
+    o['reward_requeued'] = sum(e.get('rewardCarriedOver', 0) for e in ab)
+    o['reward_lost_on_abandon'] = sum(e.get('rewardLost', 0) for e in ab)
     o['unresolved'] = len(se['inFlightMissionIds'])
     o['never_allocated'] = len({e['missionId'] for e in arrived} - {e['missionId'] for e in by(ev, 'strategic_choice')})
 
@@ -552,10 +571,15 @@ def build_html(parts, scen, order, meta):
         row('Missions arrived', [agg(s, 'missions_arrived') for s in order]),
         row('Missions finished', [agg(s, 'missions_finished') for s in order]),
         row('Missions abandoned', [agg(s, 'abandoned') for s in order]),
+        row('&nbsp;&nbsp;↳ re-queued as residual', [agg(s, 'residual_missions') for s in order]),
+        row('&nbsp;&nbsp;↳ residuals finished', [agg(s, 'residuals_finished') for s in order]),
         row('Unresolved at buzzer', [agg(s, 'unresolved') for s in order]),
         row('Never allocated', [agg(s, 'never_allocated') for s in order]),
         row('Tasks arrived', [agg(s, 'tasks_arrived') for s in order]),
         row('Tasks completed', [agg(s, 'tasks_completed') for s in order]),
+        row('Tasks failed', [agg(s, 'tasks_failed') for s in order]),
+        row('&nbsp;&nbsp;↳ on missions never allocated', [agg(s, 'tasks_failed_unallocated') for s in order]),
+        row('Tasks re-queued (not lost)', [agg(s, 'tasks_requeued') for s in order]),
         row('Tasks per mission', [agg(s, 'tasks_per_mission') for s in order]),
         row('Mean penalty rate (pts/s)', [agg(s, 'mean_penalty_rate', '{:.3f}') for s in order]),
         row('Delay cost (pts/s per 1000 pts at stake)',
@@ -814,7 +838,9 @@ def main():
             k: dict(zip(('mean', 'ci95', 'n'), mean_ci([m[k] for m in scen[s]])))
             for k in ('score', 'points', 'penalty', 'reward_capture', 'task_rate',
                       'mission_rate', 'penalty_ratio', 'missions_arrived', 'failures',
-                      'abandoned', 'unresolved', 'lockouts', 'tac_stranded')
+                      'abandoned', 'unresolved', 'lockouts', 'tac_stranded',
+                      'tasks_failed', 'tasks_failed_unallocated', 'tasks_requeued',
+                      'residual_missions', 'residuals_finished')
         }
     (out.parent / 'summary.json').write_text(json.dumps(summary, indent=2))
     print(f'wrote {out.parent / "summary.json"}')

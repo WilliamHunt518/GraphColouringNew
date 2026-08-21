@@ -169,10 +169,11 @@ adding or modifying any event.** Quick summary of event types:
 | `tactical_assignment_changed` | Each drone→task drag while building/editing a tactical (or recovery) plan — assign/chain/remove/unassign; full path-construction signal |
 | `drone_failure` | In-mission drone fails |
 | `failure_recovery` | Recovery option chosen (covers agent-suggested, redistribute, and manual recovery flows) |
-| `task_completed` / `task_failed` | Task state transition |
+| `task_completed` / `task_failed` | Task state transition. `task_failed` carries `missionWasAllocated` — most `session_ended` failures are tasks of missions the operator never took on |
+| `task_requeued` | A task moved to the residual mission when its parent was abandoned — **work transferred, not lost**; join `residualTaskId` to follow it |
 | `asset_recalled` | Operator manually recalls a drone |
 | `task_reprioritised` | Operator reorders task queue |
-| `mission_abandoned` | Operator abandons a mission with no feasible recovery |
+| `mission_abandoned` | Operator abandons a mission with no feasible recovery. The remainder is re-queued as a residual mission (`<id>-R`), which gets its own `mission_arrived` flagged `isResidual` — exclude residuals from arrival denominators, and never read an abandonment as lost reward (`rewardCarriedOver` vs `rewardLost`) |
 | `trust_probe` / `trust_probe_dismissed` | Periodic trust/workload probe answered or dismissed |
 | `session_ended` | Session summary metrics, including `reason` (timer/forced) and `tacticalFollowRate` |
 | `survey_response` | NASA-TLX / trust / TAM survey page submitted |

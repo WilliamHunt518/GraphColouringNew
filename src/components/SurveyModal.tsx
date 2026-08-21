@@ -128,6 +128,10 @@ export default function SurveyModal({ state, dispatch }: Props) {
   const currentName = surveyNames[pageIndex]
   const currentDef = SURVEY_DEFS[currentName]
   const isLast = pageIndex === surveyNames.length - 1
+  // Last page of THIS session's surveys is not the end of the study unless this is also the last
+  // session — participants were being told "Finish study" after session 1 of 2 and then handed
+  // session 2.
+  const isFinalSession = state.sessionNumber >= state.config.numSessions
 
   const allAnswered = currentDef.items.every(item => responses[item.id] !== undefined)
 
@@ -203,7 +207,7 @@ export default function SurveyModal({ state, dispatch }: Props) {
             disabled={!allAnswered}
             className="px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white"
           >
-            {isLast ? 'Finish study' : 'Next →'}
+            {isLast ? (isFinalSession ? 'Finish study' : 'Continue →') : 'Next →'}
           </button>
         </div>
       </div>

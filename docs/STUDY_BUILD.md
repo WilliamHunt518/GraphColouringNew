@@ -32,6 +32,7 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Which scenarios? | Session 1 **Strategic Heavy**, session 2 **Tactical Heavy** (defaults; changeable on the start screen). | `session_start.complexity` per session |
 | Tactical planner style? | **plan-all** (confirm the whole sequence once). | `session_start.tacticalMode === "plan-all"` |
 | Did the tutorial teach any of this? | 48 steps, manual workflow first, both assistants after. No lockout lesson. | tutorial runs under `participantId: "DEMO"`, `tutorialMode` |
+| If a mission is abandoned, is its work lost? | **No** (build ≥ `study-v1.2`). The remainder is re-queued as a residual mission and is usually finished. | `task_requeued` events + a `mission_arrived` with `isResidual: true`; **not** `task_failed` |
 
 ---
 
@@ -154,6 +155,56 @@ were real, reproducible bugs in `APPLY_STRATEGIC`/TICK, not artifacts of that se
   since previously-phantom buffer drones now actually provide cover. **Do not pool `study-v1.0` and
   `study-v1.1` sessions on redundancy-use or per-colour-failure axes without accounting for this;
   check `session_start.appVersion` before pooling.**
+
+### 9. `study-v1.2` — abandonment is logged as a transfer, not a loss
+
+Found by auditing logs against the reducer's own final state (`sim/log-audit.mts`, added in this
+pass). The event stream systematically over-reported failure around **abandonment**, which is the
+one operator action whose whole point is that the work survives.
+
+- **Re-queued tasks were logged as failures.** `ABANDON_MISSION` fired a `task_failed`
+  (`reason: 'mission_abandoned'`) for every incomplete task — but those tasks are precisely the
+  ones copied into the residual mission (`<parent>-R`) and re-queued, and they are usually
+  completed later. A live session showed three tasks logged failed for 130 "forgone" points, then
+  all three completing under the residual two minutes later. **Fixed:** carried work now emits
+  `task_requeued` (naming the `residualTaskId` that inherits it) and `task_failed` fires only for
+  work with no residual copy — which, under current residual rules, is never.
+- **The residual mission was never announced.** It was appended to `state.missions` with no
+  `mission_arrived`, so its `strategic_choice` / `tactical_confirmed` / `task_completed` events
+  referenced a mission the log never introduced, and any denominator built from `mission_arrived`
+  omitted it. **Fixed:** residuals are announced through the same `missionArrivedPayload()` as
+  every other arrival, flagged `isResidual: true` with `parentMissionId`. **Analysis must exclude
+  residual arrivals from "what arrived"** — their reward was already counted under the parent.
+  `scripts/study_report.py` does this.
+- **Both copies of the same outstanding work accrued penalty.** The abandoned parent kept billing
+  its carried tasks against live `elapsed` while the residual billed its copies too. **Fixed:** an
+  abandoned mission stops accruing at `abandonedAt`; the residual takes over from that instant.
+- **Abandoned missions lost their status at the buzzer.** `endSession` overwrote them to
+  `completed`/`failed` (and swept their carried tasks into `session_ended` failures), so the final
+  state contradicted the `mission_abandoned` event. **Fixed:** abandoned missions are left alone.
+- **`ACCEPT_RECOVERY` logged recoveries that never happened** — the `failure_recovery` event was
+  emitted before the composition guard that can reject the redistribution, and
+  `buildRecoveryOptions` marked an option `feasible` on a weaker test than that guard, so a
+  rejected click still produced a "repaired" record and the operator could click again. Dead in
+  the shipped UI (no component posts that action), but **`sim/engine.mts` drives it** — one seed
+  emitted 1310 phantom `failure_recovery` events for 7 real failures, so treat pre-v1.2 harness
+  recovery counts as unusable. **Fixed:** log only on the far side of the guard; `feasible` now
+  uses the same predicate.
+- **Interpretability, not a bug:** `task_failed` gained `missionWasAllocated` /
+  `missionStatusBefore`, and `session_ended` gained a `taskOutcomes` ledger
+  (`completed`/`failed`/`requeued`/`failuresByReason`/`failedOnNeverAllocatedMissions`). The
+  largest bucket of failures in any session is tasks of missions the operator never allocated,
+  failed en masse at the buzzer; that is a triage signal, not lost execution, and it no longer
+  needs a join against `strategic_choice` to see.
+- **Consequence for the data:** `study-v1.0`/`v1.1` logs **over-count `task_failed`** by one per
+  re-queued task and **under-count `mission_arrived`** by one per abandonment; their penalty (and
+  therefore score) is inflated for any session containing an abandonment, by the parent's rate
+  from `abandonedAt` to the buzzer. Sessions without an abandonment are unaffected on every axis.
+  To pool old sessions, drop `task_failed` with `reason: 'mission_abandoned'` and treat any
+  `<id>-R` mission as an unannounced arrival; the penalty difference cannot be recovered from the
+  log alone — re-run the seed under v1.2 if you need it.
+- Pinned by `scripts/test-abandon-logging.ts`; `sim/log-audit.mts` reports `ISSUES: 0` across
+  balanced/tactical/strategic/full at 10 seeds each.
 
 ---
 
