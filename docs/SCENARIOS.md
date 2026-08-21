@@ -4,6 +4,14 @@
 > session flow)? That is [`STUDY_BUILD.md`](STUDY_BUILD.md), tagged `study-v1.0` in git. **This**
 > file versions only the scenario *numbers* — speeds, fleet, arrival rates, mission mix. The
 > `study-v1.0` build ships scenario set **v2.1**.
+>
+> **Drone failures stopped being a per-version scenario constant at `study-v1.3`.** Every version
+> below (v1/v2/v2.1) used a per-mission precomputed schedule (`FAILURE_COUNT/GAP/JITTER/PROB_CONST`,
+> same global constants across every scenario within a version) — `study-v1.3` replaced that
+> mechanism entirely with a live per-tick, per-deployed-drone hazard (`FAILURE_RATE_PER_DRONE_SECOND`,
+> also global across scenarios, currently 1/900). It's a build-level mechanism change (fixed a
+> Blue-bias bug in the old schedule's selection RNG), not a scenario-tuning change, so it's tracked
+> in [`STUDY_BUILD.md`](STUDY_BUILD.md) §10, not versioned here.
 
 This file is the human-readable record of the scenario tuning constants used to collect study
 data. Every session also embeds these values in its `session_start` event (see

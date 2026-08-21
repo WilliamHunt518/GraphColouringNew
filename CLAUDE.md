@@ -93,6 +93,14 @@ when `sessionComplexities` isn't set. StartScreen.tsx shows one complexity picke
 | HL        | 0.10       | 0.40       |
 | LL        | 0.40       | 0.40       |
 
+**Pre-study AI-attitude survey (`study-v1.3`+):** `DemographicsForm.tsx` runs before session 1 and
+now includes, alongside the existing "About you"/comprehension sections, three Likert blocks on AI
+disposition — AIAS-4 (validated, verbatim, 10-point), a bespoke verification-propensity scale
+(7-point, 3 reverse-keyed items), and a bespoke delegation-boundary scale (7-point, 1 reverse-keyed
+item). Responses are logged raw (not reverse-scored) under `demographics` keys prefixed
+`aias_`/`verif_`/`deleg_`. Full item text, scoring notes, and provenance are in
+[`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md) §10.
+
 ### Key Files
 
 ```

@@ -18,7 +18,7 @@
 import {
   generateSessionPlan, createInitialAssets, travelTime,
   SESSION_DURATION_BY_COMPLEXITY, HUB, ASSET_SPEED,
-  CATEGORY_PENALTY_RATE, TASK_WEIGHT,
+  CATEGORY_PENALTY_RATE, TASK_WEIGHT, FAILURE_RATE_PER_DRONE_SECOND,
   TASK_PRIMARY, TASK_SUBSTITUTE, TASK_BASE_TIME, TASK_SUB_BASE_TIME,
 } from '../src/utils/missionGen.ts'
 import type { TaskType } from '../src/types/index.ts'
@@ -183,7 +183,9 @@ function simulate(bps: MissionBlueprint[], seed: number, fleet: Record<AssetType
 
       // Allocate: occupy `need[type]` earliest-free drones until t + hold + return.
       let hold = choice.makespan
-      if (withFailures) hold += (qm.bp.droneFailureTimes?.length ?? 0) * meanTaskCost(qm.tasks)
+      // Expected failures under the live per-drone-second hazard ≈ rate × team-size × exposure-time
+      // (replaces the old per-mission precomputed schedule's droneFailureTimes.length).
+      if (withFailures) hold += FAILURE_RATE_PER_DRONE_SECOND * (need.Blue + need.Red + need.Green) * hold * meanTaskCost(qm.tasks)
       for (const type of TYPES) {
         if (need[type] === 0) continue
         const idx = freeAt[type]
@@ -263,7 +265,9 @@ function finalisePenalty(partial: SimResult, bps: MissionBlueprint[], seed: numb
       const need = choice.pool
       if (reserve.Blue < need.Blue || reserve.Red < need.Red || reserve.Green < need.Green) { i++; continue }
       let hold = choice.makespan
-      if (withFailures) hold += (qm.bp.droneFailureTimes?.length ?? 0) * meanTaskCost(qm.tasks)
+      // Expected failures under the live per-drone-second hazard ≈ rate × team-size × exposure-time
+      // (replaces the old per-mission precomputed schedule's droneFailureTimes.length).
+      if (withFailures) hold += FAILURE_RATE_PER_DRONE_SECOND * (need.Blue + need.Red + need.Green) * hold * meanTaskCost(qm.tasks)
       for (const type of TYPES) {
         if (need[type] === 0) continue
         const idx = freeAt[type].map((f, k) => ({ f, k })).filter(x => x.f <= t).sort((a, b) => a.f - b.f).slice(0, need[type]).map(x => x.k)

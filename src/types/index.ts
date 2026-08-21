@@ -130,8 +130,7 @@ export interface Mission {
   // Per-drone task execution order (droneId → ordered taskId[]) — set on tactical confirm
   droneSequences: Record<string, string[]>
   // Drone failure
-  droneFailureTimes: number[]   // seconds after arrivalTime for each scheduled failure
-  droneFailuresFired: number    // how many failure events have triggered so far
+  droneFailuresFired: number    // how many failure events have triggered so far (live per-tick hazard, study-v1.3+; no precomputed schedule)
   failedDroneId: string | null
   // Failure recovery state
   failureRecoveryPending: boolean
@@ -259,8 +258,6 @@ export interface MissionBlueprint {
   taskTypes: TaskType[]
   zoneCenter: { x: number; y: number }
   waypoints: { x: number; y: number }[]
-  willFail: boolean
-  droneFailureTimes: number[]   // seconds after arrivalTime for each scheduled failure; [] if none
 }
 
 // ─── Events (data logging) ────────────────────────────────────────────────
@@ -330,10 +327,7 @@ export interface SessionStartEvent extends BaseEvent {
   categoryPenaltyRate: Record<MissionCategory, number>
   categoryWeights: Record<MissionCategory, number>   // weights for this session's complexity
   arrivalLambda: number                               // mean inter-arrival seconds for this session's complexity
-  failureCount: number
-  failureGap: number
-  failureJitter: number
-  failureProb: number    // inclusion prob per scheduled failure (E[failures]/mission = count × prob)
+  failureRatePerDroneSecond: number   // chance per second any one deployed drone fails (study-v1.3+; live per-tick hazard, uniform per drone)
   conservativeTopUp: number
   conservativeRedundancyBuffer: number
   snapshotIntervalSec: number   // cadence of state_snapshot events
@@ -359,7 +353,6 @@ export interface MissionArrivedEvent extends BaseEvent {
   arrivalTime: number
   timeRemainingInSession: number
   taskCompositions: Record<string, { primary: AssetRequirement; substitute: AssetRequirement | null; baseTime: number; subBaseTime: number | null }>
-  scheduledFailureTimes: number[]
   penaltyRate: number
   maxReward: number
   // A residual mission is the re-queued remainder of one the operator abandoned. It arrives like any

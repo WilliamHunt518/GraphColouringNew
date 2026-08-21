@@ -61,7 +61,7 @@ function run(droneSequences: Record<string, string[]>): GameState {
     arrivalTime: 0, allocationTime: 0, completionTime: null,
     agentInteraction: 'shown', chosenStrategyName: 'Aggressive', manualPriorityIds: [],
     tacticalPending: true, pendingAllocation: pending, tacticalOpenedAtMs: 0,
-    droneSequences: {}, droneFailureTimes: [], droneFailuresFired: 0, failedDroneId: null,
+    droneSequences: {}, droneFailuresFired: 0, failedDroneId: null,
     failureRecoveryPending: false, pendingRecoveryOptions: null,
     tacticallySuppressedTaskId: null, abandonedAt: null, isResidual: false, needsGreedyReplan: false,
   } as unknown as Mission

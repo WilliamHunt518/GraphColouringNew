@@ -33,6 +33,9 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Tactical planner style? | **plan-all** (confirm the whole sequence once). | `session_start.tacticalMode === "plan-all"` |
 | Did the tutorial teach any of this? | 48 steps, manual workflow first, both assistants after. No lockout lesson. | tutorial runs under `participantId: "DEMO"`, `tutorialMode` |
 | If a mission is abandoned, is its work lost? | **No** (build ≥ `study-v1.2`). The remainder is re-queued as a residual mission and is usually finished. | `task_requeued` events + a `mission_arrived` with `isResidual: true`; **not** `task_failed` |
+| How many points is a completed task worth? | **Build ≥ `study-v1.3`: double `study-v1.0`–`v1.2`** (20/40/60/80/100 by task type, not 10/20/30/40/50). Penalty-per-second is unchanged. | `session_start.taskWeight` |
+| How are drone failures generated? | **Build ≥ `study-v1.3`:** a live per-tick hazard, uniform per second per deployed drone, regardless of type or mission. **`study-v1.0`–`v1.2`:** a per-mission precomputed schedule whose selection RNG was Blue-biased. | `session_start.failureRatePerDroneSecond` (v1.3+) vs `failureCount`/`failureGap`/`failureJitter`/`failureProb` (pre-v1.3) |
+| Is there a pre-study AI-attitude survey? | **Yes, build ≥ `study-v1.3`:** AIAS-4 + two bespoke Likert blocks, before session 1. | `demographics` keys prefixed `aias_`/`verif_`/`deleg_`; absent entirely pre-`v1.3` |
 
 ---
 
@@ -206,6 +209,77 @@ one operator action whose whole point is that the work survives.
 - Pinned by `scripts/test-abandon-logging.ts`; `sim/log-audit.mts` reports `ISSUES: 0` across
   balanced/tactical/strategic/full at 10 seeds each.
 
+### 10. `study-v1.3` — friendlier scores, an honest failure model, and a pre-study AI-attitude survey
+
+Found while auditing a pilot log (`SamHJ` / P-6155): scores clamp to 0 whenever penalty outruns
+completion points (session 2 did), and drone failures were still heavily Blue-biased (17/21 across
+both sessions, vs. a 33–48% Blue share of committed drones) despite `study-v1.1` claiming to fix
+exactly this. Three changes:
+
+- **Doubled `TASK_WEIGHT`** (`missionGen.ts`: 10/20/30/40/50 → 20/40/60/80/100) so completed-task
+  points, and therefore score headroom, roughly double. Safe because `computePenaltyAccrued()`
+  charges each task a *ratio* of `TASK_WEIGHT[type]/totalWeight` against a fixed
+  `CATEGORY_PENALTY_RATE` — scaling every weight by the same factor leaves that ratio, and so
+  penalty-per-second, unchanged. Confirmed via `sim/engine.mts`: SMART-operator task-completion %
+  is unchanged (strategic/tactical both still land at 83%, matching pre-v1.3 runs) — only the
+  score numbers moved. **Consequence for the data:** don't compare raw `score`/`completionPoints`
+  across the `study-v1.2`/`v1.3` boundary; percentages (`tasksCompleted/tasksTotal`,
+  `reward_capture`) are fine to pool.
+- **Replaced the drone-failure model.** The old scheme precomputed up to `FAILURE_COUNT_CONST=2`
+  failure *times* per mission at generation time (`missionGen.ts`), fired by picking a random
+  currently-`'deployed'` drone via
+  `new SeededRNG(seed ^ mission.id.charCodeAt(1) ^ 0xfa11 ^ droneFailuresFired)`. Root cause of the
+  Blue bias: `mission.id.charCodeAt(1)` is the first digit of a 3-digit mission number, which is
+  `'0'` for every mission in any realistic session (<100 missions) — the seed barely varied, so the
+  "random" pick collapsed to nearly the same draw for every mission's Nth failure, and because Blue
+  drones (`B01`–`B11`) sit first in the asset array, a low-index draw reliably landed on Blue.
+  **Fixed:** every currently-`'deployed'` drone across every `'active'` mission now independently
+  rolls a failure **every tick** with probability `FAILURE_RATE_PER_DRONE_SECOND × dt`
+  (`FAILURE_RATE_PER_DRONE_SECOND = 1/900`, i.e. ≈1 failure per continuously-deployed drone every 15
+  minutes), seeded per (drone, tick) via `hashId(droneId)` (a real full-string hash, not a single
+  `charCodeAt`) combined with the tick timestamp — so there is no schedule and no array-position
+  dependency left to bias anything. Total failures now scale with actual drone-seconds deployed
+  (utilisation), which is the correct read of "why did session 2 have more failures than session
+  1?" — more/longer-deployed drones, not mission count or a broken picker. Calibrated via
+  `npx tsx sim/engine.mts --seeds=40`: at this rate the SMART operator completes 83% of tasks in
+  both study scenarios (strategic 83%, tactical 83%), matching the pre-existing 83–85% target.
+  Colour balance re-checked with a 40-session sweep: Blue/Red/Green failures came out
+  709/538/529 — no longer overwhelmingly Blue; the residual lean toward Blue reflects Aggressive/
+  Conservative strategies committing more Blue drones on average (more exposure), which is now the
+  *correct* thing driving the count, not an RNG artifact. `mission_arrived.scheduledFailureTimes`
+  and `session_start.failureCount/failureGap/failureJitter/failureProb` are gone, replaced by
+  `session_start.failureRatePerDroneSecond`. The residual mission's separate ad-hoc failure
+  scheduler was also removed — a residual is `'active'`/`'queued'` like any other mission, so the
+  single ambient per-tick check now covers it for free.
+  **Consequence for the data:** don't compare `drone_failure` counts, or failures broken down by
+  drone colour, across the `study-v1.2`/`v1.3` boundary — the generating process is entirely
+  different, not just re-tuned. `sim/log-audit.mts` reports `ISSUES: 0` (`drone_failure` events ==
+  `droneFailuresFired` in state) for both study scenarios at 10 seeds each under the new model.
+- **Added a pre-study AI-attitude survey** to the existing demographics questionnaire
+  (`DemographicsForm.tsx`), before session 1 alongside the existing "About you" and comprehension-
+  check sections:
+  - **Block A — AIAS-4** (Grassini, 2023; validated, verbatim, unidimensional, no reverse items),
+    10-point scale (`aias_*` keys), preceded by a short neutral "what counts as AI" framing
+    paragraph (replicating the original administration, so scores stay comparable to published
+    norms — and it doubles as neutral framing that doesn't cue the Strategic/Tactical Assistant
+    manipulation).
+  - **Block B — Verification propensity** (bespoke), 7-point scale, 6 items (`verif_*`, 3
+    reverse-keyed: `verif_comfortable_unreviewed`, `verif_happy_unsupervised`,
+    `verif_reliable_no_check`) plus one optional item (`verif_hard_to_detect_errors`) kept out of
+    the composite — it measures perceived error-detectability, a moderator, not propensity to check.
+  - **Block C — Delegation boundary** (bespoke), 7-point scale, 5 items (`deleg_*`, one
+    reverse-keyed: `deleg_urgent_better_than_nothing`). Items 1–2 map onto the Strategic
+    (recommend) vs. Tactical (decide) Assistant contrast.
+  - All responses are logged **raw** (not reverse-scored at collection time) in
+    `demographics`/`SUBMIT_DEMOGRAPHICS`, matching every other event in this build — reverse-key
+    and score at analysis time. `demographics.gender` (already collected) is available as the
+    AIAS-4 gender covariate the validation paper found significant.
+  - **Consequence for the data:** `study-v1.0`–`v1.2` sessions have no `aias_*`/`verif_*`/`deleg_*`
+    keys in `demographics` at all — absence, not a null/blank answer.
+
+`git show study-v1.2` is the exact code any pre-`v1.3` participant session ran (the boundary was
+tagged retroactively when this work started, since no tag had existed for it before).
+
 ---
 
 ## Reproducing a session from its log
@@ -218,9 +292,9 @@ session-relative `timestamp`, a real `wallClock`, and a `sessionId`.
 
 ## If you change something
 
-1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.1`).
+1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.4`).
 2. Add a section here describing what changed and what it means for pooling old data.
-3. Commit, then `git tag -a study-v1.1 -m "..."` so the tag and `appVersion` agree.
+3. Commit, then `git tag -a study-v1.4 -m "..."` so the tag and `appVersion` agree.
 
 Existing tags: `git tag -l` · what a tag means: `git show study-v1.0 --stat` (the annotation
 summarises the build) · what changed since: `git log study-v1.0..HEAD --oneline`.

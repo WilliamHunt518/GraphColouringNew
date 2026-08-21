@@ -96,9 +96,9 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 
 | `type` | Fired when | Key fields beyond the envelope | Logged in |
 |---|---|---|---|
-| `session_start` | First tick of a session (`sessionStartMs` transitions null→set) | Full parameter dump: condition/seed/fleet/task tables/penalty rates/category weights/arrival λ/failure schedule constants/conservative-strategy constants — see `SessionStartEvent` | `gameReducer.ts:825` (TICK) |
+| `session_start` | First tick of a session (`sessionStartMs` transitions null→set) | Full parameter dump: condition/seed/fleet/task tables/penalty rates/category weights/arrival λ/`failureRatePerDroneSecond` (`study-v1.3`+; live per-drone-second hazard, replaces the pre-v1.3 `failureCount`/`failureGap`/`failureJitter`/`failureProb` schedule constants)/conservative-strategy constants — see `SessionStartEvent` | `gameReducer.ts:825` (TICK) |
 | `phase_change` | Any `GamePhase` transition (`playing`↔`survey`↔`between`↔`done`) | `fromPhase`, `toPhase` | `FINISH_SURVEYS` (2121), `NEXT_SESSION` (2130), `END_STUDY` (2151), `endSession()` (2399, → `'survey'`) |
-| `mission_arrived` | Mission spawns (real spawn in TICK, `FORCE_MISSION_ARRIVAL` in testing mode, **or a residual mission re-queued by `ABANDON_MISSION`**) | `taskCompositions` (primary+substitute comp/baseTime per task), `scheduledFailureTimes`, `penaltyRate`, `maxReward`, `isResidual`/`parentMissionId` (**a residual is not new demand — exclude it from arrival denominators, see § Abandonment**) | all three sites share `missionArrivedPayload()` — TICK spawn loop, `FORCE_MISSION_ARRIVAL`, `ABANDON_MISSION` |
+| `mission_arrived` | Mission spawns (real spawn in TICK, `FORCE_MISSION_ARRIVAL` in testing mode, **or a residual mission re-queued by `ABANDON_MISSION`**) | `taskCompositions` (primary+substitute comp/baseTime per task), `penaltyRate`, `maxReward`, `isResidual`/`parentMissionId` (**a residual is not new demand — exclude it from arrival denominators, see § Abandonment**). `study-v1.3`+ dropped `scheduledFailureTimes` — failures are no longer scheduled per mission, see `session_start.failureRatePerDroneSecond` | all three sites share `missionArrivedPayload()` — TICK spawn loop, `FORCE_MISSION_ARRIVAL`, `ABANDON_MISSION` |
 | `mission_completed` | Mission's last task transitions to completed/failed in the same tick | `tasksCompleted`, `tasksFailed`, `rewardEarned`, `penaltyAccrued` (that mission only), `outcome` (`all_completed`/`partial`/`none_completed` — **a mission reaches this event once every task is completed OR failed, so `completed` alone does not mean it went well**), plus the decisions that produced it: `arrivalTime`, `allocationTime`, `timeToAllocate`, `durationFromAllocation`, `maxReward`, `chosenStrategyName`, `agentInteraction`, `hadTacticalError`, `suppressedTaskId`, `droneFailureCount` | `gameReducer.ts` TICK step 3a (before `updatedMissions` is committed to state) |
 | `strategic_modal_opened` | `OPEN_STRATEGIC` or `OVERRIDE_TACTICAL` (re-opens the modal) | Full `strategiesPresented[]` (displayed AND true asset counts, scores incl. `redundancyScore`, bad-suggestion flags), `activeMissions`, `currentPenaltyAccrued` | `gameReducer.ts:1278` (`OPEN_STRATEGIC`), `:1618` (`OVERRIDE_TACTICAL`) |
 | `strategic_dismissed` | `CLOSE_STRATEGIC` (operator closes the modal without picking) | `latencyMs` (open→dismiss) | `gameReducer.ts:1307` |
@@ -246,7 +246,10 @@ changes, or are a larger feature than a logging fix. Flagging them here so they 
 silently forgotten:
 
 - **Pre-study demographics** — now IMPLEMENTED (`SUBMIT_DEMOGRAPHICS` logs a timestamped event and
-  sets `state.demographics`). **Post-study open-response survey** — still not built.
+  sets `state.demographics`). **`study-v1.3`+** also folds in a pre-study AI-attitude survey
+  (AIAS-4 + two bespoke Likert blocks) into the same form/event — see `demographics` keys prefixed
+  `aias_`/`verif_`/`deleg_`, raw (not reverse-scored) responses, full item text and reverse-key list
+  in `docs/STUDY_BUILD.md` §10. **Post-study open-response survey** — still not built.
 - **Tactical planner intermediate drags** — now IMPLEMENTED as `tactical_assignment_changed`: each
   drone→task manipulation is relayed from the map window over the existing `_mapAction` channel
   (the map window stays a pure client — it sends an intent, the host reducer logs it, no client

@@ -59,7 +59,7 @@ function deadlockMission(): Mission {
     agentInteraction: 'manual', chosenStrategyName: 'Manual', manualPriorityIds: [],
     tacticalPending: false, pendingAllocation: null, tacticalOpenedAtMs: null,
     droneSequences: { B1: ['t5a', 't5b'], R1: ['t5b', 't5a'], G1: ['t5a'], G2: ['t5b'] },
-    droneFailureTimes: [], droneFailuresFired: 0, failedDroneId: null,
+    droneFailuresFired: 0, failedDroneId: null,
     failureRecoveryPending: false, pendingRecoveryOptions: null,
     tacticallySuppressedTaskId: null, abandonedAt: null, isResidual: false, needsGreedyReplan: false,
   } as unknown as Mission

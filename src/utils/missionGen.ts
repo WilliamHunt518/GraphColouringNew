@@ -345,32 +345,12 @@ export function generateSessionPlan(
       taskTypes,
       zoneCenter,
       waypoints,
-      willFail: false,
-      droneFailureTimes: [],
     })
   }
 
-  // Schedule drone failures per mission. Each mission gets up to FAILURE_COUNT staggered failure
-  // events so redundancy planning (extra drones in the allocation) matters. Each scheduled failure
-  // is then included only with probability FAILURE_PROB, so the expected rate is
-  // FAILURE_COUNT × FAILURE_PROB failures/mission (currently 2 × 0.75 = 1.5) — missions end up with
-  // 0/1/2 failures, giving natural variety while cutting the overall failure load. The RNG is the
-  // same seeded stream, so the schedule stays fully reproducible.
-  const FAILURE_COUNT = FAILURE_COUNT_CONST
-  const FAILURE_GAP   = FAILURE_GAP_CONST
-  const FAILURE_JITTER = FAILURE_JITTER_CONST
-  const FAILURE_PROB   = FAILURE_PROB_CONST
-
-  for (let i = 0; i < blueprints.length; i++) {
-    const times: number[] = []
-    for (let f = 0; f < FAILURE_COUNT; f++) {
-      // Failure 1 ≈ 30–60s, failure 2 ≈ 90–120s, etc. Draw the time first (keeps the stream
-      // aligned regardless of inclusion) then gate on FAILURE_PROB.
-      const t = 30 + f * FAILURE_GAP + rng.randFloat(0, FAILURE_JITTER)
-      if (rng.randFloat(0, 1) < FAILURE_PROB) times.push(t)
-    }
-    blueprints[i] = { ...blueprints[i], willFail: times.length > 0, droneFailureTimes: times }
-  }
+  // Drone failures are no longer scheduled per mission at generation time — see
+  // FAILURE_RATE_PER_DRONE_SECOND below; the live per-tick hazard in gameReducer.ts TICK
+  // handles them uniformly across every deployed drone regardless of which mission it's on.
 
   return blueprints
 }
@@ -390,18 +370,32 @@ export const CATEGORY_PENALTY_RATE: Record<MissionCategory, number> = {
   E: 0.40,
 }
 
-/** Completion reward per completed task (×10 vs legacy to give penalties room to bite). */
-export const TASK_WEIGHT: Record<TaskType, number> = { 1: 10, 2: 20, 3: 30, 4: 40, 5: 50 }
+/**
+ * Completion reward per completed task (×10 vs legacy to give penalties room to bite; study-v1.3
+ * doubled it again — ×20 vs legacy — for friendlier scores. Penalty accrual is charged as a RATIO
+ * of TASK_WEIGHT[type]/totalWeight (see computePenaltyAccrued), so scaling every entry by the same
+ * factor leaves penalty-per-second untouched: only completion points, and therefore score
+ * headroom, actually doubled. Difficulty/pacing is unaffected.
+ */
+export const TASK_WEIGHT: Record<TaskType, number> = { 1: 20, 2: 40, 3: 60, 4: 80, 5: 100 }
 
 /** Penalty is charged at this interval (seconds); each charge = CATEGORY_PENALTY_RATE × CHARGE_INTERVAL. */
 export const CHARGE_INTERVAL = 15
 
-// ─── Drone failure schedule constants ─────────────────────────────────────
+// ─── Drone failure hazard rate (study-v1.3) ────────────────────────────────
 
-export const FAILURE_COUNT_CONST = 2    // max failures scheduled per mission
-export const FAILURE_GAP_CONST = 60     // minimum seconds between successive failures
-export const FAILURE_JITTER_CONST = 30  // random jitter added to each failure time
-export const FAILURE_PROB_CONST = 0.75  // inclusion prob per scheduled failure → E[1.5]/mission
+/**
+ * Chance per second that any single currently-deployed drone fails, checked live every tick
+ * (gameReducer.ts TICK step 1b) rather than precomputed per mission — so total failures scale
+ * with actual drone-seconds deployed (utilisation), uniformly across type and mission, instead of
+ * with mission count or a fixed per-mission schedule. Replaces the old
+ * FAILURE_COUNT/GAP/JITTER/PROB_CONST scheme (E[1.5] failures/mission), whose selection RNG turned
+ * out to be Blue-biased — see docs/STUDY_BUILD.md.
+ * Calibrated via `npx tsx sim/engine.mts --seeds=40`: at 1/900 the SMART operator completes 83%
+ * of tasks in both study scenarios (strategic 83%, tactical 83%), matching the historical 83-85%
+ * target — see docs/STUDY_BUILD.md.
+ */
+export const FAILURE_RATE_PER_DRONE_SECOND = 1 / 900
 
 // ─── Asset pool ───────────────────────────────────────────────────────────
 

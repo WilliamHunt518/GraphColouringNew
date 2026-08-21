@@ -12,7 +12,7 @@ import {
   generateSessionPlan, createInitialAssets, travelTime,
   SESSION_DURATION_BY_COMPLEXITY,
   LAMBDA, CATEGORY_WEIGHTS, CATEGORIES, FLEET, TUTORIAL_FLEET,
-  FAILURE_COUNT_CONST, FAILURE_GAP_CONST, FAILURE_JITTER_CONST, FAILURE_PROB_CONST,
+  FAILURE_RATE_PER_DRONE_SECOND,
 } from '../utils/missionGen'
 import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
 import { findSchedulingCycle } from '../utils/scheduling'
@@ -36,7 +36,7 @@ const STATE_SNAPSHOT_INTERVAL = 10  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.2'
+const APP_VERSION = 'study-v1.3'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -75,8 +75,6 @@ const TUTORIAL_FIRST_BLUEPRINT: MissionBlueprint = {
     { x: 255, y: 205 },  // T3 — east
     { x: 195, y: 220 },  // T5 — south
   ],
-  willFail: false,
-  droneFailureTimes: [],
 }
 
 // ─── Tutorial second-mission blueprint (agent-introduction phase) ──────────
@@ -97,8 +95,6 @@ const TUTORIAL_SECOND_BLUEPRINT: MissionBlueprint = {
     { x: 730, y: 215 },  // T2 — northeast
     { x: 705, y: 295 },  // T4 — south
   ],
-  willFail: false,
-  droneFailureTimes: [],
 }
 
 // ─── Initial state factory ─────────────────────────────────────────────────
@@ -488,7 +484,6 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     pendingAllocation: null,
     tacticalOpenedAtMs: null,
     droneSequences: {},
-    droneFailureTimes: bp.droneFailureTimes,
     droneFailuresFired: 0,
     failedDroneId: null,
     failureRecoveryPending: false,
@@ -578,7 +573,6 @@ function missionArrivedPayload(mission: Mission, sessionDuration: number, parent
     arrivalTime: mission.arrivalTime,
     timeRemainingInSession: Math.max(0, sessionDuration - mission.arrivalTime),
     taskCompositions: buildTaskCompositions(mission.tasks),
-    scheduledFailureTimes: mission.droneFailureTimes,
     penaltyRate: CATEGORY_PENALTY_RATE[mission.category],
     maxReward: mission.tasks.reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0),
     isResidual: parentMissionId !== null,
@@ -1437,10 +1431,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             CATEGORIES.map((cat, i) => [cat, CATEGORY_WEIGHTS[sessionComplexity][i]])
           ) as Record<MissionCategory, number>,
           arrivalLambda: LAMBDA[sessionComplexity],
-          failureCount: FAILURE_COUNT_CONST,
-          failureGap: FAILURE_GAP_CONST,
-          failureJitter: FAILURE_JITTER_CONST,
-          failureProb: FAILURE_PROB_CONST,
+          failureRatePerDroneSecond: FAILURE_RATE_PER_DRONE_SECOND,
           conservativeTopUp: CONSERVATIVE_TOP_UP,
           conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
           snapshotIntervalSec: STATE_SNAPSHOT_INTERVAL,
@@ -1467,33 +1458,38 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // 1b. Drone failure check (suppressed in testing mode)
-      // Each mission has multiple scheduled failure times; fire at most one per tick,
-      // and wait for any pending recovery to be resolved before the next failure.
+      // study-v1.3: every deployed drone independently rolls a failure each tick with probability
+      // FAILURE_RATE_PER_DRONE_SECOND × dt — uniform per drone per second regardless of type or
+      // mission, so total failures scale purely with actual drone-seconds deployed (utilisation),
+      // not with mission count. Replaces the old per-mission precomputed schedule, whose RNG seed
+      // (`mission.id.charCodeAt(1)`) barely varied across a session's mission ids and reliably
+      // picked a low-index (Blue) drone — see docs/STUDY_BUILD.md.
+      // At most one failure fires per tick (dt is always small — capped rAF frames, or the fixed
+      // 0.25–1s steps the headless harnesses use — so a genuine multi-roll tick is effectively
+      // impossible at this rate; the cap is just a safety net matching prior behaviour).
       if (!state.config.testingMode) {
-        for (const mission of s.missions) {
-          if (mission.status !== 'active') continue
-          if (mission.droneFailuresFired >= mission.droneFailureTimes.length) continue
-          if (mission.failureRecoveryPending) continue  // wait for operator to resolve previous failure
-          const nextFailTime = mission.droneFailureTimes[mission.droneFailuresFired]
-          if (elapsed < mission.arrivalTime + nextFailTime) continue
+        const dt = Math.max(0, elapsed - state.elapsed)
+        if (dt > 0 && FAILURE_RATE_PER_DRONE_SECOND > 0) {
+          const missionById = new Map(s.missions.map(m => [m.id, m]))
+          const eligibleDrones = s.assets.filter(a => {
+            if (a.status !== 'deployed' || !a.currentMissionId) return false
+            const m = missionById.get(a.currentMissionId)
+            return m !== undefined && m.status === 'active' && !m.failureRecoveryPending
+          })
 
-          // Pick a random deployed drone on this mission — travelling to loiter, travelling
-          // to a task, or already executing all count equally, so the chance of failing is
-          // uniform per drone and proportionate only to how many are currently committed
-          // (not skewed toward whichever type/task happens to reach "executing" first, which
-          // previously favoured Blue: fastest + first-dispatched to the short T1/T2 tasks).
-          const eligibleDrones = s.assets.filter(
-            a => a.currentMissionId === mission.id && a.status === 'deployed'
-          )
-          if (eligibleDrones.length === 0) continue  // nothing deployed yet, wait
+          const pFail = FAILURE_RATE_PER_DRONE_SECOND * dt
+          const tickSalt = Math.floor(elapsed * 1000) >>> 0
+          const failedDrone = eligibleDrones.find(a => {
+            const rollRng = new SeededRNG((s.config.seed ^ hashId(a.id) ^ tickSalt ^ 0xF411) >>> 0)
+            return rollRng.next() < pFail
+          })
 
-          // Seeded random pick — seed varies by fired count so each failure picks a different drone
-          const failRng = new SeededRNG(s.config.seed ^ mission.id.charCodeAt(1) ^ 0xfa11 ^ mission.droneFailuresFired)
-          const failedDrone = eligibleDrones[failRng.randInt(0, eligibleDrones.length - 1)]
+          if (failedDrone) {
+          const mission = missionById.get(failedDrone.currentMissionId!)!
           const failedTask = mission.tasks.find(t => t.id === failedDrone.currentTaskId) ?? null
 
           // Mark drone as failed; schedule replacement arrival at hub in 30–45 s
-          const replaceRng = new SeededRNG(s.config.seed ^ 0x4E3B ^ mission.droneFailuresFired)
+          const replaceRng = new SeededRNG((s.config.seed ^ hashId(failedDrone.id) ^ 0x4E3B ^ mission.droneFailuresFired) >>> 0)
           const replacementDelay = 30 + replaceRng.randFloat(0, 15)
 
           if (failedTask === null) {
@@ -1520,9 +1516,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               taskType: null,
               timeRemainingInSession: Math.max(0, state.sessionDuration - elapsed),
             })
-            break  // at most one new failure per tick
-          }
-
+          } else {
           // Sections-by-colour: check if this drone type's section is already complete
           const sectionDeadline = TASK_SECTION_DEADLINES[failedTask.type as number]?.[failedDrone.type] ?? 1.0
           const isGracefulExit = sectionDeadline < 1.0 &&
@@ -1610,7 +1604,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               ? { ...m, recoveryReason: 'drone_failure' as const, recoveryOpenedAtMs: Math.round(elapsed * 1000) }
               : m) }
           }
-          break  // at most one new failure per tick
+          }
+          }
         }
       }
 
@@ -2843,14 +2838,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           }
         })
 
-        // Schedule failures proportional to task count (~1 per 5 tasks)
-        const failureCount = Math.round(residualTasks.length / 5)
-        const residualRng = new SeededRNG(state.config.seed ^ mission.id.charCodeAt(0) ^ 0xABBA)
-        const residualFailureTimes: number[] = []
-        for (let f = 0; f < failureCount; f++) {
-          residualFailureTimes.push(30 + f * 60 + residualRng.randFloat(0, 30))
-        }
-
+        // No separate failure schedule needed — a residual mission is 'active'/'queued' like any
+        // other, so the ambient per-tick hazard in TICK step 1b covers it automatically once it's
+        // allocated and has deployed drones.
         residualMission = {
           ...mission,
           id: `${mission.id}-R`,
@@ -2865,7 +2855,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           tacticalPending: false,
           pendingAllocation: null,
           droneSequences: {},
-          droneFailureTimes: residualFailureTimes,
           droneFailuresFired: 0,
           failedDroneId: null,
           failureRecoveryPending: false,
