@@ -244,6 +244,7 @@ export interface GameState {
   trustProbeActive: boolean
   nextTrustProbeAt: number
   nextSnapshotAt: number   // elapsed (s) at which the next state_snapshot is due
+  nextFailureRollAt: number   // elapsed (s) at which the next ambient drone-failure roll is due
   // Data logging — one array per session
   events: GameEvent[][]
   eventSeq: number   // monotonically increasing across the whole study (all sessions), never resets
@@ -327,7 +328,8 @@ export interface SessionStartEvent extends BaseEvent {
   categoryPenaltyRate: Record<MissionCategory, number>
   categoryWeights: Record<MissionCategory, number>   // weights for this session's complexity
   arrivalLambda: number                               // mean inter-arrival seconds for this session's complexity
-  failureRatePerDroneSecond: number   // chance per second any one deployed drone fails (study-v1.3+; live per-tick hazard, uniform per drone)
+  failureRatePerDroneSecond: number   // chance per second any one deployed drone fails (study-v1.3+; live hazard, uniform per drone)
+  failureRollIntervalSec?: number     // study-v1.4+: simulated-time cadence of that hazard roll (absent ⇒ v1.3's per-frame roll)
   conservativeTopUp: number
   conservativeRedundancyBuffer: number
   snapshotIntervalSec: number   // cadence of state_snapshot events

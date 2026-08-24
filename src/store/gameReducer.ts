@@ -30,13 +30,19 @@ const TRUST_PROBE_INTERVAL = 90  // seconds
 // where no operator action fires an event) without dominating the log.
 const STATE_SNAPSHOT_INTERVAL = 10  // seconds
 
+// Cadence (simulated seconds) of the ambient drone-failure hazard roll — see TICK step 1b. Fixed
+// in simulated time, so the failure process is identical whether the browser renders at 60 fps or
+// 165 and whether a headless harness steps at 0.25 s or 1 s. Keep it coarse enough that
+// FAILURE_RATE_PER_DRONE_SECOND × interval stays well clear of the PRNG's opening-draw tail.
+const FAILURE_ROLL_INTERVAL = 1  // seconds
+
 // Build identifier stamped into session_start, so collected data can be tied to a code version.
 // Kept identical to the git tag: `git show study-v1.0` is exactly what a session logging
 // "study-v1.0" ran. Note this is the BUILD version — distinct from the scenario parameter-set
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.3'
+const APP_VERSION = 'study-v1.4'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -163,6 +169,7 @@ export function buildInitialState(config: StudyConfig): GameState {
     trustProbeActive: false,
     nextTrustProbeAt: TRUST_PROBE_INTERVAL,
     nextSnapshotAt: 0,   // first snapshot on the opening tick, then every STATE_SNAPSHOT_INTERVAL
+    nextFailureRollAt: FAILURE_ROLL_INTERVAL,   // first hazard roll one interval in
     events: Array.from({ length: config.numSessions }, () => []),
     eventSeq: 0,
   }
@@ -1432,6 +1439,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ) as Record<MissionCategory, number>,
           arrivalLambda: LAMBDA[sessionComplexity],
           failureRatePerDroneSecond: FAILURE_RATE_PER_DRONE_SECOND,
+          failureRollIntervalSec: FAILURE_ROLL_INTERVAL,
           conservativeTopUp: CONSERVATIVE_TOP_UP,
           conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
           snapshotIntervalSec: STATE_SNAPSHOT_INTERVAL,
@@ -1458,18 +1466,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // 1b. Drone failure check (suppressed in testing mode)
-      // study-v1.3: every deployed drone independently rolls a failure each tick with probability
-      // FAILURE_RATE_PER_DRONE_SECOND × dt — uniform per drone per second regardless of type or
-      // mission, so total failures scale purely with actual drone-seconds deployed (utilisation),
-      // not with mission count. Replaces the old per-mission precomputed schedule, whose RNG seed
-      // (`mission.id.charCodeAt(1)`) barely varied across a session's mission ids and reliably
-      // picked a low-index (Blue) drone — see docs/STUDY_BUILD.md.
-      // At most one failure fires per tick (dt is always small — capped rAF frames, or the fixed
-      // 0.25–1s steps the headless harnesses use — so a genuine multi-roll tick is effectively
-      // impossible at this rate; the cap is just a safety net matching prior behaviour).
-      if (!state.config.testingMode) {
-        const dt = Math.max(0, elapsed - state.elapsed)
-        if (dt > 0 && FAILURE_RATE_PER_DRONE_SECOND > 0) {
+      // Every deployed drone independently rolls a failure on a FIXED SIMULATED CADENCE
+      // (FAILURE_ROLL_INTERVAL), with probability FAILURE_RATE_PER_DRONE_SECOND × that interval —
+      // uniform per drone per second regardless of type or mission, so total failures scale purely
+      // with actual drone-seconds deployed (utilisation), not with mission count. This replaced the
+      // old per-mission precomputed schedule, whose RNG seed (`mission.id.charCodeAt(1)`) barely
+      // varied across a session's mission ids and reliably picked a low-index (Blue) drone.
+      //
+      // study-v1.4: the roll used to happen once per rAF frame with p = rate × dt, reseeding a
+      // SeededRNG per (drone, tick) and testing its FIRST output. Across the seed family that
+      // scheme can actually reach, the first draw's lower tail is not uniform, so as dt shrank the
+      // realized rate collapsed: about right at 60 fps, ~4× low at 120 fps, and identically ZERO at
+      // ≥144 fps. A participant on a high-refresh display met no drone failures at all — the study
+      // build's only scripted adversity — while sim/engine.mts, stepping at 0.25–1 s and safely
+      // inside the working regime, calibrated as though they had. Rolling on a simulated grid keeps
+      // p far above that tail, makes the hazard identical on every machine, and (with the RNG warmed
+      // past its correlated opening draws) makes a session reproducible from its seed alone.
+      // At most one failure fires per tick, as before.
+      if (!state.config.testingMode && FAILURE_RATE_PER_DRONE_SECOND > 0 && elapsed >= s.nextFailureRollAt) {
           const missionById = new Map(s.missions.map(m => [m.id, m]))
           const eligibleDrones = s.assets.filter(a => {
             if (a.status !== 'deployed' || !a.currentMissionId) return false
@@ -1477,12 +1491,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             return m !== undefined && m.status === 'active' && !m.failureRecoveryPending
           })
 
-          const pFail = FAILURE_RATE_PER_DRONE_SECOND * dt
-          const tickSalt = Math.floor(elapsed * 1000) >>> 0
-          const failedDrone = eligibleDrones.find(a => {
-            const rollRng = new SeededRNG((s.config.seed ^ hashId(a.id) ^ tickSalt ^ 0xF411) >>> 0)
-            return rollRng.next() < pFail
-          })
+          const pFail = FAILURE_RATE_PER_DRONE_SECOND * FAILURE_ROLL_INTERVAL
+          // Every grid point this tick crossed gets its own roll, so a long tick — or the coarse
+          // fixed steps the headless harnesses take — can't skip hazard the drones were exposed to.
+          const dueRolls: number[] = []
+          for (let at = s.nextFailureRollAt; at <= elapsed; at += FAILURE_ROLL_INTERVAL) {
+            dueRolls.push(Math.round(at / FAILURE_ROLL_INTERVAL))
+          }
+          s = { ...s, nextFailureRollAt: s.nextFailureRollAt + dueRolls.length * FAILURE_ROLL_INTERVAL }
+
+          let failedDrone: Asset | undefined
+          for (const rollIndex of dueRolls) {
+            failedDrone = eligibleDrones.find(a => {
+              const rollRng = new SeededRNG((s.config.seed ^ hashId(a.id) ^ Math.imul(rollIndex, 0x9E3779B1) ^ 0xF411) >>> 0)
+              rollRng.next(); rollRng.next()   // warm past the correlated opening draws (see above)
+              return rollRng.next() < pFail
+            })
+            if (failedDrone) break
+          }
 
           if (failedDrone) {
           const mission = missionById.get(failedDrone.currentMissionId!)!
@@ -1606,7 +1632,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           }
           }
           }
-        }
       }
 
       // 2. Advance task status based on elapsed time
@@ -1625,13 +1650,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             if (task.startTime !== null && task.baseTime > 0) {
               const prog = Math.min(1, (elapsed - task.startTime) / task.baseTime)
               const sections = TASK_SECTION_DEADLINES[task.type as number] ?? {}
-              const prim = TASK_PRIMARY[task.type as TaskType]
+              // Presence is checked against the composition the task is ACTUALLY running. A task
+              // deployed on its substitute (the planner's "OR 1F (38s)" line, which the Deploy gate
+              // in coverage.ts accepts) legitimately fields fewer drones than the primary; checking
+              // it against the primary failed EVERY substitute-staffed task on its first executing
+              // tick, logged as reason 'drone_failure' with no drone having failed.
+              const running = task.useSubstitute ? TASK_SUBSTITUTE[task.type as TaskType] : null
+              const comp = running ?? TASK_PRIMARY[task.type as TaskType]
               const done = new Set(task.completedSectionTypes ?? [])
               let sectionFail = false
               for (const [droneType, deadline] of Object.entries(sections) as [string, number][]) {
                 if (done.has(droneType)) continue                    // already recorded as done
                 if (deadline < 1.0 && prog >= deadline) continue    // non-full-duration section passed
-                const required = prim[droneType as AssetType] ?? 0
+                const required = comp[droneType as AssetType] ?? 0
                 if (required === 0) continue
                 const present = task.assignedAssetIds.filter(id => {
                   const a = assetSnap.get(id)
@@ -3147,6 +3178,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         trustProbeActive: false,
         nextTrustProbeAt: TRUST_PROBE_INTERVAL,
         nextSnapshotAt: 0,
+        nextFailureRollAt: FAILURE_ROLL_INTERVAL,
       }
     }
 

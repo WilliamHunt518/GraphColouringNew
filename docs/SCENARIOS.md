@@ -235,3 +235,22 @@ drones are now released back to loitering and the task's `assignedAssetIds` clea
 re-coverable (greedy replan re-covers it; a half-staffed pending task no longer freezes). And
 `CONFIRM_FAILURE_RECOVERY` now accepts the mission's own deployed (loitering) drones — the exact pool
 the recovery planner offers — instead of only hub-reserve `available` drones.
+
+## `study-v1.4` — realized failure rate and substitute tasks (2026-08-24)
+
+No scenario parameter changed (set **v2.1** still stands: speeds, fleet, λ, mission-size mix,
+`FAILURE_RATE_PER_DRONE_SECOND = 1/900`), but two engine fixes changed what those parameters
+actually produce — see `docs/STUDY_BUILD.md` § 11:
+
+- Tasks deployed on a **substitute composition** used to fail instantly; they now run. This is the
+  difficulty change: SMART task completion moves strategic **83 → 87%**, full 74 → 76%, balanced
+  81 → 82%, tactical **83 → 82%** (unchanged). Strategic Heavy leans on substitutes most because it
+  runs many small missions against a thin reserve.
+- The **drone-failure hazard** now rolls on a fixed 1 s simulated grid instead of per animation
+  frame, so the realized failure rate no longer depends on the display's refresh rate (it was zero
+  above ~144 Hz). Harness numbers barely move — `sim/engine.mts` steps at 0.5 s and was always in
+  the working regime — but the browser now matches the harness for the first time.
+
+Strategic Heavy therefore sits ~4 points above the 83–85% band. **Nothing was retuned**: doing so
+would move the parameter-set version and break comparability with data collected under v2.1.
+Retune only as a deliberate decision, with a new set version and a note here.

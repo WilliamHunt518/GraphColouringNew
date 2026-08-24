@@ -18,7 +18,7 @@ These are genuinely different decision levels:
 **IMPORTANT — do not reintroduce old concepts:**
 There is NO "reserve posture widget", NO "preserve/maintain/spend down" recommendation, and NO "Meta-Co-Pilot". Those ideas were considered and removed. The tactical tier is purely the within-mission drone→task assignment planner.
 
-The platform supports a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL) — but the **shipped study build runs a single condition at ε = 0** (both assistants perfect), so that machinery is dormant. **What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (git tag `study-v1.0`, matching the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+The platform supports a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL) — but the **shipped study build runs a single condition at ε = 0** (both assistants perfect), so that machinery is dormant. **What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.4` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 

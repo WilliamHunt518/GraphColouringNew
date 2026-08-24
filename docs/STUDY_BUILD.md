@@ -25,7 +25,7 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 |---|---|---|
 | Could a participant hit a scheduling deadlock (lockout)? | **No.** Auto-rerouted silently; every task still completes. | `session_start.fixLockouts === true`; any `lockout_detected` has `resolution: "rerouted"` |
 | Were the assistants ever wrong? | **No.** Both run at ε = 0 — every card and plan is optimal. | `session_start.epsilonStrategic === 0` and `epsilonTactical === 0` |
-| So what goes wrong during a session? | **Drone failures only** (plus whatever the operator does). | `drone_failure` events; `recovery_opened` |
+| So what goes wrong during a session? | **Drone failures only** (plus whatever the operator does). **In `study-v1.3` on a display above ~120 Hz, nothing did** — the hazard could not fire (fixed in `v1.4`, § 11). | `drone_failure` events; `recovery_opened`; `session_start.failureRollIntervalSec` present ⇒ `v1.4`+ |
 | Was the 2×2 accuracy manipulation running? | **No.** Single condition, logged as `none`. | `session_start.condition === "none"` |
 | In-session trust/workload probes? | **No.** The modal is not mounted anywhere, so none is ever shown. | no `trust_probe` events exist |
 | How many sessions, how long? | **2 × 8 min** (480 s) on the participant-study path. | `session_start.numSessions`, `sessionDuration` |
@@ -34,7 +34,8 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Did the tutorial teach any of this? | 48 steps, manual workflow first, both assistants after. No lockout lesson. | tutorial runs under `participantId: "DEMO"`, `tutorialMode` |
 | If a mission is abandoned, is its work lost? | **No** (build ≥ `study-v1.2`). The remainder is re-queued as a residual mission and is usually finished. | `task_requeued` events + a `mission_arrived` with `isResidual: true`; **not** `task_failed` |
 | How many points is a completed task worth? | **Build ≥ `study-v1.3`: double `study-v1.0`–`v1.2`** (20/40/60/80/100 by task type, not 10/20/30/40/50). Penalty-per-second is unchanged. | `session_start.taskWeight` |
-| How are drone failures generated? | **Build ≥ `study-v1.3`:** a live per-tick hazard, uniform per second per deployed drone, regardless of type or mission. **`study-v1.0`–`v1.2`:** a per-mission precomputed schedule whose selection RNG was Blue-biased. | `session_start.failureRatePerDroneSecond` (v1.3+) vs `failureCount`/`failureGap`/`failureJitter`/`failureProb` (pre-v1.3) |
+| How are drone failures generated? | **Build ≥ `study-v1.4`:** a live hazard rolled on a fixed **1 s simulated grid**, uniform per second per deployed drone — identical on every machine. **`study-v1.3`:** the same hazard rolled per animation frame, which silently scaled with the display's refresh rate (§ 11). **`study-v1.0`–`v1.2`:** a per-mission precomputed schedule whose selection RNG was Blue-biased. | `session_start.failureRollIntervalSec` (v1.4+), `failureRatePerDroneSecond` (v1.3+) vs `failureCount`/`failureGap`/`failureJitter`/`failureProb` (pre-v1.3) |
+| Can a task run on the substitute composition the planner offers ("OR 1F")? | **Build ≥ `study-v1.4`: yes.** In `study-v1.0`–`v1.3` every substitute-staffed task failed the instant it started executing, logged as a drone failure that never happened (§ 11). | `task_completed.useSubstitute === true` exists ⇒ v1.4+; a `task_failed` with `reason: "drone_failure"` and no `drone_failure` event nearby ⇒ the pre-v1.4 bug |
 | Is there a pre-study AI-attitude survey? | **Yes, build ≥ `study-v1.3`:** AIAS-4 + two bespoke Likert blocks, before session 1. | `demographics` keys prefixed `aias_`/`verif_`/`deleg_`; absent entirely pre-`v1.3` |
 
 ---
@@ -279,6 +280,64 @@ exactly this. Three changes:
 
 `git show study-v1.2` is the exact code any pre-`v1.3` participant session ran (the boundary was
 tagged retroactively when this work started, since no tag had existed for it before).
+
+---
+
+### 11. `study-v1.4` — substitute compositions work, and drone failures fire on every machine
+
+Found by playing a full two-session participant run in the browser (`P-CHROME1`, seed 777,
+2026-08-24) against a written record of every action, then auditing the export line by line. Two
+defects, both invisible to the headless harnesses:
+
+- **Every substitute-staffed task failed the instant it started executing.** The tactical planner
+  offers each task a substitute composition (`OR 1F (38s)` under a 2F Recon; `OR 1L+1C (62s)` under
+  a Supply Drop), `coverage.ts` accepts it at the Deploy gate, and `pickDronesForTask()` falls back
+  to it when the reserve is thin — so both the operator and the agent can legitimately field one.
+  But the sections-by-colour safety net in TICK step 2 compared presence against `TASK_PRIMARY`
+  regardless of `task.useSubstitute`, so a 1-Blue Recon was read as a 2-Blue Recon missing a drone
+  and was failed on its first executing tick. It was logged as
+  `task_failed(reason: 'drone_failure')` — with no drone having failed, no `drone_failure` event to
+  join against, and the phantom counted into `session_ended.taskOutcomes.failuresByReason`. The net
+  now checks the composition the task is actually running; it still fails a genuinely understaffed
+  primary. Pinned by `scripts/test-substitute-composition.ts`.
+  **Consequence for the data:** in `study-v1.0`–`v1.3` logs this bug's signature is a `task_failed`
+  with `reason: 'drone_failure'`, `statusBefore: 'executing'` and `elapsed − startTime ≈ 0` — the
+  task died on its first executing tick — with no `drone_failure` event at that instant. (Don't
+  treat *every* unmatched one that way: a task can legitimately fail under this reason much later,
+  downstream of an unrepaired failure that released its drones.) Those sessions under-report
+  substitute usage entirely — no `task_completed` in any pre-`v1.4` log ever carried
+  `useSubstitute: true` — and over-report drone failures by the difference.
+
+- **The drone-failure hazard did not fire on high-refresh displays.** `study-v1.3` rolled the hazard
+  once per animation frame with `p = FAILURE_RATE_PER_DRONE_SECOND × dt`, reseeding a `SeededRNG`
+  per (drone, tick) and testing its **first** output. Across the seed family that scheme can
+  actually reach, that draw's lower tail is not uniform, so as `dt` shrank the realized rate fell
+  away from the intended one — measured over 30 seeds per rate: about right at 60 fps, **~4× low at
+  120 fps, and identically zero at ≥ 144 fps**. The browser run that found it logged **0 failures
+  across two sessions and ~5,700 deployed drone-seconds** (≈ 6.3 expected) on a ~170 Hz display,
+  while `sim/engine.mts` — stepping at 0.25–1 s, safely inside the working regime — kept calibrating
+  as though failures were happening. Since drone failures are this build's only scripted adversity
+  (§ 3), a participant on a fast display met none at all.
+  The roll now happens on a fixed **1 s simulated grid** (`FAILURE_ROLL_INTERVAL`), with the RNG
+  warmed past its correlated opening draws, so the hazard is identical whether the browser renders
+  at 60 fps or 240 and whether a harness steps at 0.25 s or 1 s — and a session is now reproducible
+  from its seed on any machine. Pinned by `scripts/test-failure-hazard.ts`.
+  **Consequence for the data:** do not pool `drone_failure` counts, or anything downstream of them
+  (recovery behaviour, `recovery_opened`, abandonment rates, trust ratings measured under
+  adversity), across the `v1.3`/`v1.4` boundary — and treat `v1.3` sessions as having an unknown,
+  hardware-dependent failure rate somewhere between the intended one and zero. `session_start`
+  records neither the refresh rate nor the frame times, so it cannot be recovered from the log; the
+  only clue is `userAgent` plus the failure count itself. Sessions collected pre-`v1.3` used the old
+  scheduled model and are unaffected by this particular bug.
+
+**Difficulty moved slightly.** `npx tsx sim/engine.mts --seeds=40`, SMART-operator task completion,
+before → after: balanced 81 → 82 %, tactical **83 → 82 %**, strategic **83 → 87 %**, full 74 → 76 %.
+The strategic jump is the substitute fix earning its keep — Strategic Heavy runs many small missions
+against a thin reserve, which is exactly where plans fall back to substitutes and where those tasks
+used to die. Tactical Heavy is unchanged. Nothing was retuned to compensate: scenario parameters
+stay at set v2.1 (`docs/SCENARIOS.md`), so Strategic Heavy is now ~4 points more forgiving than the
+83–85 % target band. Retuning is a separate decision — it would move the parameter set version and
+break comparability with everything collected so far.
 
 ---
 
