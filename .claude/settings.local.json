@@ -136,7 +136,10 @@
       "Bash(DBG=1 npx tsx sim/pilot-run.mts --seed=4242)",
       "Artifact",
       "PowerShell($dev = cmd /c \"ffmpeg -hide_banner -list_devices true -f dshow -i dummy 2>&1\"; $dev | Select-String '\\\\\\(audio\\\\\\)|\\\\\\(video\\\\\\)' | ForEach-Object { $_.Line.Trim\\(\\) })",
-      "PowerShell($e = ffmpeg -hide_banner -encoders 2>&1 | Select-String 'nvenc|libx264|qsv|amf|h264' | ForEach-Object { $_.Line.Trim\\(\\) }; $e; \"--- GPU ---\"; \\(Get-CimInstance Win32_VideoController\\).Name)"
+      "PowerShell($e = ffmpeg -hide_banner -encoders 2>&1 | Select-String 'nvenc|libx264|qsv|amf|h264' | ForEach-Object { $_.Line.Trim\\(\\) }; $e; \"--- GPU ---\"; \\(Get-CimInstance Win32_VideoController\\).Name)",
+      "PowerShell(ffmpeg *)",
+      "PowerShell(Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::AllScreens | ForEach-Object { \"$\\($_.DeviceName\\) Bounds=$\\($_.Bounds\\) Primary=$\\($_.Primary\\)\" })",
+      "PowerShell(Get-Job *)"
     ]
   }
 }
