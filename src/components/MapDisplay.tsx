@@ -6,6 +6,7 @@ import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { computeTacticalSuggestion, computeRecoverySuggestion } from '../utils/tacticalSuggest'
 import { tasksInCycles } from '../utils/scheduling'
 import { taskCoverableBy } from '../utils/coverage'
+import { prunePlan } from '../utils/planPrune'
 import { TACTICAL_AGENT_STEP } from '../utils/tutorialSteps'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -138,6 +139,11 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
         <div className="flex-1 min-w-0">
           {tacticalMission ? (
             <TacticalPlannerView
+              // Remount on a mission or mode change, so the planner's local plan is rebuilt from
+              // the new allocation. Within one mission+mode the plan is pruned, never rebuilt
+              // (see the prune effect in TacticalPlannerView) — that distinction is what stops a
+              // task completing mid-recovery from wiping the operator's half-built fix.
+              key={`${tacticalMission.id}:${isRecovery ? 'recovery' : isReadOnly ? 'readonly' : 'plan'}`}
               mission={tacticalMission}
               state={state}
               onBack={() => setTacticalMissionId(null)}
@@ -524,6 +530,12 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const [assignments, setAssignments] = useState<Record<string, string[]>>(buildInitialAssignments)
   // droneChainOrder: droneId → taskIds in the order the user assigned them (not strategic order)
   const [droneChainOrder, setDroneChainOrder] = useState<Record<string, string[]>>(buildInitialChainOrder)
+  // Latest committed values, for the prune effect below — it must not depend on `assignments` /
+  // `droneChainOrder` or it would re-run (and re-prune) on every drag.
+  const assignmentsRef = useRef(assignments)
+  assignmentsRef.current = assignments
+  const chainOrderRef = useRef(droneChainOrder)
+  chainOrderRef.current = droneChainOrder
   const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
   // Recovery only: whether the operator consulted the agent's fix via "Suggest" before confirming.
   const [recoverySuggestUsed, setRecoverySuggestUsed] = useState(false)
@@ -557,17 +569,25 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     return () => ro.disconnect()
   }, [])
 
-  // Reset when pending pool/order changes
-  const pendingKey = pending.dronePool.join(',') + pending.taskOrder.join(',')
+  // Reconcile the in-progress plan when the pool or task list moves underneath it.
+  //
+  // This used to rebuild `assignments` from scratch on any change, which threw away everything the
+  // operator had dragged whenever an unrelated task merely COMPLETED mid-recovery (it left
+  // `taskOrder`, the key changed, the plan reset to empty and Reassign went disabled). Prune
+  // instead — see the docblock on `prunePlan`. Switching mission or planner mode remounts this
+  // component (the `key` at the call site), so this only runs within one plan.
+  const pendingKey = pending.dronePool.join(',') + '|' + pending.taskOrder.join(',')
   const prevKey = useRef(pendingKey)
   useEffect(() => {
-    if (prevKey.current !== pendingKey) {
-      setAssignments(buildInitialAssignments())
-      setDroneChainOrder(buildInitialChainOrder())
-      setRecoverySuggestUsed(false)
-      prevKey.current = pendingKey
-    }
-  }, [pendingKey])
+    if (prevKey.current === pendingKey) return
+    prevKey.current = pendingKey
+    const pruned = prunePlan(
+      { assignments: assignmentsRef.current, chainOrder: chainOrderRef.current },
+      pending.dronePool, pending.taskOrder,
+    )
+    setAssignments(pruned.assignments)
+    setDroneChainOrder(pruned.chainOrder)
+  }, [pendingKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Return to waiting when deployed / recovery resolved (not for read-only active-mission views)
   const onBackRef = useRef(onBack)

@@ -38,6 +38,7 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Can a task run on the substitute composition the planner offers ("OR 1F")? | **Build ≥ `study-v1.4`: yes.** In `study-v1.0`–`v1.3` every substitute-staffed task failed the instant it started executing, logged as a drone failure that never happened (§ 11). | `task_completed.useSubstitute === true` exists ⇒ v1.4+; a `task_failed` with `reason: "drone_failure"` and no `drone_failure` event nearby ⇒ the pre-v1.4 bug |
 | Does the recovery planner's "Suggest" produce a plan? | **Build ≥ `study-v1.5`: yes.** In `study-v1.0`–`v1.4` it usually returned nothing at all and the button did nothing (§ 12). | a `tactical_suggest_used` with `recoveryMode: true` in a pre-`v1.5` log tells you nothing about whether a plan was offered |
 | Can a mission take a second drone failure while the first is being fixed? | **Build ≥ `study-v1.5`: no** — exempt until 30 s after the recovery is resolved. | `session_start.failureGraceSeconds` (absent ⇒ no grace) |
+| Could the operator lose a half-built recovery plan mid-fix? | **Build ≤ `study-v1.5`: yes** — any task of that mission completing wiped the planner's in-progress assignments and disabled Reassign (§ 13). **`v1.6`+: no.** | `session_start.appVersion`; in a pre-`v1.6` log a long gap between `recovery_opened` and `failure_recovery`, or a burst of re-`tactical_assignment_changed` events after a `task_completed` on the same mission |
 | Is there a pre-study AI-attitude survey? | **Yes, build ≥ `study-v1.3`:** AIAS-4 + two bespoke Likert blocks, before session 1. | `demographics` keys prefixed `aias_`/`verif_`/`deleg_`; absent entirely pre-`v1.3` |
 
 ---
@@ -393,6 +394,40 @@ drop: with the grace window the same hazard yields about one fewer failure per s
 mean drone failures per session 5.8 → 4.8, 6.4 → 5.4, 6.3 → 5.7, 7.2 → 6.2. Scenario parameters are
 untouched — still set v2.1 (`docs/SCENARIOS.md`).
 
+### 13. `study-v1.6` — a task completing no longer wipes a half-built recovery plan
+
+Found while browser-testing `v1.5`: mid-recovery on M002, the agent's **Suggest** had just drawn a
+full three-task chain into the planner when one of the mission's still-running Supply Drops
+finished. Every assignment vanished, the plan went back to "No drones assigned", and **Reassign**
+greyed out — with nothing on screen to say why.
+
+The planner keyed its local plan reset on `dronePool + taskOrder`. In a recovery `taskOrder` *is*
+the mission's unfinished tasks, so a task merely **completing** removed itself from the key and the
+planner rebuilt the plan from scratch, discarding everything the operator had dragged. A recovery
+routinely runs 30 s or more while the mission's other tasks are still finishing, so this was easy
+to hit and easy to misread as the Deploy gate refusing a valid plan.
+
+- **The plan is now pruned, never rebuilt** (`prunePlan` in `src/utils/planPrune.ts`): tasks that
+  have left `taskOrder` lose their entry, drones that have left `dronePool` are stripped everywhere,
+  tasks new to the order start empty, and everything else — including chains spanning several
+  tasks — is preserved exactly. Nothing needs re-validating: the Deploy/Reassign coverage gate
+  re-derives from the live plan on every render, so a plan a prune leaves short is already blocked.
+- **Mission and mode changes still get a clean slate**, via a `key` on `TacticalPlannerView` rather
+  than the reset effect. Switching mission, or the same mission moving between the fresh-allocation,
+  recovery and read-only views, remounts the planner and rebuilds from the new allocation.
+- `recoverySuggestUsed` is no longer cleared by this path either, so
+  `failure_recovery.wasAgentSuggested` can't be silently reset to `false` by an unrelated task
+  finishing after the operator consulted the agent.
+
+Pinned by `scripts/test-plan-prune.ts`. Note this covers the reconciliation helper, not the React
+effect that calls it — the wipe itself was component state, which the headless harnesses can't
+reach.
+
+**Consequence for the data.** No scenario, scoring or hazard parameter changed, so `v1.5` and `v1.6`
+sessions pool freely on every performance measure. One logging caveat in the other direction:
+`failure_recovery.wasAgentSuggested` **under-counts** agent consultation in `v1.0`–`v1.5`, since a
+task completing between the Suggest click and the confirm cleared the flag.
+
 ---
 
 ## Reproducing a session from its log
@@ -405,9 +440,9 @@ session-relative `timestamp`, a real `wallClock`, and a `sessionId`.
 
 ## If you change something
 
-1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.5`).
+1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.6`).
 2. Add a section here describing what changed and what it means for pooling old data.
-3. Commit, then `git tag -a study-v1.5 -m "..."` so the tag and `appVersion` agree.
+3. Commit, then `git tag -a study-v1.6 -m "..."` so the tag and `appVersion` agree.
 
 Existing tags: `git tag -l` · what a tag means: `git show study-v1.0 --stat` (the annotation
 summarises the build) · what changed since: `git log study-v1.0..HEAD --oneline`.

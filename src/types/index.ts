@@ -72,6 +72,13 @@ export interface PendingAllocation {
   suppressedTaskId: string | null             // the task the tactical agent omitted from its plan
 }
 
+// The plan the operator is actively building in the tactical/recovery planner — local UI state,
+// not committed to the reducer until Deploy/Reassign. See `prunePlan` in utils/planPrune.
+export interface TacticalPlan {
+  assignments: Record<string, string[]>  // taskId → assetId[]
+  chainOrder: Record<string, string[]>   // droneId → taskIds in the order the operator chained them
+}
+
 // ─── Recovery options (drone failure) ────────────────────────────────────
 
 export interface RecoveryOption {
