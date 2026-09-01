@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/logs/Study_Ver1.2/SAM HJ.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/logs/Study_ver1.3/study_Ayomide_none_42(2).json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.claude/settings.local.json" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/settings.local.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/Study_v1.6#/study_GeorgeH_none_42(2).json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
@@ -49,11 +47,11 @@
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Study_1" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Study_v1.6#" />
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Study_ver1.3" />
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Study_Ver1" />
       <recent name="C:\Users\wh1g17\GraphColouringNew" />
       <recent name="G:\Files\Code\GraphColouringNew\docs\paper\figs" />
-      <recent name="C:\Users\wh1g17\GraphColouringNew\docs\trust_study" />
     </key>
   </component>
   <component name="RunManager" selected="Python.study_runner">
@@ -242,6 +240,7 @@
       <workItem from="1787305014461" duration="1795000" />
       <workItem from="1787310330940" duration="3065000" />
       <workItem from="1787575281980" duration="2734000" />
+      <workItem from="1788263615403" duration="1714000" />
     </task>
     <servers />
   </component>
