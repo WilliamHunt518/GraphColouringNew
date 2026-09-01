@@ -912,7 +912,16 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     if (suggestQueue.length === 0) return
     const timer = window.setTimeout(() => {
       const [{ taskId, droneId }, ...rest] = suggestQueue
-      setAssignments(prev => ({ ...prev, [taskId]: [...(prev[taskId] ?? []), droneId] }))
+      // Guard the append the way moveDrone does. The operator keeps dragging while the queue is
+      // still revealing, so they can put a drone on a task the queue is about to place it on —
+      // and this was the one write path that would then add the id a SECOND time. A duplicate is
+      // not cosmetic: `assignedAssetIds` is copied verbatim into game state, and the sections
+      // safety net in TICK counts presence with `.filter(...).length`, so ["B05","B05"] satisfies
+      // a 2×Fast requirement with one physical drone (and the Deploy gate over-counts to match).
+      // Seen in a shipped study-v1.6 log: M004-T2 → [B02, B04, B02, B04].
+      setAssignments(prev => (prev[taskId] ?? []).includes(droneId)
+        ? prev
+        : { ...prev, [taskId]: [...(prev[taskId] ?? []), droneId] })
       setSuggestQueue(rest)
     }, 1000)
     return () => clearTimeout(timer)
