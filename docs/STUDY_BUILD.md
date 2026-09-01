@@ -40,6 +40,8 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Can a mission take a second drone failure while the first is being fixed? | **Build ≥ `study-v1.5`: no** — exempt until 30 s after the recovery is resolved. | `session_start.failureGraceSeconds` (absent ⇒ no grace) |
 | Could the operator lose a half-built recovery plan mid-fix? | **Build ≤ `study-v1.5`: yes** — any task of that mission completing wiped the planner's in-progress assignments and disabled Reassign (§ 13). **`v1.6`+: no.** | `session_start.appVersion`; in a pre-`v1.6` log a long gap between `recovery_opened` and `failure_recovery`, or a burst of re-`tactical_assignment_changed` events after a `task_completed` on the same mission |
 | Is there a pre-study AI-attitude survey? | **Yes, build ≥ `study-v1.3`:** AIAS-4 + two bespoke Likert blocks, before session 1. | `demographics` keys prefixed `aias_`/`verif_`/`deleg_`; absent entirely pre-`v1.3` |
+| Could the same drone be counted twice on one task? | **Build ≤ `study-v1.6`: yes** — the Suggest reveal appended without a duplicate guard, so a repeated id satisfied a colour requirement with fewer physical drones (§ 14). **`v1.7`+: no.** | a repeated id in `tactical_confirmed.finalPlan[].assetIds` (4 such tasks exist, all in GeorgeH's `v1.6` sessions) |
+| Do the strategy cards' three score bars mean what they say? | **Build ≤ `study-v1.6`: no.** Speed was two-valued (0% or 100%) and Reserve measured *specialists committed*, not reserve preserved — Aggressive weakly dominated all three bars on 48% of card pairs (§ 14). **`v1.7`+: yes** — Speed is `bestETA/thisETA`, Reserve is drones-left/reserve. | compare `strategiesPresented[].reserveScore` against `reserveAfter` — they agree only in `v1.7`+ |
 
 ---
 
@@ -430,6 +432,72 @@ task completing between the Suggest click and the confirm cleared the flag.
 
 ---
 
+### 14. `study-v1.7` — honest strategy-card scores, and a drone can no longer be counted twice
+
+Found by auditing every collected pilot log against the code (1 Sept 2026), after a full
+browser-driven session on `v1.6`. Two defects, both invisible to the headless harnesses because
+both live between the planner's local state, the display layer, and the log.
+
+- **A drone could appear twice in one task.** The tactical planner's progressive "Suggest" reveal
+  appended a drone to a task with **no duplicate guard**, unlike `moveDrone` and every other write
+  path. The operator keeps dragging while the queue is still revealing, so putting a drone on a task
+  the queue was about to place it on added the id a second time.
+  This is not cosmetic: `assignedAssetIds` was copied verbatim into game state, and the
+  sections-by-colour safety net in TICK counts presence as `assignedAssetIds.filter(...).length` —
+  so `["B05","B05"]` satisfied a 2×Fast requirement with **one physical drone**, and the planner's
+  Deploy gate over-counted to match. A plan that was genuinely short deployed and ran as if staffed.
+  **Fixed** at the source (`MapDisplay.tsx`, the `suggestQueue` reveal effect now guards the append
+  the way `moveDrone` does) and again at the choke point where a plan becomes game state
+  (`gameReducer.ts` de-duplicates `assignedAssetIds` on commit, so the invariant holds
+  unconditionally whatever builds the list).
+  **Consequence for the data:** occurred in **4 tasks across GeorgeH's two `study-v1.6` sessions**
+  (e.g. `M004-T2 → [B02, B04, B02, B04]`, `M004-T1 → [B05, B05]`) and in **no earlier session** — it
+  is a `v1.4`→`v1.6` regression. Treat GeorgeH's task-level outcomes as suspect; his
+  strategic-choice and latency data are unaffected.
+
+- **Two of the three strategy-card score bars were degenerate, and one was inverted.**
+  - `speedScore` was a two-point min-max, so the slower card read **exactly 0%** however small the
+    gap and 100% on a tie — only two reachable values. Across the pilots it read 0% on **63%** of
+    cards and tied at 100% on **37%**.
+  - `reserveScore` was `1 - (Green*3 + Red) / max`: **specialists committed**, weighted 3:1 toward
+    Green, Blue ignored entirely, again normalised across only the two cards so one always read
+    exactly 0%. It scored the card that held **more** drones back as 0% Reserve in **57%** of pilot
+    presentations — contradicting both the card's own "reserve-preserving" text and the `Res:`
+    counts printed directly beneath it.
+  - Net effect: **Aggressive weakly dominated Conservative on all three bars in 48% of the 122
+    card pairs the pilots saw.** With ε_S = 0 the Strategic Assistant is supposed to be *perfect*;
+    presenting a visibly strictly-worse second option on half of all decisions is a confound, not a
+    cosmetic issue. Participants chose Manual 48 times vs 42 Aggressive / 28 Conservative, and that
+    split is currently unidentifiable between low reliance and a rational response to an incoherent
+    display.
+
+  **Fixed:** `speedScore` is now `bestETA / thisETA` (the faster card reads 100%, a card 20% slower
+  reads 83% — continuous, and never pinned to 0). `reserveScore` is now the share of the current
+  reserve the commitment **leaves behind**, which is what the label claims and what the `Res:`
+  counts already show. `redundancyScore` is unchanged; it was always absolute.
+
+  The Conservative **card text also changed**. Its pool is the sequential minimum plus a +1 buffer
+  per used colour plus `CONSERVATIVE_TOP_UP` (15%) of the remaining reserve, which on small missions
+  commits *more* drones than Aggressive for the same ETA — so "Reserve-preserving deployment" was
+  simply false there, and the old reserveScore had been hiding it. It now reads "Failure-tolerant
+  deployment — commits a spare of every type used…", which is what the strategy actually optimises
+  (Resilience 60% vs Aggressive's 43% on a Cat A). **The strategy generator itself is unchanged** —
+  the same pools are committed, so mission difficulty and every scenario parameter are untouched.
+  If you later want Conservative to genuinely hold drones back, lower `CONSERVATIVE_TOP_UP`; that
+  *would* change difficulty and needs its own re-tune and version.
+
+  Pinned by `scripts/test-strategy-scores.ts`, which asserts both scores against their definitions
+  across three mission shapes and fails if either card is wholly dominated.
+
+**Consequence for the data.** No scenario, hazard, or scoring parameter changed, so `v1.6` and
+`v1.7` pool freely on performance measures. Two logging caveats:
+`strategic_modal_opened.strategiesPresented[].speedScore`/`.reserveScore` are on **different
+scales** either side of this boundary (and the `description` string changed), so don't pool the
+card scores themselves; and any analysis of *why* participants chose Manual should treat
+pre-`v1.7` sessions as having been shown a dominated Conservative option roughly half the time.
+
+---
+
 ## Reproducing a session from its log
 
 `session_start` is a full parameter dump: seed, complexity, fleet, speeds, task compositions and
@@ -440,9 +508,9 @@ session-relative `timestamp`, a real `wallClock`, and a `sessionId`.
 
 ## If you change something
 
-1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.6`).
+1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.7`).
 2. Add a section here describing what changed and what it means for pooling old data.
-3. Commit, then `git tag -a study-v1.6 -m "..."` so the tag and `appVersion` agree.
+3. Commit, then `git tag -a study-v1.7 -m "..."` so the tag and `appVersion` agree.
 
 Existing tags: `git tag -l` · what a tag means: `git show study-v1.0 --stat` (the annotation
 summarises the build) · what changed since: `git log study-v1.0..HEAD --oneline`.

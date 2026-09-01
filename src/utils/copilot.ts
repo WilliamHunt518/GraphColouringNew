@@ -278,13 +278,35 @@ export function generateStrategies(
   const consBad = applyBadAgent(consTruePool, consTrueTime, consComps)
 
   // ── Score normalisation ───────────────────────────────────────────────────
-  const displayTimes = [aggBad.displayTime, consBad.displayTime].filter(t => t < Infinity)
-  const minT = displayTimes.length > 0 ? Math.min(...displayTimes) : 0
-  const maxT = displayTimes.length > 0 ? Math.max(...displayTimes) : 1
-  const spanT = maxT - minT || 1
+  const clamp01 = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0)
 
-  const specialists = (a: AssetRequirement) => a.Green * 3 + a.Red
-  const maxSpec = Math.max(specialists(aggBad.displayPool), specialists(consBad.displayPool)) || 1
+  // Speed = the best displayed ETA as a fraction of this card's, so the faster card reads 100% and
+  // a card 20% slower reads 83%.
+  //
+  // This was a two-point min-max (`1 - (t - minT) / spanT`), which forced the slower card to
+  // EXACTLY 0% however small the gap, and to 100% whenever the two ETAs tied — a bar with only two
+  // reachable values. Across the pilot logs it read 0% on 63% of cards and tied at 100% on 37%,
+  // so it carried essentially no information about how much slower the slower option actually was.
+  const displayTimes = [aggBad.displayTime, consBad.displayTime].filter(t => t > 0 && t < Infinity)
+  const bestT = displayTimes.length > 0 ? Math.min(...displayTimes) : 0
+  const speedScoreFor = (t: number) =>
+    bestT > 0 && t > 0 && t < Infinity ? clamp01(bestT / t) : 0
+
+  // Reserve = the share of the current reserve this commitment LEAVES BEHIND. That is what the
+  // Conservative card's "reserve-preserving" text claims to optimise, and what the "Res:" counts
+  // printed directly under it already show the operator.
+  //
+  // This was `1 - (Green*3 + Red) / max`: specialists *committed*, weighted 3:1 toward Green, with
+  // Blue ignored entirely, and again normalised across only the two cards so one of them always
+  // read exactly 0%. It scored the card holding MORE drones back as 0% in 57% of pilot
+  // presentations — the bar contradicted both the card's own text and the numbers beside it, and
+  // was a large part of why Aggressive weakly dominated all three bars on ~half of all cards.
+  const reserveTotal = reserve.Blue + reserve.Red + reserve.Green
+  const reserveScoreFor = (a: AssetRequirement) => {
+    if (reserveTotal <= 0) return 0
+    const left = reserveAfter(a)   // hoisted function declaration, defined just below
+    return clamp01((left.Blue + left.Red + left.Green) / reserveTotal)
+  }
 
   function reserveAfter(a: AssetRequirement): AssetRequirement {
     return {
@@ -305,8 +327,8 @@ export function generateStrategies(
       assets: aggBad.displayPool,
       expectedCompletionTime: aggBad.displayTime,
       reserveAfter: reserveAfter(aggBad.displayPool),
-      speedScore: 1,
-      reserveScore: 1 - specialists(aggBad.displayPool) / maxSpec,
+      speedScore: speedScoreFor(aggBad.displayTime),
+      reserveScore: reserveScoreFor(aggBad.displayPool),
       redundancyScore: computeRedundancyScore(aggBad.displayPool, aggFloor),
       minimumAssets: aggMinimumAssets,
       taskComps: aggTrueTaskComps,
@@ -321,12 +343,19 @@ export function generateStrategies(
   if (consTrueTime < Infinity) {
     strategies.push({
       name: 'Conservative',
-      description: 'Reserve-preserving deployment — commits a buffer above minimum to absorb drone failures. Tasks run in series; slower but resilient.',
+      // Was "Reserve-preserving deployment — …". That claim is not true of what this strategy
+      // actually builds: the pool is the sequential minimum plus a +1 buffer per used colour plus
+      // CONSERVATIVE_TOP_UP (15%) of whatever reserve is left, which on small missions commits MORE
+      // drones than Aggressive for the same ETA. The old reserveScore hid this by scoring
+      // specialists committed; now that Reserve reads drones-left-behind, a card headed
+      // "reserve-preserving" that scores below Aggressive on Reserve would read as a contradiction.
+      // Resilience is what this strategy genuinely optimises, so that is what it now claims.
+      description: 'Failure-tolerant deployment — commits a spare of every type used, above the minimum needed, so one drone loss cannot stall the mission. Tasks run mostly in series.',
       assets: consBad.displayPool,
       expectedCompletionTime: consBad.displayTime,
       reserveAfter: reserveAfter(consBad.displayPool),
-      speedScore: 1 - (consBad.displayTime - minT) / spanT,
-      reserveScore: 1 - specialists(consBad.displayPool) / maxSpec,
+      speedScore: speedScoreFor(consBad.displayTime),
+      reserveScore: reserveScoreFor(consBad.displayPool),
       redundancyScore: computeRedundancyScore(consBad.displayPool, consFloor),
       minimumAssets: consMinimumAssets,
       taskComps: consTrueTaskComps,
