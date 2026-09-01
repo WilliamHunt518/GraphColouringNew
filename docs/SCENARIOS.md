@@ -254,3 +254,17 @@ actually produce — see `docs/STUDY_BUILD.md` § 11:
 Strategic Heavy therefore sits ~4 points above the 83–85% band. **Nothing was retuned**: doing so
 would move the parameter-set version and break comparability with data collected under v2.1.
 Retune only as a deliberate decision, with a new set version and a note here.
+
+## `study-v1.5` — post-failure grace window (2026-09-01)
+
+Again **no scenario parameter changed** (set **v2.1**, `FAILURE_RATE_PER_DRONE_SECOND = 1/900`), but
+a mission that opens a drone-failure recovery is now exempt from further failure rolls until 30 s
+after the operator resolves it (`FAILURE_GRACE_SECONDS`), so nobody takes a second failure mid-repair
+— see `docs/STUDY_BUILD.md` § 12. Only failures that actually open a recovery arm the window;
+loitering-drone deaths and graceful section exits do not, which keeps the realized hazard close to
+the configured rate (arming it on those too halved it).
+
+Effect at `--seeds=25`, SMART operator: mean drone failures per session 5.8 → 4.8 (balanced),
+6.4 → 5.4 (tactical), 6.3 → 5.7 (strategic), 7.2 → 6.2 (full); task completion essentially unmoved
+(82 → 82%, 82 → 83%, 87 → 87%, 76 → 78%). **Nothing was retuned.** Do not pool raw `drone_failure`
+counts across the v1.4/v1.5 boundary.

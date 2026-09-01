@@ -18,7 +18,7 @@ import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER
 import { findSchedulingCycle } from '../utils/scheduling'
 import { onMissionDrones, taskCoverableBy, unfinishedTasks } from '../utils/coverage'
 import { SeededRNG } from '../utils/prng'
-import { isFixLockouts } from '../utils/config'
+import { isFixLockouts, failureGraceSeconds } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
@@ -42,7 +42,7 @@ const FAILURE_ROLL_INTERVAL = 1  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.4'
+const APP_VERSION = 'study-v1.5'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -495,6 +495,7 @@ function spawnMission(bp: ReturnType<typeof generateSessionPlan>[0]): Mission {
     failedDroneId: null,
     failureRecoveryPending: false,
     pendingRecoveryOptions: null,
+    failureExemptUntil: null,
     tacticallySuppressedTaskId: null,
     abandonedAt: null,
     isResidual: false,
@@ -827,6 +828,7 @@ function applyForcedDroneFailure(
     failureRecoveryPending: true,
     recoveryReason: 'drone_failure' as const,
     recoveryOpenedAtMs: Math.round(elapsed * 1000),
+    failureExemptUntil: elapsed + failureGraceSeconds(state.config),
     tasks: m.tasks.map(t => revertIds.has(t.id)
       ? { ...t, status: 'pending' as const, assignedAssetIds: [], startTime: null, completionTime: null }
       : t),
@@ -1440,6 +1442,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           arrivalLambda: LAMBDA[sessionComplexity],
           failureRatePerDroneSecond: FAILURE_RATE_PER_DRONE_SECOND,
           failureRollIntervalSec: FAILURE_ROLL_INTERVAL,
+          failureGraceSeconds: failureGraceSeconds(cfg),
           conservativeTopUp: CONSERVATIVE_TOP_UP,
           conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
           snapshotIntervalSec: STATE_SNAPSHOT_INTERVAL,
@@ -1488,7 +1491,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           const eligibleDrones = s.assets.filter(a => {
             if (a.status !== 'deployed' || !a.currentMissionId) return false
             const m = missionById.get(a.currentMissionId)
-            return m !== undefined && m.status === 'active' && !m.failureRecoveryPending
+            if (m === undefined || m.status !== 'active' || m.failureRecoveryPending) return false
+            // study-v1.5 post-failure grace: a mission that has just lost a drone is exempt until
+            // `failureExemptUntil` (set at failure time, pushed to now + grace when the operator
+            // resolves the recovery), so a second drone can't die on the same mission while the
+            // first is still being fixed — or the instant after. See FAILURE_GRACE_SECONDS.
+            return m.failureExemptUntil == null || elapsed >= m.failureExemptUntil
           })
 
           const pFail = FAILURE_RATE_PER_DRONE_SECOND * FAILURE_ROLL_INTERVAL
@@ -1528,6 +1536,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             s = {
               ...s,
               assets: updatedAssets,
+              // No grace window: the grace exists to protect an operator mid-repair, and a
+              // loitering drone's death opens no recovery — there is nothing to be interrupted.
               missions: s.missions.map(m => m.id === mission.id
                 ? { ...m, droneFailuresFired: m.droneFailuresFired + 1, failedDroneId: failedDrone.id }
                 : m),
@@ -1581,6 +1591,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
                 ...m,
                 droneFailuresFired: m.droneFailuresFired + 1,
                 failedDroneId: failedDrone.id,
+                // No grace window either: a graceful exit is invisible to the operator (the task
+                // carries on without the drone), so nothing is being interrupted.
                 tasks: m.tasks.map(t =>
                   t.id === failedTask.id ? {
                     ...t,
@@ -1599,6 +1611,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
                 droneFailuresFired: m.droneFailuresFired + 1,
                 failedDroneId: failedDrone.id,
                 failureRecoveryPending: true,
+                // study-v1.5 grace window: refreshed to now + grace again when the operator resolves
+                // the recovery, so the protected window is measured from the fix, not the failure.
+                failureExemptUntil: elapsed + failureGraceSeconds(state.config),
                 tasks: m.tasks.map(t =>
                   t.id === failedTask.id
                     ? { ...t, status: 'pending' as const, assignedAssetIds: [], startTime: null, completionTime: null }
@@ -2623,6 +2638,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             missions: s.missions.map(m => m.id === mission.id ? {
               ...m,
               failureRecoveryPending: false,
+              failureExemptUntil: s.elapsed + failureGraceSeconds(s.config),
               pendingRecoveryOptions: null,
               tasks: m.tasks.map(t => t.id === task.id ? {
                 ...t,
@@ -2681,6 +2697,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         missions: s.missions.map(m => m.id === mission.id ? {
           ...m,
           failureRecoveryPending: false,
+          failureExemptUntil: s.elapsed + failureGraceSeconds(s.config),
           pendingRecoveryOptions: null,
           tasks: m.tasks.map(t => t.id === task.id ? {
             ...t, status: 'traveling' as const,
@@ -2709,9 +2726,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return !!a && a.status !== 'failed' &&
           (a.status === 'available' || (a.status === 'deployed' && a.currentMissionId === mission.id))
       }
+      // study-v1.5: 'traveling' tasks are re-committed too, not just 'pending' ones. The recovery
+      // planner has always let the operator chain a drone off a not-yet-started task onto the
+      // broken one (shift+drag), and the agent's "Suggest" now does the same — but only pending
+      // tasks were ever committed, so the drone flew to the broken task while the task it came
+      // from still listed it and quietly stalled. Rebuilding every unstarted task from the revised
+      // plan makes the whole chain consistent; tasks already EXECUTING are never touched.
       const recoveryTaskAssignments: Record<string, string[]> = {}
       for (const task of mission.tasks) {
-        if (task.status !== 'pending') continue
+        if (task.status !== 'pending' && task.status !== 'traveling') continue
         const ids = (action.taskAssignments[task.id] ?? []).filter(recoverable)
         if (ids.length > 0) recoveryTaskAssignments[task.id] = ids
       }
@@ -2736,7 +2759,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       const newTasks = mission.tasks.map(task => {
         const asgn = asgnByTask.get(task.id)
-        if (!asgn || task.status !== 'pending') return task
+        if (!asgn || (task.status !== 'pending' && task.status !== 'traveling')) return task
         return {
           ...task,
           status: 'traveling' as const,
@@ -2759,7 +2782,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // by the sequential chaining in TICK once the current step completes.
       const newAssets = state.assets.map(asset => {
         const myAsgns = recoveryAssignments.filter(a => a.assetIds.includes(asset.id))
-        if (myAsgns.length === 0 || !recoverable(asset.id)) return asset
+        if (myAsgns.length === 0 || !recoverable(asset.id)) {
+          // A drone the revised plan took OFF a task it was still flying to would otherwise carry
+          // on to a task that no longer lists it. Park it where it is, on-mission and free for the
+          // next replan. Only re-committed (unstarted) tasks can do this — executing work is never
+          // re-planned, so nobody is pulled off a task in progress.
+          const from = asset.currentTaskId
+          if (asset.currentMissionId === mission.id && from != null &&
+              recoveryTaskAssignments[from] !== undefined && !recoveryTaskAssignments[from].includes(asset.id)) {
+            const pos = interpolateAssetPosition(asset, now)
+            return {
+              ...asset, currentTaskId: null, position: pos, travelFrom: { ...pos }, targetPosition: { ...pos },
+              travelStartElapsed: now, travelEndElapsed: now, availableAt: now,
+            }
+          }
+          return asset
+        }
         const firstAsgn = pickFirstAssignment(myAsgns, recoverySeqs[asset.id])
         const task = newTasks.find(t => t.id === firstAsgn.taskId)!
         // Travel from where the drone actually is — its loiter/current position if already on-mission,
@@ -2780,6 +2818,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       })
 
+      const repairedIds = Object.keys(recoveryTaskAssignments).filter(tid => {
+        const before = mission.tasks.find(t => t.id === tid)!
+        if (before.status === 'pending') return true
+        const after = recoveryTaskAssignments[tid]
+        return before.assignedAssetIds.length !== after.length ||
+          before.assignedAssetIds.some(id => !after.includes(id))
+      })
+
       let s = logEvent(state, {
         type: 'failure_recovery',
         missionId: mission.id,
@@ -2791,8 +2837,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
         recoveryReason: mission.recoveryReason ?? null,
         latencyMs: mission.recoveryOpenedAtMs != null ? Math.round(now * 1000) - mission.recoveryOpenedAtMs : 0,
-        repairedTaskIds: Object.keys(recoveryTaskAssignments),
-        repairedAssignments: Object.entries(recoveryTaskAssignments).map(([taskId, assetIds]) => ({ taskId, assetIds })),
+        // Only what the fix actually CHANGED. Re-committing an untouched 'traveling' task (see the
+        // note above) must not read as a repair, or every recovery would look bigger than it was.
+        repairedTaskIds: repairedIds,
+        repairedAssignments: repairedIds.map(taskId => ({ taskId, assetIds: recoveryTaskAssignments[taskId] })),
         // Pending tasks the operator's fix still leaves with nobody on them — these can never complete,
         // so this is the direct measure of an incomplete recovery.
         tasksStillUnassigned: mission.tasks
@@ -2808,6 +2856,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           tasks: newTasks,
           droneSequences: { ...m.droneSequences, ...recoverySeqs },
           failureRecoveryPending: false,
+          // study-v1.5: the post-failure grace runs from the moment the operator finishes the
+          // repair, not from the failure — that is the window that protects the fix itself.
+          failureExemptUntil: state.elapsed + failureGraceSeconds(state.config),
           pendingRecoveryOptions: null,
         } : m),
       }
@@ -2889,6 +2940,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           droneFailuresFired: 0,
           failedDroneId: null,
           failureRecoveryPending: false,
+          failureExemptUntil: null,
           pendingRecoveryOptions: null,
           tacticallySuppressedTaskId: null,
           abandonedAt: null,

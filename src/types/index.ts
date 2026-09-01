@@ -22,6 +22,11 @@ export interface StudyConfig {
   // abandons). Read it through isFixLockouts() in utils/config — never inline, the fallback used to
   // differ between the reducer, the tutorial, and the session_start log.
   fixLockouts?: boolean
+  // Post-failure grace window (seconds). Once a drone fails on a mission, that mission is exempt
+  // from further failure rolls until this long AFTER its recovery is resolved, so an operator can
+  // never be handed a second failure on the same mission while still fixing the first. Omitted ⇒
+  // FAILURE_GRACE_SECONDS (30). 0 disables the grace entirely (pre-study-v1.5 behaviour).
+  failureGraceSeconds?: number
   tutorialMode: boolean
   skipToFreePlay?: boolean
   numSessions: number
@@ -137,6 +142,9 @@ export interface Mission {
   recoveryReason?: 'drone_failure' | 'lockout'  // why help is needed (a drone died vs a scheduling deadlock the operator must re-plan around)
   recoveryOpenedAtMs?: number | null            // session-elapsed ms when help-needed was raised (for failure_recovery latency)
   pendingRecoveryOptions: RecoveryOption[] | null
+  // study-v1.5: elapsed (s) before which this mission cannot draw another drone failure. Set when a
+  // failure fires and refreshed to `elapsed + failureGraceSeconds` when the recovery is resolved.
+  failureExemptUntil?: number | null
   // Tactical agent error tracking
   tacticallySuppressedTaskId: string | null   // set after Deploy when tactical error was active
   // Abandon tracking
@@ -330,6 +338,7 @@ export interface SessionStartEvent extends BaseEvent {
   arrivalLambda: number                               // mean inter-arrival seconds for this session's complexity
   failureRatePerDroneSecond: number   // chance per second any one deployed drone fails (study-v1.3+; live hazard, uniform per drone)
   failureRollIntervalSec?: number     // study-v1.4+: simulated-time cadence of that hazard roll (absent ⇒ v1.3's per-frame roll)
+  failureGraceSeconds?: number        // study-v1.5+: seconds after a mission's recovery is resolved during which it is exempt from further failures (absent ⇒ no grace)
   conservativeTopUp: number
   conservativeRedundancyBuffer: number
   snapshotIntervalSec: number   // cadence of state_snapshot events

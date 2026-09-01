@@ -5,6 +5,7 @@ import { HUB, MAP_W, MAP_H, ASSET_SPEED, droneLabel, TASK_PRIMARY, TASK_BASE_TIM
 import { DRONE_ICON, TASK_ICON } from '../utils/icons'
 import { computeTacticalSuggestion, computeRecoverySuggestion } from '../utils/tacticalSuggest'
 import { tasksInCycles } from '../utils/scheduling'
+import { taskCoverableBy } from '../utils/coverage'
 import { TACTICAL_AGENT_STEP } from '../utils/tutorialSteps'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -526,6 +527,10 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   const [suggestQueue, setSuggestQueue] = useState<Array<{ taskId: string; droneId: string }>>([])
   // Recovery only: whether the operator consulted the agent's fix via "Suggest" before confirming.
   const [recoverySuggestUsed, setRecoverySuggestUsed] = useState(false)
+  // Why "Suggest" produced nothing, when it produces nothing. A click that silently changes no
+  // pixel reads as a broken button, and during a recovery that is exactly when the operator most
+  // needs to know whether the agent has no fix or the plan is already complete.
+  const [suggestNote, setSuggestNote] = useState<string | null>(null)
   const isSuggestLoading = suggestQueue.length > 0
   useEffect(() => {
     onSuggestLoadingChange?.(isSuggestLoading)
@@ -698,6 +703,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   // blocked here — the operator is free to build any plan; a genuine deadlock is detected and
   // failed live in the reducer (findSchedulingCycle in TICK) once the drones are actually stuck.
   function moveDrone(droneId: string, taskId: string, chain: boolean) {
+    setSuggestNote(null)
     if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_ASSIGN_CHANGED', missionId: mission.id, op: chain ? 'chain' : 'assign', droneId, taskId, recoveryMode })
     setAssignments(prev => {
       if (!chain) {
@@ -776,6 +782,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
   function handleReset() {
     setSuggestQueue([])
+    setSuggestNote(null)
     setAssignments(buildInitialAssignments())
     setDroneChainOrder(buildInitialChainOrder())   // lockout: restores the shown (deadlocked) order
     setRecoverySuggestUsed(false)
@@ -786,6 +793,7 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
   }
 
   function handleSuggest() {
+    setSuggestNote(null)
     // Lockout: if the current allocation already staffs every pending task (the usual deadlock case
     // — tasks fully staffed, just cyclically ordered), BUILD ON IT: keep the exact assignment and
     // only untangle the order (clear chain order → canonical → acyclic), rather than reassigning
@@ -815,7 +823,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     // Recovery: the agent only re-plans the tasks still needing coverage using the idle drones.
     // Normal tactical: the agent plans the whole mission from the committed pool.
     const suggestion = recoveryMode
-      ? computeRecoverySuggestion(mission, pending, state.assets)
+      // Pass the LIVE plan: the agent only re-plans the tasks the operator's current edit leaves
+      // short, so whatever they have already fixed by hand survives the click.
+      ? computeRecoverySuggestion(mission, pending, state.assets, assignments)
       : computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets, greedy)
     // Re-apply tactical error: keep the same task suppressed even after re-suggesting
     if (pending.hasTacticalError && pending.suppressedTaskId) {
@@ -827,6 +837,24 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
       for (const droneId of (suggestion[tid] ?? [])) {
         entries.push({ taskId: tid, droneId })
       }
+    }
+    if (recoveryMode && entries.length === 0) {
+      // Nothing to reveal. Say which of the two reasons it is rather than appearing dead: either
+      // the plan on screen already covers every remaining task, or the drones left on this mission
+      // genuinely cannot cover one (in which case the only ways out are recalling/abandoning).
+      const shortTasks = pending.taskOrder.filter(tid => {
+        const task = mission.tasks.find(t => t.id === tid)
+        if (!task || task.status !== 'pending') return false
+        return !taskCoverableBy(task, (assignments[tid] ?? [])
+          .map(id => state.assets.find(a => a.id === id))
+          .filter((a): a is Asset => !!a))
+      })
+      setSuggestNote(shortTasks.length === 0
+        ? 'Plan already covers every remaining task.'
+        : 'No workable plan with the drones left on this mission.')
+      if (!readOnly) onMapAction({ _mapAction: 'TACTICAL_SUGGEST', missionId: mission.id, recoveryMode })
+      document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
+      return
     }
     if (recoveryMode) {
       // Keep the current plan for tasks the agent doesn't re-plan (in-progress tasks); only the
@@ -900,6 +928,9 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
               ? <><span className="w-3 h-3 rounded-full border border-purple-400 border-t-transparent animate-spin inline-block" />Suggesting…</>
               : 'Suggest'}
           </button>
+        )}
+        {suggestNote && (
+          <span className="text-base px-2.5 py-1 rounded bg-purple-950/60 text-purple-200 border border-purple-700/50">{suggestNote}</span>
         )}
         {!readOnly && !recoveryMode && (
           <button onClick={() => onMapAction({ _mapAction: 'OVERRIDE_TACTICAL', missionId: mission.id })}

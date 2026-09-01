@@ -18,7 +18,7 @@ These are genuinely different decision levels:
 **IMPORTANT — do not reintroduce old concepts:**
 There is NO "reserve posture widget", NO "preserve/maintain/spend down" recommendation, and NO "Meta-Co-Pilot". Those ideas were considered and removed. The tactical tier is purely the within-mission drone→task assignment planner.
 
-The platform supports a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL) — but the **shipped study build runs a single condition at ε = 0** (both assistants perfect), so that machinery is dormant. **What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.4` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+The platform supports a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL) — but the **shipped study build runs a single condition at ε = 0** (both assistants perfect), so that machinery is dormant. **What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.5` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 
@@ -220,6 +220,25 @@ Edit `conditionToEpsilons()` in `src/utils/config.ts`.
 
 ### Modifying the Strategic Agent
 `src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count bundles for a specific mission. ε_S noise perturbs the *displayed* asset counts (not the true values used at deploy).
+
+### Drone failures and the recovery planner
+A failure reverts the affected task to `pending` and flags the mission `failureRecoveryPending`; the
+operator fixes it in the recovery planner (same UI as the tactical planner, `CONFIRM_FAILURE_RECOVERY`).
+Three rules matter (`study-v1.5`):
+
+- **Recovery re-commits every UNSTARTED task**, not just the pending one — so chaining a drone off a
+  still-`traveling` task onto the broken one (shift+drag, or the agent's Suggest) rebuilds the task it
+  came from too instead of stalling it. Tasks already `executing` are never re-planned, and a drone the
+  revision pulls off a task is parked on-mission.
+- **Suggest** (`computeRecoverySuggestion` in `src/utils/tacticalSuggest.ts`) draws on every mission
+  drone not executing a task, and re-plans only the pending tasks the operator's *live* plan leaves
+  short. When it can propose nothing the planner says so rather than appearing dead.
+- **Post-failure grace** (`FAILURE_GRACE_SECONDS`, default 30 s): a mission that opens a recovery takes
+  no further failure rolls until that long **after** the operator resolves it, so a second drone can
+  never die mid-repair. Set via `StudyConfig.failureGraceSeconds` / StartScreen "Failure grace" /
+  `?failureGrace=`; `0` disables it. Read it through `failureGraceSeconds()` in `utils/config`, never
+  inline. Only failures that open a recovery arm the window — a loitering-drone death or a graceful
+  section exit leaves the hazard alone, or the realized failure rate would halve.
 
 ### Modifying the Tactical Agent
 Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_T **is** wired to noise injection: in `APPLY_STRATEGIC`, with probability `epsilonTactical` one task is silently dropped from the suggested plan (`hasTacticalError`/`suppressedTaskId` on `PendingAllocation`) — the UI still shows it as allocated, but no drone is actually assigned, and the task fails via tactical lockout once every other task in the mission completes.

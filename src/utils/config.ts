@@ -1,4 +1,5 @@
 import type { Complexity, Mode, StudyConfig } from '../types'
+import { FAILURE_GRACE_SECONDS } from './missionGen'
 
 export function parseURLConfig(): StudyConfig | null {
   const p = new URLSearchParams(window.location.search)
@@ -30,13 +31,16 @@ export function parseURLConfig(): StudyConfig | null {
   const testingMode = p.get('test') === '1'
   const fullPathsOnHover = p.get('fullpaths') === '1'
   const fixLockouts = p.get('fixLockouts') !== '0'   // default ON (agent auto-fix); ?fixLockouts=0 for help-needed
+  const graceRaw = p.get('failureGrace')
+  const graceParsed = graceRaw === null ? NaN : parseFloat(graceRaw)
+  const failureGraceSeconds = isNaN(graceParsed) ? FAILURE_GRACE_SECONDS : Math.max(0, graceParsed)
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
     agentErrorRate, epsilonTactical, tacticalMode, testingMode, tutorialMode: false, numSessions,
-    fullPathsOnHover, fixLockouts,
+    fullPathsOnHover, fixLockouts, failureGraceSeconds,
   }
 }
 
@@ -56,6 +60,20 @@ export function parseURLConfig(): StudyConfig | null {
  */
 export function isFixLockouts(cfg: { fixLockouts?: boolean }): boolean {
   return cfg.fixLockouts !== false
+}
+
+/**
+ * Single source of truth for the post-failure grace window (study-v1.5), in seconds.
+ *
+ * Read it through here rather than inlining the fallback: the reducer, the StartScreen default and
+ * the `session_start` dump must agree, or the log will claim a window the run didn't use (exactly
+ * the failure mode the `isFixLockouts` note above records). 0 is a legitimate value (grace off),
+ * so an explicit 0 must survive — hence the null/undefined check rather than `||`.
+ */
+export function failureGraceSeconds(cfg: { failureGraceSeconds?: number }): number {
+  return cfg.failureGraceSeconds == null || isNaN(cfg.failureGraceSeconds)
+    ? FAILURE_GRACE_SECONDS
+    : Math.max(0, cfg.failureGraceSeconds)
 }
 
 // Canonical study seed. Every participant who doesn't explicitly override the seed

@@ -397,6 +397,18 @@ export const CHARGE_INTERVAL = 15
  */
 export const FAILURE_RATE_PER_DRONE_SECOND = 1 / 900
 
+/**
+ * study-v1.5: post-failure grace window (seconds).
+ *
+ * A mission that has just lost a drone is exempt from further failure rolls until this long AFTER
+ * its recovery is resolved. Without it a second drone on the SAME mission could die while the
+ * operator was still mid-repair in the recovery planner — the plan they were editing was rebuilt
+ * underneath them, which is unrecoverable-feeling rather than difficult, and confounds the
+ * recovery-latency measure with "how many times was I interrupted". Overridable per run via
+ * StudyConfig.failureGraceSeconds (StartScreen field / ?failureGrace=). 0 disables it.
+ */
+export const FAILURE_GRACE_SECONDS = 30
+
 // ─── Asset pool ───────────────────────────────────────────────────────────
 
 // Uniform 11/11/11 fleet across every real study scenario — difficulty differences come only

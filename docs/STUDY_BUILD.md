@@ -36,6 +36,8 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | How many points is a completed task worth? | **Build ≥ `study-v1.3`: double `study-v1.0`–`v1.2`** (20/40/60/80/100 by task type, not 10/20/30/40/50). Penalty-per-second is unchanged. | `session_start.taskWeight` |
 | How are drone failures generated? | **Build ≥ `study-v1.4`:** a live hazard rolled on a fixed **1 s simulated grid**, uniform per second per deployed drone — identical on every machine. **`study-v1.3`:** the same hazard rolled per animation frame, which silently scaled with the display's refresh rate (§ 11). **`study-v1.0`–`v1.2`:** a per-mission precomputed schedule whose selection RNG was Blue-biased. | `session_start.failureRollIntervalSec` (v1.4+), `failureRatePerDroneSecond` (v1.3+) vs `failureCount`/`failureGap`/`failureJitter`/`failureProb` (pre-v1.3) |
 | Can a task run on the substitute composition the planner offers ("OR 1F")? | **Build ≥ `study-v1.4`: yes.** In `study-v1.0`–`v1.3` every substitute-staffed task failed the instant it started executing, logged as a drone failure that never happened (§ 11). | `task_completed.useSubstitute === true` exists ⇒ v1.4+; a `task_failed` with `reason: "drone_failure"` and no `drone_failure` event nearby ⇒ the pre-v1.4 bug |
+| Does the recovery planner's "Suggest" produce a plan? | **Build ≥ `study-v1.5`: yes.** In `study-v1.0`–`v1.4` it usually returned nothing at all and the button did nothing (§ 12). | a `tactical_suggest_used` with `recoveryMode: true` in a pre-`v1.5` log tells you nothing about whether a plan was offered |
+| Can a mission take a second drone failure while the first is being fixed? | **Build ≥ `study-v1.5`: no** — exempt until 30 s after the recovery is resolved. | `session_start.failureGraceSeconds` (absent ⇒ no grace) |
 | Is there a pre-study AI-attitude survey? | **Yes, build ≥ `study-v1.3`:** AIAS-4 + two bespoke Likert blocks, before session 1. | `demographics` keys prefixed `aias_`/`verif_`/`deleg_`; absent entirely pre-`v1.3` |
 
 ---
@@ -341,6 +343,58 @@ break comparability with everything collected so far.
 
 ---
 
+### 12. `study-v1.5` — the recovery planner's "Suggest" works, and a mission gets a grace window after a failure
+
+Reported from a live run: during a drone-failure recovery, clicking **Suggest** in the recovery
+planner did nothing at all — no drones appeared, no message, no change of any kind. Two independent
+defects stacked, and a third annoyance was fixed alongside them.
+
+- **The agent had nothing to suggest with.** `computeRecoverySuggestion` drew only on the drones
+  that were idle at that instant. After a failure that pool *is* the broken task's survivors — by
+  construction exactly one drone short of the composition that had just broken — so `tryAssign`
+  failed for every task and the whole function returned `{}`. The worst and commonest shape is a
+  solo-Fast T1 Recce: its Fast dies, nothing is released at all, and the mission's other Fasts are
+  en route to tasks that have not started, so the pool is literally empty. The agent now draws on
+  every drone on the mission except those actually *executing* a task, and re-plans only the pending
+  tasks whose current plan is short — so whatever the operator has already fixed by hand survives
+  the click, and the reveal animation stays short. It also plans from each drone's live position
+  rather than the hub, so it picks the drone that can actually get there soonest.
+
+- **Committing the fix stalled the task the drone came from.** `CONFIRM_FAILURE_RECOVERY` only ever
+  re-committed `pending` tasks. Chaining a drone off a not-yet-started (`traveling`) task onto the
+  broken one — which the planner has always allowed by shift+drag, and which the agent now proposes
+  — sent that drone to the broken task while the task it came from still listed it in
+  `assignedAssetIds`. That task then sat forever, or was failed by the sections-by-colour net when
+  its start time arrived. Recovery now rebuilds **every unstarted task** from the revised plan
+  (tasks already executing are never touched), and any drone the revision pulls off a task it was
+  still flying to is parked on-mission rather than left heading somewhere it is no longer wanted.
+
+- **A second drone could fail on a mission while the first failure was still being fixed.** A
+  mission that opens a recovery is now exempt from further failure rolls until
+  `FAILURE_GRACE_SECONDS` (**30 s**, `StudyConfig.failureGraceSeconds` / the StartScreen
+  "Failure grace" field / `?failureGrace=`) **after the operator resolves it** — the window is
+  measured from the fix, not from the failure, so the repaired mission gets a clean run. Only
+  failures that actually open a recovery arm it: a loitering drone's death and a graceful section
+  exit are invisible to the operator, so they leave the hazard alone. `0` disables the grace
+  entirely and restores pre-`v1.5` behaviour.
+
+Pinned by `scripts/test-failure-recovery-suggest.ts` (the full failure → Suggest → confirm → both
+tasks complete path, which fails 5 of its 9 checks on `v1.4`) and `scripts/test-failure-grace.ts`.
+
+**Consequence for the data.** `study-v1.0`–`v1.4` recovery behaviour is not comparable with `v1.5`
+on the agent-consultation measures: in those builds a `tactical_suggest_used` with
+`recoveryMode: true` very often produced no plan, so "the operator consulted the agent and then
+built their own fix" and "the agent had nothing to offer" are indistinguishable in the log, and
+`failure_recovery.wasAgentSuggested` under-counts genuine agent use. Drone-failure *counts* also
+drop: with the grace window the same hazard yields about one fewer failure per session.
+
+**Difficulty barely moved.** `npx tsx sim/engine.mts --seeds=25`, SMART-operator task completion,
+`v1.4` → `v1.5`: balanced 82 → 82 %, tactical 82 → 83 %, strategic 87 → 87 %, full 76 → 78 %;
+mean drone failures per session 5.8 → 4.8, 6.4 → 5.4, 6.3 → 5.7, 7.2 → 6.2. Scenario parameters are
+untouched — still set v2.1 (`docs/SCENARIOS.md`).
+
+---
+
 ## Reproducing a session from its log
 
 `session_start` is a full parameter dump: seed, complexity, fleet, speeds, task compositions and
@@ -351,9 +405,9 @@ session-relative `timestamp`, a real `wallClock`, and a `sessionId`.
 
 ## If you change something
 
-1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.4`).
+1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.5`).
 2. Add a section here describing what changed and what it means for pooling old data.
-3. Commit, then `git tag -a study-v1.4 -m "..."` so the tag and `appVersion` agree.
+3. Commit, then `git tag -a study-v1.5 -m "..."` so the tag and `appVersion` agree.
 
 Existing tags: `git tag -l` · what a tag means: `git show study-v1.0 --stat` (the annotation
 summarises the build) · what changed since: `git log study-v1.0..HEAD --oneline`.

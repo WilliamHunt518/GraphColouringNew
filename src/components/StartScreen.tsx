@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Mode, StudyConfig } from '../types'
 import { randomSeed, STUDY_SEED } from '../utils/config'
+import { FAILURE_GRACE_SECONDS } from '../utils/missionGen'
 
 const COMPLEXITIES = [
   { value: 'balanced'  as const, label: 'Balanced',         desc: 'Med Strategic / Med Tactical · 11F 11L 12C' },
@@ -67,12 +68,18 @@ export default function StartScreen({ onStart }: Props) {
   const [testingMode, setTestingMode] = useState(false)
   const [fullPathsOnHover, setFullPathsOnHover] = useState(false)
   const [fixLockouts, setFixLockouts] = useState(true)
+  const [failureGrace, setFailureGrace] = useState(String(FAILURE_GRACE_SECONDS))
   const [error, setError] = useState('')
 
   // ── Participant study (2 scenarios + demographics) ──
   const [scenarioA, setScenarioA] = useState<StudyConfig['complexity']>('strategic')
   const [scenarioB, setScenarioB] = useState<StudyConfig['complexity']>('tactical')
   const [studyFastTest, setStudyFastTest] = useState(false)
+
+  // Blank / unparseable falls back to the shipped default rather than silently disabling the grace.
+  const parsedGrace = failureGrace.trim() === '' || isNaN(parseFloat(failureGrace))
+    ? FAILURE_GRACE_SECONDS
+    : Math.max(0, parseFloat(failureGrace))
 
   function handleStart() {
     const seedNum = parseInt(seed, 10)
@@ -94,6 +101,7 @@ export default function StartScreen({ onStart }: Props) {
       numSessions,
       fullPathsOnHover,
       fixLockouts,
+      failureGraceSeconds: parsedGrace,
     })
   }
 
@@ -120,6 +128,7 @@ export default function StartScreen({ onStart }: Props) {
       numSessions: 2,
       fullPathsOnHover,
       fixLockouts,
+      failureGraceSeconds: parsedGrace,
       collectDemographics: true,
       fastTest: studyFastTest,
     })
@@ -278,6 +287,15 @@ export default function StartScreen({ onStart }: Props) {
           <label htmlFor="fix-lockouts" className="text-sm text-gray-400 cursor-pointer select-none">
             Fix lockouts <span className="text-gray-600 text-xs">(on = the agent silently reroutes a stuck deadlock so every task completes; off = flag it red "help needed" for the operator to re-plan, like a drone failure. Default on — the tutorial teaches no lockout lesson, so leave it on unless you are deliberately studying that path.)</span>
           </label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label htmlFor="failure-grace" className="text-sm text-gray-400 select-none flex-1">
+            Failure grace <span className="text-gray-600 text-xs">(seconds a mission is exempt from further drone failures after one fires, measured from when the operator finishes the recovery — stops a second failure landing on a mission while the first is still being fixed. 0 = off.)</span>
+          </label>
+          <input id="failure-grace" type="number" min="0" step="5" value={failureGrace}
+            onChange={e => setFailureGrace(e.target.value)}
+            className="w-20 px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-sm text-white text-right focus:ring-blue-500 focus:border-blue-500" />
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
