@@ -357,10 +357,13 @@ function DoneScreen({ state, config }: { state: GameState; config: StudyConfig }
           <p className="text-xs text-green-400 uppercase tracking-widest mb-2 font-semibold">Study Complete</p>
           <h2 className="text-2xl font-bold text-white">All sessions finished</h2>
           <p className="text-gray-400 text-sm mt-2">
-            You have completed all {numSessions} sessions
+            {/* Pluralise, and don't show the participant a condition label: every session runs the
+                single ε = 0 condition (study-v1.8), so "the none condition" is both meaningless and
+                internal. The researcher path still gets the scenario summary. */}
+            You have completed {numSessions === 1 ? 'the session' : `all ${numSessions} sessions`}
             {config.collectDemographics
               ? '.'
-              : <> of the <span className="text-white font-semibold">{config.condition}</span> condition ({complexitySummary} complexity).</>}
+              : <> ({complexitySummary} complexity).</>}
           </p>
         </div>
 
