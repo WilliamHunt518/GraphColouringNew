@@ -26,7 +26,8 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Could a participant hit a scheduling deadlock (lockout)? | **No.** Auto-rerouted silently; every task still completes. | `session_start.fixLockouts === true`; any `lockout_detected` has `resolution: "rerouted"` |
 | Were the assistants ever wrong? | **No.** Both run at ε = 0 — every card and plan is optimal. | `session_start.epsilonStrategic === 0` and `epsilonTactical === 0` |
 | So what goes wrong during a session? | **Drone failures only** (plus whatever the operator does). **In `study-v1.3` on a display above ~120 Hz, nothing did** — the hazard could not fire (fixed in `v1.4`, § 11). | `drone_failure` events; `recovery_opened`; `session_start.failureRollIntervalSec` present ⇒ `v1.4`+ |
-| Was the 2×2 accuracy manipulation running? | **No.** Single condition, logged as `none`. | `session_start.condition === "none"` |
+| Was the 2×2 accuracy manipulation running? | **No, and it never will be** — abandoned as a design, not merely switched off (§ 15). Single condition, logged as `none`. | `session_start.condition === "none"` |
+| Does hitting "Allocate" clear the tactical window? | **Build ≥ `study-v1.8`: yes.** Before that the second screen kept showing the previous mission's planner while the operator allocated the next one (§ 15). A planner with unfinished work — pending plan or open recovery — is still left alone. | `session_start.appVersion`; no logged quantity differs either side |
 | In-session trust/workload probes? | **No.** The modal is not mounted anywhere, so none is ever shown. | no `trust_probe` events exist |
 | How many sessions, how long? | **2 × 8 min** (480 s) on the participant-study path. | `session_start.numSessions`, `sessionDuration` |
 | Which scenarios? | Session 1 **Strategic Heavy**, session 2 **Tactical Heavy** (defaults; changeable on the start screen). | `session_start.complexity` per session |
@@ -498,6 +499,43 @@ pre-`v1.7` sessions as having been shown a dominated Conservative option roughly
 
 ---
 
+### 15. `study-v1.8` — allocating clears the tactical window, and ε = 0 is settled, not dormant
+
+Two items, one behavioural and one a decision that had been recorded as provisional.
+
+- **Hitting "Allocate" now dismisses whatever the tactical window was showing.** The map window
+  kept its own selected mission (`tacticalMissionId` in `MapDisplay.tsx`) and only cleared it when
+  that mission stopped being pending or active. So after confirming a tactical plan the planner
+  stayed up in read-only mode, and opening the strategic modal for the *next* mission left the
+  second screen displaying the *previous* mission's planner — which reads as though it were about
+  the mission being allocated. The map window now watches the broadcast `strategicModal` and clears
+  its selection when a modal opens.
+
+  Deliberately **not** cleared: a planner holding unfinished work — a pending (never-deployed) plan
+  or an open failure recovery. Both hold drags the operator has already made in component-local
+  state, and unmounting the planner would discard them, which is exactly the `study-v1.6` bug
+  approached from the other side. Only the read-only view of an already-deployed mission goes.
+
+  **Consequence for the data:** none for any logged quantity. No event, parameter or game-state
+  transition changed — this is what the second screen displays between an allocation and the next
+  tactical confirmation. `v1.7` and `v1.8` pool freely on everything.
+
+- **The 2×2 accuracy manipulation is abandoned, not dormant** (decision, 3 Sept 2026). Earlier
+  sections describe the ε machinery as "supported but not used"; it is now settled that **every
+  study session runs both assistants at ε = 0**, permanently. The study measures how operators
+  divide work between two *correct* assistants at different decision tiers, not trust calibration
+  against a fallible one. `conditionToEpsilons()`, the ε_S perturbation in `copilot.ts` and the ε_T
+  task-drop path in `APPLY_STRATEGIC` remain in the code and remain tested, but no study arm will
+  turn them on — treat them as dead weight for analysis purposes, and read `condition: "none"` in
+  every log as intended rather than as a placeholder. See § 2 for what ε = 0 guarantees.
+
+**Housekeeping:** the `study-v1.7` tag pointed at `c858ff8` while `HEAD` had moved on with the
+dismiss fix and `APP_VERSION` still read `study-v1.7` — the tag and the build disagreed, which is
+the one thing the rule below exists to prevent. Fixed by this bump; check with
+`git log study-v1.8..HEAD --oneline` (should be empty at the tagged commit).
+
+---
+
 ## Reproducing a session from its log
 
 `session_start` is a full parameter dump: seed, complexity, fleet, speeds, task compositions and
@@ -508,9 +546,13 @@ session-relative `timestamp`, a real `wallClock`, and a `sessionId`.
 
 ## If you change something
 
-1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.7`).
+1. Bump `APP_VERSION` in `src/store/gameReducer.ts` (e.g. `study-v1.8`).
 2. Add a section here describing what changed and what it means for pooling old data.
-3. Commit, then `git tag -a study-v1.7 -m "..."` so the tag and `appVersion` agree.
+3. Commit, then `git tag -a study-v1.8 -m "..."` so the tag and `appVersion` agree.
+
+Tag the commit that *ships* the version, not an earlier one: if `APP_VERSION` says `study-v1.8`
+and `git log study-v1.8..HEAD` is non-empty, sessions are logging a version that no longer matches
+the code, and the log stops being reproducible.
 
 Existing tags: `git tag -l` · what a tag means: `git show study-v1.0 --stat` (the annotation
 summarises the build) · what changed since: `git log study-v1.0..HEAD --oneline`.

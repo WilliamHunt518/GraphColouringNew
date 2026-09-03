@@ -18,7 +18,16 @@ These are genuinely different decision levels:
 **IMPORTANT — do not reintroduce old concepts:**
 There is NO "reserve posture widget", NO "preserve/maintain/spend down" recommendation, and NO "Meta-Co-Pilot". Those ideas were considered and removed. The tactical tier is purely the within-mission drone→task assignment planner.
 
-The platform supports a **2×2 between-subjects design** manipulating the accuracy of each assistant independently (conditions HH / LH / HL / LL) — but the **shipped study build runs a single condition at ε = 0** (both assistants perfect), so that machinery is dormant. **What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.7` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+**Every study session runs both assistants at ε = 0** (perfect), in a single condition logged as
+`none`. The code still contains a 2×2 between-subjects accuracy manipulation (conditions HH / LH /
+HL / LL, `conditionToEpsilons()`, the ε_S perturbation in `copilot.ts`, the ε_T task-drop path in
+`APPLY_STRATEGIC`) — **that design was abandoned and no study arm will ever turn it on** (settled
+3 Sept 2026, `study-v1.8`). Leave the machinery in place and tested, but do not propose experiments
+that use it, and do not read `condition: "none"` in a log as a placeholder: it is the design.
+The study measures how operators divide work between two *correct* assistants at different decision
+tiers — not trust calibration against a fallible one.
+
+**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.8` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 
@@ -85,6 +94,9 @@ still followed by the normal survey/between-session flow. `complexityForSession(
 `gameReducer.ts` resolves the complexity for a given session, falling back to the single `complexity` field
 when `sessionComplexities` isn't set. StartScreen.tsx shows one complexity picker per session slot once
 "Sessions" > 1.
+
+The abandoned condition mapping, kept only so old code and pre-`study-v1.0` logs stay readable —
+**no session run from `study-v1.0` onward uses any of it**; every one is `condition: "none"`, ε = 0:
 
 | Condition | ε_Strategic | ε_Tactical |
 |-----------|------------|------------|
