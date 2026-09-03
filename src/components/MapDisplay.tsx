@@ -95,6 +95,29 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
     })
   }, [state.missions])
 
+  // Hitting "Allocate" in the primary window is a strategic act, so dismiss whatever the tactical
+  // window was showing — otherwise the operator chooses a strategy for the new mission while this
+  // window still displays the previous mission's planner, which reads as if it were about the
+  // mission they are allocating.
+  //
+  // A planner with unfinished work is left alone: a pending (never-deployed) plan and an open
+  // failure recovery both hold drags the operator has already made, and unmounting the planner
+  // would throw them away (the plan is local state — see the prune effect in TacticalPlannerView).
+  // Only the read-only view of an already-deployed mission is dismissed.
+  const strategicModalMissionId = state.strategicModal?.missionId ?? null
+  const prevStrategicModalId = useRef(strategicModalMissionId)
+  useEffect(() => {
+    const justOpened = strategicModalMissionId !== null && prevStrategicModalId.current !== strategicModalMissionId
+    prevStrategicModalId.current = strategicModalMissionId
+    if (!justOpened) return
+    setTacticalMissionId(prev => {
+      if (!prev) return null
+      const m = state.missions.find(mm => mm.id === prev)
+      if (!m) return null
+      return (m.tacticalPending || m.failureRecoveryPending) ? prev : null
+    })
+  }, [strategicModalMissionId])  // eslint-disable-line react-hooks/exhaustive-deps
+
   const pending = state.missions.filter(m =>
     (m.tacticalPending && !!m.pendingAllocation) || m.failureRecoveryPending
   )

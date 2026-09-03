@@ -1,0 +1,1553 @@
+<title>Two Tiers, Two Scenarios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --plane: #f3f3f0;
+    --surface: #fcfcfb;
+    --surface-2: #ecebe6;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --rule: rgba(11, 11, 11, 0.11);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --neutral-mark: #a9a79f;
+    --good: #0ca30c;
+    --warn: #fab219;
+    --crit: #d03b3b;
+    --shadow: 0 1px 2px rgba(11, 11, 11, 0.05);
+
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #232321;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --rule: rgba(255, 255, 255, 0.11);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --neutral-mark: #6e6d67;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --rule: rgba(255, 255, 255, 0.11);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --neutral-mark: #6e6d67;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* -- masthead --------------------------------------------------- */
+  header.masthead { padding: 56px 0 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.1; letter-spacing: -0.015em; margin: 0 0 18px; text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 17px; line-height: 1.62; color: var(--ink-2);
+    max-width: 62ch; margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  .tiles { display: flex; flex-wrap: wrap; gap: 0; margin: 30px 0 0; border-top: 1px solid var(--rule); }
+  .tile { flex: 1 1 130px; padding: 16px 20px 14px 0; }
+  .tile .v {
+    font-family: var(--mono); font-weight: 600; font-size: 25px; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; display: block; line-height: 1.15;
+  }
+  .tile .k {
+    font-size: 12px; color: var(--ink-muted); margin-top: 3px; display: block;
+    letter-spacing: 0.01em;
+  }
+
+  /* -- cohort rail ------------------------------------------------ */
+  .rail-shell {
+    position: sticky; top: 0; z-index: 20; background: var(--plane);
+    border-bottom: 1px solid var(--rule); padding: 14px 0 15px;
+  }
+  .rail-label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--ink-muted); margin: 0 0 10px;
+  }
+  .rail { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 3px; }
+  .rail button {
+    flex: 0 0 auto; text-align: left; cursor: pointer; font-family: var(--sans);
+    background: var(--surface); color: var(--ink-2);
+    border: 1px solid var(--rule); border-radius: 3px;
+    padding: 8px 13px 9px; min-width: 116px;
+    transition: border-color .12s, color .12s, background .12s;
+  }
+  .rail button:hover { border-color: var(--axis); color: var(--ink); }
+  .rail button:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+  .rail button[aria-pressed="true"] {
+    background: var(--ink); color: var(--surface); border-color: var(--ink);
+  }
+  .rail button[aria-pressed="true"] .rail-n { color: var(--surface); opacity: .72; }
+  .rail .rail-w {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; opacity: .62; margin-bottom: 3px;
+  }
+  .rail .rail-t { display: block; font-size: 13.5px; font-weight: 500; line-height: 1.25; }
+  .rail-n { display: block; font-family: var(--mono); font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
+
+  .cohort-note {
+    display: flex; gap: 12px; align-items: baseline; margin: 15px 0 34px;
+    font-size: 13.5px; color: var(--ink-2); max-width: 92ch;
+  }
+  .cohort-note .badge {
+    flex: 0 0 auto; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-muted);
+    border: 1px solid var(--rule); border-radius: 2px; padding: 2px 6px;
+  }
+
+  /* -- sections --------------------------------------------------- */
+  section { margin: 0 0 52px; }
+  h2 {
+    font-family: var(--serif); font-size: 25px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 6px; text-wrap: balance;
+  }
+  .sec-intro { color: var(--ink-2); max-width: 68ch; margin: 0 0 24px; font-size: 14.5px; }
+  .sec-head { border-top: 2px solid var(--ink); padding-top: 14px; margin-bottom: 22px; }
+  .sec-head .eyebrow { margin-bottom: 8px; }
+
+  .grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .grid.two { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+
+  figure {
+    margin: 0; background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 18px 18px 14px; box-shadow: var(--shadow);
+  }
+  figure.full { grid-column: 1 / -1; }
+  figcaption { margin: 0 0 2px; }
+  .fig-title { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; margin: 0; }
+  .fig-sub { font-size: 12.5px; color: var(--ink-muted); margin: 3px 0 0; line-height: 1.45; }
+  .fig-take {
+    font-size: 13px; color: var(--ink-2); margin: 12px 0 0; padding-top: 11px;
+    border-top: 1px solid var(--grid); line-height: 1.5;
+  }
+  .fig-take b { color: var(--ink); font-weight: 600; }
+  .chart { margin-top: 14px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+  .legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+
+  .empty {
+    font-size: 13px; color: var(--ink-muted); font-style: italic;
+    padding: 26px 0; text-align: center;
+  }
+
+  /* -- callouts --------------------------------------------------- */
+  .callout {
+    display: flex; gap: 13px; border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--surface); padding: 15px 17px; margin: 0 0 14px;
+  }
+  .callout .mark {
+    flex: 0 0 auto; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase; padding-top: 2px;
+  }
+  .callout.warn .mark { color: #8a6100; }
+  .callout.crit .mark { color: var(--crit); }
+  .callout.note .mark { color: var(--ink-muted); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .callout.warn .mark { color: var(--warn); } }
+  :root[data-theme="dark"] .callout.warn .mark { color: var(--warn); }
+  .callout p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+  .callout p + p { margin-top: 8px; }
+  .callout b { color: var(--ink); font-weight: 600; }
+
+  /* -- table ------------------------------------------------------ */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: right; padding: 7px 11px; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  th:first-child, td:first-child, th.l, td.l { text-align: left; }
+  thead th {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-muted); position: sticky; top: 0;
+    background: var(--surface); border-bottom: 1px solid var(--axis);
+  }
+  tbody td { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  tbody td.num { font-family: var(--mono); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.dim td { color: var(--ink-muted); }
+  .scen-chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em;
+    padding: 1px 5px; border-radius: 2px; border: 1px solid var(--rule);
+  }
+
+  /* -- tooltip ---------------------------------------------------- */
+  #tip {
+    position: fixed; z-index: 100; pointer-events: none; opacity: 0;
+    transition: opacity .1s; background: var(--ink); color: var(--plane);
+    font-size: 12px; line-height: 1.5; padding: 7px 10px; border-radius: 3px;
+    max-width: 250px; box-shadow: 0 3px 12px rgba(0, 0, 0, .22);
+  }
+  #tip .t { font-weight: 600; display: block; }
+  #tip .m { font-family: var(--mono); font-size: 11.5px; opacity: .85; }
+
+  footer {
+    border-top: 1px solid var(--rule); padding-top: 20px; margin-top: 10px;
+    font-size: 12.5px; color: var(--ink-muted); line-height: 1.6;
+  }
+  footer code { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">SAR drone allocation &#xb7; hierarchical assistant trust study</p>
+    <h1>Two Tiers, Two Scenarios</h1>
+    <p class="standfirst">
+      Every session collected so far, pooled instead of profiled one participant at a time. The
+      question here is not who did well &#x2014; it is whether operators treat the
+      <strong>Strategic Assistant</strong> and the <strong>Tactical Assistant</strong> differently,
+      and whether that changes between the <strong>Strategic&nbsp;Heavy</strong> and
+      <strong>Tactical&nbsp;Heavy</strong> scenarios. Because the build moved underneath the data
+      several times, every figure is scoped to a build window you choose.
+    </p>
+    <div class="tiles" id="tiles"></div>
+  </header>
+
+  <div class="rail-shell">
+    <p class="rail-label">Build window &#x2014; every figure below is scoped to this selection</p>
+    <div class="rail" id="rail" role="group" aria-label="Build window"></div>
+  </div>
+  <div class="cohort-note"><span class="badge" id="cohort-badge"></span><span id="cohort-note"></span></div>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question one</p>
+      <h2>Do operators treat the two assistants differently?</h2>
+      <p class="sec-intro">
+        Both tiers offer the same bargain &#x2014; take what the assistant proposes, or build it yourself.
+        <b>Uptake</b> asks whether the assistant was invited into the decision at all. <b>Acceptance</b>
+        asks whether what it proposed then went out unchanged. They are not the same question, and
+        the data separates them sharply.
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Uptake &#x2014; was the assistant invited in?</p>
+          <p class="fig-sub">Strategic: a strategy card was taken instead of a manual bundle being built.
+            Tactical: the agent's plan was pulled into the planner at least once (it starts empty).</p>
+        </figcaption>
+        <div class="chart" id="c-uptake"></div>
+        <div class="legend" id="l-uptake"></div>
+        <p class="fig-take" id="t-uptake"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Acceptance &#x2014; did it go out unchanged?</p>
+          <p class="fig-sub">Strategic: the card was deployed exactly as shown, with no manual edit.
+            Tactical: the confirmed plan matched the agent's on every task the agent had planned.</p>
+        </figcaption>
+        <div class="chart" id="c-accept"></div>
+        <div class="legend" id="l-accept"></div>
+        <p class="fig-take" id="t-accept"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">Time spent on the decision</p>
+          <p class="fig-sub">Seconds from the panel opening to the operator committing. The bar spans
+            the interquartile range, the dot is the median, the thin line the full spread.</p>
+        </figcaption>
+        <div class="chart" id="c-latency"></div>
+        <p class="fig-take" id="t-latency"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question two</p>
+      <h2>Does the scenario change the bargain?</h2>
+      <p class="sec-intro">
+        Strategic Heavy sends many small missions; Tactical Heavy sends fewer, larger ones. The
+        headless harness calibrates both to roughly equal achievability. Operators do not experience
+        them as equal.
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Work finished, of the work taken on</p>
+          <p class="fig-sub">Tasks completed &#xf7; tasks on missions the operator actually allocated.
+            One dot per session; the rule is the median.</p>
+        </figcaption>
+        <div class="chart" id="c-completion"></div>
+        <p class="fig-take" id="t-completion"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Mean time to finish a mission</p>
+          <p class="fig-sub">Seconds from allocation to the mission's last task closing. One dot per
+            session; sessions that finished no mission at all are omitted.</p>
+        </figcaption>
+        <div class="chart" id="c-misstime"></div>
+        <p class="fig-take" id="t-misstime"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Which strategy the operator committed to</p>
+          <p class="fig-sub">Every allocation decision in the window, by what was chosen.</p>
+        </figcaption>
+        <div class="chart" id="c-mix"></div>
+        <div class="legend" id="l-mix"></div>
+        <p class="fig-take" id="t-mix"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Recovery plans that used the assistant</p>
+          <p class="fig-sub">After a drone failure, the share of recoveries built with the planner's
+            Suggest button rather than by hand.</p>
+        </figcaption>
+        <div class="chart" id="c-recovery"></div>
+        <p class="fig-take" id="t-recovery"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question two, controlled</p>
+      <h2>Each participant against themselves</h2>
+      <p class="sec-intro">
+        Every participant ran both scenarios, so their own pair controls for skill &#x2014; the comparison
+        that survives a sample this small. Each line is one person moving from their Strategic Heavy
+        session to their Tactical Heavy one.
+      </p>
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>Higher in Tactical Heavy</span>
+        <span><i style="background:var(--crit)"></i>Lower in Tactical Heavy</span>
+        <span><i style="background:var(--neutral-mark)"></i>Unchanged</span>
+      </div>
+    </div>
+    <div class="grid" id="slopes"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question three</p>
+      <h2>Does disposition predict which assistant you lean on?</h2>
+      <p class="sec-intro">
+        Three things were measured per person: how they feel about AI in general (before they ever
+        saw the app), how much they trusted each assistant (after every session), and how often they
+        actually used each one. The pre-study battery only exists on builds from
+        <b>study-v1.3</b> onward, which is the binding constraint on everything in this section.
+      </p>
+      <div id="battery-status"></div>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Trust in each assistant, per person</p>
+          <p class="fig-sub">Mean of six 7-point items (confident, would follow, performs well,
+            reliable, trust, useful), averaged over that person's sessions.</p>
+        </figcaption>
+        <div class="chart" id="c-trustslope"></div>
+        <p class="fig-take" id="t-trustslope"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Which part of trust differs</p>
+          <p class="fig-sub">The same six items, one bar per assistant, averaged across participants.
+            The figure at the right of each pair is tactical minus strategic.</p>
+        </figcaption>
+        <div class="chart" id="c-trustitems"></div>
+        <div class="legend" id="l-trustitems"></div>
+        <p class="fig-take" id="t-trustitems"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Stated trust against actual use</p>
+          <p class="fig-sub">Relative trust (tactical minus strategic) against relative uptake.
+            Up and to the right means preferring the tactical assistant on both measures.</p>
+        </figcaption>
+        <div class="chart" id="c-trustuse"></div>
+        <p class="fig-take" id="t-trustuse"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">AI attitude against relative trust</p>
+          <p class="fig-sub">AIAS-4 (10-point; low = sceptical of AI in general) against how much
+            more a person trusted the tactical assistant than the strategic one.</p>
+        </figcaption>
+        <div class="chart" id="c-aias"></div>
+        <p class="fig-take" id="t-aias"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">Every disposition measure against every outcome</p>
+          <p class="fig-sub">Pearson r with the n it rests on. Nothing here is a significance test &#x2014;
+            an r on five or six people is a shape, not a finding, and blank means too few people to
+            compute one at all.</p>
+        </figcaption>
+        <div class="table-wrap" id="c-corr"></div>
+        <p class="fig-take" id="t-corr"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">The pre-study battery, item by item</p>
+          <p class="fig-sub">Raw responses as logged, with reverse-keyed items marked (R) and flipped
+            only inside the composites. AIAS-4 is 10-point; the other two blocks are 7-point.</p>
+        </figcaption>
+        <div class="table-wrap" id="c-battery"></div>
+        <p class="fig-take" id="t-battery"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Across every window</p>
+      <h2>What moved as the build changed</h2>
+      <p class="sec-intro">
+        These two figures ignore the selector above and show all six windows at once, because the
+        interesting thing about them is the drift. Read them as a record of the instrument changing,
+        not only of operators changing.
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Uptake by window</p>
+          <p class="fig-sub">Both tiers, pooled across scenarios, in each build window.</p>
+        </figcaption>
+        <div class="chart" id="c-wintake"></div>
+        <div class="legend" id="l-wintake"></div>
+        <p class="fig-take" id="t-wintake"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Recovery assistance by window</p>
+          <p class="fig-sub">Share of failure recoveries built with the assistant's suggestion.</p>
+        </figcaption>
+        <div class="chart" id="c-winrec"></div>
+        <p class="fig-take" id="t-winrec"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Before you quote any of this</p>
+      <h2>What the numbers cannot carry</h2>
+    </div>
+    <div id="caveats"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The whole dataset</p>
+      <h2>Every session, one row each</h2>
+      <p class="sec-intro">
+        Rows greyed out fall outside the selected window. Blank cells are fields the build of the day
+        did not log &#x2014; never a zero.
+      </p>
+    </div>
+    <div class="table-wrap"><table id="sessions"></table></div>
+  </section>
+
+  <footer>
+    <p>
+      Generated from every complete session in <code>logs/</code> by
+      <code>scripts/agent_scenario_stats.py</code> &#x2192; <code>scripts/agent_scenario_aggregate.py</code>.
+      Synthetic harness runs under <code>logs/Pilots/auto/</code> and partial mid-session snapshots are
+      excluded. Cohort boundaries follow <code>docs/STUDY_BUILD.md</code> and
+      <code>docs/SCENARIOS.md</code>; every session's own parameters are in its <code>session_start</code>
+      event. Proportion error bars are Wilson score intervals at 95%.
+    </p>
+  </footer>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="agg">{"cohorts":[{"key":"all","label":"All sessions","short":"All","note":"Every complete session ever collected. Metrics that only exist in later builds are scored over the sessions that carry them, never imputed.","overall":{"sessions":15,"participants":8,"participantIds":["Ayomide","GeorgeH","P-1333","P-1622","P-2128","P-6155","P-6921","P-8561"],"versions":["pre-tag","study-v1.0","study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["greedy","plan-all"],"strategicUptake":{"k":75,"n":131,"p":0.5725190839694656,"ci":[0.486925365253153,0.6539807052770098]},"strategicUnedited":{"k":75,"n":75,"p":1.0,"ci":[0.9512744540953,1.0]},"tacticalUptake":{"k":77,"n":111,"p":0.6936936936936937,"ci":[0.6026578744023888,0.7717709040193678]},"tacticalUnmodified":{"k":77,"n":129,"p":0.5968992248062015,"ci":[0.5106345545991948,0.6775595050929497]},"tacticalUptakeSessions":13,"recoveryAgent":{"k":6,"n":77,"p":0.07792207792207792,"ci":[0.036200461908799254,0.15975805449859498]},"strategicLatency":{"n":131,"mean":13.589709923664122,"median":10.399,"q1":7.0535,"q3":15.735,"lo":2.617,"hi":77.064,"values":[2.617,2.777,2.782,3.687,4.141,4.406,4.868,5.154,5.467,5.511,5.659,5.812,5.813,5.93,6.007,6.087,6.092,6.235,6.249,6.255,6.377,6.434,6.495,6.523,6.564,6.566,6.66,6.667,6.749,6.758,6.768,6.91,7.004,7.103,7.133,7.136,7.182,7.216,7.229,7.23,7.29,7.434,7.434,7.532,7.533,7.55,7.581,7.583,7.783,7.866,7.951,8.116,8.167,8.425,8.442,8.566,8.883,8.915,9.087,9.45,9.633,9.633,9.734,10.083,10.283,10.399,10.525,10.695,10.785,11.183,11.217,11.333,11.358,11.499,11.533,11.668,11.677,11.832,11.865,11.866,11.916,12.717,12.867,12.925,13.365,13.479,13.773,13.86,13.881,14.066,14.183,14.283,14.865,14.866,14.989,15.136,15.534,15.621,15.849,15.917,16.017,16.15,16.283,16.666,17.433,18.817,18.917,19.05,19.287,19.715,20.25,20.401,20.583,20.767,20.849,20.903,21.016,21.114,23.698,24.2,28.216,31.699,36.415,37.415,37.883,38.699,39.499,46.914,47.315,64.283,77.064]},"tacticalLatency":{"n":129,"mean":27.206209302325583,"median":19.723,"q1":12.916,"q3":28.815,"lo":5.07,"hi":164.311,"values":[5.07,5.362,5.706,6.582,6.7,7.73,7.959,8.285,8.565,8.966,9.083,9.282,9.329,9.401,9.44,9.467,9.487,9.95,10.057,10.273,10.432,10.528,10.616,10.9,11.134,11.732,11.765,12.2,12.336,12.383,12.434,12.687,12.916,12.966,13.141,13.511,13.649,13.749,13.845,13.85,13.882,13.913,14.849,14.899,14.914,15.049,15.166,15.632,15.703,15.966,16.022,16.652,16.999,17.139,17.197,17.401,17.565,17.921,17.95,17.999,18.0,18.282,18.635,18.983,19.723,19.828,20.053,20.916,21.083,21.733,21.748,21.75,21.816,22.053,22.518,23.05,23.499,23.948,24.0,24.499,24.616,24.665,24.749,25.033,25.1,25.432,25.433,26.05,26.856,26.911,27.04,27.315,27.566,27.767,27.995,28.141,28.815,29.412,29.635,30.199,30.266,30.577,31.116,31.898,32.632,32.736,33.303,37.282,37.598,38.365,43.549,43.797,44.273,49.515,54.065,59.181,60.947,66.632,68.363,73.165,76.571,84.629,85.097,89.164,89.513,105.963,106.712,107.248,164.311]},"planOverlap":{"n":129,"mean":0.7353251866292762,"median":1.0,"q1":0.5,"q3":1.0,"lo":0.0,"hi":1.0},"cardMix":{"aggressive":45,"conservative":30,"manual":56},"perParticipant":[{"pid":"P-8561","scenario":"strategic","version":"pre-tag","strategicUptake":0.4166666666666667,"tacticalUptake":0.8333333333333334,"completion":null,"score":217,"penalty":323,"meanMissionTime":67.02725000000001,"tlx":10.0,"failures":10,"drags":30},{"pid":"P-8561","scenario":"tactical","version":"pre-tag","strategicUptake":0.5,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":632,"meanMissionTime":0,"tlx":10.0,"failures":7,"drags":28},{"pid":"P-1333","scenario":"tactical","version":"pre-tag","strategicUptake":0.7142857142857143,"tacticalUptake":null,"completion":null,"score":22,"penalty":328,"meanMissionTime":0,"tlx":11.833333333333334,"failures":10,"drags":0},{"pid":"P-1333","scenario":"strategic","version":"pre-tag","strategicUptake":0.7272727272727273,"tacticalUptake":null,"completion":null,"score":0,"penalty":402,"meanMissionTime":65.46200000000002,"tlx":14.166666666666666,"failures":11,"drags":0},{"pid":"P-2128","scenario":"strategic","version":"pre-tag","strategicUptake":0.6,"tacticalUptake":0.5,"completion":null,"score":105,"penalty":275,"meanMissionTime":56.41471428571429,"tlx":11.166666666666666,"failures":8,"drags":46},{"pid":"P-2128","scenario":"tactical","version":"pre-tag","strategicUptake":0.5714285714285714,"tacticalUptake":0.8571428571428571,"completion":null,"score":50,"penalty":650,"meanMissionTime":101.758,"tlx":15.0,"failures":10,"drags":41},{"pid":"P-6155","scenario":"strategic","version":"study-v1.2","strategicUptake":0.4,"tacticalUptake":0.2,"completion":0.7241379310344828,"score":151,"penalty":329,"meanMissionTime":58.784333333333336,"tlx":8.166666666666666,"failures":7,"drags":73},{"pid":"P-6155","scenario":"tactical","version":"study-v1.2","strategicUptake":0.6666666666666666,"tacticalUptake":0.3333333333333333,"completion":0.4523809523809524,"score":0,"penalty":725,"meanMissionTime":69.6654,"tlx":10.0,"failures":14,"drags":98},{"pid":"P-1622","scenario":"tactical","version":"study-v1.0","strategicUptake":1.0,"tacticalUptake":1.0,"completion":null,"score":191,"penalty":259,"meanMissionTime":76.35240000000002,"tlx":7.166666666666667,"failures":9,"drags":24},{"pid":"P-1622","scenario":"strategic","version":"study-v1.0","strategicUptake":0.875,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":466,"meanMissionTime":52.55171428571428,"tlx":10.0,"failures":13,"drags":21},{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36},{"pid":"P-6921","scenario":"strategic","version":"pre-tag","strategicUptake":0.38461538461538464,"tacticalUptake":0.8461538461538461,"completion":null,"score":483,"penalty":167,"meanMissionTime":64.7698181818182,"tlx":10.0,"failures":9,"drags":35}],"completion":{"n":6,"mean":0.6766304861132447,"median":0.6863932898415657,"q1":0.566008316008316,"q3":0.8156498673740054,"lo":0.4523809523809524,"hi":0.85},"score":{"n":15,"mean":232.13333333333333,"median":105.0,"q1":0.0,"q3":335.0,"lo":0,"hi":1005},"penalty":{"n":15,"mean":415.46666666666664,"median":329.0,"q1":309.0,"q3":549.0,"lo":167,"hi":725},"meanMissionTime":{"n":15,"mean":69.98370422799424,"median":65.46200000000002,"q1":55.42165714285714,"q3":76.68486666666666,"lo":0,"hi":169.14500000000004},"tlx":{"n":15,"mean":11.177777777777777,"median":11.166666666666666,"q1":10.0,"q3":12.75,"lo":7.166666666666667,"hi":15.0},"failures":{"n":15,"mean":8.2,"median":9.0,"q1":6.5,"q3":10.0,"lo":2,"hi":14},"drags":{"n":13,"mean":38.61538461538461,"median":33.0,"q1":24.0,"q3":41.0,"lo":15.0,"hi":98.0}},"strategic":{"sessions":8,"participants":8,"participantIds":["Ayomide","GeorgeH","P-1333","P-1622","P-2128","P-6155","P-6921","P-8561"],"versions":["pre-tag","study-v1.0","study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["greedy","plan-all"],"strategicUptake":{"k":48,"n":88,"p":0.5454545454545454,"ci":[0.44169880685506685,0.6454076895474348]},"strategicUnedited":{"k":48,"n":48,"p":1.0,"ci":[0.9258973488472576,0.9999999999999999]},"tacticalUptake":{"k":51,"n":75,"p":0.68,"ci":[0.5678872410148672,0.7745715624594409]},"tacticalUnmodified":{"k":52,"n":86,"p":0.6046511627906976,"ci":[0.49897526698784006,0.7013773536244373]},"tacticalUptakeSessions":7,"recoveryAgent":{"k":2,"n":39,"p":0.05128205128205128,"ci":[0.014177657646399527,0.1688593904563791]},"strategicLatency":{"n":88,"mean":13.390386363636365,"median":9.258,"q1":6.6365,"q3":16.05025,"lo":2.617,"hi":77.064,"values":[2.617,2.777,2.782,3.687,4.141,4.868,5.154,5.467,5.511,5.659,5.812,5.813,5.93,6.007,6.087,6.235,6.255,6.377,6.434,6.495,6.564,6.566,6.66,6.667,6.758,6.768,6.91,7.103,7.133,7.136,7.229,7.23,7.29,7.434,7.533,7.55,7.581,7.583,7.951,8.116,8.167,8.425,8.442,8.883,9.633,10.283,10.399,10.525,10.785,11.217,11.358,11.499,11.668,11.865,12.867,12.925,13.86,14.183,14.283,14.865,14.866,14.989,15.136,15.534,15.917,16.017,16.15,16.283,17.433,18.817,18.917,19.05,19.287,20.25,20.583,20.767,20.849,20.903,23.698,24.2,28.216,31.699,36.415,37.415,37.883,38.699,47.315,77.064]},"tacticalLatency":{"n":86,"mean":19.97101162790698,"median":16.5105,"q1":11.74025,"q3":26.637999999999998,"lo":5.07,"hi":68.363,"values":[5.07,5.362,5.706,6.582,6.7,7.73,8.285,8.565,8.966,9.083,9.282,9.329,9.401,9.44,9.487,10.057,10.432,10.528,10.616,10.9,11.134,11.732,11.765,12.2,12.336,12.434,12.687,12.916,13.141,13.511,13.649,13.749,13.845,13.85,13.882,13.913,14.849,14.899,14.914,15.632,15.703,15.966,16.022,16.999,17.197,17.401,17.565,17.921,17.95,17.999,18.0,18.282,18.635,18.983,21.733,21.748,21.75,21.816,22.053,22.518,23.05,23.499,24.749,25.432,27.04,27.315,27.767,28.141,28.815,29.412,29.635,30.266,30.577,31.116,31.898,32.632,32.736,33.303,37.282,37.598,43.549,43.797,44.273,49.515,60.947,68.363]},"planOverlap":{"n":86,"mean":0.7398282154402105,"median":1.0,"q1":0.5,"q3":1.0,"lo":0.0,"hi":1.0},"cardMix":{"aggressive":32,"conservative":16,"manual":40},"perParticipant":[{"pid":"P-8561","scenario":"strategic","version":"pre-tag","strategicUptake":0.4166666666666667,"tacticalUptake":0.8333333333333334,"completion":null,"score":217,"penalty":323,"meanMissionTime":67.02725000000001,"tlx":10.0,"failures":10,"drags":30},{"pid":"P-1333","scenario":"strategic","version":"pre-tag","strategicUptake":0.7272727272727273,"tacticalUptake":null,"completion":null,"score":0,"penalty":402,"meanMissionTime":65.46200000000002,"tlx":14.166666666666666,"failures":11,"drags":0},{"pid":"P-2128","scenario":"strategic","version":"pre-tag","strategicUptake":0.6,"tacticalUptake":0.5,"completion":null,"score":105,"penalty":275,"meanMissionTime":56.41471428571429,"tlx":11.166666666666666,"failures":8,"drags":46},{"pid":"P-6155","scenario":"strategic","version":"study-v1.2","strategicUptake":0.4,"tacticalUptake":0.2,"completion":0.7241379310344828,"score":151,"penalty":329,"meanMissionTime":58.784333333333336,"tlx":8.166666666666666,"failures":7,"drags":73},{"pid":"P-1622","scenario":"strategic","version":"study-v1.0","strategicUptake":0.875,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":466,"meanMissionTime":52.55171428571428,"tlx":10.0,"failures":13,"drags":21},{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36},{"pid":"P-6921","scenario":"strategic","version":"pre-tag","strategicUptake":0.38461538461538464,"tacticalUptake":0.8461538461538461,"completion":null,"score":483,"penalty":167,"meanMissionTime":64.7698181818182,"tlx":10.0,"failures":9,"drags":35}],"completion":{"n":3,"mean":0.806763925729443,"median":0.8461538461538461,"q1":0.7851458885941645,"q3":0.8480769230769231,"lo":0.7241379310344828,"hi":0.85},"score":{"n":8,"mean":276.75,"median":184.0,"q1":78.75,"q3":460.5,"lo":0,"hi":805},"penalty":{"n":8,"mean":323.0,"median":325.0,"q1":290.0,"q3":347.25,"lo":167,"hi":466},"meanMissionTime":{"n":8,"mean":62.05697042748918,"median":61.777075757575766,"q1":55.91818571428572,"q3":65.85331250000002,"lo":52.55171428571428,"hi":77.01733333333333},"tlx":{"n":8,"mean":11.229166666666666,"median":10.583333333333332,"q1":10.0,"q3":13.083333333333334,"lo":8.166666666666666,"hi":14.166666666666666},"failures":{"n":8,"mean":7.875,"median":8.5,"q1":6.0,"q3":10.25,"lo":2,"hi":13},"drags":{"n":7,"mean":36.57142857142857,"median":35.0,"q1":25.5,"q3":41.0,"lo":15.0,"hi":73.0}},"tactical":{"sessions":7,"participants":7,"participantIds":["Ayomide","GeorgeH","P-1333","P-1622","P-2128","P-6155","P-8561"],"versions":["pre-tag","study-v1.0","study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["greedy","plan-all"],"strategicUptake":{"k":27,"n":43,"p":0.627906976744186,"ci":[0.47859538265273166,0.7562386110622568]},"strategicUnedited":{"k":27,"n":27,"p":1.0,"ci":[0.8754409628553641,1.0]},"tacticalUptake":{"k":26,"n":36,"p":0.7222222222222222,"ci":[0.5600719978365485,0.841518299741862]},"tacticalUnmodified":{"k":25,"n":43,"p":0.5813953488372093,"ci":[0.43328315755711777,0.7161566566251477]},"tacticalUptakeSessions":6,"recoveryAgent":{"k":4,"n":38,"p":0.10526315789473684,"ci":[0.041701897932665793,0.24130831200194466]},"strategicLatency":{"n":43,"mean":13.997627906976744,"median":11.333,"q1":7.8245000000000005,"q3":13.973500000000001,"lo":4.406,"hi":64.283,"values":[4.406,6.092,6.249,6.523,6.749,7.004,7.182,7.216,7.434,7.532,7.783,7.866,8.566,8.915,9.087,9.45,9.633,9.734,10.083,10.695,11.183,11.333,11.533,11.677,11.832,11.866,11.916,12.717,13.365,13.479,13.773,13.881,14.066,15.621,15.849,16.666,19.715,20.401,21.016,21.114,39.499,46.914,64.283]},"tacticalLatency":{"n":43,"mean":41.67660465116279,"median":25.1,"q1":19.7755,"q3":62.9065,"lo":7.959,"hi":164.311,"values":[7.959,9.467,9.95,10.273,12.383,12.966,15.049,15.166,16.652,17.139,19.723,19.828,20.053,20.916,21.083,23.948,24.0,24.499,24.616,24.665,25.033,25.1,25.433,26.05,26.856,26.911,27.566,27.995,30.199,38.365,54.065,59.181,66.632,73.165,76.571,84.629,85.097,89.164,89.513,105.963,106.712,107.248,164.311]},"planOverlap":{"n":43,"mean":0.7263191290074075,"median":0.9473684210526315,"q1":0.375,"q3":1.0,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":13,"conservative":14,"manual":16},"perParticipant":[{"pid":"P-8561","scenario":"tactical","version":"pre-tag","strategicUptake":0.5,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":632,"meanMissionTime":0,"tlx":10.0,"failures":7,"drags":28},{"pid":"P-1333","scenario":"tactical","version":"pre-tag","strategicUptake":0.7142857142857143,"tacticalUptake":null,"completion":null,"score":22,"penalty":328,"meanMissionTime":0,"tlx":11.833333333333334,"failures":10,"drags":0},{"pid":"P-2128","scenario":"tactical","version":"pre-tag","strategicUptake":0.5714285714285714,"tacticalUptake":0.8571428571428571,"completion":null,"score":50,"penalty":650,"meanMissionTime":101.758,"tlx":15.0,"failures":10,"drags":41},{"pid":"P-6155","scenario":"tactical","version":"study-v1.2","strategicUptake":0.6666666666666666,"tacticalUptake":0.3333333333333333,"completion":0.4523809523809524,"score":0,"penalty":725,"meanMissionTime":69.6654,"tlx":10.0,"failures":14,"drags":98},{"pid":"P-1622","scenario":"tactical","version":"study-v1.0","strategicUptake":1.0,"tacticalUptake":1.0,"completion":null,"score":191,"penalty":259,"meanMissionTime":76.35240000000002,"tlx":7.166666666666667,"failures":9,"drags":24},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33}],"completion":{"n":3,"mean":0.5464970464970466,"median":0.5384615384615384,"q1":0.49542124542124544,"q3":0.5935550935550935,"lo":0.4523809523809524,"hi":0.6486486486486487},"score":{"n":7,"mean":181.14285714285714,"median":22.0,"q1":0.0,"q3":120.5,"lo":0,"hi":1005},"penalty":{"n":7,"mean":521.1428571428571,"median":632.0,"q1":373.5,"q3":642.5,"lo":259,"hi":725},"meanMissionTime":{"n":7,"mean":79.04282857142859,"median":76.35240000000002,"q1":34.8327,"q3":119.0685,"lo":0,"hi":169.14500000000004},"tlx":{"n":7,"mean":11.119047619047619,"median":11.333333333333334,"q1":10.0,"q3":12.166666666666668,"lo":7.166666666666667,"hi":15.0},"failures":{"n":7,"mean":8.571428571428571,"median":9.0,"q1":6.5,"q3":10.0,"lo":4,"hi":14},"drags":{"n":6,"mean":41.0,"median":30.5,"q1":25.0,"q3":39.0,"lo":22.0,"hi":98.0}},"dateRange":["2026-07-01","2026-09-01"],"contrasts":[{"pid":"Ayomide","version":"study-v1.4","strategicFirst":false,"completion":{"strategic":0.85,"tactical":0.5384615384615384,"delta":-0.31153846153846154},"strategicUptake":{"strategic":0.14285714285714285,"tactical":0.3333333333333333,"delta":0.19047619047619047},"tacticalUptake":{"strategic":0.2857142857142857,"tactical":0.0,"delta":-0.2857142857142857},"tacticalUnmodified":{"strategic":0.42857142857142855,"tactical":0.0,"delta":-0.42857142857142855},"meanMissionTime":{"strategic":54.4286,"tactical":169.14500000000004,"delta":114.71640000000004},"tlx":{"strategic":13.333333333333334,"tactical":12.5,"delta":-0.8333333333333339},"penalty":{"strategic":327,"tactical":419,"delta":92}},{"pid":"GeorgeH","version":"study-v1.6","strategicFirst":true,"completion":{"strategic":0.8461538461538461,"tactical":0.6486486486486487,"delta":-0.19750519750519746},"strategicUptake":{"strategic":0.5555555555555556,"tactical":0.42857142857142855,"delta":-0.12698412698412703},"tacticalUptake":{"strategic":0.75,"tactical":1.0,"delta":0.25},"tacticalUnmodified":{"strategic":0.75,"tactical":0.2857142857142857,"delta":-0.4642857142857143},"meanMissionTime":{"strategic":77.01733333333333,"tactical":136.37900000000002,"delta":59.36166666666669},"tlx":{"strategic":13.0,"tactical":11.333333333333334,"delta":-1.666666666666666},"penalty":{"strategic":295,"tactical":635,"delta":340}},{"pid":"P-1333","version":"pre-tag","strategicFirst":false,"completion":null,"strategicUptake":{"strategic":0.7272727272727273,"tactical":0.7142857142857143,"delta":-0.012987012987012991},"tacticalUptake":null,"tacticalUnmodified":{"strategic":0.6363636363636364,"tactical":0.8571428571428571,"delta":0.22077922077922074},"meanMissionTime":null,"tlx":{"strategic":14.166666666666666,"tactical":11.833333333333334,"delta":-2.333333333333332},"penalty":{"strategic":402,"tactical":328,"delta":-74}},{"pid":"P-1622","version":"study-v1.0","strategicFirst":false,"completion":null,"strategicUptake":{"strategic":0.875,"tactical":1.0,"delta":0.125},"tacticalUptake":{"strategic":1.0,"tactical":1.0,"delta":0.0},"tacticalUnmodified":{"strategic":1.0,"tactical":1.0,"delta":0.0},"meanMissionTime":{"strategic":52.55171428571428,"tactical":76.35240000000002,"delta":23.800685714285734},"tlx":{"strategic":10.0,"tactical":7.166666666666667,"delta":-2.833333333333333},"penalty":{"strategic":466,"tactical":259,"delta":-207}},{"pid":"P-2128","version":"pre-tag","strategicFirst":true,"completion":null,"strategicUptake":{"strategic":0.6,"tactical":0.5714285714285714,"delta":-0.02857142857142858},"tacticalUptake":{"strategic":0.5,"tactical":0.8571428571428571,"delta":0.3571428571428571},"tacticalUnmodified":{"strategic":0.7,"tactical":0.8571428571428571,"delta":0.15714285714285714},"meanMissionTime":{"strategic":56.41471428571429,"tactical":101.758,"delta":45.343285714285706},"tlx":{"strategic":11.166666666666666,"tactical":15.0,"delta":3.833333333333334},"penalty":{"strategic":275,"tactical":650,"delta":375}},{"pid":"P-6155","version":"study-v1.2","strategicFirst":true,"completion":{"strategic":0.7241379310344828,"tactical":0.4523809523809524,"delta":-0.2717569786535304},"strategicUptake":{"strategic":0.4,"tactical":0.6666666666666666,"delta":0.2666666666666666},"tacticalUptake":{"strategic":0.2,"tactical":0.3333333333333333,"delta":0.1333333333333333},"tacticalUnmodified":{"strategic":0.3,"tactical":0.1111111111111111,"delta":-0.18888888888888888},"meanMissionTime":{"strategic":58.784333333333336,"tactical":69.6654,"delta":10.881066666666669},"tlx":{"strategic":8.166666666666666,"tactical":10.0,"delta":1.833333333333334},"penalty":{"strategic":329,"tactical":725,"delta":396}},{"pid":"P-8561","version":"pre-tag","strategicFirst":true,"completion":null,"strategicUptake":{"strategic":0.4166666666666667,"tactical":0.5,"delta":0.08333333333333331},"tacticalUptake":{"strategic":0.8333333333333334,"tactical":1.0,"delta":0.16666666666666663},"tacticalUnmodified":{"strategic":0.9166666666666666,"tactical":1.0,"delta":0.08333333333333337},"meanMissionTime":null,"tlx":{"strategic":10.0,"tactical":10.0,"delta":0.0},"penalty":{"strategic":323,"tactical":632,"delta":309}}],"orderEffect":[{"session":1,"sessions":8,"scenarios":{"strategic":5,"tactical":3},"strategicUptake":{"k":37,"n":70,"p":0.5285714285714286,"ci":[0.4132168390581603,0.6409531680922806]},"tacticalUptake":{"k":40,"n":62,"p":0.6451612903225806,"ci":[0.5208089986340214,0.7525743942361396]},"tacticalUnmodified":{"k":39,"n":69,"p":0.5652173913043478,"ci":[0.4478819321166955,0.6756738382123472]},"completion":{"n":3,"mean":0.7029177718832891,"median":0.7241379310344828,"q1":0.6312997347480106,"q3":0.7851458885941645,"lo":0.5384615384615384,"hi":0.8461538461538461,"values":[0.5384615384615384,0.7241379310344828,0.8461538461538461]}},{"session":2,"sessions":7,"scenarios":{"strategic":3,"tactical":4},"strategicUptake":{"k":38,"n":61,"p":0.6229508196721312,"ci":[0.49747627570942377,0.7338566957163277]},"tacticalUptake":{"k":37,"n":49,"p":0.7551020408163265,"ci":[0.619134127396842,0.8539779661052471]},"tacticalUnmodified":{"k":38,"n":60,"p":0.6333333333333333,"ci":[0.5068276736679673,0.7437926115379172]},"completion":{"n":3,"mean":0.6503432003432004,"median":0.6486486486486487,"q1":0.5505148005148005,"q3":0.7493243243243244,"lo":0.4523809523809524,"hi":0.85,"values":[0.4523809523809524,0.6486486486486487,0.85]}}],"attitudes":{"people":[{"pid":"Ayomide","versions":["study-v1.4"],"sessions":2,"straightlined":false,"aias":8.0,"verification":6.0,"delegation":5.2,"hasBattery":true,"delegHumanFinalSay":7,"delegTrustSuggestOverDecide":7,"errorDetectability":1,"autonomyExperience":3,"experienceMean":2.2,"raw":{"aias_improve_life":8,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":8,"verif_check_before_relying":7,"verif_comfortable_unreviewed":1,"verif_want_reasoning":7,"verif_happy_unsupervised":2,"verif_overconfident":3,"verif_reliable_no_check":2,"deleg_human_final_say":7,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":1,"deleg_not_when_lives_at_stake":7,"deleg_urgent_better_than_nothing":4,"verif_hard_to_detect_errors":1},"trustStrategic":2.833333333333333,"trustTactical":5.416666666666666,"trustDelta":2.583333333333333,"trustItemsStrategic":{"reliable":3.5,"trust":3.0,"performs":3.0,"confident":2.5,"useful":3.5,"follow":1.5},"trustItemsTactical":{"reliable":5.5,"trust":5.5,"performs":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.2,"tacticalUptake":0.2,"uptakeDelta":0.0,"tlx":{"n":2,"mean":12.916666666666668,"median":12.916666666666668,"q1":12.708333333333334,"q3":13.125,"lo":12.5,"hi":13.333333333333334,"values":[12.5,13.333333333333334]}},{"pid":"GeorgeH","versions":["study-v1.6"],"sessions":2,"straightlined":false,"aias":7.0,"verification":6.0,"delegation":4.6,"hasBattery":true,"delegHumanFinalSay":6,"delegTrustSuggestOverDecide":7,"errorDetectability":4,"autonomyExperience":2,"experienceMean":1.2,"raw":{"aias_improve_life":6,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":6,"verif_check_before_relying":7,"verif_comfortable_unreviewed":2,"verif_want_reasoning":5,"verif_happy_unsupervised":2,"verif_overconfident":7,"verif_reliable_no_check":3,"deleg_human_final_say":6,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":4,"deleg_not_when_lives_at_stake":4,"deleg_urgent_better_than_nothing":6,"verif_hard_to_detect_errors":4},"trustStrategic":3.8333333333333335,"trustTactical":5.416666666666666,"trustDelta":1.5833333333333326,"trustItemsStrategic":{"reliable":4.0,"trust":3.5,"performs":3.5,"confident":5.0,"useful":5.0,"follow":2.0},"trustItemsTactical":{"trust":6.0,"performs":5.0,"reliable":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.5,"tacticalUptake":0.8666666666666667,"uptakeDelta":0.3666666666666667,"tlx":{"n":2,"mean":12.166666666666668,"median":12.166666666666668,"q1":11.75,"q3":12.583333333333334,"lo":11.333333333333334,"hi":13.0,"values":[11.333333333333334,13.0]}},{"pid":"P-1333","versions":["pre-tag"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":3,"experienceMean":2.0,"raw":{},"trustStrategic":6.0,"trustTactical":5.0,"trustDelta":-1.0,"trustItemsStrategic":{"reliable":6.0,"trust":6.0,"performs":6.0,"confident":6.0,"useful":6.0,"follow":6.0},"trustItemsTactical":{"reliable":5.0,"trust":5.0,"performs":5.5,"confident":4.5,"useful":5.5,"follow":4.5},"strategicUptake":0.7222222222222222,"tacticalUptake":null,"uptakeDelta":null,"tlx":{"n":2,"mean":13.0,"median":13.0,"q1":12.416666666666668,"q3":13.583333333333332,"lo":11.833333333333334,"hi":14.166666666666666,"values":[11.833333333333334,14.166666666666666]}},{"pid":"P-1622","versions":["study-v1.0"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":2,"experienceMean":1.2,"raw":{},"trustStrategic":3.9166666666666665,"trustTactical":4.833333333333333,"trustDelta":0.9166666666666665,"trustItemsStrategic":{"reliable":5.0,"trust":3.5,"performs":4.0,"confident":4.5,"useful":5.5,"follow":1.0},"trustItemsTactical":{"follow":4.5,"reliable":6.0,"trust":5.5,"performs":5.0,"confident":4.0,"useful":4.0},"strategicUptake":0.9090909090909091,"tacticalUptake":1.0,"uptakeDelta":0.09090909090909094,"tlx":{"n":2,"mean":8.583333333333334,"median":8.583333333333334,"q1":7.875,"q3":9.291666666666668,"lo":7.166666666666667,"hi":10.0,"values":[7.166666666666667,10.0]}},{"pid":"P-2128","versions":["pre-tag"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":2,"experienceMean":1.4,"raw":{},"trustStrategic":5.333333333333334,"trustTactical":4.833333333333334,"trustDelta":-0.5,"trustItemsStrategic":{"reliable":5.5,"trust":5.5,"performs":6.0,"confident":6.0,"useful":5.0,"follow":4.0},"trustItemsTactical":{"reliable":5.5,"trust":5.0,"performs":5.0,"confident":5.5,"useful":4.0,"follow":4.0},"strategicUptake":0.5882352941176471,"tacticalUptake":0.6470588235294118,"uptakeDelta":0.05882352941176472,"tlx":{"n":2,"mean":13.083333333333332,"median":13.083333333333332,"q1":12.125,"q3":14.041666666666666,"lo":11.166666666666666,"hi":15.0,"values":[11.166666666666666,15.0]}},{"pid":"P-6155","versions":["study-v1.2"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":3,"experienceMean":1.2,"raw":{},"trustStrategic":4.75,"trustTactical":3.666666666666667,"trustDelta":-1.083333333333333,"trustItemsStrategic":{"reliable":5.0,"trust":5.0,"performs":4.0,"confident":6.0,"useful":5.5,"follow":3.0},"trustItemsTactical":{"reliable":4.5,"trust":3.0,"performs":4.0,"confident":3.5,"useful":5.0,"follow":2.0},"strategicUptake":0.5263157894736842,"tacticalUptake":0.2631578947368421,"uptakeDelta":-0.2631578947368421,"tlx":{"n":2,"mean":9.083333333333332,"median":9.083333333333332,"q1":8.625,"q3":9.541666666666666,"lo":8.166666666666666,"hi":10.0,"values":[8.166666666666666,10.0]}},{"pid":"P-6921","versions":["pre-tag"],"sessions":1,"straightlined":true,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":null,"experienceMean":null,"raw":{},"trustStrategic":7.0,"trustTactical":7.0,"trustDelta":0.0,"trustItemsStrategic":{"reliable":7.0,"trust":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0},"trustItemsTactical":{"trust":7.0,"reliable":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0},"strategicUptake":0.38461538461538464,"tacticalUptake":0.8461538461538461,"uptakeDelta":0.4615384615384615,"tlx":{"n":1,"mean":10.0,"median":10.0,"q1":10.0,"q3":10.0,"lo":10.0,"hi":10.0,"values":[10.0]}},{"pid":"P-8561","versions":["pre-tag"],"sessions":2,"straightlined":true,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":0,"experienceMean":0.0,"raw":{},"trustStrategic":7.0,"trustTactical":7.0,"trustDelta":0.0,"trustItemsStrategic":{"reliable":7.0,"trust":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0},"trustItemsTactical":{"trust":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0,"reliable":7.0},"strategicUptake":0.4375,"tacticalUptake":0.875,"uptakeDelta":0.4375,"tlx":{"n":2,"mean":10.0,"median":10.0,"q1":10.0,"q3":10.0,"lo":10.0,"hi":10.0,"values":[10.0,10.0]}}],"withBattery":2,"straightlined":["P-6921","P-8561"],"correlations":{"aiasVsTrustDelta":{"n":2,"r":null},"aiasVsTrustStrategic":{"n":2,"r":null},"aiasVsTrustTactical":{"n":2,"r":null},"aiasVsUptakeDelta":{"n":2,"r":null},"verificationVsTrustDelta":{"n":2,"r":null},"delegationVsTrustDelta":{"n":2,"r":null},"experienceVsTrustDelta":{"n":6,"r":0.2500560870478029},"experienceVsTrustStrategic":{"n":6,"r":-0.07331264748457612},"experienceVsTrustTactical":{"n":6,"r":0.45704371174856195},"experienceVsUptakeDelta":{"n":5,"r":-0.12557120971196753},"trustStrategicVsUptake":{"n":6,"r":0.5146291391557574},"trustTacticalVsUptake":{"n":5,"r":0.3099079852074803},"trustDeltaVsUptakeDelta":{"n":5,"r":0.5498896707866324}}}},{"key":"pilot","label":"Pilot era (pre-tag builds)","short":"Pilot","note":"Tactical agent in greedy mode: it suggested one task at a time, so tactical agreement here is agreement with a single step, not with a whole-mission plan.","overall":{"sessions":7,"participants":4,"participantIds":["P-1333","P-2128","P-6921","P-8561"],"versions":["pre-tag"],"tacticalModes":["greedy"],"strategicUptake":{"k":35,"n":64,"p":0.546875,"ci":[0.42573382520679776,0.6627074851396563]},"strategicUnedited":{"k":35,"n":35,"p":1.0,"ci":[0.9010957324106112,1.0]},"tacticalUptake":{"k":36,"n":46,"p":0.782608695652174,"ci":[0.6442603416081054,0.8773922538141925]},"tacticalUnmodified":{"k":41,"n":64,"p":0.640625,"ci":[0.5182062363615084,0.7471176946778538]},"tacticalUptakeSessions":5,"recoveryAgent":{"k":0,"n":43,"p":0.0,"ci":[0.0,0.08201257002322722]},"strategicLatency":{"n":64,"mean":9.707484375,"median":7.2295,"q1":6.19925,"q3":11.568999999999999,"lo":2.617,"hi":37.883,"values":[2.617,2.777,2.782,3.687,4.141,4.406,4.868,5.154,5.511,5.659,5.812,5.813,5.93,6.007,6.087,6.092,6.235,6.249,6.255,6.377,6.495,6.523,6.564,6.566,6.66,6.667,6.758,7.004,7.103,7.136,7.216,7.229,7.23,7.29,7.532,7.581,7.583,7.783,7.866,7.951,8.442,8.566,8.883,8.915,9.633,10.785,11.499,11.533,11.677,11.865,13.365,15.136,15.621,15.917,16.15,16.283,17.433,18.917,20.401,20.849,21.016,21.114,24.2,37.883]},"tacticalLatency":{"n":64,"mean":22.204328125,"median":15.834499999999998,"q1":10.829,"q3":25.802500000000002,"lo":5.07,"hi":107.248,"values":[5.07,5.362,5.706,7.73,7.959,8.285,8.565,8.966,9.329,9.401,9.44,9.467,9.95,10.057,10.273,10.616,10.9,11.765,12.2,12.336,12.434,12.687,13.141,13.511,13.845,13.85,13.913,14.849,14.914,15.166,15.632,15.703,15.966,16.022,16.652,17.139,17.197,17.921,19.723,21.748,21.816,22.053,22.518,24.616,25.033,25.1,25.432,25.433,26.911,27.315,27.566,27.995,28.815,29.412,29.635,30.577,31.116,32.736,44.273,54.065,60.947,68.363,106.712,107.248]},"planOverlap":{"n":64,"mean":0.6861049107142857,"median":0.6666666666666666,"q1":0.475,"q3":1.0,"lo":0.0,"hi":1.0},"cardMix":{"aggressive":18,"conservative":17,"manual":29},"perParticipant":[{"pid":"P-8561","scenario":"strategic","version":"pre-tag","strategicUptake":0.4166666666666667,"tacticalUptake":0.8333333333333334,"completion":null,"score":217,"penalty":323,"meanMissionTime":67.02725000000001,"tlx":10.0,"failures":10,"drags":30},{"pid":"P-8561","scenario":"tactical","version":"pre-tag","strategicUptake":0.5,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":632,"meanMissionTime":0,"tlx":10.0,"failures":7,"drags":28},{"pid":"P-1333","scenario":"tactical","version":"pre-tag","strategicUptake":0.7142857142857143,"tacticalUptake":null,"completion":null,"score":22,"penalty":328,"meanMissionTime":0,"tlx":11.833333333333334,"failures":10,"drags":0},{"pid":"P-1333","scenario":"strategic","version":"pre-tag","strategicUptake":0.7272727272727273,"tacticalUptake":null,"completion":null,"score":0,"penalty":402,"meanMissionTime":65.46200000000002,"tlx":14.166666666666666,"failures":11,"drags":0},{"pid":"P-2128","scenario":"strategic","version":"pre-tag","strategicUptake":0.6,"tacticalUptake":0.5,"completion":null,"score":105,"penalty":275,"meanMissionTime":56.41471428571429,"tlx":11.166666666666666,"failures":8,"drags":46},{"pid":"P-2128","scenario":"tactical","version":"pre-tag","strategicUptake":0.5714285714285714,"tacticalUptake":0.8571428571428571,"completion":null,"score":50,"penalty":650,"meanMissionTime":101.758,"tlx":15.0,"failures":10,"drags":41},{"pid":"P-6921","scenario":"strategic","version":"pre-tag","strategicUptake":0.38461538461538464,"tacticalUptake":0.8461538461538461,"completion":null,"score":483,"penalty":167,"meanMissionTime":64.7698181818182,"tlx":10.0,"failures":9,"drags":35}],"completion":null,"score":{"n":7,"mean":125.28571428571429,"median":50.0,"q1":11.0,"q3":161.0,"lo":0,"hi":483},"penalty":{"n":7,"mean":396.7142857142857,"median":328.0,"q1":299.0,"q3":517.0,"lo":167,"hi":650},"meanMissionTime":{"n":7,"mean":50.77596892393321,"median":64.7698181818182,"q1":28.207357142857145,"q3":66.24462500000001,"lo":0,"hi":101.758},"tlx":{"n":7,"mean":11.738095238095239,"median":11.166666666666666,"q1":10.0,"q3":13.0,"lo":10.0,"hi":15.0},"failures":{"n":7,"mean":9.285714285714286,"median":10.0,"q1":8.5,"q3":10.0,"lo":7,"hi":11},"drags":{"n":5,"mean":36.0,"median":35.0,"q1":30.0,"q3":41.0,"lo":28.0,"hi":46.0}},"strategic":{"sessions":4,"participants":4,"participantIds":["P-1333","P-2128","P-6921","P-8561"],"versions":["pre-tag"],"tacticalModes":["greedy"],"strategicUptake":{"k":24,"n":46,"p":0.5217391304347826,"ci":[0.38137172148151327,0.6587554012432788]},"strategicUnedited":{"k":24,"n":24,"p":1.0,"ci":[0.8620194241710247,1.0]},"tacticalUptake":{"k":26,"n":35,"p":0.7428571428571429,"ci":[0.5793037572935127,0.8583713127344985]},"tacticalUnmodified":{"k":25,"n":46,"p":0.5434782608695652,"ci":[0.4017993496608042,0.67845489578878]},"tacticalUptakeSessions":3,"recoveryAgent":{"k":0,"n":26,"p":0.0,"ci":[0.0,0.12873304380462175]},"strategicLatency":{"n":46,"mean":9.31304347826087,"median":6.9305,"q1":5.949249999999999,"q3":10.497,"lo":2.617,"hi":37.883,"values":[2.617,2.777,2.782,3.687,4.141,4.868,5.154,5.511,5.659,5.812,5.813,5.93,6.007,6.087,6.235,6.255,6.377,6.495,6.564,6.566,6.66,6.667,6.758,7.103,7.136,7.229,7.23,7.29,7.581,7.583,7.951,8.442,8.883,9.633,10.785,11.499,11.865,15.136,15.917,16.15,16.283,17.433,18.917,20.849,24.2,37.883]},"tacticalLatency":{"n":46,"mean":18.784108695652172,"median":14.381,"q1":10.687,"q3":22.40175,"lo":5.07,"hi":68.363,"values":[5.07,5.362,5.706,7.73,8.285,8.565,8.966,9.329,9.401,9.44,10.057,10.616,10.9,11.765,12.2,12.336,12.434,12.687,13.141,13.511,13.845,13.85,13.913,14.849,14.914,15.632,15.703,15.966,16.022,17.197,17.921,21.748,21.816,22.053,22.518,25.432,27.315,28.815,29.412,29.635,30.577,31.116,32.736,44.273,60.947,68.363]},"planOverlap":{"n":46,"mean":0.6649068322981366,"median":0.6,"q1":0.5,"q3":1.0,"lo":0.0,"hi":1.0},"cardMix":{"aggressive":13,"conservative":11,"manual":22},"perParticipant":[{"pid":"P-8561","scenario":"strategic","version":"pre-tag","strategicUptake":0.4166666666666667,"tacticalUptake":0.8333333333333334,"completion":null,"score":217,"penalty":323,"meanMissionTime":67.02725000000001,"tlx":10.0,"failures":10,"drags":30},{"pid":"P-1333","scenario":"strategic","version":"pre-tag","strategicUptake":0.7272727272727273,"tacticalUptake":null,"completion":null,"score":0,"penalty":402,"meanMissionTime":65.46200000000002,"tlx":14.166666666666666,"failures":11,"drags":0},{"pid":"P-2128","scenario":"strategic","version":"pre-tag","strategicUptake":0.6,"tacticalUptake":0.5,"completion":null,"score":105,"penalty":275,"meanMissionTime":56.41471428571429,"tlx":11.166666666666666,"failures":8,"drags":46},{"pid":"P-6921","scenario":"strategic","version":"pre-tag","strategicUptake":0.38461538461538464,"tacticalUptake":0.8461538461538461,"completion":null,"score":483,"penalty":167,"meanMissionTime":64.7698181818182,"tlx":10.0,"failures":9,"drags":35}],"completion":null,"score":{"n":4,"mean":201.25,"median":161.0,"q1":78.75,"q3":283.5,"lo":0,"hi":483},"penalty":{"n":4,"mean":291.75,"median":299.0,"q1":248.0,"q3":342.75,"lo":167,"hi":402},"meanMissionTime":{"n":4,"mean":63.418445616883126,"median":65.1159090909091,"q1":62.68104220779222,"q3":65.85331250000002,"lo":56.41471428571429,"hi":67.02725000000001},"tlx":{"n":4,"mean":11.333333333333332,"median":10.583333333333332,"q1":10.0,"q3":11.916666666666666,"lo":10.0,"hi":14.166666666666666},"failures":{"n":4,"mean":9.5,"median":9.5,"q1":8.75,"q3":10.25,"lo":8,"hi":11},"drags":{"n":3,"mean":37.0,"median":35.0,"q1":32.5,"q3":40.5,"lo":30.0,"hi":46.0}},"tactical":{"sessions":3,"participants":3,"participantIds":["P-1333","P-2128","P-8561"],"versions":["pre-tag"],"tacticalModes":["greedy"],"strategicUptake":{"k":11,"n":18,"p":0.6111111111111112,"ci":[0.3861866858065617,0.7969500807306884]},"strategicUnedited":{"k":11,"n":11,"p":1.0,"ci":[0.7411599827511859,1.0]},"tacticalUptake":{"k":10,"n":11,"p":0.9090909090909091,"ci":[0.6226353745137962,0.9837682477371741]},"tacticalUnmodified":{"k":16,"n":18,"p":0.8888888888888888,"ci":[0.6719975513339578,0.9689811315464172]},"tacticalUptakeSessions":2,"recoveryAgent":{"k":0,"n":17,"p":0.0,"ci":[0.0,0.18432366037156456]},"strategicLatency":{"n":18,"mean":10.715499999999999,"median":8.216000000000001,"q1":7.0569999999999995,"q3":12.943,"lo":4.406,"hi":21.114,"values":[4.406,6.092,6.249,6.523,7.004,7.216,7.532,7.783,7.866,8.566,8.915,11.533,11.677,13.365,15.621,20.401,21.016,21.114]},"tacticalLatency":{"n":18,"mean":30.94488888888889,"median":24.8245,"q1":15.537500000000001,"q3":27.40225,"lo":7.959,"hi":107.248,"values":[7.959,9.467,9.95,10.273,15.166,16.652,17.139,19.723,24.616,25.033,25.1,25.433,26.911,27.566,27.995,54.065,106.712,107.248]},"planOverlap":{"n":18,"mean":0.7402777777777777,"median":1.0,"q1":0.375,"q3":1.0,"lo":0.16666666666666666,"hi":1.0},"cardMix":{"aggressive":5,"conservative":6,"manual":7},"perParticipant":[{"pid":"P-8561","scenario":"tactical","version":"pre-tag","strategicUptake":0.5,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":632,"meanMissionTime":0,"tlx":10.0,"failures":7,"drags":28},{"pid":"P-1333","scenario":"tactical","version":"pre-tag","strategicUptake":0.7142857142857143,"tacticalUptake":null,"completion":null,"score":22,"penalty":328,"meanMissionTime":0,"tlx":11.833333333333334,"failures":10,"drags":0},{"pid":"P-2128","scenario":"tactical","version":"pre-tag","strategicUptake":0.5714285714285714,"tacticalUptake":0.8571428571428571,"completion":null,"score":50,"penalty":650,"meanMissionTime":101.758,"tlx":15.0,"failures":10,"drags":41}],"completion":null,"score":{"n":3,"mean":24.0,"median":22.0,"q1":11.0,"q3":36.0,"lo":0,"hi":50},"penalty":{"n":3,"mean":536.6666666666666,"median":632.0,"q1":480.0,"q3":641.0,"lo":328,"hi":650},"meanMissionTime":{"n":3,"mean":33.919333333333334,"median":0.0,"q1":0.0,"q3":50.879,"lo":0,"hi":101.758},"tlx":{"n":3,"mean":12.277777777777779,"median":11.833333333333334,"q1":10.916666666666668,"q3":13.416666666666668,"lo":10.0,"hi":15.0},"failures":{"n":3,"mean":9.0,"median":10.0,"q1":8.5,"q3":10.0,"lo":7,"hi":10},"drags":{"n":2,"mean":34.5,"median":34.5,"q1":31.25,"q3":37.75,"lo":28.0,"hi":41.0}},"dateRange":["2026-07-01","2026-07-16"],"contrasts":[{"pid":"P-1333","version":"pre-tag","strategicFirst":false,"completion":null,"strategicUptake":{"strategic":0.7272727272727273,"tactical":0.7142857142857143,"delta":-0.012987012987012991},"tacticalUptake":null,"tacticalUnmodified":{"strategic":0.6363636363636364,"tactical":0.8571428571428571,"delta":0.22077922077922074},"meanMissionTime":null,"tlx":{"strategic":14.166666666666666,"tactical":11.833333333333334,"delta":-2.333333333333332},"penalty":{"strategic":402,"tactical":328,"delta":-74}},{"pid":"P-2128","version":"pre-tag","strategicFirst":true,"completion":null,"strategicUptake":{"strategic":0.6,"tactical":0.5714285714285714,"delta":-0.02857142857142858},"tacticalUptake":{"strategic":0.5,"tactical":0.8571428571428571,"delta":0.3571428571428571},"tacticalUnmodified":{"strategic":0.7,"tactical":0.8571428571428571,"delta":0.15714285714285714},"meanMissionTime":{"strategic":56.41471428571429,"tactical":101.758,"delta":45.343285714285706},"tlx":{"strategic":11.166666666666666,"tactical":15.0,"delta":3.833333333333334},"penalty":{"strategic":275,"tactical":650,"delta":375}},{"pid":"P-8561","version":"pre-tag","strategicFirst":true,"completion":null,"strategicUptake":{"strategic":0.4166666666666667,"tactical":0.5,"delta":0.08333333333333331},"tacticalUptake":{"strategic":0.8333333333333334,"tactical":1.0,"delta":0.16666666666666663},"tacticalUnmodified":{"strategic":0.9166666666666666,"tactical":1.0,"delta":0.08333333333333337},"meanMissionTime":null,"tlx":{"strategic":10.0,"tactical":10.0,"delta":0.0},"penalty":{"strategic":323,"tactical":632,"delta":309}}],"orderEffect":[{"session":1,"sessions":4,"scenarios":{"strategic":3,"tactical":1},"strategicUptake":{"k":21,"n":42,"p":0.5,"ci":[0.3552574591652803,0.6447425408347197]},"tacticalUptake":{"k":26,"n":35,"p":0.7428571428571429,"ci":[0.5793037572935127,0.8583713127344985]},"tacticalUnmodified":{"k":24,"n":42,"p":0.5714285714285714,"ci":[0.4220597791187447,0.7088257048085179]},"completion":null},{"session":2,"sessions":3,"scenarios":{"strategic":1,"tactical":2},"strategicUptake":{"k":14,"n":22,"p":0.6363636363636364,"ci":[0.4295134934371804,0.802670272273921]},"tacticalUptake":{"k":10,"n":11,"p":0.9090909090909091,"ci":[0.6226353745137962,0.9837682477371741]},"tacticalUnmodified":{"k":17,"n":22,"p":0.7727272727272727,"ci":[0.5655964393704065,0.8987710920517964]},"completion":null}],"attitudes":{"people":[{"pid":"P-1333","versions":["pre-tag"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":3,"experienceMean":2.0,"raw":{},"trustStrategic":6.0,"trustTactical":5.0,"trustDelta":-1.0,"trustItemsStrategic":{"reliable":6.0,"trust":6.0,"performs":6.0,"confident":6.0,"useful":6.0,"follow":6.0},"trustItemsTactical":{"reliable":5.0,"trust":5.0,"performs":5.5,"confident":4.5,"useful":5.5,"follow":4.5},"strategicUptake":0.7222222222222222,"tacticalUptake":null,"uptakeDelta":null,"tlx":{"n":2,"mean":13.0,"median":13.0,"q1":12.416666666666668,"q3":13.583333333333332,"lo":11.833333333333334,"hi":14.166666666666666,"values":[11.833333333333334,14.166666666666666]}},{"pid":"P-2128","versions":["pre-tag"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":2,"experienceMean":1.4,"raw":{},"trustStrategic":5.333333333333334,"trustTactical":4.833333333333334,"trustDelta":-0.5,"trustItemsStrategic":{"reliable":5.5,"trust":5.5,"performs":6.0,"confident":6.0,"useful":5.0,"follow":4.0},"trustItemsTactical":{"reliable":5.5,"trust":5.0,"performs":5.0,"confident":5.5,"useful":4.0,"follow":4.0},"strategicUptake":0.5882352941176471,"tacticalUptake":0.6470588235294118,"uptakeDelta":0.05882352941176472,"tlx":{"n":2,"mean":13.083333333333332,"median":13.083333333333332,"q1":12.125,"q3":14.041666666666666,"lo":11.166666666666666,"hi":15.0,"values":[11.166666666666666,15.0]}},{"pid":"P-6921","versions":["pre-tag"],"sessions":1,"straightlined":true,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":null,"experienceMean":null,"raw":{},"trustStrategic":7.0,"trustTactical":7.0,"trustDelta":0.0,"trustItemsStrategic":{"reliable":7.0,"trust":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0},"trustItemsTactical":{"trust":7.0,"reliable":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0},"strategicUptake":0.38461538461538464,"tacticalUptake":0.8461538461538461,"uptakeDelta":0.4615384615384615,"tlx":{"n":1,"mean":10.0,"median":10.0,"q1":10.0,"q3":10.0,"lo":10.0,"hi":10.0,"values":[10.0]}},{"pid":"P-8561","versions":["pre-tag"],"sessions":2,"straightlined":true,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":0,"experienceMean":0.0,"raw":{},"trustStrategic":7.0,"trustTactical":7.0,"trustDelta":0.0,"trustItemsStrategic":{"reliable":7.0,"trust":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0},"trustItemsTactical":{"trust":7.0,"performs":7.0,"confident":7.0,"useful":7.0,"follow":7.0,"reliable":7.0},"strategicUptake":0.4375,"tacticalUptake":0.875,"uptakeDelta":0.4375,"tlx":{"n":2,"mean":10.0,"median":10.0,"q1":10.0,"q3":10.0,"lo":10.0,"hi":10.0,"values":[10.0,10.0]}}],"withBattery":0,"straightlined":["P-6921","P-8561"],"correlations":{"aiasVsTrustDelta":{"n":0,"r":null},"aiasVsTrustStrategic":{"n":0,"r":null},"aiasVsTrustTactical":{"n":0,"r":null},"aiasVsUptakeDelta":{"n":0,"r":null},"verificationVsTrustDelta":{"n":0,"r":null},"delegationVsTrustDelta":{"n":0,"r":null},"experienceVsTrustDelta":{"n":2,"r":null},"experienceVsTrustStrategic":{"n":2,"r":null},"experienceVsTrustTactical":{"n":2,"r":null},"experienceVsUptakeDelta":{"n":1,"r":null},"trustStrategicVsUptake":{"n":2,"r":null},"trustTacticalVsUptake":{"n":1,"r":null},"trustDeltaVsUptakeDelta":{"n":1,"r":null}}}},{"key":"study","label":"Study build (study-v1.0+)","short":"v1.0+","note":"Tactical agent switched to plan-all (3-5 task plans) and the scenario set settled at v2.1. This is the first window where both tiers offer a comparable decision.","overall":{"sessions":8,"participants":4,"participantIds":["Ayomide","GeorgeH","P-1622","P-6155"],"versions":["study-v1.0","study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":40,"n":67,"p":0.5970149253731343,"ci":[0.4774111146058888,0.7060968806963064]},"strategicUnedited":{"k":40,"n":40,"p":1.0,"ci":[0.9123754607496077,1.0]},"tacticalUptake":{"k":41,"n":65,"p":0.6307692307692307,"ci":[0.5092359303460251,0.7377077781093274]},"tacticalUnmodified":{"k":36,"n":65,"p":0.5538461538461539,"ci":[0.4333760431730088,0.6683066603086071]},"tacticalUptakeSessions":8,"recoveryAgent":{"k":6,"n":34,"p":0.17647058823529413,"ci":[0.08348855603569685,0.33514067740052156]},"strategicLatency":{"n":67,"mean":17.29810447761194,"median":12.925,"q1":9.683499999999999,"q3":19.1685,"lo":5.467,"hi":77.064,"values":[5.467,6.434,6.749,6.768,6.91,7.133,7.182,7.434,7.434,7.533,7.55,8.116,8.167,8.425,9.087,9.45,9.633,9.734,10.083,10.283,10.399,10.525,10.695,11.183,11.217,11.333,11.358,11.668,11.832,11.866,11.916,12.717,12.867,12.925,13.479,13.773,13.86,13.881,14.066,14.183,14.283,14.865,14.866,14.989,15.534,15.849,16.017,16.666,18.817,19.05,19.287,19.715,20.25,20.583,20.767,20.903,23.698,28.216,31.699,36.415,37.415,38.699,39.499,46.914,47.315,64.283,77.064]},"tacticalLatency":{"n":65,"mean":32.13113846153846,"median":23.05,"q1":15.049,"q3":33.303,"lo":6.582,"hi":164.311,"values":[6.582,6.7,9.083,9.282,9.487,10.432,10.528,11.134,11.732,12.383,12.916,12.966,13.649,13.749,13.882,14.899,15.049,16.999,17.401,17.565,17.95,17.999,18.0,18.282,18.635,18.983,19.828,20.053,20.916,21.083,21.733,21.75,23.05,23.499,23.948,24.0,24.499,24.665,24.749,26.05,26.856,27.04,27.767,28.141,30.199,30.266,31.898,32.632,33.303,37.282,37.598,38.365,43.549,43.797,49.515,59.181,66.632,73.165,76.571,84.629,85.097,89.164,89.513,105.963,164.311]},"planOverlap":{"n":65,"mean":0.78378822753019,"median":1.0,"q1":0.5,"q3":1.0,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":27,"conservative":13,"manual":27},"perParticipant":[{"pid":"P-6155","scenario":"strategic","version":"study-v1.2","strategicUptake":0.4,"tacticalUptake":0.2,"completion":0.7241379310344828,"score":151,"penalty":329,"meanMissionTime":58.784333333333336,"tlx":8.166666666666666,"failures":7,"drags":73},{"pid":"P-6155","scenario":"tactical","version":"study-v1.2","strategicUptake":0.6666666666666666,"tacticalUptake":0.3333333333333333,"completion":0.4523809523809524,"score":0,"penalty":725,"meanMissionTime":69.6654,"tlx":10.0,"failures":14,"drags":98},{"pid":"P-1622","scenario":"tactical","version":"study-v1.0","strategicUptake":1.0,"tacticalUptake":1.0,"completion":null,"score":191,"penalty":259,"meanMissionTime":76.35240000000002,"tlx":7.166666666666667,"failures":9,"drags":24},{"pid":"P-1622","scenario":"strategic","version":"study-v1.0","strategicUptake":0.875,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":466,"meanMissionTime":52.55171428571428,"tlx":10.0,"failures":13,"drags":21},{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36}],"completion":{"n":6,"mean":0.6766304861132447,"median":0.6863932898415657,"q1":0.566008316008316,"q3":0.8156498673740054,"lo":0.4523809523809524,"hi":0.85},"score":{"n":8,"mean":325.625,"median":171.0,"q1":0.0,"q3":541.0,"lo":0,"hi":1005},"penalty":{"n":8,"mean":431.875,"median":374.0,"q1":319.0,"q3":508.25,"lo":259,"hi":725},"meanMissionTime":{"n":8,"mean":86.79047261904763,"median":73.00890000000001,"q1":57.69540000000001,"q3":91.85775,"lo":52.55171428571428,"hi":169.14500000000004},"tlx":{"n":8,"mean":10.6875,"median":10.666666666666668,"q1":9.541666666666666,"q3":12.625,"lo":7.166666666666667,"hi":13.333333333333334},"failures":{"n":8,"mean":7.25,"median":6.5,"q1":3.75,"q3":10.0,"lo":2,"hi":14},"drags":{"n":8,"mean":40.25,"median":28.5,"q1":21.75,"q3":45.25,"lo":15.0,"hi":98.0}},"strategic":{"sessions":4,"participants":4,"participantIds":["Ayomide","GeorgeH","P-1622","P-6155"],"versions":["study-v1.0","study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":24,"n":42,"p":0.5714285714285714,"ci":[0.4220597791187447,0.7088257048085179]},"strategicUnedited":{"k":24,"n":24,"p":1.0,"ci":[0.8620194241710247,1.0]},"tacticalUptake":{"k":25,"n":40,"p":0.625,"ci":[0.47032160054531913,0.7577722646420829]},"tacticalUnmodified":{"k":27,"n":40,"p":0.675,"ci":[0.52017458088898,0.7991568303733828]},"tacticalUptakeSessions":4,"recoveryAgent":{"k":2,"n":13,"p":0.15384615384615385,"ci":[0.04325726318273798,0.4223517050863101]},"strategicLatency":{"n":42,"mean":17.85604761904762,"median":14.233,"q1":8.8895,"q3":20.49975,"lo":5.467,"hi":77.064,"values":[5.467,6.434,6.768,6.91,7.133,7.434,7.533,7.55,8.116,8.167,8.425,10.283,10.399,10.525,11.217,11.358,11.668,12.867,12.925,13.86,14.183,14.283,14.865,14.866,14.989,15.534,16.017,18.817,19.05,19.287,20.25,20.583,20.767,20.903,23.698,28.216,31.699,36.415,37.415,38.699,47.315,77.064]},"tacticalLatency":{"n":40,"mean":21.33595,"median":18.141,"q1":13.46575,"q3":27.8605,"lo":6.582,"hi":49.515,"values":[6.582,6.7,9.083,9.282,9.487,10.432,10.528,11.134,11.732,12.916,13.649,13.749,13.882,14.899,16.999,17.401,17.565,17.95,17.999,18.0,18.282,18.635,18.983,21.733,21.75,23.05,23.499,24.749,27.04,27.767,28.141,30.266,31.898,32.632,33.303,37.282,37.598,43.549,43.797,49.515]},"planOverlap":{"n":40,"mean":0.8259878060535956,"median":1.0,"q1":0.8131868131868132,"q3":1.0,"lo":0.10526315789473684,"hi":1.0},"cardMix":{"aggressive":19,"conservative":5,"manual":18},"perParticipant":[{"pid":"P-6155","scenario":"strategic","version":"study-v1.2","strategicUptake":0.4,"tacticalUptake":0.2,"completion":0.7241379310344828,"score":151,"penalty":329,"meanMissionTime":58.784333333333336,"tlx":8.166666666666666,"failures":7,"drags":73},{"pid":"P-1622","scenario":"strategic","version":"study-v1.0","strategicUptake":0.875,"tacticalUptake":1.0,"completion":null,"score":0,"penalty":466,"meanMissionTime":52.55171428571428,"tlx":10.0,"failures":13,"drags":21},{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36}],"completion":{"n":3,"mean":0.806763925729443,"median":0.8461538461538461,"q1":0.7851458885941645,"q3":0.8480769230769231,"lo":0.7241379310344828,"hi":0.85},"score":{"n":4,"mean":352.25,"median":302.0,"q1":113.25,"q3":541.0,"lo":0,"hi":805},"penalty":{"n":4,"mean":354.25,"median":328.0,"q1":319.0,"q3":363.25,"lo":295,"hi":466},"meanMissionTime":{"n":4,"mean":60.69549523809523,"median":56.60646666666667,"q1":53.95937857142857,"q3":63.34258333333334,"lo":52.55171428571428,"hi":77.01733333333333},"tlx":{"n":4,"mean":11.125,"median":11.5,"q1":9.541666666666666,"q3":13.083333333333334,"lo":8.166666666666666,"hi":13.333333333333334},"failures":{"n":4,"mean":6.25,"median":5.0,"q1":2.75,"q3":8.5,"lo":2,"hi":13},"drags":{"n":4,"mean":36.25,"median":28.5,"q1":19.5,"q3":45.25,"lo":15.0,"hi":73.0}},"tactical":{"sessions":4,"participants":4,"participantIds":["Ayomide","GeorgeH","P-1622","P-6155"],"versions":["study-v1.0","study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":16,"n":25,"p":0.64,"ci":[0.44518154601046633,0.7975234356826436]},"strategicUnedited":{"k":16,"n":16,"p":1.0,"ci":[0.8063865817272802,1.0]},"tacticalUptake":{"k":16,"n":25,"p":0.64,"ci":[0.44518154601046633,0.7975234356826436]},"tacticalUnmodified":{"k":9,"n":25,"p":0.36,"ci":[0.20247656431735636,0.5548184539895337]},"tacticalUptakeSessions":4,"recoveryAgent":{"k":4,"n":21,"p":0.19047619047619047,"ci":[0.07667440615177301,0.40000986539273287]},"strategicLatency":{"n":25,"mean":16.36076,"median":11.866,"q1":9.734,"q3":14.066,"lo":6.749,"hi":64.283,"values":[6.749,7.182,7.434,9.087,9.45,9.633,9.734,10.083,10.695,11.183,11.333,11.832,11.866,11.916,12.717,13.479,13.773,13.881,14.066,15.849,16.666,19.715,39.499,46.914,64.283]},"tacticalLatency":{"n":25,"mean":49.40344,"median":26.856,"q1":21.083,"q3":76.571,"lo":12.383,"hi":164.311,"values":[12.383,12.966,15.049,19.828,20.053,20.916,21.083,23.948,24.0,24.499,24.665,26.05,26.856,30.199,38.365,59.181,66.632,73.165,76.571,84.629,85.097,89.164,89.513,105.963,164.311]},"planOverlap":{"n":25,"mean":0.716268901892741,"median":0.8095238095238095,"q1":0.5,"q3":1.0,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":8,"conservative":8,"manual":9},"perParticipant":[{"pid":"P-6155","scenario":"tactical","version":"study-v1.2","strategicUptake":0.6666666666666666,"tacticalUptake":0.3333333333333333,"completion":0.4523809523809524,"score":0,"penalty":725,"meanMissionTime":69.6654,"tlx":10.0,"failures":14,"drags":98},{"pid":"P-1622","scenario":"tactical","version":"study-v1.0","strategicUptake":1.0,"tacticalUptake":1.0,"completion":null,"score":191,"penalty":259,"meanMissionTime":76.35240000000002,"tlx":7.166666666666667,"failures":9,"drags":24},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33}],"completion":{"n":3,"mean":0.5464970464970466,"median":0.5384615384615384,"q1":0.49542124542124544,"q3":0.5935550935550935,"lo":0.4523809523809524,"hi":0.6486486486486487},"score":{"n":4,"mean":299.0,"median":95.5,"q1":0.0,"q3":394.5,"lo":0,"hi":1005},"penalty":{"n":4,"mean":509.5,"median":527.0,"q1":379.0,"q3":657.5,"lo":259,"hi":725},"meanMissionTime":{"n":4,"mean":112.88545000000002,"median":106.36570000000002,"q1":74.68065000000001,"q3":144.57050000000004,"lo":69.6654,"hi":169.14500000000004},"tlx":{"n":4,"mean":10.25,"median":10.666666666666668,"q1":9.291666666666668,"q3":11.625,"lo":7.166666666666667,"hi":12.5},"failures":{"n":4,"mean":8.25,"median":7.5,"q1":5.5,"q3":10.25,"lo":4,"hi":14},"drags":{"n":4,"mean":44.25,"median":28.5,"q1":23.5,"q3":49.25,"lo":22.0,"hi":98.0}},"dateRange":["2026-08-20","2026-09-01"],"contrasts":[{"pid":"Ayomide","version":"study-v1.4","strategicFirst":false,"completion":{"strategic":0.85,"tactical":0.5384615384615384,"delta":-0.31153846153846154},"strategicUptake":{"strategic":0.14285714285714285,"tactical":0.3333333333333333,"delta":0.19047619047619047},"tacticalUptake":{"strategic":0.2857142857142857,"tactical":0.0,"delta":-0.2857142857142857},"tacticalUnmodified":{"strategic":0.42857142857142855,"tactical":0.0,"delta":-0.42857142857142855},"meanMissionTime":{"strategic":54.4286,"tactical":169.14500000000004,"delta":114.71640000000004},"tlx":{"strategic":13.333333333333334,"tactical":12.5,"delta":-0.8333333333333339},"penalty":{"strategic":327,"tactical":419,"delta":92}},{"pid":"GeorgeH","version":"study-v1.6","strategicFirst":true,"completion":{"strategic":0.8461538461538461,"tactical":0.6486486486486487,"delta":-0.19750519750519746},"strategicUptake":{"strategic":0.5555555555555556,"tactical":0.42857142857142855,"delta":-0.12698412698412703},"tacticalUptake":{"strategic":0.75,"tactical":1.0,"delta":0.25},"tacticalUnmodified":{"strategic":0.75,"tactical":0.2857142857142857,"delta":-0.4642857142857143},"meanMissionTime":{"strategic":77.01733333333333,"tactical":136.37900000000002,"delta":59.36166666666669},"tlx":{"strategic":13.0,"tactical":11.333333333333334,"delta":-1.666666666666666},"penalty":{"strategic":295,"tactical":635,"delta":340}},{"pid":"P-1622","version":"study-v1.0","strategicFirst":false,"completion":null,"strategicUptake":{"strategic":0.875,"tactical":1.0,"delta":0.125},"tacticalUptake":{"strategic":1.0,"tactical":1.0,"delta":0.0},"tacticalUnmodified":{"strategic":1.0,"tactical":1.0,"delta":0.0},"meanMissionTime":{"strategic":52.55171428571428,"tactical":76.35240000000002,"delta":23.800685714285734},"tlx":{"strategic":10.0,"tactical":7.166666666666667,"delta":-2.833333333333333},"penalty":{"strategic":466,"tactical":259,"delta":-207}},{"pid":"P-6155","version":"study-v1.2","strategicFirst":true,"completion":{"strategic":0.7241379310344828,"tactical":0.4523809523809524,"delta":-0.2717569786535304},"strategicUptake":{"strategic":0.4,"tactical":0.6666666666666666,"delta":0.2666666666666666},"tacticalUptake":{"strategic":0.2,"tactical":0.3333333333333333,"delta":0.1333333333333333},"tacticalUnmodified":{"strategic":0.3,"tactical":0.1111111111111111,"delta":-0.18888888888888888},"meanMissionTime":{"strategic":58.784333333333336,"tactical":69.6654,"delta":10.881066666666669},"tlx":{"strategic":8.166666666666666,"tactical":10.0,"delta":1.833333333333334},"penalty":{"strategic":329,"tactical":725,"delta":396}}],"orderEffect":[{"session":1,"sessions":4,"scenarios":{"strategic":2,"tactical":2},"strategicUptake":{"k":16,"n":28,"p":0.5714285714285714,"ci":[0.390704789856154,0.7349170381926877]},"tacticalUptake":{"k":14,"n":27,"p":0.5185185185185185,"ci":[0.3398532458621043,0.6925704935029092]},"tacticalUnmodified":{"k":15,"n":27,"p":0.5555555555555556,"ci":[0.37312719479576884,0.7241440232992717]},"completion":{"n":3,"mean":0.7029177718832891,"median":0.7241379310344828,"q1":0.6312997347480106,"q3":0.7851458885941645,"lo":0.5384615384615384,"hi":0.8461538461538461,"values":[0.5384615384615384,0.7241379310344828,0.8461538461538461]}},{"session":2,"sessions":4,"scenarios":{"strategic":2,"tactical":2},"strategicUptake":{"k":24,"n":39,"p":0.6153846153846154,"ci":[0.45898781310078474,0.7510883745299295]},"tacticalUptake":{"k":27,"n":38,"p":0.7105263157894737,"ci":[0.5524256173381024,0.8299689373634387]},"tacticalUnmodified":{"k":21,"n":38,"p":0.5526315789473685,"ci":[0.3970602917908942,0.6985383468844911]},"completion":{"n":3,"mean":0.6503432003432004,"median":0.6486486486486487,"q1":0.5505148005148005,"q3":0.7493243243243244,"lo":0.4523809523809524,"hi":0.85,"values":[0.4523809523809524,0.6486486486486487,0.85]}}],"attitudes":{"people":[{"pid":"Ayomide","versions":["study-v1.4"],"sessions":2,"straightlined":false,"aias":8.0,"verification":6.0,"delegation":5.2,"hasBattery":true,"delegHumanFinalSay":7,"delegTrustSuggestOverDecide":7,"errorDetectability":1,"autonomyExperience":3,"experienceMean":2.2,"raw":{"aias_improve_life":8,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":8,"verif_check_before_relying":7,"verif_comfortable_unreviewed":1,"verif_want_reasoning":7,"verif_happy_unsupervised":2,"verif_overconfident":3,"verif_reliable_no_check":2,"deleg_human_final_say":7,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":1,"deleg_not_when_lives_at_stake":7,"deleg_urgent_better_than_nothing":4,"verif_hard_to_detect_errors":1},"trustStrategic":2.833333333333333,"trustTactical":5.416666666666666,"trustDelta":2.583333333333333,"trustItemsStrategic":{"reliable":3.5,"trust":3.0,"performs":3.0,"confident":2.5,"useful":3.5,"follow":1.5},"trustItemsTactical":{"reliable":5.5,"trust":5.5,"performs":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.2,"tacticalUptake":0.2,"uptakeDelta":0.0,"tlx":{"n":2,"mean":12.916666666666668,"median":12.916666666666668,"q1":12.708333333333334,"q3":13.125,"lo":12.5,"hi":13.333333333333334,"values":[12.5,13.333333333333334]}},{"pid":"GeorgeH","versions":["study-v1.6"],"sessions":2,"straightlined":false,"aias":7.0,"verification":6.0,"delegation":4.6,"hasBattery":true,"delegHumanFinalSay":6,"delegTrustSuggestOverDecide":7,"errorDetectability":4,"autonomyExperience":2,"experienceMean":1.2,"raw":{"aias_improve_life":6,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":6,"verif_check_before_relying":7,"verif_comfortable_unreviewed":2,"verif_want_reasoning":5,"verif_happy_unsupervised":2,"verif_overconfident":7,"verif_reliable_no_check":3,"deleg_human_final_say":6,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":4,"deleg_not_when_lives_at_stake":4,"deleg_urgent_better_than_nothing":6,"verif_hard_to_detect_errors":4},"trustStrategic":3.8333333333333335,"trustTactical":5.416666666666666,"trustDelta":1.5833333333333326,"trustItemsStrategic":{"reliable":4.0,"trust":3.5,"performs":3.5,"confident":5.0,"useful":5.0,"follow":2.0},"trustItemsTactical":{"trust":6.0,"performs":5.0,"reliable":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.5,"tacticalUptake":0.8666666666666667,"uptakeDelta":0.3666666666666667,"tlx":{"n":2,"mean":12.166666666666668,"median":12.166666666666668,"q1":11.75,"q3":12.583333333333334,"lo":11.333333333333334,"hi":13.0,"values":[11.333333333333334,13.0]}},{"pid":"P-1622","versions":["study-v1.0"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":2,"experienceMean":1.2,"raw":{},"trustStrategic":3.9166666666666665,"trustTactical":4.833333333333333,"trustDelta":0.9166666666666665,"trustItemsStrategic":{"reliable":5.0,"trust":3.5,"performs":4.0,"confident":4.5,"useful":5.5,"follow":1.0},"trustItemsTactical":{"follow":4.5,"reliable":6.0,"trust":5.5,"performs":5.0,"confident":4.0,"useful":4.0},"strategicUptake":0.9090909090909091,"tacticalUptake":1.0,"uptakeDelta":0.09090909090909094,"tlx":{"n":2,"mean":8.583333333333334,"median":8.583333333333334,"q1":7.875,"q3":9.291666666666668,"lo":7.166666666666667,"hi":10.0,"values":[7.166666666666667,10.0]}},{"pid":"P-6155","versions":["study-v1.2"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":3,"experienceMean":1.2,"raw":{},"trustStrategic":4.75,"trustTactical":3.666666666666667,"trustDelta":-1.083333333333333,"trustItemsStrategic":{"reliable":5.0,"trust":5.0,"performs":4.0,"confident":6.0,"useful":5.5,"follow":3.0},"trustItemsTactical":{"reliable":4.5,"trust":3.0,"performs":4.0,"confident":3.5,"useful":5.0,"follow":2.0},"strategicUptake":0.5263157894736842,"tacticalUptake":0.2631578947368421,"uptakeDelta":-0.2631578947368421,"tlx":{"n":2,"mean":9.083333333333332,"median":9.083333333333332,"q1":8.625,"q3":9.541666666666666,"lo":8.166666666666666,"hi":10.0,"values":[8.166666666666666,10.0]}}],"withBattery":2,"straightlined":[],"correlations":{"aiasVsTrustDelta":{"n":2,"r":null},"aiasVsTrustStrategic":{"n":2,"r":null},"aiasVsTrustTactical":{"n":2,"r":null},"aiasVsUptakeDelta":{"n":2,"r":null},"verificationVsTrustDelta":{"n":2,"r":null},"delegationVsTrustDelta":{"n":2,"r":null},"experienceVsTrustDelta":{"n":4,"r":0.6816212031674664},"experienceVsTrustStrategic":{"n":4,"r":-0.8495907904857465},"experienceVsTrustTactical":{"n":4,"r":0.4714045207910316},"experienceVsUptakeDelta":{"n":4,"r":-0.12471560408971082},"trustStrategicVsUptake":{"n":4,"r":0.5235092610103376},"trustTacticalVsUptake":{"n":4,"r":0.31093413744812615},"trustDeltaVsUptakeDelta":{"n":4,"r":0.6251290456591596}}}},{"key":"outcomes","label":"Task outcomes logged (study-v1.2+)","short":"v1.2+","note":"session_ended.taskOutcomes exists, so completion can be scored over the work the operator actually took on.","overall":{"sessions":6,"participants":3,"participantIds":["Ayomide","GeorgeH","P-6155"],"versions":["study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":20,"n":45,"p":0.4444444444444444,"ci":[0.30938708549039107,0.5882411658363468]},"strategicUnedited":{"k":20,"n":20,"p":1.0,"ci":[0.8388698745050667,1.0]},"tacticalUptake":{"k":20,"n":44,"p":0.45454545454545453,"ci":[0.3170500778685361,0.599340678293465]},"tacticalUnmodified":{"k":15,"n":44,"p":0.3409090909090909,"ci":[0.21875632628639946,0.4886113202806049]},"tacticalUptakeSessions":6,"recoveryAgent":{"k":6,"n":22,"p":0.2727272727272727,"ci":[0.1315058201581444,0.4815212369900198]},"strategicLatency":{"n":45,"mean":19.711733333333335,"median":14.183,"q1":9.734,"q3":20.583,"lo":5.467,"hi":77.064,"values":[5.467,6.434,6.749,7.182,7.434,7.434,7.533,8.116,8.167,9.45,9.633,9.734,10.083,10.695,11.183,11.217,11.832,11.916,12.717,12.867,13.881,14.066,14.183,14.283,14.865,14.989,15.534,16.017,16.666,18.817,19.05,19.715,20.25,20.583,20.767,28.216,31.699,36.415,37.415,38.699,39.499,46.914,47.315,64.283,77.064]},"tacticalLatency":{"n":44,"mean":35.28781818181818,"median":23.7235,"q1":13.724,"q3":37.78975,"lo":6.582,"hi":164.311,"values":[6.582,6.7,9.083,10.432,10.528,11.134,11.732,12.383,12.916,12.966,13.649,13.749,13.882,14.899,16.999,17.999,18.282,19.828,20.916,21.083,23.05,23.499,23.948,24.0,24.499,24.749,27.767,30.199,30.266,31.898,32.632,37.282,37.598,38.365,49.515,59.181,66.632,73.165,84.629,85.097,89.164,89.513,105.963,164.311]},"planOverlap":{"n":44,"mean":0.6805962452150532,"median":0.7871148459383753,"q1":0.3458333333333333,"q3":1.0,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":16,"conservative":4,"manual":25},"perParticipant":[{"pid":"P-6155","scenario":"strategic","version":"study-v1.2","strategicUptake":0.4,"tacticalUptake":0.2,"completion":0.7241379310344828,"score":151,"penalty":329,"meanMissionTime":58.784333333333336,"tlx":8.166666666666666,"failures":7,"drags":73},{"pid":"P-6155","scenario":"tactical","version":"study-v1.2","strategicUptake":0.6666666666666666,"tacticalUptake":0.3333333333333333,"completion":0.4523809523809524,"score":0,"penalty":725,"meanMissionTime":69.6654,"tlx":10.0,"failures":14,"drags":98},{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36}],"completion":{"n":6,"mean":0.6766304861132447,"median":0.6863932898415657,"q1":0.566008316008316,"q3":0.8156498673740054,"lo":0.4523809523809524,"hi":0.85},"score":{"n":6,"mean":402.3333333333333,"median":302.0,"q1":37.75,"q3":717.0,"lo":0,"hi":1005},"penalty":{"n":6,"mean":455.0,"median":374.0,"q1":327.5,"q3":581.0,"lo":295,"hi":725},"meanMissionTime":{"n":6,"mean":94.23661111111112,"median":73.34136666666666,"q1":61.5046,"q3":121.53858333333335,"lo":54.4286,"hi":169.14500000000004},"tlx":{"n":6,"mean":11.388888888888888,"median":11.916666666666668,"q1":10.333333333333334,"q3":12.875,"lo":8.166666666666666,"hi":13.333333333333334},"failures":{"n":6,"mean":6.0,"median":5.0,"q1":3.25,"q3":6.75,"lo":2,"hi":14},"drags":{"n":6,"mean":46.166666666666664,"median":34.5,"q1":24.75,"q3":63.75,"lo":15.0,"hi":98.0}},"strategic":{"sessions":3,"participants":3,"participantIds":["Ayomide","GeorgeH","P-6155"],"versions":["study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":10,"n":26,"p":0.38461538461538464,"ci":[0.22428359511834428,0.5746547996057992]},"strategicUnedited":{"k":10,"n":10,"p":1.0,"ci":[0.7224598312333834,1.0]},"tacticalUptake":{"k":10,"n":25,"p":0.4,"ci":[0.23403057664190918,0.5926087221487266]},"tacticalUnmodified":{"k":12,"n":25,"p":0.48,"ci":[0.30031003928960015,0.6650178204685269]},"tacticalUptakeSessions":3,"recoveryAgent":{"k":2,"n":7,"p":0.2857142857142857,"ci":[0.0822171657090155,0.6410709098517873]},"strategicLatency":{"n":26,"mean":21.284461538461535,"median":15.775500000000001,"q1":11.6295,"q3":26.35375,"lo":5.467,"hi":77.064,"values":[5.467,6.434,7.434,7.533,8.116,8.167,11.217,12.867,14.183,14.283,14.865,14.989,15.534,16.017,18.817,19.05,20.25,20.583,20.767,28.216,31.699,36.415,37.415,38.699,47.315,77.064]},"tacticalLatency":{"n":25,"mean":20.27288,"median":16.999,"q1":11.732,"q3":27.767,"lo":6.582,"hi":49.515,"values":[6.582,6.7,9.083,10.432,10.528,11.134,11.732,12.916,13.649,13.749,13.882,14.899,16.999,17.999,18.282,23.05,23.499,24.749,27.767,30.266,31.898,32.632,37.282,37.598,49.515]},"planOverlap":{"n":25,"mean":0.7215804896857528,"median":0.9,"q1":0.4,"q3":1.0,"lo":0.10526315789473684,"hi":1.0},"cardMix":{"aggressive":10,"conservative":0,"manual":16},"perParticipant":[{"pid":"P-6155","scenario":"strategic","version":"study-v1.2","strategicUptake":0.4,"tacticalUptake":0.2,"completion":0.7241379310344828,"score":151,"penalty":329,"meanMissionTime":58.784333333333336,"tlx":8.166666666666666,"failures":7,"drags":73},{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36}],"completion":{"n":3,"mean":0.806763925729443,"median":0.8461538461538461,"q1":0.7851458885941645,"q3":0.8480769230769231,"lo":0.7241379310344828,"hi":0.85},"score":{"n":3,"mean":469.6666666666667,"median":453.0,"q1":302.0,"q3":629.0,"lo":151,"hi":805},"penalty":{"n":3,"mean":317.0,"median":327.0,"q1":311.0,"q3":328.0,"lo":295,"hi":329},"meanMissionTime":{"n":3,"mean":63.410088888888886,"median":58.784333333333336,"q1":56.60646666666667,"q3":67.90083333333334,"lo":54.4286,"hi":77.01733333333333},"tlx":{"n":3,"mean":11.5,"median":13.0,"q1":10.583333333333332,"q3":13.166666666666668,"lo":8.166666666666666,"hi":13.333333333333334},"failures":{"n":3,"mean":4.0,"median":3.0,"q1":2.5,"q3":5.0,"lo":2,"hi":7},"drags":{"n":3,"mean":41.333333333333336,"median":36.0,"q1":25.5,"q3":54.5,"lo":15.0,"hi":73.0}},"tactical":{"sessions":3,"participants":3,"participantIds":["Ayomide","GeorgeH","P-6155"],"versions":["study-v1.2","study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":10,"n":19,"p":0.5263157894736842,"ci":[0.31707482511825114,0.7267049451255145]},"strategicUnedited":{"k":10,"n":10,"p":1.0,"ci":[0.7224598312333834,1.0]},"tacticalUptake":{"k":10,"n":19,"p":0.5263157894736842,"ci":[0.31707482511825114,0.7267049451255145]},"tacticalUnmodified":{"k":3,"n":19,"p":0.15789473684210525,"ci":[0.055203710399278266,0.3756592764317668]},"tacticalUptakeSessions":3,"recoveryAgent":{"k":4,"n":15,"p":0.26666666666666666,"ci":[0.1089727610318281,0.5195088965768675]},"strategicLatency":{"n":19,"mean":17.559578947368422,"median":11.832,"q1":9.683499999999999,"q3":15.366,"lo":6.749,"hi":64.283,"values":[6.749,7.182,7.434,9.45,9.633,9.734,10.083,10.695,11.183,11.832,11.916,12.717,13.881,14.066,16.666,19.715,39.499,46.914,64.283]},"tacticalLatency":{"n":19,"mean":55.04431578947369,"median":38.365,"q1":22.5155,"q3":84.863,"lo":12.383,"hi":164.311,"values":[12.383,12.966,19.828,20.916,21.083,23.948,24.0,24.499,30.199,38.365,59.181,66.632,73.165,84.629,85.097,89.164,89.513,105.963,164.311]},"planOverlap":{"n":19,"mean":0.6266696077536065,"median":0.7,"q1":0.3416666666666667,"q3":0.8967611336032388,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":6,"conservative":4,"manual":9},"perParticipant":[{"pid":"P-6155","scenario":"tactical","version":"study-v1.2","strategicUptake":0.6666666666666666,"tacticalUptake":0.3333333333333333,"completion":0.4523809523809524,"score":0,"penalty":725,"meanMissionTime":69.6654,"tlx":10.0,"failures":14,"drags":98},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33}],"completion":{"n":3,"mean":0.5464970464970466,"median":0.5384615384615384,"q1":0.49542124542124544,"q3":0.5935550935550935,"lo":0.4523809523809524,"hi":0.6486486486486487},"score":{"n":3,"mean":335.0,"median":0.0,"q1":0.0,"q3":502.5,"lo":0,"hi":1005},"penalty":{"n":3,"mean":593.0,"median":635.0,"q1":527.0,"q3":680.0,"lo":419,"hi":725},"meanMissionTime":{"n":3,"mean":125.06313333333337,"median":136.37900000000002,"q1":103.02220000000001,"q3":152.76200000000003,"lo":69.6654,"hi":169.14500000000004},"tlx":{"n":3,"mean":11.277777777777779,"median":11.333333333333334,"q1":10.666666666666668,"q3":11.916666666666668,"lo":10.0,"hi":12.5},"failures":{"n":3,"mean":8.0,"median":6.0,"q1":5.0,"q3":10.0,"lo":4,"hi":14},"drags":{"n":3,"mean":51.0,"median":33.0,"q1":27.5,"q3":65.5,"lo":22.0,"hi":98.0}},"dateRange":["2026-08-21","2026-09-01"],"contrasts":[{"pid":"Ayomide","version":"study-v1.4","strategicFirst":false,"completion":{"strategic":0.85,"tactical":0.5384615384615384,"delta":-0.31153846153846154},"strategicUptake":{"strategic":0.14285714285714285,"tactical":0.3333333333333333,"delta":0.19047619047619047},"tacticalUptake":{"strategic":0.2857142857142857,"tactical":0.0,"delta":-0.2857142857142857},"tacticalUnmodified":{"strategic":0.42857142857142855,"tactical":0.0,"delta":-0.42857142857142855},"meanMissionTime":{"strategic":54.4286,"tactical":169.14500000000004,"delta":114.71640000000004},"tlx":{"strategic":13.333333333333334,"tactical":12.5,"delta":-0.8333333333333339},"penalty":{"strategic":327,"tactical":419,"delta":92}},{"pid":"GeorgeH","version":"study-v1.6","strategicFirst":true,"completion":{"strategic":0.8461538461538461,"tactical":0.6486486486486487,"delta":-0.19750519750519746},"strategicUptake":{"strategic":0.5555555555555556,"tactical":0.42857142857142855,"delta":-0.12698412698412703},"tacticalUptake":{"strategic":0.75,"tactical":1.0,"delta":0.25},"tacticalUnmodified":{"strategic":0.75,"tactical":0.2857142857142857,"delta":-0.4642857142857143},"meanMissionTime":{"strategic":77.01733333333333,"tactical":136.37900000000002,"delta":59.36166666666669},"tlx":{"strategic":13.0,"tactical":11.333333333333334,"delta":-1.666666666666666},"penalty":{"strategic":295,"tactical":635,"delta":340}},{"pid":"P-6155","version":"study-v1.2","strategicFirst":true,"completion":{"strategic":0.7241379310344828,"tactical":0.4523809523809524,"delta":-0.2717569786535304},"strategicUptake":{"strategic":0.4,"tactical":0.6666666666666666,"delta":0.2666666666666666},"tacticalUptake":{"strategic":0.2,"tactical":0.3333333333333333,"delta":0.1333333333333333},"tacticalUnmodified":{"strategic":0.3,"tactical":0.1111111111111111,"delta":-0.18888888888888888},"meanMissionTime":{"strategic":58.784333333333336,"tactical":69.6654,"delta":10.881066666666669},"tlx":{"strategic":8.166666666666666,"tactical":10.0,"delta":1.833333333333334},"penalty":{"strategic":329,"tactical":725,"delta":396}}],"orderEffect":[{"session":1,"sessions":3,"scenarios":{"strategic":2,"tactical":1},"strategicUptake":{"k":10,"n":22,"p":0.45454545454545453,"ci":[0.26920014432004846,0.6534052671095845]},"tacticalUptake":{"k":8,"n":21,"p":0.38095238095238093,"ci":[0.20750767797982506,0.5912170418449848]},"tacticalUnmodified":{"k":9,"n":21,"p":0.42857142857142855,"ci":[0.24469699486521043,0.6345378370296754]},"completion":{"n":3,"mean":0.7029177718832891,"median":0.7241379310344828,"q1":0.6312997347480106,"q3":0.7851458885941645,"lo":0.5384615384615384,"hi":0.8461538461538461,"values":[0.5384615384615384,0.7241379310344828,0.8461538461538461]}},{"session":2,"sessions":3,"scenarios":{"strategic":1,"tactical":2},"strategicUptake":{"k":10,"n":23,"p":0.43478260869565216,"ci":[0.25634368332198654,0.6318895069498304]},"tacticalUptake":{"k":12,"n":23,"p":0.5217391304347826,"ci":[0.3296242986421849,0.7076313046005427]},"tacticalUnmodified":{"k":6,"n":23,"p":0.2608695652173913,"ci":[0.1254844588924897,0.4647039054375056]},"completion":{"n":3,"mean":0.6503432003432004,"median":0.6486486486486487,"q1":0.5505148005148005,"q3":0.7493243243243244,"lo":0.4523809523809524,"hi":0.85,"values":[0.4523809523809524,0.6486486486486487,0.85]}}],"attitudes":{"people":[{"pid":"Ayomide","versions":["study-v1.4"],"sessions":2,"straightlined":false,"aias":8.0,"verification":6.0,"delegation":5.2,"hasBattery":true,"delegHumanFinalSay":7,"delegTrustSuggestOverDecide":7,"errorDetectability":1,"autonomyExperience":3,"experienceMean":2.2,"raw":{"aias_improve_life":8,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":8,"verif_check_before_relying":7,"verif_comfortable_unreviewed":1,"verif_want_reasoning":7,"verif_happy_unsupervised":2,"verif_overconfident":3,"verif_reliable_no_check":2,"deleg_human_final_say":7,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":1,"deleg_not_when_lives_at_stake":7,"deleg_urgent_better_than_nothing":4,"verif_hard_to_detect_errors":1},"trustStrategic":2.833333333333333,"trustTactical":5.416666666666666,"trustDelta":2.583333333333333,"trustItemsStrategic":{"reliable":3.5,"trust":3.0,"performs":3.0,"confident":2.5,"useful":3.5,"follow":1.5},"trustItemsTactical":{"reliable":5.5,"trust":5.5,"performs":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.2,"tacticalUptake":0.2,"uptakeDelta":0.0,"tlx":{"n":2,"mean":12.916666666666668,"median":12.916666666666668,"q1":12.708333333333334,"q3":13.125,"lo":12.5,"hi":13.333333333333334,"values":[12.5,13.333333333333334]}},{"pid":"GeorgeH","versions":["study-v1.6"],"sessions":2,"straightlined":false,"aias":7.0,"verification":6.0,"delegation":4.6,"hasBattery":true,"delegHumanFinalSay":6,"delegTrustSuggestOverDecide":7,"errorDetectability":4,"autonomyExperience":2,"experienceMean":1.2,"raw":{"aias_improve_life":6,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":6,"verif_check_before_relying":7,"verif_comfortable_unreviewed":2,"verif_want_reasoning":5,"verif_happy_unsupervised":2,"verif_overconfident":7,"verif_reliable_no_check":3,"deleg_human_final_say":6,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":4,"deleg_not_when_lives_at_stake":4,"deleg_urgent_better_than_nothing":6,"verif_hard_to_detect_errors":4},"trustStrategic":3.8333333333333335,"trustTactical":5.416666666666666,"trustDelta":1.5833333333333326,"trustItemsStrategic":{"reliable":4.0,"trust":3.5,"performs":3.5,"confident":5.0,"useful":5.0,"follow":2.0},"trustItemsTactical":{"trust":6.0,"performs":5.0,"reliable":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.5,"tacticalUptake":0.8666666666666667,"uptakeDelta":0.3666666666666667,"tlx":{"n":2,"mean":12.166666666666668,"median":12.166666666666668,"q1":11.75,"q3":12.583333333333334,"lo":11.333333333333334,"hi":13.0,"values":[11.333333333333334,13.0]}},{"pid":"P-6155","versions":["study-v1.2"],"sessions":2,"straightlined":false,"aias":null,"verification":null,"delegation":null,"hasBattery":false,"delegHumanFinalSay":null,"delegTrustSuggestOverDecide":null,"errorDetectability":null,"autonomyExperience":3,"experienceMean":1.2,"raw":{},"trustStrategic":4.75,"trustTactical":3.666666666666667,"trustDelta":-1.083333333333333,"trustItemsStrategic":{"reliable":5.0,"trust":5.0,"performs":4.0,"confident":6.0,"useful":5.5,"follow":3.0},"trustItemsTactical":{"reliable":4.5,"trust":3.0,"performs":4.0,"confident":3.5,"useful":5.0,"follow":2.0},"strategicUptake":0.5263157894736842,"tacticalUptake":0.2631578947368421,"uptakeDelta":-0.2631578947368421,"tlx":{"n":2,"mean":9.083333333333332,"median":9.083333333333332,"q1":8.625,"q3":9.541666666666666,"lo":8.166666666666666,"hi":10.0,"values":[8.166666666666666,10.0]}}],"withBattery":2,"straightlined":[],"correlations":{"aiasVsTrustDelta":{"n":2,"r":null},"aiasVsTrustStrategic":{"n":2,"r":null},"aiasVsTrustTactical":{"n":2,"r":null},"aiasVsUptakeDelta":{"n":2,"r":null},"verificationVsTrustDelta":{"n":2,"r":null},"delegationVsTrustDelta":{"n":2,"r":null},"experienceVsTrustDelta":{"n":3,"r":0.7107423155935334},"experienceVsTrustStrategic":{"n":3,"r":-0.8782998231498674},"experienceVsTrustTactical":{"n":3,"r":0.5},"experienceVsUptakeDelta":{"n":3,"r":-0.09446059512589734},"trustStrategicVsUptake":{"n":3,"r":0.9106859946220727},"trustTacticalVsUptake":{"n":3,"r":0.4238453627542711},"trustDeltaVsUptakeDelta":{"n":3,"r":0.6331698995804379}}}},{"key":"hazard","label":"Honest failure model (study-v1.4+)","short":"v1.4+","note":"Drone failures fire at the intended rate on every machine. Before v1.4 a high-refresh display could meet no failures at all.","overall":{"sessions":4,"participants":2,"participantIds":["Ayomide","GeorgeH"],"versions":["study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":10,"n":26,"p":0.38461538461538464,"ci":[0.22428359511834428,0.5746547996057992]},"strategicUnedited":{"k":10,"n":10,"p":1.0,"ci":[0.7224598312333834,1.0]},"tacticalUptake":{"k":15,"n":25,"p":0.6,"ci":[0.40739127785127344,0.7659694233580909]},"tacticalUnmodified":{"k":11,"n":25,"p":0.44,"ci":[0.2666537494700256,0.6293298298043557]},"tacticalUptakeSessions":4,"recoveryAgent":{"k":6,"n":9,"p":0.6666666666666666,"ci":[0.35419734749908977,0.879418401317257]},"strategicLatency":{"n":26,"mean":26.481384615384613,"median":19.9825,"q1":14.4595,"q3":37.165,"lo":7.434,"hi":77.064,"values":[7.434,10.083,10.695,11.183,11.832,11.916,14.283,14.989,15.534,16.017,16.666,19.05,19.715,20.25,20.583,20.767,28.216,31.699,36.415,37.415,38.699,39.499,46.914,47.315,64.283,77.064]},"tacticalLatency":{"n":25,"mean":42.7008,"median":24.499,"q1":13.882,"q3":66.632,"lo":6.7,"hi":164.311,"values":[6.7,9.083,10.528,11.732,12.966,13.649,13.882,14.899,16.999,17.999,23.499,24.0,24.499,24.749,32.632,37.282,37.598,49.515,66.632,84.629,85.097,89.164,89.513,105.963,164.311]},"planOverlap":{"n":25,"mean":0.7087072829131652,"median":0.8095238095238095,"q1":0.3333333333333333,"q3":1.0,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":7,"conservative":3,"manual":16},"perParticipant":[{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36}],"completion":{"n":4,"mean":0.7208160083160083,"median":0.7474012474012475,"q1":0.6211018711018711,"q3":0.8471153846153846,"lo":0.5384615384615384,"hi":0.85},"score":{"n":4,"mean":565.75,"median":629.0,"q1":339.75,"q3":855.0,"lo":0,"hi":1005},"penalty":{"n":4,"mean":419.0,"median":373.0,"q1":319.0,"q3":473.0,"lo":295,"hi":635},"meanMissionTime":{"n":4,"mean":109.24248333333335,"median":106.69816666666668,"q1":71.37015,"q3":144.57050000000004,"lo":54.4286,"hi":169.14500000000004},"tlx":{"n":4,"mean":12.541666666666668,"median":12.75,"q1":12.208333333333334,"q3":13.083333333333334,"lo":11.333333333333334,"hi":13.333333333333334},"failures":{"n":4,"mean":3.75,"median":3.5,"q1":2.75,"q3":4.5,"lo":2,"hi":6},"drags":{"n":4,"mean":26.5,"median":27.5,"q1":20.25,"q3":33.75,"lo":15.0,"hi":36.0}},"strategic":{"sessions":2,"participants":2,"participantIds":["Ayomide","GeorgeH"],"versions":["study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":6,"n":16,"p":0.375,"ci":[0.18480982554752806,0.613593529020652]},"strategicUnedited":{"k":6,"n":6,"p":1.0,"ci":[0.6096569663469354,0.9999999999999999]},"tacticalUptake":{"k":8,"n":15,"p":0.5333333333333333,"ci":[0.3011663015105079,0.7519077474025355]},"tacticalUnmodified":{"k":9,"n":15,"p":0.6,"ci":[0.357464427565077,0.8017577191740534]},"tacticalUptakeSessions":2,"recoveryAgent":{"k":2,"n":4,"p":0.5,"ci":[0.15003570882017148,0.8499642911798285]},"strategicLatency":{"n":16,"mean":27.858124999999998,"median":20.674999999999997,"q1":15.89625,"q3":36.665,"lo":7.434,"hi":77.064,"values":[7.434,14.283,14.989,15.534,16.017,19.05,20.25,20.583,20.767,28.216,31.699,36.415,37.415,38.699,47.315,77.064]},"tacticalLatency":{"n":15,"mean":21.383066666666664,"median":16.999,"q1":12.6905,"q3":28.6905,"lo":6.7,"hi":49.515,"values":[6.7,9.083,10.528,11.732,13.649,13.882,14.899,16.999,17.999,23.499,24.749,32.632,37.282,37.598,49.515]},"planOverlap":{"n":15,"mean":0.7398412698412699,"median":1.0,"q1":0.3666666666666667,"q3":1.0,"lo":0.2,"hi":1.0},"cardMix":{"aggressive":6,"conservative":0,"manual":10},"perParticipant":[{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"Ayomide","scenario":"strategic","version":"study-v1.4","strategicUptake":0.14285714285714285,"tacticalUptake":0.2857142857142857,"completion":0.85,"score":453,"penalty":327,"meanMissionTime":54.4286,"tlx":13.333333333333334,"failures":2,"drags":36}],"completion":{"n":2,"mean":0.8480769230769231,"median":0.8480769230769231,"q1":0.8471153846153846,"q3":0.8490384615384615,"lo":0.8461538461538461,"hi":0.85},"score":{"n":2,"mean":629.0,"median":629.0,"q1":541.0,"q3":717.0,"lo":453,"hi":805},"penalty":{"n":2,"mean":311.0,"median":311.0,"q1":303.0,"q3":319.0,"lo":295,"hi":327},"meanMissionTime":{"n":2,"mean":65.72296666666666,"median":65.72296666666666,"q1":60.075783333333334,"q3":71.37015,"lo":54.4286,"hi":77.01733333333333},"tlx":{"n":2,"mean":13.166666666666668,"median":13.166666666666668,"q1":13.083333333333334,"q3":13.25,"lo":13.0,"hi":13.333333333333334},"failures":{"n":2,"mean":2.5,"median":2.5,"q1":2.25,"q3":2.75,"lo":2,"hi":3},"drags":{"n":2,"mean":25.5,"median":25.5,"q1":20.25,"q3":30.75,"lo":15.0,"hi":36.0}},"tactical":{"sessions":2,"participants":2,"participantIds":["Ayomide","GeorgeH"],"versions":["study-v1.4","study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":4,"n":10,"p":0.4,"ci":[0.16817758120350967,0.6873304525498135]},"strategicUnedited":{"k":4,"n":4,"p":1.0,"ci":[0.5100999795960008,1.0]},"tacticalUptake":{"k":7,"n":10,"p":0.7,"ci":[0.39677321997956516,0.892210712513788]},"tacticalUnmodified":{"k":2,"n":10,"p":0.2,"ci":[0.056680947980693314,0.5098431532792765]},"tacticalUptakeSessions":2,"recoveryAgent":{"k":4,"n":5,"p":0.8,"ci":[0.3755282641185388,0.9637768390302125]},"strategicLatency":{"n":10,"mean":24.2786,"median":14.291,"q1":11.34525,"q3":34.553,"lo":10.083,"hi":64.283,"values":[10.083,10.695,11.183,11.832,11.916,16.666,19.715,39.499,46.914,64.283]},"tacticalLatency":{"n":10,"mean":74.6774,"median":84.863,"q1":35.032250000000005,"q3":89.42575000000001,"lo":12.966,"hi":164.311,"values":[12.966,24.0,24.499,66.632,84.629,85.097,89.164,89.513,105.963,164.311]},"planOverlap":{"n":10,"mean":0.6620063025210083,"median":0.7323529411764705,"q1":0.39999999999999997,"q3":0.9523809523809523,"lo":0.1,"hi":1.0},"cardMix":{"aggressive":1,"conservative":3,"manual":6},"perParticipant":[{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22},{"pid":"Ayomide","scenario":"tactical","version":"study-v1.4","strategicUptake":0.3333333333333333,"tacticalUptake":0.0,"completion":0.5384615384615384,"score":0,"penalty":419,"meanMissionTime":169.14500000000004,"tlx":12.5,"failures":4,"drags":33}],"completion":{"n":2,"mean":0.5935550935550935,"median":0.5935550935550935,"q1":0.566008316008316,"q3":0.6211018711018711,"lo":0.5384615384615384,"hi":0.6486486486486487},"score":{"n":2,"mean":502.5,"median":502.5,"q1":251.25,"q3":753.75,"lo":0,"hi":1005},"penalty":{"n":2,"mean":527.0,"median":527.0,"q1":473.0,"q3":581.0,"lo":419,"hi":635},"meanMissionTime":{"n":2,"mean":152.76200000000003,"median":152.76200000000003,"q1":144.57050000000004,"q3":160.95350000000002,"lo":136.37900000000002,"hi":169.14500000000004},"tlx":{"n":2,"mean":11.916666666666668,"median":11.916666666666668,"q1":11.625,"q3":12.208333333333334,"lo":11.333333333333334,"hi":12.5},"failures":{"n":2,"mean":5.0,"median":5.0,"q1":4.5,"q3":5.5,"lo":4,"hi":6},"drags":{"n":2,"mean":27.5,"median":27.5,"q1":24.75,"q3":30.25,"lo":22.0,"hi":33.0}},"dateRange":["2026-08-24","2026-09-01"],"contrasts":[{"pid":"Ayomide","version":"study-v1.4","strategicFirst":false,"completion":{"strategic":0.85,"tactical":0.5384615384615384,"delta":-0.31153846153846154},"strategicUptake":{"strategic":0.14285714285714285,"tactical":0.3333333333333333,"delta":0.19047619047619047},"tacticalUptake":{"strategic":0.2857142857142857,"tactical":0.0,"delta":-0.2857142857142857},"tacticalUnmodified":{"strategic":0.42857142857142855,"tactical":0.0,"delta":-0.42857142857142855},"meanMissionTime":{"strategic":54.4286,"tactical":169.14500000000004,"delta":114.71640000000004},"tlx":{"strategic":13.333333333333334,"tactical":12.5,"delta":-0.8333333333333339},"penalty":{"strategic":327,"tactical":419,"delta":92}},{"pid":"GeorgeH","version":"study-v1.6","strategicFirst":true,"completion":{"strategic":0.8461538461538461,"tactical":0.6486486486486487,"delta":-0.19750519750519746},"strategicUptake":{"strategic":0.5555555555555556,"tactical":0.42857142857142855,"delta":-0.12698412698412703},"tacticalUptake":{"strategic":0.75,"tactical":1.0,"delta":0.25},"tacticalUnmodified":{"strategic":0.75,"tactical":0.2857142857142857,"delta":-0.4642857142857143},"meanMissionTime":{"strategic":77.01733333333333,"tactical":136.37900000000002,"delta":59.36166666666669},"tlx":{"strategic":13.0,"tactical":11.333333333333334,"delta":-1.666666666666666},"penalty":{"strategic":295,"tactical":635,"delta":340}}],"orderEffect":[{"session":1,"sessions":2,"scenarios":{"strategic":1,"tactical":1},"strategicUptake":{"k":6,"n":12,"p":0.5,"ci":[0.2537781703934222,0.7462218296065778]},"tacticalUptake":{"k":6,"n":11,"p":0.5454545454545454,"ci":[0.28008775568998817,0.7872904245601196]},"tacticalUnmodified":{"k":6,"n":11,"p":0.5454545454545454,"ci":[0.28008775568998817,0.7872904245601196]},"completion":{"n":2,"mean":0.6923076923076923,"median":0.6923076923076923,"q1":0.6153846153846154,"q3":0.7692307692307692,"lo":0.5384615384615384,"hi":0.8461538461538461,"values":[0.5384615384615384,0.8461538461538461]}},{"session":2,"sessions":2,"scenarios":{"strategic":1,"tactical":1},"strategicUptake":{"k":4,"n":14,"p":0.2857142857142857,"ci":[0.11721187910109099,0.5464954117248438]},"tacticalUptake":{"k":9,"n":14,"p":0.6428571428571429,"ci":[0.3876400468214042,0.8365550926279727]},"tacticalUnmodified":{"k":5,"n":14,"p":0.35714285714285715,"ci":[0.16344490737202735,0.6123599531785959]},"completion":{"n":2,"mean":0.7493243243243244,"median":0.7493243243243244,"q1":0.6989864864864865,"q3":0.7996621621621621,"lo":0.6486486486486487,"hi":0.85,"values":[0.6486486486486487,0.85]}}],"attitudes":{"people":[{"pid":"Ayomide","versions":["study-v1.4"],"sessions":2,"straightlined":false,"aias":8.0,"verification":6.0,"delegation":5.2,"hasBattery":true,"delegHumanFinalSay":7,"delegTrustSuggestOverDecide":7,"errorDetectability":1,"autonomyExperience":3,"experienceMean":2.2,"raw":{"aias_improve_life":8,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":8,"verif_check_before_relying":7,"verif_comfortable_unreviewed":1,"verif_want_reasoning":7,"verif_happy_unsupervised":2,"verif_overconfident":3,"verif_reliable_no_check":2,"deleg_human_final_say":7,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":1,"deleg_not_when_lives_at_stake":7,"deleg_urgent_better_than_nothing":4,"verif_hard_to_detect_errors":1},"trustStrategic":2.833333333333333,"trustTactical":5.416666666666666,"trustDelta":2.583333333333333,"trustItemsStrategic":{"reliable":3.5,"trust":3.0,"performs":3.0,"confident":2.5,"useful":3.5,"follow":1.5},"trustItemsTactical":{"reliable":5.5,"trust":5.5,"performs":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.2,"tacticalUptake":0.2,"uptakeDelta":0.0,"tlx":{"n":2,"mean":12.916666666666668,"median":12.916666666666668,"q1":12.708333333333334,"q3":13.125,"lo":12.5,"hi":13.333333333333334,"values":[12.5,13.333333333333334]}},{"pid":"GeorgeH","versions":["study-v1.6"],"sessions":2,"straightlined":false,"aias":7.0,"verification":6.0,"delegation":4.6,"hasBattery":true,"delegHumanFinalSay":6,"delegTrustSuggestOverDecide":7,"errorDetectability":4,"autonomyExperience":2,"experienceMean":1.2,"raw":{"aias_improve_life":6,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":6,"verif_check_before_relying":7,"verif_comfortable_unreviewed":2,"verif_want_reasoning":5,"verif_happy_unsupervised":2,"verif_overconfident":7,"verif_reliable_no_check":3,"deleg_human_final_say":6,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":4,"deleg_not_when_lives_at_stake":4,"deleg_urgent_better_than_nothing":6,"verif_hard_to_detect_errors":4},"trustStrategic":3.8333333333333335,"trustTactical":5.416666666666666,"trustDelta":1.5833333333333326,"trustItemsStrategic":{"reliable":4.0,"trust":3.5,"performs":3.5,"confident":5.0,"useful":5.0,"follow":2.0},"trustItemsTactical":{"trust":6.0,"performs":5.0,"reliable":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.5,"tacticalUptake":0.8666666666666667,"uptakeDelta":0.3666666666666667,"tlx":{"n":2,"mean":12.166666666666668,"median":12.166666666666668,"q1":11.75,"q3":12.583333333333334,"lo":11.333333333333334,"hi":13.0,"values":[11.333333333333334,13.0]}}],"withBattery":2,"straightlined":[],"correlations":{"aiasVsTrustDelta":{"n":2,"r":null},"aiasVsTrustStrategic":{"n":2,"r":null},"aiasVsTrustTactical":{"n":2,"r":null},"aiasVsUptakeDelta":{"n":2,"r":null},"verificationVsTrustDelta":{"n":2,"r":null},"delegationVsTrustDelta":{"n":2,"r":null},"experienceVsTrustDelta":{"n":2,"r":null},"experienceVsTrustStrategic":{"n":2,"r":null},"experienceVsTrustTactical":{"n":2,"r":null},"experienceVsUptakeDelta":{"n":2,"r":null},"trustStrategicVsUptake":{"n":2,"r":null},"trustTacticalVsUptake":{"n":2,"r":null},"trustDeltaVsUptakeDelta":{"n":2,"r":null}}}},{"key":"recovery","label":"Recovery Suggest works (study-v1.5+)","short":"v1.5+","note":"The recovery planner\u2019s Suggest button returns a plan instead of nothing, so agent use during a failure is measurable for the first time.","overall":{"sessions":2,"participants":1,"participantIds":["GeorgeH"],"versions":["study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":8,"n":16,"p":0.5,"ci":[0.2799923761135083,0.7200076238864916]},"strategicUnedited":{"k":8,"n":8,"p":1.0,"ci":[0.6755843804891231,1.0]},"tacticalUptake":{"k":13,"n":15,"p":0.8666666666666667,"ci":[0.6211750079348376,0.9626395301086407]},"tacticalUnmodified":{"k":8,"n":15,"p":0.5333333333333333,"ci":[0.3011663015105079,0.7519077474025355]},"tacticalUptakeSessions":2,"recoveryAgent":{"k":5,"n":6,"p":0.8333333333333334,"ci":[0.43649056343635395,0.9699474141282697]},"strategicLatency":{"n":16,"mean":16.1830625,"median":15.261500000000002,"q1":11.66975,"q3":19.216250000000002,"lo":7.434,"hi":38.699,"values":[7.434,10.083,10.695,11.183,11.832,11.916,14.283,14.989,15.534,16.017,16.666,19.05,19.715,20.25,20.583,38.699]},"tacticalLatency":{"n":15,"mean":43.3102,"median":24.0,"q1":13.3075,"q3":63.381,"lo":9.083,"hi":164.311,"values":[9.083,10.528,11.732,12.966,13.649,14.899,16.999,24.0,24.499,24.749,37.598,89.164,89.513,105.963,164.311]},"planOverlap":{"n":15,"mean":0.8659010270774977,"median":1.0,"q1":0.7394957983193278,"q3":1.0,"lo":0.4,"hi":1.0},"cardMix":{"aggressive":6,"conservative":2,"manual":8},"perParticipant":[{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15},{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22}],"completion":{"n":2,"mean":0.7474012474012475,"median":0.7474012474012475,"q1":0.6980249480249481,"q3":0.7967775467775468,"lo":0.6486486486486487,"hi":0.8461538461538461},"score":{"n":2,"mean":905.0,"median":905.0,"q1":855.0,"q3":955.0,"lo":805,"hi":1005},"penalty":{"n":2,"mean":465.0,"median":465.0,"q1":380.0,"q3":550.0,"lo":295,"hi":635},"meanMissionTime":{"n":2,"mean":106.69816666666668,"median":106.69816666666668,"q1":91.85775,"q3":121.53858333333335,"lo":77.01733333333333,"hi":136.37900000000002},"tlx":{"n":2,"mean":12.166666666666668,"median":12.166666666666668,"q1":11.75,"q3":12.583333333333334,"lo":11.333333333333334,"hi":13.0},"failures":{"n":2,"mean":4.5,"median":4.5,"q1":3.75,"q3":5.25,"lo":3,"hi":6},"drags":{"n":2,"mean":18.5,"median":18.5,"q1":16.75,"q3":20.25,"lo":15.0,"hi":22.0}},"strategic":{"sessions":1,"participants":1,"participantIds":["GeorgeH"],"versions":["study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":5,"n":9,"p":0.5555555555555556,"ci":[0.2666473457440297,0.811224570528086]},"strategicUnedited":{"k":5,"n":5,"p":1.0,"ci":[0.5655085052479191,1.0]},"tacticalUptake":{"k":6,"n":8,"p":0.75,"ci":[0.40926987910258916,0.9285223111419724]},"tacticalUnmodified":{"k":6,"n":8,"p":0.75,"ci":[0.40926987910258916,0.9285223111419724]},"tacticalUptakeSessions":1,"recoveryAgent":{"k":2,"n":2,"p":1.0,"ci":[0.34237195288961925,1.0]},"strategicLatency":{"n":9,"mean":18.537666666666667,"median":16.017,"q1":14.989,"q3":20.25,"lo":7.434,"hi":38.699,"values":[7.434,14.283,14.989,15.534,16.017,19.05,20.25,20.583,38.699]},"tacticalLatency":{"n":8,"mean":17.404625,"median":14.274,"q1":11.431,"q3":18.9365,"lo":9.083,"hi":37.598,"values":[9.083,10.528,11.732,13.649,14.899,16.999,24.749,37.598]},"planOverlap":{"n":8,"mean":0.8892857142857142,"median":1.0,"q1":0.9285714285714286,"q3":1.0,"lo":0.4,"hi":1.0},"cardMix":{"aggressive":5,"conservative":0,"manual":4},"perParticipant":[{"pid":"GeorgeH","scenario":"strategic","version":"study-v1.6","strategicUptake":0.5555555555555556,"tacticalUptake":0.75,"completion":0.8461538461538461,"score":805,"penalty":295,"meanMissionTime":77.01733333333333,"tlx":13.0,"failures":3,"drags":15}],"completion":{"n":1,"mean":0.8461538461538461,"median":0.8461538461538461,"q1":0.8461538461538461,"q3":0.8461538461538461,"lo":0.8461538461538461,"hi":0.8461538461538461},"score":{"n":1,"mean":805.0,"median":805,"q1":805,"q3":805,"lo":805,"hi":805},"penalty":{"n":1,"mean":295.0,"median":295,"q1":295,"q3":295,"lo":295,"hi":295},"meanMissionTime":{"n":1,"mean":77.01733333333333,"median":77.01733333333333,"q1":77.01733333333333,"q3":77.01733333333333,"lo":77.01733333333333,"hi":77.01733333333333},"tlx":{"n":1,"mean":13.0,"median":13.0,"q1":13.0,"q3":13.0,"lo":13.0,"hi":13.0},"failures":{"n":1,"mean":3.0,"median":3,"q1":3,"q3":3,"lo":3,"hi":3},"drags":{"n":1,"mean":15.0,"median":15.0,"q1":15.0,"q3":15.0,"lo":15.0,"hi":15.0}},"tactical":{"sessions":1,"participants":1,"participantIds":["GeorgeH"],"versions":["study-v1.6"],"tacticalModes":["plan-all"],"strategicUptake":{"k":3,"n":7,"p":0.42857142857142855,"ci":[0.15821692226262685,0.7495457695909742]},"strategicUnedited":{"k":3,"n":3,"p":1.0,"ci":[0.43849391955098227,1.0]},"tacticalUptake":{"k":7,"n":7,"p":1.0,"ci":[0.6456611570247934,1.0]},"tacticalUnmodified":{"k":2,"n":7,"p":0.2857142857142857,"ci":[0.0822171657090155,0.6410709098517873]},"tacticalUptakeSessions":1,"recoveryAgent":{"k":3,"n":4,"p":0.75,"ci":[0.3006360524426366,0.9544139373553637]},"strategicLatency":{"n":7,"mean":13.155714285714286,"median":11.832,"q1":10.939,"q3":14.291,"lo":10.083,"hi":19.715,"values":[10.083,10.695,11.183,11.832,11.916,16.666,19.715]},"tacticalLatency":{"n":7,"mean":72.91657142857143,"median":89.164,"q1":24.249499999999998,"q3":97.738,"lo":12.966,"hi":164.311,"values":[12.966,24.0,24.499,89.164,89.513,105.963,164.311]},"planOverlap":{"n":7,"mean":0.8391756702681071,"median":0.8095238095238095,"q1":0.7323529411764705,"q3":1.0,"lo":0.6,"hi":1.0},"cardMix":{"aggressive":1,"conservative":2,"manual":4},"perParticipant":[{"pid":"GeorgeH","scenario":"tactical","version":"study-v1.6","strategicUptake":0.42857142857142855,"tacticalUptake":1.0,"completion":0.6486486486486487,"score":1005,"penalty":635,"meanMissionTime":136.37900000000002,"tlx":11.333333333333334,"failures":6,"drags":22}],"completion":{"n":1,"mean":0.6486486486486487,"median":0.6486486486486487,"q1":0.6486486486486487,"q3":0.6486486486486487,"lo":0.6486486486486487,"hi":0.6486486486486487},"score":{"n":1,"mean":1005.0,"median":1005,"q1":1005,"q3":1005,"lo":1005,"hi":1005},"penalty":{"n":1,"mean":635.0,"median":635,"q1":635,"q3":635,"lo":635,"hi":635},"meanMissionTime":{"n":1,"mean":136.37900000000002,"median":136.37900000000002,"q1":136.37900000000002,"q3":136.37900000000002,"lo":136.37900000000002,"hi":136.37900000000002},"tlx":{"n":1,"mean":11.333333333333334,"median":11.333333333333334,"q1":11.333333333333334,"q3":11.333333333333334,"lo":11.333333333333334,"hi":11.333333333333334},"failures":{"n":1,"mean":6.0,"median":6,"q1":6,"q3":6,"lo":6,"hi":6},"drags":{"n":1,"mean":22.0,"median":22.0,"q1":22.0,"q3":22.0,"lo":22.0,"hi":22.0}},"dateRange":["2026-09-01","2026-09-01"],"contrasts":[{"pid":"GeorgeH","version":"study-v1.6","strategicFirst":true,"completion":{"strategic":0.8461538461538461,"tactical":0.6486486486486487,"delta":-0.19750519750519746},"strategicUptake":{"strategic":0.5555555555555556,"tactical":0.42857142857142855,"delta":-0.12698412698412703},"tacticalUptake":{"strategic":0.75,"tactical":1.0,"delta":0.25},"tacticalUnmodified":{"strategic":0.75,"tactical":0.2857142857142857,"delta":-0.4642857142857143},"meanMissionTime":{"strategic":77.01733333333333,"tactical":136.37900000000002,"delta":59.36166666666669},"tlx":{"strategic":13.0,"tactical":11.333333333333334,"delta":-1.666666666666666},"penalty":{"strategic":295,"tactical":635,"delta":340}}],"orderEffect":[{"session":1,"sessions":1,"scenarios":{"strategic":1,"tactical":0},"strategicUptake":{"k":5,"n":9,"p":0.5555555555555556,"ci":[0.2666473457440297,0.811224570528086]},"tacticalUptake":{"k":6,"n":8,"p":0.75,"ci":[0.40926987910258916,0.9285223111419724]},"tacticalUnmodified":{"k":6,"n":8,"p":0.75,"ci":[0.40926987910258916,0.9285223111419724]},"completion":{"n":1,"mean":0.8461538461538461,"median":0.8461538461538461,"q1":0.8461538461538461,"q3":0.8461538461538461,"lo":0.8461538461538461,"hi":0.8461538461538461,"values":[0.8461538461538461]}},{"session":2,"sessions":1,"scenarios":{"strategic":0,"tactical":1},"strategicUptake":{"k":3,"n":7,"p":0.42857142857142855,"ci":[0.15821692226262685,0.7495457695909742]},"tacticalUptake":{"k":7,"n":7,"p":1.0,"ci":[0.6456611570247934,1.0]},"tacticalUnmodified":{"k":2,"n":7,"p":0.2857142857142857,"ci":[0.0822171657090155,0.6410709098517873]},"completion":{"n":1,"mean":0.6486486486486487,"median":0.6486486486486487,"q1":0.6486486486486487,"q3":0.6486486486486487,"lo":0.6486486486486487,"hi":0.6486486486486487,"values":[0.6486486486486487]}}],"attitudes":{"people":[{"pid":"GeorgeH","versions":["study-v1.6"],"sessions":2,"straightlined":false,"aias":7.0,"verification":6.0,"delegation":4.6,"hasBattery":true,"delegHumanFinalSay":6,"delegTrustSuggestOverDecide":7,"errorDetectability":4,"autonomyExperience":2,"experienceMean":1.2,"raw":{"aias_improve_life":6,"aias_improve_work":8,"aias_future_use":8,"aias_positive_humanity":6,"verif_check_before_relying":7,"verif_comfortable_unreviewed":2,"verif_want_reasoning":5,"verif_happy_unsupervised":2,"verif_overconfident":7,"verif_reliable_no_check":3,"deleg_human_final_say":6,"deleg_trust_suggest_over_decide":7,"deleg_prefer_self_even_if_slower":4,"deleg_not_when_lives_at_stake":4,"deleg_urgent_better_than_nothing":6,"verif_hard_to_detect_errors":4},"trustStrategic":3.8333333333333335,"trustTactical":5.416666666666666,"trustDelta":1.5833333333333326,"trustItemsStrategic":{"reliable":4.0,"trust":3.5,"performs":3.5,"confident":5.0,"useful":5.0,"follow":2.0},"trustItemsTactical":{"trust":6.0,"performs":5.0,"reliable":5.0,"confident":5.5,"useful":6.0,"follow":5.0},"strategicUptake":0.5,"tacticalUptake":0.8666666666666667,"uptakeDelta":0.3666666666666667,"tlx":{"n":2,"mean":12.166666666666668,"median":12.166666666666668,"q1":11.75,"q3":12.583333333333334,"lo":11.333333333333334,"hi":13.0,"values":[11.333333333333334,13.0]}}],"withBattery":1,"straightlined":[],"correlations":{"aiasVsTrustDelta":{"n":1,"r":null},"aiasVsTrustStrategic":{"n":1,"r":null},"aiasVsTrustTactical":{"n":1,"r":null},"aiasVsUptakeDelta":{"n":1,"r":null},"verificationVsTrustDelta":{"n":1,"r":null},"delegationVsTrustDelta":{"n":1,"r":null},"experienceVsTrustDelta":{"n":1,"r":null},"experienceVsTrustStrategic":{"n":1,"r":null},"experienceVsTrustTactical":{"n":1,"r":null},"experienceVsUptakeDelta":{"n":1,"r":null},"trustStrategicVsUptake":{"n":1,"r":null},"trustTacticalVsUptake":{"n":1,"r":null},"trustDeltaVsUptakeDelta":{"n":1,"r":null}}}}]}</script>
+<script>
+(function () {
+  'use strict';
+  var DATA = JSON.parse(document.getElementById('agg').textContent);
+  var COHORTS = DATA.cohorts;
+  var cur = COHORTS.find(function (c) { return c.key === 'study'; }) || COHORTS[0];
+
+  var NS = 'http://www.w3.org/2000/svg';
+  var SCEN = [
+    { key: 'strategic', label: 'Strategic Heavy' },
+    { key: 'tactical', label: 'Tactical Heavy' }
+  ];
+  var TIER = {
+    strategic: { label: 'Strategic Assistant', color: 'var(--s1)' },
+    tactical: { label: 'Tactical Assistant', color: 'var(--s2)' }
+  };
+
+  // -- tiny svg helpers ----------------------------------------------
+  function svgEl(name, attrs) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function text(x, y, s, o) {
+    o = o || {};
+    var t = svgEl('text', {
+      x: x, y: y, fill: o.fill || 'var(--ink-muted)',
+      'font-size': o.size || 11, 'text-anchor': o.anchor || 'start',
+      'font-family': o.mono ? 'var(--mono)' : 'var(--sans)',
+      'font-weight': o.weight || 400, 'dominant-baseline': o.baseline || 'auto'
+    });
+    t.textContent = s;
+    return t;
+  }
+  // Bar with 4px rounded data-end, anchored flat to the baseline.
+  function barPath(x, y, w, h, r) {
+    r = Math.min(r === undefined ? 4 : r, w / 2, Math.max(h, 0));
+    if (h <= 0.6) return 'M' + x + ' ' + (y + h) + 'h' + w;
+    return 'M' + x + ' ' + (y + h) + 'V' + (y + r) + 'a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + -r +
+      'h' + (w - 2 * r) + 'a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + r + 'V' + (y + h) + 'Z';
+  }
+
+  // -- tooltip -------------------------------------------------------
+  var tip = document.getElementById('tip');
+  function bindTip(node, title, meta) {
+    node.style.cursor = 'default';
+    node.addEventListener('mouseenter', function () {
+      tip.innerHTML = '';
+      var t = document.createElement('span'); t.className = 't'; t.textContent = title;
+      var m = document.createElement('span'); m.className = 'm'; m.textContent = meta;
+      tip.appendChild(t); tip.appendChild(m);
+      tip.style.opacity = '1';
+    });
+    node.addEventListener('mousemove', function (e) {
+      var w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.min(e.clientX + 14, window.innerWidth - w - 8) + 'px';
+      tip.style.top = Math.max(8, e.clientY - h - 12) + 'px';
+    });
+    node.addEventListener('mouseleave', function () { tip.style.opacity = '0'; });
+  }
+
+  // -- formatting ----------------------------------------------------
+  function pc(p) { return p === null || p === undefined ? '\u2014' : Math.round(p * 100) + '%'; }
+  function frac(r) { return r && r.n ? r.k + '/' + r.n : '\u2014'; }
+  function n1(v) { return v === null || v === undefined ? '\u2014' : (Math.round(v * 10) / 10).toFixed(1); }
+  function n0(v) { return v === null || v === undefined ? '\u2014' : String(Math.round(v)); }
+  function has(r) { return !!(r && r.n); }
+
+  // -- chart: grouped proportion bars, faceted by scenario -----------
+  function renderProportion(host, legendHost, spec) {
+    host.innerHTML = '';
+    if (legendHost) legendHost.innerHTML = '';
+    var live = spec.groups.filter(function (g) {
+      return g.bars.some(function (b) { return has(b.rate); });
+    });
+    if (!live.length) { host.innerHTML = '<p class="empty">No decisions of this kind in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 420, 300), H = 232;
+    var m = { t: 16, r: 8, b: 46, l: 34 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+    var y = function (p) { return m.t + ph - p * ph; };
+
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+      svg.appendChild(svgEl('line', {
+        x1: m.l, x2: W - m.r, y1: y(g), y2: y(g),
+        stroke: g === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(text(m.l - 8, y(g) + 4, Math.round(g * 100) + '%', { anchor: 'end', mono: true, size: 10 }));
+    });
+
+    var gw = pw / live.length;
+    live.forEach(function (g, gi) {
+      var bars = g.bars.filter(function (b) { return has(b.rate); });
+      var bw = Math.min(46, (gw - 26) / bars.length - 2);
+      var span = bars.length * bw + (bars.length - 1) * 2;
+      var x0 = m.l + gi * gw + (gw - span) / 2;
+
+      bars.forEach(function (b, bi) {
+        var x = x0 + bi * (bw + 2), r = b.rate;
+        var top = y(r.p), h = m.t + ph - top;
+        var path = svgEl('path', { d: barPath(x, top, bw, h), fill: b.color, 'fill-opacity': 0.9 });
+        bindTip(path, b.name + ' \u00b7 ' + g.label, pc(r.p) + '  (' + r.k + ' of ' + r.n + ')' +
+          (r.ci ? '   95% CI ' + pc(r.ci[0]) + '\u2013' + pc(r.ci[1]) : ''));
+        svg.appendChild(path);
+
+        // Wilson interval, ringed in the surface so it reads on top of the fill.
+        var capTop = top;
+        if (r.ci && r.n > 1) {
+          var cx = x + bw / 2;
+          capTop = Math.min(top, y(r.ci[1]));
+          [{ w: 4, c: 'var(--surface)' }, { w: 1.6, c: 'var(--ink-2)' }].forEach(function (st) {
+            svg.appendChild(svgEl('path', {
+              d: 'M' + cx + ' ' + y(r.ci[0]) + 'V' + y(r.ci[1]) +
+                 'M' + (cx - 4) + ' ' + y(r.ci[1]) + 'h8M' + (cx - 4) + ' ' + y(r.ci[0]) + 'h8',
+              stroke: st.c, 'stroke-width': st.w, fill: 'none', 'stroke-linecap': 'round'
+            }));
+          });
+        }
+        // Clear the interval cap. With no headroom above it, drop the label inside the bar and
+        // below the interval's lower cap, so it never sits on the whisker.
+        var inside = capTop - 7 < m.t + 4;
+        var ly = inside ? (r.ci ? y(r.ci[0]) + 17 : top + 17) : capTop - 7;
+        svg.appendChild(text(x + bw / 2, ly, pc(r.p),
+          { anchor: 'middle', mono: true, size: 12, weight: 600,
+            fill: inside ? 'var(--surface)' : 'var(--ink)' }));
+        svg.appendChild(text(x + bw / 2, m.t + ph + 15, r.k + '/' + r.n,
+          { anchor: 'middle', mono: true, size: 10 }));
+      });
+      svg.appendChild(text(m.l + gi * gw + gw / 2, m.t + ph + 33, g.label,
+        { anchor: 'middle', size: 12, fill: 'var(--ink-2)', weight: 500 }));
+    });
+    host.appendChild(svg);
+
+    if (legendHost) {
+      var seen = {};
+      live.forEach(function (g) {
+        g.bars.forEach(function (b) {
+          if (seen[b.name] || !has(b.rate)) return;
+          seen[b.name] = 1;
+          var s = document.createElement('span');
+          s.innerHTML = '<i style="background:' + b.color + '"></i>';
+          s.appendChild(document.createTextNode(b.name));
+          legendHost.appendChild(s);
+        });
+      });
+    }
+  }
+
+  // -- chart: horizontal range rows (median + IQR + spread) ----------
+  function renderRanges(host, rows, unit) {
+    host.innerHTML = '';
+    var live = rows.filter(function (r) { return r.stat && r.stat.n; });
+    if (!live.length) { host.innerHTML = '<p class="empty">No timing data in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 600, 320);
+    var rowH = 34, m = { t: 10, r: 26, b: 30, l: Math.min(252, W * 0.36) };
+    var H = m.t + live.length * rowH + m.b;
+    var hi = Math.max.apply(null, live.map(function (r) { return r.stat.hi; }));
+    var step = hi > 120 ? 60 : hi > 60 ? 30 : hi > 24 ? 10 : 5;
+    var top = Math.ceil(hi / step) * step;
+    var pw = W - m.l - m.r;
+    var x = function (v) { return m.l + (v / top) * pw; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    for (var g = 0; g <= top; g += step) {
+      svg.appendChild(svgEl('line', {
+        x1: x(g), x2: x(g), y1: m.t, y2: m.t + live.length * rowH,
+        stroke: g === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(text(x(g), H - m.b + 18, g + (g === top ? unit : ''),
+        { anchor: 'middle', mono: true, size: 10 }));
+    }
+
+    live.forEach(function (r, i) {
+      var cy = m.t + i * rowH + rowH / 2, s = r.stat;
+      svg.appendChild(text(m.l - 12, cy + 4, r.label, { anchor: 'end', size: 12, fill: 'var(--ink-2)' }));
+      svg.appendChild(svgEl('line', {
+        x1: x(s.lo), x2: x(s.hi), y1: cy, y2: cy, stroke: 'var(--axis)', 'stroke-width': 2,
+        'stroke-linecap': 'round'
+      }));
+      var bx = x(s.q1), bw = Math.max(x(s.q3) - x(s.q1), 3);
+      var box = svgEl('rect', { x: bx, y: cy - 8, width: bw, height: 16, rx: 3, fill: r.color, 'fill-opacity': 0.85 });
+      bindTip(box, r.label, 'median ' + n1(s.median) + unit + '   IQR ' + n1(s.q1) + '\u2013' + n1(s.q3) +
+        unit + '   range ' + n1(s.lo) + '\u2013' + n1(s.hi) + unit + '   n=' + s.n);
+      svg.appendChild(box);
+      // Median as a ringed dot, not a notch: a notch through a narrow IQR splits the bar in two
+      // and reads as two separate marks.
+      svg.appendChild(svgEl('circle', {
+        cx: x(s.median), cy: cy, r: 4.5, fill: 'var(--surface)', stroke: r.color, 'stroke-width': 2.5
+      }));
+      svg.appendChild(text(Math.min(x(s.hi) + 8, W - 4), cy + 4, n1(s.median) + unit,
+        { mono: true, size: 11, fill: 'var(--ink)', weight: 600 }));
+    });
+    host.appendChild(svg);
+  }
+
+  // -- chart: per-session dots with a median rule, by scenario -------
+  function renderDots(host, rows, unit, decimals) {
+    host.innerHTML = '';
+    var all = rows.reduce(function (a, r) { return a.concat(r.values); }, []);
+    if (!all.length) { host.innerHTML = '<p class="empty">Not logged by the builds in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 420, 300);
+    var rowH = 58, m = { t: 14, r: 26, b: 26, l: Math.min(124, W * 0.3) };
+    var H = m.t + rows.length * rowH + m.b;
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    var ticks;
+    if (unit === '%') {
+      lo = 0; hi = 1;
+      ticks = [0, 0.25, 0.5, 0.75, 1];
+    } else {
+      // Round the axis out to a human step so the ticks read 0/60/120, not 32/111/190.
+      var span = hi - lo || hi || 1;
+      var step = span > 240 ? 120 : span > 120 ? 60 : span > 60 ? 30 : span > 24 ? 10 : 5;
+      lo = Math.max(0, Math.floor((lo - span * 0.12) / step) * step);
+      hi = Math.ceil((hi + span * 0.12) / step) * step;
+      ticks = [];
+      for (var tv = lo; tv <= hi + 0.001; tv += step) ticks.push(tv);
+    }
+    var pw = W - m.l - m.r;
+    var x = function (v) { return m.l + ((v - lo) / (hi - lo || 1)) * pw; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    ticks.forEach(function (t) {
+      svg.appendChild(svgEl('line', {
+        x1: x(t), x2: x(t), y1: m.t - 4, y2: m.t + rows.length * rowH - 8,
+        stroke: 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(text(x(t), H - m.b + 14,
+        unit === '%' ? Math.round(t * 100) + '%' : n0(t) + (t === ticks[ticks.length - 1] ? unit : ''),
+        { anchor: 'middle', mono: true, size: 10 }));
+    });
+
+    rows.forEach(function (r, i) {
+      var cy = m.t + i * rowH + 20;
+      svg.appendChild(text(m.l - 12, cy + 4, r.label, { anchor: 'end', size: 12, fill: 'var(--ink-2)', weight: 500 }));
+      if (!r.values.length) {
+        svg.appendChild(text(m.l, cy + 4, 'no data', { size: 11, fill: 'var(--ink-muted)' }));
+        return;
+      }
+      var srt = r.values.slice().sort(function (a, b) { return a - b; });
+      var med = srt.length % 2 ? srt[(srt.length - 1) / 2] : (srt[srt.length / 2 - 1] + srt[srt.length / 2]) / 2;
+      svg.appendChild(svgEl('line', {
+        x1: m.l, x2: W - m.r, y1: cy, y2: cy, stroke: 'var(--grid)', 'stroke-width': 1
+      }));
+      r.values.forEach(function (v, vi) {
+        var c = svgEl('circle', {
+          cx: x(v), cy: cy, r: 6, fill: r.color, 'fill-opacity': 0.5,
+          stroke: 'var(--surface)', 'stroke-width': 2
+        });
+        bindTip(c, r.labels[vi] || r.label,
+          (unit === '%' ? pc(v) : n0(v) + unit));
+        svg.appendChild(c);
+      });
+      svg.appendChild(svgEl('line', {
+        x1: x(med), x2: x(med), y1: cy - 13, y2: cy + 13, stroke: r.color, 'stroke-width': 2.5,
+        'stroke-linecap': 'round'
+      }));
+      svg.appendChild(text(x(med), cy + 27, 'median ' + (unit === '%' ? pc(med) : n0(med) + unit),
+        { anchor: 'middle', mono: true, size: 10.5, fill: 'var(--ink-2)' }));
+    });
+    host.appendChild(svg);
+  }
+
+  // -- chart: stacked composition rows -------------------------------
+  function renderStack(host, legendHost, rows, series) {
+    host.innerHTML = ''; legendHost.innerHTML = '';
+    var live = rows.filter(function (r) { return r.total > 0; });
+    if (!live.length) { host.innerHTML = '<p class="empty">No allocations in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 420, 300);
+    var rowH = 52, m = { t: 8, r: 8, b: 8, l: Math.min(124, W * 0.3) };
+    var H = m.t + live.length * rowH + m.b;
+    var pw = W - m.l - m.r;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    live.forEach(function (r, i) {
+      var cy = m.t + i * rowH + 12, acc = 0;
+      svg.appendChild(text(m.l - 12, cy + 15, r.label, { anchor: 'end', size: 12, fill: 'var(--ink-2)', weight: 500 }));
+      series.forEach(function (s) {
+        var v = r.values[s.key] || 0;
+        if (!v) return;
+        var w = (v / r.total) * pw - 2;
+        if (w <= 0) return;
+        var seg = svgEl('rect', { x: m.l + acc, y: cy, width: w, height: 22, rx: 2, fill: s.color });
+        bindTip(seg, s.label + ' \u00b7 ' + r.label, v + ' of ' + r.total + '  (' + pc(v / r.total) + ')');
+        svg.appendChild(seg);
+        if (w > 34) {
+          svg.appendChild(text(m.l + acc + w / 2, cy + 15, pc(v / r.total),
+            { anchor: 'middle', mono: true, size: 10.5, fill: s.ink || 'var(--surface)', weight: 600 }));
+        }
+        acc += w + 2;
+      });
+      svg.appendChild(text(m.l, cy + 38, r.total + ' allocation decisions',
+        { mono: true, size: 10, fill: 'var(--ink-muted)' }));
+    });
+    host.appendChild(svg);
+    series.forEach(function (s) {
+      var el = document.createElement('span');
+      el.innerHTML = '<i style="background:' + s.color + '"></i>';
+      el.appendChild(document.createTextNode(s.label));
+      legendHost.appendChild(el);
+    });
+  }
+
+  // -- chart: within-participant slope -------------------------------
+  function renderSlope(host, pairs, opts) {
+    host.innerHTML = '';
+    if (!pairs.length) { host.innerHTML = '<p class="empty">Not logged for any paired participant here.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 360, 280), H = 236;
+    var m = { t: 20, r: 66, b: 44, l: 66 };
+    var vals = pairs.reduce(function (a, p) { return a.concat([p.strategic, p.tactical]); }, []);
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    if (opts.pct) { lo = Math.min(lo, 0); hi = Math.max(hi, 1); }
+    var pad = (hi - lo) * 0.16 || 1;
+    lo -= pad; hi += pad;
+    var ph = H - m.t - m.b;
+    var y = function (v) { return m.t + ph - ((v - lo) / (hi - lo)) * ph; };
+    var xa = m.l, xb = W - m.r;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    [xa, xb].forEach(function (x) {
+      svg.appendChild(svgEl('line', { x1: x, x2: x, y1: m.t - 6, y2: m.t + ph + 6, stroke: 'var(--grid)', 'stroke-width': 1 }));
+    });
+    svg.appendChild(text(xa, H - 10, opts.left || 'Strategic Heavy', { anchor: 'middle', size: 11, fill: 'var(--ink-2)' }));
+    svg.appendChild(text(xb, H - 10, opts.right || 'Tactical Heavy', { anchor: 'middle', size: 11, fill: 'var(--ink-2)' }));
+
+    // Labels on both ends are the collision risk: two participants an inch apart in value put
+    // their names on top of each other. Nudge each column apart to a minimum spacing, keeping order.
+    function declash(items) {
+      items.sort(function (a, b) { return a.y - b.y; });
+      for (var i = 1; i < items.length; i++) {
+        if (items[i].y - items[i - 1].y < 12) items[i].y = items[i - 1].y + 12;
+      }
+      var over = items.length ? items[items.length - 1].y - (m.t + ph + 6) : 0;
+      if (over > 0) items.forEach(function (it) { it.y -= over; });
+      return items;
+    }
+    var left = [], right = [];
+    pairs.forEach(function (p) {
+      var up = p.tactical > p.strategic;
+      var col = Math.abs(p.delta) < 1e-9 ? 'var(--neutral-mark)' : (up ? 'var(--s1)' : 'var(--crit)');
+      var line = svgEl('line', { x1: xa, x2: xb, y1: y(p.strategic), y2: y(p.tactical), stroke: col, 'stroke-width': 2, 'stroke-opacity': 0.75 });
+      bindTip(line, p.pid + ' \u00b7 ' + p.version,
+        opts.fmt(p.strategic) + ' \u2192 ' + opts.fmt(p.tactical) + '   (' + (p.delta > 0 ? '+' : '') + opts.fmt(p.delta) + ')');
+      svg.appendChild(line);
+      [[xa, p.strategic], [xb, p.tactical]].forEach(function (pt) {
+        svg.appendChild(svgEl('circle', { cx: pt[0], cy: y(pt[1]), r: 4.5, fill: col, stroke: 'var(--surface)', 'stroke-width': 2 }));
+      });
+      left.push({ y: y(p.strategic) + 4, s: p.pid });
+      right.push({ y: y(p.tactical) + 4, s: opts.fmt(p.tactical) });
+    });
+    declash(left).forEach(function (it) {
+      svg.appendChild(text(xa - 9, it.y, it.s, { anchor: 'end', size: 10, mono: true }));
+    });
+    declash(right).forEach(function (it) {
+      svg.appendChild(text(xb + 9, it.y, it.s, { size: 10, mono: true }));
+    });
+    host.appendChild(svg);
+  }
+
+  // -- chart: labelled scatter, one point per participant ------------
+  // Deliberately no fit line: at five or six points a regression line reads as a claim the data
+  // cannot support. The r and its n go in the caption instead.
+  function renderScatter(host, pts, opts) {
+    host.innerHTML = '';
+    if (pts.length < 1) {
+      host.innerHTML = '<p class="empty">' + (opts.empty || 'No participant in this window has both measures.') + '</p>';
+      return;
+    }
+    var W = Math.max(host.clientWidth || 420, 300), H = 258;
+    var m = { t: 16, r: 22, b: 46, l: 52 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+
+    function scale(vals, forced) {
+      var lo = forced ? forced[0] : Math.min.apply(null, vals);
+      var hi = forced ? forced[1] : Math.max.apply(null, vals);
+      if (!forced) { var pad = (hi - lo) * 0.22 || 0.5; lo -= pad; hi += pad; }
+      return { lo: lo, hi: hi };
+    }
+    var sx = scale(pts.map(function (p) { return p.x; }), opts.xDomain);
+    var sy = scale(pts.map(function (p) { return p.y; }), opts.yDomain);
+    var x = function (v) { return m.l + ((v - sx.lo) / (sx.hi - sx.lo || 1)) * pw; };
+    var y = function (v) { return m.t + ph - ((v - sy.lo) / (sy.hi - sy.lo || 1)) * ph; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    function axisTicks(s) {
+      var span = s.hi - s.lo;
+      var step = span > 8 ? 2 : span > 4 ? 1 : span > 2 ? 0.5 : span > 0.8 ? 0.25 : 0.1;
+      var t = [], v = Math.ceil(s.lo / step) * step;
+      for (; v <= s.hi + 1e-9; v += step) t.push(Math.round(v * 1000) / 1000);
+      return t;
+    }
+    axisTicks(sy).forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t),
+        stroke: Math.abs(t) < 1e-9 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(text(m.l - 8, y(t) + 4, opts.fy ? opts.fy(t) : t, { anchor: 'end', mono: true, size: 10 }));
+    });
+    axisTicks(sx).forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: x(t), x2: x(t), y1: m.t, y2: m.t + ph,
+        stroke: Math.abs(t) < 1e-9 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(text(x(t), m.t + ph + 16, opts.fx ? opts.fx(t) : t, { anchor: 'middle', mono: true, size: 10 }));
+    });
+    svg.appendChild(text(m.l + pw / 2, H - 6, opts.xLabel, { anchor: 'middle', size: 11, fill: 'var(--ink-2)' }));
+    var yl = text(0, 0, opts.yLabel, { anchor: 'middle', size: 11, fill: 'var(--ink-2)' });
+    yl.setAttribute('transform', 'translate(13,' + (m.t + ph / 2) + ') rotate(-90)');
+    svg.appendChild(yl);
+
+    var placed = [];
+    pts.forEach(function (p) {
+      var c = svgEl('circle', { cx: x(p.x), cy: y(p.y), r: 6.5, fill: p.color || 'var(--s1)',
+        'fill-opacity': 0.55, stroke: 'var(--surface)', 'stroke-width': 2 });
+      bindTip(c, p.label, opts.xLabel + ': ' + (opts.fx ? opts.fx(p.x) : p.x) + '   ' +
+        opts.yLabel + ': ' + (opts.fy ? opts.fy(p.y) : p.y));
+      svg.appendChild(c);
+      // Flip the label under the point when it would land on one already placed above.
+      var ly = y(p.y) - 11;
+      if (placed.some(function (q) { return Math.abs(q.x - x(p.x)) < 52 && Math.abs(q.y - ly) < 11; })) {
+        ly = y(p.y) + 18;
+      }
+      placed.push({ x: x(p.x), y: ly });
+      svg.appendChild(text(x(p.x), ly, p.label, { anchor: 'middle', mono: true, size: 10 }));
+    });
+    host.appendChild(svg);
+  }
+
+  // -- chart: one value per build window -----------------------------
+  function renderWindows(host, legendHost, series) {
+    host.innerHTML = ''; if (legendHost) legendHost.innerHTML = '';
+    var W = Math.max(host.clientWidth || 420, 300), H = 236;
+    var m = { t: 16, r: 8, b: 58, l: 34 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var y = function (p) { return m.t + ph - p * ph; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+      svg.appendChild(svgEl('line', { x1: m.l, x2: W - m.r, y1: y(g), y2: y(g), stroke: g === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(text(m.l - 8, y(g) + 4, Math.round(g * 100) + '%', { anchor: 'end', mono: true, size: 10 }));
+    });
+
+    var gw = pw / COHORTS.length;
+    COHORTS.forEach(function (c, ci) {
+      var bars = series.map(function (s) { return { s: s, r: s.get(c) }; })
+                       .filter(function (b) { return has(b.r); });
+      var bw = Math.min(30, (gw - 16) / Math.max(series.length, 1) - 2);
+      var span = bars.length * bw + Math.max(bars.length - 1, 0) * 2;
+      var x0 = m.l + ci * gw + (gw - span) / 2;
+      bars.forEach(function (b, bi) {
+        var x = x0 + bi * (bw + 2), top = y(b.r.p);
+        var path = svgEl('path', { d: barPath(x, top, bw, m.t + ph - top), fill: b.s.color, 'fill-opacity': c.key === cur.key ? 0.95 : 0.34 });
+        bindTip(path, b.s.name + ' \u00b7 ' + c.label, pc(b.r.p) + '  (' + b.r.k + ' of ' + b.r.n + ')');
+        svg.appendChild(path);
+        svg.appendChild(text(x + bw / 2, top - 6, pc(b.r.p), { anchor: 'middle', mono: true, size: 10, fill: c.key === cur.key ? 'var(--ink)' : 'var(--ink-muted)', weight: 600 }));
+      });
+      if (!bars.length) svg.appendChild(text(m.l + ci * gw + gw / 2, y(0) - 6, '\u2014', { anchor: 'middle', size: 11 }));
+      var lab = text(m.l + ci * gw + gw / 2, m.t + ph + 16, c.short, { anchor: 'middle', mono: true, size: 10, fill: c.key === cur.key ? 'var(--ink)' : 'var(--ink-muted)', weight: c.key === cur.key ? 600 : 400 });
+      svg.appendChild(lab);
+      svg.appendChild(text(m.l + ci * gw + gw / 2, m.t + ph + 30, c.overall.sessions + ' sess.', { anchor: 'middle', mono: true, size: 9.5 }));
+    });
+    host.appendChild(svg);
+    if (legendHost) series.forEach(function (s) {
+      var el = document.createElement('span');
+      el.innerHTML = '<i style="background:' + s.color + '"></i>';
+      el.appendChild(document.createTextNode(s.name));
+      legendHost.appendChild(el);
+    });
+  }
+
+  // -- narrative helpers, computed not typed -------------------------
+  function gapSentence(a, b, aName, bName, noun) {
+    if (!has(a) || !has(b)) return '';
+    var d = Math.round(Math.abs(a.p - b.p) * 100);
+    var pts = d === 1 ? ' point' : ' points';
+    if (d < 5) return 'The two tiers sit within ' + d + pts + ' of each other on ' + noun + '.';
+    return (a.p > b.p ? aName : bName) + ' leads on ' + noun + ' by <b>' + d + pts + '</b>.';
+  }
+
+  function countDirection(pairs) {
+    var down = pairs.filter(function (p) { return p.delta < 0; }).length;
+    return { down: down, up: pairs.length - down, n: pairs.length };
+  }
+
+  // -- section: pre-study disposition vs trust vs behaviour ----------
+  var TRUST_ITEM_LABEL = {
+    trust: 'I trust it', reliable: 'It is reliable', performs: 'It performs well',
+    confident: 'I am confident in it', useful: 'It is useful',
+    follow: 'I would follow it'
+  };
+  var TRUST_ITEM_ORDER = ['useful', 'performs', 'reliable', 'trust', 'confident', 'follow'];
+
+  function rr(v) { return v === null || v === undefined ? '\u2014' : (v >= 0 ? '+' : '') + v.toFixed(2); }
+
+  function renderAttitudes(c) {
+    var A = c.attitudes;
+    var usable = A.people.filter(function (p) { return !p.straightlined; });
+    var withBattery = usable.filter(function (p) { return p.hasBattery; });
+
+    // Status banner: say up front what this window can and cannot answer.
+    var st = document.getElementById('battery-status');
+    st.innerHTML = '';
+    var short = withBattery.length < 5;
+    var d = document.createElement('div');
+    d.className = 'callout ' + (short ? 'crit' : 'note');
+    d.innerHTML = '<span class="mark">' + (short ? 'Not yet' : 'n') + '</span><div><p>' +
+      '<b>' + withBattery.length + ' of ' + usable.length + '</b> usable participants in this window ' +
+      'completed the pre-study AI-attitude battery' +
+      (A.straightlined.length
+        ? '. A further ' + A.straightlined.length + ' (' + A.straightlined.join(', ') +
+          ') left every trust and workload slider on its default and are excluded from this ' +
+          'section only \u2014 their behavioural data is untouched everywhere else'
+        : '') + '. ' +
+      (short
+        ? 'That is far too few to relate AI scepticism to anything. The figures below therefore show ' +
+          'the individual profiles and the machinery that will compute the relationship \u2014 they are ' +
+          'not evidence of one. A descriptive correlation needs roughly 15\u201320 participants on ' +
+          'study-v1.3 or later; a defensible one, more.'
+        : 'Correlations below are descriptive, with n printed beside every r.') +
+      '</p></div>';
+    st.appendChild(d);
+
+    // 1. Trust in each assistant, per person.
+    var tp = usable.filter(function (p) { return p.trustStrategic !== null && p.trustTactical !== null; })
+      .map(function (p) {
+        return { pid: p.pid, version: p.versions.join('/'), strategic: p.trustStrategic,
+                 tactical: p.trustTactical, delta: p.trustDelta };
+      });
+    renderSlope(document.getElementById('c-trustslope'), tp, {
+      pct: false, fmt: function (v) { return v.toFixed(1); },
+      left: 'Strategic Assistant', right: 'Tactical Assistant'
+    });
+    var favTac = tp.filter(function (p) { return p.delta > 0.25; });
+    var favStrat = tp.filter(function (p) { return p.delta < -0.25; });
+    var split = favTac.length > 0 && favStrat.length > 0;
+    document.getElementById('t-trustslope').innerHTML = tp.length
+      ? '<b>' + favTac.length + ' of ' + tp.length + '</b> trusted the tactical assistant more, <b>' +
+        favStrat.length + '</b> the strategic one' +
+        (tp.length - favTac.length - favStrat.length ? ', the rest within a quarter-point' : '') +
+        '. ' + (split
+          ? 'The split tracks build era, not personality: the people who rated the tactical ' +
+            'assistant highest ran the newest builds, where its recovery suggestions actually worked.'
+          : 'Everyone in this window leans the same way, so the window cannot separate the person ' +
+            'from the build they ran.')
+      : '';
+
+    // 2. Per-item trust profile.
+    var acc = { strategic: {}, tactical: {} };
+    usable.forEach(function (p) {
+      [['strategic', p.trustItemsStrategic], ['tactical', p.trustItemsTactical]].forEach(function (pair) {
+        if (!pair[1]) return;
+        Object.keys(pair[1]).forEach(function (k) {
+          (acc[pair[0]][k] = acc[pair[0]][k] || []).push(pair[1][k]);
+        });
+      });
+    });
+    var itemRows = TRUST_ITEM_ORDER.filter(function (k) { return acc.strategic[k] || acc.tactical[k]; })
+      .map(function (k) {
+        var mean = function (a) { return a && a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : null; };
+        return { key: k, label: TRUST_ITEM_LABEL[k] || k,
+                 s: mean(acc.strategic[k]), t: mean(acc.tactical[k]) };
+      });
+    renderItemBars(document.getElementById('c-trustitems'), document.getElementById('l-trustitems'), itemRows);
+    var follow = itemRows.filter(function (r) { return r.key === 'follow'; })[0];
+    var others = itemRows.filter(function (r) { return r.key !== 'follow'; });
+    var omean = others.length
+      ? others.reduce(function (s, r) { return s + ((r.s + r.t) / 2); }, 0) / others.length : null;
+    document.getElementById('t-trustitems').innerHTML = (follow && omean)
+      ? '<b>"I would follow it" is the lowest-scoring item on both assistants</b> \u2014 ' +
+        ((follow.s + follow.t) / 2).toFixed(1) + ' against ' + omean.toFixed(1) +
+        ' for the other five. People rate both assistants as useful and reliable and still reserve ' +
+        'the decision. That gap, not the level of either bar, is the trust story here.'
+      : '';
+
+    // 3. Stated trust vs actual use.
+    var tu = usable.filter(function (p) { return p.trustDelta !== null && p.uptakeDelta !== null; })
+      .map(function (p) { return { x: p.trustDelta, y: p.uptakeDelta, label: p.pid,
+        color: p.hasBattery ? 'var(--s2)' : 'var(--s1)' }; });
+    renderScatter(document.getElementById('c-trustuse'), tu, {
+      xLabel: 'Trust: tactical \u2212 strategic', yLabel: 'Uptake: tactical \u2212 strategic',
+      fx: function (v) { return (v > 0 ? '+' : '') + v; },
+      fy: function (v) { return Math.round(v * 100) + '%'; }
+    });
+    var cr = A.correlations.trustDeltaVsUptakeDelta;
+    document.getElementById('t-trustuse').innerHTML = cr.r !== null
+      ? 'r = <b>' + rr(cr.r) + '</b> on n = ' + cr.n + '. People who said they trusted one assistant ' +
+        'more did lean on it more, but with this many points the sign is the only part worth reading.'
+      : 'Too few participants with both measures in this window to compute a correlation.';
+
+    // 4. AIAS vs relative trust.
+    var ax = withBattery.filter(function (p) { return p.aias !== null && p.trustDelta !== null; })
+      .map(function (p) { return { x: p.aias, y: p.trustDelta, label: p.pid, color: 'var(--s2)' }; });
+    renderScatter(document.getElementById('c-aias'), ax, {
+      xLabel: 'AIAS-4 (10 = most positive about AI)', yLabel: 'Trust: tactical \u2212 strategic',
+      xDomain: [1, 10],
+      empty: 'No participant in this window completed the AI-attitude battery.'
+    });
+    var ac = A.correlations.aiasVsTrustDelta;
+    document.getElementById('t-aias').innerHTML = ax.length
+      ? (ac.r !== null
+          ? 'r = <b>' + rr(ac.r) + '</b> on n = ' + ac.n + '.'
+          : '<b>n = ' + ax.length + '. No relationship can be computed or claimed from this.</b> ') +
+        ' Both people who took the battery scored high on it (' +
+        ax.map(function (p) { return p.x.toFixed(1); }).join(' and ') +
+        ' out of 10, i.e. positive about AI in general) and both trusted the tactical assistant more. ' +
+        'There is no sceptic in the sample yet, so the axis this figure exists to test is unpopulated.'
+      : 'The AI-attitude battery arrived in study-v1.3; no session in this window predates it.';
+
+    // 5. Correlation table.
+    var CORRS = [
+      ['AIAS-4 (AI positivity)', 'Trust: tactical \u2212 strategic', 'aiasVsTrustDelta'],
+      ['AIAS-4 (AI positivity)', 'Trust in strategic', 'aiasVsTrustStrategic'],
+      ['AIAS-4 (AI positivity)', 'Trust in tactical', 'aiasVsTrustTactical'],
+      ['AIAS-4 (AI positivity)', 'Uptake: tactical \u2212 strategic', 'aiasVsUptakeDelta'],
+      ['Verification propensity', 'Trust: tactical \u2212 strategic', 'verificationVsTrustDelta'],
+      ['Delegation boundary (tighter = higher)', 'Trust: tactical \u2212 strategic', 'delegationVsTrustDelta'],
+      ['Prior autonomy/sim experience', 'Trust in strategic', 'experienceVsTrustStrategic'],
+      ['Prior autonomy/sim experience', 'Trust in tactical', 'experienceVsTrustTactical'],
+      ['Prior autonomy/sim experience', 'Trust: tactical \u2212 strategic', 'experienceVsTrustDelta'],
+      ['Prior autonomy/sim experience', 'Uptake: tactical \u2212 strategic', 'experienceVsUptakeDelta'],
+      ['Trust in strategic', 'Strategic uptake', 'trustStrategicVsUptake'],
+      ['Trust in tactical', 'Tactical uptake', 'trustTacticalVsUptake'],
+      ['Trust: tactical \u2212 strategic', 'Uptake: tactical \u2212 strategic', 'trustDeltaVsUptakeDelta']
+    ];
+    var ct = document.getElementById('c-corr');
+    var rowsHtml = CORRS.map(function (row) {
+      var v = A.correlations[row[2]] || { n: 0, r: null };
+      var strength = v.r === null ? '' : Math.abs(v.r) >= 0.5 ? 'moderate' : Math.abs(v.r) >= 0.3 ? 'weak' : 'none to speak of';
+      return '<tr' + (v.r === null ? ' class="dim"' : '') + '><td class="l">' + row[0] + '</td>' +
+        '<td class="l">' + row[1] + '</td>' +
+        '<td class="num">' + (v.r === null ? '\u2014' : rr(v.r)) + '</td>' +
+        '<td class="num">' + v.n + '</td>' +
+        '<td class="l">' + (v.r === null ? (v.n < 3 ? 'too few people' : 'no variance') : strength) + '</td></tr>';
+    }).join('');
+    ct.innerHTML = '<table><thead><tr><th class="l">Disposition or attitude</th>' +
+      '<th class="l">Outcome</th><th>r</th><th>n</th><th class="l">Reads as</th></tr></thead><tbody>' +
+      rowsHtml + '</tbody></table>';
+    var expT = A.correlations.experienceVsTrustTactical, expS = A.correlations.experienceVsTrustStrategic;
+    document.getElementById('t-corr').innerHTML = (expT.r !== null && expS.r !== null)
+      ? 'The one asymmetry with more than two people behind it: prior autonomy and simulation ' +
+        'experience tracks trust in the <b>tactical</b> assistant (r = ' + rr(expT.r) + ', n = ' +
+        expT.n + ') but not the strategic one (r = ' + rr(expS.r) + '). If that holds up with real ' +
+        'numbers it is the shape the AIAS question is after \u2014 disposition moving trust in one tier ' +
+        'more than the other. It is six people. Treat it as a hypothesis to power for, not a result.'
+      : 'Not enough participants in this window to compute the experience contrasts.';
+
+    // 6. Battery item table.
+    var bt = document.getElementById('c-battery');
+    if (!withBattery.length) {
+      bt.innerHTML = '<p class="empty">No participant in this window completed the pre-study battery ' +
+        '(it arrives in study-v1.3).</p>';
+      document.getElementById('t-battery').innerHTML = '';
+    } else {
+      var ITEMS = [
+        ['AIAS-4 \u00b7 10-point', 'aias_improve_life', 'AI will improve my life'],
+        ['', 'aias_improve_work', 'AI will improve my work'],
+        ['', 'aias_future_use', 'I will use AI in the future'],
+        ['', 'aias_positive_humanity', 'AI is positive for humanity'],
+        ['Verification \u00b7 7-point', 'verif_check_before_relying', 'I check its output before relying on it'],
+        ['', 'verif_comfortable_unreviewed', 'Comfortable acting on unreviewed output (R)'],
+        ['', 'verif_want_reasoning', 'I want to see its reasoning'],
+        ['', 'verif_happy_unsupervised', 'Happy to let it run unsupervised (R)'],
+        ['', 'verif_overconfident', 'These systems are overconfident'],
+        ['', 'verif_reliable_no_check', 'Reliable enough not to check (R)'],
+        ['', 'verif_hard_to_detect_errors', 'Its errors are hard to spot (not in composite)'],
+        ['Delegation \u00b7 7-point', 'deleg_human_final_say', 'A human should have the final say'],
+        ['', 'deleg_trust_suggest_over_decide', 'I trust one that suggests over one that decides'],
+        ['', 'deleg_prefer_self_even_if_slower', 'I would rather do it myself, even if slower'],
+        ['', 'deleg_not_when_lives_at_stake', 'Not when lives are at stake'],
+        ['', 'deleg_urgent_better_than_nothing', 'When urgent, its call beats nothing (R)']
+      ];
+      var head = '<table><thead><tr><th class="l">Block</th><th class="l">Item</th>' +
+        withBattery.map(function (p) { return '<th>' + p.pid + '</th>'; }).join('') +
+        '</tr></thead><tbody>';
+      var body = ITEMS.map(function (it) {
+        return '<tr><td class="l num">' + it[0] + '</td><td class="l">' + it[2] + '</td>' +
+          withBattery.map(function (p) {
+            var v = p.raw[it[1]];
+            return '<td class="num">' + (v === undefined ? '' : v) + '</td>';
+          }).join('') + '</tr>';
+      }).join('');
+      var comp = [['Composite', 'AIAS-4 mean (higher = more positive)', 'aias'],
+                  ['Composite', 'Verification propensity (higher = checks more)', 'verification'],
+                  ['Composite', 'Delegation boundary (higher = delegates less)', 'delegation']]
+        .map(function (row) {
+          return '<tr><td class="l num">' + row[0] + '</td><td class="l"><b>' + row[1] + '</b></td>' +
+            withBattery.map(function (p) {
+              return '<td class="num"><b>' + (p[row[2]] === null ? '' : p[row[2]].toFixed(2)) + '</b></td>';
+            }).join('') + '</tr>';
+        }).join('');
+      bt.innerHTML = head + body + comp + '</tbody></table>';
+      document.getElementById('t-battery').innerHTML =
+        'Both respondents want to <b>verify</b> (' +
+        withBattery.map(function (p) { return p.verification.toFixed(1); }).join(' and ') +
+        ' out of 7) while being positive about AI overall \u2014 the combination the two-tier design is ' +
+        'built for: happy to be given a proposal, unwilling to hand over the decision. The two ' +
+        'delegation items that map directly onto the tiers (final say, suggests-over-decides) both ' +
+        'sit at 6\u20137 for both people.';
+    }
+  }
+
+  // Grouped bars for a fixed 0\u20137 survey scale, one pair of bars per item.
+  function renderItemBars(host, legendHost, rows) {
+    host.innerHTML = ''; legendHost.innerHTML = '';
+    if (!rows.length) { host.innerHTML = '<p class="empty">No trust responses in this window.</p>'; return; }
+    var W = Math.max(host.clientWidth || 420, 300);
+    var rowH = 30, m = { t: 8, r: 40, b: 26, l: Math.min(178, W * 0.42) };
+    var H = m.t + rows.length * rowH + m.b;
+    var pw = W - m.l - m.r;
+    var x = function (v) { return m.l + (v / 7) * pw; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: x(t), x2: x(t), y1: m.t, y2: m.t + rows.length * rowH,
+        stroke: t === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      if (pw > 240 || t === 0 || t === 7) {
+        svg.appendChild(text(x(t), H - m.b + 16, t, { anchor: 'middle', mono: true, size: 10 }));
+      }
+    });
+
+    rows.forEach(function (r, i) {
+      var top = m.t + i * rowH + 3;
+      svg.appendChild(text(m.l - 10, top + 12, r.label, { anchor: 'end', size: 11.5, fill: 'var(--ink-2)' }));
+      [{ v: r.s, c: TIER.strategic.color, n: TIER.strategic.label },
+       { v: r.t, c: TIER.tactical.color, n: TIER.tactical.label }].forEach(function (b, bi) {
+        if (b.v === null) return;
+        var yy = top + bi * 11;
+        var bar = svgEl('rect', { x: m.l, y: yy, width: Math.max(x(b.v) - m.l, 2), height: 9, rx: 2, fill: b.c });
+        bindTip(bar, b.n + ' \u2014 ' + r.label, b.v.toFixed(2) + ' of 7');
+        svg.appendChild(bar);
+      });
+      var gap = (r.s !== null && r.t !== null) ? (r.t - r.s) : null;
+      if (gap !== null) {
+        svg.appendChild(text(W - m.r + 6, top + 14, (gap >= 0 ? '+' : '') + gap.toFixed(1),
+          { mono: true, size: 10, fill: 'var(--ink-muted)' }));
+      }
+    });
+    host.appendChild(svg);
+    [TIER.strategic, TIER.tactical].forEach(function (t) {
+      var el = document.createElement('span');
+      el.innerHTML = '<i style="background:' + t.color + '"></i>';
+      el.appendChild(document.createTextNode(t.label));
+      legendHost.appendChild(el);
+    });
+  }
+
+  // -- render everything for the selected cohort ---------------------
+  function draw() {
+    var c = cur;
+
+    // rail
+    var rail = document.getElementById('rail');
+    rail.innerHTML = '';
+    COHORTS.forEach(function (co, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', co.key === c.key ? 'true' : 'false');
+      b.innerHTML = '<span class="rail-w">Window ' + (i + 1) + '</span>' +
+        '<span class="rail-t">' + co.short + '</span>' +
+        '<span class="rail-n">' + co.overall.sessions + ' sess \u00b7 ' + co.overall.participants + ' ppl</span>';
+      b.addEventListener('click', function () { cur = co; draw(); });
+      rail.appendChild(b);
+    });
+    document.getElementById('cohort-badge').textContent =
+      c.dateRange[0] + ' \u2192 ' + c.dateRange[1];
+    document.getElementById('cohort-note').innerHTML =
+      '<b>' + c.label + '.</b> ' + c.note + ' Tactical agent mode: ' +
+      c.overall.tacticalModes.join(' + ') + '. Participants: ' + c.overall.participantIds.join(', ') + '.';
+
+    // Masthead tiles describe the WHOLE dataset -- they sit above the window selector, so scoping
+    // them to the selection would silently redefine what the header is counting.
+    var o = c.overall;
+    var g = DATA.cohorts[0].overall;
+    var tiles = [
+      { v: g.participants, k: 'participants' },
+      { v: g.sessions, k: 'sessions (8 min each)' },
+      { v: g.strategicUptake.n, k: 'allocation decisions' },
+      { v: g.tacticalUnmodified.n, k: 'tactical plans confirmed' },
+      { v: g.recoveryAgent.n, k: 'failure recoveries' },
+      { v: '\u03b5 = 0', k: 'both assistants perfect' }
+    ];
+    var th = document.getElementById('tiles');
+    th.innerHTML = '';
+    tiles.forEach(function (t) {
+      var d = document.createElement('div');
+      d.className = 'tile';
+      d.innerHTML = '<span class="v">' + t.v + '</span><span class="k">' + t.k + '</span>';
+      th.appendChild(d);
+    });
+
+    // 1. uptake
+    renderProportion(
+      document.getElementById('c-uptake'),
+      document.getElementById('l-uptake'),
+      { groups: SCEN.map(function (s) {
+          return { label: s.label, bars: [
+            { name: TIER.strategic.label, color: TIER.strategic.color, rate: c[s.key].strategicUptake },
+            { name: TIER.tactical.label, color: TIER.tactical.color, rate: c[s.key].tacticalUptake }
+          ] };
+        }) });
+    document.getElementById('t-uptake').innerHTML =
+      gapSentence(o.strategicUptake, o.tacticalUptake, 'The strategy card', 'The tactical planner', 'uptake') +
+      ' Pooled across both scenarios: strategic ' + pc(o.strategicUptake.p) + ' (' + frac(o.strategicUptake) +
+      ' allocations), tactical ' + pc(o.tacticalUptake.p) + ' (' + frac(o.tacticalUptake) + ' plans).' +
+      (o.tacticalUptakeSessions < o.sessions
+        ? ' <b>' + (o.sessions - o.tacticalUptakeSessions) + ' session' +
+          (o.sessions - o.tacticalUptakeSessions === 1 ? '' : 's') +
+          ' excluded</b> from the tactical bar: that build predates the consultation counter.'
+        : '');
+
+    // 2. acceptance
+    renderProportion(
+      document.getElementById('c-accept'),
+      document.getElementById('l-accept'),
+      { groups: SCEN.map(function (s) {
+          return { label: s.label, bars: [
+            { name: TIER.strategic.label, color: TIER.strategic.color, rate: c[s.key].strategicUnedited },
+            { name: TIER.tactical.label, color: TIER.tactical.color, rate: c[s.key].tacticalUnmodified }
+          ] };
+        }) });
+    var accGap = has(o.strategicUnedited) && has(o.tacticalUnmodified)
+      ? Math.round((o.strategicUnedited.p - o.tacticalUnmodified.p) * 100) : null;
+    document.getElementById('t-accept').innerHTML =
+      (accGap === null ? '' : 'A strategy card that is taken is taken <b>whole</b> \u2014 ' +
+        pc(o.strategicUnedited.p) + ' of ' + o.strategicUnedited.n +
+        ' went out with no edit. Tactical plans survive contact far less often: ' +
+        pc(o.tacticalUnmodified.p) + ' of ' + o.tacticalUnmodified.n + ', a gap of <b>' + accGap +
+        ' points</b>.') +
+      ' The strategic card is a single number per drone type; the tactical plan is a dozen individual assignments, so there is far more to disagree with.';
+
+    // 3. latency
+    renderRanges(document.getElementById('c-latency'), [
+      { label: 'Strategic Heavy \u2014 strategy card', color: TIER.strategic.color, stat: c.strategic.strategicLatency },
+      { label: 'Strategic Heavy \u2014 tactical plan', color: TIER.tactical.color, stat: c.strategic.tacticalLatency },
+      { label: 'Tactical Heavy \u2014 strategy card', color: TIER.strategic.color, stat: c.tactical.strategicLatency },
+      { label: 'Tactical Heavy \u2014 tactical plan', color: TIER.tactical.color, stat: c.tactical.tacticalLatency }
+    ], 's');
+    var sl = o.strategicLatency, tl = o.tacticalLatency;
+    document.getElementById('t-latency').innerHTML = (sl && tl)
+      ? 'The tactical decision takes <b>' + (Math.round((tl.median / sl.median) * 10) / 10) +
+        '\u00d7</b> as long as the strategic one at the median (' + n1(tl.median) + 's vs ' +
+        n1(sl.median) + 's), and its spread is far wider \u2014 the tail is where a plan was rebuilt by hand.'
+      : '';
+
+    // 4. completion
+    renderDots(document.getElementById('c-completion'), SCEN.map(function (s) {
+      var pp = c[s.key].perParticipant.filter(function (p) { return p.completion !== null && p.completion !== undefined; });
+      return { label: s.label, color: s.key === 'strategic' ? TIER.strategic.color : TIER.tactical.color,
+               values: pp.map(function (p) { return p.completion; }),
+               labels: pp.map(function (p) { return p.pid + ' \u00b7 ' + p.version; }) };
+    }), '%');
+    var cs = c.strategic.completion, ct = c.tactical.completion;
+    document.getElementById('t-completion').innerHTML = (cs && ct)
+      ? 'Operators finish <b>' + pc(cs.median) + '</b> of the work they take on in Strategic Heavy but <b>' +
+        pc(ct.median) + '</b> in Tactical Heavy \u2014 a gap the achievability harness does not predict, since it ' +
+        'calibrates both scenarios to about 83% for its own automated operator.'
+      : 'Only builds from study-v1.2 log task outcomes, so completion cannot be scored in this window.';
+
+    // 5. mission time
+    renderDots(document.getElementById('c-misstime'), SCEN.map(function (s) {
+      var pp = c[s.key].perParticipant.filter(function (p) { return p.meanMissionTime; });
+      return { label: s.label, color: s.key === 'strategic' ? TIER.strategic.color : TIER.tactical.color,
+               values: pp.map(function (p) { return p.meanMissionTime; }),
+               labels: pp.map(function (p) { return p.pid + ' \u00b7 ' + p.version; }) };
+    }), 's');
+    var ms = c.strategic.meanMissionTime, mt = c.tactical.meanMissionTime;
+    document.getElementById('t-misstime').innerHTML = (ms && mt)
+      ? 'A Tactical Heavy mission takes <b>' + n0(mt.median - ms.median) + 's longer</b> at the median (' +
+        n0(mt.median) + 's vs ' + n0(ms.median) + 's). Bigger missions, more drones to place, and a ' +
+        'planning step that has to finish before anything starts.'
+      : '';
+
+    // 6. card mix
+    renderStack(document.getElementById('c-mix'), document.getElementById('l-mix'),
+      SCEN.map(function (s) {
+        var m = c[s.key].cardMix;
+        return { label: s.label, values: m, total: m.aggressive + m.conservative + m.manual };
+      }),
+      [{ key: 'aggressive', label: 'Aggressive card', color: 'var(--s1)' },
+       { key: 'conservative', label: 'Conservative card', color: '#86b6ef', ink: 'var(--ink)' },
+       { key: 'manual', label: 'Built by hand', color: 'var(--neutral-mark)' }]);
+    var mixS = c.strategic.cardMix, mixT = c.tactical.cardMix;
+    var ratio = function (m) { return m.conservative ? (Math.round((m.aggressive / m.conservative) * 10) / 10) + ':1' : (m.aggressive ? 'all aggressive' : '\u2014'); };
+    document.getElementById('t-mix').innerHTML =
+      'Aggressive-to-Conservative among cards taken: <b>' + ratio(mixS) + '</b> in Strategic Heavy, <b>' +
+      ratio(mixT) + '</b> in Tactical Heavy. When missions are large, operators stop reaching for the ' +
+      'card that empties the reserve fastest.';
+
+    // 7. recovery
+    renderProportion(document.getElementById('c-recovery'), null,
+      { groups: SCEN.map(function (s) {
+          return { label: s.label, bars: [
+            { name: 'Recovery used the assistant', color: TIER.tactical.color, rate: c[s.key].recoveryAgent }
+          ] };
+        }) });
+    document.getElementById('t-recovery').innerHTML = has(o.recoveryAgent)
+      ? pc(o.recoveryAgent.p) + ' of ' + o.recoveryAgent.n + ' recoveries in this window used the ' +
+        'assistant\'s suggestion. <b>Read this against the build, not against trust</b> \u2014 the recovery ' +
+        'planner\'s Suggest button returned nothing at all until study-v1.5.'
+      : '';
+
+    // 8. slopes
+    var slopeSpecs = [
+      { key: 'completion', title: 'Work finished', sub: 'of the work taken on', pct: true, fmt: pc },
+      { key: 'tacticalUnmodified', title: 'Tactical plans accepted unchanged', sub: 'share of confirmed plans', pct: true, fmt: pc },
+      { key: 'strategicUptake', title: 'Strategy cards taken', sub: 'share of allocations', pct: true, fmt: pc },
+      { key: 'meanMissionTime', title: 'Mean mission time', sub: 'seconds', pct: false, fmt: function (v) { return n0(v) + 's'; } }
+    ];
+    // Two passes: every card has to be in the grid before any chart measures its own width, or the
+    // first card measures the full row and its SVG gets scaled down to a fraction of its type size.
+    var sh = document.getElementById('slopes');
+    sh.innerHTML = '';
+    var pending = [];
+    slopeSpecs.forEach(function (sp) {
+      var pairs = c.contrasts.filter(function (p) { return p[sp.key]; })
+        .map(function (p) {
+          return { pid: p.pid, version: p.version, strategic: p[sp.key].strategic,
+                   tactical: p[sp.key].tactical, delta: p[sp.key].delta };
+        });
+      var fig = document.createElement('figure');
+      var dir = countDirection(pairs);
+      fig.innerHTML = '<figcaption><p class="fig-title">' + sp.title + '</p>' +
+        '<p class="fig-sub">' + sp.sub + ' \u00b7 one line per participant</p></figcaption>' +
+        '<div class="chart"></div>' +
+        (pairs.length ? '<p class="fig-take"><b>' + Math.max(dir.down, dir.up) + ' of ' + dir.n +
+          '</b> participants moved ' + (dir.down >= dir.up ? 'down' : 'up') +
+          ' going into Tactical Heavy.</p>' : '');
+      sh.appendChild(fig);
+      pending.push({ host: fig.querySelector('.chart'), pairs: pairs, sp: sp });
+    });
+    pending.forEach(function (p) { renderSlope(p.host, p.pairs, p.sp); });
+
+    // 9. disposition, trust, and use
+    renderAttitudes(c);
+
+    // 10. windows
+    renderWindows(document.getElementById('c-wintake'), document.getElementById('l-wintake'), [
+      { name: TIER.strategic.label, color: TIER.strategic.color, get: function (co) { return co.overall.strategicUptake; } },
+      { name: TIER.tactical.label, color: TIER.tactical.color, get: function (co) { return co.overall.tacticalUptake; } }
+    ]);
+    var spanOf = function (get) {
+      var ps = COHORTS.map(get).filter(has).map(function (r) { return r.p; });
+      return ps.length ? pc(Math.min.apply(null, ps)) + '\u2013' + pc(Math.max.apply(null, ps)) : '\u2014';
+    };
+    document.getElementById('t-wintake').innerHTML =
+      'Across the six windows strategic uptake spans <b>' +
+      spanOf(function (co) { return co.overall.strategicUptake; }) + '</b> and tactical uptake <b>' +
+      spanOf(function (co) { return co.overall.tacticalUptake; }) + '</b>, with no consistent ' +
+      'direction. The narrow windows rest on one or two people, so this is a description of who was ' +
+      'in the room, not a trend in operator behaviour.';
+
+    renderWindows(document.getElementById('c-winrec'), null, [
+      { name: 'Recovery used the assistant', color: TIER.tactical.color, get: function (co) { return co.overall.recoveryAgent; } }
+    ]);
+    document.getElementById('t-winrec').innerHTML =
+      'The one monotone series in the dataset \u2014 and it is <b>a bug being fixed</b>, not trust being ' +
+      'earned. Before study-v1.5 the recovery planner\'s Suggest button could return nothing; the ' +
+      'zero on the left is the software, not the operator.';
+
+    // 10. caveats
+    var cav = document.getElementById('caveats');
+    cav.innerHTML = '';
+    var items = [
+      ['crit', 'n', 'This is <b>' + DATA.cohorts[0].overall.participants + ' people</b>. ' +
+        'Nothing here is a hypothesis test. The Wilson intervals on every bar are wide on purpose: at ' +
+        'these counts a two-bar gap of twenty points is routinely noise. Treat every figure as a ' +
+        'description of the sessions collected, and use the direction of the within-participant lines ' +
+        'over the level of any bar.'],
+      ['warn', 'Pooling', 'The tactical agent ran in <b>greedy</b> mode for every pre-tag session and ' +
+        '<b>plan-all</b> from study-v1.0. Greedy committed one task at a time, so its "plan" was a ' +
+        'single step and agreeing with it was nearly free; plan-all proposes the whole mission. ' +
+        'Tactical acceptance must not be pooled across that boundary \u2014 which is exactly why the ' +
+        'Pilot and v1.0+ windows are separated rather than summed.'],
+      ['warn', 'Scoring', 'Session <b>score</b> is not comparable across study-v1.3, which deliberately ' +
+        'made scoring friendlier. It is deliberately absent from every figure here; completion rate ' +
+        'and mission time carry the performance story instead.'],
+      ['note', 'Order', 'Scenario is partly confounded with session order \u2014 each participant plays one ' +
+        'scenario then the other. The split is close to balanced overall (' + orderBlurb() + '), and ' +
+        'uptake is modestly higher in second sessions on both tiers, so a scenario gap that runs the ' +
+        'same way for both orders is the safer read.'],
+      ['warn', 'Surveys', 'The pre-study AI-attitude battery (AIAS-4, verification propensity, ' +
+        'delegation boundary) only exists from <b>study-v1.3</b>, so it covers ' +
+        DATA.cohorts[0].attitudes.withBattery + ' of the ' + DATA.cohorts[0].overall.participants +
+        ' participants \u2014 nothing about AI scepticism can be estimated yet. Two more participants ' +
+        'left every trust and workload slider on its default; they are flagged and dropped from the ' +
+        'survey figures, but their behavioural data stands.'],
+      ['note', 'Missing \u2260 zero', 'Fields that a build did not log are dropped from their figure, never ' +
+        'counted as zero. The earliest participant has no tactical consultation counter, the pre-v1.2 ' +
+        'builds log no task outcomes, and the drone-failure hazard only fired correctly on every ' +
+        'display from study-v1.4.']
+    ];
+    items.forEach(function (it) {
+      var d = document.createElement('div');
+      d.className = 'callout ' + it[0];
+      d.innerHTML = '<span class="mark">' + it[1] + '</span><div><p>' + it[2] + '</p></div>';
+      cav.appendChild(d);
+    });
+
+    // 11. table
+    var rows = DATA.cohorts[0].overall.perParticipant.slice();
+    var inWindow = {};
+    c.overall.perParticipant.forEach(function (p) { inWindow[p.pid + '|' + p.scenario] = 1; });
+    var tbl = document.getElementById('sessions');
+    tbl.innerHTML =
+      '<thead><tr><th class="l">Participant</th><th class="l">Scenario</th><th class="l">Build</th>' +
+      '<th>Cards taken</th><th>Tactical uptake</th><th>Completion</th><th>Mission time</th>' +
+      '<th>Failures</th><th>Drags</th><th>TLX</th></tr></thead>';
+    var tb = document.createElement('tbody');
+    rows.sort(function (a, b) { return a.pid < b.pid ? -1 : a.pid > b.pid ? 1 : (a.scenario < b.scenario ? -1 : 1); });
+    rows.forEach(function (p) {
+      var tr = document.createElement('tr');
+      if (!inWindow[p.pid + '|' + p.scenario]) tr.className = 'dim';
+      var chipCol = p.scenario === 'strategic' ? 'var(--s1)' : 'var(--s2)';
+      tr.innerHTML =
+        '<td class="l num">' + p.pid + '</td>' +
+        '<td class="l"><span class="scen-chip" style="color:' + chipCol + '">' +
+          (p.scenario === 'strategic' ? 'STRAT-HEAVY' : 'TAC-HEAVY') + '</span></td>' +
+        '<td class="l num">' + p.version + '</td>' +
+        '<td class="num">' + pc(p.strategicUptake) + '</td>' +
+        '<td class="num">' + (p.tacticalUptake === null || p.tacticalUptake === undefined ? '' : pc(p.tacticalUptake)) + '</td>' +
+        '<td class="num">' + (p.completion === null || p.completion === undefined ? '' : pc(p.completion)) + '</td>' +
+        '<td class="num">' + (p.meanMissionTime ? n0(p.meanMissionTime) + 's' : '') + '</td>' +
+        '<td class="num">' + p.failures + '</td>' +
+        '<td class="num">' + (p.drags || '') + '</td>' +
+        '<td class="num">' + n1(p.tlx) + '</td>';
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+  }
+
+  function orderBlurb() {
+    var all = DATA.cohorts[0];
+    var s1 = all.orderEffect[0], s2 = all.orderEffect[1];
+    if (!s1 || !s2) return 'order data unavailable';
+    return s1.scenarios.strategic + ' played Strategic Heavy first, ' +
+           s1.scenarios.tactical + ' played Tactical Heavy first';
+  }
+
+  draw();
+  var rt;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(draw, 140);
+  });
+})();
+</script>

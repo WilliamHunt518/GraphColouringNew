@@ -1,0 +1,1553 @@
+<title>Two Tiers, Two Scenarios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --plane: #f3f3f0;
+    --surface: #fcfcfb;
+    --surface-2: #ecebe6;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --rule: rgba(11, 11, 11, 0.11);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --neutral-mark: #a9a79f;
+    --good: #0ca30c;
+    --warn: #fab219;
+    --crit: #d03b3b;
+    --shadow: 0 1px 2px rgba(11, 11, 11, 0.05);
+
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #232321;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --rule: rgba(255, 255, 255, 0.11);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --neutral-mark: #6e6d67;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --rule: rgba(255, 255, 255, 0.11);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --neutral-mark: #6e6d67;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ── masthead ─────────────────────────────────────────────────── */
+  header.masthead { padding: 56px 0 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.1; letter-spacing: -0.015em; margin: 0 0 18px; text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 17px; line-height: 1.62; color: var(--ink-2);
+    max-width: 62ch; margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  .tiles { display: flex; flex-wrap: wrap; gap: 0; margin: 30px 0 0; border-top: 1px solid var(--rule); }
+  .tile { flex: 1 1 130px; padding: 16px 20px 14px 0; }
+  .tile .v {
+    font-family: var(--mono); font-weight: 600; font-size: 25px; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; display: block; line-height: 1.15;
+  }
+  .tile .k {
+    font-size: 12px; color: var(--ink-muted); margin-top: 3px; display: block;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── cohort rail ──────────────────────────────────────────────── */
+  .rail-shell {
+    position: sticky; top: 0; z-index: 20; background: var(--plane);
+    border-bottom: 1px solid var(--rule); padding: 14px 0 15px;
+  }
+  .rail-label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--ink-muted); margin: 0 0 10px;
+  }
+  .rail { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 3px; }
+  .rail button {
+    flex: 0 0 auto; text-align: left; cursor: pointer; font-family: var(--sans);
+    background: var(--surface); color: var(--ink-2);
+    border: 1px solid var(--rule); border-radius: 3px;
+    padding: 8px 13px 9px; min-width: 116px;
+    transition: border-color .12s, color .12s, background .12s;
+  }
+  .rail button:hover { border-color: var(--axis); color: var(--ink); }
+  .rail button:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+  .rail button[aria-pressed="true"] {
+    background: var(--ink); color: var(--surface); border-color: var(--ink);
+  }
+  .rail button[aria-pressed="true"] .rail-n { color: var(--surface); opacity: .72; }
+  .rail .rail-w {
+    display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; opacity: .62; margin-bottom: 3px;
+  }
+  .rail .rail-t { display: block; font-size: 13.5px; font-weight: 500; line-height: 1.25; }
+  .rail-n { display: block; font-family: var(--mono); font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
+
+  .cohort-note {
+    display: flex; gap: 12px; align-items: baseline; margin: 15px 0 34px;
+    font-size: 13.5px; color: var(--ink-2); max-width: 92ch;
+  }
+  .cohort-note .badge {
+    flex: 0 0 auto; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-muted);
+    border: 1px solid var(--rule); border-radius: 2px; padding: 2px 6px;
+  }
+
+  /* ── sections ─────────────────────────────────────────────────── */
+  section { margin: 0 0 52px; }
+  h2 {
+    font-family: var(--serif); font-size: 25px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 6px; text-wrap: balance;
+  }
+  .sec-intro { color: var(--ink-2); max-width: 68ch; margin: 0 0 24px; font-size: 14.5px; }
+  .sec-head { border-top: 2px solid var(--ink); padding-top: 14px; margin-bottom: 22px; }
+  .sec-head .eyebrow { margin-bottom: 8px; }
+
+  .grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .grid.two { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+
+  figure {
+    margin: 0; background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 4px; padding: 18px 18px 14px; box-shadow: var(--shadow);
+  }
+  figure.full { grid-column: 1 / -1; }
+  figcaption { margin: 0 0 2px; }
+  .fig-title { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; margin: 0; }
+  .fig-sub { font-size: 12.5px; color: var(--ink-muted); margin: 3px 0 0; line-height: 1.45; }
+  .fig-take {
+    font-size: 13px; color: var(--ink-2); margin: 12px 0 0; padding-top: 11px;
+    border-top: 1px solid var(--grid); line-height: 1.5;
+  }
+  .fig-take b { color: var(--ink); font-weight: 600; }
+  .chart { margin-top: 14px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+  .legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+
+  .empty {
+    font-size: 13px; color: var(--ink-muted); font-style: italic;
+    padding: 26px 0; text-align: center;
+  }
+
+  /* ── callouts ─────────────────────────────────────────────────── */
+  .callout {
+    display: flex; gap: 13px; border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--surface); padding: 15px 17px; margin: 0 0 14px;
+  }
+  .callout .mark {
+    flex: 0 0 auto; font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase; padding-top: 2px;
+  }
+  .callout.warn .mark { color: #8a6100; }
+  .callout.crit .mark { color: var(--crit); }
+  .callout.note .mark { color: var(--ink-muted); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .callout.warn .mark { color: var(--warn); } }
+  :root[data-theme="dark"] .callout.warn .mark { color: var(--warn); }
+  .callout p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+  .callout p + p { margin-top: 8px; }
+  .callout b { color: var(--ink); font-weight: 600; }
+
+  /* ── table ────────────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: right; padding: 7px 11px; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  th:first-child, td:first-child, th.l, td.l { text-align: left; }
+  thead th {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-muted); position: sticky; top: 0;
+    background: var(--surface); border-bottom: 1px solid var(--axis);
+  }
+  tbody td { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  tbody td.num { font-family: var(--mono); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.dim td { color: var(--ink-muted); }
+  .scen-chip {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em;
+    padding: 1px 5px; border-radius: 2px; border: 1px solid var(--rule);
+  }
+
+  /* ── tooltip ──────────────────────────────────────────────────── */
+  #tip {
+    position: fixed; z-index: 100; pointer-events: none; opacity: 0;
+    transition: opacity .1s; background: var(--ink); color: var(--plane);
+    font-size: 12px; line-height: 1.5; padding: 7px 10px; border-radius: 3px;
+    max-width: 250px; box-shadow: 0 3px 12px rgba(0, 0, 0, .22);
+  }
+  #tip .t { font-weight: 600; display: block; }
+  #tip .m { font-family: var(--mono); font-size: 11.5px; opacity: .85; }
+
+  footer {
+    border-top: 1px solid var(--rule); padding-top: 20px; margin-top: 10px;
+    font-size: 12.5px; color: var(--ink-muted); line-height: 1.6;
+  }
+  footer code { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">SAR drone allocation · hierarchical assistant trust study</p>
+    <h1>Two Tiers, Two Scenarios</h1>
+    <p class="standfirst">
+      Every session collected so far, pooled instead of profiled one participant at a time. The
+      question here is not who did well — it is whether operators treat the
+      <strong>Strategic Assistant</strong> and the <strong>Tactical Assistant</strong> differently,
+      and whether that changes between the <strong>Strategic&nbsp;Heavy</strong> and
+      <strong>Tactical&nbsp;Heavy</strong> scenarios. Because the build moved underneath the data
+      several times, every figure is scoped to a build window you choose.
+    </p>
+    <div class="tiles" id="tiles"></div>
+  </header>
+
+  <div class="rail-shell">
+    <p class="rail-label">Build window — every figure below is scoped to this selection</p>
+    <div class="rail" id="rail" role="group" aria-label="Build window"></div>
+  </div>
+  <div class="cohort-note"><span class="badge" id="cohort-badge"></span><span id="cohort-note"></span></div>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question one</p>
+      <h2>Do operators treat the two assistants differently?</h2>
+      <p class="sec-intro">
+        Both tiers offer the same bargain — take what the assistant proposes, or build it yourself.
+        <b>Uptake</b> asks whether the assistant was invited into the decision at all. <b>Acceptance</b>
+        asks whether what it proposed then went out unchanged. They are not the same question, and
+        the data separates them sharply.
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Uptake — was the assistant invited in?</p>
+          <p class="fig-sub">Strategic: a strategy card was taken instead of a manual bundle being built.
+            Tactical: the agent's plan was pulled into the planner at least once (it starts empty).</p>
+        </figcaption>
+        <div class="chart" id="c-uptake"></div>
+        <div class="legend" id="l-uptake"></div>
+        <p class="fig-take" id="t-uptake"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Acceptance — did it go out unchanged?</p>
+          <p class="fig-sub">Strategic: the card was deployed exactly as shown, with no manual edit.
+            Tactical: the confirmed plan matched the agent's on every task the agent had planned.</p>
+        </figcaption>
+        <div class="chart" id="c-accept"></div>
+        <div class="legend" id="l-accept"></div>
+        <p class="fig-take" id="t-accept"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">Time spent on the decision</p>
+          <p class="fig-sub">Seconds from the panel opening to the operator committing. The bar spans
+            the interquartile range, the dot is the median, the thin line the full spread.</p>
+        </figcaption>
+        <div class="chart" id="c-latency"></div>
+        <p class="fig-take" id="t-latency"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question two</p>
+      <h2>Does the scenario change the bargain?</h2>
+      <p class="sec-intro">
+        Strategic Heavy sends many small missions; Tactical Heavy sends fewer, larger ones. The
+        headless harness calibrates both to roughly equal achievability. Operators do not experience
+        them as equal.
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Work finished, of the work taken on</p>
+          <p class="fig-sub">Tasks completed ÷ tasks on missions the operator actually allocated.
+            One dot per session; the rule is the median.</p>
+        </figcaption>
+        <div class="chart" id="c-completion"></div>
+        <p class="fig-take" id="t-completion"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Mean time to finish a mission</p>
+          <p class="fig-sub">Seconds from allocation to the mission's last task closing. One dot per
+            session; sessions that finished no mission at all are omitted.</p>
+        </figcaption>
+        <div class="chart" id="c-misstime"></div>
+        <p class="fig-take" id="t-misstime"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Which strategy the operator committed to</p>
+          <p class="fig-sub">Every allocation decision in the window, by what was chosen.</p>
+        </figcaption>
+        <div class="chart" id="c-mix"></div>
+        <div class="legend" id="l-mix"></div>
+        <p class="fig-take" id="t-mix"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Recovery plans that used the assistant</p>
+          <p class="fig-sub">After a drone failure, the share of recoveries built with the planner's
+            Suggest button rather than by hand.</p>
+        </figcaption>
+        <div class="chart" id="c-recovery"></div>
+        <p class="fig-take" id="t-recovery"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question two, controlled</p>
+      <h2>Each participant against themselves</h2>
+      <p class="sec-intro">
+        Every participant ran both scenarios, so their own pair controls for skill — the comparison
+        that survives a sample this small. Each line is one person moving from their Strategic Heavy
+        session to their Tactical Heavy one.
+      </p>
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>Higher in Tactical Heavy</span>
+        <span><i style="background:var(--crit)"></i>Lower in Tactical Heavy</span>
+        <span><i style="background:var(--neutral-mark)"></i>Unchanged</span>
+      </div>
+    </div>
+    <div class="grid" id="slopes"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question three</p>
+      <h2>Does disposition predict which assistant you lean on?</h2>
+      <p class="sec-intro">
+        Three things were measured per person: how they feel about AI in general (before they ever
+        saw the app), how much they trusted each assistant (after every session), and how often they
+        actually used each one. The pre-study battery only exists on builds from
+        <b>study-v1.3</b> onward, which is the binding constraint on everything in this section.
+      </p>
+      <div id="battery-status"></div>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Trust in each assistant, per person</p>
+          <p class="fig-sub">Mean of six 7-point items (confident, would follow, performs well,
+            reliable, trust, useful), averaged over that person's sessions.</p>
+        </figcaption>
+        <div class="chart" id="c-trustslope"></div>
+        <p class="fig-take" id="t-trustslope"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Which part of trust differs</p>
+          <p class="fig-sub">The same six items, one bar per assistant, averaged across participants.
+            The figure at the right of each pair is tactical minus strategic.</p>
+        </figcaption>
+        <div class="chart" id="c-trustitems"></div>
+        <div class="legend" id="l-trustitems"></div>
+        <p class="fig-take" id="t-trustitems"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Stated trust against actual use</p>
+          <p class="fig-sub">Relative trust (tactical minus strategic) against relative uptake.
+            Up and to the right means preferring the tactical assistant on both measures.</p>
+        </figcaption>
+        <div class="chart" id="c-trustuse"></div>
+        <p class="fig-take" id="t-trustuse"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">AI attitude against relative trust</p>
+          <p class="fig-sub">AIAS-4 (10-point; low = sceptical of AI in general) against how much
+            more a person trusted the tactical assistant than the strategic one.</p>
+        </figcaption>
+        <div class="chart" id="c-aias"></div>
+        <p class="fig-take" id="t-aias"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">Every disposition measure against every outcome</p>
+          <p class="fig-sub">Pearson r with the n it rests on. Nothing here is a significance test —
+            an r on five or six people is a shape, not a finding, and blank means too few people to
+            compute one at all.</p>
+        </figcaption>
+        <div class="table-wrap" id="c-corr"></div>
+        <p class="fig-take" id="t-corr"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">The pre-study battery, item by item</p>
+          <p class="fig-sub">Raw responses as logged, with reverse-keyed items marked (R) and flipped
+            only inside the composites. AIAS-4 is 10-point; the other two blocks are 7-point.</p>
+        </figcaption>
+        <div class="table-wrap" id="c-battery"></div>
+        <p class="fig-take" id="t-battery"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Across every window</p>
+      <h2>What moved as the build changed</h2>
+      <p class="sec-intro">
+        These two figures ignore the selector above and show all six windows at once, because the
+        interesting thing about them is the drift. Read them as a record of the instrument changing,
+        not only of operators changing.
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Uptake by window</p>
+          <p class="fig-sub">Both tiers, pooled across scenarios, in each build window.</p>
+        </figcaption>
+        <div class="chart" id="c-wintake"></div>
+        <div class="legend" id="l-wintake"></div>
+        <p class="fig-take" id="t-wintake"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Recovery assistance by window</p>
+          <p class="fig-sub">Share of failure recoveries built with the assistant's suggestion.</p>
+        </figcaption>
+        <div class="chart" id="c-winrec"></div>
+        <p class="fig-take" id="t-winrec"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Before you quote any of this</p>
+      <h2>What the numbers cannot carry</h2>
+    </div>
+    <div id="caveats"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">The whole dataset</p>
+      <h2>Every session, one row each</h2>
+      <p class="sec-intro">
+        Rows greyed out fall outside the selected window. Blank cells are fields the build of the day
+        did not log — never a zero.
+      </p>
+    </div>
+    <div class="table-wrap"><table id="sessions"></table></div>
+  </section>
+
+  <footer>
+    <p>
+      Generated from every complete session in <code>logs/</code> by
+      <code>scripts/agent_scenario_stats.py</code> → <code>scripts/agent_scenario_aggregate.py</code>.
+      Synthetic harness runs under <code>logs/Pilots/auto/</code> and partial mid-session snapshots are
+      excluded. Cohort boundaries follow <code>docs/STUDY_BUILD.md</code> and
+      <code>docs/SCENARIOS.md</code>; every session's own parameters are in its <code>session_start</code>
+      event. Proportion error bars are Wilson score intervals at 95%.
+    </p>
+  </footer>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="agg">__DATA__</script>
+<script>
+(function () {
+  'use strict';
+  var DATA = JSON.parse(document.getElementById('agg').textContent);
+  var COHORTS = DATA.cohorts;
+  var cur = COHORTS.find(function (c) { return c.key === 'study'; }) || COHORTS[0];
+
+  var NS = 'http://www.w3.org/2000/svg';
+  var SCEN = [
+    { key: 'strategic', label: 'Strategic Heavy' },
+    { key: 'tactical', label: 'Tactical Heavy' }
+  ];
+  var TIER = {
+    strategic: { label: 'Strategic Assistant', color: 'var(--s1)' },
+    tactical: { label: 'Tactical Assistant', color: 'var(--s2)' }
+  };
+
+  // ── tiny svg helpers ──────────────────────────────────────────────
+  function svgEl(name, attrs) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function text(x, y, s, o) {
+    o = o || {};
+    var t = svgEl('text', {
+      x: x, y: y, fill: o.fill || 'var(--ink-muted)',
+      'font-size': o.size || 11, 'text-anchor': o.anchor || 'start',
+      'font-family': o.mono ? 'var(--mono)' : 'var(--sans)',
+      'font-weight': o.weight || 400, 'dominant-baseline': o.baseline || 'auto'
+    });
+    t.textContent = s;
+    return t;
+  }
+  // Bar with 4px rounded data-end, anchored flat to the baseline.
+  function barPath(x, y, w, h, r) {
+    r = Math.min(r === undefined ? 4 : r, w / 2, Math.max(h, 0));
+    if (h <= 0.6) return 'M' + x + ' ' + (y + h) + 'h' + w;
+    return 'M' + x + ' ' + (y + h) + 'V' + (y + r) + 'a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + -r +
+      'h' + (w - 2 * r) + 'a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + r + 'V' + (y + h) + 'Z';
+  }
+
+  // ── tooltip ───────────────────────────────────────────────────────
+  var tip = document.getElementById('tip');
+  function bindTip(node, title, meta) {
+    node.style.cursor = 'default';
+    node.addEventListener('mouseenter', function () {
+      tip.innerHTML = '';
+      var t = document.createElement('span'); t.className = 't'; t.textContent = title;
+      var m = document.createElement('span'); m.className = 'm'; m.textContent = meta;
+      tip.appendChild(t); tip.appendChild(m);
+      tip.style.opacity = '1';
+    });
+    node.addEventListener('mousemove', function (e) {
+      var w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.min(e.clientX + 14, window.innerWidth - w - 8) + 'px';
+      tip.style.top = Math.max(8, e.clientY - h - 12) + 'px';
+    });
+    node.addEventListener('mouseleave', function () { tip.style.opacity = '0'; });
+  }
+
+  // ── formatting ────────────────────────────────────────────────────
+  function pc(p) { return p === null || p === undefined ? '—' : Math.round(p * 100) + '%'; }
+  function frac(r) { return r && r.n ? r.k + '/' + r.n : '—'; }
+  function n1(v) { return v === null || v === undefined ? '—' : (Math.round(v * 10) / 10).toFixed(1); }
+  function n0(v) { return v === null || v === undefined ? '—' : String(Math.round(v)); }
+  function has(r) { return !!(r && r.n); }
+
+  // ── chart: grouped proportion bars, faceted by scenario ───────────
+  function renderProportion(host, legendHost, spec) {
+    host.innerHTML = '';
+    if (legendHost) legendHost.innerHTML = '';
+    var live = spec.groups.filter(function (g) {
+      return g.bars.some(function (b) { return has(b.rate); });
+    });
+    if (!live.length) { host.innerHTML = '<p class="empty">No decisions of this kind in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 420, 300), H = 232;
+    var m = { t: 16, r: 8, b: 46, l: 34 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+    var y = function (p) { return m.t + ph - p * ph; };
+
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+      svg.appendChild(svgEl('line', {
+        x1: m.l, x2: W - m.r, y1: y(g), y2: y(g),
+        stroke: g === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(text(m.l - 8, y(g) + 4, Math.round(g * 100) + '%', { anchor: 'end', mono: true, size: 10 }));
+    });
+
+    var gw = pw / live.length;
+    live.forEach(function (g, gi) {
+      var bars = g.bars.filter(function (b) { return has(b.rate); });
+      var bw = Math.min(46, (gw - 26) / bars.length - 2);
+      var span = bars.length * bw + (bars.length - 1) * 2;
+      var x0 = m.l + gi * gw + (gw - span) / 2;
+
+      bars.forEach(function (b, bi) {
+        var x = x0 + bi * (bw + 2), r = b.rate;
+        var top = y(r.p), h = m.t + ph - top;
+        var path = svgEl('path', { d: barPath(x, top, bw, h), fill: b.color, 'fill-opacity': 0.9 });
+        bindTip(path, b.name + ' · ' + g.label, pc(r.p) + '  (' + r.k + ' of ' + r.n + ')' +
+          (r.ci ? '   95% CI ' + pc(r.ci[0]) + '–' + pc(r.ci[1]) : ''));
+        svg.appendChild(path);
+
+        // Wilson interval, ringed in the surface so it reads on top of the fill.
+        var capTop = top;
+        if (r.ci && r.n > 1) {
+          var cx = x + bw / 2;
+          capTop = Math.min(top, y(r.ci[1]));
+          [{ w: 4, c: 'var(--surface)' }, { w: 1.6, c: 'var(--ink-2)' }].forEach(function (st) {
+            svg.appendChild(svgEl('path', {
+              d: 'M' + cx + ' ' + y(r.ci[0]) + 'V' + y(r.ci[1]) +
+                 'M' + (cx - 4) + ' ' + y(r.ci[1]) + 'h8M' + (cx - 4) + ' ' + y(r.ci[0]) + 'h8',
+              stroke: st.c, 'stroke-width': st.w, fill: 'none', 'stroke-linecap': 'round'
+            }));
+          });
+        }
+        // Clear the interval cap. With no headroom above it, drop the label inside the bar and
+        // below the interval's lower cap, so it never sits on the whisker.
+        var inside = capTop - 7 < m.t + 4;
+        var ly = inside ? (r.ci ? y(r.ci[0]) + 17 : top + 17) : capTop - 7;
+        svg.appendChild(text(x + bw / 2, ly, pc(r.p),
+          { anchor: 'middle', mono: true, size: 12, weight: 600,
+            fill: inside ? 'var(--surface)' : 'var(--ink)' }));
+        svg.appendChild(text(x + bw / 2, m.t + ph + 15, r.k + '/' + r.n,
+          { anchor: 'middle', mono: true, size: 10 }));
+      });
+      svg.appendChild(text(m.l + gi * gw + gw / 2, m.t + ph + 33, g.label,
+        { anchor: 'middle', size: 12, fill: 'var(--ink-2)', weight: 500 }));
+    });
+    host.appendChild(svg);
+
+    if (legendHost) {
+      var seen = {};
+      live.forEach(function (g) {
+        g.bars.forEach(function (b) {
+          if (seen[b.name] || !has(b.rate)) return;
+          seen[b.name] = 1;
+          var s = document.createElement('span');
+          s.innerHTML = '<i style="background:' + b.color + '"></i>';
+          s.appendChild(document.createTextNode(b.name));
+          legendHost.appendChild(s);
+        });
+      });
+    }
+  }
+
+  // ── chart: horizontal range rows (median + IQR + spread) ──────────
+  function renderRanges(host, rows, unit) {
+    host.innerHTML = '';
+    var live = rows.filter(function (r) { return r.stat && r.stat.n; });
+    if (!live.length) { host.innerHTML = '<p class="empty">No timing data in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 600, 320);
+    var rowH = 34, m = { t: 10, r: 26, b: 30, l: Math.min(252, W * 0.36) };
+    var H = m.t + live.length * rowH + m.b;
+    var hi = Math.max.apply(null, live.map(function (r) { return r.stat.hi; }));
+    var step = hi > 120 ? 60 : hi > 60 ? 30 : hi > 24 ? 10 : 5;
+    var top = Math.ceil(hi / step) * step;
+    var pw = W - m.l - m.r;
+    var x = function (v) { return m.l + (v / top) * pw; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    for (var g = 0; g <= top; g += step) {
+      svg.appendChild(svgEl('line', {
+        x1: x(g), x2: x(g), y1: m.t, y2: m.t + live.length * rowH,
+        stroke: g === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(text(x(g), H - m.b + 18, g + (g === top ? unit : ''),
+        { anchor: 'middle', mono: true, size: 10 }));
+    }
+
+    live.forEach(function (r, i) {
+      var cy = m.t + i * rowH + rowH / 2, s = r.stat;
+      svg.appendChild(text(m.l - 12, cy + 4, r.label, { anchor: 'end', size: 12, fill: 'var(--ink-2)' }));
+      svg.appendChild(svgEl('line', {
+        x1: x(s.lo), x2: x(s.hi), y1: cy, y2: cy, stroke: 'var(--axis)', 'stroke-width': 2,
+        'stroke-linecap': 'round'
+      }));
+      var bx = x(s.q1), bw = Math.max(x(s.q3) - x(s.q1), 3);
+      var box = svgEl('rect', { x: bx, y: cy - 8, width: bw, height: 16, rx: 3, fill: r.color, 'fill-opacity': 0.85 });
+      bindTip(box, r.label, 'median ' + n1(s.median) + unit + '   IQR ' + n1(s.q1) + '–' + n1(s.q3) +
+        unit + '   range ' + n1(s.lo) + '–' + n1(s.hi) + unit + '   n=' + s.n);
+      svg.appendChild(box);
+      // Median as a ringed dot, not a notch: a notch through a narrow IQR splits the bar in two
+      // and reads as two separate marks.
+      svg.appendChild(svgEl('circle', {
+        cx: x(s.median), cy: cy, r: 4.5, fill: 'var(--surface)', stroke: r.color, 'stroke-width': 2.5
+      }));
+      svg.appendChild(text(Math.min(x(s.hi) + 8, W - 4), cy + 4, n1(s.median) + unit,
+        { mono: true, size: 11, fill: 'var(--ink)', weight: 600 }));
+    });
+    host.appendChild(svg);
+  }
+
+  // ── chart: per-session dots with a median rule, by scenario ───────
+  function renderDots(host, rows, unit, decimals) {
+    host.innerHTML = '';
+    var all = rows.reduce(function (a, r) { return a.concat(r.values); }, []);
+    if (!all.length) { host.innerHTML = '<p class="empty">Not logged by the builds in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 420, 300);
+    var rowH = 58, m = { t: 14, r: 26, b: 26, l: Math.min(124, W * 0.3) };
+    var H = m.t + rows.length * rowH + m.b;
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    var ticks;
+    if (unit === '%') {
+      lo = 0; hi = 1;
+      ticks = [0, 0.25, 0.5, 0.75, 1];
+    } else {
+      // Round the axis out to a human step so the ticks read 0/60/120, not 32/111/190.
+      var span = hi - lo || hi || 1;
+      var step = span > 240 ? 120 : span > 120 ? 60 : span > 60 ? 30 : span > 24 ? 10 : 5;
+      lo = Math.max(0, Math.floor((lo - span * 0.12) / step) * step);
+      hi = Math.ceil((hi + span * 0.12) / step) * step;
+      ticks = [];
+      for (var tv = lo; tv <= hi + 0.001; tv += step) ticks.push(tv);
+    }
+    var pw = W - m.l - m.r;
+    var x = function (v) { return m.l + ((v - lo) / (hi - lo || 1)) * pw; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    ticks.forEach(function (t) {
+      svg.appendChild(svgEl('line', {
+        x1: x(t), x2: x(t), y1: m.t - 4, y2: m.t + rows.length * rowH - 8,
+        stroke: 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(text(x(t), H - m.b + 14,
+        unit === '%' ? Math.round(t * 100) + '%' : n0(t) + (t === ticks[ticks.length - 1] ? unit : ''),
+        { anchor: 'middle', mono: true, size: 10 }));
+    });
+
+    rows.forEach(function (r, i) {
+      var cy = m.t + i * rowH + 20;
+      svg.appendChild(text(m.l - 12, cy + 4, r.label, { anchor: 'end', size: 12, fill: 'var(--ink-2)', weight: 500 }));
+      if (!r.values.length) {
+        svg.appendChild(text(m.l, cy + 4, 'no data', { size: 11, fill: 'var(--ink-muted)' }));
+        return;
+      }
+      var srt = r.values.slice().sort(function (a, b) { return a - b; });
+      var med = srt.length % 2 ? srt[(srt.length - 1) / 2] : (srt[srt.length / 2 - 1] + srt[srt.length / 2]) / 2;
+      svg.appendChild(svgEl('line', {
+        x1: m.l, x2: W - m.r, y1: cy, y2: cy, stroke: 'var(--grid)', 'stroke-width': 1
+      }));
+      r.values.forEach(function (v, vi) {
+        var c = svgEl('circle', {
+          cx: x(v), cy: cy, r: 6, fill: r.color, 'fill-opacity': 0.5,
+          stroke: 'var(--surface)', 'stroke-width': 2
+        });
+        bindTip(c, r.labels[vi] || r.label,
+          (unit === '%' ? pc(v) : n0(v) + unit));
+        svg.appendChild(c);
+      });
+      svg.appendChild(svgEl('line', {
+        x1: x(med), x2: x(med), y1: cy - 13, y2: cy + 13, stroke: r.color, 'stroke-width': 2.5,
+        'stroke-linecap': 'round'
+      }));
+      svg.appendChild(text(x(med), cy + 27, 'median ' + (unit === '%' ? pc(med) : n0(med) + unit),
+        { anchor: 'middle', mono: true, size: 10.5, fill: 'var(--ink-2)' }));
+    });
+    host.appendChild(svg);
+  }
+
+  // ── chart: stacked composition rows ───────────────────────────────
+  function renderStack(host, legendHost, rows, series) {
+    host.innerHTML = ''; legendHost.innerHTML = '';
+    var live = rows.filter(function (r) { return r.total > 0; });
+    if (!live.length) { host.innerHTML = '<p class="empty">No allocations in this window.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 420, 300);
+    var rowH = 52, m = { t: 8, r: 8, b: 8, l: Math.min(124, W * 0.3) };
+    var H = m.t + live.length * rowH + m.b;
+    var pw = W - m.l - m.r;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    live.forEach(function (r, i) {
+      var cy = m.t + i * rowH + 12, acc = 0;
+      svg.appendChild(text(m.l - 12, cy + 15, r.label, { anchor: 'end', size: 12, fill: 'var(--ink-2)', weight: 500 }));
+      series.forEach(function (s) {
+        var v = r.values[s.key] || 0;
+        if (!v) return;
+        var w = (v / r.total) * pw - 2;
+        if (w <= 0) return;
+        var seg = svgEl('rect', { x: m.l + acc, y: cy, width: w, height: 22, rx: 2, fill: s.color });
+        bindTip(seg, s.label + ' · ' + r.label, v + ' of ' + r.total + '  (' + pc(v / r.total) + ')');
+        svg.appendChild(seg);
+        if (w > 34) {
+          svg.appendChild(text(m.l + acc + w / 2, cy + 15, pc(v / r.total),
+            { anchor: 'middle', mono: true, size: 10.5, fill: s.ink || 'var(--surface)', weight: 600 }));
+        }
+        acc += w + 2;
+      });
+      svg.appendChild(text(m.l, cy + 38, r.total + ' allocation decisions',
+        { mono: true, size: 10, fill: 'var(--ink-muted)' }));
+    });
+    host.appendChild(svg);
+    series.forEach(function (s) {
+      var el = document.createElement('span');
+      el.innerHTML = '<i style="background:' + s.color + '"></i>';
+      el.appendChild(document.createTextNode(s.label));
+      legendHost.appendChild(el);
+    });
+  }
+
+  // ── chart: within-participant slope ───────────────────────────────
+  function renderSlope(host, pairs, opts) {
+    host.innerHTML = '';
+    if (!pairs.length) { host.innerHTML = '<p class="empty">Not logged for any paired participant here.</p>'; return; }
+
+    var W = Math.max(host.clientWidth || 360, 280), H = 236;
+    var m = { t: 20, r: 66, b: 44, l: 66 };
+    var vals = pairs.reduce(function (a, p) { return a.concat([p.strategic, p.tactical]); }, []);
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    if (opts.pct) { lo = Math.min(lo, 0); hi = Math.max(hi, 1); }
+    var pad = (hi - lo) * 0.16 || 1;
+    lo -= pad; hi += pad;
+    var ph = H - m.t - m.b;
+    var y = function (v) { return m.t + ph - ((v - lo) / (hi - lo)) * ph; };
+    var xa = m.l, xb = W - m.r;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    [xa, xb].forEach(function (x) {
+      svg.appendChild(svgEl('line', { x1: x, x2: x, y1: m.t - 6, y2: m.t + ph + 6, stroke: 'var(--grid)', 'stroke-width': 1 }));
+    });
+    svg.appendChild(text(xa, H - 10, opts.left || 'Strategic Heavy', { anchor: 'middle', size: 11, fill: 'var(--ink-2)' }));
+    svg.appendChild(text(xb, H - 10, opts.right || 'Tactical Heavy', { anchor: 'middle', size: 11, fill: 'var(--ink-2)' }));
+
+    // Labels on both ends are the collision risk: two participants an inch apart in value put
+    // their names on top of each other. Nudge each column apart to a minimum spacing, keeping order.
+    function declash(items) {
+      items.sort(function (a, b) { return a.y - b.y; });
+      for (var i = 1; i < items.length; i++) {
+        if (items[i].y - items[i - 1].y < 12) items[i].y = items[i - 1].y + 12;
+      }
+      var over = items.length ? items[items.length - 1].y - (m.t + ph + 6) : 0;
+      if (over > 0) items.forEach(function (it) { it.y -= over; });
+      return items;
+    }
+    var left = [], right = [];
+    pairs.forEach(function (p) {
+      var up = p.tactical > p.strategic;
+      var col = Math.abs(p.delta) < 1e-9 ? 'var(--neutral-mark)' : (up ? 'var(--s1)' : 'var(--crit)');
+      var line = svgEl('line', { x1: xa, x2: xb, y1: y(p.strategic), y2: y(p.tactical), stroke: col, 'stroke-width': 2, 'stroke-opacity': 0.75 });
+      bindTip(line, p.pid + ' · ' + p.version,
+        opts.fmt(p.strategic) + ' → ' + opts.fmt(p.tactical) + '   (' + (p.delta > 0 ? '+' : '') + opts.fmt(p.delta) + ')');
+      svg.appendChild(line);
+      [[xa, p.strategic], [xb, p.tactical]].forEach(function (pt) {
+        svg.appendChild(svgEl('circle', { cx: pt[0], cy: y(pt[1]), r: 4.5, fill: col, stroke: 'var(--surface)', 'stroke-width': 2 }));
+      });
+      left.push({ y: y(p.strategic) + 4, s: p.pid });
+      right.push({ y: y(p.tactical) + 4, s: opts.fmt(p.tactical) });
+    });
+    declash(left).forEach(function (it) {
+      svg.appendChild(text(xa - 9, it.y, it.s, { anchor: 'end', size: 10, mono: true }));
+    });
+    declash(right).forEach(function (it) {
+      svg.appendChild(text(xb + 9, it.y, it.s, { size: 10, mono: true }));
+    });
+    host.appendChild(svg);
+  }
+
+  // ── chart: labelled scatter, one point per participant ────────────
+  // Deliberately no fit line: at five or six points a regression line reads as a claim the data
+  // cannot support. The r and its n go in the caption instead.
+  function renderScatter(host, pts, opts) {
+    host.innerHTML = '';
+    if (pts.length < 1) {
+      host.innerHTML = '<p class="empty">' + (opts.empty || 'No participant in this window has both measures.') + '</p>';
+      return;
+    }
+    var W = Math.max(host.clientWidth || 420, 300), H = 258;
+    var m = { t: 16, r: 22, b: 46, l: 52 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+
+    function scale(vals, forced) {
+      var lo = forced ? forced[0] : Math.min.apply(null, vals);
+      var hi = forced ? forced[1] : Math.max.apply(null, vals);
+      if (!forced) { var pad = (hi - lo) * 0.22 || 0.5; lo -= pad; hi += pad; }
+      return { lo: lo, hi: hi };
+    }
+    var sx = scale(pts.map(function (p) { return p.x; }), opts.xDomain);
+    var sy = scale(pts.map(function (p) { return p.y; }), opts.yDomain);
+    var x = function (v) { return m.l + ((v - sx.lo) / (sx.hi - sx.lo || 1)) * pw; };
+    var y = function (v) { return m.t + ph - ((v - sy.lo) / (sy.hi - sy.lo || 1)) * ph; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    function axisTicks(s) {
+      var span = s.hi - s.lo;
+      var step = span > 8 ? 2 : span > 4 ? 1 : span > 2 ? 0.5 : span > 0.8 ? 0.25 : 0.1;
+      var t = [], v = Math.ceil(s.lo / step) * step;
+      for (; v <= s.hi + 1e-9; v += step) t.push(Math.round(v * 1000) / 1000);
+      return t;
+    }
+    axisTicks(sy).forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t),
+        stroke: Math.abs(t) < 1e-9 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(text(m.l - 8, y(t) + 4, opts.fy ? opts.fy(t) : t, { anchor: 'end', mono: true, size: 10 }));
+    });
+    axisTicks(sx).forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: x(t), x2: x(t), y1: m.t, y2: m.t + ph,
+        stroke: Math.abs(t) < 1e-9 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(text(x(t), m.t + ph + 16, opts.fx ? opts.fx(t) : t, { anchor: 'middle', mono: true, size: 10 }));
+    });
+    svg.appendChild(text(m.l + pw / 2, H - 6, opts.xLabel, { anchor: 'middle', size: 11, fill: 'var(--ink-2)' }));
+    var yl = text(0, 0, opts.yLabel, { anchor: 'middle', size: 11, fill: 'var(--ink-2)' });
+    yl.setAttribute('transform', 'translate(13,' + (m.t + ph / 2) + ') rotate(-90)');
+    svg.appendChild(yl);
+
+    var placed = [];
+    pts.forEach(function (p) {
+      var c = svgEl('circle', { cx: x(p.x), cy: y(p.y), r: 6.5, fill: p.color || 'var(--s1)',
+        'fill-opacity': 0.55, stroke: 'var(--surface)', 'stroke-width': 2 });
+      bindTip(c, p.label, opts.xLabel + ': ' + (opts.fx ? opts.fx(p.x) : p.x) + '   ' +
+        opts.yLabel + ': ' + (opts.fy ? opts.fy(p.y) : p.y));
+      svg.appendChild(c);
+      // Flip the label under the point when it would land on one already placed above.
+      var ly = y(p.y) - 11;
+      if (placed.some(function (q) { return Math.abs(q.x - x(p.x)) < 52 && Math.abs(q.y - ly) < 11; })) {
+        ly = y(p.y) + 18;
+      }
+      placed.push({ x: x(p.x), y: ly });
+      svg.appendChild(text(x(p.x), ly, p.label, { anchor: 'middle', mono: true, size: 10 }));
+    });
+    host.appendChild(svg);
+  }
+
+  // ── chart: one value per build window ─────────────────────────────
+  function renderWindows(host, legendHost, series) {
+    host.innerHTML = ''; if (legendHost) legendHost.innerHTML = '';
+    var W = Math.max(host.clientWidth || 420, 300), H = 236;
+    var m = { t: 16, r: 8, b: 58, l: 34 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var y = function (p) { return m.t + ph - p * ph; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (g) {
+      svg.appendChild(svgEl('line', { x1: m.l, x2: W - m.r, y1: y(g), y2: y(g), stroke: g === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(text(m.l - 8, y(g) + 4, Math.round(g * 100) + '%', { anchor: 'end', mono: true, size: 10 }));
+    });
+
+    var gw = pw / COHORTS.length;
+    COHORTS.forEach(function (c, ci) {
+      var bars = series.map(function (s) { return { s: s, r: s.get(c) }; })
+                       .filter(function (b) { return has(b.r); });
+      var bw = Math.min(30, (gw - 16) / Math.max(series.length, 1) - 2);
+      var span = bars.length * bw + Math.max(bars.length - 1, 0) * 2;
+      var x0 = m.l + ci * gw + (gw - span) / 2;
+      bars.forEach(function (b, bi) {
+        var x = x0 + bi * (bw + 2), top = y(b.r.p);
+        var path = svgEl('path', { d: barPath(x, top, bw, m.t + ph - top), fill: b.s.color, 'fill-opacity': c.key === cur.key ? 0.95 : 0.34 });
+        bindTip(path, b.s.name + ' · ' + c.label, pc(b.r.p) + '  (' + b.r.k + ' of ' + b.r.n + ')');
+        svg.appendChild(path);
+        svg.appendChild(text(x + bw / 2, top - 6, pc(b.r.p), { anchor: 'middle', mono: true, size: 10, fill: c.key === cur.key ? 'var(--ink)' : 'var(--ink-muted)', weight: 600 }));
+      });
+      if (!bars.length) svg.appendChild(text(m.l + ci * gw + gw / 2, y(0) - 6, '—', { anchor: 'middle', size: 11 }));
+      var lab = text(m.l + ci * gw + gw / 2, m.t + ph + 16, c.short, { anchor: 'middle', mono: true, size: 10, fill: c.key === cur.key ? 'var(--ink)' : 'var(--ink-muted)', weight: c.key === cur.key ? 600 : 400 });
+      svg.appendChild(lab);
+      svg.appendChild(text(m.l + ci * gw + gw / 2, m.t + ph + 30, c.overall.sessions + ' sess.', { anchor: 'middle', mono: true, size: 9.5 }));
+    });
+    host.appendChild(svg);
+    if (legendHost) series.forEach(function (s) {
+      var el = document.createElement('span');
+      el.innerHTML = '<i style="background:' + s.color + '"></i>';
+      el.appendChild(document.createTextNode(s.name));
+      legendHost.appendChild(el);
+    });
+  }
+
+  // ── narrative helpers, computed not typed ─────────────────────────
+  function gapSentence(a, b, aName, bName, noun) {
+    if (!has(a) || !has(b)) return '';
+    var d = Math.round(Math.abs(a.p - b.p) * 100);
+    var pts = d === 1 ? ' point' : ' points';
+    if (d < 5) return 'The two tiers sit within ' + d + pts + ' of each other on ' + noun + '.';
+    return (a.p > b.p ? aName : bName) + ' leads on ' + noun + ' by <b>' + d + pts + '</b>.';
+  }
+
+  function countDirection(pairs) {
+    var down = pairs.filter(function (p) { return p.delta < 0; }).length;
+    return { down: down, up: pairs.length - down, n: pairs.length };
+  }
+
+  // ── section: pre-study disposition vs trust vs behaviour ──────────
+  var TRUST_ITEM_LABEL = {
+    trust: 'I trust it', reliable: 'It is reliable', performs: 'It performs well',
+    confident: 'I am confident in it', useful: 'It is useful',
+    follow: 'I would follow it'
+  };
+  var TRUST_ITEM_ORDER = ['useful', 'performs', 'reliable', 'trust', 'confident', 'follow'];
+
+  function rr(v) { return v === null || v === undefined ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2); }
+
+  function renderAttitudes(c) {
+    var A = c.attitudes;
+    var usable = A.people.filter(function (p) { return !p.straightlined; });
+    var withBattery = usable.filter(function (p) { return p.hasBattery; });
+
+    // Status banner: say up front what this window can and cannot answer.
+    var st = document.getElementById('battery-status');
+    st.innerHTML = '';
+    var short = withBattery.length < 5;
+    var d = document.createElement('div');
+    d.className = 'callout ' + (short ? 'crit' : 'note');
+    d.innerHTML = '<span class="mark">' + (short ? 'Not yet' : 'n') + '</span><div><p>' +
+      '<b>' + withBattery.length + ' of ' + usable.length + '</b> usable participants in this window ' +
+      'completed the pre-study AI-attitude battery' +
+      (A.straightlined.length
+        ? '. A further ' + A.straightlined.length + ' (' + A.straightlined.join(', ') +
+          ') left every trust and workload slider on its default and are excluded from this ' +
+          'section only — their behavioural data is untouched everywhere else'
+        : '') + '. ' +
+      (short
+        ? 'That is far too few to relate AI scepticism to anything. The figures below therefore show ' +
+          'the individual profiles and the machinery that will compute the relationship — they are ' +
+          'not evidence of one. A descriptive correlation needs roughly 15–20 participants on ' +
+          'study-v1.3 or later; a defensible one, more.'
+        : 'Correlations below are descriptive, with n printed beside every r.') +
+      '</p></div>';
+    st.appendChild(d);
+
+    // 1. Trust in each assistant, per person.
+    var tp = usable.filter(function (p) { return p.trustStrategic !== null && p.trustTactical !== null; })
+      .map(function (p) {
+        return { pid: p.pid, version: p.versions.join('/'), strategic: p.trustStrategic,
+                 tactical: p.trustTactical, delta: p.trustDelta };
+      });
+    renderSlope(document.getElementById('c-trustslope'), tp, {
+      pct: false, fmt: function (v) { return v.toFixed(1); },
+      left: 'Strategic Assistant', right: 'Tactical Assistant'
+    });
+    var favTac = tp.filter(function (p) { return p.delta > 0.25; });
+    var favStrat = tp.filter(function (p) { return p.delta < -0.25; });
+    var split = favTac.length > 0 && favStrat.length > 0;
+    document.getElementById('t-trustslope').innerHTML = tp.length
+      ? '<b>' + favTac.length + ' of ' + tp.length + '</b> trusted the tactical assistant more, <b>' +
+        favStrat.length + '</b> the strategic one' +
+        (tp.length - favTac.length - favStrat.length ? ', the rest within a quarter-point' : '') +
+        '. ' + (split
+          ? 'The split tracks build era, not personality: the people who rated the tactical ' +
+            'assistant highest ran the newest builds, where its recovery suggestions actually worked.'
+          : 'Everyone in this window leans the same way, so the window cannot separate the person ' +
+            'from the build they ran.')
+      : '';
+
+    // 2. Per-item trust profile.
+    var acc = { strategic: {}, tactical: {} };
+    usable.forEach(function (p) {
+      [['strategic', p.trustItemsStrategic], ['tactical', p.trustItemsTactical]].forEach(function (pair) {
+        if (!pair[1]) return;
+        Object.keys(pair[1]).forEach(function (k) {
+          (acc[pair[0]][k] = acc[pair[0]][k] || []).push(pair[1][k]);
+        });
+      });
+    });
+    var itemRows = TRUST_ITEM_ORDER.filter(function (k) { return acc.strategic[k] || acc.tactical[k]; })
+      .map(function (k) {
+        var mean = function (a) { return a && a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : null; };
+        return { key: k, label: TRUST_ITEM_LABEL[k] || k,
+                 s: mean(acc.strategic[k]), t: mean(acc.tactical[k]) };
+      });
+    renderItemBars(document.getElementById('c-trustitems'), document.getElementById('l-trustitems'), itemRows);
+    var follow = itemRows.filter(function (r) { return r.key === 'follow'; })[0];
+    var others = itemRows.filter(function (r) { return r.key !== 'follow'; });
+    var omean = others.length
+      ? others.reduce(function (s, r) { return s + ((r.s + r.t) / 2); }, 0) / others.length : null;
+    document.getElementById('t-trustitems').innerHTML = (follow && omean)
+      ? '<b>"I would follow it" is the lowest-scoring item on both assistants</b> — ' +
+        ((follow.s + follow.t) / 2).toFixed(1) + ' against ' + omean.toFixed(1) +
+        ' for the other five. People rate both assistants as useful and reliable and still reserve ' +
+        'the decision. That gap, not the level of either bar, is the trust story here.'
+      : '';
+
+    // 3. Stated trust vs actual use.
+    var tu = usable.filter(function (p) { return p.trustDelta !== null && p.uptakeDelta !== null; })
+      .map(function (p) { return { x: p.trustDelta, y: p.uptakeDelta, label: p.pid,
+        color: p.hasBattery ? 'var(--s2)' : 'var(--s1)' }; });
+    renderScatter(document.getElementById('c-trustuse'), tu, {
+      xLabel: 'Trust: tactical − strategic', yLabel: 'Uptake: tactical − strategic',
+      fx: function (v) { return (v > 0 ? '+' : '') + v; },
+      fy: function (v) { return Math.round(v * 100) + '%'; }
+    });
+    var cr = A.correlations.trustDeltaVsUptakeDelta;
+    document.getElementById('t-trustuse').innerHTML = cr.r !== null
+      ? 'r = <b>' + rr(cr.r) + '</b> on n = ' + cr.n + '. People who said they trusted one assistant ' +
+        'more did lean on it more, but with this many points the sign is the only part worth reading.'
+      : 'Too few participants with both measures in this window to compute a correlation.';
+
+    // 4. AIAS vs relative trust.
+    var ax = withBattery.filter(function (p) { return p.aias !== null && p.trustDelta !== null; })
+      .map(function (p) { return { x: p.aias, y: p.trustDelta, label: p.pid, color: 'var(--s2)' }; });
+    renderScatter(document.getElementById('c-aias'), ax, {
+      xLabel: 'AIAS-4 (10 = most positive about AI)', yLabel: 'Trust: tactical − strategic',
+      xDomain: [1, 10],
+      empty: 'No participant in this window completed the AI-attitude battery.'
+    });
+    var ac = A.correlations.aiasVsTrustDelta;
+    document.getElementById('t-aias').innerHTML = ax.length
+      ? (ac.r !== null
+          ? 'r = <b>' + rr(ac.r) + '</b> on n = ' + ac.n + '.'
+          : '<b>n = ' + ax.length + '. No relationship can be computed or claimed from this.</b> ') +
+        ' Both people who took the battery scored high on it (' +
+        ax.map(function (p) { return p.x.toFixed(1); }).join(' and ') +
+        ' out of 10, i.e. positive about AI in general) and both trusted the tactical assistant more. ' +
+        'There is no sceptic in the sample yet, so the axis this figure exists to test is unpopulated.'
+      : 'The AI-attitude battery arrived in study-v1.3; no session in this window predates it.';
+
+    // 5. Correlation table.
+    var CORRS = [
+      ['AIAS-4 (AI positivity)', 'Trust: tactical − strategic', 'aiasVsTrustDelta'],
+      ['AIAS-4 (AI positivity)', 'Trust in strategic', 'aiasVsTrustStrategic'],
+      ['AIAS-4 (AI positivity)', 'Trust in tactical', 'aiasVsTrustTactical'],
+      ['AIAS-4 (AI positivity)', 'Uptake: tactical − strategic', 'aiasVsUptakeDelta'],
+      ['Verification propensity', 'Trust: tactical − strategic', 'verificationVsTrustDelta'],
+      ['Delegation boundary (tighter = higher)', 'Trust: tactical − strategic', 'delegationVsTrustDelta'],
+      ['Prior autonomy/sim experience', 'Trust in strategic', 'experienceVsTrustStrategic'],
+      ['Prior autonomy/sim experience', 'Trust in tactical', 'experienceVsTrustTactical'],
+      ['Prior autonomy/sim experience', 'Trust: tactical − strategic', 'experienceVsTrustDelta'],
+      ['Prior autonomy/sim experience', 'Uptake: tactical − strategic', 'experienceVsUptakeDelta'],
+      ['Trust in strategic', 'Strategic uptake', 'trustStrategicVsUptake'],
+      ['Trust in tactical', 'Tactical uptake', 'trustTacticalVsUptake'],
+      ['Trust: tactical − strategic', 'Uptake: tactical − strategic', 'trustDeltaVsUptakeDelta']
+    ];
+    var ct = document.getElementById('c-corr');
+    var rowsHtml = CORRS.map(function (row) {
+      var v = A.correlations[row[2]] || { n: 0, r: null };
+      var strength = v.r === null ? '' : Math.abs(v.r) >= 0.5 ? 'moderate' : Math.abs(v.r) >= 0.3 ? 'weak' : 'none to speak of';
+      return '<tr' + (v.r === null ? ' class="dim"' : '') + '><td class="l">' + row[0] + '</td>' +
+        '<td class="l">' + row[1] + '</td>' +
+        '<td class="num">' + (v.r === null ? '—' : rr(v.r)) + '</td>' +
+        '<td class="num">' + v.n + '</td>' +
+        '<td class="l">' + (v.r === null ? (v.n < 3 ? 'too few people' : 'no variance') : strength) + '</td></tr>';
+    }).join('');
+    ct.innerHTML = '<table><thead><tr><th class="l">Disposition or attitude</th>' +
+      '<th class="l">Outcome</th><th>r</th><th>n</th><th class="l">Reads as</th></tr></thead><tbody>' +
+      rowsHtml + '</tbody></table>';
+    var expT = A.correlations.experienceVsTrustTactical, expS = A.correlations.experienceVsTrustStrategic;
+    document.getElementById('t-corr').innerHTML = (expT.r !== null && expS.r !== null)
+      ? 'The one asymmetry with more than two people behind it: prior autonomy and simulation ' +
+        'experience tracks trust in the <b>tactical</b> assistant (r = ' + rr(expT.r) + ', n = ' +
+        expT.n + ') but not the strategic one (r = ' + rr(expS.r) + '). If that holds up with real ' +
+        'numbers it is the shape the AIAS question is after — disposition moving trust in one tier ' +
+        'more than the other. It is six people. Treat it as a hypothesis to power for, not a result.'
+      : 'Not enough participants in this window to compute the experience contrasts.';
+
+    // 6. Battery item table.
+    var bt = document.getElementById('c-battery');
+    if (!withBattery.length) {
+      bt.innerHTML = '<p class="empty">No participant in this window completed the pre-study battery ' +
+        '(it arrives in study-v1.3).</p>';
+      document.getElementById('t-battery').innerHTML = '';
+    } else {
+      var ITEMS = [
+        ['AIAS-4 · 10-point', 'aias_improve_life', 'AI will improve my life'],
+        ['', 'aias_improve_work', 'AI will improve my work'],
+        ['', 'aias_future_use', 'I will use AI in the future'],
+        ['', 'aias_positive_humanity', 'AI is positive for humanity'],
+        ['Verification · 7-point', 'verif_check_before_relying', 'I check its output before relying on it'],
+        ['', 'verif_comfortable_unreviewed', 'Comfortable acting on unreviewed output (R)'],
+        ['', 'verif_want_reasoning', 'I want to see its reasoning'],
+        ['', 'verif_happy_unsupervised', 'Happy to let it run unsupervised (R)'],
+        ['', 'verif_overconfident', 'These systems are overconfident'],
+        ['', 'verif_reliable_no_check', 'Reliable enough not to check (R)'],
+        ['', 'verif_hard_to_detect_errors', 'Its errors are hard to spot (not in composite)'],
+        ['Delegation · 7-point', 'deleg_human_final_say', 'A human should have the final say'],
+        ['', 'deleg_trust_suggest_over_decide', 'I trust one that suggests over one that decides'],
+        ['', 'deleg_prefer_self_even_if_slower', 'I would rather do it myself, even if slower'],
+        ['', 'deleg_not_when_lives_at_stake', 'Not when lives are at stake'],
+        ['', 'deleg_urgent_better_than_nothing', 'When urgent, its call beats nothing (R)']
+      ];
+      var head = '<table><thead><tr><th class="l">Block</th><th class="l">Item</th>' +
+        withBattery.map(function (p) { return '<th>' + p.pid + '</th>'; }).join('') +
+        '</tr></thead><tbody>';
+      var body = ITEMS.map(function (it) {
+        return '<tr><td class="l num">' + it[0] + '</td><td class="l">' + it[2] + '</td>' +
+          withBattery.map(function (p) {
+            var v = p.raw[it[1]];
+            return '<td class="num">' + (v === undefined ? '' : v) + '</td>';
+          }).join('') + '</tr>';
+      }).join('');
+      var comp = [['Composite', 'AIAS-4 mean (higher = more positive)', 'aias'],
+                  ['Composite', 'Verification propensity (higher = checks more)', 'verification'],
+                  ['Composite', 'Delegation boundary (higher = delegates less)', 'delegation']]
+        .map(function (row) {
+          return '<tr><td class="l num">' + row[0] + '</td><td class="l"><b>' + row[1] + '</b></td>' +
+            withBattery.map(function (p) {
+              return '<td class="num"><b>' + (p[row[2]] === null ? '' : p[row[2]].toFixed(2)) + '</b></td>';
+            }).join('') + '</tr>';
+        }).join('');
+      bt.innerHTML = head + body + comp + '</tbody></table>';
+      document.getElementById('t-battery').innerHTML =
+        'Both respondents want to <b>verify</b> (' +
+        withBattery.map(function (p) { return p.verification.toFixed(1); }).join(' and ') +
+        ' out of 7) while being positive about AI overall — the combination the two-tier design is ' +
+        'built for: happy to be given a proposal, unwilling to hand over the decision. The two ' +
+        'delegation items that map directly onto the tiers (final say, suggests-over-decides) both ' +
+        'sit at 6–7 for both people.';
+    }
+  }
+
+  // Grouped bars for a fixed 0–7 survey scale, one pair of bars per item.
+  function renderItemBars(host, legendHost, rows) {
+    host.innerHTML = ''; legendHost.innerHTML = '';
+    if (!rows.length) { host.innerHTML = '<p class="empty">No trust responses in this window.</p>'; return; }
+    var W = Math.max(host.clientWidth || 420, 300);
+    var rowH = 30, m = { t: 8, r: 40, b: 26, l: Math.min(178, W * 0.42) };
+    var H = m.t + rows.length * rowH + m.b;
+    var pw = W - m.l - m.r;
+    var x = function (v) { return m.l + (v / 7) * pw; };
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+
+    [0, 1, 2, 3, 4, 5, 6, 7].forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: x(t), x2: x(t), y1: m.t, y2: m.t + rows.length * rowH,
+        stroke: t === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      if (pw > 240 || t === 0 || t === 7) {
+        svg.appendChild(text(x(t), H - m.b + 16, t, { anchor: 'middle', mono: true, size: 10 }));
+      }
+    });
+
+    rows.forEach(function (r, i) {
+      var top = m.t + i * rowH + 3;
+      svg.appendChild(text(m.l - 10, top + 12, r.label, { anchor: 'end', size: 11.5, fill: 'var(--ink-2)' }));
+      [{ v: r.s, c: TIER.strategic.color, n: TIER.strategic.label },
+       { v: r.t, c: TIER.tactical.color, n: TIER.tactical.label }].forEach(function (b, bi) {
+        if (b.v === null) return;
+        var yy = top + bi * 11;
+        var bar = svgEl('rect', { x: m.l, y: yy, width: Math.max(x(b.v) - m.l, 2), height: 9, rx: 2, fill: b.c });
+        bindTip(bar, b.n + ' — ' + r.label, b.v.toFixed(2) + ' of 7');
+        svg.appendChild(bar);
+      });
+      var gap = (r.s !== null && r.t !== null) ? (r.t - r.s) : null;
+      if (gap !== null) {
+        svg.appendChild(text(W - m.r + 6, top + 14, (gap >= 0 ? '+' : '') + gap.toFixed(1),
+          { mono: true, size: 10, fill: 'var(--ink-muted)' }));
+      }
+    });
+    host.appendChild(svg);
+    [TIER.strategic, TIER.tactical].forEach(function (t) {
+      var el = document.createElement('span');
+      el.innerHTML = '<i style="background:' + t.color + '"></i>';
+      el.appendChild(document.createTextNode(t.label));
+      legendHost.appendChild(el);
+    });
+  }
+
+  // ── render everything for the selected cohort ─────────────────────
+  function draw() {
+    var c = cur;
+
+    // rail
+    var rail = document.getElementById('rail');
+    rail.innerHTML = '';
+    COHORTS.forEach(function (co, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', co.key === c.key ? 'true' : 'false');
+      b.innerHTML = '<span class="rail-w">Window ' + (i + 1) + '</span>' +
+        '<span class="rail-t">' + co.short + '</span>' +
+        '<span class="rail-n">' + co.overall.sessions + ' sess · ' + co.overall.participants + ' ppl</span>';
+      b.addEventListener('click', function () { cur = co; draw(); });
+      rail.appendChild(b);
+    });
+    document.getElementById('cohort-badge').textContent =
+      c.dateRange[0] + ' → ' + c.dateRange[1];
+    document.getElementById('cohort-note').innerHTML =
+      '<b>' + c.label + '.</b> ' + c.note + ' Tactical agent mode: ' +
+      c.overall.tacticalModes.join(' + ') + '. Participants: ' + c.overall.participantIds.join(', ') + '.';
+
+    // Masthead tiles describe the WHOLE dataset -- they sit above the window selector, so scoping
+    // them to the selection would silently redefine what the header is counting.
+    var o = c.overall;
+    var g = DATA.cohorts[0].overall;
+    var tiles = [
+      { v: g.participants, k: 'participants' },
+      { v: g.sessions, k: 'sessions (8 min each)' },
+      { v: g.strategicUptake.n, k: 'allocation decisions' },
+      { v: g.tacticalUnmodified.n, k: 'tactical plans confirmed' },
+      { v: g.recoveryAgent.n, k: 'failure recoveries' },
+      { v: 'ε = 0', k: 'both assistants perfect' }
+    ];
+    var th = document.getElementById('tiles');
+    th.innerHTML = '';
+    tiles.forEach(function (t) {
+      var d = document.createElement('div');
+      d.className = 'tile';
+      d.innerHTML = '<span class="v">' + t.v + '</span><span class="k">' + t.k + '</span>';
+      th.appendChild(d);
+    });
+
+    // 1. uptake
+    renderProportion(
+      document.getElementById('c-uptake'),
+      document.getElementById('l-uptake'),
+      { groups: SCEN.map(function (s) {
+          return { label: s.label, bars: [
+            { name: TIER.strategic.label, color: TIER.strategic.color, rate: c[s.key].strategicUptake },
+            { name: TIER.tactical.label, color: TIER.tactical.color, rate: c[s.key].tacticalUptake }
+          ] };
+        }) });
+    document.getElementById('t-uptake').innerHTML =
+      gapSentence(o.strategicUptake, o.tacticalUptake, 'The strategy card', 'The tactical planner', 'uptake') +
+      ' Pooled across both scenarios: strategic ' + pc(o.strategicUptake.p) + ' (' + frac(o.strategicUptake) +
+      ' allocations), tactical ' + pc(o.tacticalUptake.p) + ' (' + frac(o.tacticalUptake) + ' plans).' +
+      (o.tacticalUptakeSessions < o.sessions
+        ? ' <b>' + (o.sessions - o.tacticalUptakeSessions) + ' session' +
+          (o.sessions - o.tacticalUptakeSessions === 1 ? '' : 's') +
+          ' excluded</b> from the tactical bar: that build predates the consultation counter.'
+        : '');
+
+    // 2. acceptance
+    renderProportion(
+      document.getElementById('c-accept'),
+      document.getElementById('l-accept'),
+      { groups: SCEN.map(function (s) {
+          return { label: s.label, bars: [
+            { name: TIER.strategic.label, color: TIER.strategic.color, rate: c[s.key].strategicUnedited },
+            { name: TIER.tactical.label, color: TIER.tactical.color, rate: c[s.key].tacticalUnmodified }
+          ] };
+        }) });
+    var accGap = has(o.strategicUnedited) && has(o.tacticalUnmodified)
+      ? Math.round((o.strategicUnedited.p - o.tacticalUnmodified.p) * 100) : null;
+    document.getElementById('t-accept').innerHTML =
+      (accGap === null ? '' : 'A strategy card that is taken is taken <b>whole</b> — ' +
+        pc(o.strategicUnedited.p) + ' of ' + o.strategicUnedited.n +
+        ' went out with no edit. Tactical plans survive contact far less often: ' +
+        pc(o.tacticalUnmodified.p) + ' of ' + o.tacticalUnmodified.n + ', a gap of <b>' + accGap +
+        ' points</b>.') +
+      ' The strategic card is a single number per drone type; the tactical plan is a dozen individual assignments, so there is far more to disagree with.';
+
+    // 3. latency
+    renderRanges(document.getElementById('c-latency'), [
+      { label: 'Strategic Heavy — strategy card', color: TIER.strategic.color, stat: c.strategic.strategicLatency },
+      { label: 'Strategic Heavy — tactical plan', color: TIER.tactical.color, stat: c.strategic.tacticalLatency },
+      { label: 'Tactical Heavy — strategy card', color: TIER.strategic.color, stat: c.tactical.strategicLatency },
+      { label: 'Tactical Heavy — tactical plan', color: TIER.tactical.color, stat: c.tactical.tacticalLatency }
+    ], 's');
+    var sl = o.strategicLatency, tl = o.tacticalLatency;
+    document.getElementById('t-latency').innerHTML = (sl && tl)
+      ? 'The tactical decision takes <b>' + (Math.round((tl.median / sl.median) * 10) / 10) +
+        '×</b> as long as the strategic one at the median (' + n1(tl.median) + 's vs ' +
+        n1(sl.median) + 's), and its spread is far wider — the tail is where a plan was rebuilt by hand.'
+      : '';
+
+    // 4. completion
+    renderDots(document.getElementById('c-completion'), SCEN.map(function (s) {
+      var pp = c[s.key].perParticipant.filter(function (p) { return p.completion !== null && p.completion !== undefined; });
+      return { label: s.label, color: s.key === 'strategic' ? TIER.strategic.color : TIER.tactical.color,
+               values: pp.map(function (p) { return p.completion; }),
+               labels: pp.map(function (p) { return p.pid + ' · ' + p.version; }) };
+    }), '%');
+    var cs = c.strategic.completion, ct = c.tactical.completion;
+    document.getElementById('t-completion').innerHTML = (cs && ct)
+      ? 'Operators finish <b>' + pc(cs.median) + '</b> of the work they take on in Strategic Heavy but <b>' +
+        pc(ct.median) + '</b> in Tactical Heavy — a gap the achievability harness does not predict, since it ' +
+        'calibrates both scenarios to about 83% for its own automated operator.'
+      : 'Only builds from study-v1.2 log task outcomes, so completion cannot be scored in this window.';
+
+    // 5. mission time
+    renderDots(document.getElementById('c-misstime'), SCEN.map(function (s) {
+      var pp = c[s.key].perParticipant.filter(function (p) { return p.meanMissionTime; });
+      return { label: s.label, color: s.key === 'strategic' ? TIER.strategic.color : TIER.tactical.color,
+               values: pp.map(function (p) { return p.meanMissionTime; }),
+               labels: pp.map(function (p) { return p.pid + ' · ' + p.version; }) };
+    }), 's');
+    var ms = c.strategic.meanMissionTime, mt = c.tactical.meanMissionTime;
+    document.getElementById('t-misstime').innerHTML = (ms && mt)
+      ? 'A Tactical Heavy mission takes <b>' + n0(mt.median - ms.median) + 's longer</b> at the median (' +
+        n0(mt.median) + 's vs ' + n0(ms.median) + 's). Bigger missions, more drones to place, and a ' +
+        'planning step that has to finish before anything starts.'
+      : '';
+
+    // 6. card mix
+    renderStack(document.getElementById('c-mix'), document.getElementById('l-mix'),
+      SCEN.map(function (s) {
+        var m = c[s.key].cardMix;
+        return { label: s.label, values: m, total: m.aggressive + m.conservative + m.manual };
+      }),
+      [{ key: 'aggressive', label: 'Aggressive card', color: 'var(--s1)' },
+       { key: 'conservative', label: 'Conservative card', color: '#86b6ef', ink: 'var(--ink)' },
+       { key: 'manual', label: 'Built by hand', color: 'var(--neutral-mark)' }]);
+    var mixS = c.strategic.cardMix, mixT = c.tactical.cardMix;
+    var ratio = function (m) { return m.conservative ? (Math.round((m.aggressive / m.conservative) * 10) / 10) + ':1' : (m.aggressive ? 'all aggressive' : '—'); };
+    document.getElementById('t-mix').innerHTML =
+      'Aggressive-to-Conservative among cards taken: <b>' + ratio(mixS) + '</b> in Strategic Heavy, <b>' +
+      ratio(mixT) + '</b> in Tactical Heavy. When missions are large, operators stop reaching for the ' +
+      'card that empties the reserve fastest.';
+
+    // 7. recovery
+    renderProportion(document.getElementById('c-recovery'), null,
+      { groups: SCEN.map(function (s) {
+          return { label: s.label, bars: [
+            { name: 'Recovery used the assistant', color: TIER.tactical.color, rate: c[s.key].recoveryAgent }
+          ] };
+        }) });
+    document.getElementById('t-recovery').innerHTML = has(o.recoveryAgent)
+      ? pc(o.recoveryAgent.p) + ' of ' + o.recoveryAgent.n + ' recoveries in this window used the ' +
+        'assistant\'s suggestion. <b>Read this against the build, not against trust</b> — the recovery ' +
+        'planner\'s Suggest button returned nothing at all until study-v1.5.'
+      : '';
+
+    // 8. slopes
+    var slopeSpecs = [
+      { key: 'completion', title: 'Work finished', sub: 'of the work taken on', pct: true, fmt: pc },
+      { key: 'tacticalUnmodified', title: 'Tactical plans accepted unchanged', sub: 'share of confirmed plans', pct: true, fmt: pc },
+      { key: 'strategicUptake', title: 'Strategy cards taken', sub: 'share of allocations', pct: true, fmt: pc },
+      { key: 'meanMissionTime', title: 'Mean mission time', sub: 'seconds', pct: false, fmt: function (v) { return n0(v) + 's'; } }
+    ];
+    // Two passes: every card has to be in the grid before any chart measures its own width, or the
+    // first card measures the full row and its SVG gets scaled down to a fraction of its type size.
+    var sh = document.getElementById('slopes');
+    sh.innerHTML = '';
+    var pending = [];
+    slopeSpecs.forEach(function (sp) {
+      var pairs = c.contrasts.filter(function (p) { return p[sp.key]; })
+        .map(function (p) {
+          return { pid: p.pid, version: p.version, strategic: p[sp.key].strategic,
+                   tactical: p[sp.key].tactical, delta: p[sp.key].delta };
+        });
+      var fig = document.createElement('figure');
+      var dir = countDirection(pairs);
+      fig.innerHTML = '<figcaption><p class="fig-title">' + sp.title + '</p>' +
+        '<p class="fig-sub">' + sp.sub + ' · one line per participant</p></figcaption>' +
+        '<div class="chart"></div>' +
+        (pairs.length ? '<p class="fig-take"><b>' + Math.max(dir.down, dir.up) + ' of ' + dir.n +
+          '</b> participants moved ' + (dir.down >= dir.up ? 'down' : 'up') +
+          ' going into Tactical Heavy.</p>' : '');
+      sh.appendChild(fig);
+      pending.push({ host: fig.querySelector('.chart'), pairs: pairs, sp: sp });
+    });
+    pending.forEach(function (p) { renderSlope(p.host, p.pairs, p.sp); });
+
+    // 9. disposition, trust, and use
+    renderAttitudes(c);
+
+    // 10. windows
+    renderWindows(document.getElementById('c-wintake'), document.getElementById('l-wintake'), [
+      { name: TIER.strategic.label, color: TIER.strategic.color, get: function (co) { return co.overall.strategicUptake; } },
+      { name: TIER.tactical.label, color: TIER.tactical.color, get: function (co) { return co.overall.tacticalUptake; } }
+    ]);
+    var spanOf = function (get) {
+      var ps = COHORTS.map(get).filter(has).map(function (r) { return r.p; });
+      return ps.length ? pc(Math.min.apply(null, ps)) + '–' + pc(Math.max.apply(null, ps)) : '—';
+    };
+    document.getElementById('t-wintake').innerHTML =
+      'Across the six windows strategic uptake spans <b>' +
+      spanOf(function (co) { return co.overall.strategicUptake; }) + '</b> and tactical uptake <b>' +
+      spanOf(function (co) { return co.overall.tacticalUptake; }) + '</b>, with no consistent ' +
+      'direction. The narrow windows rest on one or two people, so this is a description of who was ' +
+      'in the room, not a trend in operator behaviour.';
+
+    renderWindows(document.getElementById('c-winrec'), null, [
+      { name: 'Recovery used the assistant', color: TIER.tactical.color, get: function (co) { return co.overall.recoveryAgent; } }
+    ]);
+    document.getElementById('t-winrec').innerHTML =
+      'The one monotone series in the dataset — and it is <b>a bug being fixed</b>, not trust being ' +
+      'earned. Before study-v1.5 the recovery planner\'s Suggest button could return nothing; the ' +
+      'zero on the left is the software, not the operator.';
+
+    // 10. caveats
+    var cav = document.getElementById('caveats');
+    cav.innerHTML = '';
+    var items = [
+      ['crit', 'n', 'This is <b>' + DATA.cohorts[0].overall.participants + ' people</b>. ' +
+        'Nothing here is a hypothesis test. The Wilson intervals on every bar are wide on purpose: at ' +
+        'these counts a two-bar gap of twenty points is routinely noise. Treat every figure as a ' +
+        'description of the sessions collected, and use the direction of the within-participant lines ' +
+        'over the level of any bar.'],
+      ['warn', 'Pooling', 'The tactical agent ran in <b>greedy</b> mode for every pre-tag session and ' +
+        '<b>plan-all</b> from study-v1.0. Greedy committed one task at a time, so its "plan" was a ' +
+        'single step and agreeing with it was nearly free; plan-all proposes the whole mission. ' +
+        'Tactical acceptance must not be pooled across that boundary — which is exactly why the ' +
+        'Pilot and v1.0+ windows are separated rather than summed.'],
+      ['warn', 'Scoring', 'Session <b>score</b> is not comparable across study-v1.3, which deliberately ' +
+        'made scoring friendlier. It is deliberately absent from every figure here; completion rate ' +
+        'and mission time carry the performance story instead.'],
+      ['note', 'Order', 'Scenario is partly confounded with session order — each participant plays one ' +
+        'scenario then the other. The split is close to balanced overall (' + orderBlurb() + '), and ' +
+        'uptake is modestly higher in second sessions on both tiers, so a scenario gap that runs the ' +
+        'same way for both orders is the safer read.'],
+      ['warn', 'Surveys', 'The pre-study AI-attitude battery (AIAS-4, verification propensity, ' +
+        'delegation boundary) only exists from <b>study-v1.3</b>, so it covers ' +
+        DATA.cohorts[0].attitudes.withBattery + ' of the ' + DATA.cohorts[0].overall.participants +
+        ' participants — nothing about AI scepticism can be estimated yet. Two more participants ' +
+        'left every trust and workload slider on its default; they are flagged and dropped from the ' +
+        'survey figures, but their behavioural data stands.'],
+      ['note', 'Missing ≠ zero', 'Fields that a build did not log are dropped from their figure, never ' +
+        'counted as zero. The earliest participant has no tactical consultation counter, the pre-v1.2 ' +
+        'builds log no task outcomes, and the drone-failure hazard only fired correctly on every ' +
+        'display from study-v1.4.']
+    ];
+    items.forEach(function (it) {
+      var d = document.createElement('div');
+      d.className = 'callout ' + it[0];
+      d.innerHTML = '<span class="mark">' + it[1] + '</span><div><p>' + it[2] + '</p></div>';
+      cav.appendChild(d);
+    });
+
+    // 11. table
+    var rows = DATA.cohorts[0].overall.perParticipant.slice();
+    var inWindow = {};
+    c.overall.perParticipant.forEach(function (p) { inWindow[p.pid + '|' + p.scenario] = 1; });
+    var tbl = document.getElementById('sessions');
+    tbl.innerHTML =
+      '<thead><tr><th class="l">Participant</th><th class="l">Scenario</th><th class="l">Build</th>' +
+      '<th>Cards taken</th><th>Tactical uptake</th><th>Completion</th><th>Mission time</th>' +
+      '<th>Failures</th><th>Drags</th><th>TLX</th></tr></thead>';
+    var tb = document.createElement('tbody');
+    rows.sort(function (a, b) { return a.pid < b.pid ? -1 : a.pid > b.pid ? 1 : (a.scenario < b.scenario ? -1 : 1); });
+    rows.forEach(function (p) {
+      var tr = document.createElement('tr');
+      if (!inWindow[p.pid + '|' + p.scenario]) tr.className = 'dim';
+      var chipCol = p.scenario === 'strategic' ? 'var(--s1)' : 'var(--s2)';
+      tr.innerHTML =
+        '<td class="l num">' + p.pid + '</td>' +
+        '<td class="l"><span class="scen-chip" style="color:' + chipCol + '">' +
+          (p.scenario === 'strategic' ? 'STRAT-HEAVY' : 'TAC-HEAVY') + '</span></td>' +
+        '<td class="l num">' + p.version + '</td>' +
+        '<td class="num">' + pc(p.strategicUptake) + '</td>' +
+        '<td class="num">' + (p.tacticalUptake === null || p.tacticalUptake === undefined ? '' : pc(p.tacticalUptake)) + '</td>' +
+        '<td class="num">' + (p.completion === null || p.completion === undefined ? '' : pc(p.completion)) + '</td>' +
+        '<td class="num">' + (p.meanMissionTime ? n0(p.meanMissionTime) + 's' : '') + '</td>' +
+        '<td class="num">' + p.failures + '</td>' +
+        '<td class="num">' + (p.drags || '') + '</td>' +
+        '<td class="num">' + n1(p.tlx) + '</td>';
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+  }
+
+  function orderBlurb() {
+    var all = DATA.cohorts[0];
+    var s1 = all.orderEffect[0], s2 = all.orderEffect[1];
+    if (!s1 || !s2) return 'order data unavailable';
+    return s1.scenarios.strategic + ' played Strategic Heavy first, ' +
+           s1.scenarios.tactical + ' played Tactical Heavy first';
+  }
+
+  draw();
+  var rt;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(draw, 140);
+  });
+})();
+</script>
