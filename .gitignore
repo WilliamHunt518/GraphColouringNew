@@ -20,3 +20,7 @@ logs/Pilots/auto/figs/
 
 # Python bytecode from the analysis scripts in scripts/
 __pycache__/
+
+# Narration pipeline working files: audio, transcripts and per-decision narration are
+# identifiable data (a voice, a screen, a named person). Regenerate them, never commit them.
+logs/narration/

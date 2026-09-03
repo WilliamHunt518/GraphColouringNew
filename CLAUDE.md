@@ -77,6 +77,16 @@ modes with `file:line` references, and a ready-to-paste patch for the most likel
 GPU ⇒ the hard-coded NVENC encoder fails and needs a fallback). Do not diagnose the encoder with
 `ffmpeg -encoders`; it lists compiled support, not usable hardware.
 
+**Using the recordings as data** — transcribing the participant's narration and lining it up
+against the event log — is [`docs/NARRATION.md`](docs/NARRATION.md), run by
+`scripts/narration_pipeline.py`. It is a **skeleton**: the logic is written and unit-tested
+(`scripts/test_narration.py`, standard library only, runs without a video), but nothing has met a
+real recording yet, so every default — the timer OCR box above all — is a guess pending tuning.
+Alignment reads the on-screen countdown rather than the recorder's filename, because
+`MAX_TICK_GAP_MS` pauses simulated time when the primary window is hidden and only the countdown
+survives that. Generated audio/transcripts are identifiable and are gitignored — never commit
+`logs/narration/`.
+
 ## Architecture
 
 ### Study Design
