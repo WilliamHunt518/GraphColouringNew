@@ -87,6 +87,16 @@ Alignment reads the on-screen countdown rather than the recorder's filename, bec
 survives that. Generated audio/transcripts are identifiable and are gitignored — never commit
 `logs/narration/`.
 
+## Running online (proposal, not built)
+
+A Prolific/online arm is **sketched but not implemented** — nothing in `src/` targets an
+unsupervised participant. [`docs/ONLINE_DEPLOYMENT.md`](docs/ONLINE_DEPLOYMENT.md) has the build
+plan, the costing (hosting ≈ £0, ~£25/participant all-in), and the concurrency analysis. The two
+blockers are the dual-window layout (online participants have one screen, and an occluded primary
+window pauses the rAF clock) and the manual download export. Don't start building it without
+reading that doc; if it is built, it gets a `study-v2.x` section in `STUDY_BUILD.md` like every
+other build decision.
+
 ## Architecture
 
 ### Study Design
