@@ -534,6 +534,39 @@ dismiss fix and `APP_VERSION` still read `study-v1.7` — the tag and the build 
 the one thing the rule below exists to prevent. Fixed by this bump; check with
 `git log study-v1.8..HEAD --oneline` (should be empty at the tagged commit).
 
+### 16. `study-v1.9` — deploying a tactical plan closes the planner
+
+`study-v1.8` fixed half of this and the other half survived. Confirming a tactical plan left the
+planner on screen in read-only "View Only" mode; v1.8 cleared that when the operator next opened
+the strategic modal, but if they simply deployed and did nothing else, the map window went on
+displaying the mission they had just finished with. It reads as though that mission still wants a
+decision, and it hides the "select a mission" waiting state that tells the operator the tactical
+tier is idle.
+
+Two mechanisms should have prevented it and each missed:
+
+- `MapDisplay`'s auto-clear kept the selection while `status === 'active'`, and a just-deployed
+  mission is exactly that.
+- `TacticalPlannerView` has its own "return to waiting" effect for precisely this transition, but it
+  never fired. The planner is keyed on mission id + mode, so the pending → read-only flip
+  **remounted** it; the fresh instance's `initiallyReadOnly` ref was already `true`, so the effect
+  took its early return. A child cannot reliably watch for the state change that unmounts it.
+
+The selection is now cleared in `MapDisplay` the moment the mission stops being `tacticalPending`
+or `failureRecoveryPending` — race-free, and it covers confirming a failure recovery too, which had
+the identical shape (`recovery` → `readonly` remount). The planner's read-only mode is now
+unreachable: the tactical queue only ever offers pending or recovery missions, so no active mission
+can be selected at all. The `study-v1.8` strategic-modal dismissal is kept as an explicit guarantee
+even though the stronger rule subsumes it.
+
+Unchanged, and for the same reason as v1.8: a planner holding unfinished work is never closed out
+from under the operator. Deploying is what *ends* the unfinished work, so closing on deploy is the
+same rule, not an exception to it.
+
+**Consequence for the data:** none. No event, parameter or game-state transition changed — this is
+only what the second screen displays after a deploy. `v1.7`, `v1.8` and `v1.9` pool freely on
+everything.
+
 ---
 
 ## Reproducing a session from its log

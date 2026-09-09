@@ -84,13 +84,26 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
     channelRef.current?.postMessage(action)
   }
 
-  // Auto-clear local selection when the selected mission is no longer pending/active
+  // Auto-clear local selection the moment the selected mission stops needing a tactical decision —
+  // i.e. as soon as Deploy commits the plan (`tacticalPending` → false, status → 'active') or a
+  // recovery is resolved. The tactical window then returns to the waiting state with nothing
+  // selected, which is what deploying means: this window's job on that mission is finished.
+  //
+  // It used to keep the selection while `status === 'active'`, which left the just-deployed mission
+  // on screen in a read-only planner. TacticalPlannerView's own "return to waiting" effect was
+  // meant to catch that, but never fired: the planner is keyed on mission id + mode, so the
+  // pending→read-only flip REMOUNTED it, and the fresh instance's `initiallyReadOnly` ref was
+  // already true, so the effect returned early. Clearing here instead of relying on the child's
+  // effect is race-free — the child can be unmounted by the same state change it is watching.
+  //
+  // Note this makes the planner's read-only mode unreachable: the queue panel only ever offers
+  // pending/recovery missions, so an active mission can no longer be selected at all.
   useEffect(() => {
     setTacticalMissionId(prev => {
       if (!prev) return null
       const m = state.missions.find(m => m.id === prev)
       if (!m) return null
-      if (!m.tacticalPending && !m.failureRecoveryPending && m.status !== 'active') return null
+      if (!m.tacticalPending && !m.failureRecoveryPending) return null
       return prev
     })
   }, [state.missions])
@@ -104,6 +117,11 @@ export default function MapDisplay({ state, onReprioritiseTop: _onReprioritiseTo
   // failure recovery both hold drags the operator has already made, and unmounting the planner
   // would throw them away (the plan is local state — see the prune effect in TacticalPlannerView).
   // Only the read-only view of an already-deployed mission is dismissed.
+  //
+  // Since the auto-clear effect above stopped holding on to deployed missions, that read-only view
+  // no longer exists, so this effect is a no-op in practice — the stronger rule subsumes it. Kept
+  // as the explicit guarantee of the `study-v1.8` decision, so a future change that reintroduces a
+  // way to view a non-pending mission here cannot silently undo it.
   const strategicModalMissionId = state.strategicModal?.missionId ?? null
   const prevStrategicModalId = useRef(strategicModalMissionId)
   useEffect(() => {

@@ -27,7 +27,7 @@ that use it, and do not read `condition: "none"` in a log as a placeholder: it i
 The study measures how operators divide work between two *correct* assistants at different decision
 tiers — not trust calibration against a fallible one.
 
-**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.8` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.9` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 
