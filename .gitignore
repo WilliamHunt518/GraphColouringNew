@@ -24,3 +24,7 @@ __pycache__/
 # Narration pipeline working files: audio, transcripts and per-decision narration are
 # identifiable data (a voice, a screen, a named person). Regenerate them, never commit them.
 logs/narration/
+
+# Raw session recordings (screen + mic) that feed the narration pipeline above — same reason,
+# same rule: identifiable data, never commit it.
+Recordings/

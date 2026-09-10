@@ -1,0 +1,332 @@
+<title>Decision Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --plane: #f3f3f0; --surface: #fcfcfb; --surface-2: #ecebe6;
+    --ink: #0b0b0b; --ink-2: #52514e; --ink-muted: #898781;
+    --grid: #e1e0d9; --rule: rgba(11, 11, 11, 0.11);
+    --strategic: #2a78d6; --tactical: #eb6834; --recovery: #d03b3b;
+    --good: #0ca30c; --warn: #b5790a; --warn-bg: #fbe9c8; --crit-bg: #f7d9d9;
+    --shadow: 0 1px 2px rgba(11, 11, 11, 0.05);
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane: #0d0d0d; --surface: #1a1a19; --surface-2: #232321;
+      --ink: #ffffff; --ink-2: #c3c2b7; --ink-muted: #898781;
+      --grid: #2c2c2a; --rule: rgba(255, 255, 255, 0.11);
+      --strategic: #3987e5; --tactical: #d95926; --recovery: #e5605e;
+      --good: #3fc93f; --warn: #e8b854; --warn-bg: #3a2f10; --crit-bg: #3a1414;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane: #0d0d0d; --surface: #1a1a19; --surface-2: #232321;
+    --ink: #ffffff; --ink-2: #c3c2b7; --ink-muted: #898781;
+    --grid: #2c2c2a; --rule: rgba(255, 255, 255, 0.11);
+    --strategic: #3987e5; --tactical: #d95926; --recovery: #e5605e;
+    --good: #3fc93f; --warn: #e8b854; --warn-bg: #3a2f10; --crit-bg: #3a1414;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--plane); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 96px; }
+
+  header.masthead { padding: 48px 0 24px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 14px; }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.015em; margin: 0 0 16px; }
+  .standfirst { font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 68ch; margin: 0 0 18px; }
+  .warning { font-family: var(--mono); font-size: 12.5px; line-height: 1.6; background: var(--crit-bg); color: var(--recovery); border: 1px solid var(--recovery); border-radius: 4px; padding: 10px 14px; max-width: 68ch; }
+  .warning strong { text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .rail-shell { position: sticky; top: 0; z-index: 20; background: var(--plane); border-bottom: 1px solid var(--rule); padding: 14px 0; }
+  .rail { display: flex; gap: 8px; overflow-x: auto; flex-wrap: wrap; }
+  .rail button { cursor: pointer; font-family: var(--mono); font-size: 12.5px; background: var(--surface); color: var(--ink-2); border: 1px solid var(--rule); border-radius: 3px; padding: 7px 12px; }
+  .rail button.active { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+  .rail button .n { color: var(--ink-muted); }
+
+  .session-meta { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); margin: 18px 0 8px; display: flex; gap: 18px; flex-wrap: wrap; }
+  .session-meta b { color: var(--ink-2); font-weight: 500; }
+  .align-bad { color: var(--recovery); }
+
+  .cards { margin-top: 12px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden; }
+  .card-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+  .badge { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; color: #fff; }
+  .badge.strategic { background: var(--strategic); }
+  .badge.tactical { background: var(--tactical); }
+  .badge.recovery { background: var(--recovery); }
+  .card-mission { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .card-time { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); margin-left: auto; }
+  .unclosed { font-family: var(--mono); font-size: 11px; color: var(--warn); background: var(--warn-bg); border-radius: 3px; padding: 2px 7px; }
+
+  .card-body { padding: 14px 16px 16px; display: grid; gap: 14px; }
+  .panel-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 7px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13.5px; }
+  .kv .k { color: var(--ink-muted); }
+  .kv .v { color: var(--ink); }
+  .chip { display: inline-block; font-family: var(--mono); font-size: 12px; background: var(--surface-2); border-radius: 3px; padding: 1px 6px; margin: 1px 3px 1px 0; }
+  .strategy-mini { border: 1px solid var(--rule); border-radius: 4px; padding: 8px 10px; margin-bottom: 6px; }
+  .strategy-mini .name { font-weight: 600; font-size: 13.5px; }
+  .strategy-mini .desc { color: var(--ink-muted); font-size: 12.5px; margin: 3px 0 6px; }
+  .plan-row { font-family: var(--mono); font-size: 12.5px; display: flex; gap: 8px; padding: 2px 0; }
+  .plan-row .task { color: var(--ink-muted); min-width: 70px; }
+
+  .narration { border-left: 2px solid var(--rule); padding-left: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .utt { font-size: 14px; }
+  .utt .ts { font-family: var(--mono); font-size: 11px; color: var(--ink-muted); margin-right: 6px; }
+  .utt .txt { color: var(--ink); }
+  .speech-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .no-narration { font-size: 13px; color: var(--ink-muted); font-style: italic; }
+
+  .quote { font-size: 14.5px; font-style: italic; color: var(--ink); border-left: 2px solid var(--strategic); padding-left: 12px; margin: 0 0 8px; }
+  .clip { margin: 0 0 10px; }
+  .clip video { width: 100%; max-width: 480px; border-radius: 4px; display: block; background: #000; }
+  .clip-label { font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); margin: 4px 0 0; }
+  .code-chip { display: inline-block; font-family: var(--mono); font-size: 11px; background: var(--surface-2); color: var(--ink-2); border-radius: 3px; padding: 2px 7px; margin: 0 5px 5px 0; }
+  .code-chip.trust { color: var(--strategic); border: 1px solid var(--strategic); background: transparent; }
+  .coder-note { font-size: 12.5px; color: var(--ink-muted); margin: 4px 0 8px; }
+  details.raw { margin-top: 4px; }
+  details.raw summary { cursor: pointer; font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); }
+  details.raw .narration { margin-top: 8px; }
+
+  /* ── findings ─────────────────────────────────────────────────── */
+  section.findings { padding: 28px 0; border-bottom: 1px solid var(--rule); }
+  section.findings h2 { font-family: var(--serif); font-size: 22px; margin: 0 0 6px; }
+  .findings .coverage { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); margin: 0 0 14px; }
+  .limitations { background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 4px; padding: 12px 14px; margin: 0 0 18px; }
+  .limitations p { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warn); margin: 0 0 8px; }
+  .limitations ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+  .limitations li { margin-bottom: 6px; }
+  .narrative-box { font-size: 14.5px; line-height: 1.65; color: var(--ink-2); max-width: 72ch; margin: 0 0 20px; }
+  .bars { display: flex; flex-direction: column; gap: 7px; margin-bottom: 20px; }
+  .bar-row { display: grid; grid-template-columns: 160px 1fr 30px; align-items: center; gap: 10px; font-size: 13px; }
+  .bar-row .label { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+  .bar-track { background: var(--surface-2); border-radius: 3px; height: 14px; overflow: hidden; }
+  .bar-fill { background: var(--strategic); height: 100%; }
+  .bar-fill.trust { background: var(--tactical); }
+  .bar-row .n { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); text-align: right; }
+  table.crosstab { border-collapse: collapse; font-size: 12.5px; margin-bottom: 8px; }
+  table.crosstab th, table.crosstab td { border: 1px solid var(--rule); padding: 5px 9px; text-align: left; }
+  table.crosstab th { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); background: var(--surface-2); }
+
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">Narration pipeline &middot; docs/NARRATION.md</p>
+    <h1>Decision cards</h1>
+    <p class="standfirst">Every logged operator decision (strategic / tactical / recovery) with the
+      narration transcript overlapping it, joined on session time. Generated by
+      <code>scripts/build_narration_report.py</code> from <code>logs/narration/*/windows.json</code>.</p>
+    <p class="warning"><strong>Local only.</strong> This file embeds verbatim (redacted) participant
+      speech. It lives under <code>logs/narration/</code>, which is gitignored &mdash; never commit
+      it, push it, or paste it into a hosted tool. Open it by double-clicking; nothing here is
+      uploaded anywhere.</p>
+  </header>
+
+  <section class="findings" id="findings"></section>
+
+  <div class="rail-shell">
+    <div class="rail" id="rail"></div>
+  </div>
+
+  <div id="body"></div>
+
+  <footer>Re-run <code>python scripts/build_narration_report.py</code> after processing another
+    session through <code>narration_pipeline.py ... join</code>.</footer>
+</div>
+
+<script>
+const DATA = __DATA__;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function mmss(sec) {
+  if (sec === null || sec === undefined || isNaN(sec)) return '—';
+  sec = Math.max(0, Math.round(sec));
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+function humanKey(k) {
+  return k.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+}
+const ASSET_LABEL = {Blue: 'F', Red: 'L', Green: 'C'}; // Fast / Lifter / Camera, per operator-facing naming
+function isAssetCounts(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  const keys = Object.keys(v);
+  return keys.length > 0 && keys.every(k => k in ASSET_LABEL && typeof v[k] === 'number');
+}
+function assetChip(v) {
+  return '<span class="chip">' + Object.entries(v).map(([k, n]) => n + ASSET_LABEL[k]).join(' ') + '</span>';
+}
+function isTaskPlan(v) {
+  return Array.isArray(v) && v.length > 0 && v.every(x => x && typeof x === 'object' && 'taskId' in x && 'assetIds' in x);
+}
+function isStrategyList(v) {
+  return Array.isArray(v) && v.length > 0 && v.every(x => x && typeof x === 'object' && 'displayedAssets' in x && 'name' in x);
+}
+function fmtPrimitive(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? '✓' : '✗';
+  if (typeof v === 'number') return (Number.isInteger(v) ? v : v.toFixed(2)) + '';
+  return esc(v);
+}
+function renderValue(key, v) {
+  if (v === null || v === undefined) return '<span class="v">—</span>';
+  if (key.toLowerCase().includes('latencyms') && typeof v === 'number') return '<span class="v">' + (v / 1000).toFixed(1) + 's</span>';
+  if (isAssetCounts(v)) return '<span class="v">' + assetChip(v) + '</span>';
+  if (isStrategyList(v)) {
+    return '<div class="v">' + v.map(s => `
+      <div class="strategy-mini">
+        <div class="name">${esc(s.name)}</div>
+        <div class="desc">${esc(s.description || '')}</div>
+        ${assetChip(s.displayedAssets)}
+        <span class="chip">${s.displayedCompletionTime ? s.displayedCompletionTime.toFixed(0) + 's ETA' : ''}</span>
+        ${s.isBadSuggestion ? '<span class="chip" style="color:var(--recovery)">bad suggestion: ' + esc(s.badSuggestionType || '') + '</span>' : ''}
+      </div>`).join('') + '</div>';
+  }
+  if (isTaskPlan(v)) {
+    return '<div class="v">' + v.map(t => `<div class="plan-row"><span class="task">${esc(t.taskId)}</span><span>${(t.assetIds || []).join(', ')}</span></div>`).join('') + '</div>';
+  }
+  if (Array.isArray(v)) {
+    if (v.length === 0) return '<span class="v">—</span>';
+    return '<span class="v">' + v.map(x => `<span class="chip">${fmtPrimitive(x)}</span>`).join('') + '</span>';
+  }
+  if (typeof v === 'object') {
+    return '<div class="v kv" style="margin-top:2px">' + Object.entries(v).map(([k, vv]) => `<div class="k">${esc(humanKey(k))}</div>${renderValue(k, vv)}`).join('') + '</div>';
+  }
+  return '<span class="v">' + fmtPrimitive(v) + '</span>';
+}
+function renderEvent(ev) {
+  if (!ev) return '<p class="no-narration">— unresolved —</p>';
+  const entries = Object.entries(ev).filter(([k]) => k !== 'type');
+  if (!entries.length) return '<p class="no-narration">no extra fields logged</p>';
+  return '<div class="kv">' + entries.map(([k, v]) => `<div class="k">${esc(humanKey(k))}</div>${renderValue(k, v)}`).join('') + '</div>';
+}
+function renderWindow(w) {
+  const closedTag = w.closed ? '' : '<span class="unclosed">session ended mid-decision</span>';
+  const rawList = w.utterances && w.utterances.length
+    ? '<div class="narration">' + w.utterances.map(u => `<div class="utt"><span class="ts">[${mmss(u.start)}–${mmss(u.end)}]</span><span class="txt">${esc(u.text)}</span></div>`).join('') +
+      `<div class="speech-chips">
+        <span class="chip">${w.speech.wordsPerMin ?? '—'} wpm</span>
+        <span class="chip">${w.speech.pauseShare != null ? Math.round(w.speech.pauseShare * 100) + '% pause' : '—'}</span>
+        <span class="chip">${w.speech.disfluencyPer100 != null ? w.speech.disfluencyPer100 + ' disfl/100w' : 'disfl n/a'}</span>
+      </div></div>`
+    : '<p class="no-narration">no narration overlapping this decision</p>';
+
+  const clipHtml = w.clipPath
+    ? `<div class="clip"><video controls preload="none" src="${esc(w.clipPath)}"></video><p class="clip-label">${esc(w.clipPath)}</p></div>`
+    : '';
+
+  const c = w.coding;
+  let saidSection;
+  if (c) {
+    const shared = c.sharedNarrationWith && c.sharedNarrationWith.length
+      ? `<p class="coder-note">Narration shared verbatim with ${c.sharedNarrationWith.length} other decision(s): ${c.sharedNarrationWith.join(', ')} — one continuous utterance covers all of them; see session narrative above.</p>`
+      : '';
+    const noteHtml = c.note ? `<p class="coder-note">${esc(c.note)}</p>` : '';
+    const chips = (c.reasonCodes || []).map(r => `<span class="code-chip">${esc(humanKey(r))}</span>`).join('')
+      + (c.trustCode ? `<span class="code-chip trust">${esc(humanKey(c.trustCode))}</span>` : '');
+    saidSection = `
+      ${clipHtml}
+      <blockquote class="quote">${esc(c.quote)}</blockquote>
+      ${chips}
+      ${shared}
+      ${noteHtml}
+      <details class="raw"><summary>full overlapping narration (${w.utteranceCount} utterance(s))</summary>${rawList}</details>`;
+  } else {
+    saidSection = clipHtml + rawList;
+  }
+
+  return `
+    <div class="card">
+      <div class="card-head">
+        <span class="badge ${w.kind}">${w.kind}</span>
+        <span class="card-mission">${esc(w.missionId || '')}</span>
+        ${closedTag}
+        <span class="card-time">${mmss(w.start)}–${mmss(w.end)}</span>
+      </div>
+      <div class="card-body">
+        <div>
+          <p class="panel-label">Shown</p>
+          ${renderEvent(w.openEvent)}
+        </div>
+        <div>
+          <p class="panel-label">Decision</p>
+          ${renderEvent(w.closeEvent)}
+        </div>
+        <div>
+          <p class="panel-label">What they said${c ? ' <span style="font-weight:400;color:var(--ink-muted)">(coded)</span>' : ''}</p>
+          ${saidSection}
+        </div>
+      </div>
+    </div>`;
+}
+function renderSession(s) {
+  const align = s.alignment || {};
+  const alignCls = align.ok ? '' : 'align-bad';
+  const narrative = s.narrative
+    ? `<p class="narrative-box"><strong>Session narrative (${esc(s.coder || 'uncredited coder')}):</strong> ${esc(s.narrative)}</p>`
+    : '';
+  return `
+    <div class="session-meta">
+      <span><b>${esc(s.participantId)}</b> session ${esc(s.sessionNumber)}</span>
+      <span>${esc(s.complexity || '')} &middot; ${esc(s.appVersion || '')}</span>
+      <span class="${alignCls}">alignment: ${align.ok ? 'ok' : 'CHECK'} (offset ${align.offset != null ? align.offset.toFixed(1) : '?'}s, ${align.samples ?? 0} samples)</span>
+    </div>
+    ${narrative}
+    <div class="cards">${s.windows.map(renderWindow).join('')}</div>`;
+}
+
+function bar(label, n, max, cls) {
+  const pct = max ? Math.round(n / max * 100) : 0;
+  return `<div class="bar-row"><span class="label">${esc(humanKey(label))}</span><div class="bar-track"><div class="bar-fill ${cls || ''}" style="width:${pct}%"></div></div><span class="n">${n}</span></div>`;
+}
+function renderFindings(f) {
+  if (!f || !f.codedWindows) {
+    return '<h2>Findings</h2><p class="standfirst">No coded sessions yet — codes.json has not been written for any processed session. See docs/NARRATION.md "No coding scheme".</p>';
+  }
+  const reasonMax = Math.max(...Object.values(f.reasonCounts), 1);
+  const trustMax = Math.max(...Object.values(f.trustCounts), 1);
+  const choices = [...new Set(Object.values(f.crossTab).flatMap(o => Object.keys(o)))];
+  const crossRows = Object.entries(f.crossTab).map(([reason, byChoice]) => `
+    <tr><td>${esc(humanKey(reason))}</td>${choices.map(ch => `<td>${byChoice[ch] || 0}</td>`).join('')}</tr>`).join('');
+  return `
+    <h2>Findings</h2>
+    <p class="coverage">${f.codedWindows} / ${f.totalWindows} logged decisions coded &middot; coder(s): ${esc(f.coders.join(', ') || 'none')}</p>
+    <div class="limitations">
+      <p>Read before trusting this</p>
+      <ul>${DATA.sessions.flatMap(s => s.limitations || []).map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+    </div>
+    <p class="panel-label">Stated reason, by decision (n=${f.codedWindows})</p>
+    <div class="bars">${Object.entries(f.reasonCounts).sort((a,b) => b[1]-a[1]).map(([k,n]) => bar(k, n, reasonMax)).join('')}</div>
+    <p class="panel-label">Trust stance, by decision</p>
+    <div class="bars">${Object.entries(f.trustCounts).sort((a,b) => b[1]-a[1]).map(([k,n]) => bar(k, n, trustMax, 'trust')).join('')}</div>
+    <p class="panel-label">Stated reason vs. what was actually chosen</p>
+    <table class="crosstab"><thead><tr><th>reason</th>${choices.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${crossRows}</tbody></table>`;
+}
+
+const rail = document.getElementById('rail');
+const body = document.getElementById('body');
+document.getElementById('findings').innerHTML = renderFindings(DATA.findings);
+DATA.sessions.forEach((s, i) => {
+  const btn = document.createElement('button');
+  btn.innerHTML = esc(s.participantId) + ' s' + esc(s.sessionNumber) + ' <span class="n">(' + s.windows.length + ')</span>';
+  btn.onclick = () => show(i);
+  rail.appendChild(btn);
+});
+function show(i) {
+  [...rail.children].forEach((b, j) => b.classList.toggle('active', i === j));
+  body.innerHTML = renderSession(DATA.sessions[i]);
+}
+show(0);
+</script>

@@ -23,6 +23,7 @@ transcripts are identifiable data. See .gitignore.
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import re
 import shutil
@@ -297,6 +298,87 @@ def _ocr_timer(args, duration: float):
     return samples, reads
 
 
+# ── step: speakerid ───────────────────────────────────────────────────────────────────────────
+
+def cmd_speakerid(args) -> None:
+    """Label each transcript segment 'researcher' or 'participant' by voice similarity to a
+    reference clip of the researcher, using resemblyzer -- no HuggingFace token needed (unlike
+    --diarize/pyannote above), because the researcher is always the same one person across every
+    session, so a single short reference clip is reusable for every participant.
+
+    Rewrites transcript.raw.json's segments in place with a 'speaker' field; `join` already
+    respects that field when merging into utterances, so nothing downstream needs to change.
+    Run BEFORE `join` (or re-run it after -- `join` just re-reads whatever is on disk).
+
+    Why not real librosa: it needs numba, which is broken in this machine's base environment
+    against the numpy also installed there, and conda-installed so pip can't fix it. See
+    `_librosa_shim.py` and docs/NARRATION.md "Speaker identification".
+    """
+    sys.path.insert(0, str(BASE / 'scripts'))
+    import _librosa_shim
+    _librosa_shim.install()
+    try:
+        from resemblyzer import VoiceEncoder, preprocess_wav
+    except ImportError:
+        die('resemblyzer is not installed.', 'pip install resemblyzer webrtcvad soundfile audioread')
+    try:
+        import soundfile as sf
+    except ImportError:
+        die('soundfile is not installed.', 'pip install soundfile')
+    import numpy as np
+
+    d = out_dir(args)
+    tr_path = Path(args.transcript) if args.transcript else d / 'transcript.raw.json'
+    if not tr_path.exists():
+        die('no transcript at %s' % tr_path, 'run the `transcribe` step first')
+    blob = json.loads(tr_path.read_text(encoding='utf-8'))
+    segments = blob.get('segments', [])
+
+    audio_path = Path(args.audio) if args.audio else d / 'audio.wav'
+    if not audio_path.exists():
+        die('no audio at %s' % audio_path, 'run the `audio` step first')
+    full_wav, sr = sf.read(str(audio_path), dtype='float32', always_2d=False)
+    if full_wav.ndim > 1:
+        full_wav = full_wav.mean(axis=1)
+
+    print('loading voice encoder...')
+    enc = VoiceEncoder('cpu')
+    ref_wav = preprocess_wav(args.ref)
+    ref_emb = enc.embed_utterance(ref_wav)
+
+    def cosine(a, b):
+        return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+    counts = {'researcher': 0, 'participant': 0, 'unknown': 0}
+    for s in segments:
+        start, end = s.get('start'), s.get('end')
+        if start is None or end is None:
+            s['speaker'] = 'unknown'
+            counts['unknown'] += 1
+            continue
+        clip = full_wav[max(0, int(start * sr)):int(end * sr)]
+        if len(clip) < sr * 0.3:            # too short for a usable embedding
+            s['speaker'] = 'unknown'
+            counts['unknown'] += 1
+            continue
+        w = preprocess_wav(clip, source_sr=sr)
+        if len(w) < sr * 0.2:               # VAD trimmed it to near-nothing
+            s['speaker'] = 'unknown'
+            counts['unknown'] += 1
+            continue
+        sim = cosine(ref_emb, enc.embed_utterance(w))
+        s['speaker'] = 'researcher' if sim >= args.threshold else 'participant'
+        s['speakerSim'] = round(sim, 3)
+        counts[s['speaker']] += 1
+
+    tr_path.write_text(json.dumps(blob, indent=1), encoding='utf-8')
+    print('wrote %s' % tr_path)
+    print('%d researcher, %d participant, %d unknown (of %d segments), threshold=%.2f'
+          % (counts['researcher'], counts['participant'], counts['unknown'], len(segments), args.threshold))
+    print('This is a coarse binary voice-similarity classifier, not validated diarization -- spot-check')
+    print('a few labels against the video before trusting it. Re-run `join` to pick up the labels.')
+
+
 # ── step: join ────────────────────────────────────────────────────────────────────────────────
 
 def cmd_join(args) -> Path:
@@ -363,6 +445,144 @@ def cmd_all(args) -> None:
     cmd_join(args)
 
 
+# ── step: clips ───────────────────────────────────────────────────────────────────────────────
+
+def safe_window_id(window_id: str) -> str:
+    """windowId is 'kind:missionId:seconds' -- ':' is illegal in a Windows filename."""
+    return window_id.replace(':', '_')
+
+
+def _load_codes(narration_dir: Path) -> dict:
+    path = narration_dir / 'codes.json'
+    if not path.exists():
+        return {}
+    d = json.loads(path.read_text(encoding='utf-8'))
+    return {c['windowId']: c for c in d.get('codings', [])}
+
+
+_WORD_RE = re.compile(r"[^a-z0-9' ]")
+
+
+def _quote_span(utterances: list[dict], quote: str) -> tuple[float, float] | None:
+    """Best-effort (start, end) session-time span of `quote`'s words inside this window's
+    attached utterances, using word-level timestamps -- or None if nothing matches confidently.
+
+    A curated quote (codes.json) is a hand-trimmed excerpt of what was actually said, sometimes
+    spliced from the tail of one utterance and the head of the next (Whisper's segment cuts don't
+    know or care where a decision boundary is), and sometimes from an utterance that overlaps
+    several decision windows (a fast-talking multitasking burst -- see docs/NARRATION.md
+    "Tuning"). The window's own openedAt/closedAt is the UI action; this is the speech act.
+    `clips` unions both so a card's clip always contains the words on the card, not just
+    whichever window nominally owns the timestamp.
+
+    One `find_longest_match` over the WHOLE flat transcript (not a per-utterance or sliding-window
+    score) is what makes this robust to a quote spanning an utterance boundary: a symmetric
+    similarity ratio between a short quote and one candidate utterance's full (much longer) text
+    is a bad metric regardless of whether the quote is actually there, since ratio is penalised by
+    the length mismatch either way. Coverage of the single best contiguous verbatim run is not.
+    """
+    words = [(_WORD_RE.sub('', (w.get('word') or '').lower()), w['start'], w['end'])
+             for u in utterances for w in (u.get('words') or [])
+             if w.get('start') is not None and _WORD_RE.sub('', (w.get('word') or '').lower())]
+    q_tokens = [_WORD_RE.sub('', t.lower()) for t in quote.split()]
+    q_tokens = [t for t in q_tokens if t]
+    if not words or not q_tokens:
+        return None
+
+    flat = [w[0] for w in words]
+    flat_joined = ' '.join(flat)
+    q_joined = ' '.join(q_tokens)
+    match = difflib.SequenceMatcher(None, flat_joined, q_joined, autojunk=False).find_longest_match(
+        0, len(flat_joined), 0, len(q_joined))
+    if match.size < 0.4 * len(q_joined):
+        return None   # even the single best run barely overlaps the quote -- don't guess
+
+    # Map the character offset back to a word index, then take a generous window of words around
+    # it -- generous because the character->word mapping only needs to land close, not exactly.
+    pos, anchor = 0, 0
+    for i, w in enumerate(flat):
+        if pos <= match.a < pos + len(w):
+            anchor = i
+            break
+        pos += len(w) + 1   # +1 for the joining space
+    lo = max(0, anchor - 2)
+    hi = min(len(words), lo + len(q_tokens) + 4)
+    return words[lo][1], words[hi - 1][2]
+
+
+def cmd_clips(args) -> None:
+    """Cut a short mp4 (screen + mic) for each decision window, straight from the source video.
+
+    The clip's span is the UNION of the window's own [openedAt, closedAt] (the UI action) and,
+    when codes.json has a coded quote for this window, that quote's own word-level span (the
+    speech act) -- so a card's embedded clip always contains what its quote says, even when that
+    quote was actually spoken nearer a neighbouring decision (the shared-burst case; see
+    docs/NARRATION.md). `--pad` adds context at both ends; `--max-duration` only ever shrinks that
+    padding -- it never truncates the decision's own span, so a long recovery still plays in full
+    rather than silently cutting off before its own close event.
+
+    Needs `align` to have already produced alignment.json; refuses to guess offset 0, since a
+    wrong clip is worse than no clip.
+    """
+    d = out_dir(args)
+    win_path = d / 'windows.json'
+    if not win_path.exists():
+        die('no windows.json at %s' % win_path, 'run the `join` step first')
+    data = json.loads(win_path.read_text(encoding='utf-8'))
+    blob = data.get('alignment')
+    if not blob:
+        die('windows.json has no alignment recorded')
+    align = Alignment(blob['offset'], blob['samples'], blob['residualMax'],
+                      blob['residualMedian'], blob['source'], blob['tolerance'])
+    if not align.ok:
+        print('warning: alignment did not pass its own check -- clips may be off; eyeball one '
+              'before trusting the rest', file=sys.stderr)
+    codes = _load_codes(d)
+
+    windows = data['windows']
+    if args.window_id:
+        windows = [w for w in windows if w['id'] == args.window_id]
+        if not windows:
+            die('no window with id %r in %s' % (args.window_id, win_path))
+
+    ff = need_ffmpeg()
+    out_clips = d / 'clips'
+    out_clips.mkdir(parents=True, exist_ok=True)
+    written = []
+    for w in windows:
+        open_t, close_t = w.get('openedAt'), w.get('closedAt')
+        core_start = open_t if open_t is not None else w['start']
+        core_end = close_t if close_t is not None else w['end']
+
+        coding = codes.get(w['id'])
+        if coding and coding.get('quote'):
+            qspan = _quote_span(w.get('utterances', []), coding['quote'])
+            if qspan:
+                core_start, core_end = min(core_start, qspan[0]), max(core_end, qspan[1])
+
+        pad = args.pad
+        core_len = core_end - core_start
+        if core_len + 2 * pad > args.max_duration:
+            pad = max(0.0, (args.max_duration - core_len) / 2.0)
+            if core_len > args.max_duration:
+                print('warning: %s is %.1fs, longer than --max-duration %.1fs -- showing it in '
+                      'full anyway (raise --max-duration to also restore padding)'
+                      % (w['id'], core_len, args.max_duration), file=sys.stderr)
+        span_start = max(0.0, core_start - pad)
+        span_end = core_end + pad
+        v_start, v_end = align.to_video(span_start), align.to_video(span_end)
+        dest = out_clips / (safe_window_id(w['id']) + '.mp4')
+        subprocess.run([
+            ff, '-y', '-loglevel', 'error', '-ss', str(v_start), '-i', args.video,
+            '-t', str(v_end - v_start),
+            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+            '-c:a', 'aac', '-movflags', '+faststart', str(dest),
+        ], check=True)
+        written.append((w['id'], dest, v_end - v_start))
+        print('wrote %s  (%.1fs, video %.1f-%.1fs)' % (dest.relative_to(BASE), v_end - v_start, v_start, v_end))
+    print('%d clip(s) in %s' % (len(written), out_clips.relative_to(BASE)))
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────────────────────
 
 def roi_type(s: str):
@@ -416,6 +636,15 @@ def main() -> None:
                     help='measured ffmpeg warm-up, for the filename anchor')
     sp.set_defaults(func=cmd_align)
 
+    sp = sub.add_parser('speakerid', help='label segments researcher/participant by voice similarity (no HF token)')
+    sp.add_argument('--ref', required=True,
+                    help='wav clip of only the researcher talking (soundfile-readable -- if you '
+                         'only have an mp4, extract audio first: ffmpeg -i clip.mp4 -vn -ac 1 '
+                         '-ar 16000 ref.wav)')
+    sp.add_argument('--audio'), sp.add_argument('--transcript')
+    sp.add_argument('--threshold', type=float, default=0.62)
+    sp.set_defaults(func=cmd_speakerid)
+
     sp = sub.add_parser('join', help='attach narration to each decision')
     sp.add_argument('--log', required=True)
     sp.add_argument('--transcript'), sp.add_argument('--alignment')
@@ -424,6 +653,13 @@ def main() -> None:
     sp.add_argument('--merge-gap', type=float, default=0.6)
     sp.add_argument('--redact', nargs='*', default=[], help='names to remove from the transcript')
     sp.set_defaults(func=cmd_join)
+
+    sp = sub.add_parser('clips', help='cut a short mp4 per decision window, straight from the source video')
+    common_video(sp)
+    sp.add_argument('--window-id', help='cut just this one window (default: every window)')
+    sp.add_argument('--pad', type=float, default=2.0, help='seconds of context before/after the decision')
+    sp.add_argument('--max-duration', type=float, default=25.0, help='hard cap per clip, seconds')
+    sp.set_defaults(func=cmd_clips)
 
     sp = sub.add_parser('all', help='audio -> transcribe -> align -> join')
     common_video(sp)
