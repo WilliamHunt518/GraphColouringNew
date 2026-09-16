@@ -36,11 +36,13 @@ export function parseURLConfig(): StudyConfig | null {
   const failureGraceSeconds = isNaN(graceParsed) ? FAILURE_GRACE_SECONDS : Math.max(0, graceParsed)
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
+  const agentFailuresEnabledFlag = p.get('failuresLive') === '1'
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
     agentErrorRate, epsilonTactical, tacticalMode, testingMode, tutorialMode: false, numSessions,
     fullPathsOnHover, fixLockouts, failureGraceSeconds,
+    agentFailuresEnabled: agentFailuresEnabledFlag,
   }
 }
 
@@ -74,6 +76,29 @@ export function failureGraceSeconds(cfg: { failureGraceSeconds?: number }): numb
   return cfg.failureGraceSeconds == null || isNaN(cfg.failureGraceSeconds)
     ? FAILURE_GRACE_SECONDS
     : Math.max(0, cfg.failureGraceSeconds)
+}
+
+/**
+ * Master gate for the ε_Strategic/ε_Tactical agent-reliability manipulation (study-v1.10).
+ *
+ * Default (omitted/false) is OFF: both effective epsilons read as 0 regardless of whatever
+ * agentErrorRate/epsilonTactical are configured to. This lets a candidate rate be dialled in and
+ * tested (testingMode's flagging UI shows exactly when/how a failure would have fired) without it
+ * ever being live for a real participant — a session only manipulates the agent's reliability when
+ * this is explicitly turned on. Read epsilon through effectiveEpsilonStrategic/effectiveEpsilonTactical
+ * below, never `cfg.agentErrorRate`/`cfg.epsilonTactical` directly, or a leftover configured rate on
+ * a shared preset/URL could silently go live.
+ */
+export function agentFailuresEnabled(cfg: { agentFailuresEnabled?: boolean }): boolean {
+  return cfg.agentFailuresEnabled === true
+}
+
+export function effectiveEpsilonStrategic(cfg: { agentErrorRate: number; agentFailuresEnabled?: boolean }): number {
+  return agentFailuresEnabled(cfg) ? cfg.agentErrorRate : 0
+}
+
+export function effectiveEpsilonTactical(cfg: { epsilonTactical: number; agentFailuresEnabled?: boolean }): number {
+  return agentFailuresEnabled(cfg) ? cfg.epsilonTactical : 0
 }
 
 // Canonical study seed. Every participant who doesn't explicitly override the seed

@@ -222,6 +222,7 @@ export default function GameShell({ config }: Props) {
       pendingBlueprints: state.pendingBlueprints,
       mode: state.config.mode,
       tacticalMode: state.config.tacticalMode,
+      testingMode: state.config.testingMode,
       reserve: reserveCount(state.assets, state.missions),
       strategicModal: state.strategicModal,
       openMissionId,

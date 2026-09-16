@@ -33,6 +33,12 @@ export interface StudyConfig {
   fullPathsOnHover?: boolean   // when true, hovering a drone/mission on the strategic map reveals full planned paths
   collectDemographics?: boolean  // when true, a demographics/experience questionnaire runs before session 1
   fastTest?: boolean             // dev only: 10s sessions + relaxed form validation, so the full flow can be walked quickly
+  // Master gate for the ε_Strategic/ε_Tactical agent-reliability manipulation (study-v1.10). Default
+  // (omitted/false) forces both effective epsilons to 0 regardless of agentErrorRate/epsilonTactical,
+  // so a configured-but-not-yet-decided rate can sit on a session without ever firing. Read only via
+  // agentFailuresEnabled()/effectiveEpsilonStrategic()/effectiveEpsilonTactical() in utils/config —
+  // never inline (same rule as isFixLockouts/failureGraceSeconds).
+  agentFailuresEnabled?: boolean
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
@@ -68,8 +74,13 @@ export interface PendingAllocation {
   isAgentSuggested: boolean
   isBadSuggestion: boolean
   badSuggestionType: 'over' | 'under' | null
-  hasTacticalError: boolean                   // true when tactical agent suppressed one task
-  suppressedTaskId: string | null             // the task the tactical agent omitted from its plan
+  hasTacticalError: boolean                   // true when ε_Tactical fired for this mission (study-v1.10: a route failure, not a drop)
+  suppressedTaskId: string | null             // pre-study-v1.10 mechanism (task dropped from the plan); always null now — kept for shape stability, no historical log ever had this true (ε was always 0)
+  // study-v1.10: the agent's suggested per-drone route when ε_Tactical fired — every task still gets
+  // its correct drones (composition untouched), but a drone's route may detour through a few extra
+  // tasks before its real one. {} when no failure fired. Consumed by the tactical planner's Suggest
+  // button to seed drone chain order (MapDisplay.tsx handleSuggest) and logged on tactical_opened.
+  agentDroneSequences?: Record<string, string[]>
 }
 
 // The plan the operator is actively building in the tactical/recovery planner — local UI state,
@@ -186,6 +197,7 @@ export interface Strategy {
   taskComps: Record<string, TaskComp>
   isBadSuggestion: boolean
   badSuggestionType: 'over' | 'under' | null
+  badSuggestionColour: AssetType | null   // study-v1.10: which drone type the ε_Strategic failure targeted (null if not bad, or bad but no colour was applicable)
   // True (correct) values — never shown to user, used by reducer for actual assignment
   trueAssets: AssetRequirement
   trueTaskComps: Record<string, TaskComp>
@@ -222,6 +234,7 @@ export interface MapViewState {
   pendingBlueprints: MissionBlueprint[]
   mode: Mode
   tacticalMode: 'plan-all' | 'greedy'
+  testingMode: boolean   // study-v1.10: gates the ε_Tactical route-failure debug banner in the tactical planner
   reserve: AssetRequirement
   strategicModal: StrategicModal | null
   openMissionId: string | null
@@ -348,6 +361,13 @@ export interface SessionStartEvent extends BaseEvent {
   failureGraceSeconds?: number        // study-v1.5+: seconds after a mission's recovery is resolved during which it is exempt from further failures (absent ⇒ no grace)
   conservativeTopUp: number
   conservativeRedundancyBuffer: number
+  // study-v1.10: master gate for the ε_Strategic/ε_Tactical manipulation, and the failure-mechanic
+  // parameters in effect. epsilonStrategic/epsilonTactical above are already the GATED (effective)
+  // values — this flag says whether that gating did anything.
+  agentFailuresEnabled: boolean
+  strategicFailureOverDelta: number    // 'over' failure: drones added to one random colour on both cards
+  tacticalFailureMinHops: number       // 'route' failure: random-detour prefix length range per drone
+  tacticalFailureMaxHops: number
   snapshotIntervalSec: number   // cadence of state_snapshot events
   trustProbeIntervalSec: number // cadence at which the trust/workload probe is scheduled
   // Build/runtime provenance — "which code version and what screen produced this data"
@@ -416,6 +436,7 @@ export interface StrategicChoiceEvent extends BaseEvent {
   wasAgentSuggestion: boolean
   agentSuggestionWasBad: boolean
   badSuggestionType: 'over' | 'under' | null
+  badSuggestionColour: AssetType | null   // study-v1.10: which drone type the ε_Strategic failure targeted
   assetsChosen: AssetRequirement
   editedFromStrategy: string | null   // strategy name if manual edit was seeded from a card
   timeRemainingInSession: number
@@ -450,7 +471,10 @@ export interface TacticalOpenedEvent extends BaseEvent {
   // (as a later task_failed/'tactical_lockout'), which made "was an error injected but harmless?"
   // unanswerable — needed to separate agent accuracy from operator detection in RQ2/RQ4.
   hasTacticalError: boolean
-  suppressedTaskId: string | null
+  suppressedTaskId: string | null   // pre-study-v1.10 mechanism; always null now, see PendingAllocation
+  // study-v1.10: the agent's suggested per-drone route (taskId hops in order) at the moment it was
+  // computed — includes the random-detour prefix when hasTacticalError fired. {} when it didn't.
+  agentDroneSequences: Record<string, string[]>
   dronePool: string[]                  // drones committed by the strategic step — what the operator has to plan with
   agentProjectedCompletion: number     // agent's estimated finish (absolute elapsed s)
   unassignedTaskIds: string[]          // mission tasks the agent's plan left with no drones (includes any suppressed task)
@@ -478,6 +502,7 @@ export interface TacticalConfirmedEvent extends BaseEvent {
   unassignedTaskIds: string[]           // mission tasks committed with NO drones — these can never complete
   substituteTaskIds: string[]           // tasks committed on the slower substitute composition
   chainedDroneIds: string[]             // drones committed to more than one task
+  tacticalFailureFired: boolean         // study-v1.10: echoes pending.hasTacticalError — did ε_Tactical fire for this mission (saves a join back to tactical_opened)
 }
 
 export interface TacticalSuggestUsedEvent extends BaseEvent {
@@ -748,6 +773,7 @@ export interface StrategicModalOpenedEvent extends BaseEvent {
     redundancyScore: number
     isBadSuggestion: boolean
     badSuggestionType: 'over' | 'under' | null
+    badSuggestionColour: AssetType | null    // study-v1.10: which drone type the ε_Strategic failure targeted
     revealDelayMs: number                    // simulated "Analysing…" delay before THIS card became readable/selectable
   }>
 }

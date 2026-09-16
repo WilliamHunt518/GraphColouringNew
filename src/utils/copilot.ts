@@ -1,4 +1,4 @@
-import type { Task, AssetRequirement, Strategy, TaskType, TaskComp } from '../types'
+import type { Task, AssetRequirement, AssetType, Strategy, TaskType, TaskComp } from '../types'
 import type { SeededRNG } from './prng'
 import type { TaskComposition } from './missionGen'
 import { TASK_PRIMARY, TASK_SUBSTITUTE, TASK_BASE_TIME, TASK_SUB_BASE_TIME, HUB, ASSET_SPEED, travelTime } from './missionGen'
@@ -8,6 +8,9 @@ const SESSION_DURATION = 480
 // Conservative-strategy top-up parameters (also used in session_start parameter dump)
 export const CONSERVATIVE_TOP_UP = 0.15
 export const CONSERVATIVE_REDUNDANCY_BUFFER = 1
+
+// ε_Strategic 'over' failure magnitude (study-v1.10, also dumped in session_start)
+export const STRATEGIC_OVER_DELTA = 3
 
 // ─── Virtual-timeline simulator ───────────────────────────────────────────
 
@@ -135,11 +138,20 @@ export function buildNoisyTaskOrder(tasks: Task[], errorRate: number, rng: Seede
  * Aggressive = maximum parallelism (parallel sum of all task requirements, capped by reserve).
  * Conservative = reserve-pressure-chosen compositions + 30% top-up (reserve-balanced logic).
  *
- * Bad-agent errors (probability = agentErrorRate):
- *   'over' — displayed assets increased by 2–3 on one random type; reserve looks worse than it is
- *   'under' — displayed assets decreased by 2–3; displayed time is optimistic (computed from bad counts)
- * In both cases, trueAssets/trueTaskComps hold the correct values used by greedyAssign.
- * The displayed assets/time are intentionally wrong so the operator is misled.
+ * ε_Strategic failure (study-v1.10, probability = agentErrorRate, ONE roll per mission — not per
+ * card, so a failure corrupts BOTH cards with the same mistake, not two independent ones):
+ *   'over'  — commits STRATEGIC_OVER_DELTA (3) extra drones of one random colour on both cards.
+ *             Wastes reserve (no completion-time benefit — the extra tokens sit idle) without
+ *             affecting feasibility.
+ *   'under' — removes 1 drone from a colour that carries redundancy buffer above that card's own
+ *             sequential floor (preferring the failure's chosen colour, else any buffered colour on
+ *             that specific card). Floored at the card's minimum, so this can never make a card
+ *             infeasible or drop a task — it only zeroes out the resilience margin: the mission
+ *             still completes on the happy path, but a later drone failure on it has no spare to
+ *             absorb.
+ * Both `assets` (displayed) and `trueAssets` (used by greedyAssign at deploy time) are the SAME
+ * corrupted pool — this has always been a real-consequence error, not a display-only one, despite
+ * what an earlier draft of this comment claimed.
  */
 export function generateStrategies(
   tasks: Task[],
@@ -244,38 +256,97 @@ export function generateStrategies(
   const consFloor = sequentialFloor(consComps)
   const consMinimumAssets = consFloor
 
-  // ── Bad-agent perturbation ────────────────────────────────────────────────
-  // When an error fires, both the displayed pool AND the true pool used for execution
-  // are corrupted — so errors have real consequences, not just display confusion.
-  //   'over' — commits extra drones (reserve depleted unnecessarily)
-  //   'under' — commits too few drones (some tasks skipped in greedyAssign, causing lockout)
-  function applyBadAgent(truePool: AssetRequirement, trueTime: number, compsForSim: Map<string, { comp: TaskComposition; baseTime: number }>): {
-    displayPool: AssetRequirement; displayTime: number;
-    badTruePool: AssetRequirement;  // pool used for actual execution (= displayPool when bad)
-    isBad: boolean; badType: 'over' | 'under' | null
-  } {
-    if (rng.randFloat(0, 1) > agentErrorRate) {
-      return { displayPool: { ...truePool }, displayTime: trueTime, badTruePool: { ...truePool }, isBad: false, badType: null }
+  // ── ε_Strategic failure (study-v1.10) ─────────────────────────────────────
+  // ONE roll per mission (not per card) — when it fires, both cards are corrupted by the SAME
+  // mistake (same failure type), not two independent ones. Both the displayed pool and the pool
+  // actually used at deploy time are the corrupted one — real consequences, not just a display
+  // discrepancy.
+  //
+  // "Fires" is necessary but not sufficient: a corruption must also be MATERIAL, or the failure is
+  // invisible and undermines the whole point of the manipulation —
+  //   'over'  only ever targets a colour with real reserve headroom (never "add 3 Green" when
+  //           reserve.Green is already fully committed, which would silently add zero)
+  //   'under' only ever targets a colour the mission actually NEEDS (floor > 0) that also carries
+  //           buffer above that floor — never a top-up-only colour the mission uses zero of (e.g.
+  //           Conservative's blanket CONSERVATIVE_TOP_UP can leave a lone Green sitting on an
+  //           all-Blue mission; stripping that spare has no operational effect and doesn't count)
+  // And EITHER BOTH cards end up corrupted, or NEITHER does — an asymmetric "only one card looks
+  // wrong" defeats the "both plans are bad" premise. So a card is only marked bad once we've
+  // confirmed BOTH cards have a materially-impactful colour available for the rolled type; if
+  // either doesn't, the roll still "fired" (logged as such isn't needed — no card shows it) but
+  // has zero effect this mission, same as reserve being too tight to matter physically.
+  const strategicFailure = (() => {
+    if (agentErrorRate <= 0 || rng.randFloat(0, 1) >= agentErrorRate) {
+      return { fires: false, type: null as 'over' | 'under' | null, colour: null as AssetType | null }
     }
-    const types: Array<keyof AssetRequirement> = ['Blue', 'Red', 'Green']
-    const t = types[rng.randInt(0, 2)]
-    const isOver = rng.randFloat(0, 1) < 0.5
-    const delta = 2 + rng.randInt(0, 1)  // 2 or 3
+    const types: AssetType[] = ['Blue', 'Red', 'Green']
+    return {
+      fires: true,
+      type: (rng.randFloat(0, 1) < 0.5 ? 'over' : 'under') as 'over' | 'under',
+      colour: types[rng.randInt(0, 3)],   // randInt is exclusive of its upper bound — 3, not 2, to reach Green
+    }
+  })()
+
+  // Computes the ACTUAL corrupted pool for a candidate colour and reports whether it genuinely
+  // differs from truePool — verified by really applying the change, not inferred from a separate
+  // headroom/buffer predicate that could theoretically drift out of sync with what applying it
+  // actually does. "Fires" is necessary but not sufficient: only a colour that provably changes the
+  // pool counts as impactful.
+  function tryColour(
+    truePool: AssetRequirement, floor: AssetRequirement, type: 'over' | 'under', colour: AssetType,
+  ): AssetRequirement | null {
     const badPool = { ...truePool }
-    if (isOver) {
-      badPool[t] = Math.min(reserve[t], truePool[t] + delta)
+    if (type === 'over') {
+      badPool[colour] = Math.min(reserve[colour], truePool[colour] + STRATEGIC_OVER_DELTA)
     } else {
-      badPool[t] = Math.max(0, truePool[t] - delta)
+      if (floor[colour] <= 0) return null   // not a colour the mission actually needs
+      badPool[colour] = Math.max(floor[colour], truePool[colour] - 1)
     }
-    // Displayed time computed from the bad pool — looks plausible but is misleading
-    // For 'under', pool may be infeasible; show an optimistic estimate instead of Infinity
-    const rawTime = simulatePool(sorted, compsForSim, badPool)
-    const displayTime = rawTime < Infinity ? rawTime : trueTime * (0.7 + rng.randFloat(0, 0.2))
-    return { displayPool: badPool, displayTime, badTruePool: badPool, isBad: true, badType: isOver ? 'over' : 'under' }
+    return badPool[colour] !== truePool[colour] ? badPool : null
   }
 
-  const aggBad = applyBadAgent(aggTruePool, aggTrueTime, primComps)
-  const consBad = applyBadAgent(consTruePool, consTrueTime, consComps)
+  // Tries the mission-wide preferred colour first, then the other two (fixed order), returning the
+  // first one that actually changes something on THIS card.
+  function pickImpactfulPool(
+    truePool: AssetRequirement, floor: AssetRequirement, type: 'over' | 'under', preferred: AssetType,
+  ): { badPool: AssetRequirement; colour: AssetType } | null {
+    const order = [preferred, ...(['Blue', 'Red', 'Green'] as AssetType[]).filter(t => t !== preferred)]
+    for (const colour of order) {
+      const badPool = tryColour(truePool, floor, type, colour)
+      if (badPool) return { badPool, colour }
+    }
+    return null
+  }
+
+  const aggTrial = strategicFailure.fires ? pickImpactfulPool(aggTruePool, aggFloor, strategicFailure.type!, strategicFailure.colour!) : null
+  const consTrial = strategicFailure.fires ? pickImpactfulPool(consTruePool, consFloor, strategicFailure.type!, strategicFailure.colour!) : null
+  // Both cards fail, or neither does — an asymmetric "only one card looks wrong" defeats the "both
+  // plans are bad" premise. If either card has nothing that actually changes anything (very tight
+  // reserve, or a card with zero redundancy anywhere), the roll still "fired" but has zero visible
+  // effect this mission — the same honest degrade-to-nothing as physically running out of room.
+  const bothCardsCanFail = aggTrial !== null && consTrial !== null
+
+  function applyStrategicFailure(
+    truePool: AssetRequirement,
+    trueTime: number,
+    trial: { badPool: AssetRequirement; colour: AssetType } | null,
+    compsForSim: Map<string, { comp: TaskComposition; baseTime: number }>,
+  ): {
+    displayPool: AssetRequirement; displayTime: number;
+    badTruePool: AssetRequirement;  // pool used for actual execution (= displayPool when bad)
+    isBad: boolean; badType: 'over' | 'under' | null; badColour: AssetType | null
+  } {
+    if (!bothCardsCanFail || !trial) {
+      return { displayPool: { ...truePool }, displayTime: trueTime, badTruePool: { ...truePool }, isBad: false, badType: null, badColour: null }
+    }
+    const rawTime = simulatePool(sorted, compsForSim, trial.badPool)
+    // 'under' never drops below the floor, so this stays finite; guarded anyway for safety.
+    const displayTime = rawTime < Infinity ? rawTime : trueTime
+    return { displayPool: trial.badPool, displayTime, badTruePool: trial.badPool, isBad: true, badType: strategicFailure.type, badColour: trial.colour }
+  }
+
+  const aggBad = applyStrategicFailure(aggTruePool, aggTrueTime, aggTrial, primComps)
+  const consBad = applyStrategicFailure(consTruePool, consTrueTime, consTrial, consComps)
 
   // ── Score normalisation ───────────────────────────────────────────────────
   const clamp01 = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0)
@@ -334,6 +405,7 @@ export function generateStrategies(
       taskComps: aggTrueTaskComps,
       isBadSuggestion: aggBad.isBad,
       badSuggestionType: aggBad.badType,
+      badSuggestionColour: aggBad.badColour,
       trueAssets: aggBad.badTruePool,   // corrupted pool used for real deployment when bad
       trueTaskComps: aggTrueTaskComps,
     })
@@ -361,6 +433,7 @@ export function generateStrategies(
       taskComps: consTrueTaskComps,
       isBadSuggestion: consBad.isBad,
       badSuggestionType: consBad.badType,
+      badSuggestionColour: consBad.badColour,
       trueAssets: consBad.badTruePool,  // corrupted pool used for real deployment when bad
       trueTaskComps: consTrueTaskComps,
     })

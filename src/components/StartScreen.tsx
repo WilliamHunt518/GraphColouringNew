@@ -62,6 +62,10 @@ export default function StartScreen({ onStart }: Props) {
   const [mode, setMode] = useState<Mode>('agent')
   const [epsilonStrategic, setEpsilonStrategic] = useState(0.0)
   const [epsilonTactical, setEpsilonTactical]   = useState(0.0)
+  // Master gate for the ε_Strategic/ε_Tactical manipulation (study-v1.10). Default OFF so a
+  // candidate accuracy can be dialled in and tested (Testing Mode's flagging UI) without it ever
+  // being live for a real participant until deliberately switched on.
+  const [agentFailuresEnabled, setAgentFailuresEnabled] = useState(false)
   const [tacticalMode, setTacticalMode] = useState<StudyConfig['tacticalMode']>('plan-all')
   const [seed, setSeed] = useState(String(STUDY_SEED))
   const [numSessions, setNumSessions] = useState(1)
@@ -95,6 +99,7 @@ export default function StartScreen({ onStart }: Props) {
       seed: seedNum,
       agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
       epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
+      agentFailuresEnabled: mode === 'agent' ? agentFailuresEnabled : false,
       tacticalMode: mode === 'agent' ? tacticalMode : 'plan-all',
       testingMode,
       tutorialMode: false,
@@ -122,6 +127,7 @@ export default function StartScreen({ onStart }: Props) {
       seed: seedNum,
       agentErrorRate: mode === 'agent' ? epsilonStrategic : 0,
       epsilonTactical: mode === 'agent' ? epsilonTactical : 0,
+      agentFailuresEnabled: mode === 'agent' ? agentFailuresEnabled : false,
       tacticalMode: mode === 'agent' ? tacticalMode : 'plan-all',
       testingMode: false,
       tutorialMode: false,
@@ -176,6 +182,15 @@ export default function StartScreen({ onStart }: Props) {
                 <AccuracySpinner label="Strategic Assistant" epsilon={epsilonStrategic} onChange={setEpsilonStrategic} />
                 <AccuracySpinner label="Tactical Assistant"  epsilon={epsilonTactical}  onChange={setEpsilonTactical} />
               </div>
+              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                <input id="agent-failures-enabled" type="checkbox" checked={agentFailuresEnabled}
+                  onChange={e => setAgentFailuresEnabled(e.target.checked)}
+                  className="rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-orange-500" />
+                <span>
+                  Failures LIVE for this session
+                  <span className="ml-1 text-gray-600">(off = accuracy above is dialled but never fires — safe for tuning with Testing Mode)</span>
+                </span>
+              </label>
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-300">Tactical Assistant Style</label>

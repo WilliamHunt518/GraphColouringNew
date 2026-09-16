@@ -96,15 +96,15 @@ with the event appended to `events[state.sessionNumber - 1]` and `eventSeq` bump
 
 | `type` | Fired when | Key fields beyond the envelope | Logged in |
 |---|---|---|---|
-| `session_start` | First tick of a session (`sessionStartMs` transitions null→set) | Full parameter dump: condition/seed/fleet/task tables/penalty rates/category weights/arrival λ/`failureRatePerDroneSecond` (`study-v1.3`+; live per-drone-second hazard, replaces the pre-v1.3 `failureCount`/`failureGap`/`failureJitter`/`failureProb` schedule constants) + `failureRollIntervalSec` (`study-v1.4`+; the simulated-time cadence that hazard is rolled on — **its absence marks a `v1.3` log, whose realized failure rate depended on the machine's refresh rate, see STUDY_BUILD.md § 11**) + `failureGraceSeconds` (`study-v1.5`+; seconds a mission is exempt from further failures after its recovery is resolved — **absent ⇒ no grace, so pre-`v1.5` drone-failure counts run slightly higher, see STUDY_BUILD.md § 12**)/conservative-strategy constants — see `SessionStartEvent` | `gameReducer.ts:825` (TICK) |
+| `session_start` | First tick of a session (`sessionStartMs` transitions null→set) | Full parameter dump: condition/seed/fleet/task tables/penalty rates/category weights/arrival λ/`failureRatePerDroneSecond` (`study-v1.3`+; live per-drone-second hazard, replaces the pre-v1.3 `failureCount`/`failureGap`/`failureJitter`/`failureProb` schedule constants) + `failureRollIntervalSec` (`study-v1.4`+; the simulated-time cadence that hazard is rolled on — **its absence marks a `v1.3` log, whose realized failure rate depended on the machine's refresh rate, see STUDY_BUILD.md § 11**) + `failureGraceSeconds` (`study-v1.5`+; seconds a mission is exempt from further failures after its recovery is resolved — **absent ⇒ no grace, so pre-`v1.5` drone-failure counts run slightly higher, see STUDY_BUILD.md § 12**)/conservative-strategy constants + `agentFailuresEnabled`/`strategicFailureOverDelta`/`tacticalFailureMinHops`/`tacticalFailureMaxHops` (`study-v1.10`+; the 2×2 agent-reliability manipulation's master gate and failure-mechanic parameters — **absent ⇒ pre-`v1.10` log, manipulation was never live**, see STUDY_BUILD.md § 17) — see `SessionStartEvent` | `gameReducer.ts:825` (TICK) |
 | `phase_change` | Any `GamePhase` transition (`playing`↔`survey`↔`between`↔`done`) | `fromPhase`, `toPhase` | `FINISH_SURVEYS` (2121), `NEXT_SESSION` (2130), `END_STUDY` (2151), `endSession()` (2399, → `'survey'`) |
 | `mission_arrived` | Mission spawns (real spawn in TICK, `FORCE_MISSION_ARRIVAL` in testing mode, **or a residual mission re-queued by `ABANDON_MISSION`**) | `taskCompositions` (primary+substitute comp/baseTime per task), `penaltyRate`, `maxReward`, `isResidual`/`parentMissionId` (**a residual is not new demand — exclude it from arrival denominators, see § Abandonment**). `study-v1.3`+ dropped `scheduledFailureTimes` — failures are no longer scheduled per mission, see `session_start.failureRatePerDroneSecond` | all three sites share `missionArrivedPayload()` — TICK spawn loop, `FORCE_MISSION_ARRIVAL`, `ABANDON_MISSION` |
 | `mission_completed` | Mission's last task transitions to completed/failed in the same tick | `tasksCompleted`, `tasksFailed`, `rewardEarned`, `penaltyAccrued` (that mission only), `outcome` (`all_completed`/`partial`/`none_completed` — **a mission reaches this event once every task is completed OR failed, so `completed` alone does not mean it went well**), plus the decisions that produced it: `arrivalTime`, `allocationTime`, `timeToAllocate`, `durationFromAllocation`, `maxReward`, `chosenStrategyName`, `agentInteraction`, `hadTacticalError`, `suppressedTaskId`, `droneFailureCount` | `gameReducer.ts` TICK step 3a (before `updatedMissions` is committed to state) |
 | `strategic_modal_opened` | `OPEN_STRATEGIC` or `OVERRIDE_TACTICAL` (re-opens the modal) | Full `strategiesPresented[]` (displayed AND true asset counts, scores incl. `redundancyScore`, bad-suggestion flags), `activeMissions`, `currentPenaltyAccrued` | `gameReducer.ts:1278` (`OPEN_STRATEGIC`), `:1618` (`OVERRIDE_TACTICAL`) |
 | `strategic_dismissed` | `CLOSE_STRATEGIC` (operator closes the modal without picking) | `latencyMs` (open→dismiss) | `gameReducer.ts:1307` |
-| `strategic_choice` | `APPLY_STRATEGIC` (operator picks Aggressive/Conservative/Manual) | `latencyMs`, `deltaVsAggressive`/`deltaVsConservative` (chosen minus each card's true assets), `agentSuggestionWasBad`/`badSuggestionType`, `strategyCardCount`, `manualBeforeCardsLoaded`/`cardsLoadedAtManualSwitch` (manual chosen before the 3–5 s card reveal finished = a clue the operator declined the agent) | `gameReducer.ts:1470` |
-| `tactical_opened` | Immediately after `strategic_choice`, when the tactical planner becomes available | `strategyChosen`, `agentPlan[]` (taskId/taskType/assetIds/order as suggested), **`hasTacticalError`/`suppressedTaskId` (the ε_T draw for this mission — logged whether or not it ever manifests)**, `dronePool`, `agentProjectedCompletion`, `unassignedTaskIds` | `gameReducer.ts` (`APPLY_STRATEGIC`) |
-| `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `suggestUsedCount`, `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed`, plus override-quality fields: `agentProjectedCompletion` vs `finalProjectedCompletion` (directly comparable — same scheduler, same units), `plannedTasks[]` (per-task start/base/substitute), `unassignedTaskIds` (**committed with no drones ⇒ can never complete**), `substituteTaskIds`, `chainedDroneIds` | `gameReducer.ts` (inside `applyTacticalAllocation()`) |
+| `strategic_choice` | `APPLY_STRATEGIC` (operator picks Aggressive/Conservative/Manual) | `latencyMs`, `deltaVsAggressive`/`deltaVsConservative` (chosen minus each card's true assets), `agentSuggestionWasBad`/`badSuggestionType`/`badSuggestionColour` (**`study-v1.10`: which drone type the ε_Strategic failure targeted**), `strategyCardCount`, `manualBeforeCardsLoaded`/`cardsLoadedAtManualSwitch` (manual chosen before the 3–5 s card reveal finished = a clue the operator declined the agent) | `gameReducer.ts:1470` |
+| `tactical_opened` | Immediately after `strategic_choice`, when the tactical planner becomes available | `strategyChosen`, `agentPlan[]` (taskId/taskType/assetIds/order as suggested), **`hasTacticalError`/`suppressedTaskId` (the ε_Tactical draw for this mission — logged whether or not the operator notices/fixes it; `study-v1.10`: a route failure, `suppressedTaskId` retired/always null)**, **`agentDroneSequences` (`study-v1.10`: the agent's proposed per-drone route, detour hops included when it fired)**, `dronePool`, `agentProjectedCompletion`, `unassignedTaskIds` | `gameReducer.ts` (`APPLY_STRATEGIC`) |
+| `tactical_confirmed` | `CONFIRM_TACTICAL` | `latencyMs` (tactical-open→confirm), `suggestUsedCount`, `agentPlan[]` vs `finalPlan[]` triples, `modifiedFromAgentPlan`, `changedTaskIds`, `chainingUsed`, plus override-quality fields: `agentProjectedCompletion` vs `finalProjectedCompletion` (directly comparable — same scheduler, same units), `plannedTasks[]` (per-task start/base/substitute), `unassignedTaskIds` (**committed with no drones ⇒ can never complete**), `substituteTaskIds`, `chainedDroneIds`, **`tacticalFailureFired`** (`study-v1.10`: echoes `pending.hasTacticalError`, avoids a join back to `tactical_opened`) | `gameReducer.ts` (inside `applyTacticalAllocation()`) |
 | `tactical_suggest_used` | `TACTICAL_SUGGEST` (operator clicks "Suggest" in the tactical **or recovery** planner) | `suggestCountThisMission` (1-based click index this allocation), `recoveryMode` | `gameReducer.ts` (`TACTICAL_SUGGEST` case) |
 | `strategic_card_previewed` | `PICK_STRATEGY` (operator highlights an Aggressive/Conservative card in the strategic modal, before applying) | `strategyIndex`, `strategyName`, `latencyMs` (since modal opened) | `gameReducer.ts` (`PICK_STRATEGY` case) |
 | `manual_allocation_edited` | `EDIT_MANUAL` (operator adjusts a manual drone count in the strategic modal) | `allocation` (running counts after this edit), `latencyMs` (since modal opened) | `gameReducer.ts` (`EDIT_MANUAL` case) |
@@ -200,8 +200,9 @@ any of its tasks finished, but fires **no** `mission_completed` event. That pair
 ## Mapping to research questions
 
 - **RQ1 (performance benefit)** — `session_ended` (score/penalty/completion/green
-  efficiency/mean mission time) compared across condition (HH/LH/HL/LL), joined with
-  `session_start.epsilonStrategic/epsilonTactical` to confirm the realised condition.
+  efficiency/mean mission time) compared across the 2×2 agent-reliability cells, grouped directly by
+  `session_start.epsilonStrategic`/`epsilonTactical` (`condition` itself stays `"none"` — no label
+  was revived, see `docs/STUDY_BUILD.md` § 17) and gated by `session_start.agentFailuresEnabled`.
   At mission granularity, `mission_completed` now carries its own outcome AND the decisions that
   produced it (`chosenStrategyName`, `agentInteraction`, `outcome`, `timeToAllocate`,
   `durationFromAllocation`, `rewardEarned` vs `maxReward`), so "did agent-followed allocations
@@ -243,9 +244,12 @@ any of its tasks finished, but fires **no** `mission_completed` event. That pair
   from the opening and `tasksStillUnassigned` for an incomplete fix). Override *quality* at the
   tactical tier is `tactical_confirmed.agentProjectedCompletion` vs `finalProjectedCompletion`
   (was the override actually better?) plus `unassignedTaskIds` (did the override strand a task?).
-  `tactical_opened.hasTacticalError` records the ε_T draw per mission **whether or not it ever
-  manifests**, which is what separates agent accuracy from operator detection — previously an
-  injected error was only visible if it happened to surface as a later `task_failed`.
+  `tactical_opened.hasTacticalError` records the ε_Tactical draw per mission **whether or not the
+  operator ever notices/fixes it**, which is what separates agent accuracy from operator detection.
+  As of `study-v1.10` it's a route failure, not a dropped task, so "manifests" means "the confirmed
+  plan still carries the agent's detour hops" rather than a task failing outright — compare
+  `tactical_opened.agentDroneSequences` against `tactical_confirmed.finalPlan`/`chainedDroneIds`, and
+  `tactical_confirmed.tacticalFailureFired` for a one-field flag without the join.
   Original pairing detail:
   `drone_failure` → `failure_recovery` pairs (`wasAgentSuggested` flags whether the
   recovery used the agent's plan — either a pre-computed `ACCEPT_RECOVERY` option, or the
@@ -341,19 +345,24 @@ deprecated) `docs/OLD-DRAFTS-DO-NOT-USE/paper/` draft disagree.
 These are **not** logging gaps — they're real behavioral differences worth knowing about
 before trusting the paper's description of the system:
 
-- `src/utils/copilot.ts` (`generateStrategies()` → `applyBadAgent()`) still actively
-  perturbs the *displayed* Strategic Agent card values via ε_Strategic. The paper's
-  claim (if it says ε-injection was removed) is stale.
+- `src/utils/copilot.ts` (`generateStrategies()` → `applyStrategicFailure()`, renamed from
+  `applyBadAgent()` in `study-v1.10`) still actively perturbs the *displayed AND true* Strategic
+  Agent card values via ε_Strategic — one roll per mission, both cards corrupted the same way. The
+  paper's claim (if it says ε-injection was removed, or that it's display-only) is stale.
   `strategic_modal_opened.strategiesPresented[].trueAssets` vs `.displayedAssets` is
   exactly the field pair that lets you reconstruct what was shown vs what would actually
-  deploy.
-- `src/store/gameReducer.ts` (`APPLY_STRATEGIC`, tactical error injection block) still
-  actively suppresses one tactical task with probability ε_Tactical
-  (`hasTacticalError`/`suppressedTaskId` on `PendingAllocation`).
+  deploy (currently identical either way — see `docs/STUDY_BUILD.md` § 17).
+- `src/store/gameReducer.ts` (`APPLY_STRATEGIC`, tactical error injection block) — **as of
+  `study-v1.10`, this no longer suppresses a task.** It now (via `buildTacticalFailurePlan` in
+  `utils/tacticalSuggest.ts`) gives the agent's suggested plan a bad ROUTE with probability
+  ε_Tactical — composition is only ever added to (redundant detour memberships), never removed, so
+  every task still gets its correct drones. `hasTacticalError` on `PendingAllocation` still records
+  whether it fired; `suppressedTaskId` is retired (always `null`). See `docs/STUDY_BUILD.md` § 17.
 - `src/utils/config.ts` `parseURLConfig()` always sets `condition: 'none'` — there is
-  no URL-param-driven mapping from a condition code (HH/LH/HL/LL) to ε values; the
-  researcher must set epsilons some other way (or the start screen handles it — check
-  `StartScreen.tsx` before assuming this is broken).
+  no URL-param-driven mapping from a condition code (HH/LH/HL/LL) to ε values, and this was a
+  deliberate choice in `study-v1.10`, not an oversight: `conditionToEpsilons()` does not exist and
+  was not revived. The researcher sets `eps_s`/`eps_t`/`failuresLive` directly (or the start screen's
+  accuracy dials + "Failures LIVE" checkbox).
 - Penalty growth: confirm against `computePenaltyAccrued()` in `gameReducer.ts` whether
   it's linear or exponential in elapsed time before citing the paper's claim either way.
 

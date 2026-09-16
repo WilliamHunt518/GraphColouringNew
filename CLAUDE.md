@@ -18,16 +18,47 @@ These are genuinely different decision levels:
 **IMPORTANT — do not reintroduce old concepts:**
 There is NO "reserve posture widget", NO "preserve/maintain/spend down" recommendation, and NO "Meta-Co-Pilot". Those ideas were considered and removed. The tactical tier is purely the within-mission drone→task assignment planner.
 
-**Every study session runs both assistants at ε = 0** (perfect), in a single condition logged as
-`none`. The code still contains a 2×2 between-subjects accuracy manipulation (conditions HH / LH /
-HL / LL, `conditionToEpsilons()`, the ε_S perturbation in `copilot.ts`, the ε_T task-drop path in
-`APPLY_STRATEGIC`) — **that design was abandoned and no study arm will ever turn it on** (settled
-3 Sept 2026, `study-v1.8`). Leave the machinery in place and tested, but do not propose experiments
-that use it, and do not read `condition: "none"` in a log as a placeholder: it is the design.
-The study measures how operators divide work between two *correct* assistants at different decision
-tiers — not trust calibration against a fallible one.
+**The 2×2 agent-reliability manipulation is live again as of `study-v1.10`** (reversing the 3 Sept
+2026 abandonment below) — a between-subjects design crossing Strategic-Assistant reliability ×
+Tactical-Assistant reliability. It runs on the same ε_Strategic/ε_Tactical machinery, but the failure
+content was redesigned to be specific and plausible rather than generic noise:
 
-**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.9` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+- **ε_Strategic** (`copilot.ts generateStrategies`): ONE roll per mission (not per card) — when it
+  fires, EITHER both the Aggressive and Conservative cards are corrupted by the *same* mistake, or
+  neither is (never just one — `bothCardsCanFail` gates it): `'over'` (+3 drones of one colour with
+  genuine reserve headroom, committed on both cards — wastes reserve, no feasibility risk) or
+  `'under'` (−1 drone from a colour the mission actually NEEDS — `floor > 0`, not a spare of an
+  unused colour like a stray top-up Green on an all-Blue mission — that also carries redundancy
+  buffer, floored at the card's own feasible minimum). `pickImpactfulColour` enforces materiality: a
+  colour is only ever picked if the corruption genuinely does something (real headroom for `'over'`,
+  a genuinely-needed buffered colour for `'under'`) — never a silent no-op.
+- **ε_Tactical** (`APPLY_STRATEGIC` → `buildTacticalFailurePlan` in `tacticalSuggest.ts`): no longer
+  drops a task (too obvious — an unmissable red flag). Composition is never removed, only added to,
+  and only ONE detour hop is ever actually deployed per affected drone: a drone with real work draws a
+  random walk of `TACTICAL_FAILURE_MIN_HOPS`–`MAX_HOPS` tasks (full narrative logged on
+  `tactical_opened.agentDroneSequences`), but only `detours[0]` becomes a real, redundant
+  `taskAssignments` member — the rest are data-only and MapDisplay's existing chain-order filter drops
+  them before deployment. This bounds the failure to at most one extra task's worth of delay,
+  isolated to the detouring drone: executing every drawn hop could add minutes to one drone's route,
+  and (worse) a redundant drone's late arrival at another real task can push that task's genuine
+  completion later for the drones that actually needed to be there (`taskStarts` takes the max arrival
+  across every drone referencing a task). Every task still gets covered; the plan is just slightly
+  slower, imperceptibly so to an operator who doesn't dig in. A live cross-drone deadlock is handled
+  by the existing `findSchedulingCycle`/`rerouteDeadlock` TICK-time detector — nothing new needed there.
+- **`condition` stays `'none'`** — no HH/LH/HL/LL label was revived; each session's raw
+  `epsilonStrategic`/`epsilonTactical` are logged directly, which is enough to bucket sessions later.
+  `conditionToEpsilons()` does not exist in the code and was deliberately not brought back.
+- **Master gate:** `StudyConfig.agentFailuresEnabled` (default **false**) — both effective epsilons
+  read as 0 regardless of the configured rate unless this is explicitly turned on (StartScreen
+  checkbox, `?failuresLive=1`). Read epsilon only via `effectiveEpsilonStrategic`/
+  `effectiveEpsilonTactical` in `utils/config.ts`, never `cfg.agentErrorRate`/`cfg.epsilonTactical`
+  directly. This is what let the rate be tuned with `testingMode`'s failure-flagging UI (orange "TEST"
+  badges on a bad strategy card / in the tactical planner) before ever going live for a participant.
+
+See `docs/STUDY_BUILD.md` §17 (`study-v1.10`) for the full rationale, including why the hop range is
+smaller than first sketched (every route-sequence entry is a full task-dwell, not a cheap waypoint).
+
+**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.10` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 
@@ -115,10 +146,13 @@ still followed by the normal survey/between-session flow. `complexityForSession(
 when `sessionComplexities` isn't set. StartScreen.tsx shows one complexity picker per session slot once
 "Sessions" > 1.
 
-The abandoned condition mapping, kept only so old code and pre-`study-v1.0` logs stay readable —
-**no session run from `study-v1.0` onward uses any of it**; every one is `condition: "none"`, ε = 0:
+The table below is the ORIGINAL condition→epsilon mapping design, kept only for historical context —
+it was never implemented as code (`conditionToEpsilons()` does not exist anywhere in the repo) and
+`condition` has stayed `'none'` for every session ever run, `study-v1.0` onward. The live `study-v1.10`
+manipulation (see § above) does not use condition labels at all — it sets `epsilonStrategic`/
+`epsilonTactical` directly per session (StartScreen accuracy dials), gated by `agentFailuresEnabled`:
 
-| Condition | ε_Strategic | ε_Tactical |
+| Condition (never implemented) | ε_Strategic | ε_Tactical |
 |-----------|------------|------------|
 | HH        | 0.10       | 0.10       |
 | LH        | 0.40       | 0.10       |
@@ -145,9 +179,9 @@ src/
     index.ts             # All TypeScript types (Asset, Task, Mission, GameState, events)
   utils/
     prng.ts              # SeededRNG class (Mulberry32)
-    config.ts            # URL param parsing, condition → epsilon mapping
+    config.ts            # URL param parsing, agentFailuresEnabled/effective-epsilon gate helpers
     missionGen.ts        # Seeded mission generator (Poisson arrivals, zone placement)
-    copilot.ts           # Strategic Agent — Aggressive/Conservative strategy generator with ε_S noise
+    copilot.ts           # Strategic Agent — Aggressive/Conservative strategy generator, ε_Strategic failure
     metacopilot.ts       # Tactical Agent stub (not yet implemented as a separate module;
                          #   tactical suggestions currently computed inline in gameReducer via greedyAssign)
                          # NOTE: there is no separate scoring.ts — computeScore/computeCompletionPoints/
@@ -248,10 +282,15 @@ numbers are no longer shown to participants (the tutorial says only fastest/stan
 Edit `src/types/index.ts` first, then update `missionGen.ts` and `copilot.ts`.
 
 ### Changing accuracy
-Edit `conditionToEpsilons()` in `src/utils/config.ts`.
+Set `epsilonStrategic`/`epsilonTactical` per session (StartScreen accuracy dials, or `?eps_s=`/`?eps_t=`
+URL params) and turn on `agentFailuresEnabled` (StartScreen checkbox, or `?failuresLive=1`) — both
+gates live in `src/utils/config.ts` (`effectiveEpsilonStrategic`/`effectiveEpsilonTactical`). There is
+no `conditionToEpsilons()` — it was never implemented; see the Study Design section above.
 
 ### Modifying the Strategic Agent
-`src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count bundles for a specific mission. ε_S noise perturbs the *displayed* asset counts (not the true values used at deploy).
+`src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count
+bundles for a specific mission. ε_Strategic (study-v1.10) rolls ONCE per mission and, when it fires,
+corrupts both cards' *actual* asset counts the same way (not just the display — see `rollStrategicFailure`).
 
 ### Drone failures and the recovery planner
 A failure reverts the affected task to `pending` and flags the mission `failureRecoveryPending`; the
@@ -280,7 +319,7 @@ Four rules matter (`study-v1.5`–`v1.6`):
   reintroduce a `taskOrder`-sensitive reset.
 
 ### Modifying the Tactical Agent
-Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_T **is** wired to noise injection: in `APPLY_STRATEGIC`, with probability `epsilonTactical` one task is silently dropped from the suggested plan (`hasTacticalError`/`suppressedTaskId` on `PendingAllocation`) — the UI still shows it as allocated, but no drone is actually assigned, and the task fails via tactical lockout once every other task in the mission completes.
+Tactical suggestions are currently generated inline in `src/store/gameReducer.ts` via `greedyAssign()` during `APPLY_STRATEGIC`. The `metacopilot.ts` file is a stub for when this logic is extracted into its own module. ε_Tactical (study-v1.10, via `buildTacticalFailurePlan` in `utils/tacticalSuggest.ts`) with probability `epsilonTactical` gives the agent's suggestion a bad ROUTE, never a dropped task: composition is only ever added to, never removed, so every task still gets its correct drones and nothing fails from this. A random multi-hop walk is drawn (logged in full on `tactical_opened.agentDroneSequences`) but only its FIRST hop becomes a real, redundant `taskAssignments` member — the rest are data-only and never deployed (see the docstring on `buildTacticalFailurePlan` for the two reasons: uncapped execution could take minutes, and a redundant drone's late arrival at another real task can delay that task's genuinely-required drones too). `hasTacticalError` on `PendingAllocation` records whether it fired; `suppressedTaskId` is retired (always `null` — the old drop-a-task field, kept only so the type shape doesn't change). `PendingAllocation.agentDroneSequences` carries the per-drone full route (for logging/display); `MapDisplay.tsx handleSuggest` hands the operator the precomputed `pending.taskAssignments` as-is when it fired, instead of recomputing a fresh uncorrupted one (recomputing would silently erase the failure — see the docstring on `buildTacticalFailurePlan` for why the one real detour addition has to live inside the plan's `taskAssignments`, not a separate field).
 
 ### Scheduling deadlocks (cross-drone chain cycles)
 A chained tactical plan can deadlock: e.g. Fast is chained task1→task2 while Lifter is chained task2→task1, so each task waits on a drone that is itself waiting on the other task. The operator/agent is **not** prevented from building such a plan (no build-time validation blocks it). Instead the drones fly out, and a **live** detector in `gameReducer.ts` TICK (step 3c, `findSchedulingCycle` in `src/utils/scheduling.ts`) waits until the cycle's drones have physically arrived and are sitting idle (genuinely stuck) before acting. This is distinct from the ε_T `tactical_lockout` mechanism above.

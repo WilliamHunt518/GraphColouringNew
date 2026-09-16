@@ -24,9 +24,9 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | Question | `study-v1.0` answer | Check in the log |
 |---|---|---|
 | Could a participant hit a scheduling deadlock (lockout)? | **No.** Auto-rerouted silently; every task still completes. | `session_start.fixLockouts === true`; any `lockout_detected` has `resolution: "rerouted"` |
-| Were the assistants ever wrong? | **No.** Both run at ε = 0 — every card and plan is optimal. | `session_start.epsilonStrategic === 0` and `epsilonTactical === 0` |
-| So what goes wrong during a session? | **Drone failures only** (plus whatever the operator does). **In `study-v1.3` on a display above ~120 Hz, nothing did** — the hazard could not fire (fixed in `v1.4`, § 11). | `drone_failure` events; `recovery_opened`; `session_start.failureRollIntervalSec` present ⇒ `v1.4`+ |
-| Was the 2×2 accuracy manipulation running? | **No, and it never will be** — abandoned as a design, not merely switched off (§ 15). Single condition, logged as `none`. | `session_start.condition === "none"` |
+| Were the assistants ever wrong? | **Build `study-v1.0`–`v1.9`: no** — both ran at ε = 0 always. **`v1.10`+: depends on the session** — `agentFailuresEnabled` gates whether the configured `epsilonStrategic`/`epsilonTactical` ever fire (§ 17). | `session_start.epsilonStrategic`/`epsilonTactical` (already the *effective*, gated values) and `agentFailuresEnabled` |
+| So what goes wrong during a session? | **Drone failures always** (plus whatever the operator does), **and, from `v1.10` on, optionally agent mistakes too** when `agentFailuresEnabled` is on (§ 17). **In `study-v1.3` on a display above ~120 Hz, the failure hazard alone could not fire** — the hazard could not fire (fixed in `v1.4`, § 11). | `drone_failure` events; `recovery_opened`; `session_start.failureRollIntervalSec` present ⇒ `v1.4`+; `strategic_choice.agentSuggestionWasBad` / `tactical_confirmed.tacticalFailureFired` ⇒ v1.10+ |
+| Was the 2×2 accuracy manipulation running? | **`study-v1.0`–`v1.9`: no, and section 15 called it permanent — that call was reversed.** **`v1.10`+: it can be, per-session, gated by `agentFailuresEnabled`** (default off — see § 17). `condition` was never revived as a label either way; it stays `"none"` and raw epsilons are logged instead. | `session_start.agentFailuresEnabled`; `epsilonStrategic`/`epsilonTactical` > 0 |
 | Does hitting "Allocate" clear the tactical window? | **Build ≥ `study-v1.8`: yes.** Before that the second screen kept showing the previous mission's planner while the operator allocated the next one (§ 15). A planner with unfinished work — pending plan or open recovery — is still left alone. | `session_start.appVersion`; no logged quantity differs either side |
 | In-session trust/workload probes? | **No.** The modal is not mounted anywhere, so none is ever shown. | no `trust_probe` events exist |
 | How many sessions, how long? | **2 × 8 min** (480 s) on the participant-study path. | `session_start.numSessions`, `sessionDuration` |
@@ -529,6 +529,11 @@ Two items, one behavioural and one a decision that had been recorded as provisio
   turn them on — treat them as dead weight for analysis purposes, and read `condition: "none"` in
   every log as intended rather than as a placeholder. See § 2 for what ε = 0 guarantees.
 
+  **Superseded by § 17 (`study-v1.10`):** "permanently" didn't hold — the manipulation was revived,
+  redesigned, and gated behind an explicit `agentFailuresEnabled` flag (default off). This paragraph
+  is left exactly as written because it correctly describes every session tagged `v1.0`–`v1.9`:
+  `condition` really was always `"none"` and ε really was always 0 for every one of those.
+
 **Housekeeping:** the `study-v1.7` tag pointed at `c858ff8` while `HEAD` had moved on with the
 dismiss fix and `APP_VERSION` still read `study-v1.7` — the tag and the build disagreed, which is
 the one thing the rule below exists to prevent. Fixed by this bump; check with
@@ -566,6 +571,156 @@ same rule, not an exception to it.
 **Consequence for the data:** none. No event, parameter or game-state transition changed — this is
 only what the second screen displays after a deploy. `v1.7`, `v1.8` and `v1.9` pool freely on
 everything.
+
+---
+
+### 17. `study-v1.10` — the 2×2 agent-reliability manipulation, revived and redesigned
+
+§ 15 called the abandonment of the ε machinery permanent. It wasn't: the study is now a proper 2×2
+factorial (Strategic-Assistant reliability × Tactical-Assistant reliability, between-subjects), built
+on the same ε_Strategic/ε_Tactical machinery `study-v1.0`–`v1.9` left in place — but with the failure
+content redesigned from generic noise into something specific and non-catastrophic, and with an
+explicit master gate so it can be tuned before ever going live for a participant.
+
+**Master gate.** `StudyConfig.agentFailuresEnabled` (default **false**). Read only through
+`agentFailuresEnabled()`/`effectiveEpsilonStrategic()`/`effectiveEpsilonTactical()` in `utils/config.ts`
+— every reducer/component read of the raw `cfg.agentErrorRate`/`cfg.epsilonTactical` for the purpose
+of actually rolling a failure was moved onto these. With the gate off, both effective epsilons are 0
+regardless of what's dialled in, so a candidate rate can sit configured on a session (or a shared
+preset/URL) without ever being live. `session_start.epsilonStrategic`/`epsilonTactical` log the
+*effective* (already-gated) values, same meaning as always; the new `session_start.agentFailuresEnabled`
+says whether gating did anything. StartScreen gets a checkbox next to the two accuracy dials
+(`?failuresLive=1` for the URL form), default unchecked.
+
+**ε_Strategic — one roll per mission, both cards corrupted the same way, or neither.** Previously
+`copilot.ts` rolled independently per card (two RNG draws) with a generic ±2–3-on-a-random-type
+nudge. Now `generateStrategies` rolls ONCE per mission; when it fires, the SAME mistake is attempted
+on both cards:
+- `'over'` — +`STRATEGIC_OVER_DELTA` (3) drones of one colour, capped at reserve. Wastes reserve (no
+  completion-time benefit — the extra tokens sit idle) with no feasibility risk.
+- `'under'` — −1 drone from a colour that carries redundancy buffer *on that specific card*, floored
+  at that card's own sequential minimum. Can never make a card infeasible or drop a task — it only
+  zeroes out the resilience margin: the mission still completes on the happy path, but a later drone
+  failure on it has no spare to absorb.
+
+Two correctness properties, tightened after early testing surfaced both as real problems rather than
+edge cases:
+
+- **Materiality.** A candidate colour is only eligible if the corruption actually DOES something:
+  `'over'` only targets a colour with genuine reserve headroom (`reserve[t] > pool[t]`) — never "add
+  3 Green" when reserve.Green is already fully committed, which would silently add zero and look like
+  a no-op failure. `'under'` only targets a colour the mission actually NEEDS (`floor[t] > 0`) that
+  also carries buffer above that floor — never a colour the mission uses zero of. This second one was
+  a real, reproducible bug: Conservative's blanket `CONSERVATIVE_TOP_UP` can leave a spare drone of an
+  entirely unused colour sitting on the card (e.g. one Green on an all-Blue mission), and the
+  original `'under'` logic (`pool[t] > floor[t]`, no needed-check) happily "failed" by stripping that
+  spare — a change with zero operational effect, since nothing needed it. `pickImpactfulColour` now
+  requires `floor[t] > 0` too. Covered by `scripts/test-strategic-failure.ts` tests 6–7 (the latter
+  reproduces the all-Blue scenario directly).
+- **Both cards fail, or neither does.** `bothCardsCanFail` is computed up front — a colour is picked
+  independently per card via `pickImpactfulColour`, and a card is only actually corrupted if BOTH
+  cards found a materially-impactful colour for the rolled type. An asymmetric "only one card looks
+  wrong" would undercut the "both plans are bad" premise the failure is supposed to teach. If either
+  card has nothing to corrupt (very tight reserve, or a card with zero redundancy anywhere), the roll
+  still "fires" in the sense that it was drawn, but has no visible effect on either card that mission
+  — the same honest degrade-to-nothing behaviour as physically running out of room, not a bug.
+  Covered by test 5 (2000 seeds, zero asymmetric outcomes).
+
+Both the displayed and the true (deploy-time) pool are the same corrupted one, as before — this has
+always been a real-consequence error, not a display-only one (the docstring above `generateStrategies`
+claiming otherwise was stale and is now corrected). New `Strategy.badSuggestionColour` /
+`StrategicChoiceEvent.badSuggestionColour` / `strategiesPresented[].badSuggestionColour` record which
+colour was targeted.
+
+**ε_Tactical — a bad route, never a dropped task.** The old mechanism silently deleted one task from
+the suggested plan (`hasTacticalError`/`suppressedTaskId`) — a task showing zero drones is an
+unmissable red flag, not a plausible mistake, and it was also never actually reachable in play: the
+tactical planner starts empty and its Suggest button recomputed a fresh, uncorrupted plan every time,
+so the only way the drop ever manifested was if the operator built a complete plan by hand and simply
+never selected the dropped task — the mechanism was live in the reducer but essentially unreachable
+through the UI as it exists today.
+
+The replacement, `buildTacticalFailurePlan` in `utils/tacticalSuggest.ts`, never removes a
+task-composition entry, only adds to it: for every drone with real work, it draws a random walk of
+`TACTICAL_FAILURE_MIN_HOPS`–`MAX_HOPS` detour tasks through the mission's own tasks, and appends the
+drone's real task(s) unconditionally at the end. Coverage is guaranteed by construction, not
+probabilistically checked-and-patched.
+
+**Only the first drawn detour is ever actually deployed.** The initial version made every drawn
+detour a real, redundant `taskAssignments` member, and testing surfaced why that doesn't work:
+
+- **It could genuinely take ages.** Every `droneSequences` entry is a full task-dwell
+  (`buildManualAssignments` keeps a drone at a task for its whole `baseTime`, not a cheap waypoint
+  pass — see `docs/EVENT_LOGGING.md`), so 2–4 stacked detours could add anywhere from ~20s to
+  3+ minutes to a single drone's route before it reached its real work — large relative to the 480s
+  session, and squarely what "so it doesn't take ages" was pushing back on.
+- **A redundant drone's late arrival could delay a task's REAL required drones too**, not just waste
+  the detourer's own time: `taskStarts[taskId]` is the MAX arrival across every drone referencing
+  that task in its `droneSequences`, redundant or not, so a detourer showing up late at some other
+  real task could push that task's genuine completion later for the drones that actually needed to
+  be there — a compounding effect well beyond "this one drone wastes some time."
+
+Both are fixed by capping real execution to the FIRST detour only: `buildTacticalFailurePlan` adds
+only `detours[0]` as a redundant `taskAssignments` member; `detours[1..]` are real data (returned in
+`droneSequences`, so the fuller "how elaborate was the bad route" story is still logged on
+`tactical_opened`) but are deliberately never added to `taskAssignments`. `MapDisplay.tsx`'s existing
+chain-order memo (`userOrder.filter(tid => assignments[tid]?.includes(id))`) already filters a
+drone's route down to tasks it's a genuine member of, so those later hops are silently dropped from
+what actually gets deployed — no changes needed there. The first detour is also drawn excluding the
+drone's own real task(s), and every later (decorative) draw excludes both the real tasks AND the
+first detour, so a later draw can never coincidentally collide with the one real membership and leak
+through as an accidental SECOND dwell on the same task. Net effect: at most one extra task's worth of
+delay per affected drone, isolated to that drone alone — bounded, and (per the request that motivated
+this) "a lazy operator won't notice." Covered by `scripts/test-tactical-failure.ts` tests 4–5.
+
+The (single, real) detour addition has to land inside the plan's `taskAssignments` itself, not a
+separate route field, or the failure would have no effect on what's actually deployed: `MapDisplay.tsx`'s
+`TacticalPlannerView` starts every non-recovery plan empty, and its Suggest button
+(`computeTacticalSuggestion`) recomputes a plan from scratch with no notion of any failure. A
+route-only corruption would be silently discarded the instant the operator clicked Suggest, because
+the planner's chain-order memo filters a drone's route down to tasks it's already assigned to. So
+`handleSuggest` now hands the operator `pending.taskAssignments` **as-is** (already
+detour-augmented) whenever `pending.hasTacticalError` is true, instead of recomputing — exactly
+mirroring how a bad strategic card is real until the operator notices and fixes it. `suppressedTaskId`
+stays on `PendingAllocation`/events for shape stability but is retired — always `null` now (harmless:
+no historical log ever had it `true`, since ε was always 0 before this build).
+
+If the (single) real detour happens to create a genuine cross-drone scheduling cycle, the existing
+live-TICK `findSchedulingCycle`/`rerouteDeadlock` detector (§ "Scheduling deadlocks" in `CLAUDE.md`,
+default-on via `fixLockouts`) reroutes it exactly as it would an operator-built one — nothing new was
+needed for that.
+
+**RNG seed bug found during testing.** The per-mission tactical roll was seeded with
+`mission.id.charCodeAt(2)` — a single character at a fixed index. Mission ids are shaped
+`M${seq.padStart(3,'0')}` (`missionGen.ts spawnMission`), so for `seq` 1–9 — nearly an entire short
+session — `id[2]` (the tens digit) is `'0'` every time. That collapsed the "per-mission" roll to ONE
+fixed coin-flip reused for almost every mission in a session, not a fresh draw each time: depending on
+that single draw, epsilon=0.5 could fire for every agent-sourced tactical allocation in a session or
+none of them, which is how it was first found (a whole test session at epsilon=0.5 with zero tactical
+failures). Fixed to seed with `hashId(mission.id)` (the whole-string hash already used for the
+strategic side's `agentRng`), which varies properly across `M001`, `M002`, etc. Covered by
+`scripts/test-tactical-failure.ts` test 8, which reproduces the old collapse and confirms the fix
+varies.
+
+**Event log additions (all additive, old logs unaffected):** `session_start.agentFailuresEnabled`,
+`strategicFailureOverDelta`, `tacticalFailureMinHops`, `tacticalFailureMaxHops`;
+`Strategy`/`strategiesPresented[]`/`StrategicChoiceEvent.badSuggestionColour`;
+`TacticalOpenedEvent.agentDroneSequences`; `TacticalConfirmedEvent.tacticalFailureFired`.
+
+**Testing-mode flagging.** Gated on `state.testingMode` (the existing orange "TEST" convention in
+`PrimaryDisplay.tsx`), purely additive UI, never shown to a participant: a strategy card shows
+`⚠ TEST: over/under <colour>` when it's the corrupted one; the tactical planner header shows
+`⚠ TEST: route failure — N drone(s), M total stops` when one fired for that mission. This exists so
+the researcher can see frequency/severity while dialling in `TACTICAL_FAILURE_MIN/MAX_HOPS` and the
+epsilon values before ever setting `agentFailuresEnabled` for a real participant.
+
+`condition` was **not** revived as a label — no HH/LH/HL/LL bucketing, `conditionToEpsilons()` still
+doesn't exist. Every session logs its raw `epsilonStrategic`/`epsilonTactical` directly, which is
+enough to bucket sessions into the 2×2 cells after the fact.
+
+**Consequence for the data:** none for any session tagged `v1.0`–`v1.9` — this only changes what a
+session run with `agentFailuresEnabled: true` looks like, and no such session exists yet. Regression
+coverage: `scripts/test-strategic-failure.ts`, `scripts/test-tactical-failure.ts`.
 
 ---
 

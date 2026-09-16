@@ -138,6 +138,16 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
     .filter(t => t.status === 'completed')
     .reduce((sum, t) => sum + TASK_WEIGHT[t.type], 0)
 
+  // Testing-mode-only running tally of ε_Strategic/ε_Tactical failures fired THIS session
+  // (study-v1.10) — a persistent counter in the header so a failure is never missed even if the
+  // operator doesn't happen to be looking at the card/planner the moment it fires. Recomputed from
+  // the session's own logged events, so it's exactly what actually happened, not a guess.
+  const sessionEvents = state.config.testingMode ? (state.events[state.sessionNumber - 1] ?? []) : []
+  const strategicFailureCount = sessionEvents.filter(
+    e => e.type === 'strategic_modal_opened' && e.strategiesPresented.some(s => s.isBadSuggestion)
+  ).length
+  const tacticalFailureCount = sessionEvents.filter(e => e.type === 'tactical_opened' && e.hasTacticalError).length
+
   return (
     <div className="h-full flex flex-col bg-gray-950 text-white overflow-hidden">
       {/* Strategic frame — cyan ring around the whole window reinforces the cross-mission decision tier */}
@@ -162,6 +172,16 @@ export default function PrimaryDisplay({ state, dispatch, setOpenMissionId, tuto
           {state.config.testingMode && (
             <span className="text-xs px-2 py-0.5 rounded border uppercase tracking-wide bg-orange-900/60 text-orange-300 border-orange-700/50 font-bold">
               TEST
+            </span>
+          )}
+          {state.config.testingMode && (strategicFailureCount > 0 || tacticalFailureCount > 0) && (
+            <span className="text-sm px-2.5 py-1 rounded border-2 border-red-500 bg-red-950 text-red-400 font-extrabold uppercase tracking-wide animate-pulse">
+              ⚠ FAILURES FIRED — {strategicFailureCount} strategic / {tacticalFailureCount} tactical
+            </span>
+          )}
+          {state.config.testingMode && strategicFailureCount === 0 && tacticalFailureCount === 0 && (
+            <span className="text-xs px-2 py-0.5 rounded border border-gray-700 text-gray-500">
+              0 failures fired yet this session
             </span>
           )}
         </div>
@@ -529,7 +549,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
       {showAgentCards && !tutorialForceManual && (
         <div className="grid grid-cols-2 gap-2">
           {modal.strategies.map((strat, i) => (
-            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} loaded={loadedCards.has(i)} reserve={reserve} onSelect={() => { if (!loadedCards.has(i)) return; setSelectedIdx(i); dispatch({ type: 'PICK_STRATEGY', strategyIndex: i }) }} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} />
+            <StrategyCard key={strat.name} strat={strat} selected={selectedIdx === i} loaded={loadedCards.has(i)} reserve={reserve} onSelect={() => { if (!loadedCards.has(i)) return; setSelectedIdx(i); dispatch({ type: 'PICK_STRATEGY', strategyIndex: i }) }} tutorialId={isTutorialFirst && i === 0 ? 'first-strategy-card' : undefined} testingMode={state.config.testingMode} />
           ))}
           {modal.strategies.length === 0 && (
             <p className="col-span-2 text-xs text-gray-500 py-2 text-center">
@@ -630,7 +650,7 @@ function StrategicPanel({ modal, state, dispatch, isTutorialFirst, tutorialForce
   )
 }
 
-function StrategyCard({ strat, selected, loaded, onSelect, tutorialId }: { strat: Strategy; selected: boolean; loaded: boolean; reserve?: AssetRequirement; onSelect: () => void; tutorialId?: string }) {
+function StrategyCard({ strat, selected, loaded, onSelect, tutorialId, testingMode }: { strat: Strategy; selected: boolean; loaded: boolean; reserve?: AssetRequirement; onSelect: () => void; tutorialId?: string; testingMode?: boolean }) {
   const DRONE_COLOR: Record<AssetType, string> = { Blue: 'text-blue-300', Red: 'text-red-300', Green: 'text-green-300' }
   const DRONE_COLOR_DIM: Record<AssetType, string> = { Blue: 'text-blue-400/60', Red: 'text-red-400/60', Green: 'text-green-400/60' }
 
@@ -651,6 +671,11 @@ function StrategyCard({ strat, selected, loaded, onSelect, tutorialId }: { strat
         {selected && <span className="text-blue-400 text-xs">✓</span>}
         <div className="font-semibold text-sm text-white">{strat.name}</div>
       </div>
+      {testingMode && strat.isBadSuggestion && (
+        <div className="mb-1 text-xs px-1.5 py-0.5 rounded bg-red-950 text-red-400 border-2 border-red-500 font-extrabold inline-block animate-pulse">
+          ⚠ TEST FAILURE: {strat.badSuggestionType}{strat.badSuggestionColour ? ` ${strat.badSuggestionColour}` : ''}
+        </div>
+      )}
       <div className="text-xs text-gray-400 mt-0.5">{strat.description}</div>
       <div className="mt-2 text-xs space-y-1">
         <div className="flex items-center gap-1.5 flex-wrap">

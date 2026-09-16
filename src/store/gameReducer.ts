@@ -14,11 +14,12 @@ import {
   LAMBDA, CATEGORY_WEIGHTS, CATEGORIES, FLEET, TUTORIAL_FLEET,
   FAILURE_RATE_PER_DRONE_SECOND,
 } from '../utils/missionGen'
-import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER } from '../utils/copilot'
+import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER, STRATEGIC_OVER_DELTA } from '../utils/copilot'
 import { findSchedulingCycle } from '../utils/scheduling'
 import { onMissionDrones, taskCoverableBy, unfinishedTasks } from '../utils/coverage'
+import { buildTacticalFailurePlan, TACTICAL_FAILURE_MIN_HOPS, TACTICAL_FAILURE_MAX_HOPS } from '../utils/tacticalSuggest'
 import { SeededRNG } from '../utils/prng'
-import { isFixLockouts, failureGraceSeconds } from '../utils/config'
+import { isFixLockouts, failureGraceSeconds, effectiveEpsilonStrategic, effectiveEpsilonTactical, agentFailuresEnabled } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
@@ -42,7 +43,7 @@ const FAILURE_ROLL_INTERVAL = 1  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.9'
+const APP_VERSION = 'study-v1.10'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -1039,6 +1040,7 @@ function applyTacticalAllocation(
       .map(t => t.id),
     substituteTaskIds: assignments.filter(a => a.useSubstitute).map(a => a.taskId),
     chainedDroneIds: [...droneUseCount.entries()].filter(([, n]) => n > 1).map(([id]) => id),
+    tacticalFailureFired: pending.hasTacticalError,
   })
 
   return s
@@ -1424,8 +1426,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           mode: cfg.mode,
           complexity: sessionComplexity,
           seed: cfg.seed,
-          epsilonStrategic: cfg.agentErrorRate,
-          epsilonTactical: cfg.epsilonTactical,
+          epsilonStrategic: effectiveEpsilonStrategic(cfg),
+          epsilonTactical: effectiveEpsilonTactical(cfg),
+          agentFailuresEnabled: agentFailuresEnabled(cfg),
+          strategicFailureOverDelta: STRATEGIC_OVER_DELTA,
+          tacticalFailureMinHops: TACTICAL_FAILURE_MIN_HOPS,
+          tacticalFailureMaxHops: TACTICAL_FAILURE_MAX_HOPS,
           tacticalMode: cfg.tacticalMode,
           fixLockouts: isFixLockouts(cfg),
           numSessions: cfg.numSessions,
@@ -2117,7 +2123,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
       const agentRng = new SeededRNG(state.config.seed ^ hashId(mission.id))
       const strategies = state.config.mode === 'agent'
-        ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
+        ? generateStrategies(mission.tasks, reserve, effectiveEpsilonStrategic(state.config), agentRng)
         : []
       const openedAtMs = Math.round(state.elapsed * 1000)
       const cardRevealDelaysMs = drawCardRevealDelays(state.config.seed, mission.id, strategies.length)
@@ -2151,6 +2157,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           redundancyScore: st.redundancyScore,
           isBadSuggestion: st.isBadSuggestion,
           badSuggestionType: st.badSuggestionType,
+          badSuggestionColour: st.badSuggestionColour,
           revealDelayMs: cardRevealDelaysMs[i] ?? 0,
         })),
       })
@@ -2236,6 +2243,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let taskComps: Record<string, TaskComp> | undefined
       let isBad = false
       let badType: 'over' | 'under' | null = null
+      let badColour: AssetType | null = null
 
       if (action.source === 'agent' && action.strategyIndex !== null) {
         const strat = modal.strategies[action.strategyIndex]
@@ -2245,6 +2253,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         strategyName = strat.name
         isBad = strat.isBadSuggestion
         badType = strat.badSuggestionType
+        badColour = strat.badSuggestionColour
       } else {
         composition = action.manualAllocation ?? { Blue: 0, Red: 0, Green: 0 }
         strategyName = 'Manual'
@@ -2315,22 +2324,32 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
 
-      // ── Tactical error injection (agent mode only) ─────────────────────────
-      // With probability epsilonTactical, remove one task from the tactical plan.
-      // The suppressed task will appear allocated in the UI (deception) but has no drone.
+      // ── Tactical error injection (agent mode only, study-v1.10) ────────────
+      // With probability epsilonTactical, the agent's suggested plan is bad, but never in a way
+      // that drops coverage: every drone that has real work still gets it — taskAssignmentMap gets
+      // each affected drone added as a REDUNDANT extra member of a few random detour tasks (harmless
+      // — composition checks are "at least N") — and its route visits those detours before its real
+      // task. See buildTacticalFailurePlan for the full rationale (why the augmentation has to land
+      // in taskAssignmentMap itself, not just a separate route field, and why deadlock resolution
+      // doesn't need new code). Computed from the PRE-greedy-collapse map so a bad route survives
+      // into greedy tacticalMode too, not just plan-all.
       let hasTacticalError = false
-      let suppressedTaskId: string | null = null
-      if (action.source === 'agent' && state.config.epsilonTactical > 0) {
-        const tacRng = new SeededRNG(state.config.seed ^ (mission.id.charCodeAt(2) ?? 0) ^ 0x7ac1)
-        if (tacRng.randFloat(0, 1) < state.config.epsilonTactical) {
-          // Only suppress a task that actually has drones assigned to it
-          const suppressable = taskOrder.filter(tid => (taskAssignmentMap[tid] ?? []).length > 0)
-          if (suppressable.length > 0) {
-            suppressedTaskId = suppressable[tacRng.randInt(0, suppressable.length - 1)]
-            taskAssignmentMap = { ...taskAssignmentMap }
-            delete taskAssignmentMap[suppressedTaskId]
-            hasTacticalError = true
-          }
+      const suppressedTaskId: string | null = null   // pre-study-v1.10 mechanism, retired — always null now
+      let agentDroneSequences: Record<string, string[]> = {}
+      if (action.source === 'agent' && effectiveEpsilonTactical(state.config) > 0) {
+        // hashId(mission.id), not mission.id.charCodeAt(2) — the latter is a single character at a
+        // fixed index, which for the "M001".."M009" ids that cover almost an entire session is THE
+        // SAME character every time (the tens digit of a 1-digit sequence number is always '0').
+        // That collapsed this roll to one fixed coin-flip reused for nearly every mission in a
+        // session instead of a fresh draw each time — found via study-v1.10 testing (epsilon=0.5
+        // never fired a single tactical failure in a whole session). hashId mixes the WHOLE id
+        // string, matching the strategic agentRng seed a few lines up in OVERRIDE_TACTICAL/OPEN_STRATEGIC.
+        const tacRng = new SeededRNG(state.config.seed ^ hashId(mission.id) ^ 0x7ac1)
+        if (tacRng.randFloat(0, 1) < effectiveEpsilonTactical(state.config)) {
+          hasTacticalError = true
+          const failurePlan = buildTacticalFailurePlan(mission.tasks, taskAssignmentMap, tacRng)
+          taskAssignmentMap = failurePlan.taskAssignments
+          agentDroneSequences = failurePlan.droneSequences
         }
       }
 
@@ -2352,6 +2371,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         badSuggestionType: badType,
         hasTacticalError,
         suppressedTaskId,
+        agentDroneSequences,
       }
 
       const diffAssets = (a: AssetRequirement, b: AssetRequirement): AssetRequirement =>
@@ -2367,6 +2387,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         wasAgentSuggestion: action.source === 'agent',
         agentSuggestionWasBad: isBad,
         badSuggestionType: badType,
+        badSuggestionColour: badColour,
         assetsChosen: composition,
         editedFromStrategy: action.editedFromStrategy ?? null,
         timeRemainingInSession: Math.max(0, state.sessionDuration - now),
@@ -2399,6 +2420,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // The ε_T draw for this mission, logged whether or not it ever manifests as a failed task.
         hasTacticalError,
         suppressedTaskId,
+        agentDroneSequences,
         dronePool,
         agentProjectedCompletion: expectedCompletionTime,
         unassignedTaskIds: mission.tasks.filter(t => (taskAssignmentMap[t.id] ?? []).length === 0).map(t => t.id),
@@ -2554,7 +2576,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
       const agentRng = new SeededRNG(state.config.seed ^ hashId(mission.id))
       const strategies = state.config.mode === 'agent'
-        ? generateStrategies(mission.tasks, reserve, state.config.agentErrorRate, agentRng)
+        ? generateStrategies(mission.tasks, reserve, effectiveEpsilonStrategic(state.config), agentRng)
         : []
       const openedAtMs = Math.round(state.elapsed * 1000)
       const cardRevealDelaysMs = drawCardRevealDelays(state.config.seed, mission.id, strategies.length)
@@ -2582,6 +2604,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           redundancyScore: st.redundancyScore,
           isBadSuggestion: st.isBadSuggestion,
           badSuggestionType: st.badSuggestionType,
+          badSuggestionColour: st.badSuggestionColour,
           revealDelayMs: cardRevealDelaysMs[i] ?? 0,
         })),
       })

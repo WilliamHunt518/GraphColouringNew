@@ -882,16 +882,20 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
 
     const greedy = state.tacticalMode === 'greedy'
     // Recovery: the agent only re-plans the tasks still needing coverage using the idle drones.
-    // Normal tactical: the agent plans the whole mission from the committed pool.
+    // Normal tactical: the agent plans the whole mission from the committed pool — UNLESS a
+    // study-v1.10 tactical failure fired for this mission, in which case hand over the reducer's
+    // actual (composition-augmented, detour-carrying) suggestion as-is rather than recomputing a
+    // fresh, uncorrupted one. computeTacticalSuggestion has no notion of the failure, so recomputing
+    // here would silently erase it the moment the operator clicked Suggest — pending.taskAssignments
+    // already IS the agent's real proposal (see buildTacticalFailurePlan for why the redundant
+    // detour memberships have to live there, not just in a separate route field).
     const suggestion = recoveryMode
       // Pass the LIVE plan: the agent only re-plans the tasks the operator's current edit leaves
       // short, so whatever they have already fixed by hand survives the click.
       ? computeRecoverySuggestion(mission, pending, state.assets, assignments)
-      : computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets, greedy)
-    // Re-apply tactical error: keep the same task suppressed even after re-suggesting
-    if (pending.hasTacticalError && pending.suppressedTaskId) {
-      delete suggestion[pending.suppressedTaskId]
-    }
+      : (pending.hasTacticalError && pending.agentDroneSequences)
+        ? pending.taskAssignments
+        : computeTacticalSuggestion(pending.dronePool, pending.taskOrder, mission.tasks, state.assets, greedy)
     // Flatten to one entry per drone, ordered by task priority then drone order within each task
     const entries: Array<{ taskId: string; droneId: string }> = []
     for (const tid of pending.taskOrder) {
@@ -936,7 +940,17 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
       setRecoverySuggestUsed(true)
     } else {
       setAssignments({})
-      setDroneChainOrder({})
+      // study-v1.10: when a tactical route failure fired for this mission, hand the operator the
+      // agent's actual (detour-prefixed) route rather than the natural order — a lazy "just click
+      // Suggest and Deploy" operator inherits the wasted hops exactly like a bad strategic card;
+      // dragging a drone to fix its order overrides this the same way editing a card does.
+      setDroneChainOrder(
+        pending.hasTacticalError && pending.agentDroneSequences
+          ? Object.fromEntries(
+              Object.entries(pending.agentDroneSequences).filter(([id]) => pending.dronePool.includes(id))
+            )
+          : {}
+      )
     }
     setSuggestQueue(entries)
     document.dispatchEvent(new CustomEvent('tutorial-suggest-clicked'))
@@ -968,6 +982,20 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
     return () => clearTimeout(timer)
   }, [suggestQueue])
 
+  // Testing-mode-only visibility into the ε_Tactical route failure (study-v1.10) — so the researcher
+  // can see frequency/severity while tuning TACTICAL_FAILURE_MIN/MAX_HOPS, never shown to a
+  // participant. Only the FIRST drawn detour is ever actually deployed (see the docstring on
+  // buildTacticalFailurePlan) — the rest of the random walk is real data but never costs real time,
+  // so "drawn" (full walk length, what's logged) is reported alongside "executed" (always 1 real
+  // detour hop per affected drone) rather than a single misleading combined stop count.
+  const testFailureStats = (state.testingMode && pending.hasTacticalError && pending.agentDroneSequences)
+    ? (() => {
+        const seqs = pending.agentDroneSequences!
+        const drawnStops = Object.values(seqs).reduce((sum, seq) => sum + seq.length, 0)
+        return { droneCount: Object.keys(seqs).length, drawnStops }
+      })()
+    : null
+
   return (
     <div className="flex flex-col h-full bg-gray-950">
       {/* Header */}
@@ -982,6 +1010,11 @@ function TacticalPlannerView({ mission, state, onBack, onMapAction, overrideAllo
           <span className="text-lg px-2.5 py-1 rounded bg-gray-700/60 text-gray-400 border border-gray-600/50">View Only</span>
         ) : (
           <span className="text-lg px-2.5 py-1 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700/50">Tactical View</span>
+        )}
+        {testFailureStats && (
+          <span className="text-lg px-2.5 py-1 rounded bg-red-950 text-red-400 border-2 border-red-500 font-extrabold uppercase animate-pulse">
+            ⚠ TEST FAILURE: route — {testFailureStats.droneCount} drone(s) detoured (1 real stop each · {testFailureStats.drawnStops} drawn)
+          </span>
         )}
         <div className="flex-1" />
         {!readOnly && <span className="text-lg text-gray-500">Drag → assign · Shift+drag → chain · hover a drone for its full path</span>}
