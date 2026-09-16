@@ -370,6 +370,51 @@
   <section>
     <div class="sec-head">
       <p class="eyebrow">Question three</p>
+      <h2>Does using an assistant more go with doing better?</h2>
+      <p class="sec-intro">
+        One dot per <b>session</b>, not per person — a participant's own uptake moves from session to
+        session, and that movement is the only lever a sample this small has. <b>Uptake</b> is the same
+        measure as the figures above (strategic: a card taken instead of a manual bundle; tactical: the
+        agent's plan pulled in at least once). <b>Completion</b> and <b>mission time</b> carry the
+        performance story everywhere else in this report — session score is excluded here for the same
+        reason it is excluded there (not comparable across study-v1.3).
+      </p>
+    </div>
+    <div class="grid two">
+      <figure>
+        <figcaption>
+          <p class="fig-title">Strategic uptake vs. completion</p>
+          <p class="fig-sub">Share of allocations that took a card, against the share of taken-on work
+            finished that session.</p>
+        </figcaption>
+        <div class="chart" id="c-usecompS"></div>
+        <p class="fig-take" id="t-usecompS"></p>
+      </figure>
+      <figure>
+        <figcaption>
+          <p class="fig-title">Tactical uptake vs. completion</p>
+          <p class="fig-sub">Share of confirmed plans that consulted the agent at least once, against
+            completion that session.</p>
+        </figcaption>
+        <div class="chart" id="c-usecompT"></div>
+        <p class="fig-take" id="t-usecompT"></p>
+      </figure>
+      <figure class="full">
+        <figcaption>
+          <p class="fig-title">Every use measure against every performance measure</p>
+          <p class="fig-sub">Pearson r with the n it rests on, one row per session in the window. A
+            positive r on mission time means MORE uptake went with a SLOWER mission, not a faster one —
+            read the sign against the axis, not against intuition.</p>
+        </figcaption>
+        <div class="table-wrap" id="c-usecorr"></div>
+        <p class="fig-take" id="t-usecorr"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">Question four</p>
       <h2>Does disposition predict which assistant you lean on?</h2>
       <p class="sec-intro">
         Three things were measured per person: how they feel about AI in general (before they ever
@@ -999,6 +1044,70 @@
 
   function rr(v) { return v === null || v === undefined ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2); }
 
+  // ── section: does using an assistant more go with doing better? ───
+  function renderUsePerformance(c) {
+    var o = c.overall;
+    var pp = o.perParticipant;
+
+    function pts(uptakeKey, color) {
+      return pp.filter(function (p) {
+        return p[uptakeKey] !== null && p[uptakeKey] !== undefined &&
+          p.completion !== null && p.completion !== undefined;
+      }).map(function (p) { return { x: p[uptakeKey], y: p.completion, label: p.pid, color: color }; });
+    }
+
+    function takeaway(v, verb) {
+      if (!v || v.r === null) return 'Too few sessions in this window with both measures to compute a correlation.';
+      var lead = 'r = <b>' + rr(v.r) + '</b> on n = ' + v.n + ' sessions. ';
+      if (Math.abs(v.r) < 0.2) return lead + 'Essentially flat — ' + verb + ' says little about completion here.';
+      return lead + (v.r > 0
+        ? 'Sessions that ' + verb + ' more also finished more of the work they took on.'
+        : 'Sessions that ' + verb + ' more finished LESS of the work they took on — the opposite of ' +
+          '"more assistant use helps." At this n, treat the sign as a shape, not a finding.');
+    }
+
+    var sPts = pts('strategicUptake', TIER.strategic.color);
+    renderScatter(document.getElementById('c-usecompS'), sPts, {
+      xLabel: 'Strategic uptake', yLabel: 'Completion (own missions)',
+      xDomain: [0, 1], yDomain: [0, 1], fx: pc, fy: pc,
+      empty: 'No session in this window has both a strategic uptake rate and a completion rate.'
+    });
+    document.getElementById('t-usecompS').innerHTML =
+      takeaway(o.useVsPerformance.strategicUptakeVsCompletion, 'took a strategy card');
+
+    var tPts = pts('tacticalUptake', TIER.tactical.color);
+    renderScatter(document.getElementById('c-usecompT'), tPts, {
+      xLabel: 'Tactical uptake', yLabel: 'Completion (own missions)',
+      xDomain: [0, 1], yDomain: [0, 1], fx: pc, fy: pc,
+      empty: 'No session in this window has both a tactical uptake rate and a completion rate.'
+    });
+    document.getElementById('t-usecompT').innerHTML =
+      takeaway(o.useVsPerformance.tacticalUptakeVsCompletion, 'consulted the tactical agent');
+
+    var USE_CORRS = [
+      ['Strategic uptake', 'Completion (own missions)', 'strategicUptakeVsCompletion'],
+      ['Strategic uptake', 'Mean mission time', 'strategicUptakeVsMissionTime'],
+      ['Tactical uptake (agent consulted)', 'Completion (own missions)', 'tacticalUptakeVsCompletion'],
+      ['Tactical uptake (agent consulted)', 'Mean mission time', 'tacticalUptakeVsMissionTime']
+    ];
+    var rowsHtml = USE_CORRS.map(function (row) {
+      var v = o.useVsPerformance[row[2]] || { n: 0, r: null };
+      var strength = v.r === null ? '' : Math.abs(v.r) >= 0.5 ? 'moderate' : Math.abs(v.r) >= 0.3 ? 'weak' : 'none to speak of';
+      return '<tr' + (v.r === null ? ' class="dim"' : '') + '><td class="l">' + row[0] + '</td>' +
+        '<td class="l">' + row[1] + '</td>' +
+        '<td class="num">' + (v.r === null ? '—' : rr(v.r)) + '</td>' +
+        '<td class="num">' + v.n + '</td>' +
+        '<td class="l">' + (v.r === null ? (v.n < 3 ? 'too few sessions' : 'no variance') : strength) + '</td></tr>';
+    }).join('');
+    document.getElementById('c-usecorr').innerHTML =
+      '<table><thead><tr><th class="l">Use measure</th><th class="l">Performance measure</th>' +
+      '<th>r</th><th>n</th><th class="l">Reads as</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>';
+    document.getElementById('t-usecorr').innerHTML =
+      '<b>n is sessions, not people</b> — a handful of participants contribute several rows each, so ' +
+      'this is not an independent sample. A positive r on mission time means more uptake went with a ' +
+      'SLOWER mission, not a faster one: read every sign against its axis label, not against intuition.';
+  }
+
   function renderAttitudes(c) {
     var A = c.attitudes;
     var usable = A.people.filter(function (p) { return !p.straightlined; });
@@ -1436,6 +1545,9 @@
       pending.push({ host: fig.querySelector('.chart'), pairs: pairs, sp: sp });
     });
     pending.forEach(function (p) { renderSlope(p.host, p.pairs, p.sp); });
+
+    // 8b. use vs performance
+    renderUsePerformance(c);
 
     // 9. disposition, trust, and use
     renderAttitudes(c);

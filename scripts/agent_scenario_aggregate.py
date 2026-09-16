@@ -114,6 +114,20 @@ def cell(rows):
     rec = sum(r['recoveries'] for r in rows)
     rec_a = sum(r['recoveriesAgent'] for r in rows)
 
+    pp = [dict(
+        pid=r['pid'], scenario=r['scenario'], version=r['version'],
+        strategicUptake=(r['strategicTaken'] / r['strategicChoices']) if r['strategicChoices'] else None,
+        tacticalUptake=(r['tacticalConsulted'] / r['tacticalConfirms'])
+        if (r['hasSuggestField'] and r['tacticalConfirms']) else None,
+        completion=r['ownCompletionRate'], score=r['score'], penalty=r['penalty'],
+        # 0 means no mission was ever completed in the session, not an instant mission (see contrasts()).
+        meanMissionTime=r['meanMissionTime'] or None, tlx=r['tlxMean'],
+        failures=r['failures'], drags=r['drags'],
+    ) for r in rows]
+
+    def use_corr(xk, yk):
+        return pearson([(p[xk], p[yk]) for p in pp])
+
     parts = sorted({r['pid'] for r in rows})
     return dict(
         sessions=len(rows), participants=len(parts), participantIds=parts,
@@ -134,15 +148,7 @@ def cell(rows):
             manual=sum(r['choiceManual'] for r in rows),
         ),
         # per-participant rates, for dot overlays -- the honest view at this n
-        perParticipant=[dict(
-            pid=r['pid'], scenario=r['scenario'], version=r['version'],
-            strategicUptake=(r['strategicTaken'] / r['strategicChoices']) if r['strategicChoices'] else None,
-            tacticalUptake=(r['tacticalConsulted'] / r['tacticalConfirms'])
-            if (r['hasSuggestField'] and r['tacticalConfirms']) else None,
-            completion=r['ownCompletionRate'], score=r['score'], penalty=r['penalty'],
-            meanMissionTime=r['meanMissionTime'], tlx=r['tlxMean'],
-            failures=r['failures'], drags=r['drags'],
-        ) for r in rows],
+        perParticipant=pp,
         # performance -- only meaningful where the field exists
         completion=summarise([r['ownCompletionRate'] for r in rows]),
         score=summarise([r['score'] for r in rows]),
@@ -151,6 +157,17 @@ def cell(rows):
         tlx=summarise([r['tlxMean'] for r in rows]),
         failures=summarise([r['failures'] for r in rows]),
         drags=summarise([float(r['drags']) for r in rows if r['drags'] > 0]),
+        # does using an assistant more go with doing better? one point per SESSION (not per
+        # participant -- a person's own uptake varies session to session, and that variation is
+        # the only lever this design has at n this small). Completion and mission time carry the
+        # performance story everywhere else in this report (score is not comparable across
+        # study-v1.3, so it is excluded here too).
+        useVsPerformance=dict(
+            strategicUptakeVsCompletion=use_corr('strategicUptake', 'completion'),
+            strategicUptakeVsMissionTime=use_corr('strategicUptake', 'meanMissionTime'),
+            tacticalUptakeVsCompletion=use_corr('tacticalUptake', 'completion'),
+            tacticalUptakeVsMissionTime=use_corr('tacticalUptake', 'meanMissionTime'),
+        ),
     )
 
 
