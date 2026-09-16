@@ -21,12 +21,18 @@ BASE = Path(__file__).resolve().parent.parent
 # -- build ordering, so a cohort can be expressed as "version >= X" ----------------------------
 # Pre-tag runs logged no appVersion at all; they are ordered by wall clock and treated as < v1.0.
 VERSION_ORDER = ['pre-tag', 'study-v1.0', 'study-v1.1', 'study-v1.2', 'study-v1.3',
-                 'study-v1.4', 'study-v1.5', 'study-v1.6', 'study-v1.7']
+                 'study-v1.4', 'study-v1.5', 'study-v1.6', 'study-v1.7', 'study-v1.8',
+                 'study-v1.9']
 
 
 def vrank(v):
-    v = v or 'pre-tag'
-    return VERSION_ORDER.index(v) if v in VERSION_ORDER else 0
+    # No appVersion at all -> genuinely pre-tag. A non-empty version this list doesn't know about
+    # -> a tag shipped after this list was last updated, i.e. newer than everything in it, not
+    # older. Falling back to 0 here previously misfiled every study-v1.8/v1.9 session as pre-tag
+    # and silently dropped them from every cohort that requires minrank >= study-v1.0.
+    if not v:
+        return 0
+    return VERSION_ORDER.index(v) if v in VERSION_ORDER else len(VERSION_ORDER)
 
 
 def events(session):
