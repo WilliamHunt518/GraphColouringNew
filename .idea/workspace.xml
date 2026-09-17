@@ -2,10 +2,20 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="72158fef-1a19-4f9a-80a5-25aa3e4f06d6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/logs/Study_ver_final/Xinyi.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/logs/Study_ver_final/study_Samratul_none_42(2).json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/Study_ver_final/study_Andrew.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" beforeDir="false" afterPath="$PROJECT_DIR$/.claude/worktrees/agent-ae2b74e1d0381fb1b" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/STUDY_BUILD.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/STUDY_BUILD.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/reports/aggregate.json" beforeDir="false" afterPath="$PROJECT_DIR$/docs/reports/aggregate.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/reports/two-tiers-two-scenarios.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/reports/two-tiers-two-scenarios.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/Study_Ver1.2/SAM HJ.json" beforeDir="false" afterPath="$PROJECT_DIR$/logs/Study_Ver1.2/SAM HJ.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/Study_Ver1/Ramis.json" beforeDir="false" afterPath="$PROJECT_DIR$/logs/Study_Ver1/Ramis.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/Study_ver_final/Xinyi.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test-strategic-failure.ts" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test-strategic-failure.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/store/gameReducer.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/store/gameReducer.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/copilot.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/copilot.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,7 +65,29 @@
       <recent name="C:\Users\wh1g17\GraphColouringNew\logs\Study_Ver1" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.study_runner">
+  <component name="RunManager" selected="Python.build_agent_report">
+    <configuration name="build_agent_report" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/build_agent_report.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="demo_study2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -100,6 +132,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="python scripts/build_agent_report.py     # no arguments, standard library only" type="PythonConfigurationType" factoryName="Python">
+      <module name="GraphColouringNew" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Apps\Anaconda3\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/docs/reports" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="scripts/build_agent_report.py" />
+      <option name="PARAMETERS" value="# no arguments, standard library only" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="run_analysis" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GraphColouringNew" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -114,28 +168,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/analysis/run_analysis.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="study_launcher" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="GraphColouringNew" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/study_launcher.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -168,11 +200,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.build_agent_report" />
         <item itemvalue="Python.study_runner" />
         <item itemvalue="Python.demo_study2" />
         <item itemvalue="Python.run_analysis" />
         <item itemvalue="Python.launch_menu" />
-        <item itemvalue="Python.study_launcher" />
       </list>
     </recent_temporary>
   </component>
@@ -245,7 +277,8 @@
       <workItem from="1788437635243" duration="2286000" />
       <workItem from="1789042118283" duration="4940000" />
       <workItem from="1789468089272" duration="2354000" />
-      <workItem from="1789559426589" duration="1982000" />
+      <workItem from="1789559426589" duration="9705000" />
+      <workItem from="1789634669903" duration="5153000" />
     </task>
     <servers />
   </component>
@@ -254,9 +287,11 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/GraphColouringNew$demo_study2.coverage" NAME="demo_study2 Coverage Results" MODIFIED="1778173300678" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$build_agent_report.coverage" NAME="build_agent_report Coverage Results" MODIFIED="1789641128620" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts" />
     <SUITE FILE_PATH="coverage/GraphColouringNew$run_experiment.coverage" NAME="run_experiment Coverage Results" MODIFIED="1777035121428" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GraphColouringNew$layout_editor.coverage" NAME="layout_editor Coverage Results" MODIFIED="1773764780332" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GraphColouringNew$study_runner.coverage" NAME="study_runner Coverage Results" MODIFIED="1778241404496" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GraphColouringNew$python_scripts_build_agent_report_py_______no_arguments__standard_library_only.coverage" NAME="python scripts/build_agent_report.py     # no arguments, standard library only Coverage Results" MODIFIED="1789565719945" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/docs/reports" />
     <SUITE FILE_PATH="coverage/GraphColouringNew$study_launcher.coverage" NAME="study_launcher Coverage Results" MODIFIED="1777035127240" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GraphColouringNew$launch_menu.coverage" NAME="launch_menu Coverage Results" MODIFIED="1777046953934" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/GraphColouringNew$run_analysis.coverage" NAME="run_analysis Coverage Results" MODIFIED="1777478841059" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/analysis" />

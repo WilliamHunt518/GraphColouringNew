@@ -1,14 +1,16 @@
-// Regression test for the ε_Strategic agent-reliability failure (study-v1.10).
+// Regression test for the ε_Strategic agent-reliability failure (study-v1.10, redirected v1.11).
 // Run: npx tsx scripts/test-strategic-failure.ts
 //
-// The manipulation was redesigned from "nudge each card's numbers independently" to a single
-// per-mission roll that, when it fires, corrupts BOTH cards with the SAME mistake:
-//   'over'  — +STRATEGIC_OVER_DELTA drones of one random colour (wastes reserve, no feasibility risk)
-//   'under' — -1 drone from a colour that carries redundancy buffer, floored at that card's own
-//             sequential minimum (never causes infeasibility or a dropped task — only removes slack)
-// This checks: both cards are corrupted consistently when it fires; a card is never pushed below
-// its feasible floor; firing frequency roughly matches the configured epsilon; and the master
-// agentFailuresEnabled gate actually suppresses everything when off.
+// The manipulation is a single per-mission roll that, when it fires, corrupts BOTH cards, each in
+// the direction fixed by its own identity (study-v1.11 — no longer a shared random type, so a lucky
+// draw can't accidentally make the "wrong" card look moderate/viable):
+//   Aggressive   — 'over'  — +STRATEGIC_OVER_DELTA drones of one colour (wastes reserve, no feasibility risk)
+//   Conservative — 'under' — -1 drone from a colour that carries redundancy buffer, floored at that
+//                  card's own sequential minimum (never causes infeasibility or a dropped task —
+//                  only removes slack)
+// This checks: both cards are corrupted consistently when it fires, each with its fixed direction; a
+// card is never pushed below its feasible floor; firing frequency roughly matches the configured
+// epsilon; and the master agentFailuresEnabled gate actually suppresses everything when off.
 import { generateStrategies } from '../src/utils/copilot'
 import { effectiveEpsilonStrategic } from '../src/utils/config'
 import { SeededRNG } from '../src/utils/prng'
@@ -44,10 +46,10 @@ const MISSION_TASKS: Task[] = [
   check('epsilon=0 never produces a bad suggestion (200 seeds)', !anyBad)
 }
 
-// ── 2. epsilon = 1 always fires, and both cards get the SAME failure type when both are affected ──
+// ── 2. epsilon = 1 always fires, and each card's failure type is fixed by its own identity ────────
 {
   let bothAffected = 0
-  let typeMismatch = 0
+  let wrongDirection = 0
   let neverInfeasible = true
   for (let seed = 0; seed < 300; seed++) {
     const strategies = generateStrategies(MISSION_TASKS, RESERVE, 1, new SeededRNG(seed))
@@ -60,13 +62,12 @@ const MISSION_TASKS: Task[] = [
         if (s.trueAssets[t] < 0 || s.trueAssets[t] > RESERVE[t]) neverInfeasible = false
       }
     }
-    if (agg.isBadSuggestion && cons.isBadSuggestion) {
-      bothAffected++
-      if (agg.badSuggestionType !== cons.badSuggestionType) typeMismatch++
-    }
+    if (agg.isBadSuggestion && agg.badSuggestionType !== 'over') wrongDirection++
+    if (cons.isBadSuggestion && cons.badSuggestionType !== 'under') wrongDirection++
+    if (agg.isBadSuggestion && cons.isBadSuggestion) bothAffected++
   }
   check('epsilon=1: trueAssets never negative or over reserve (300 seeds)', neverInfeasible)
-  check('epsilon=1: when both cards are affected, they share the same failure type', typeMismatch === 0, { bothAffected, typeMismatch })
+  check("epsilon=1: Aggressive is always 'over' and Conservative always 'under' when bad (300 seeds)", wrongDirection === 0, { wrongDirection })
   check('epsilon=1: both cards are affected in the common case (mission has buffer on both)', bothAffected > 250, { bothAffected })
 }
 
@@ -210,6 +211,40 @@ const MISSION_TASKS: Task[] = [
     effectiveEpsilonStrategic({ agentErrorRate: 0.9 }) === 0)
   check('agentFailuresEnabled=true passes the configured rate through',
     effectiveEpsilonStrategic({ agentErrorRate: 0.9, agentFailuresEnabled: true }) === 0.9)
+}
+
+// ── 10. `forcedFailure` (study-v1.11) overrides the internal Bernoulli roll — this is the plumbing
+//       gameReducer.ts uses to hand in a balanced-batch decision instead of an independent draw.
+{
+  // forcedFailure.fires=false must suppress a failure even at agentErrorRate=1.
+  let everBadWhenForcedOff = false
+  for (let seed = 0; seed < 100; seed++) {
+    const strategies = generateStrategies(MISSION_TASKS, RESERVE, 1, new SeededRNG(seed), undefined, { fires: false })
+    if (strategies.some(s => s.isBadSuggestion)) everBadWhenForcedOff = true
+  }
+  check('forcedFailure={fires:false} suppresses a failure even at agentErrorRate=1 (100 seeds)', !everBadWhenForcedOff)
+
+  // forcedFailure.fires=true must produce a failure even at agentErrorRate=0.
+  let everNotBadWhenForcedOn = false
+  let bothAffected = 0
+  for (let seed = 0; seed < 100; seed++) {
+    const strategies = generateStrategies(MISSION_TASKS, RESERVE, 0, new SeededRNG(seed), undefined, { fires: true })
+    const agg = strategies.find(s => s.name === 'Aggressive')
+    const cons = strategies.find(s => s.name === 'Conservative')
+    if (agg?.isBadSuggestion && cons?.isBadSuggestion) bothAffected++
+    else everNotBadWhenForcedOn = true
+  }
+  check('forcedFailure={fires:true} produces a failure even at agentErrorRate=0 (100 seeds)', !everNotBadWhenForcedOn, { bothAffected })
+
+  // An explicit colour is honoured rather than randomly drawn.
+  let everWrongColour = false
+  for (let seed = 0; seed < 50; seed++) {
+    const strategies = generateStrategies(MISSION_TASKS, RESERVE, 0, new SeededRNG(seed), undefined, { fires: true, colour: 'Red' })
+    for (const s of strategies) {
+      if (s.isBadSuggestion && s.badSuggestionColour !== 'Red') everWrongColour = true
+    }
+  }
+  check("forcedFailure={fires:true, colour:'Red'} always targets Red when it can (50 seeds)", !everWrongColour)
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) FAILED.`)

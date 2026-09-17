@@ -724,6 +724,82 @@ coverage: `scripts/test-strategic-failure.ts`, `scripts/test-tactical-failure.ts
 
 ---
 
+### 18. `study-v1.11` — fixed failure direction per card, and balanced (stratified) fire draws
+
+Two refinements to the `study-v1.10` manipulation, made while dialling in the failure rate before it
+first goes live for a real participant (checked at the time this section was written: no logged
+session anywhere in `logs/` has ever had `agentFailuresEnabled: true` — the manipulation has not yet
+run for a participant, on `v1.10` or `v1.11`).
+
+**ε_Strategic's failure TYPE is no longer a random 50/50 coin flip shared by both cards — it's now
+fixed by card identity.** Previously, when the per-mission roll fired, a single random draw picked
+'over' or 'under' and applied the SAME type to both cards. That could, by chance, corrupt Aggressive
+with 'under' (making it read as more moderate/reserve-conscious than usual) or Conservative with
+'over' (making it read as more generous/capable) — occasionally "luck"-ing a card into looking like a
+genuinely viable choice despite being the corrupted one, which undercuts the manipulation: the
+operator is meant to be evaluating two plausible-looking but flawed plans, not occasionally getting a
+free pass because the corruption happened to land in the direction that card's framing already
+implied was fine. Now, when it fires: **Aggressive is always 'over'** (further over-committed, on top
+of its already-maximal posture) and **Conservative is always 'under'** (further under-committed, on
+top of its already-conservative posture) — the corruption always pushes a card further in the
+direction its own name implies, never against it. "Both cards fail, or neither does"
+(`bothCardsCanFail`) is unchanged. `generateStrategies` no longer draws a `type` from `rng` at all;
+`applyStrategicFailure` takes the type as a fixed parameter per call site (`'over'` for Aggressive,
+`'under'` for Conservative). Covered by `scripts/test-strategic-failure.ts` test 2 (rewritten from
+"both cards share the same type" to "Aggressive is always over, Conservative always under").
+
+**The "does it fire this check?" draw is now a balanced (stratified) batch draw, not an independent
+Bernoulli roll per check.** Independent per-check draws (`rng.randFloat(0,1) < epsilon`) are unbiased
+in expectation but have real variance at the check counts one participant actually sees — roughly
+6–20 missions per session, ~19–22 across a participant's two sessions combined. Two participants on
+the identical epsilon could see visibly different realized failure counts purely from bad luck, which
+is exactly the kind of between-subject noise a between-subjects reliability manipulation is supposed
+to minimise, not add to. `utils/balancedRoll.ts` (`drawBalancedRoll`) replaces the per-check roll with
+a pre-built, seeded-shuffled batch of exactly `round(epsilon * FAILURE_BALANCE_BATCH_SIZE)` hits out
+of `FAILURE_BALANCE_BATCH_SIZE` (20) slots, consumed one per check; a completed batch always contains
+exactly the configured proportion, in an unpredictable but seed-reproducible order, so no participant
+can get "extra unlucky" (or lucky) over a full batch the way independent draws allow. 20 was chosen to
+roughly match one participant's TOTAL mission count across both sessions combined (see
+`docs/SCENARIOS.md`), so in the common case a participant's whole run is close to exactly one balanced
+batch rather than several partial ones. When a batch is exhausted, a fresh one is drawn from the next
+slice of the seed's randomness (`batchNumber` increments the seed salt), so the sequence stays fully
+reproducible from `seed` alone.
+
+Separate queues for ε_Strategic and ε_Tactical (`GameState.strategicFailureRoll` /
+`tacticalFailureRoll`, distinct salts `STRATEGIC_FAILURE_SALT`/`TACTICAL_FAILURE_SALT`), deliberately
+**not reset by `NEXT_SESSION`** — one participant's epsilon is fixed for their whole run, and the
+batch size is tuned to the whole run's mission count, so the queue is meant to span both sessions.
+
+**Caching to keep "one real mission = one check" true regardless of operator behaviour.** The
+previous per-mission-id-seeded RNG (`state.config.seed ^ hashId(mission.id)`) made a mission's roll
+naturally idempotent — reopening its strategic modal (`OVERRIDE_TACTICAL`) reran `generateStrategies`
+with the identical seed and got the identical answer "for free." A queue-consuming draw doesn't have
+that property for free: without caching, every `OVERRIDE_TACTICAL` round trip on the same mission
+would burn an extra slot from the balanced batch, both skewing the total count and letting a
+determined operator "reroll" by dismissing and reallocating. Fixed by caching the decision onto the
+mission itself the first time it's drawn (`Mission.strategicFailureFired` / `strategicFailureColour`
+/ `tacticalFailureFired`, all `undefined` until drawn) — `resolveStrategicFailure()` in
+`gameReducer.ts` checks the cache before drawing, and the tactical injection block in
+`APPLY_STRATEGIC` does the same inline. Regression-tested end-to-end in
+`scripts/test-balanced-failure-roll.ts` test 5: `OPEN_STRATEGIC` then two full
+`APPLY_STRATEGIC`(manual)+`OVERRIDE_TACTICAL` round trips on the same mission advance the queue
+exactly once, and the cached decision is unchanged across all three.
+
+`generateStrategies` gained an optional `forcedFailure?: { fires: boolean; colour?: AssetType | null
+}` parameter — when supplied (as `gameReducer.ts` now always does in agent mode), it replaces the
+internal Bernoulli roll entirely; `agentErrorRate`+`rng` remain the fallback for standalone callers
+(the existing test suite calls `generateStrategies` directly without one, so it still exercises the
+plain-Bernoulli path at the configured rate — new test 10 in `test-strategic-failure.ts` covers the
+`forcedFailure` plumbing itself).
+
+**Event log additions (all additive, old logs unaffected):** `session_start.failureBalanceBatchSize`.
+
+**Consequence for the data:** none for any session tagged `v1.0`–`v1.10` — no such session ran with
+`agentFailuresEnabled: true`. Regression coverage: `scripts/test-strategic-failure.ts` (updated),
+`scripts/test-balanced-failure-roll.ts` (new).
+
+---
+
 ## Reproducing a session from its log
 
 `session_start` is a full parameter dump: seed, complexity, fleet, speeds, task compositions and

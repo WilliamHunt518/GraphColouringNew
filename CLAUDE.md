@@ -19,19 +19,24 @@ These are genuinely different decision levels:
 There is NO "reserve posture widget", NO "preserve/maintain/spend down" recommendation, and NO "Meta-Co-Pilot". Those ideas were considered and removed. The tactical tier is purely the within-mission drone→task assignment planner.
 
 **The 2×2 agent-reliability manipulation is live again as of `study-v1.10`** (reversing the 3 Sept
-2026 abandonment below) — a between-subjects design crossing Strategic-Assistant reliability ×
-Tactical-Assistant reliability. It runs on the same ε_Strategic/ε_Tactical machinery, but the failure
-content was redesigned to be specific and plausible rather than generic noise:
+2026 abandonment below), **refined in `study-v1.11`** — a between-subjects design crossing
+Strategic-Assistant reliability × Tactical-Assistant reliability. It runs on the same
+ε_Strategic/ε_Tactical machinery, but the failure content was redesigned to be specific and plausible
+rather than generic noise:
 
 - **ε_Strategic** (`copilot.ts generateStrategies`): ONE roll per mission (not per card) — when it
-  fires, EITHER both the Aggressive and Conservative cards are corrupted by the *same* mistake, or
-  neither is (never just one — `bothCardsCanFail` gates it): `'over'` (+3 drones of one colour with
-  genuine reserve headroom, committed on both cards — wastes reserve, no feasibility risk) or
-  `'under'` (−1 drone from a colour the mission actually NEEDS — `floor > 0`, not a spare of an
-  unused colour like a stray top-up Green on an all-Blue mission — that also carries redundancy
-  buffer, floored at the card's own feasible minimum). `pickImpactfulColour` enforces materiality: a
-  colour is only ever picked if the corruption genuinely does something (real headroom for `'over'`,
-  a genuinely-needed buffered colour for `'under'`) — never a silent no-op.
+  fires, BOTH the Aggressive and Conservative cards are corrupted, or neither is (never just one —
+  `bothCardsCanFail` gates it). Each card's failure TYPE is fixed by its own identity, not a shared
+  random coin flip (`study-v1.11` — see `docs/STUDY_BUILD.md` §18 for why a random shared type could
+  occasionally "luck" the wrong card into looking viable): **Aggressive is always `'over'`** (+3
+  drones of one colour with genuine reserve headroom — wastes reserve, no feasibility risk);
+  **Conservative is always `'under'`** (−1 drone from a colour the mission actually NEEDS — `floor >
+  0`, not a spare of an unused colour like a stray top-up Green on an all-Blue mission — that also
+  carries redundancy buffer, floored at the card's own feasible minimum). `pickImpactfulColour`
+  enforces materiality: a colour is only ever picked if the corruption genuinely does something (real
+  headroom for `'over'`, a genuinely-needed buffered colour for `'under'`) — never a silent no-op.
+  `generateStrategies` accepts an optional `forcedFailure` param so the caller can hand in a
+  precomputed fires/colour decision (see the balanced-draw point below) instead of rolling internally.
 - **ε_Tactical** (`APPLY_STRATEGIC` → `buildTacticalFailurePlan` in `tacticalSuggest.ts`): no longer
   drops a task (too obvious — an unmissable red flag). Composition is never removed, only added to,
   and only ONE detour hop is ever actually deployed per affected drone: a drone with real work draws a
@@ -54,11 +59,22 @@ content was redesigned to be specific and plausible rather than generic noise:
   `effectiveEpsilonTactical` in `utils/config.ts`, never `cfg.agentErrorRate`/`cfg.epsilonTactical`
   directly. This is what let the rate be tuned with `testingMode`'s failure-flagging UI (orange "TEST"
   badges on a bad strategy card / in the tactical planner) before ever going live for a participant.
+- **Balanced (stratified) fire draws, `study-v1.11`** (`utils/balancedRoll.ts`): the "does this check
+  fire?" decision for both ε_Strategic and ε_Tactical is no longer an independent Bernoulli draw per
+  check — it's drawn from a seeded-shuffled batch of exactly `round(epsilon * 20)` hits per 20 slots
+  (`FAILURE_BALANCE_BATCH_SIZE`, chosen to roughly match one participant's total mission count across
+  both sessions), so a completed batch always contains exactly the configured proportion and no
+  participant can get "extra unlucky/lucky" at a given epsilon the way independent draws allow. The
+  queue lives on `GameState.strategicFailureRoll`/`tacticalFailureRoll`, spans both of a
+  participant's sessions (not reset by `NEXT_SESSION`), and the outcome is cached onto
+  `Mission.strategicFailureFired`/`tacticalFailureFired` the first time it's drawn so a dismiss-and
+  -reallocate (`OVERRIDE_TACTICAL`) round trip on the same mission never consumes a second slot.
 
-See `docs/STUDY_BUILD.md` §17 (`study-v1.10`) for the full rationale, including why the hop range is
-smaller than first sketched (every route-sequence entry is a full task-dwell, not a cheap waypoint).
+See `docs/STUDY_BUILD.md` §17–18 (`study-v1.10`–`v1.11`) for the full rationale, including why the hop
+range is smaller than first sketched (every route-sequence entry is a full task-dwell, not a cheap
+waypoint).
 
-**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.10` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.11` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 
@@ -289,8 +305,11 @@ no `conditionToEpsilons()` — it was never implemented; see the Study Design se
 
 ### Modifying the Strategic Agent
 `src/utils/copilot.ts` — `generateStrategies()`. Generates Aggressive/Conservative drone-count
-bundles for a specific mission. ε_Strategic (study-v1.10) rolls ONCE per mission and, when it fires,
-corrupts both cards' *actual* asset counts the same way (not just the display — see `rollStrategicFailure`).
+bundles for a specific mission. ε_Strategic rolls ONCE per mission (drawn by the caller via the
+balanced queue in `utils/balancedRoll.ts`, `study-v1.11` — see `gameReducer.ts`'s
+`resolveStrategicFailure`) and, when it fires, corrupts both cards' *actual* asset counts, not just
+the display — Aggressive always `'over'`, Conservative always `'under'` (fixed per card since
+`study-v1.11`, no longer a shared random type).
 
 ### Drone failures and the recovery planner
 A failure reverts the affected task to `pending` and flags the mission `failureRecoveryPending`; the

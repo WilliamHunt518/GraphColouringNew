@@ -1,3 +1,5 @@
+import type { BalancedRollState } from '../utils/balancedRoll'
+
 // ─── Study configuration ───────────────────────────────────────────────────
 
 export type Complexity = 'balanced' | 'strategic' | 'tactical' | 'full' | 'quick'
@@ -170,6 +172,14 @@ export interface Mission {
   abandonedReason?: 'operator' | 'lockout'  // why the mission was abandoned (operator gave up vs unbreakable scheduling deadlock)
   isResidual: boolean            // true if this mission was re-queued from an abandoned one
   needsGreedyReplan: boolean     // true when greedy mode is active; auto-replans after each task
+  // study-v1.11: the ε_Strategic/ε_Tactical "did it fire" decision, cached the first time it's drawn
+  // (OPEN_STRATEGIC / APPLY_STRATEGIC) so a later OVERRIDE_TACTICAL re-generating this SAME mission's
+  // strategies never draws a second time from the balanced batch (see utils/balancedRoll.ts) — one
+  // real-world mission is one check, no matter how many times the operator reopens its planner.
+  // undefined = not yet drawn.
+  strategicFailureFired?: boolean
+  strategicFailureColour?: AssetType | null
+  tacticalFailureFired?: boolean
 }
 
 // ─── Strategies ───────────────────────────────────────────────────────────
@@ -273,6 +283,12 @@ export interface GameState {
   nextTrustProbeAt: number
   nextSnapshotAt: number   // elapsed (s) at which the next state_snapshot is due
   nextFailureRollAt: number   // elapsed (s) at which the next ambient drone-failure roll is due
+  // study-v1.11: balanced (stratified) queues for the ε_Strategic/ε_Tactical "did it fire" draws —
+  // see utils/balancedRoll.ts. Deliberately NOT reset by NEXT_SESSION: one participant's epsilon is
+  // fixed for their whole run, and the batch size is tuned to roughly one participant-run's total
+  // mission count, so the queue is meant to span both sessions.
+  strategicFailureRoll: BalancedRollState
+  tacticalFailureRoll: BalancedRollState
   // Data logging — one array per session
   events: GameEvent[][]
   eventSeq: number   // monotonically increasing across the whole study (all sessions), never resets
@@ -368,6 +384,7 @@ export interface SessionStartEvent extends BaseEvent {
   strategicFailureOverDelta: number    // 'over' failure: drones added to one random colour on both cards
   tacticalFailureMinHops: number       // 'route' failure: random-detour prefix length range per drone
   tacticalFailureMaxHops: number
+  failureBalanceBatchSize: number      // study-v1.11: balanced-batch size for the ε_Strategic/ε_Tactical fire draw (see utils/balancedRoll.ts)
   snapshotIntervalSec: number   // cadence of state_snapshot events
   trustProbeIntervalSec: number // cadence at which the trust/workload probe is scheduled
   // Build/runtime provenance — "which code version and what screen produced this data"

@@ -18,6 +18,7 @@ import { generateStrategies, CONSERVATIVE_TOP_UP, CONSERVATIVE_REDUNDANCY_BUFFER
 import { findSchedulingCycle } from '../utils/scheduling'
 import { onMissionDrones, taskCoverableBy, unfinishedTasks } from '../utils/coverage'
 import { buildTacticalFailurePlan, TACTICAL_FAILURE_MIN_HOPS, TACTICAL_FAILURE_MAX_HOPS } from '../utils/tacticalSuggest'
+import { drawBalancedRoll, initialBalancedRollState, FAILURE_BALANCE_BATCH_SIZE, STRATEGIC_FAILURE_SALT, TACTICAL_FAILURE_SALT } from '../utils/balancedRoll'
 import { SeededRNG } from '../utils/prng'
 import { isFixLockouts, failureGraceSeconds, effectiveEpsilonStrategic, effectiveEpsilonTactical, agentFailuresEnabled } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
@@ -43,7 +44,7 @@ const FAILURE_ROLL_INTERVAL = 1  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.10'
+const APP_VERSION = 'study-v1.11'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -63,6 +64,26 @@ const CARD_REVEAL_SPAN_MS = 1000
 function drawCardRevealDelays(seed: number, missionId: string, count: number): number[] {
   const rng = new SeededRNG((seed ^ hashId(missionId) ^ 0x5ea1) >>> 0)
   return Array.from({ length: count }, () => Math.round(CARD_REVEAL_MIN_MS + rng.next() * CARD_REVEAL_SPAN_MS))
+}
+
+// study-v1.11: resolves the ε_Strategic "did it fire" decision for a mission, drawing from the
+// session-spanning balanced queue (utils/balancedRoll.ts) the FIRST time this mission needs it, and
+// reusing the cached result on any later regeneration (OVERRIDE_TACTICAL re-opening the same
+// mission's strategic modal) — one mission is one check, however many times its planner is reopened.
+function resolveStrategicFailure(
+  s: GameState,
+  mission: Mission,
+): { fires: boolean; colour: AssetType | null; state: GameState; mission: Mission } {
+  if (mission.strategicFailureFired !== undefined) {
+    return { fires: mission.strategicFailureFired, colour: mission.strategicFailureColour ?? null, state: s, mission }
+  }
+  const epsilon = effectiveEpsilonStrategic(s.config)
+  const { fired, state: nextQueue } = drawBalancedRoll(s.strategicFailureRoll, epsilon, s.config.seed, STRATEGIC_FAILURE_SALT)
+  const rng = new SeededRNG(s.config.seed ^ hashId(mission.id))
+  const colour = fired ? (['Blue', 'Red', 'Green'] as AssetType[])[rng.randInt(0, 3)] : null
+  const nextState: GameState = { ...s, strategicFailureRoll: nextQueue }
+  const nextMission: Mission = { ...mission, strategicFailureFired: fired, strategicFailureColour: colour }
+  return { fires: fired, colour, state: nextState, mission: nextMission }
 }
 
 // ─── Tutorial first-mission blueprint ─────────────────────────────────────
@@ -171,6 +192,8 @@ export function buildInitialState(config: StudyConfig): GameState {
     nextTrustProbeAt: TRUST_PROBE_INTERVAL,
     nextSnapshotAt: 0,   // first snapshot on the opening tick, then every STATE_SNAPSHOT_INTERVAL
     nextFailureRollAt: FAILURE_ROLL_INTERVAL,   // first hazard roll one interval in
+    strategicFailureRoll: initialBalancedRollState,
+    tacticalFailureRoll: initialBalancedRollState,
     events: Array.from({ length: config.numSessions }, () => []),
     eventSeq: 0,
   }
@@ -1432,6 +1455,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           strategicFailureOverDelta: STRATEGIC_OVER_DELTA,
           tacticalFailureMinHops: TACTICAL_FAILURE_MIN_HOPS,
           tacticalFailureMaxHops: TACTICAL_FAILURE_MAX_HOPS,
+          failureBalanceBatchSize: FAILURE_BALANCE_BATCH_SIZE,
           tacticalMode: cfg.tacticalMode,
           fixLockouts: isFixLockouts(cfg),
           numSessions: cfg.numSessions,
@@ -2112,23 +2136,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── OPEN_STRATEGIC ───────────────────────────────────────────────────
     case 'OPEN_STRATEGIC': {
-      const mission = state.missions.find(m => m.id === action.missionId)
-      if (!mission || mission.status !== 'queued') return state
+      const mission0 = state.missions.find(m => m.id === action.missionId)
+      if (!mission0 || mission0.status !== 'queued') return state
+      const resolved = state.config.mode === 'agent'
+        ? resolveStrategicFailure(state, mission0)
+        : { fires: false, colour: null, state, mission: mission0 }
+      const { fires, colour, state: state1, mission } = resolved
       // Exclude drones already locked into other pending tactical plans
-      const effectiveAvail = availableExcludingPending(state.assets, state.missions, action.missionId)
+      const effectiveAvail = availableExcludingPending(state1.assets, state1.missions, action.missionId)
       const reserve = {
         Blue:  effectiveAvail.filter(a => a.type === 'Blue').length,
         Red:   effectiveAvail.filter(a => a.type === 'Red').length,
         Green: effectiveAvail.filter(a => a.type === 'Green').length,
       }
-      const agentRng = new SeededRNG(state.config.seed ^ hashId(mission.id))
-      const strategies = state.config.mode === 'agent'
-        ? generateStrategies(mission.tasks, reserve, effectiveEpsilonStrategic(state.config), agentRng)
+      const agentRng = new SeededRNG(state1.config.seed ^ hashId(mission.id))
+      const strategies = state1.config.mode === 'agent'
+        ? generateStrategies(mission.tasks, reserve, effectiveEpsilonStrategic(state1.config), agentRng, undefined, { fires, colour })
         : []
-      const openedAtMs = Math.round(state.elapsed * 1000)
-      const cardRevealDelaysMs = drawCardRevealDelays(state.config.seed, mission.id, strategies.length)
+      const openedAtMs = Math.round(state1.elapsed * 1000)
+      const cardRevealDelaysMs = drawCardRevealDelays(state1.config.seed, mission.id, strategies.length)
       let s: GameState = {
-        ...state,
+        ...state1,
+        missions: state1.missions.map(m => m.id === mission.id ? mission : m),
         strategicModal: {
           missionId: action.missionId,
           strategies,
@@ -2336,17 +2365,28 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       let hasTacticalError = false
       const suppressedTaskId: string | null = null   // pre-study-v1.10 mechanism, retired — always null now
       let agentDroneSequences: Record<string, string[]> = {}
+      // study-v1.11: draws from the session-spanning balanced queue (utils/balancedRoll.ts) instead
+      // of an independent per-mission Bernoulli roll, and caches the outcome onto the mission the
+      // first time it's needed (a later re-apply for this same mission, via an OVERRIDE_TACTICAL round
+      // trip, reuses it rather than drawing — see resolveStrategicFailure's docstring for why).
+      let tacticalFailureRoll = state.tacticalFailureRoll
+      let tacticalFailureFiredForMission = mission.tacticalFailureFired
       if (action.source === 'agent' && effectiveEpsilonTactical(state.config) > 0) {
-        // hashId(mission.id), not mission.id.charCodeAt(2) — the latter is a single character at a
-        // fixed index, which for the "M001".."M009" ids that cover almost an entire session is THE
-        // SAME character every time (the tens digit of a 1-digit sequence number is always '0').
-        // That collapsed this roll to one fixed coin-flip reused for nearly every mission in a
-        // session instead of a fresh draw each time — found via study-v1.10 testing (epsilon=0.5
-        // never fired a single tactical failure in a whole session). hashId mixes the WHOLE id
-        // string, matching the strategic agentRng seed a few lines up in OVERRIDE_TACTICAL/OPEN_STRATEGIC.
-        const tacRng = new SeededRNG(state.config.seed ^ hashId(mission.id) ^ 0x7ac1)
-        if (tacRng.randFloat(0, 1) < effectiveEpsilonTactical(state.config)) {
-          hasTacticalError = true
+        if (tacticalFailureFiredForMission === undefined) {
+          const draw = drawBalancedRoll(state.tacticalFailureRoll, effectiveEpsilonTactical(state.config), state.config.seed, TACTICAL_FAILURE_SALT)
+          tacticalFailureFiredForMission = draw.fired
+          tacticalFailureRoll = draw.state
+        }
+        hasTacticalError = tacticalFailureFiredForMission
+        if (hasTacticalError) {
+          // hashId(mission.id), not mission.id.charCodeAt(2) — the latter is a single character at a
+          // fixed index, which for the "M001".."M009" ids that cover almost an entire session is THE
+          // SAME character every time (the tens digit of a 1-digit sequence number is always '0').
+          // That collapsed this roll to one fixed coin-flip reused for nearly every mission in a
+          // session instead of a fresh draw each time — found via study-v1.10 testing (epsilon=0.5
+          // never fired a single tactical failure in a whole session). hashId mixes the WHOLE id
+          // string, matching the strategic agentRng seed a few lines up in OVERRIDE_TACTICAL/OPEN_STRATEGIC.
+          const tacRng = new SeededRNG(state.config.seed ^ hashId(mission.id) ^ 0x7ac1)
           const failurePlan = buildTacticalFailurePlan(mission.tasks, taskAssignmentMap, tacRng)
           taskAssignmentMap = failurePlan.taskAssignments
           agentDroneSequences = failurePlan.droneSequences
@@ -2430,6 +2470,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // off toward the mission zone right away and loiters there until the tactical plan is confirmed.
       s = {
         ...s,
+        tacticalFailureRoll,
         missions: s.missions.map(m => m.id === mission.id ? {
           ...m,
           tacticalPending: true,
@@ -2438,6 +2479,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           chosenStrategyName: strategyName,
           tacticalOpenedAtMs,
           tacticalSuggestCount: 0,
+          tacticalFailureFired: tacticalFailureFiredForMission,
         } : m),
         assets: launchToLoiter(s.assets, mission, dronePool, now),
         strategicModal: null,
@@ -2560,29 +2602,36 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── OVERRIDE_TACTICAL ────────────────────────────────────────────────
     case 'OVERRIDE_TACTICAL': {
-      const mission = state.missions.find(m => m.id === action.missionId)
-      if (!mission || !mission.tacticalPending) return state
+      const mission0 = state.missions.find(m => m.id === action.missionId)
+      if (!mission0 || !mission0.tacticalPending) return state
+      // Reuses mission0's already-cached strategicFailureFired/Colour (set the first time this
+      // mission's strategies were generated, in OPEN_STRATEGIC) rather than drawing again — see
+      // resolveStrategicFailure's docstring.
+      const resolved = state.config.mode === 'agent'
+        ? resolveStrategicFailure(state, mission0)
+        : { fires: false, colour: null, state, mission: mission0 }
+      const { fires, colour, state: state1, mission } = resolved
       // Clear pending state and open the strategic modal again for re-allocation.
       // When computing reserve, exclude drones in OTHER missions' pending pools
       // (this mission's own pool is being released, so include those drones back).
-      const missionsWithoutThis = state.missions.map(m =>
-        m.id === action.missionId ? { ...m, tacticalPending: false, pendingAllocation: null } : m
+      const missionsWithoutThis = state1.missions.map(m =>
+        m.id === action.missionId ? { ...mission, tacticalPending: false, pendingAllocation: null } : m
       )
-      const ovEffAvail = availableExcludingPending(state.assets, missionsWithoutThis, action.missionId)
+      const ovEffAvail = availableExcludingPending(state1.assets, missionsWithoutThis, action.missionId)
       const reserve = {
         Blue:  ovEffAvail.filter(a => a.type === 'Blue').length,
         Red:   ovEffAvail.filter(a => a.type === 'Red').length,
         Green: ovEffAvail.filter(a => a.type === 'Green').length,
       }
-      const agentRng = new SeededRNG(state.config.seed ^ hashId(mission.id))
-      const strategies = state.config.mode === 'agent'
-        ? generateStrategies(mission.tasks, reserve, effectiveEpsilonStrategic(state.config), agentRng)
+      const agentRng = new SeededRNG(state1.config.seed ^ hashId(mission.id))
+      const strategies = state1.config.mode === 'agent'
+        ? generateStrategies(mission.tasks, reserve, effectiveEpsilonStrategic(state1.config), agentRng, undefined, { fires, colour })
         : []
-      const openedAtMs = Math.round(state.elapsed * 1000)
-      const cardRevealDelaysMs = drawCardRevealDelays(state.config.seed, mission.id, strategies.length)
+      const openedAtMs = Math.round(state1.elapsed * 1000)
+      const cardRevealDelaysMs = drawCardRevealDelays(state1.config.seed, mission.id, strategies.length)
       let s: GameState = {
-        ...state,
-        missions: state.missions.map(m => m.id === action.missionId ? { ...m, tacticalPending: false, pendingAllocation: null } : m),
+        ...state1,
+        missions: missionsWithoutThis,
         strategicModal: { missionId: action.missionId, strategies, selectedStrategyIndex: null, manualAllocation: null, openedAtMs, cardRevealDelaysMs },
       }
       s = logEvent(s, {
