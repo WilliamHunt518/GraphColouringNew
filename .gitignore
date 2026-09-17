@@ -28,3 +28,6 @@ logs/narration/
 # Raw session recordings (screen + mic) that feed the narration pipeline above — same reason,
 # same rule: identifiable data, never commit it.
 Recordings/
+
+# Interview transcripts (named participants) — same reason, same rule.
+Interviews/
