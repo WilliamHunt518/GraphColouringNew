@@ -1,5 +1,5 @@
 {
-  "participantId": "P-6155",
+  "participantId": "SAM HJ",
   "condition": "none",
   "mode": "agent",
   "complexities": [
@@ -77,7 +77,7 @@
       },
       {
         "type": "session_start",
-        "participantId": "P-6155",
+        "participantId": "SAM HJ",
         "condition": "none",
         "mode": "agent",
         "complexity": "strategic",
@@ -58462,7 +58462,7 @@
     [
       {
         "type": "session_start",
-        "participantId": "P-6155",
+        "participantId": "SAM HJ",
         "condition": "none",
         "mode": "agent",
         "complexity": "tactical",

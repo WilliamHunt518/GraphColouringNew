@@ -1,5 +1,5 @@
 {
-  "participantId": "P-5994",
+  "participantId": "Xinyi",
   "condition": "none",
   "mode": "agent",
   "complexities": [
@@ -93,7 +93,7 @@
       },
       {
         "type": "session_start",
-        "participantId": "P-5994",
+        "participantId": "Xinyi",
         "condition": "none",
         "mode": "agent",
         "complexity": "tactical",
@@ -42913,7 +42913,7 @@
     [
       {
         "type": "session_start",
-        "participantId": "P-5994",
+        "participantId": "Xinyi",
         "condition": "none",
         "mode": "agent",
         "complexity": "strategic",
