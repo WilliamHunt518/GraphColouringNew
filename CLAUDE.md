@@ -74,7 +74,7 @@ See `docs/STUDY_BUILD.md` §17–18 (`study-v1.10`–`v1.11`) for the full ratio
 range is smaller than first sketched (every route-sequence entry is a full task-dwell, not a cheap
 waypoint).
 
-**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.11` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.12` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 

@@ -22,7 +22,7 @@ BASE = Path(__file__).resolve().parent.parent
 # Pre-tag runs logged no appVersion at all; they are ordered by wall clock and treated as < v1.0.
 VERSION_ORDER = ['pre-tag', 'study-v1.0', 'study-v1.1', 'study-v1.2', 'study-v1.3',
                  'study-v1.4', 'study-v1.5', 'study-v1.6', 'study-v1.7', 'study-v1.8',
-                 'study-v1.9']
+                 'study-v1.9', 'study-v1.10', 'study-v1.11', 'study-v1.12']
 
 
 def vrank(v):
@@ -241,8 +241,10 @@ def load_all():
     sep = chr(92)   # backslash, for Windows paths out of glob
     for f in sorted(glob.glob(str(BASE / 'logs' / '**' / '*.json'), recursive=True)):
         p = f.replace(sep, '/')
-        if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json'):
-            continue   # snapshots are partial; /auto/ is synthetic (headless harness), not people
+        if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json') or p.endswith('faultTest.json'):
+            continue   # snapshots are partial; /auto/ is synthetic (headless harness), not people;
+                       # faultTest is a dev run exercising ε>0 (agentFailuresEnabled) — the only
+                       # session in the whole dataset with a non-zero epsilon, never a participant
         try:
             d = json.load(open(f, encoding='utf-8'))
         except Exception:

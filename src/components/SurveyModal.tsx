@@ -9,7 +9,7 @@ interface Props {
 
 // ─── Survey definitions ────────────────────────────────────────────────────
 
-interface NASAItem { id: string; question: string; leftLabel: string; rightLabel: string }
+interface NASAItem { id: string; question: string; leftLabel: string; rightLabel: string; help?: string }
 interface LikertItem { id: string; question: string }
 type SurveyType = 'nasa' | 'likert'
 
@@ -25,7 +25,8 @@ const NASA_ITEMS: NASAItem[] = [
   { id: 'mental_demand',   question: 'How mentally demanding was the task?',                                           leftLabel: 'Low',     rightLabel: 'High'    },
   { id: 'physical_demand', question: 'How physically demanding was the task?',                                         leftLabel: 'Low',     rightLabel: 'High'    },
   { id: 'temporal_demand', question: 'How hurried or rushed was the pace of the task?',                                leftLabel: 'Low',     rightLabel: 'High'    },
-  { id: 'performance',     question: 'How successful were you in accomplishing what you were asked to do?',            leftLabel: 'Perfect', rightLabel: 'Failure' },
+  { id: 'performance',     question: 'How successful were you in accomplishing what you were asked to do?',            leftLabel: 'Perfect', rightLabel: 'Failure',
+    help: 'This one runs the opposite way to the others — drag toward Perfect for a good outcome, toward Failure for a bad one.' },
   { id: 'effort',          question: 'How hard did you have to work to accomplish your level of performance?',         leftLabel: 'Low',     rightLabel: 'High'    },
   { id: 'frustration',     question: 'How insecure, discouraged, irritated, stressed, or annoyed were you?',          leftLabel: 'Low',     rightLabel: 'High'    },
 ]
@@ -227,6 +228,11 @@ function NASASlider({
   return (
     <div className="space-y-2">
       <p className="text-sm text-gray-200">{item.question}</p>
+      {item.help && (
+        <p className="text-xs text-amber-400/90 flex items-start gap-1">
+          <span aria-hidden="true">⚠</span> {item.help}
+        </p>
+      )}
       <div className="flex items-center gap-3">
         <span className="text-xs text-gray-500 w-14 text-right shrink-0">{item.leftLabel}</span>
         <input

@@ -800,6 +800,67 @@ plain-Bernoulli path at the configured rate — new test 10 in `test-strategic-f
 
 ---
 
+### 19. `study-v1.12` — NASA-TLX Performance slider now warns it runs backwards; Conservative's
+    "unused colour" spare investigated and confirmed intentional, not a bug
+
+Two things looked at together after a researcher note that Eike's data might have an agent-fault
+leak (it didn't — see below) and that one TLX slider felt "confusingly backwards."
+
+**NASA-TLX `performance` item — fixed.** Every other TLX item (`mental_demand`, `physical_demand`,
+`temporal_demand`, `effort`, `frustration`) runs Low→High, and dragging right always means "more of
+the bad thing." `performance` is the one standard NASA-TLX item that runs the opposite way —
+"How successful were you...", **Perfect→Failure** — so right still means "worse" (consistent with
+every other item's raw 0–20 polarity, 0 = good/low-workload end), but the *question* is phrased
+positively ("successful") while the slider's right-hand, higher-number end means the opposite. A
+participant who anchors on "the question asks how successful, so I'll drag right to say I did well"
+gets exactly backwards from what the scale records.
+
+The researcher had been catching this by ear and correcting participants verbally; only the two
+most recent participants (Eike, Reuben — both `study-v1.11`) got that correction. Checked the
+`performance` values collected before them against each session's actual completion rate
+(`session_ended.taskOutcomes`, `completed / (completed + failed)`) — if the slider is read
+correctly, a high completion rate should pull `performance` toward 0 (Perfect), i.e. a negative
+correlation. Sessions before Eike/Reuben: r = +0.16 (n=14) — the wrong sign. The two corrected
+sessions: r = -0.07 (n=4, too few to lean on alone, but the right sign). The single clearest case is
+**JackHJ session 1: 96% completion (his best session in the whole dataset) paired with
+`performance = 18/20` — one step from the Failure end** — very hard to read as anything but the
+slider being used backwards. n is too small across the rest to call every earlier session
+individually, but the direction and JackHJ's case together are enough to treat `performance` as
+**unreliable pre-`v1.12`, except for Eike and Reuben (verbally corrected, trust as recorded)**.
+Reproduce the correlation with `scripts/tlx_performance_check.py`.
+
+**Fix:** `SurveyModal.tsx`'s `NASAItem` gained an optional `help` string, shown as a small amber
+warning line under the question, only on `performance`: *"This one runs the opposite way to the
+others — drag toward Perfect for a good outcome, toward Failure for a bad one."* Deliberately did
+**not** reword the question or swap the endpoint labels — both are the validated NASA-TLX item
+verbatim (same reasoning as preserving the AIAS-4 wording in § 10: comparability with the published
+instrument matters more than a locally-cleaner phrasing). The fix is the same intervention the
+researcher was already doing by voice, just made automatic so it no longer depends on the
+researcher remembering to say it.
+
+**Consequence for the data:** treat `demographics`/`survey_response(nasa_tlx).responses.performance`
+as suspect-polarity for every session before Eike/Reuben — don't drop it, but don't trust its sign
+without corroborating it against completion rate or the participant's own interview/narration first.
+Eike, Reuben, and every session from here on (`v1.12`+) can be taken at face value. The other five
+TLX items are unaffected; a composite TLX mean that includes raw `performance` should be treated
+with the same caution as `performance` alone for the affected sessions.
+
+**Conservative's "spare of an unused colour" — investigated, not a bug.** While looking at Eike's
+data the audit also turned up `copilot.ts`'s Conservative strategy occasionally arming one spare
+drone of a colour a mission's tasks never use at all (e.g. a Green spare on an all-Blue mission) —
+`CONSERVATIVE_TOP_UP` (15% of remaining reserve) is applied to all three colours unconditionally,
+not gated to colours the mission actually needs the way the flat `+1` redundancy buffer is. Present
+in 21% of the 262 strategic card-pairs logged across the whole dataset, every participant, every
+build — not new, and not related to the `agentFailuresEnabled`/ε mechanism (confirmed off for Eike,
+`isBadSuggestion: false` on every card). **Confirmed with the researcher this is intentional** — a
+deliberately naive/wasteful facet of the Conservative policy the study wants left in, not corrected.
+The only thing worth checking was whether it was at least *deterministic* given the same inputs —
+it is: the formula is a pure function of `reserve` and the mission's own requirements, no RNG
+involved, so the same mission state always produces the same card. No code change. Noted here so
+it isn't re-investigated as a suspected bug a second time.
+
+---
+
 ## Reproducing a session from its log
 
 `session_start` is a full parameter dump: seed, complexity, fleet, speeds, task compositions and
