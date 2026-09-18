@@ -31,3 +31,11 @@ Recordings/
 
 # Interview transcripts (named participants) — same reason, same rule.
 Interviews/
+
+# Filled-in supplementary questionnaire responses (named participants) — same reason, same rule.
+# The blank template in Forms/ has no participant data and is fine to commit.
+logs/AI_Attitude_Supplement_*.docx
+
+# Embeds verbatim interview quotes (identifiable) alongside the pooled numbers — unlike everything
+# else in docs/reports/, this one isn't safe to commit. Regenerate locally, never commit it.
+docs/reports/findings_synthesis.html
