@@ -74,7 +74,7 @@ See `docs/STUDY_BUILD.md` §17–18 (`study-v1.10`–`v1.11`) for the full ratio
 range is smaller than first sketched (every route-sequence entry is a full task-dwell, not a cheap
 waypoint).
 
-**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.12` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
+**What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.13` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
 ## Tech Stack
 
@@ -154,6 +154,15 @@ Three 8-minute (480 s) sessions. Asset pool: 11 Blue, 11 Red, 11 Green (33 total
 [`docs/SCENARIOS.md`](docs/SCENARIOS.md)** — read/update it whenever the speeds, fleet, failure
 rate, arrival rates, or mission-size mix change, so collected data is never pooled across
 incompatible parameter sets.
+
+**Four fixed games, and "Swap games" (`study-v1.13`):** each session's mission stream is
+`SeededRNG(seed ^ planSeedIndex(config, sessionNumber))` (`utils/config.ts`). With the fixed seed
+42 there are exactly four games (2 scenarios × 2 indices) and they differ a lot in workload (the
+two Tactical Heavy games ~1.9×). Up to P30 the index was the session number, so game load was
+confounded with scenario order; `StudyConfig.swapGames` (Participant Study checkbox, **default on**;
+`?swapGames=1`) reverses the index so new participants play the same games in the other position.
+Never seed the plan from `sessionNumber` directly. Analysis must group by game (`planSeedIndex`),
+not by run — see `docs/STUDY_BUILD.md` § 20 and `scripts/study_analysis.py`.
 
 **Study builder (per-session complexity):** `StudyConfig.sessionComplexities?: Complexity[]` lets a single
 participant run chain different presets session-to-session (e.g. Strategic Heavy → Tactical Heavy), each

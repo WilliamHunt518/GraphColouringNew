@@ -79,6 +79,10 @@ export default function StartScreen({ onStart }: Props) {
   const [scenarioA, setScenarioA] = useState<StudyConfig['complexity']>('strategic')
   const [scenarioB, setScenarioB] = useState<StudyConfig['complexity']>('tactical')
   const [studyFastTest, setStudyFastTest] = useState(false)
+  // study-v1.13: play the two games in reversed order. Default ON: every participant up to P30
+  // ran the unswapped order, so new participants are what balance game difficulty against
+  // scenario order (docs/STUDY_BUILD.md section 20).
+  const [swapGames, setSwapGames] = useState(true)
 
   // Blank / unparseable falls back to the shipped default rather than silently disabling the grace.
   const parsedGrace = failureGrace.trim() === '' || isNaN(parseFloat(failureGrace))
@@ -137,6 +141,7 @@ export default function StartScreen({ onStart }: Props) {
       failureGraceSeconds: parsedGrace,
       collectDemographics: true,
       fastTest: studyFastTest,
+      swapGames,
     })
   }
 
@@ -339,6 +344,14 @@ export default function StartScreen({ onStart }: Props) {
                 {COMPLEXITIES.map(cx => <option key={cx.value} value={cx.value}>{cx.label}</option>)}
               </select>
             </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <input id="swap-games" type="checkbox" checked={swapGames}
+              onChange={e => setSwapGames(e.target.checked)}
+              className="w-4 h-4 mt-0.5 rounded border-gray-600 bg-gray-800 text-emerald-500 focus:ring-emerald-500" />
+            <label htmlFor="swap-games" className="text-sm text-gray-400 cursor-pointer select-none">
+              Swap games <span className="text-gray-600 text-xs">(play the two mission streams in reversed order. Default on: everyone up to P30 ran them unswapped, so new participants balance game difficulty against scenario order. Keep alternating Scenario 1 as usual.)</span>
+            </label>
           </div>
           <div className="flex items-center gap-3">
             <input id="study-fast-test" type="checkbox" checked={studyFastTest}

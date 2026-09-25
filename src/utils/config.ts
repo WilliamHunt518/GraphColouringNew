@@ -37,12 +37,14 @@ export function parseURLConfig(): StudyConfig | null {
   const numSessionsRaw = parseInt(p.get('numSessions') ?? '1', 10)
   const numSessions = isNaN(numSessionsRaw) || numSessionsRaw < 1 ? 1 : numSessionsRaw
   const agentFailuresEnabledFlag = p.get('failuresLive') === '1'
+  const swapGames = p.get('swapGames') === '1'
 
   return {
     participantId, condition: 'none', mode, complexity, seed,
     agentErrorRate, epsilonTactical, tacticalMode, testingMode, tutorialMode: false, numSessions,
     fullPathsOnHover, fixLockouts, failureGraceSeconds,
     agentFailuresEnabled: agentFailuresEnabledFlag,
+    swapGames,
   }
 }
 
@@ -99,6 +101,20 @@ export function effectiveEpsilonStrategic(cfg: { agentErrorRate: number; agentFa
 
 export function effectiveEpsilonTactical(cfg: { epsilonTactical: number; agentFailuresEnabled?: boolean }): number {
   return agentFailuresEnabled(cfg) ? cfg.epsilonTactical : 0
+}
+
+/**
+ * Which game a session plays (study-v1.13). The mission stream for session n is generated from
+ * SeededRNG(seed ^ planSeedIndex(cfg, n)). Normally that index is n itself, so with the fixed study
+ * seed every participant's session 1 and session 2 are the same two games whichever scenario sits
+ * in them -- which confounded game difficulty with scenario order (the four scenario x session
+ * games differ up to ~1.9x in workload). With swapGames on, the index runs backwards
+ * (numSessions + 1 - n), reproducing exactly the same games in the opposite order. Only the plan
+ * seed moves; every other stream is keyed by mission/drone id, so a swapped session replays the
+ * unswapped game identically.
+ */
+export function planSeedIndex(cfg: { swapGames?: boolean; numSessions: number }, sessionNumber: number): number {
+  return cfg.swapGames === true && cfg.numSessions >= 2 ? cfg.numSessions + 1 - sessionNumber : sessionNumber
 }
 
 // Canonical study seed. Every participant who doesn't explicitly override the seed

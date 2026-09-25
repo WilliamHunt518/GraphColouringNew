@@ -31,6 +31,7 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | In-session trust/workload probes? | **No.** The modal is not mounted anywhere, so none is ever shown. | no `trust_probe` events exist |
 | How many sessions, how long? | **2 × 8 min** (480 s) on the participant-study path. | `session_start.numSessions`, `sessionDuration` |
 | Which scenarios? | Session 1 **Strategic Heavy**, session 2 **Tactical Heavy** (defaults; changeable on the start screen). | `session_start.complexity` per session |
+| Do both runs of a scenario play the same missions? | **No — there are four fixed games.** The mission stream is seeded by `seed ^ index`, everyone uses seed 42, and the index was the session number, so up to P30 each scenario × run cell was one game played by only one order group (the Tactical games differ ~1.9× in work; strategic-first got the heavier game in both scenarios). **`v1.13`+:** "Swap games" (default on) plays the same games in the other order so load can be balanced against order (§ 20). Raw `score` is not comparable across games; normalise by points on offer. | `session_start.planSeedIndex` (v1.13+; absent ⇒ equals `sessionNumber`), `swapGames` |
 | Tactical planner style? | **plan-all** (confirm the whole sequence once). | `session_start.tacticalMode === "plan-all"` |
 | Did the tutorial teach any of this? | 48 steps, manual workflow first, both assistants after. No lockout lesson. | tutorial runs under `participantId: "DEMO"`, `tutorialMode` |
 | If a mission is abandoned, is its work lost? | **No** (build ≥ `study-v1.2`). The remainder is re-queued as a residual mission and is usually finished. | `task_requeued` events + a `mission_arrived` with `isResidual: true`; **not** `task_failed` |
@@ -38,10 +39,11 @@ Related: [`SCENARIOS.md`](SCENARIOS.md) for the scenario parameter set and its t
 | How are drone failures generated? | **Build ≥ `study-v1.4`:** a live hazard rolled on a fixed **1 s simulated grid**, uniform per second per deployed drone — identical on every machine. **`study-v1.3`:** the same hazard rolled per animation frame, which silently scaled with the display's refresh rate (§ 11). **`study-v1.0`–`v1.2`:** a per-mission precomputed schedule whose selection RNG was Blue-biased. | `session_start.failureRollIntervalSec` (v1.4+), `failureRatePerDroneSecond` (v1.3+) vs `failureCount`/`failureGap`/`failureJitter`/`failureProb` (pre-v1.3) |
 | Can a task run on the substitute composition the planner offers ("OR 1F")? | **Build ≥ `study-v1.4`: yes.** In `study-v1.0`–`v1.3` every substitute-staffed task failed the instant it started executing, logged as a drone failure that never happened (§ 11). | `task_completed.useSubstitute === true` exists ⇒ v1.4+; a `task_failed` with `reason: "drone_failure"` and no `drone_failure` event nearby ⇒ the pre-v1.4 bug |
 | Does the recovery planner's "Suggest" produce a plan? | **Build ≥ `study-v1.5`: yes.** In `study-v1.0`–`v1.4` it usually returned nothing at all and the button did nothing (§ 12). | a `tactical_suggest_used` with `recoveryMode: true` in a pre-`v1.5` log tells you nothing about whether a plan was offered |
+| Does the recovery "Suggest" consider drones still executing a task? | **No, in every build, and it is deliberately left unfixed** (found after data collection; fixing it would split the data). `computeRecoverySuggestion` only draws on mission drones that are not `executing`, so when the only fix needs a busy drone Suggest finds nothing, even though the operator can chain that drone after its current task by hand. That makes it a natural probe of over-trust: in `study-v1.12`, 7 failures had this shape; 3 of the 4 operators who clicked Suggest abandoned, and the one who chained by hand recovered. | `recovery_opened.feasibleWithOnMissionDrones === false` but the affected tasks are coverable once busy mission drones are counted (`scripts/study_analysis.py`, pattern `abandon-busy`) |
 | Can a mission take a second drone failure while the first is being fixed? | **Build ≥ `study-v1.5`: no** — exempt until 30 s after the recovery is resolved. | `session_start.failureGraceSeconds` (absent ⇒ no grace) |
 | Could the operator lose a half-built recovery plan mid-fix? | **Build ≤ `study-v1.5`: yes** — any task of that mission completing wiped the planner's in-progress assignments and disabled Reassign (§ 13). **`v1.6`+: no.** | `session_start.appVersion`; in a pre-`v1.6` log a long gap between `recovery_opened` and `failure_recovery`, or a burst of re-`tactical_assignment_changed` events after a `task_completed` on the same mission |
 | Is there a pre-study AI-attitude survey? | **Yes, build ≥ `study-v1.3`:** AIAS-4 + two bespoke Likert blocks, before session 1. | `demographics` keys prefixed `aias_`/`verif_`/`deleg_`; absent entirely pre-`v1.3` |
-| Could the same drone be counted twice on one task? | **Build ≤ `study-v1.6`: yes** — the Suggest reveal appended without a duplicate guard, so a repeated id satisfied a colour requirement with fewer physical drones (§ 14). **`v1.7`+: no.** | a repeated id in `tactical_confirmed.finalPlan[].assetIds` (4 such tasks exist, all in GeorgeH's `v1.6` sessions) |
+| Could the same drone be counted twice on one task? | **Build ≤ `study-v1.6`: yes** — the Suggest reveal appended without a duplicate guard, so a repeated id satisfied a colour requirement with fewer physical drones (§ 14). **`v1.7`+: no.** | a repeated id in `tactical_confirmed.finalPlan[].assetIds` (4 such tasks exist, all in P04's `v1.6` sessions) |
 | Do the strategy cards' three score bars mean what they say? | **Build ≤ `study-v1.6`: no.** Speed was two-valued (0% or 100%) and Reserve measured *specialists committed*, not reserve preserved — Aggressive weakly dominated all three bars on 48% of card pairs (§ 14). **`v1.7`+: yes** — Speed is `bestETA/thisETA`, Reserve is drones-left/reserve. | compare `strategiesPresented[].reserveScore` against `reserveAfter` — they agree only in `v1.7`+ |
 
 ---
@@ -126,7 +128,7 @@ truthful). Fleet is 6/6/6 rather than 11/11/11, to be easier to count while lear
 
 ### 8. `study-v1.1` — even failure targeting, and strategic commitments actually deploy in full
 
-Found while auditing a pilot log (`Ramis` / P-1622) where drone failures looked Blue-heavy and a
+Found while auditing a pilot log (`P01`) where drone failures looked Blue-heavy and a
 strategic card's promised drone count didn't match what showed up in the tactical planner. Both
 were real, reproducible bugs in `APPLY_STRATEGIC`/TICK, not artifacts of that session:
 
@@ -218,7 +220,7 @@ one operator action whose whole point is that the work survives.
 
 ### 10. `study-v1.3` — friendlier scores, an honest failure model, and a pre-study AI-attitude survey
 
-Found while auditing a pilot log (`SamHJ` / P-6155): scores clamp to 0 whenever penalty outruns
+Found while auditing a pilot log (`P02`): scores clamp to 0 whenever penalty outruns
 completion points (session 2 did), and drone failures were still heavily Blue-biased (17/21 across
 both sessions, vs. a 33–48% Blue share of committed drones) despite `study-v1.1` claiming to fix
 exactly this. Three changes:
@@ -451,9 +453,9 @@ both live between the planner's local state, the display layer, and the log.
   the way `moveDrone` does) and again at the choke point where a plan becomes game state
   (`gameReducer.ts` de-duplicates `assignedAssetIds` on commit, so the invariant holds
   unconditionally whatever builds the list).
-  **Consequence for the data:** occurred in **4 tasks across GeorgeH's two `study-v1.6` sessions**
+  **Consequence for the data:** occurred in **4 tasks across P04's two `study-v1.6` sessions**
   (e.g. `M004-T2 → [B02, B04, B02, B04]`, `M004-T1 → [B05, B05]`) and in **no earlier session** — it
-  is a `v1.4`→`v1.6` regression. Treat GeorgeH's task-level outcomes as suspect; his
+  is a `v1.4`→`v1.6` regression. Treat P04's task-level outcomes as suspect; his
   strategic-choice and latency data are unaffected.
 
 - **Two of the three strategy-card score bars were degenerate, and one was inverted.**
@@ -803,7 +805,7 @@ plain-Bernoulli path at the configured rate — new test 10 in `test-strategic-f
 ### 19. `study-v1.12` — NASA-TLX Performance slider now warns it runs backwards; Conservative's
     "unused colour" spare investigated and confirmed intentional, not a bug
 
-Two things looked at together after a researcher note that Eike's data might have an agent-fault
+Two things looked at together after a researcher note that P10's data might have an agent-fault
 leak (it didn't — see below) and that one TLX slider felt "confusingly backwards."
 
 **NASA-TLX `performance` item — fixed.** Every other TLX item (`mental_demand`, `physical_demand`,
@@ -816,17 +818,17 @@ participant who anchors on "the question asks how successful, so I'll drag right
 gets exactly backwards from what the scale records.
 
 The researcher had been catching this by ear and correcting participants verbally; only the two
-most recent participants (Eike, Reuben — both `study-v1.11`) got that correction. Checked the
+most recent participants (P10, P11 — both `study-v1.11`) got that correction. Checked the
 `performance` values collected before them against each session's actual completion rate
 (`session_ended.taskOutcomes`, `completed / (completed + failed)`) — if the slider is read
 correctly, a high completion rate should pull `performance` toward 0 (Perfect), i.e. a negative
-correlation. Sessions before Eike/Reuben: r = +0.16 (n=14) — the wrong sign. The two corrected
+correlation. Sessions before P10/P11: r = +0.16 (n=14) — the wrong sign. The two corrected
 sessions: r = -0.07 (n=4, too few to lean on alone, but the right sign). The single clearest case is
-**JackHJ session 1: 96% completion (his best session in the whole dataset) paired with
+**P05 session 1: 96% completion (his best session in the whole dataset) paired with
 `performance = 18/20` — one step from the Failure end** — very hard to read as anything but the
 slider being used backwards. n is too small across the rest to call every earlier session
-individually, but the direction and JackHJ's case together are enough to treat `performance` as
-**unreliable pre-`v1.12`, except for Eike and Reuben (verbally corrected, trust as recorded)**.
+individually, but the direction and P05's case together are enough to treat `performance` as
+**unreliable pre-`v1.12`, except for P10 and P11 (verbally corrected, trust as recorded)**.
 Reproduce the correlation with `scripts/tlx_performance_check.py`.
 
 **Fix:** `SurveyModal.tsx`'s `NASAItem` gained an optional `help` string, shown as a small amber
@@ -839,25 +841,80 @@ researcher was already doing by voice, just made automatic so it no longer depen
 researcher remembering to say it.
 
 **Consequence for the data:** treat `demographics`/`survey_response(nasa_tlx).responses.performance`
-as suspect-polarity for every session before Eike/Reuben — don't drop it, but don't trust its sign
+as suspect-polarity for every session before P10/P11 — don't drop it, but don't trust its sign
 without corroborating it against completion rate or the participant's own interview/narration first.
-Eike, Reuben, and every session from here on (`v1.12`+) can be taken at face value. The other five
+P10, P11, and every session from here on (`v1.12`+) can be taken at face value. The other five
 TLX items are unaffected; a composite TLX mean that includes raw `performance` should be treated
 with the same caution as `performance` alone for the affected sessions.
 
-**Conservative's "spare of an unused colour" — investigated, not a bug.** While looking at Eike's
+**Conservative's "spare of an unused colour" — investigated, not a bug.** While looking at P10's
 data the audit also turned up `copilot.ts`'s Conservative strategy occasionally arming one spare
 drone of a colour a mission's tasks never use at all (e.g. a Green spare on an all-Blue mission) —
 `CONSERVATIVE_TOP_UP` (15% of remaining reserve) is applied to all three colours unconditionally,
 not gated to colours the mission actually needs the way the flat `+1` redundancy buffer is. Present
 in 21% of the 262 strategic card-pairs logged across the whole dataset, every participant, every
-build — not new, and not related to the `agentFailuresEnabled`/ε mechanism (confirmed off for Eike,
+build — not new, and not related to the `agentFailuresEnabled`/ε mechanism (confirmed off for P10,
 `isBadSuggestion: false` on every card). **Confirmed with the researcher this is intentional** — a
 deliberately naive/wasteful facet of the Conservative policy the study wants left in, not corrected.
 The only thing worth checking was whether it was at least *deterministic* given the same inputs —
 it is: the formula is a pure function of `reserve` and the mission's own requirements, no RNG
 involved, so the same mission state always produces the same card. No code change. Noted here so
 it isn't re-investigated as a suspected bug a second time.
+
+### 20. `study-v1.13` — "Swap games": the two mission streams can be played in reversed order
+
+**The problem (found in the log analysis, after P30).** Each session's mission stream is generated
+from `SeededRNG(seed ^ index)`, and until this build the index was simply the session number. Every
+participant runs the fixed study seed 42, so **session 1 and session 2 were always the same two
+games, whichever scenario ran in them**. With the scenario order alternated, that makes four fixed
+games, each played by only one order group:
+
+| Game | Played by (pre-v1.13) | Missions | Tasks | Drone-s of work | Points on offer |
+|---|---|---|---|---|---|
+| Strategic Heavy, index 1 | strategic-first, as run 1 | 13 | 41 | 2450 | 2260 |
+| Strategic Heavy, index 2 | tactical-first, as run 2 | 14 | 43 | 1975 | 2000 |
+| Tactical Heavy, index 1 | tactical-first, as run 1 | 6 | 27 | 1785 | 1540 |
+| Tactical Heavy, index 2 | strategic-first, as run 2 | 9 | 46 | 3455 | 2900 |
+
+So the strategic-first group got the **heavier game in both scenarios** (about 57% more total work)
+and the tactical-first group the lighter one in both. "Drone-s of work" is primary composition × base
+time summed over tasks. The defining difference between scenarios (many small missions vs a few large
+ones) holds in all four games. The scenario comparison still averages two games per scenario,
+balanced across order. What is lost is that game load is **confounded with order**, and the run
+(learning) effect is confounded with the run-2 games carrying about 28% more work. Raw `score` is not
+comparable across runs; analysis normalises by points on offer (`docs/reports/two-tiers-two-scenarios.html` §1).
+
+**Fix: `StudyConfig.swapGames`.** With it on, session *n* uses index `numSessions + 1 − n`, so
+session 1 plays what session 2 normally plays and vice versa. Nothing else changes: only the mission
+plan was ever keyed by session number (`gameReducer.ts` `buildInitialState` and `NEXT_SESSION`); drone
+failures, strategy cards and the tactical assistant are keyed by seed + mission/drone id, and the
+tutorial-only `seedCenters` keep-out is empty outside the tutorial. So a swapped session replays an
+existing game **exactly**, just in the other position. Read the index only through
+`planSeedIndex()` in `utils/config.ts`.
+
+- **StartScreen → Participant Study → "Swap games", ticked by default.** Every participant up to P30
+  ran unswapped, so the remaining recruits fill the missing cells: strategic-first + swap → the
+  lighter games; tactical-first + swap → the heavier games. Keep alternating Scenario 1 as usual.
+- **URL:** `?swapGames=1`. The advanced/single-session start path and the tutorial don't set it (a
+  single session has nothing to swap).
+- **Logged:** `session_start.swapGames` and `session_start.planSeedIndex` (the index the mission
+  stream was generated with). Older logs lack both; their index always equals the session number.
+- **Pinned by `scripts/test-swap-games.ts`**: the index mapping; swapped session *n* equals unswapped
+  session (3 − *n*) blueprint-for-blueprint in both scenario orders; the unswapped path is unchanged;
+  a swapped tactical-first session 1 reproduces, mission for mission, the Tactical game P12 actually
+  logged as session 2; and `session_start` records the swap.
+
+**How the data is meant to be used (researcher's decision, 2026-09-25).** Game load is treated
+as a nuisance variable to **balance**, not as a condition. The aim is equal cells in the
+order × game-load table (tracked live in §1 of the report). If recruitment ends unbalanced, trim
+the over-full cells **by a rule fixed in advance** (e.g. earliest-run participants first), never by
+their results, and report the untrimmed analysis alongside. `scripts/study_analysis.py` derives each
+session's game from `planSeedIndex` (falling back to the session number) and each participant's load
+from which game in each scenario asks for more work.
+
+**Consequence for the data:** `study-v1.13` sessions pool with `v1.12` at the level of *games*:
+same four games, same behaviour. Anything grouped by **run** must now also say which game each run
+was, because a run-1 Tactical session can be either game.
 
 ---
 

@@ -41,6 +41,15 @@ export interface StudyConfig {
   // agentFailuresEnabled()/effectiveEpsilonStrategic()/effectiveEpsilonTactical() in utils/config —
   // never inline (same rule as isFixLockouts/failureGraceSeconds).
   agentFailuresEnabled?: boolean
+  // study-v1.13: play the session games in the opposite order. Each session's mission stream is
+  // seeded by seed ^ (game index), and the game index is normally the session number -- so with a
+  // fixed seed, session 1 and session 2 are always the same two games whatever scenario runs in
+  // them. Swapping gives session n the game index (numSessions + 1 - n): session 1 plays what
+  // session 2 normally plays and vice versa, so the SAME four scenario x game combinations occur
+  // with the order reversed. This lets game difficulty be balanced against order (see
+  // docs/STUDY_BUILD.md section 20). Read through planSeedIndex() in utils/config -- never inline.
+  // Omitted/false = the original behaviour.
+  swapGames?: boolean
 }
 
 // ─── Assets ───────────────────────────────────────────────────────────────
@@ -381,6 +390,11 @@ export interface SessionStartEvent extends BaseEvent {
   // parameters in effect. epsilonStrategic/epsilonTactical above are already the GATED (effective)
   // values — this flag says whether that gating did anything.
   agentFailuresEnabled: boolean
+  // study-v1.13: game-order swap (see StudyConfig.swapGames). planSeedIndex is the index this
+  // session's mission stream was generated with (plan RNG = seed ^ planSeedIndex); absent in older
+  // logs, where it always equals the session number.
+  swapGames?: boolean
+  planSeedIndex?: number
   strategicFailureOverDelta: number    // 'over' failure: drones added to one random colour on both cards
   tacticalFailureMinHops: number       // 'route' failure: random-detour prefix length range per drone
   tacticalFailureMaxHops: number

@@ -20,7 +20,7 @@ import { onMissionDrones, taskCoverableBy, unfinishedTasks } from '../utils/cove
 import { buildTacticalFailurePlan, TACTICAL_FAILURE_MIN_HOPS, TACTICAL_FAILURE_MAX_HOPS } from '../utils/tacticalSuggest'
 import { drawBalancedRoll, initialBalancedRollState, FAILURE_BALANCE_BATCH_SIZE, STRATEGIC_FAILURE_SALT, TACTICAL_FAILURE_SALT } from '../utils/balancedRoll'
 import { SeededRNG } from '../utils/prng'
-import { isFixLockouts, failureGraceSeconds, effectiveEpsilonStrategic, effectiveEpsilonTactical, agentFailuresEnabled } from '../utils/config'
+import { isFixLockouts, failureGraceSeconds, effectiveEpsilonStrategic, effectiveEpsilonTactical, agentFailuresEnabled, planSeedIndex } from '../utils/config'
 import { debugLog } from '../utils/debugLog'
 import type { StudyConfig } from '../types'
 
@@ -44,7 +44,7 @@ const FAILURE_ROLL_INTERVAL = 1  // seconds
 // versions (v1/v2/v2.1) in docs/SCENARIOS.md, which this build pins at v2.1.
 // Bump it and add a section to docs/STUDY_BUILD.md whenever scoring, mission generation, agent
 // behaviour, or any of the decisions recorded there changes — then tag the commit to match.
-const APP_VERSION = 'study-v1.12'
+const APP_VERSION = 'study-v1.13'
 
 // Largest slice of simulated time a single TICK may advance. See the stall-absorption comment in
 // the TICK handler: without it, a suspended requestAnimationFrame loop replayed the whole
@@ -166,7 +166,7 @@ export function buildInitialState(config: StudyConfig): GameState {
   const seedCenters = config.tutorialMode
     ? [TUTORIAL_FIRST_BLUEPRINT.zoneCenter, TUTORIAL_SECOND_BLUEPRINT.zoneCenter]
     : []
-  const generated = generateSessionPlan(new SeededRNG(config.seed ^ 1), complexity, undefined, seedCenters)
+  const generated = generateSessionPlan(new SeededRNG(config.seed ^ planSeedIndex(config, 1)), complexity, undefined, seedCenters)
   const blueprints = config.tutorialMode
     ? [TUTORIAL_FIRST_BLUEPRINT, TUTORIAL_SECOND_BLUEPRINT, ...generated]
     : generated
@@ -1478,6 +1478,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           failureRatePerDroneSecond: FAILURE_RATE_PER_DRONE_SECOND,
           failureRollIntervalSec: FAILURE_ROLL_INTERVAL,
           failureGraceSeconds: failureGraceSeconds(cfg),
+          swapGames: cfg.swapGames === true,
+          planSeedIndex: planSeedIndex(cfg, state.sessionNumber),
           conservativeTopUp: CONSERVATIVE_TOP_UP,
           conservativeRedundancyBuffer: CONSERVATIVE_REDUNDANCY_BUFFER,
           snapshotIntervalSec: STATE_SNAPSHOT_INTERVAL,
@@ -3286,7 +3288,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== 'between') return state
       const nextSession = state.sessionNumber + 1
       const complexity = complexityForSession(state.config, nextSession)
-      const blueprints = generateSessionPlan(new SeededRNG(state.config.seed ^ nextSession), complexity)
+      const blueprints = generateSessionPlan(new SeededRNG(state.config.seed ^ planSeedIndex(state.config, nextSession)), complexity)
       const s = logEvent(state, { type: 'phase_change', fromPhase: state.phase, toPhase: 'playing' })
 
       return {
