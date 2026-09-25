@@ -1,6 +1,49 @@
 # Aggregate reports
 
-## `two-tiers-two-scenarios.html`
+## `two-tiers-two-scenarios.html` (rebuilt 2026-09-25)
+
+Log-only analysis of the participant study, organised around the design that was actually run: a
+**2×2 crossover** (every participant plays Strategic Heavy and Tactical Heavy, in counterbalanced
+order). Surveys and recordings are deliberately left out. Sections:
+
+1. **Design** — the four games (see below) and what n can detect.
+2. **Performance** — score per point on offer as the primary outcome, completion alongside;
+   crossover estimates for scenario, run and interaction, plus a run-2-only check.
+3. **Reliance over time** — the reliance ladder per tier, drift within each 8-minute run, and
+   run 1 vs run 2.
+4. **Mission size** — assistant use by category A–E, with a GEE controlling scenario and run.
+5. **Drone failures** — every recovery episode classified (recovered with Suggest / by hand /
+   abandoned when unfixable / abandoned without trying / abandoned right after Suggest), and its
+   relation to how much each person relies on the assistants.
+6. **Reliance vs performance.**
+7. **Outliers** — robust-z screen within game; a toggle reruns everything without flagged people.
+
+Controls at the top switch build window (`study-v1.12` only, or `v1.4`+) and outlier exclusion.
+
+**Four games, not two.** Everyone played seed 42 and the mission stream is seeded by
+`seed ^ sessionNumber`, so each scenario × run cell is one fixed game played by only one order
+group (points on offer: Strategic 2260 / 2000, Tactical 1540 / 2900 for run 1 / run 2). Raw score
+is therefore not comparable across runs, and learning cannot be separated from game difficulty
+from the logs alone. The page uses score ÷ points on offer throughout.
+
+```bash
+python scripts/study_analysis.py           # writes the page + study_analysis.json
+python scripts/study_analysis.py --print   # also prints a text summary
+```
+
+Pipeline: `scripts/study_analysis.py` (needs numpy, scipy, statsmodels, pandas) injects its
+result into `scripts/study_analysis_template.html`. Edit the **template**, never the generated
+HTML. Reads only `logs/Participants/`; participant ids are file names (some logs still carry an
+un-anonymised in-app id). P09 is always excluded (ε = 0.2 fault test; participant did not follow
+the task).
+
+## `two-tiers-two-scenarios-legacy.html`
+
+The previous cohort-window page (built by `scripts/build_agent_report.py`, writes `aggregate.json`
+too). Kept because it is still the only page with the post-session trust and AI-attitude figures.
+Its text and numbers below are from that older version.
+
+### Legacy page notes
 
 A single self-contained page pooling **every complete session collected so far**, to answer the
 questions the per-participant reports cannot:

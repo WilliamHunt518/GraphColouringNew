@@ -22,7 +22,7 @@ BASE = Path(__file__).resolve().parent.parent
 # Pre-tag runs logged no appVersion at all; they are ordered by wall clock and treated as < v1.0.
 VERSION_ORDER = ['pre-tag', 'study-v1.0', 'study-v1.1', 'study-v1.2', 'study-v1.3',
                  'study-v1.4', 'study-v1.5', 'study-v1.6', 'study-v1.7', 'study-v1.8',
-                 'study-v1.9', 'study-v1.10', 'study-v1.11', 'study-v1.12']
+                 'study-v1.9', 'study-v1.10', 'study-v1.11', 'study-v1.12', 'study-v1.13']
 
 
 def vrank(v):
@@ -82,7 +82,7 @@ def read_session(sess, pid, path, idx):
     confirms = by('tactical_confirmed')
     # Consultation: did the operator ever pull the agent's plan in? The planner starts empty, so
     # suggestUsedCount == 0 means the plan was built without ever seeing the agent's.
-    # The earliest logs (P-1333) predate the field; there, absence is NOT a zero, and
+    # The earliest logs (PIL01, formerly "P-1333") predate the field; there, absence is NOT a zero, and
     # `hasSuggestField` below lets the aggregate drop those sessions instead of miscounting them.
     has_suggest = bool(confirms) and all('suggestUsedCount' in c for c in confirms)
     consulted = [c for c in confirms if (c.get('suggestUsedCount') or 0) > 0]
@@ -241,18 +241,21 @@ def load_all():
     sep = chr(92)   # backslash, for Windows paths out of glob
     for f in sorted(glob.glob(str(BASE / 'logs' / '**' / '*.json'), recursive=True)):
         p = f.replace(sep, '/')
-        if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json') or p.endswith('faultTest.json'):
-            continue   # snapshots are partial; /auto/ is synthetic (headless harness), not people;
-                       # faultTest is a dev run exercising ε>0 (agentFailuresEnabled) — the only
-                       # session in the whole dataset with a non-zero epsilon, never a participant
+        if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json'):
+            continue   # snapshots are partial; /auto/ is synthetic (headless harness), not people.
+                       # (P09 was logged as "faultTest.json" before participant IDs were assigned —
+                       # a real participant run with agentFailuresEnabled on, ε=0.2/0.2, the only
+                       # non-zero-epsilon session in the dataset. Now included like any other.)
         try:
             d = json.load(open(f, encoding='utf-8'))
         except Exception:
             continue
         if not isinstance(d, dict) or 'sessions' not in d:
             continue
-        pid = d.get('participantId')
         rel = str(Path(f).relative_to(BASE)).replace(sep, '/')
+        # Under logs/Participants/ the file name IS the anonymised id; a few logs still carry the
+        # in-app code they were run under (e.g. P18.json says "P-8005"), which must not leak.
+        pid = Path(f).stem if rel.startswith('logs/Participants/') else d.get('participantId')
         att = score_attitudes(d.get('demographics'))
         for i, s in enumerate(d['sessions']):
             r = read_session(s, pid, rel, i + 1)

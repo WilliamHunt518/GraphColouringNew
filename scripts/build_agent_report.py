@@ -29,7 +29,11 @@ from agent_scenario_aggregate import COHORTS, in_cohort, cell, \
 
 TEMPLATE = BASE / 'scripts' / 'agent_report_template.html'
 OUT_DIR = BASE / 'docs' / 'reports'
-OUT_HTML = OUT_DIR / 'two-tiers-two-scenarios.html'
+# The page at two-tiers-two-scenarios.html is now built by scripts/study_analysis.py (crossover
+# design, score, failures, mission size). This older cohort-window page -- still the only one with
+# the survey/attitude figures -- is kept under a legacy name so the two builders never overwrite
+# each other.
+OUT_HTML = OUT_DIR / 'two-tiers-two-scenarios-legacy.html'
 OUT_JSON = OUT_DIR / 'aggregate.json'
 
 # Session-level lists that no figure reads. Dropping them keeps the embedded payload small enough
