@@ -24,7 +24,7 @@ from agent_scenario_stats import events   # noqa: E402
 
 # Sessions where the researcher verbally corrected the participant before they answered —
 # trust these regardless of which side of the v1.12 UI fix they fall on.
-VERBALLY_CORRECTED = {'Eike', 'Reuben'}
+VERBALLY_CORRECTED = {'P10', 'P11'}
 
 
 def pearson(pairs):
@@ -44,9 +44,9 @@ def pearson(pairs):
 
 def load_rows():
     rows = []
-    for f in sorted(Path(BASE / 'logs').glob('**/*.json')):
+    for f in sorted(f for root in ('Results', 'logs') for f in (BASE / root).glob('**/*.json')):
         p = str(f).replace(chr(92), '/')
-        if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json') or p.endswith('faultTest.json'):
+        if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json'):
             continue
         try:
             d = json.loads(f.read_text(encoding='utf-8'))

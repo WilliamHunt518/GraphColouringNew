@@ -132,7 +132,7 @@ real recording yet, so every default — the timer OCR box above all — is a gu
 Alignment reads the on-screen countdown rather than the recorder's filename, because
 `MAX_TICK_GAP_MS` pauses simulated time when the primary window is hidden and only the countdown
 survives that. Generated audio/transcripts are identifiable and are gitignored — never commit
-`logs/narration/`.
+`Results/Narration/`.
 
 ## Running online (proposal, not built)
 

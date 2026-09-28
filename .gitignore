@@ -23,19 +23,23 @@ __pycache__/
 
 # Narration pipeline working files: audio, transcripts and per-decision narration are
 # identifiable data (a voice, a screen, a named person). Regenerate them, never commit them.
-logs/narration/
+Results/Narration/
 
 # Raw session recordings (screen + mic) that feed the narration pipeline above — same reason,
 # same rule: identifiable data, never commit it.
-Recordings/
+Results/Recordings/
 
 # Interview transcripts (named participants) — same reason, same rule.
-Interviews/
+Results/Interviews/
 
 # Filled-in supplementary questionnaire responses (named participants) — same reason, same rule.
 # The blank template in Forms/ has no participant data and is fine to commit.
-logs/AI_Attitude_Supplement_*.docx
+Results/Supplements/
 
 # Embeds verbatim interview quotes (identifiable) alongside the pooled numbers — unlike everything
 # else in docs/reports/, this one isn't safe to commit. Regenerate locally, never commit it.
 docs/reports/findings_synthesis.html
+
+# The name<->anon-ID key. The ONLY place real names live -- never commit or push it.
+docs/Participants.xlsx
+docs/~$*.xlsx

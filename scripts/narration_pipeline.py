@@ -17,7 +17,7 @@ been run against a real recording. `docs/NARRATION.md` is the tuning guide.
 Nothing here is imported at module load: the heavy dependencies are imported inside the step that
 needs them, so `--help`, `probe` and `join` work on a machine with nothing installed.
 
-Outputs land in logs/narration/<participant>_s<session>/ and are NOT committed -- audio and
+Outputs land in Results/Narration/<participant>_s<session>/ and are NOT committed -- audio and
 transcripts are identifiable data. See .gitignore.
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ def need_ffmpeg() -> str:
 
 
 def out_dir(args) -> Path:
-    d = Path(args.out) if args.out else BASE / 'logs' / 'narration' / (
+    d = Path(args.out) if args.out else BASE / 'Results' / 'Narration' / (
         '%s_s%d' % (args.participant or 'unknown', args.session or 1))
     d.mkdir(parents=True, exist_ok=True)
     return d
@@ -595,7 +595,7 @@ def roi_type(s: str):
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--participant'), p.add_argument('--session', type=int, default=1)
-    p.add_argument('--out', help='output directory (default logs/narration/<pid>_s<n>/)')
+    p.add_argument('--out', help='output directory (default Results/Narration/<pid>_s<n>/)')
     sub = p.add_subparsers(dest='cmd', required=True)
 
     def common_video(sp):

@@ -7,14 +7,14 @@ were making a specific decision**.
 
 > **Status: skeleton, now run once against a real recording, with a first coding pass and clips.**
 > The logic is written and unit-tested; as of 2026-09-10 the full chain has been run end-to-end
-> against `Recordings/JackHJ.mp4` / `logs/Study_ver_final/study_JackHJ_none_42.json` session 1 —
+> against `Results/Recordings/P05.mp4` / `Results/Participants/P05.json` session 1 —
 > `probe` → `align` → `transcribe` → `join` → hand-coded (`codes.json`) → `clips` — producing 13
 > coded decisions, each with a curated quote, reason/trust tags, and a synced video clip, plus an
-> aggregate **Findings** section in `logs/narration/decision-cards.html`. The other 4 recordings
-> (`AYOMIDE`, `GeorgeH`, `RAMIS`, `SAMHJ`) have not been run yet and may use a different recording
+> aggregate **Findings** section in `Results/Narration/decision-cards.html`. The other 4 recordings
+> (`P03`, `P04`, `P01`, `P02`) have not been run yet and may use a different recording
 > rig (monitor layout), so **do not assume the ROI below carries over** — re-probe each one.
 > Speaker identification (`speakerid`) is built, was run against a *confirmed-correct* reference
-> clip, and does not work yet — it mislabelled JackHJ's own clear narration as the researcher. The
+> clip, and does not work yet — it mislabelled P05's own clear narration as the researcher. The
 > bad output was reverted before anything downstream used it. **Do not run `speakerid` and trust
 > its output** until the fix in **Plan: fixing speaker-ID accuracy** (below) is actually done —
 > that section exists specifically so this isn't re-discovered the hard way. See the
@@ -114,7 +114,7 @@ python scripts/narration_pipeline.py --participant P-1234 --session 1 all \
 
 Steps also run individually (`audio`, `transcribe`, `align`, `join`) — during tuning you will
 mostly re-run `align` and `join`, which are the cheap ones. Output lands in
-`logs/narration/<participant>_s<session>/`:
+`Results/Narration/<participant>_s<session>/`:
 
 | File | What it is |
 |---|---|
@@ -158,7 +158,7 @@ frames; open one, measure the box around `7:59`, divide by frame size, pass as `
 The `align` step prints how many frames gave a usable clock — if that is 0 it also prints the raw
 OCR strings, which usually makes the problem obvious (a slice of the map, or the score).
 
-> **From the `JackHJ.mp4` run:** the default ROI (tuned for a fullscreen kiosk with no browser
+> **From the `P05.mp4` run:** the default ROI (tuned for a fullscreen kiosk with no browser
 > chrome) was wrong on two counts on this rig — the recording shows visible browser chrome (tab
 > bar, address bar) above the app, pushing the header down to roughly `y≈0.18` not `y≈0.0`; and
 > the timer + score are one right-aligned cluster (`7:58  Score: 429 +540`), so the timer's own
@@ -225,15 +225,15 @@ python scripts/narration_pipeline.py --participant P --session N join --log ... 
 
 This rewrites `transcript.raw.json`'s segments in place with `speaker: "researcher"` or
 `"participant"` (voice-similarity, resemblyzer, cosine threshold `--threshold`, default 0.62);
-`join` already respects that field, so nothing else changes. Effort-coding tools (the JackHJ
+`join` already respects that field, so nothing else changes. Effort-coding tools (the P05
 `codes.json`) can then exclude `researcher` segments from being read as the participant's own
 reasoning, instead of relying on a human eyeballing content for tone, as was done by hand there.
 
 > **Status: built, tried once with a confirmed-correct reference clip, and it doesn't work yet.**
 > Not "no reference clip" — a real one. The researcher (Will) confirmed on 2026-09-10 that
-> `logs/narration/JackHJ_s1/candidate_A_setup-chat.mp4` is entirely his own voice. Run against it,
+> `Results/Narration/P05_s1/candidate_A_setup-chat.mp4` is entirely his own voice. Run against it,
 > `speakerid` labelled 80/98 segments "researcher" against only 13 "participant" — including
-> JackHJ's own unambiguous first-person narration ("The first one, I'm going to deploy these
+> P05's own unambiguous first-person narration ("The first one, I'm going to deploy these
 > manually...", sim 0.865) as *more* similar to the researcher reference than a genuine
 > same-speaker match should be. **The labels were reverted immediately** (segment `speaker`/
 > `speakerSim` fields stripped back out of `transcript.raw.json`) before anything downstream —
@@ -284,7 +284,7 @@ has no numba/numpy version conflict to inherit — the conflict here is specific
 shared conda **base** environment), and either (a) run `speakerid` inside that venv directly, or
 (b) keep it invoked from the base env but shell out to the isolated venv's `python` for just the
 resemblyzer call. One-time setup, reusable for all 5 recordings and every future one. **Verify
-before trusting it**: re-run against `candidate_A_setup-chat.mp4` and check that JackHJ's own
+before trusting it**: re-run against `candidate_A_setup-chat.mp4` and check that P05's own
 "The first one, I'm going to deploy these manually" segment (session time ~12.4s) comes back
 `participant` with a *low* similarity score, not `researcher` with a high one — that's the
 concrete regression test this bug leaves behind.
@@ -316,7 +316,7 @@ Each clip is `[openedAt − pad, closedAt + pad]` (`--pad`, default 2 s), capped
 `--max-duration` (default 25 s) — the decision's own span from the log, not the wider
 pre-roll/post-roll window `join` uses for narration capture, so the clip shows the actual UI
 action and the speech act around it, not a shared multi-minute ramble. Output lands in
-`logs/narration/<pid>_s<n>/clips/<window-id-with-underscores>.mp4` (`:` is illegal in a Windows
+`Results/Narration/<pid>_s<n>/clips/<window-id-with-underscores>.mp4` (`:` is illegal in a Windows
 filename). `scripts/build_narration_report.py` picks up any clip it finds next to a coded window
 and embeds it as a native `<video>` player on that card automatically — re-run it after cutting
 clips. Clip generation needs `align`'s alignment to be trustworthy (`ok: true` in
@@ -328,8 +328,8 @@ output — same file, same rule.
 
 ## What this deliberately does not do yet
 
-- **A coding scheme now exists for one session, single-pass, uncalibrated.** JackHJ session 1 has
-  been hand-coded (`logs/narration/JackHJ_s1/codes.json`) against a small bottom-up codebook —
+- **A coding scheme now exists for one session, single-pass, uncalibrated.** P05 session 1 has
+  been hand-coded (`Results/Narration/P05_s1/codes.json`) against a small bottom-up codebook —
   reason for the choice (`task_load`, `performance_trust`, `mission_criticality`,
   `spare_capacity`, `verification`, `efficiency_anticipation`, `none_stated`) and trust stance
   (`deliberate_manual_control`, `implicit_confidence`, `explicit_trust_increase`) — by a single
@@ -341,12 +341,12 @@ output — same file, same rule.
   coder, to get a real κ is the natural next step before treating any of this as validated. It
   needs a codebook grounded in real transcripts, which is why it waited for one.
 - **Report integration exists, but deliberately isn't in `two-tiers-two-scenarios.html`.**
-  `scripts/build_narration_report.py` renders every `logs/narration/*/windows.json` into decision
+  `scripts/build_narration_report.py` renders every `Results/Narration/*/windows.json` into decision
   cards (the event as shown, the choice made, the narration overlapping it) and writes
-  `logs/narration/decision-cards.html`. It is **not** merged into the committed, pooled,
+  `Results/Narration/decision-cards.html`. It is **not** merged into the committed, pooled,
   de-identified `docs/reports/` output: a decision card embeds verbatim (redacted) participant
   speech, which is identifiable data under the same ethics terms as the audio and transcripts
-  above — so its output path is inside the gitignored `logs/narration/` tree and must never be
+  above — so its output path is inside the gitignored `Results/Narration/` tree and must never be
   committed, pushed, or pasted into a hosted tool. Re-run it after every new session that goes
   through `join`.
 - **No automated video analysis, but manual spot-checking is now one command away.** The `clips`
@@ -370,7 +370,7 @@ Ethics approval is in place for recording. Two practical consequences the pipeli
 
 - **Everything runs locally.** faster-whisper and pyannote are on-device; nothing is uploaded. If
   you ever swap in a hosted API, that is a change of data-handling, not an implementation detail.
-- **Nothing generated here is committed.** `logs/narration/` is in `.gitignore` — audio,
+- **Nothing generated here is committed.** `Results/Narration/` is in `.gitignore` — audio,
   transcripts and per-decision narration are identifiable (a voice, a screen, a named person).
   Regenerate them; never commit them. `--redact` takes names to strip (pass the participant's, and
   your own — they will say it), and also removes emails and phone numbers. It is a crude first
@@ -391,7 +391,7 @@ narrated and others did not, do not pool them.
 | `scripts/narration_pipeline.py` | CLI over ffmpeg / faster-whisper / OpenCV / resemblyzer. Heavy imports are lazy, so `--help`, `probe` and `join` work with nothing installed. Steps: `probe`, `audio`, `transcribe`, `align`, `speakerid`, `join`, `clips`, `all` |
 | `scripts/_librosa_shim.py` | reimplements the 3 librosa calls `speakerid` needs, on soundfile/torchaudio, so it doesn't need real librosa's numba dependency. See Speaker identification above |
 | `scripts/test_narration.py` | pins the core against synthetic data — runs today, without a video |
-| `scripts/build_narration_report.py` + `scripts/narration_report_template.html` | render every `logs/narration/*/windows.json` (+ `codes.json` and `clips/` where present) into `logs/narration/decision-cards.html` (gitignored — see Handling and ethics above) |
+| `scripts/build_narration_report.py` + `scripts/narration_report_template.html` | render every `Results/Narration/*/windows.json` (+ `codes.json` and `clips/` where present) into `Results/Narration/decision-cards.html` (gitignored — see Handling and ethics above) |
 
 ```bash
 python scripts/test_narration.py

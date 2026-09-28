@@ -120,7 +120,7 @@ def decision_row(e, pid, path, version, scenario, session_index):
 def load_decisions():
     rows = []
     sep = chr(92)
-    for f in sorted(Path(BASE / 'logs').glob('**/*.json')):
+    for f in sorted(f for root in ('Results', 'logs') for f in (BASE / root).glob('**/*.json')):
         p = str(f).replace(sep, '/')
         if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json'):
             continue   # snapshots are partial; /auto/ is synthetic — see agent_scenario_stats.py.
@@ -132,8 +132,8 @@ def load_decisions():
         if not isinstance(d, dict) or 'sessions' not in d:
             continue
         rel = str(f.relative_to(BASE)).replace(sep, '/')
-        # file name is the anonymised id under logs/Participants/ -- see agent_scenario_stats.py
-        pid = f.stem if rel.startswith('logs/Participants/') else d.get('participantId')
+        # file name is the anonymised id under Results/Participants/ -- see agent_scenario_stats.py
+        pid = f.stem if rel.startswith('Results/Participants/') else d.get('participantId')
         for i, sess in enumerate(d['sessions']):
             evs = events(sess)
             start = next((e for e in evs if e.get('type') == 'session_start'), None)
@@ -198,7 +198,7 @@ def participant_signature(pid, rows):
         meanAutomationTactical=mean(r['automationScore'] for r in tac),
         meanAutomationRecovery=mean(r['automationScore'] for r in rec),
         # does the objectively busiest moment coincide with the self-reported "task_load" reason?
-        # cross-reference against logs/narration/<pid>_s<n>/codes.json by hand -- not joined here,
+        # cross-reference against Results/Narration/<pid>_s<n>/codes.json by hand -- not joined here,
         # narration codes are gitignored (identifiable), this file is not.
     )
 

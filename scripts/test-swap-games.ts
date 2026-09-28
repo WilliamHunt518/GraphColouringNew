@@ -70,7 +70,7 @@ for (const order of [['strategic', 'tactical'], ['tactical', 'strategic']] as co
 
 // ── 4. Against real data: swapped tactical-first session 1 == P12's logged session 2 ─────────
 {
-  const log = JSON.parse(readFileSync(new URL('../logs/Participants/P12.json', import.meta.url), 'utf-8'))
+  const log = JSON.parse(readFileSync(new URL('../Results/Participants/P12.json', import.meta.url), 'utf-8'))
   const sess = log.sessions[1]
   const evs: any[] = (Array.isArray(sess) ? sess : Object.values(sess)).filter((e: any) => e && typeof e === 'object')
   const start = evs.find(e => e.type === 'session_start')

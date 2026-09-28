@@ -18,7 +18,7 @@ the reward available in each is taken into account.
 
 Usage:
   python scripts/study_report.py                          # defaults to logs/Pilots/auto
-  python scripts/study_report.py logs/Study_1 --out r.html
+  python scripts/study_report.py Results/Participants --out r.html
 """
 import json, sys, base64, argparse, statistics as st
 from pathlib import Path

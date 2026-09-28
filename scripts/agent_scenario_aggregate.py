@@ -103,7 +103,7 @@ def cell(rows):
     s_unedited = sum(r['strategicTaken'] - r['strategicEdited'] for r in rows)
 
     # -- tactical tier: uptake = the agent's plan was pulled in at least once --------------------
-    # P-1333 predates suggestUsedCount; its sessions are excluded from uptake rather than counted
+    # PIL01 (formerly "P-1333") predates suggestUsedCount; its sessions are excluded from uptake rather than counted
     # as zero, which is what a missing field would otherwise look like.
     t_rows = [r for r in rows if r['hasSuggestField']]
     t_cons = sum(r['tacticalConsulted'] for r in t_rows)

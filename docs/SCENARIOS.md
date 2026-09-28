@@ -26,8 +26,8 @@ All constants live in `src/utils/missionGen.ts` unless noted. Difficulty was tun
 
 ## v1 (pilot)
 
-> **Participant P-1333** (`logs/Study_1/study_P-1333_none_42.json`, condition `none`, seed 42,
-> sessions `strategic` → `tactical`) was collected under **v1**. **Do not pool P-1333 with v2+
+> **Participant PIL01** (`Results/Pilots/PIL01.json`, condition `none`, seed 42,
+> sessions `strategic` → `tactical`) was collected under **v1**. **Do not pool PIL01 with v2+
 > data** — the fleet speeds, failure rate, arrival rates and mission-size mix all differ.
 
 ### Fleet & speeds

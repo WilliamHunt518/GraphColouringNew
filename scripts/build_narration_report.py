@@ -4,12 +4,12 @@ Build a local-only "decision cards" viewer over everything the narration pipelin
 
     python scripts/build_narration_report.py
 
-Reads every logs/narration/<pid>_s<n>/windows.json (docs/NARRATION.md) and writes one
+Reads every Results/Narration/<pid>_s<n>/windows.json (docs/NARRATION.md) and writes one
 self-contained HTML file, embedding the narration alongside each decision event, to
 
-    logs/narration/decision-cards.html
+    Results/Narration/decision-cards.html
 
-That output path is INSIDE logs/narration/, which is gitignored -- deliberately. The page embeds
+That output path is INSIDE Results/Narration/, which is gitignored -- deliberately. The page embeds
 verbatim (redacted) participant speech, which is identifiable data under the same ethics-approval
 terms as the audio and transcripts it's built from (see docs/NARRATION.md "Handling and ethics"):
 runs locally, never committed, never uploaded. Unlike docs/reports/two-tiers-two-scenarios.html
@@ -24,7 +24,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 TEMPLATE = BASE / 'scripts' / 'narration_report_template.html'
-OUT = BASE / 'logs' / 'narration' / 'decision-cards.html'
+OUT = BASE / 'Results' / 'Narration' / 'decision-cards.html'
 
 # Per-utterance word-level timing is only needed for the pipeline's own speech_measures() call,
 # already computed into `speech`; dropping it here keeps the embedded payload an order of
@@ -33,7 +33,7 @@ DROP_UTTERANCE_KEYS = ('words', 'windowIds', 'segments')
 
 
 def load_codings(narration_dir: Path) -> dict:
-    """logs/narration/<pid>_s<n>/codes.json -- optional, hand-coded (see docs/NARRATION.md
+    """Results/Narration/<pid>_s<n>/codes.json -- optional, hand-coded (see docs/NARRATION.md
     "No coding scheme"). Absent for any session not yet coded; callers must handle that."""
     path = narration_dir / 'codes.json'
     if not path.exists():
@@ -52,7 +52,7 @@ def safe_window_id(window_id: str) -> str:
 
 def load_sessions() -> list[dict]:
     sessions = []
-    for path in sorted(glob.glob(str(BASE / 'logs' / 'narration' / '*' / 'windows.json'))):
+    for path in sorted(glob.glob(str(BASE / 'Results' / 'Narration' / '*' / 'windows.json'))):
         narration_dir = Path(path).parent
         d = json.loads(Path(path).read_text(encoding='utf-8'))
         coding = load_codings(narration_dir)
@@ -66,8 +66,8 @@ def load_sessions() -> list[dict]:
             ww['coding'] = coding.get('byWindowId', {}).get(w['id'])
             clip = narration_dir / 'clips' / (safe_window_id(w['id']) + '.mp4')
             if clip.exists():
-                # Relative to the report's own location (logs/narration/decision-cards.html), so
-                # it keeps working wherever the whole logs/narration/ tree is opened from.
+                # Relative to the report's own location (Results/Narration/decision-cards.html), so
+                # it keeps working wherever the whole Results/Narration/ tree is opened from.
                 ww['clipPath'] = narration_dir.name + '/clips/' + clip.name
             windows.append(ww)
         sessions.append(dict(
@@ -135,7 +135,7 @@ def ascii_only(src: str) -> str:
 def main() -> None:
     sessions = load_sessions()
     if not sessions:
-        print('no logs/narration/*/windows.json found -- run narration_pipeline.py ... join first',
+        print('no Results/Narration/*/windows.json found -- run narration_pipeline.py ... join first',
               file=sys.stderr)
         raise SystemExit(1)
 
@@ -157,7 +157,7 @@ def main() -> None:
     print('%d session(s), %d decisions, %d with narration attached, %d coded'
           % (len(sessions), n_windows, n_spoken, findings['codedWindows']))
     print('  %s  (%.0f KB)' % (OUT.relative_to(BASE), OUT.stat().st_size / 1024))
-    print('  gitignored (logs/narration/) -- open it locally, never commit or upload it')
+    print('  gitignored (Results/Narration/) -- open it locally, never commit or upload it')
 
 
 if __name__ == '__main__':

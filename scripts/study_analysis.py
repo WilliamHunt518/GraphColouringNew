@@ -21,7 +21,7 @@ can only be separated by comparing the two order groups. The questions it answer
   outliers      robust-z screen on performance and engagement, with every headline recomputed
                 with and without the flagged participants
 
-Only logs/Participants/ is read (pilots are not participants). The participant id is the FILE
+Only Results/Participants/ is read (pilots are not participants). The participant id is the FILE
 name: a few logs still carry an un-anonymised in-app id (see docs/Participants.xlsx), which must
 never reach the report.
 
@@ -39,7 +39,7 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / 'scripts'))
 from agent_scenario_stats import events, vrank   # noqa: E402
 
-LOG_DIR = BASE / 'logs' / 'Participants'
+LOG_DIR = BASE / 'Results' / 'Participants'
 OUT_JSON = BASE / 'docs' / 'reports' / 'study_analysis.json'
 OUT_HTML = BASE / 'docs' / 'reports' / 'two-tiers-two-scenarios.html'
 TEMPLATE = BASE / 'scripts' / 'study_analysis_template.html'

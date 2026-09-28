@@ -239,7 +239,9 @@ def score_attitudes(dem):
 def load_all():
     out = []
     sep = chr(92)   # backslash, for Windows paths out of glob
-    for f in sorted(glob.glob(str(BASE / 'logs' / '**' / '*.json'), recursive=True)):
+    # Results/ holds the real participant + pilot logs; logs/ keeps the dev/test fixtures.
+    for f in sorted(f for root in ('Results', 'logs')
+                    for f in glob.glob(str(BASE / root / '**' / '*.json'), recursive=True)):
         p = f.replace(sep, '/')
         if 'sar_snapshot' in p or '/auto/' in p or p.endswith('summary.json'):
             continue   # snapshots are partial; /auto/ is synthetic (headless harness), not people.
@@ -253,9 +255,9 @@ def load_all():
         if not isinstance(d, dict) or 'sessions' not in d:
             continue
         rel = str(Path(f).relative_to(BASE)).replace(sep, '/')
-        # Under logs/Participants/ the file name IS the anonymised id; a few logs still carry the
+        # Under Results/Participants/ the file name IS the anonymised id; a few logs still carry the
         # in-app code they were run under (e.g. P18.json says "P-8005"), which must not leak.
-        pid = Path(f).stem if rel.startswith('logs/Participants/') else d.get('participantId')
+        pid = Path(f).stem if rel.startswith('Results/Participants/') else d.get('participantId')
         att = score_attitudes(d.get('demographics'))
         for i, s in enumerate(d['sessions']):
             r = read_session(s, pid, rel, i + 1)

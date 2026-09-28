@@ -33,7 +33,7 @@ python scripts/study_analysis.py --print   # also prints a text summary
 
 Pipeline: `scripts/study_analysis.py` (needs numpy, scipy, statsmodels, pandas) injects its
 result into `scripts/study_analysis_template.html`. Edit the **template**, never the generated
-HTML. Reads only `logs/Participants/`; participant ids are file names (some logs still carry an
+HTML. Reads only `Results/Participants/`; participant ids are file names (some logs still carry an
 un-anonymised in-app id). P09 is always excluded (ε = 0.2 fault test; participant did not follow
 the task).
 
