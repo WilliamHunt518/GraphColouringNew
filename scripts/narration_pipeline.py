@@ -126,6 +126,15 @@ def cmd_transcribe(args) -> Path:
     Word timestamps are not optional here: without them an utterance cannot be placed inside a
     decision window with any precision, and the pause/rate measures have nothing to work from.
     """
+    # Import torch FIRST if it is there. On Windows, CTranslate2 finds no cuDNN/cuBLAS of its own
+    # and dies with a bare segfault at model load on `--device cuda`; importing torch first loads
+    # the copies bundled in torch/lib into the process, and CTranslate2 then resolves against them.
+    # Harmless everywhere else, so it is unconditional rather than platform-gated.
+    try:
+        import torch  # noqa: F401
+    except ImportError:
+        pass
+
     try:
         from faster_whisper import WhisperModel
     except ImportError:

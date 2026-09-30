@@ -94,6 +94,61 @@ pip install resemblyzer soundfile webrtcvad audioread   # optional: `speakerid` 
 `ffmpeg` must be on PATH already (it is, for the recorder). A CUDA build of torch makes
 transcription roughly an order of magnitude faster; without one, use `--model distil-large-v3`.
 
+### The environment that actually works on the study machine (2026-09-28)
+
+Getting faster-whisper onto the GPU here took three dead ends, so the working recipe is written
+down rather than rediscovered. It lives in its own venv, **outside the repo**, at
+`C:\Users\Work\.venvs\narration`:
+
+```bash
+# built from a standalone python.org 3.12 -- NOT the system 3.14 and NOT anaconda's 3.11
+"$LOCALAPPDATA/Programs/Python/Python312/python.exe" -m venv ~/.venvs/narration
+~/.venvs/narration/Scripts/python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cu128
+~/.venvs/narration/Scripts/python.exe -m pip install faster-whisper
+```
+
+The three things that do not work, and why:
+
+1. **The machine's default Python is 3.14** -- neither torch nor a usable ctranslate2 has wheels
+   for it. Anything here has to run on 3.12 or older.
+2. **A venv built from anaconda's 3.11 cannot load torch at all** -- `OSError: [WinError 1114] ...
+   Error loading "torch\lib\c10.dll"`, regardless of what is on PATH. A venv from a standalone
+   python.org install loads the identical wheel fine. Don't try to debug the conda one; rebuild.
+3. **CTranslate2 on CUDA segfaults with no message unless torch is imported first.** It finds no
+   cuDNN/cuBLAS of its own on Windows, and a missing dependent DLL kills the process outright
+   rather than raising. `cmd_transcribe` now does an unconditional best-effort `import torch`
+   before `from faster_whisper import WhisperModel` for exactly this reason -- **do not remove
+   it**; the failure it prevents is silent. (Installing `nvidia-cudnn-cu12`/`nvidia-cublas-cu12`
+   alongside instead does *not* fix it, and conflicts with torch's own copies.)
+
+The card is an **RTX 5070 (Blackwell, sm_120)**, which is why torch has to be a cu128 build --
+anything older has no kernels for it. Measured throughput on that card, `large-v3` / `float16` /
+`beam_size 5`: **15-50x realtime** (it varies with how much of the sitting is silence, which the
+VAD filter skips). The whole corpus of ~33 sittings is well under an hour, not the multi-day job a
+CPU run would be.
+
+### Transcribing the whole study
+
+`scripts/transcribe_batch.py` walks every recording, skips anything already done, and is safe to
+stop and restart -- a session counts as done only once its `transcript.raw.json` exists:
+
+```bash
+python scripts/transcribe_batch.py --list       # what is outstanding
+python scripts/transcribe_batch.py --limit 4    # the next four sittings
+python scripts/transcribe_batch.py              # the lot
+```
+
+It finds the venv above automatically (`--python` overrides). Its unit is the **recording**, not
+the session, because one recording is one participant's whole sitting: it extracts audio to
+`<pid>_s1/` and transcribes once, rather than transcribing the same speech again for `_s2`. Where
+an `_s2/` directory already holds a hand-trimmed `audio.wav`, that clip is picked up as well.
+
+**`Results/Recordings/P02.mp4` cannot be read at all** -- `moov atom not found`: the recorder was
+killed before ffmpeg finalised the container, so the file has frames but no index. ffmpeg refuses
+it outright and the batch skips it with a FAILED line. P02 has an interview transcript
+(`Results/Interviews/P02.docx`), so the sitting is not a total loss, but there is no narration
+audio for it and there will not be without an untruncation tool.
+
 ---
 
 ## Run it
@@ -325,6 +380,446 @@ clips. Clip generation needs `align`'s alignment to be trustworthy (`ok: true` i
 output — same file, same rule.
 
 ---
+
+## Segmenting a sitting into its phases
+
+A recording is not one thing. It is the intake forms, two worked sessions, two post-session
+surveys, the between screen, and the debrief -- and a sentence means something different in each.
+`scripts/narration_segments.py` splits the transcript accordingly:
+
+```bash
+python scripts/narration_segments.py --list
+python scripts/narration_segments.py --participants P36 P30
+python scripts/narration_segments.py                     # everyone with a transcript
+```
+
+Output lands beside the transcript in `Results/Narration/<pid>_s1/`: `segments.json` (boundaries,
+anchor provenance, per-phase word counts) and `segments/NN_kind.txt` / `.jsonl` (that phase's
+speech, timestamped; `.txt` is for reading, `.jsonl` keeps word timings for tooling). Same ethics
+rule as everything else in that tree -- gitignored, never committed.
+
+**The boundaries are not estimated.** Every phase change is already in the event log as a
+`phase_change` with an exact `wallClock` (`demographics → playing → survey → between → playing →
+survey → done`, identical across all 30 sittings), so the only unknown is the wall-clock time of
+video frame 0. That comes from an existing `alignment.json` where one exists, otherwise from file
+mtime minus duration, corrected by `MTIME_STARTUP_LATENCY` and good to about ±2 s. Fine for
+cutting phase blocks; **not** fine for placing an utterance inside a single decision window --
+that still needs a proper per-session `align`.
+
+> **An `alignment.json` reading `ok: false` with a huge `residualMax` is usually not a failure.**
+> One recording contains both sessions, so the timer-OCR reads form two valid clusters ~631 s
+> apart and the single-offset fit rightly refuses to average them; the "stall" it reports is the
+> session boundary. The reads themselves are good. `_ocr_anchor` clusters them and takes the
+> earliest. This is the same "no `--start`/`--end` flag" limitation noted in the Tuning section,
+> seen from the other end.
+
+### Where the debrief actually is
+
+The semi-structured debrief is the richest part of most sittings, and it is **not always in the
+`interview` phase**. For four participants (`P03`, `P19`, `P21`, `P27`) the recording stopped at
+`done` and the debrief happened while the final survey was still on screen -- so it sits in
+`survey2`, which for them runs 6-9 minutes instead of the usual 1-2. For four early participants
+(`P05`, `P06`, `P07`, `P12`) it is not in the audio at all and only exists as
+`Results/Interviews/<pid>.docx`. Every sitting is accounted for by one of those three routes; a
+long `survey2` next to a near-empty `interview` is the signature of the second.
+
+More generally, **people start volunteering opinions during the post-session surveys**, well
+before the debrief proper. `survey1` + `survey2` hold ~18k words across the corpus. Do not treat
+the survey phases as dead air.
+
+### Corpus shape (30 participants, all phases)
+
+| Phase | Words | What it is good for |
+|---|---:|---|
+| intake | 6,783 | mostly form-filling; occasional unprompted first impressions |
+| session 1 | 21,136 | concurrent think-aloud + researcher exchanges — the decision-level data |
+| survey 1 | 10,444 | first reflective opinions, immediately post-task |
+| between | 3,481 | short; sometimes a candid aside |
+| session 2 | 14,711 | as session 1, other scenario (quieter — people narrate less second time) |
+| survey 2 | 7,615 | as survey 1, plus the four debriefs that landed here |
+| interview | 24,358 | the debrief: the largest single block in the corpus |
+
+`P05` is the one incomplete case: its `audio.wav` was trimmed to session 1 alone for the original
+pilot run, so its later phases read as empty. Do **not** fix that by re-transcribing over
+`P05_s1/` -- the hand-coded `codes.json` and `windows.json` there are pinned to that transcript.
+Transcribe the full `P05.mp4` into a separate directory instead.
+
+### Name redaction is off by default, on purpose
+
+`--redact` takes names and `redact()` matches them case-insensitively and whole-word. The
+researcher's name is "Will", so defaulting it on rewrote "I will say" to "I [name] say" 217 times
+across the corpus before it was caught. A redaction that corrupts the sentence is worse than none
+in a tree that never leaves the machine and is read by the person whose name it would remove.
+Pass `--redact` deliberately; `AMBIGUOUS_NAMES` warns for names that are also ordinary words.
+
+### The consulted expert
+
+`P36`, the final participant, is a serving military officer -- the only one with real domain
+expertise in the task the scenario simulates. Their sitting is also the richest in the corpus by a
+wide margin (4,307 words of debrief, ~3.5× the next). `CONSULTED_EXPERTS` in
+`narration_segments.py` flags this and it is carried into `segments.json` as `consultedExpert`, so
+the pooled-versus-separate decision is available to make rather than buried. Nothing in the
+analysis acts on it yet.
+
+## Mining the debriefs
+
+`scripts/narration_quotes.py` has two deterministic commands with the judgement deliberately left
+visible between them:
+
+```bash
+python scripts/narration_quotes.py themes                        # the coding frame
+python scripts/narration_quotes.py assemble                      # gather each debrief to read
+#   ... a human or an LLM reads debrief.txt and writes quotes.json ...
+python scripts/narration_quotes.py render                        # cross-linked quote bank
+```
+
+`assemble` writes `Results/Narration/<pid>_s1/debrief.txt`, pulling from `interview` plus `survey2`
+where the debrief landed there -- detected by duration and word count, not a hardcoded list, so a
+re-segment cannot silently drop one. 26 of 30 sittings have a debrief in audio; the other four are
+`Results/Interviews/*.docx` and are reported as such rather than appearing silent.
+
+`render` reads every `quotes.json` and writes `Results/Narration/_quotes/`: one file per theme
+(every quote on that topic, across participants) and one per participant (their whole stance,
+theme by theme), cross-linked, keyed by a quote id of `<pid>/<theme>/<video seconds>` so any quote
+can be found in the video or cut with the `clips` step.
+
+**The extraction in the middle is not automated and should not be.** It is the same shape as the
+P05 `codes.json` pass: single-coder, uncalibrated, no κ. `quotes.json` records the coder and an
+`attributionNote`, which matters more than usual here because **speaker labels do not exist** --
+`speakerid` is still broken (see above), so participant and researcher are separated by content.
+Where the researcher offered a formulation and the participant only assented, the participant's own
+wording is quoted and the assent recorded in the note; a debrief that happened over the survey is
+especially interleaved and needs the surrounding turns checked.
+
+The themes are grounded in the questions actually asked, recovered from the recordings rather than
+invented: "how did you find that", "what about the two different agents", "what about the two
+scenarios", "did that develop at all", "how do you feel about AI tools generally", plus the topics
+participants raised unprompted often enough to need a home.
+
+### What the coding produced
+
+All 26 audio debriefs are coded: **141 quotes, 26 participants, 10 themes**. Four things run
+through them, each of which changes how the click logs should be read.
+
+**1 · Tier preference looks like a strategy choice, not a trust disposition.** P10 and P21
+independently identify the same structural fact — redundancy can come free from the *shape* of a
+plan — and draw opposite conclusions. P10 commits generously at the strategic tier, which collapses
+the tactical problem to one sensible plan, then delegates it: *"there is really only one way of
+assigning them, which means if I just hit the suggest button, then I can focus on something
+else."* P21 commits leanly and hand-chains for failure tolerance: *"I was adding the contingency
+plans from the start, which didn't require that intervention."* P03 states the coupling as a
+general property: *"if you have a good strategy then it's likely less to fail, because you've
+already constrained everything."* Same insight, opposite tier delegated.
+
+**2 · "Manual" is at least four different acts, and the logs cannot tell them apart.**
+Interpolating between the only two cards offered (P17: *"I wanted it to be somewhere between those
+two levels"*; also P22, P28); avoiding the strategic card's reveal delay on a mission simple enough
+to beat it (P29: *"it was faster for me to just click manual"*); deliberately benchmarking the
+agent (P29: *"doing a few manual ones myself to see whether it would be better"*); and editing the
+card as a first draft (P19: *"you can fix bad, you can't fix nothing — it gives you that seed"*;
+also P04, P30, P31). Only the last of these is even visible, and only as its opposite. Two of the
+four are *evidence of engagement with the agent*, scored as rejection of it.
+
+**3 · Reliance and believed reliability come apart, repeatedly and explicitly.** P28: *"I think
+it's less reliable than before, but I still use its suggestion [...] because at least it saves
+time."* P35: *"I will rely more on AI — whether it gave me the right answer or not."* P24: *"Did
+you feel you had time to check the plan? No. I don't have time to hesitate. But did you trust it?
+Yeah."* P11 puts it as arithmetic: *"even if the tactical agent gave me a dodgy suggestion and the
+mission failed, I probably would have gained more points from the time saved running another
+mission."* A measure that reads following the recommendation as trust inverts all four.
+
+**4 · Three structural explanations for tier asymmetry, none of which is trust.** Verification cost
+(P14 and P22, below); decision type — P30: *"[strategic] needs a bit more of a human element,
+because obviously it's unpredictable [...] but when it's already there, it's: okay, this is what
+you have, optimise it within your resources"*; and agreement-with-self as the calibration rule —
+P32: *"the tactical one seemed to be doing what I was doing, quite reliably, and obviously the
+strategic one wasn't."* That last one is corrosive: the strategic tier is *designed* to commit
+redundancy no operator would choose, so under P32's rule it cannot pass, whether or not it is
+right.
+
+### Verification cost is asymmetric between the tiers, and two participants explain why
+
+P14 gives a purely display-based account of why he scrutinised the tiers differently: *"the way
+strategic plans were presented — the quantifiable stats like reserve, resilience, speed — I could
+just make a decision in one glance. But in the tactical interface, I had to hover over every drone,
+look at the trajectory [...] and then deploy if it was fine."* P22 reaches the identical mechanism
+and draws the opposite behavioural conclusion: *"I can't accurately assess and then come up with a
+better solution [...] whereas in the strategic view I felt like I could very quickly assess [...]
+it's a smaller task space, whereas the tactical view is much more complex."* P14 pays the cost and
+checks harder; P22 refuses to pay it and defers.
+
+Two participants converging on the mechanism while diverging on the response is stronger evidence
+for it than either alone. **Any tier effect in the reliance data has to be defended against this
+explanation**, and it is testable — `strategic_card_previewed` dwell against tactical confirm
+latency.
+
+### Two recurring misreadings worth tracking as covariates
+
+- **Failure attribution.** The drone-failure hazard is a flat per-drone-second rate, entirely
+  independent of both assistants. P03 and P19 separate it cleanly and explicitly exonerate the
+  agent (P19: *"I think those were my failures, though, if I'm being honest with you"*); P25 and
+  P18 cannot tell (P25: *"I'm not sure if it's just depends on the tasks, or it just depends on the
+  AI assistant"*). Whether an operator can attribute a loss correctly looks like a strong moderator
+  of measured trust, and no current instrument captures it.
+- **Structure inferred from an i.i.d. process.** P19 and P01 both report failures clustering by
+  location or task type, and P19 built a (never-executed) strategy on it: *"the environment is
+  particularly hostile to those drones."* There is no such variation.
+
+### Error detection is gated on spare capacity
+
+P15, P17, P33 and P35 all say, independently, that they only noticed the strategic tier's problems
+in the session where they had slack. P15: *"in the second round I have more experience [...] now I
+can check [...] in the first round, maybe I'm not so familiar, so I haven't checked."* P33: *"in
+the first test, I don't have enough time to [notice] it."* P35: *"it's easier to find it out. But
+when there are too many tasks in a mission [...] I don't have time to check it."*
+
+Since the agents made **no errors at all**, a declining trust trajectory can be produced entirely
+by growing operator competence at noticing what was always there. Any trust-over-time result needs
+to contend with this.
+
+## Finding: the Conservative card commits drones the mission does not need
+
+P21, in debrief: *"it was giving me the wrong type of drones. It required only blue drones and kept
+giving me red and green ones. So I didn't like that one."* He ran with `agentFailuresEnabled=false`
+and both epsilons at 0, so no injected failure was possible, and the first reading was that he had
+misread a correct card. **He had not** — and he is one of five.
+
+**Sighting accounting, once all 26 debriefs were coded.** Five participants describe the defect
+unprompted and in specific terms — **P13, P17, P20, P21, P35**:
+
+- P13: *"in conservative, you don't need camera or lifters, yet it adds it as reserve — even for
+  tasks it doesn't do. That doesn't make sense. It sends redundancy for nothing."*
+- P17: *"the type of error is redundant allocation. I have never seen underrepresented"* —
+  correctly characterising the direction, which is exactly right: an ungated top-up can only add.
+- P20: *"it required all fast drones, and the assistant recommended I add some red and green."*
+- P35: *"the mission don't need the blue one, and it suggests me to allocate two or three blue ones."*
+
+A sixth (**P33**) confirms it once the researcher names it, so it is coded as a led confirmation.
+Two more (**P01**, **P19**) report over-allocation in terms too ambiguous to code as this defect,
+and three (**P28**, **P36**, plus P13 again) complain about strategic over-commitment generally.
+It is by a wide margin the most-reported single issue in the corpus.
+
+`copilot.ts:266-268` builds the Conservative pool as
+
+```
+consBase[c] + floor((reserve[c] - consBase[c]) * CONSERVATIVE_TOP_UP)
+            + (consBase[c] > 0 ? CONSERVATIVE_REDUNDANCY_BUFFER : 0)
+```
+
+The `+1` buffer is correctly gated on the colour actually being used by the mission, and the
+comment beside it says so. **The 15% top-up is not gated at all.** On an all-Blue mission with 11
+Red in reserve, `floor(11 × 0.15) = 1` Red drone is committed to a mission with no use for it.
+Aggressive has no equivalent term and never does this.
+
+Reproduce with `scripts/check_conservative_topup.py`.
+
+| | |
+|---|---|
+| Conservative cards carrying a needless colour | **144 of 725 (19.9%)** |
+| Aggressive cards doing the same | 0 of 692 |
+| Participants who saw at least one | 33 of 34 |
+| Prevalence in **Strategic Heavy** | **29.9%** (131/438) |
+| Prevalence in **Tactical Heavy** | **4.5%** (13/287) |
+
+### But it does not measurably change behaviour, and an earlier claim here was wrong
+
+**Correction (2026-09-30).** An earlier version of this section reported that Conservative uptake
+fell 35.0% → 24.2% on affected cards, a 14.6 pp within-participant drop at *p* = .008, and that
+roughly 40% of the scenario effect on strategic reliance rested on it. **That contrast is
+confounded and the conclusion does not survive.**
+
+An odd card requires the mission to leave a colour unused, so it is **structurally impossible on a
+three-colour mission** — 0 of 431 in this cohort. "Odd" is nested inside "simple", and simple
+missions are exactly where operators build the allocation themselves anyway. The naive odd-versus-
+clean contrast is a simple-versus-complex contrast wearing a disguise.
+
+Within the only stratum where it is identified — few-colour missions, *n* = 196 — the effect is
+54.7% versus 50.8% uptake, and adjusted for scenario, run and position: **b = −0.29, *p* = .40.**
+
+And it absorbs completely into mission composition (GEE, binomial, clustered on participant;
+scenario coefficient is Tactical Heavy vs Strategic Heavy):
+
+| Model | Scenario | Odd card |
+|---|---|---|
+| unadjusted | b = +0.72, *p* < .001 | — |
+| + odd-card flag | b = +0.50, *p* = .009 | b = −0.64, *p* = .009 |
+| + mission composition | b = +0.27, *p* = .13 | b = −0.03, *p* = .93 |
+
+The variable doing the work is **how many colours the mission needs** (b = +0.30, *p* = .007):
+operators take the card on complex missions and build simple ones themselves. Both the scenario
+effect and the odd-card effect are shadows of that.
+
+### No trust carry-over — and the qualitative data says otherwise
+
+Three independent tests, all null:
+
+| Test | Result |
+|---|---|
+| Already seen one this session → uptake on later decisions | b = +0.29, *p* = .30 |
+| Uptake on the very next decision (66.4% → 63.0%) | b = +0.07, *p* = .77 |
+| Post-session `trust_strategic` vs odd cards seen | ρ = −0.07, *p* = .57 (66 sessions) |
+
+Operators answer the card in front of them and do not generalise. What the odd card *does* do is
+local and large: on that decision Manual jumps from 30.9% to 49.2%, and **both** cards lose roughly
+equally (Aggressive 34.1 → 26.5, Conservative 34.9 → 24.2) — it pushes people out of the card
+system altogether rather than across to the other card.
+
+**This is a real dissociation, and it is a finding rather than a nuisance.** P20 states plainly
+that his trust in the strategic tier dropped after seeing one and that the tactical tier was
+unaffected — *"after that point I started [dis]trusting the strategic assistant. But I didn't
+notice any similar errors on the tactical."* His behaviour, and the cohort's, shows no such shift:
+not on the next decision, not later in the session, not on the trust scale he filled in minutes
+afterwards. Self-reported trust damage that leaves no behavioural trace is exactly the kind of
+thing a study with both streams is for.
+
+The behaviour was not unknown to the code:  `generateStrategies`' epsilon comment mentions "a lone
+Green sitting on an all-Blue mission" as something not worth corrupting. What was never considered
+is how that card *reads* to an operator.
+
+> **Ruled 2026-09-30: `copilot.ts` stays as it is.** Recruitment closed at 34 participants with
+> this behaviour in place, so changing it would split the cohort on the study's core measure for no
+> analytic gain — and it is arguably not a defect at all but the honest consequence of a
+> deliberately simple, myopic rule. A `KNOWN BEHAVIOUR` note sits above `CONSERVATIVE_TOP_UP` in
+> `copilot.ts` saying what to change, and to re-tag and not pool, **if this build is ever adapted
+> or rerun.** Analysis reports it as prevalence and as a local effect on the affected decision; it
+> is not used as a covariate, because it is collinear with mission composition and adds nothing
+> once that is in the model.
+
+## Finding: the reveal delay is the study's best instrument, not a nuisance
+
+Both tiers carry a deliberate simulated delay, with different cost structures:
+
+| | Delay | Scales with |
+|---|---|---|
+| Strategic card reveal | flat **4.0–5.0 s** (`CARD_REVEAL_MIN_MS`/`SPAN_MS`, median 4.3 s over 1423 cards) | nothing |
+| Tactical Suggest | **2 s per drone**, progressive (`MapDisplay.tsx:966`) | mission size |
+
+Median tactical Suggest is about **14 s**, p90 **22 s**, max **38 s**, and worse in Tactical Heavy
+(16 s vs 12 s). The researcher confirms to P27 on the record that this is theatre: *"it solves its
+problem instantly, and then it goes through the pretend adding one by one, because it's a fake
+tool."* Four participants complain about it (P15, P26, P27, P29).
+
+**Ruled 2026-09-30: this is part of the problem, and it stays.** It also turns out to be the most
+useful single instrument in the build.
+
+### What it buys: `manualBeforeCardsLoaded`
+
+Manual entry is available immediately; the cards are not. `strategic_choice` therefore logs whether
+the operator committed to building the allocation themselves **before the recommendation existed on
+screen** — and reproduced by `scripts/manual_choice_analysis.py`:
+
+| | Manual choices made before the cards loaded |
+|---|---|
+| Overall | **45.6%** (98/215 where the flag is logged) |
+| One-colour missions | **57.3%** |
+| Three-colour missions | 35.5% |
+
+**Nearly half of all Manual choices are not rejections of the advice — the advice had not been
+given yet.** On the simplest missions it is a clear majority. Any reliance measure that reads
+Manual as "declined the recommendation" is measuring something that did not happen in those cases,
+and without this delay the two would be indistinguishable.
+
+The delay is also randomly drawn per mission and independent of mission content, which makes it a
+natural experiment on latency itself: Manual share is 33.7% on shorter-than-median draws against
+35.6% on longer, **z = 0.50**. No detectable effect — though the spread is only ~1 s, so this fails
+to confirm the effect rather than ruling it out.
+
+### Manual is slower, not faster — a second belief-versus-behaviour gap
+
+P29's account is that on a simple mission he could beat the card: *"it was faster for me to just
+click manual."* Decision time from modal opening to choice says otherwise:
+
+| Mission | Manual (median) | Cards (median) |
+|---|---|---|
+| One colour | 10.5 s | 9.3–10.6 s |
+| Three colours | 17.0 s | 10.9–11.2 s |
+
+Adjusted for mission composition, Manual takes **+4.0 s longer** (*p* = .003). It is never the
+faster route, even where the cards cost a 4–5 s wait. What P29 is describing is the moment he
+*committed*, which the pre-emption data above shows was genuinely early — not the time the
+allocation took. Alongside P20's reported-but-invisible trust drop, this is the second case where a
+participant's stated reason is contradicted by their own logged behaviour.
+
+### What Manual commits — and why the first answer here was too simple
+
+**Correction (2026-09-30).** An earlier version of this section said Manual buys reserve: about one
+drone per decision held back, matching what P22, P24, P28 and P30 describe. The average is right
+and the interpretation was not. Manual is used far more on small, low-criticality missions
+(category A 43% Manual, category D 26%), so an average over Manual decisions is an average over a
+non-random slice of missions. Broken out, **the saving reverses:**
+
+| Mission size | Drones committed vs the Conservative card |
+|---|---|
+| small (mean need 4.3) | **−1.25** |
+| mid (7.2) | −0.67 |
+| large (14.0) | **+1.02** |
+
+Mission size drives it (b = +0.35, *p* < .001); criticality has no independent effect once size is
+in the model (b = −0.02, *p* = .94 — the two are correlated, category E needs ~15 drones against
+category A's ~5). The comparison itself is sound — `deltaVsConservative` is matched on mission by
+construction — but **"Manual preserves reserve" is true of small missions and false of large ones.**
+
+What operators are actually doing is adjusting the card in whichever direction they think it is
+wrong, and the direction flips with mission size:
+
+| Where the manual allocation sits | Share |
+|---|---|
+| **between** the two cards | 47.8% |
+| **below both** | 44.5% |
+| above both | 7.7% |
+
+On large missions 57.1% land between the cards — the interpolation P17, P22 and P28 describe
+(*"I wanted it to be somewhere between those two levels"*). On small missions 52.0% land **below
+both**, which is trimming, not interpolating.
+
+### On small missions the Conservative card is often dominated
+
+The small-mission row above is the tell: mean Conservative 4.4 drones against Aggressive 4.0.
+
+**Conservative commits more drones than Aggressive in 17.5% of all card pairs — and 35.4% on small
+missions** (29.1% on one-colour missions). Conservative is also the slower card by design. So on
+those missions it is dominated on every axis the operator can see: more drones, more time, no
+visible compensation. Choosing it would be irrational, and operators largely do not — Conservative
+uptake falls from 36.6% to 25.9% and Manual rises from 29.5% to 40.7%.
+
+This is the same ungated top-up as the finding above, seen through a sharper lens: it is not just
+that an odd colour appears, it is that the card meant to be the cautious option becomes the
+expensive one exactly where the mission is small enough for that to be obvious.
+
+**And it behaves the same way under analysis.** Put the domination flag and the stray-colour flag in
+one model with mission composition and neither survives — dominated b = +0.24 (*p* = .20), odd
+b = −0.14 (*p* = .66), while colours needed holds at b = +0.26 (*p* = .03). Two independent
+operationalisations of "the simple rules produced a visibly bad card", the same answer both times:
+real, visible, and not what is driving the behaviour. Mission composition is.
+
+### The limitation that remains
+
+Tactical Suggest latency scales with mission size, which *is* the scenario manipulation, and has no
+random component to exploit. It cannot be adjusted away and should be stated as a limitation on the
+scenario × tier interaction specifically. P20 is the illustration: he ranked strategic above
+tactical on time saved, then caught himself — *"there was like a loading stage when it was doing the
+strategic part, so maybe that's not right, actually."* Participants' own cross-tier time
+comparisons are not reliable, and time saved is the commonest stated reason for delegating in the
+whole corpus.
+
+## Finding: two operator affordances are effectively invisible
+
+Surfaced by P27 asking for a queue sort that already exists.
+
+- **`task_reprioritised` was fired by ZERO of 34 participants.** The reorder control (up/down and
+  priority within a mission) is in the event table in `CLAUDE.md` and was never once used. Any
+  analysis treating it as a manual-control signal has an empty column.
+- **The mission-queue sort toggle emits no event at all.** `sortMode` in `PrimaryDisplay.tsx:106`
+  flips the queue between arrival order and score order, and lives entirely in React state. So the
+  order missions were *presented* in — which directly shapes which mission gets allocated next — is
+  unrecoverable from every log in the study. This is a genuine gap and belongs in
+  [`EVENT_LOGGING.md`](EVENT_LOGGING.md).
+
+P27 was one of very few to look for the sort at all, and did not find it: *"I'd prefer to put the
+task which cannot be done for now to the end of the list."* His fuller proposal — order by
+feasibility first, criticality second, with lookahead to drones about to be freed — is the most
+specific design request in the corpus, and it asks for help with **which mission to work on next**,
+the one decision neither assistant supports. Both tiers act only after that choice is made.
 
 ## What this deliberately does not do yet
 
