@@ -267,6 +267,19 @@ pass — either because they need new UI instrumentation, cross-window architect
 changes, or are a larger feature than a logging fix. Flagging them here so they aren't
 silently forgotten:
 
+- **Mission-queue sort order is never logged (found 2026-09-29, narration pass).** `sortMode` in
+  `PrimaryDisplay.tsx:106` toggles the queue between arrival order and score order and lives purely
+  in React state — no action, no event. The order missions were *presented* in directly shapes
+  which one the operator allocates next, so its absence is a real hole in any analysis of
+  allocation order or triage behaviour, and it is unrecoverable for every session already
+  collected. Surfaced by P27 asking for a sort that already exists and that he had not found.
+  Cheap to fix for future runs: log a `queue_sorted` event on toggle.
+- **`task_reprioritised` has never once fired (found 2026-09-29).** Zero events across all 34
+  participants. The control is real and documented in `CLAUDE.md`'s event table, but no operator
+  ever used it, so the column is empty rather than sparse — do not read absence as a preference for
+  arrival order. Worth deciding whether the affordance is undiscoverable (like the sort above) or
+  simply unwanted before drawing any conclusion from it.
+
 - **Pre-study demographics** — now IMPLEMENTED (`SUBMIT_DEMOGRAPHICS` logs a timestamped event and
   sets `state.demographics`). **`study-v1.3`+** also folds in a pre-study AI-attitude survey
   (AIAS-4 + two bespoke Likert blocks) into the same form/event — see `demographics` keys prefixed

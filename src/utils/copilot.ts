@@ -6,6 +6,25 @@ import { TASK_PRIMARY, TASK_SUBSTITUTE, TASK_BASE_TIME, TASK_SUB_BASE_TIME, HUB,
 const SESSION_DURATION = 480
 
 // Conservative-strategy top-up parameters (also used in session_start parameter dump)
+//
+// KNOWN BEHAVIOUR, DELIBERATELY NOT CHANGED — read this before reusing this build.
+// CONSERVATIVE_REDUNDANCY_BUFFER is gated below on the colour actually being used by the mission
+// (`consBase > 0`). CONSERVATIVE_TOP_UP is NOT gated, so on a mission that uses only one colour it
+// still commits floor(spare * 0.15) drones of the colours the mission has no use for — e.g. a lone
+// Red and Green sent on an all-Blue mission. It happened on 144 of 725 Conservative cards (19.9%)
+// across the study, and five participants reported it unprompted in debrief as the agent "giving
+// me the wrong type of drones".
+//
+// It was left alone because recruitment closed at 34 participants with this behaviour in place:
+// changing it would have split the cohort on the study's core measure for no analytic gain. It is
+// also arguably not a defect but the honest consequence of a deliberately simple, myopic rule.
+// Analysis showed no measurable independent effect on reliance once mission composition is
+// controlled, and no carry-over to later decisions or to post-session trust
+// (`scripts/check_conservative_topup.py`, and docs/NARRATION.md).
+//
+// IF THIS BUILD IS EVER ADAPTED OR RERUN: gate the top-up the same way as the buffer
+// (`consBase[c] > 0 ? ... : 0`), give it a new study-v tag, and do not pool the resulting data
+// with Results/Participants/.
 export const CONSERVATIVE_TOP_UP = 0.15
 export const CONSERVATIVE_REDUNDANCY_BUFFER = 1
 

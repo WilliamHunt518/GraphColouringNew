@@ -59,6 +59,16 @@ function hashId(id: string): number {
 // has resolved, so this is a forced wait baked into strategic_choice.latencyMs — it is drawn from
 // the seeded RNG (never Math.random) so a session replays identically, and logged on
 // strategic_modal_opened / strategic_choice so it can be subtracted post hoc.
+//
+// DO NOT REMOVE OR SHORTEN THIS WITHOUT READING docs/NARRATION.md. The delay turned out to be the
+// study's most useful single instrument, not a nuisance: because Manual entry is available
+// immediately and the cards are not, `manualBeforeCardsLoaded` records whether the operator
+// committed to building it themselves BEFORE the recommendation existed on screen. 45.6% of all
+// Manual choices did, rising to 57.3% on one-colour missions — those are pre-emptions, not
+// rejections of advice, and without this window they would be indistinguishable
+// (`scripts/manual_choice_analysis.py`). Because the draw is random per mission and independent of
+// mission content, it also gives a natural experiment on latency itself (no detectable effect on
+// Manual share, z = 0.50 — though the ~1 s spread makes that underpowered).
 const CARD_REVEAL_MIN_MS = 4000
 const CARD_REVEAL_SPAN_MS = 1000
 function drawCardRevealDelays(seed: number, missionId: string, count: number): number[] {
