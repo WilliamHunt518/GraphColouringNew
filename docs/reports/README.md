@@ -1,5 +1,58 @@
 # Aggregate reports
 
+## `findings_synthesis.html` (built 2026-09-30) — **not committed**
+
+The narrative results page: what the study found, argued in order, with the behavioural numbers and
+the debrief quotes on the same page. The other two pages each answer half the question —
+`two-tiers-two-scenarios.html` is log-only and `Results/Narration/decision-cards.html` is narration-
+only — and most of what the study found lives in the join between them, where a behavioural
+regularity sits next to the sentence that explains it, or contradicts it.
+
+```bash
+python scripts/build_findings_synthesis.py          # needs numpy/scipy/pandas/statsmodels
+python scripts/build_findings_synthesis.py --print  # also dump the computed numbers
+```
+
+> **This output is gitignored and must stay that way.** It embeds verbatim participant speech
+> alongside the pooled numbers, which is identifiable data under the same terms as the audio.
+> Regenerate it locally; never commit it, publish it, or paste it into a hosted tool. The builder
+> prints a reminder on every run.
+
+Sections: the argument in one page · what drives reliance · "Manual" is four different acts ·
+manual is slower and what it actually buys · when simple rules look wrong · the dominated
+Conservative card · does an illogical card change anything afterwards · verification as a price ·
+where the two streams disagree · failure recovery · performance · learning · performance against a
+near-perfect operator · what operators asked for · limitations · every coded quote by theme.
+
+Two conventions worth knowing before reading it:
+
+- **Mission load is reported two ways every time** — drone colours needed, and mission category
+  A→E. Category is the designed proxy (excluding residuals it *is* the task count, A = 2 … E = 6,
+  and it sets the penalty rate); colours is the stronger statistical signal because uptake turns
+  over at category E. **Residual missions are excluded from every category view**: a mission
+  abandoned in flight re-enters as `<id>-R` carrying its parent's category with only the leftover
+  tasks, so category-E residuals average 2.6 tasks against 6.0 for a genuine E.
+- **Every quote is from the post-session debrief**, not from during the task. The tag on a quote is
+  the coder's topic label plus what the researcher had just asked — it is not a record of what the
+  operator was doing at that moment. In-session speech is transcribed but **not yet aligned to
+  individual decisions**; that needs the per-session timer alignment described in
+  `docs/NARRATION.md`.
+
+Three sources, kept distinct so any figure can be audited:
+
+| Source | What it supplies | Recomputed? |
+|---|---|---|
+| `Results/Participants/*.json` | every decision-level analysis (composition, pre-emption, timing, the card artefacts) | yes, on every build |
+| `docs/reports/study_analysis.json` | crossover performance, reliance ladders, failure-recovery episodes | no — read, so the two pages cannot disagree |
+| `Results/Narration/*_s1/quotes.json` | coded debrief quotes, single-coder and uncalibrated | yes |
+| `docs/reports/smart_benchmark.json` | score a near-perfect automated operator achieves on the four fixed games | no — regenerate with `npx tsx sim/engine.mts --games --reps=5` |
+
+Edit `scripts/findings_synthesis_template.html`, never the generated page. P09 is excluded
+throughout. The tier palette and reliance ladder are inherited from `study_analysis_template.html`;
+the route palette (Aggressive / Conservative / Manual) is new and was validated for colour-vision
+separation, chroma, lightness and surface contrast in both light and dark mode.
+
+
 ## `two-tiers-two-scenarios.html` (rebuilt 2026-09-25)
 
 Log-only analysis of the participant study, organised around the design that was actually run: a

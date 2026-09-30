@@ -25,6 +25,21 @@ const DURATION = durArg ? parseInt(durArg.split('=')[1], 10) : 480
 const seedArg = process.argv.find(a => a.startsWith('--seeds='))
 const N_SEEDS = seedArg ? parseInt(seedArg.split('=')[1], 10) : 80
 
+// --games: run the SMART ('redundant') operator over exactly the four fixed games the study's
+// participants played, and print JSON. Used as the "near-perfect operator" reference in
+// scripts/build_findings_synthesis.py, so a participant's score can be read as a share of what a
+// competent automated operator scored on THE SAME mission stream, penalties included.
+//
+// Seed arithmetic: the app draws its mission plan from SeededRNG(seed ^ planSeedIndex) while this
+// harness uses SeededRNG(seed ^ 1), so reproducing app plan index i needs simSeed = (42 ^ i) ^ 1.
+// planSeedIndex is the SESSION NUMBER (or its reverse under swapGames), so the indices that exist
+// in the study are 1 and 2 -- never 0. Getting that wrong silently benchmarks games nobody played.
+// Only the mission stream is matched -- drone-failure draws are not, which is why the reference is
+// averaged over repeated runs rather than taken from one.
+const GAMES_MODE = process.argv.includes('--games')
+const gamesRepArg = process.argv.find(a => a.startsWith('--reps='))
+const GAME_REPS = gamesRepArg ? parseInt(gamesRepArg.split('=')[1], 10) : 1
+
 // ─── Candidate rebalance package (edit + re-run to tune) ─────────────────────
 // Speeds mutate the real ASSET_SPEED object (shared by reducer + strategies).
 // Fleets/λ override per scenario. Set PACKAGE.speeds=null to test current code.
@@ -266,7 +281,33 @@ function runSession(complexity: Complexity, seed: number): Record<Policy, Result
 
 function mean(xs: number[]) { return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0 }
 
+function runGames() {
+  const out: any[] = []
+  for (const complexity of ['strategic', 'tactical'] as Complexity[]) {
+    for (const planIndex of [1, 2]) {
+      const simSeed = (42 ^ planIndex) ^ 1
+      const reps: Result[] = []
+      for (let r = 0; r < GAME_REPS; r++) {
+        // Vary only the non-plan randomness between reps by re-running the same seed; the mission
+        // stream is fixed by construction, drone failures are drawn from session state.
+        reps.push(runSession(complexity, simSeed).redundant)
+      }
+      const avg = (f: (x: Result) => number) => mean(reps.map(f))
+      out.push({
+        complexity, planIndex, simSeed, reps: reps.length,
+        score: avg(r => r.score), penalty: avg(r => r.penalty),
+        missions: avg(r => r.missions), missionsDone: avg(r => r.missionsDone),
+        tasks: avg(r => r.tasks), tasksDone: avg(r => r.tasksDone),
+        taskCompletion: avg(r => r.tasks ? r.tasksDone / r.tasks : 0),
+        failures: avg(r => r.failures),
+      })
+    }
+  }
+  console.log(JSON.stringify({ duration: DURATION, policy: 'redundant (SMART)', games: out }, null, 1))
+}
+
 function run() {
+  if (GAMES_MODE) { runGames(); return }
   console.log(`\n${'═'.repeat(100)}`)
   console.log(`FAITHFUL ENGINE   pkg=${PKG_NAME}  speeds ${ASSET_SPEED.Blue}/${ASSET_SPEED.Red}/${ASSET_SPEED.Green}  duration=${DURATION}s  seeds=${N_SEEDS}`)
   console.log('═'.repeat(100))

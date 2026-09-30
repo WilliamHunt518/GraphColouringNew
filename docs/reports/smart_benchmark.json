@@ -1,0 +1,62 @@
+{
+ "duration": 480,
+ "policy": "redundant (SMART)",
+ "games": [
+  {
+   "complexity": "strategic",
+   "planIndex": 1,
+   "simSeed": 42,
+   "reps": 5,
+   "score": 1637,
+   "penalty": 163,
+   "missions": 13,
+   "missionsDone": 13,
+   "tasks": 41,
+   "tasksDone": 35,
+   "taskCompletion": 0.853658536585366,
+   "failures": 7
+  },
+  {
+   "complexity": "strategic",
+   "planIndex": 2,
+   "simSeed": 41,
+   "reps": 5,
+   "score": 1607,
+   "penalty": 153,
+   "missions": 14,
+   "missionsDone": 14,
+   "tasks": 43,
+   "tasksDone": 37,
+   "taskCompletion": 0.8604651162790697,
+   "failures": 9
+  },
+  {
+   "complexity": "tactical",
+   "planIndex": 1,
+   "simSeed": 42,
+   "reps": 5,
+   "score": 1372,
+   "penalty": 108,
+   "missions": 6,
+   "missionsDone": 6,
+   "tasks": 27,
+   "tasksDone": 26,
+   "taskCompletion": 0.962962962962963,
+   "failures": 2
+  },
+  {
+   "complexity": "tactical",
+   "planIndex": 2,
+   "simSeed": 41,
+   "reps": 5,
+   "score": 1775,
+   "penalty": 445,
+   "missions": 9,
+   "missionsDone": 9,
+   "tasks": 46,
+   "tasksDone": 36,
+   "taskCompletion": 0.782608695652174,
+   "failures": 12
+  }
+ ]
+}
