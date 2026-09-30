@@ -530,8 +530,9 @@ h('p', { class: 'lede', html:
 
 const ban = h('div', { class: 'banner' }, main);
 ban.innerHTML = '<b>Identifiable data — do not circulate.</b> This page embeds verbatim participant '
-  + 'speech alongside the pooled numbers. It is gitignored by design and must never be committed, '
-  + 'published, or pasted into a hosted tool. Regenerate it locally with '
+  + 'speech alongside the pooled numbers, so it is identifiable under the same terms as the '
+  + 'recordings. It lives in the gitignored <code>Results/Narration/</code> tree and moves by hand '
+  + 'with the rest of that data. Do not paste it into a hosted tool. Rebuild it with '
   + '<code>python scripts/build_findings_synthesis.py</code>.';
 
 h('p', { class: 'meta', text:

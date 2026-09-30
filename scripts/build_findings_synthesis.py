@@ -12,10 +12,14 @@ This page is that join, written as an argument rather than a dashboard.
     python scripts/build_findings_synthesis.py          # needs numpy/pandas/scipy/statsmodels
     python scripts/build_findings_synthesis.py --print  # also dump the computed numbers
 
-**Output is gitignored and must stay that way.** It embeds verbatim participant speech alongside
-the pooled numbers, which is identifiable data under the same terms as the audio -- `.gitignore`
-already carries `docs/reports/findings_synthesis.html` for exactly this reason. Regenerate it
-locally; never commit it, publish it, or paste it into a hosted tool.
+**Output lands in `Results/Narration/`, which is gitignored in full**, beside `decision-cards.html`
+and the audio it is derived from. That is deliberate: the page embeds verbatim participant speech
+alongside the pooled numbers, so it is identifiable data under the same terms as the recordings,
+and it travels the way the rest of that data travels -- copied by hand, not through git. Regenerate
+it locally; do not paste it into a hosted tool.
+
+Everything needed to rebuild it IS committed (this script, its template, and
+`docs/reports/smart_benchmark.json`), so the page is reproducible from the repo plus `Results/`.
 
 ## Where each number comes from
 
@@ -52,7 +56,7 @@ PARTICIPANTS = BASE / 'Results' / 'Participants'
 NARRATION = BASE / 'Results' / 'Narration'
 STUDY_JSON = BASE / 'docs' / 'reports' / 'study_analysis.json'
 TEMPLATE = BASE / 'scripts' / 'findings_synthesis_template.html'
-OUT_HTML = BASE / 'docs' / 'reports' / 'findings_synthesis.html'
+OUT_HTML = BASE / 'Results' / 'Narration' / 'findings_synthesis.html'
 
 EXCLUDE = {'P09'}
 CRITICALITY = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5}
@@ -542,7 +546,8 @@ def main() -> None:
     print('%d decisions, %d participants, %d quotes from %d participants'
           % (payload['computed']['n']['decisions'], payload['computed']['n']['participants'],
              len(payload['narration']['quotes']), len(payload['narration']['participants'])))
-    print('REMINDER: this file is gitignored and holds verbatim participant speech. Do not commit.')
+    print('NOTE: written into the gitignored Results/Narration/ tree -- it holds verbatim participant')
+    print('      speech, so it moves by hand with the rest of the identifiable data, not via git.')
     if args.print:
         print(json.dumps(payload['computed'], indent=1, default=float))
 

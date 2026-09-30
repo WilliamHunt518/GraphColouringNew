@@ -1,6 +1,6 @@
 # Aggregate reports
 
-## `findings_synthesis.html` (built 2026-09-30) — **not committed**
+## `findings_synthesis.html` — built into `Results/Narration/`, not into this folder
 
 The narrative results page: what the study found, argued in order, with the behavioural numbers and
 the debrief quotes on the same page. The other two pages each answer half the question —
@@ -13,10 +13,14 @@ python scripts/build_findings_synthesis.py          # needs numpy/scipy/pandas/s
 python scripts/build_findings_synthesis.py --print  # also dump the computed numbers
 ```
 
-> **This output is gitignored and must stay that way.** It embeds verbatim participant speech
-> alongside the pooled numbers, which is identifiable data under the same terms as the audio.
-> Regenerate it locally; never commit it, publish it, or paste it into a hosted tool. The builder
-> prints a reminder on every run.
+> **The page is written to `Results/Narration/findings_synthesis.html`, not to `docs/reports/`.**
+> It embeds verbatim participant speech alongside the pooled numbers, so it is identifiable data
+> under the same terms as the recordings and interviews, and it sits in the same gitignored tree
+> as `decision-cards.html` and the audio it came from — moved between machines by hand, like
+> the rest of `Results/`. Do not paste it into a hosted tool.
+>
+> Everything needed to rebuild it is committed, so the page is reproducible from the repo plus a
+> copy of `Results/`. Only the rendered artefact stays out.
 
 Sections: the argument in one page · what drives reliance · "Manual" is four different acts ·
 manual is slower and what it actually buys · when simple rules look wrong · the dominated
