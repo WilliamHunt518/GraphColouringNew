@@ -22,13 +22,15 @@ python scripts/build_findings_synthesis.py --print  # also dump the computed num
 > Everything needed to rebuild it is committed, so the page is reproducible from the repo plus a
 > copy of `Results/`. Only the rendered artefact stays out.
 
-Sections: the argument in one page · what drives reliance · "Manual" is four different acts ·
+Sections: the argument in one page · who the operators were · what they said between the scenarios
+(NASA-TLX and the two trust scales) · what they brought with them (the AI-disposition batteries and
+prior experience) · what drives reliance · "Manual" is four different acts ·
 manual is slower and what it actually buys · when simple rules look wrong · the dominated
 Conservative card · does an illogical card change anything afterwards · verification as a price ·
 where the two streams disagree · failure recovery · performance · learning · performance against a
 near-perfect operator · what operators asked for · limitations · every coded quote by theme.
 
-Two conventions worth knowing before reading it:
+Three conventions worth knowing before reading it:
 
 - **Mission load is reported two ways every time** — drone colours needed, and mission category
   A→E. Category is the designed proxy (excluding residuals it *is* the task count, A = 2 … E = 6,
@@ -41,12 +43,19 @@ Two conventions worth knowing before reading it:
   operator was doing at that moment. In-session speech is transcribed but **not yet aligned to
   individual decisions**; that needs the per-session timer alignment described in
   `docs/NARRATION.md`.
+- **The questionnaire sections are exploratory and say so.** The scenario and run contrasts on the
+  post-session surveys are experimental (a 2×2 crossover, the same `study_analysis.crossover`
+  estimator used on every performance measure). Everything relating a questionnaire to behaviour is
+  correlational, and the whole disposition family is Holm-corrected together with both the raw and
+  adjusted p shown — at n = 32 across 40 tests, an uncorrected table would be guaranteed to display
+  two or three "findings". Battery scoring is imported from `agent_scenario_stats.score_attitudes`
+  (the reverse-keying that `docs/STUDY_BUILD.md` §10 specifies), never reimplemented.
 
 Three sources, kept distinct so any figure can be audited:
 
 | Source | What it supplies | Recomputed? |
 |---|---|---|
-| `Results/Participants/*.json` | every decision-level analysis (composition, pre-emption, timing, the card artefacts) | yes, on every build |
+| `Results/Participants/*.json` | every decision-level analysis (composition, pre-emption, timing, the card artefacts), plus both questionnaire streams — the post-session NASA-TLX and trust scales from `survey_response`, and the pre-study demographics / prior-experience / AI-disposition batteries from the `demographics` block | yes, on every build |
 | `docs/reports/study_analysis.json` | crossover performance, reliance ladders, failure-recovery episodes | no — read, so the two pages cannot disagree |
 | `Results/Narration/*_s1/quotes.json` | coded debrief quotes, single-coder and uncalibrated | yes |
 | `docs/reports/smart_benchmark.json` | score a near-perfect automated operator achieves on the four fixed games | no — regenerate with `npx tsx sim/engine.mts --games --reps=5` |

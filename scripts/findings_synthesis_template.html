@@ -244,8 +244,13 @@ function barsGrouped(host, cats, series, o = {}) {
   const y = v => H - padB - (H - padB - padT) * (v / max);
   const bandW = (W - padL - padR) / cats.length;
   const gap = 2, bw = Math.min(42, (bandW - 26 - gap * (series.length - 1)) / series.length);
-  (o.ticks || 4) && [...Array(o.ticks || 4 + 1).keys()].forEach(i => {
-    const v = max * i / (o.ticks || 4);
+  // `o.ticks` is the number of INTERVALS, so n+1 gridlines are drawn and the top one lands on the
+  // maximum. (Written as `Array(o.ticks || 4 + 1)` it parsed as `o.ticks || 5`, which made a
+  // caller-supplied count both the divisor and one short of its own gridline count; the default of
+  // 4 is unchanged by the fix.)
+  const nTicks = o.ticks == null ? 4 : o.ticks;
+  nTicks && [...Array(nTicks + 1).keys()].forEach(i => {
+    const v = max * i / nTicks;
     el('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: css('--grid'), 'stroke-width': 1 }, s);
     el('text', { x: padL - 8, y: y(v) + 4, 'text-anchor': 'end', fill: css('--ink-3'),
                  'font-size': 11, 'font-family': css('--mono') }, s).textContent = o.fmt ? o.fmt(v) : num(v, 0);
@@ -304,7 +309,7 @@ function barsStacked(host, rows, keys, o = {}) {
 /* Diverging bars around a zero baseline. One series; polarity carried by position, so no
    second hue is introduced -- the sign is unambiguous and a legend would add nothing. */
 function barsDiverging(host, rows, o = {}) {
-  const W = 700, rowH = 36, padL = 132, padR = 74, padT = 8;
+  const W = 700, rowH = o.rowH || 36, padL = o.padL || 132, padR = 74, padT = 8;
   const H = padT + rows.length * rowH + 22;
   const s = svgRoot(host, W, H);
   const mx = Math.max(...rows.map(r => Math.abs(r.value))) * 1.25 || 1;
@@ -318,13 +323,18 @@ function barsDiverging(host, rows, o = {}) {
     el('text', { x: padL - 10, y: y + rowH / 2 + 4, 'text-anchor': 'end', fill: css('--ink-2'),
                  'font-size': 12.5 }, s).textContent = r.label;
     const x0 = Math.min(mid, x(r.value)), w = Math.abs(x(r.value) - mid);
-    el('rect', { x: x0, y: y + (rowH - bh) / 2, width: w, height: bh, rx: 4, fill: css('--mark') }, s);
+    // A row can opt out of the ink: a correlation that does not survive correction is drawn in the
+    // soft tone so the eye is not pulled to it. Magnitude still reads; emphasis does not.
+    el('rect', { x: x0, y: y + (rowH - bh) / 2, width: w, height: bh, rx: 4,
+                 fill: css(r.faint ? '--mark-soft' : '--mark') }, s);
     const right = r.value >= 0;
+    const lab = o.fmt ? o.fmt(r.value) : sgn(r.value);
     el('text', { x: right ? x(r.value) + 8 : x(r.value) - 8, y: y + rowH / 2 + 4,
                  'text-anchor': right ? 'start' : 'end', fill: css('--ink-2'), 'font-size': 12,
-                 'font-family': css('--mono') }, s).textContent = sgn(r.value);
+                 'font-family': css('--mono') }, s).textContent = lab;
     const hit = el('rect', { x: padL, y, width: W - padL - padR, height: rowH, fill: 'transparent' }, s);
-    hoverable(hit, `<b>${r.label}</b><br>${sgn(r.value)} drones${r.sub ? '<br>' + r.sub : ''}`);
+    hoverable(hit, `<b>${r.label}</b><br>${lab}${o.unit != null ? o.unit : ' drones'}`
+      + `${r.sub ? '<br>' + r.sub : ''}`);
   });
 }
 
@@ -418,16 +428,20 @@ function linesAt(host, series, o = {}) {
   });
 }
 
-/* Paired slope chart: one line per participant between two conditions. */
+/* Paired slope chart: one line per participant between two conditions.
+   Defaults to a 0-1 proportion axis labelled as percentages; `o.lo`/`o.hi`/`o.fmt`/`o.ticks` carry
+   a scale that is not a proportion (the 1-7 trust scales) without touching the proportion callers. */
 function slopes(host, pairs, o = {}) {
   const W = 700, H = o.height || 260, padT = 18, padB = 34, padL = 150, padR = 150;
   const s = svgRoot(host, W, H);
-  const y = v => H - padB - (H - padB - padT) * v;
+  const lo = o.lo != null ? o.lo : 0, hi = o.hi != null ? o.hi : 1;
+  const fmt = o.fmt || (v => pct(v, 0));
+  const y = v => H - padB - (H - padB - padT) * ((v - lo) / (hi - lo));
   const xa = padL, xb = W - padR;
-  [0, .5, 1].forEach(v => {
+  (o.ticks || [lo, (lo + hi) / 2, hi]).forEach(v => {
     el('line', { x1: xa - 30, x2: xb + 30, y1: y(v), y2: y(v), stroke: css('--grid') }, s);
     el('text', { x: xa - 40, y: y(v) + 4, 'text-anchor': 'end', fill: css('--ink-3'),
-                 'font-size': 11, 'font-family': css('--mono') }, s).textContent = pct(v, 0);
+                 'font-size': 11, 'font-family': css('--mono') }, s).textContent = fmt(v);
   });
   pairs.forEach(pr => {
     const up = pr.b >= pr.a;
@@ -437,8 +451,8 @@ function slopes(host, pairs, o = {}) {
       el('circle', { cx, cy: y(v), r: 3.5, fill: css('--mark-soft') }, s));
     const hit = el('line', { x1: xa, y1: y(pr.a), x2: xb, y2: y(pr.b), stroke: 'transparent',
                              'stroke-width': 12 }, s);
-    hoverable(hit, '<b>' + pr.label + '</b><br>' + o.aLabel + ': ' + pct(pr.a) + '<br>'
-      + o.bLabel + ': ' + pct(pr.b));
+    hoverable(hit, '<b>' + pr.label + '</b><br>' + o.aLabel + ': ' + fmt(pr.a) + '<br>'
+      + o.bLabel + ': ' + fmt(pr.b));
   });
   const ma = pairs.reduce((s2, p) => s2 + p.a, 0) / pairs.length;
   const mb = pairs.reduce((s2, p) => s2 + p.b, 0) / pairs.length;
@@ -448,9 +462,9 @@ function slopes(host, pairs, o = {}) {
     el('circle', { cx, cy: y(v), r: 6, fill: css('--s-strat'), stroke: css('--surface'),
                    'stroke-width': 2 }, s));
   el('text', { x: xa - 40, y: y(ma) - 12, 'text-anchor': 'end', fill: css('--s-strat'),
-               'font-size': 11.5, 'font-weight': 600 }, s).textContent = 'mean ' + pct(ma, 0);
+               'font-size': 11.5, 'font-weight': 600 }, s).textContent = 'mean ' + fmt(ma);
   el('text', { x: xb + 40, y: y(mb) - 12, 'text-anchor': 'start', fill: css('--s-strat'),
-               'font-size': 11.5, 'font-weight': 600 }, s).textContent = 'mean ' + pct(mb, 0);
+               'font-size': 11.5, 'font-weight': 600 }, s).textContent = 'mean ' + fmt(mb);
   [[xa, o.aLabel], [xb, o.bLabel]].forEach(([cx, lab]) =>
     el('text', { x: cx, y: H - 10, 'text-anchor': 'middle', fill: css('--ink-2'),
                  'font-size': 12 }, s).textContent = lab);
@@ -518,6 +532,7 @@ function tiles(host, items) {
 
 /* ───────────────────────── the page ───────────────────────── */
 const C = DATA.computed, S = DATA.study, N = DATA.narration;
+const SR = DATA.selfreport, DP = DATA.disposition;
 const main = $('main');
 
 /* — masthead — */
@@ -580,6 +595,384 @@ reg('argument', 'The argument in one page');
     + 'nothing on this page pairs a sentence with the click it accompanied. Where a quote is set '
     + 'beside a behavioural result, the claim is that the two are about the same thing, not that '
     + 'they were simultaneous. Coding is a single uncalibrated pass, no second rater, no κ.');
+}
+
+/* — 1b · the sample —
+   Descriptive, and placed before any finding, because almost everything in the disposition section
+   that follows is a null and a null is only readable once you know who it is a null about. */
+reg('sample', 'Who the operators were');
+{
+  const s = section('sample', 'Sample', 'Who the operators were');
+  const SA = DP.sample, cov = DP.coverage;
+  para(s, `Thirty-three operators, two sessions each — ${SR.n.sessions} sessions in all, every one `
+    + 'of them with a complete post-session questionnaire set. Scenario order is counterbalanced, '
+    + 'so every measure below is a within-person crossover.');
+  tiles(s, [
+    { v: String(SA.n), k: 'operators', s: SR.n.sessions + ' sessions, all surveys complete' },
+    { v: num(SA.age.mean, 1), k: 'mean age', s: `range ${SA.age.lo}–${SA.age.hi}` },
+    { v: `${SA.fieldStem}/${SA.n}`, k: 'from a computing or engineering field', s: 'self-described' },
+    { v: `${cov.withBattery}/${cov.n}`, k: 'completed the AI-disposition battery', s: 'added in study-v1.3' },
+  ]);
+
+  const c = card(s, 'Background');
+  const gen = SA.gender.map(r => `${r.label} ${r.n}`).join(' · ');
+  const edu = SA.education.map(r => `${r.label.replace(/\s*\/\s*/g, '/')} ${r.n}`).join(' · ');
+  para(c, `<b>Gender</b> ${gen}. <b>Education</b> ${edu}. <b>Plays video games</b> `
+    + SA.gaming.map(r => `${r.label.toLowerCase()} ${r.n}`).join(' · ') + '.');
+  tableFor(c, ['Prior experience with…', 'None', 'A little', 'Moderate', 'Extensive'],
+    SA.experience.filter(e => e.key !== 'gaming_frequency' && e.levels.length === 4)
+      .map(e => [e.label, ...e.levels.map(l => l.n)]),
+    'Show the five prior-experience items');
+
+  note(s, '<b>This is a convenience sample of research students, and it constrains what the rest of '
+    + `the page can ask.</b> ${SA.fieldStem} of the ${SA.n} describe a computing, engineering, AI or `
+    + 'physical-science field, most at postgraduate level. Two of the five experience axes are '
+    + 'floored — '
+    + SA.experience.filter(e => ['Operating drones', 'Dispatch / command / ATC'].includes(e.label))
+      .map(e => `${e.label} (${e.levels[0].n}/${SA.n} answered “None”)`).join(' and ')
+    + ' — so they are reported for completeness and cannot really be tested. Nobody here is a '
+    + 'trained emergency dispatcher, and the people who rely on an assistant least may be exactly '
+    + 'the people this sample over-represents.');
+  note(s, `<b>${cov.missing.join(', ')} predates the battery.</b> The AI-disposition questions were `
+    + 'added in <code>study-v1.3</code>; sessions before it have no <code>aias_</code>/'
+    + '<code>verif_</code>/<code>deleg_</code> keys at all. That is absence, not a zero, so those '
+    + `participants drop out of the disposition tests (n = ${cov.withBattery}) and stay in `
+    + 'everything else. Nobody straight-lined a whole questionnaire set '
+    + `(${SR.n.flat} of ${SR.n.sessions} sessions), and every operator agreed or strongly agreed `
+    + 'with each comprehension-check item, so no session is excluded on either ground.');
+}
+
+/* — 1c · the post-session questionnaires —
+   The between-session instruments: NASA-TLX and the two trust scales. Never previously reported. */
+reg('selfreport', 'What they said between the scenarios');
+{
+  // Kicker is deliberately NOT 'Finding': that word auto-increments the finding counter, and seven
+  // places in the sections below refer to findings by number ('the three in Finding 4'). Numbering
+  // these two in would silently shift every one of those references. They are a separate evidence
+  // stream anyway -- what operators said, rather than what the logs show.
+  const s = section('selfreport', 'Self-report', 'Workload did not move between scenarios; trust in the two tiers did');
+  const G = SR.gap;
+  const cx = k => SR.crossover.find(r => r.key === k) || {};
+  const rtlx = cx('rtlx'), ts = cx('trust_s'), tt = cx('trust_t'), td = cx('trust_d');
+  para(s, 'After every session operators rated their workload on the NASA-TLX and then rated each '
+    + 'assistant on the same six statements. Two sessions each, counterbalanced, so both the '
+    + 'scenario difference and the simple effect of being on your second run are identified. These '
+    + 'questionnaires had never been analysed; they turn out to carry the one thing the behavioural '
+    + 'data does not — an explicit, ranked comparison of the two tiers.');
+  tiles(s, [
+    { v: sgn(G.diff, 2), k: 'higher trust in the Tactical Assistant, on 7', s: `dz = ${num(G.dz, 2)}, ${pval(G.p)}` },
+    { v: `${G.higherTactical}/${G.n}`, k: 'operators rated the tactical tier higher', s: `${G.higherStrategic} rated the strategic tier higher` },
+    { v: sgn(rtlx.scenario ? rtlx.scenario.diff : null, 2), k: 'scenario effect on workload (of 20)', s: pval(rtlx.scenario && rtlx.scenario.p) },
+    { v: sgn(ts.run ? ts.run.diff : null, 2), k: 'change in strategic trust by run 2', s: pval(ts.run && ts.run.p) },
+  ]);
+
+  h('h3', { text: 'Workload is flat across a manipulation that changed everything else' }, s);
+  const cW = card(s, 'NASA-TLX subscales by scenario (0–20, higher = more demanding)');
+  legend(cW, [{ label: 'Strategic Heavy', color: css('--s-strat') },
+              { label: 'Tactical Heavy', color: css('--s-tac') }]);
+  barsGrouped(h('div', { class: 'chart' }, cW),
+    SR.tlxCrossover.map(r => r.label.replace(' (high = failure)', '')),
+    [{ label: 'Strategic Heavy', color: css('--s-strat'), values: SR.tlxCrossover.map(r => r.means.strategic) },
+     { label: 'Tactical Heavy', color: css('--s-tac'), values: SR.tlxCrossover.map(r => r.means.tactical) }],
+    { max: 20, height: 260 });
+  tableFor(cW, ['Subscale', 'Strategic Heavy', 'Tactical Heavy', 'Scenario effect', 'Run effect'],
+    SR.tlxCrossover.map(r => [r.label, num(r.means.strategic, 2), num(r.means.tactical, 2),
+                              `${sgn(r.scenario.diff, 2)} (${pval(r.scenario.p)})`,
+                              `${sgn(r.run.diff, 2)} (${pval(r.run.p)})`]),
+    'Show the crossover estimates per subscale');
+  para(s, `Raw TLX is ${num(rtlx.means && rtlx.means.strategic, 2)} in Strategic Heavy and `
+    + `${num(rtlx.means && rtlx.means.tactical, 2)} in Tactical Heavy — a difference of `
+    + `${sgn(rtlx.scenario && rtlx.scenario.diff, 2)} on a 20-point scale, `
+    + `${pval(rtlx.scenario && rtlx.scenario.p)}. No subscale moves either. The same crossover run `
+    + `on score finds ${sgn(cx('score').scenario && cx('score').scenario.diff, 0)} points `
+    + `(${pval(cx('score').scenario && cx('score').scenario.p)}) and on card uptake `
+    + `${sgn(100 * cx('took').scenario.diff, 0)} percentage points `
+    + `(${pval(cx('took').scenario && cx('took').scenario.p)}). <b>The manipulation changed what `
+    + 'operators did and what they scored without changing how hard the session felt.</b>');
+  note(s, 'Two readings, and the data here cannot separate them. Either the scenarios genuinely '
+    + 'impose similar load by different routes — more missions to triage versus more drones to '
+    + 'route — or the TLX is too coarse an instrument to catch a difference in <i>what kind</i> of '
+    + 'work a session demands. Mental demand and time pressure are the two highest subscales in '
+    + 'both scenarios and physical demand the lowest, which is at least the right shape for a '
+    + 'seated supervisory task. Note also that workload is mid-scale '
+    + `(${num(rtlx.means && rtlx.means.strategic, 1)} of 20), so neither a floor nor a ceiling is `
+    + 'hiding a difference.');
+
+  h('h3', { text: 'The trust gap, and the one item that behaves differently' }, s);
+  const cI = card(s, 'The same six statements, asked about each assistant (1–7)');
+  legend(cI, [{ label: 'Strategic Assistant', color: css('--s-strat') },
+              { label: 'Tactical Assistant', color: css('--s-tac') }]);
+  barsGrouped(h('div', { class: 'chart' }, cI), SR.items.map(i => i.label.replace(/^I /, '')),
+    [{ label: 'Strategic Assistant', color: css('--s-strat'), values: SR.items.map(i => i.strategic) },
+     { label: 'Tactical Assistant', color: css('--s-tac'), values: SR.items.map(i => i.tactical) }],
+    // No `fmt`: the default already prints the axis at 0dp and the bar values at 1dp, which is
+    // what a 1-7 scale wants.
+    { max: 7, ticks: 7, height: 270 });
+  h('p', { class: 'cap', html: 'Six identical stems, prefixed per assistant. The tactical tier is '
+    + 'rated higher on every one. <b>On both tiers the lowest-rated item by a wide margin is the '
+    + 'one that asks for unconditional compliance</b> — '
+    + `“would follow it without hesitation”, ${num(SR.items.find(i => i.stem === 'follow').strategic, 2)} `
+    + `and ${num(SR.items.find(i => i.stem === 'follow').tactical, 2)}, against `
+    + `${num(SR.items.find(i => i.stem === 'useful').strategic, 2)} and `
+    + `${num(SR.items.find(i => i.stem === 'useful').tactical, 2)} for “provides useful guidance”.` }, cI);
+
+  const cS = card(s, 'Each operator’s trust in the two assistants');
+  slopes(h('div', { class: 'chart' }, cS), SR.slopes.map(x => ({ label: x.pid, a: x.a, b: x.b })),
+    { aLabel: 'Strategic Assistant', bLabel: 'Tactical Assistant', lo: 1, hi: 7,
+      ticks: [1, 4, 7], fmt: v => num(v, 1), height: 280 });
+  h('p', { class: 'cap', html: `One line per operator, averaged over both their sessions; heavy line `
+    + `is the mean. Paired difference ${sgn(G.diff, 2)} (95% CI ${num(G.lo, 2)} to ${num(G.hi, 2)}), `
+    + `d<sub>z</sub> = ${num(G.dz, 2)}, ${pval(G.p)}; Wilcoxon ${pval(G.wilcoxon)}. `
+    + `${G.higherTactical} of ${G.n} operators rank the tactical tier higher, ${G.higherStrategic} `
+    + `the strategic one${G.tied ? `, ${G.tied} tied` : ''}. Internal consistency is high on both `
+    + `scales (α = ${num(SR.alpha.strategic, 2)} strategic, ${num(SR.alpha.tactical, 2)} `
+    + `tactical), so this is one construct measured twice, not noise.` }, cS);
+
+  para(s, '<b>The debriefs, coded independently of any of this, say the same thing.</b> Of the '
+    + `${SR.stanceCoded} coded debriefs, ${SR.stance.prefers_tactical || 0} operators expressed a `
+    + `preference for the tactical tier and ${SR.stance.prefers_strategic || 0} for the strategic `
+    + `one (${SR.stance.distrusts_both || 0} distrusted both, ${SR.stance.trusts_both || 0} trusted `
+    + `both, ${SR.stance.conditional || 0} made their answer conditional). Two streams, one `
+    + 'questionnaire and one interview, agreeing on a ranking.');
+  quote(s, 'P27/agent_comparison/1828');
+  quote(s, 'P20/agent_comparison/1620');
+
+  h('h3', { text: 'But reported trust is not the same thing as the reliance it is supposed to explain' }, s);
+  para(s, 'This is where the self-report and the behaviour part company. The page’s behavioural '
+    + 'finding is that reliance is governed by mission composition and by what checking costs at '
+    + 'each tier — see <a href="#drivers">the reliance models</a> and '
+    + '<a href="#verification">verification as a price</a>. Asked directly, operators instead '
+    + 'report a straightforward ranking of the two assistants. The two are reconcilable, and the '
+    + 'most economical reading is uncomfortable for the questionnaire: at the tactical tier the '
+    + 'plan is a drone-by-drone route through a complex mission, and checking it is expensive to '
+    + 'the point of impracticality. An operator who cannot check is left reporting the assistant as '
+    + 'trustworthy, because there is nothing else to report.');
+  quote(s, 'P22/agent_comparison/1776');
+  const cL = card(s, 'What the questionnaires do and do not track');
+  const linkRows = SR.link.map(r => [r.label, 'ρ = ' + num(r.rho, 2), pval(r.p), 'n = ' + r.n]);
+  const tL = h('table', {}, cL);
+  const thL = h('tr', {}, h('thead', {}, tL));
+  ['Pairing (session level)', 'ρ', 'Result', ''].forEach((x, i) =>
+    h('th', { text: x, class: i ? 'num' : '' }, thL));
+  const tbL = h('tbody', {}, tL);
+  SR.link.forEach(r => {
+    const tr = h('tr', {}, tbL);
+    h('td', { text: r.label }, tr);
+    h('td', { text: 'ρ = ' + num(r.rho, 2), class: 'num' }, tr);
+    h('td', { text: pval(r.p), class: 'num ' + pClass(r.p) }, tr);
+    h('td', { text: 'n = ' + r.n, class: 'num' }, tr);
+  });
+  h('p', { class: 'cap', html: 'The questionnaires are not disconnected from behaviour — but the '
+    + 'strategic scale tracks that session’s card uptake about twice as strongly as the tactical '
+    + 'scale tracks tactical consulting. <b>The survey is administered after the session</b>, which '
+    + 'settles the direction it can be read in: a rating given at the end cannot have caused the '
+    + 'reliance that preceded it. Read these as operators reporting, accurately, what they had just '
+    + 'been doing — most accurately at the tier where they could see what they were doing.' }, cL);
+
+  h('h3', { text: 'Exposure erodes strategic trust, and only strategic trust' }, s);
+  const cC = card(s, 'Crossover estimates on the questionnaire measures');
+  const tC = h('table', {}, cC);
+  const thC = h('tr', {}, h('thead', {}, tC));
+  ['Measure', 'Strategic Heavy', 'Tactical Heavy', 'Scenario effect', 'Run 2 − run 1'].forEach((x, i) =>
+    h('th', { text: x, class: i ? 'num' : '' }, thC));
+  const tbC = h('tbody', {}, tC);
+  SR.crossover.forEach(r => {
+    const tr = h('tr', {}, tbC);
+    // Proportions are shown as percentages, so their effects are shown in percentage points
+    // rather than as a bare 0.12 next to a 58%.
+    const prop = r.key === 'took' || r.key === 'consult';
+    const fv = v => prop ? pct(v, 0) : num(v, r.key === 'score' ? 0 : 2);
+    const fe = v => prop ? sgn(100 * v, 0) + 'pp' : sgn(v, r.key === 'score' ? 0 : 2);
+    h('td', { text: r.label }, tr);
+    h('td', { text: fv(r.means.strategic), class: 'num' }, tr);
+    h('td', { text: fv(r.means.tactical), class: 'num' }, tr);
+    h('td', { html: `${fe(r.scenario.diff)} <span class="${pClass(r.scenario.p)}">`
+      + `${pval(r.scenario.p)}</span>`, class: 'num' }, tr);
+    h('td', { html: `${fe(r.run.diff)} <span class="${pClass(r.run.p)}">${pval(r.run.p)}</span>`,
+              class: 'num' }, tr);
+  });
+  h('p', { class: 'cap', html: 'Standard 2×2 crossover (Jones & Kenward), the same estimator the '
+    + 'log-only report uses on every performance measure: the scenario effect is half the '
+    + 'difference between the two order groups’ within-person changes, the run effect half their '
+    + 'sum. Imported from <code>study_analysis.py</code> rather than reimplemented.' }, cC);
+  para(s, `Trust in the Strategic Assistant falls by ${num(Math.abs(ts.run.diff), 2)} points from `
+    + `run 1 to run 2 (${pval(ts.run.p)}) while trust in the Tactical Assistant does not move `
+    + `(${sgn(tt.run.diff, 2)}, ${pval(tt.run.p)}), so the gap between the two tiers `
+    + `${td.run.diff > 0 ? 'widens' : 'narrows'} with exposure `
+    + `(${sgn(td.run.diff, 2)}, ${pval(td.run.p)}). Behaviour moves the same way and less: card `
+    + `uptake changes by ${sgn(100 * cx('took').run.diff, 0)}pp `
+    + `(${pval(cx('took').run.p)}). <b>A second session is enough to cost the strategic tier `
+    + 'reported trust, and the most obvious thing a second session gives an operator time to '
+    + 'notice is set out below</b> — the Conservative card that commits a drone type the mission '
+    + 'has no use for, in <a href="#artefact">when simple rules look wrong</a>. Strategic trust is '
+    + 'also the one measure with a '
+    + `scenario effect (${sgn(ts.scenario.diff, 2)}, ${pval(ts.scenario.p)}): the tier is rated `
+    + 'higher in the scenario where its advice was worth more.');
+  quote(s, 'P19/trust_trajectory/2001');
+  note(s, '<b>Four limits on this section.</b> (1) Each scale was administered once per session, at '
+    + 'the end, so “trust” here is one retrospective reading and the erosion result is two points '
+    + 'on a line, not a trajectory. (2) The run effect carries learning, fatigue and — for '
+    + 'participants before the game-order swap — some game-difficulty confound; see '
+    + '<a href="#learning">learning</a>. (3) The trust scales are adapted, not a verbatim validated '
+    + 'instrument, though both are internally consistent here. (4) Nothing in this section is '
+    + 'causal: the scenario and run contrasts are experimental, every correlation with behaviour '
+    + 'is not.');
+}
+
+/* — 1d · the pre-study battery — */
+reg('disposition', 'What they brought with them');
+{
+  const s = section('disposition', 'Disposition', 'Nothing operators brought with them predicted how they used either tier');
+  para(s, 'Before session 1 every operator (from <code>study-v1.3</code> on) completed three '
+    + 'Likert batteries: the validated four-item AIAS-4 on general attitude to AI, a bespoke '
+    + 'verification-propensity scale, and a bespoke delegation-boundary scale on how much authority '
+    + 'a human should keep. With five prior-experience items alongside them, that is eight '
+    + 'candidate individual-difference predictors of reliance. They were scored and then never '
+    + 'reported. Here is what they predict.');
+  tiles(s, [
+    { v: String(DP.nTests), k: 'disposition × behaviour tests run', s: `n = ${DP.nDetect} operators` },
+    { v: String(DP.nNominal), k: 'significant at p < .05 uncorrected', s: 'out of ' + DP.nTests },
+    { v: String(DP.nHolm), k: 'surviving Holm correction', s: 'the whole family corrected together' },
+    { v: 'ρ ≥ ' + num(DP.detectable, 2), k: 'smallest correlation this sample could detect', s: '80% power, two-tailed' },
+  ]);
+
+  const cB = card(s, 'The three batteries');
+  const tB = h('table', {}, cB);
+  const thB = h('tr', {}, h('thead', {}, tB));
+  ['Battery', 'Scale', 'Mean (SD)', 'Observed range', 'α', 'n'].forEach((x, i) =>
+    h('th', { text: x, class: i ? 'num' : '' }, thB));
+  const tbB = h('tbody', {}, tB);
+  DP.batteries.forEach(b => {
+    const tr = h('tr', {}, tbB);
+    h('td', { html: b.label + (b.validated ? ' <span class="badge">VALIDATED</span>' : '') }, tr);
+    h('td', { text: b.scale, class: 'num' }, tr);
+    h('td', { text: `${num(b.mean, 2)} (${num(b.sd, 2)})`, class: 'num' }, tr);
+    h('td', { text: `${num(b.lo, 2)}–${num(b.hi, 2)}`, class: 'num' }, tr);
+    h('td', { text: num(b.alpha, 2), class: 'num ' + (b.alpha >= 0.7 ? 'sig' : 'ns') }, tr);
+    h('td', { text: b.n, class: 'num' }, tr);
+  });
+  h('p', { class: 'cap', html: 'Scored exactly as <code>docs/STUDY_BUILD.md</code> §10 specifies '
+    + '(reverse-keyed items flipped at analysis time; the error-detectability item held out of the '
+    + 'verification composite by design), using the same '
+    + '<code>agent_scenario_stats.score_attitudes</code> the rest of the pipeline uses. <b>The two '
+    + 'bespoke composites are not reliable enough to carry a null</b> — α of '
+    + `${num(DP.batteries[1].alpha, 2)} and ${num(DP.batteries[2].alpha, 2)} against `
+    + `${num(DP.batteries[0].alpha, 2)} for the validated AIAS-4. Each was five or six items `
+    + 'written for this study and never piloted as a scale.' }, cB);
+
+  const cD = card(s, 'Every disposition against every reliance measure (Spearman ρ)');
+  // Row labels have to name BOTH sides of the correlation or four rows read as the same predictor,
+  // so each side gets a short form and the gutter is widened to fit them.
+  const SHORT_P = {
+    aias: 'AIAS-4 attitude', verification: 'Verification propensity',
+    delegation: 'Delegation boundary', delegTrustSuggestOverDecide: '“suggest > decide”',
+    delegHumanFinalSay: '“human decides”', errorDetectability: '“errors hard to spot”',
+    experienceMean: 'Prior experience', autonomyExperience: 'Automation experience',
+  };
+  const SHORT_B = { took: 'card uptake', consult: 'tactical consulting',
+                    accept: 'tactical unmodified', secs: 'decision time', score: 'score' };
+  const strong = DP.cells.slice().sort((a, b) => Math.abs(b.rho || 0) - Math.abs(a.rho || 0)).slice(0, 12);
+  barsDiverging(h('div', { class: 'chart' }, cD),
+    strong.map(c => ({ label: `${SHORT_P[c.predictor] || c.predictor} → ${SHORT_B[c.behaviour]}`,
+                       value: c.rho, faint: !(c.p < 0.05),
+                       sub: `${c.predictorLabel.replace(/[“”]/g, '"')} vs ${c.behaviourLabel}`
+                         + `<br>${pval(c.p)} · Holm ${pval(c.holm)} · n = ${c.n}` })),
+    { zeroLabel: 'no association', unit: '', padL: 230, fmt: v => 'ρ = ' + sgn(v, 2) });
+  h('p', { class: 'cap', html: 'The twelve largest of ' + DP.nTests + ' correlations, strongest '
+    + 'first; hover for the full item wording and both p-values. Solid bars are nominally '
+    + 'significant, soft bars are not. <b>Every bar here is small, and none survives '
+    + 'correction.</b>' }, cD);
+  tableFor(cD, ['Disposition', 'Behaviour', 'ρ', 'p', 'Holm-adjusted p', 'n'],
+    DP.cells.slice().sort((a, b) => (a.p == null) - (b.p == null) || a.p - b.p)
+      .map(c => [c.predictorLabel.replace(/[“”]/g, '"'), c.behaviourLabel, num(c.rho, 2),
+                 pval(c.p).replace('p = ', '').replace('p < ', '<'),
+                 pval(c.holm).replace('p = ', '').replace('p < ', '<'), c.n]),
+    `Show all ${DP.nTests} tests`);
+  para(s, `Three of the ${DP.nTests} clear p &lt; .05 before correction and none of them clears Holm. `
+    + 'The three are at least coherent rather than random — operators who scored higher on the '
+    + 'delegation-boundary scale consulted the tactical plan less and took it unmodified less '
+    + 'often, and operators higher on verification propensity scored lower, which is what a habit '
+    + 'of checking should cost in a timed task. But a family of '
+    + `${DP.nTests} tests at n = ${DP.nDetect} is expected to throw up two by chance, and these are `
+    + 'exactly the size of the ones it throws up. <b>They are hypotheses for a study designed to '
+    + 'test them, not findings.</b>');
+
+  h('h3', { text: 'The one test the instrument was designed for' }, s);
+  para(s, 'Two delegation items were written against this study’s own structure — the Strategic '
+    + 'Assistant recommends and the operator decides, the Tactical Assistant plans the execution. '
+    + 'If operators were responding to that distinction, “I trust AI more for suggesting options '
+    + 'than for making decisions” should predict the <i>gap</i> between how much they used each '
+    + 'tier, not either level alone. It predicts nothing.');
+  const cT = card(s, 'Predicting the difference between strategic uptake and tactical consulting');
+  tableFor(cT, ['Disposition', 'ρ with the tier gap', 'p', 'n'],
+    DP.tierGap.map(r => [r.label.replace(/[“”]/g, '"'), num(r.rho, 2),
+                         pval(r.p).replace('p = ', ''), r.n]), 'Show the tier-gap tests');
+  const tg = DP.tierGap[0];
+  para(cT, `The designed test comes out at ρ = ${num(tg.rho, 2)}, ${pval(tg.p)}. Operators do hold `
+    + 'views about where an AI’s authority should stop — the debriefs are full of them — and those '
+    + 'views did not shape which tier they leaned on.');
+  quote(s, 'P24/general_ai_disposition/1812');
+
+  h('h3', { text: 'Nor does disposition predict what they reported afterwards' }, s);
+  tableFor(card(s, 'Disposition against the post-session questionnaires'),
+    ['Disposition', 'Reported measure', 'ρ', 'p', 'n'],
+    DP.onTrust.map(r => [r.predictorLabel.replace(/[“”]/g, '"'), r.behaviourLabel, num(r.rho, 2),
+                         pval(r.p).replace('p = ', ''), r.n]), 'Show the tests');
+  para(s, 'This is the more interesting null of the two. If post-session trust were a disposition '
+    + 'being expressed, a general attitude to AI should predict it. It does not — not for either '
+    + 'assistant, and not for reported workload. Taken with the previous section, where the same '
+    + 'ratings track that session’s own behaviour at ρ = '
+    + `${num(SR.link[0].rho, 2)}, <b>the trust scales look like a reading taken on the session `
+    + 'rather than a trait carried into it.</b> That is the same conclusion the behavioural half of '
+    + 'this page reaches by a different route.');
+
+  h('h3', { text: 'Prior experience, grouped' } , s);
+  para(s, 'Each experience item is ordinal, so the only defensible grouping is a median split, '
+    + 'tested with the same Welch contrast the log-only report uses between order groups.');
+  const cG = card(s, 'Median split on each experience axis');
+  const tG = h('table', {}, cG);
+  const thG = h('tr', {}, h('thead', {}, tG));
+  ['Experience axis', 'Groups', 'Card uptake', 'Tactical consulting', 'Score'].forEach((x, i) =>
+    h('th', { text: x, class: i ? 'num' : '' }, thG));
+  const tbG = h('tbody', {}, tG);
+  DP.groups.forEach(g => {
+    const pick = k => g.rows.find(r => r.behaviour === k);
+    const tr = h('tr', {}, tbG);
+    h('td', { html: g.label + (g.floored ? ' <span class="ns">· floored</span>' : '') }, tr);
+    h('td', { text: `${g.nLow} / ${g.nHigh}`, class: 'num' }, tr);
+    ['took', 'consult', 'score'].forEach(k => {
+      const r = pick(k);
+      if (!r) { h('td', { text: '—', class: 'num' }, tr); return; }
+      const fv = k === 'score' ? v => num(v, 0) : v => pct(v, 0);
+      h('td', { html: `${fv(r.low)} → ${fv(r.high)}<br><span class="${pClass(r.p)}">`
+        + `${pval(r.p)}</span>`, class: 'num' }, tr);
+    });
+  });
+  h('p', { class: 'cap', html: 'Lower group → higher group, with the Welch p. '
+    + `All ${DP.groups.reduce((n, g) => n + g.rows.length, 0)} contrasts across every axis and every `
+    + 'behaviour are null; the three columns shown are representative. “Floored” marks an axis '
+    + 'where one group has fewer than eight people, so the contrast is reported but underpowered '
+    + 'to the point of being uninformative. On the two axes where most operators answered “None” '
+    + '— drones and dispatch/command — the median sits at zero, so the “higher” group there means '
+    + 'nothing more than <i>any</i> experience at all.' }, cG);
+
+  note(s, '<b>How much of this null is the operators, and how much is the measurement?</b> Three '
+    + 'things argue for caution before reading it as “individual differences do not matter here”. '
+    + `<b>Range.</b> AIAS-4 runs ${num(DP.batteries[0].lo, 1)}–${num(DP.batteries[0].hi, 1)} on a `
+    + `10-point scale with a mean of ${num(DP.batteries[0].mean, 1)}: this sample contains almost `
+    + 'no AI sceptics, and a predictor with no low end cannot show a gradient. '
+    + '<b>Reliability.</b> The two scales that would have carried the more specific hypotheses are '
+    + `the two with poor α (${num(DP.batteries[1].alpha, 2)} and ${num(DP.batteries[2].alpha, 2)}); `
+    + 'their nulls are at least partly their own. <b>Power.</b> At n = '
+    + `${DP.nDetect} nothing below ρ ≈ ${num(DP.detectable, 2)} was ever findable, and real `
+    + 'dispositional effects on behaviour are rarely that large. What the section does establish is '
+    + 'narrower and still useful: <b>in this task, measured this way, disposition is not where '
+    + 'reliance comes from, and the structural account in the rest of the page does not need it.</b>');
+  note(s, '<b>If this battery is run again</b> — the online arm in '
+    + '<code>docs/ONLINE_DEPLOYMENT.md</code> is the obvious occasion — the two bespoke scales need '
+    + 'piloting and probably rewriting before they are worth administering, the sample needs people '
+    + 'who are not computing postgraduates, and a disposition hypothesis worth testing needs to be '
+    + 'named in advance so it is not one of forty.');
 }
 
 /* — 2 · what drives reliance — */
