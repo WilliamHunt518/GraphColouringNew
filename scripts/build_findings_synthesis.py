@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build docs/reports/findings_synthesis.html -- the narrative results page.
+"""Build Results/findings_synthesis.html -- the narrative results page.
 
 The other two report pages each answer half the question. `two-tiers-two-scenarios.html` is the
 log-only crossover analysis: performance, reliance, failures, outliers, with controls to switch
@@ -12,11 +12,11 @@ This page is that join, written as an argument rather than a dashboard.
     python scripts/build_findings_synthesis.py          # needs numpy/pandas/scipy/statsmodels
     python scripts/build_findings_synthesis.py --print  # also dump the computed numbers
 
-**Output lands in `Results/Narration/`, which is gitignored in full**, beside `decision-cards.html`
-and the audio it is derived from. That is deliberate: the page embeds verbatim participant speech
-alongside the pooled numbers, so it is identifiable data under the same terms as the recordings,
-and it travels the way the rest of that data travels -- copied by hand, not through git. Regenerate
-it locally; do not paste it into a hosted tool.
+**Output lands in `Results/findings_synthesis.html`, which IS committed**, so the page is readable
+on any machine with a clone. The page embeds verbatim participant speech (anonymous IDs only), so
+treat it as identifiable data: do not circulate it or paste it into a hosted tool. Its quote inputs
+in `Results/Narration/` stay gitignored and move between machines by hand -- build on a machine that
+has them, or the page comes out without quotes (the builder warns when that happens).
 
 Everything needed to rebuild it IS committed (this script, its template, and
 `docs/reports/smart_benchmark.json`), so the page is reproducible from the repo plus `Results/`.
@@ -76,7 +76,7 @@ PARTICIPANTS = BASE / 'Results' / 'Participants'
 NARRATION = BASE / 'Results' / 'Narration'
 STUDY_JSON = BASE / 'docs' / 'reports' / 'study_analysis.json'
 TEMPLATE = BASE / 'scripts' / 'findings_synthesis_template.html'
-OUT_HTML = BASE / 'Results' / 'Narration' / 'findings_synthesis.html'
+OUT_HTML = BASE / 'Results' / 'findings_synthesis.html'
 
 EXCLUDE = {'P09'}
 CRITICALITY = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5}
@@ -210,6 +210,50 @@ def term(model, name):
                 lo=float(model.conf_int().loc[name, 0]), hi=float(model.conf_int().loc[name, 1]))
 
 
+# ── every specification of the reliance model, for the page's model explorer ─────────────────
+# The narrative argues from three nested models, but which terms belong in a model is a judgement
+# call, so every combination is fitted here and the page lets the reader pick. Each entry is one
+# toggle on the page; `terms` lists (coefficient name, plain-English label) pairs it contributes.
+EXPLORER_TERMS = [
+    ('scenario', 'C(scenario)', [('C(scenario)[T.tactical]', 'Tactical Heavy scenario (vs Strategic Heavy)')]),
+    ('odd', 'odd', [('odd', 'Conservative card was illogical')]),
+    ('ncolours', 'ncolours', [('ncolours', 'Each extra drone colour the mission needs')]),
+    ('ndrones', 'ndrones', [('ndrones', 'Each extra drone the mission needs')]),
+    ('category', 'criticality', [('criticality', 'Each step up in mission category (A to E)')]),
+    ('time', 'C(run) + idx', [('C(run)[T.2]', 'Second run (vs first)'),
+                              ('idx', 'Each further decision into the session')]),
+]
+EXPLORER_SAMPLES = [('all', 'Every decision'), ('genuine', 'Genuine missions only (residuals excluded)')]
+
+
+def model_explorer(df: pd.DataFrame) -> dict:
+    """Fit `took ~ <any non-empty subset of EXPLORER_TERMS>` on both samples.
+
+    Keyed '<sample>|<term keys in EXPLORER_TERMS order, joined by +>' so the page can look a model
+    up from its checkboxes without knowing anything about formulas.
+    """
+    from itertools import combinations
+    keys = [k for k, _, _ in EXPLORER_TERMS]
+    models = {}
+    for skey, _ in EXPLORER_SAMPLES:
+        data = df if skey == 'all' else df[df.residual == 0]
+        for r in range(1, len(keys) + 1):
+            for combo in combinations(EXPLORER_TERMS, r):
+                formula = 'took ~ ' + ' + '.join(rhs for _, rhs, _ in combo)
+                mid = skey + '|' + '+'.join(k for k, _, _ in combo)
+                try:
+                    mm = _quietly(lambda: gee(formula, data, binomial=True))
+                    models[mid] = dict(
+                        formula=formula, n=int(len(data)), nPid=int(data.pid.nunique()),
+                        terms=[dict(key=k, coef=name, label=label, **term(mm, name))
+                               for k, _, coefs in combo for name, label in coefs])
+                except Exception as e:  # a degenerate fit is reported, not hidden
+                    models[mid] = dict(formula=formula, error=str(e))
+    return dict(terms=[dict(key=k, label=' / '.join(l for _, l in c)) for k, _, c in EXPLORER_TERMS],
+                samples=[dict(key=k, label=l) for k, l in EXPLORER_SAMPLES],
+                models=models)
+
+
 # ── the analyses the narrative rests on ───────────────────────────────────────────────────────
 
 def analyse(df: pd.DataFrame) -> dict:
@@ -248,14 +292,15 @@ def analyse(df: pd.DataFrame) -> dict:
 
     # 3 · what manual commits -------------------------------------------------------------------
     sized = manual.dropna(subset=['d_cons'])
-    m = gee('d_cons ~ ncolours + ndrones + criticality + C(scenario)', sized)
+    # Category enters this model as `criticality`, so residual missions are dropped from the fit: a
+    # residual keeps its parent's category while holding only the tasks left over, which would
+    # read a one-task leftover of an E mission as maximally critical. (Checked: it made no
+    # difference -- p = .93 with residuals, .91 without -- but the model should not rely on that.)
+    m = gee('d_cons ~ ncolours + ndrones + criticality + C(scenario)', sized[sized.residual == 0])
     out['delta'] = dict(
         byBand=[dict(band=str(b), mean=float(s.d_cons.mean()), n=int(len(s)),
                      need=float(s.ndrones.mean()))
                 for b, s in sized.groupby('band', observed=True)],
-        byCategory=[dict(category=c, mean=float(s.mean()), n=int(len(s)))
-                    for c, s in ((c, sized[sized.category == c].d_cons) for c in 'ABCDE')
-                    if len(s) >= 5],
         model=dict(size=term(m, 'ndrones'), colours=term(m, 'ncolours'),
                    criticality=term(m, 'criticality')))
 
@@ -330,6 +375,7 @@ def analyse(df: pd.DataFrame) -> dict:
                 entry[name] = term(mm, name)
         models.append(entry)
     out['drivers'] = models
+    out['explorer'] = model_explorer(df)
     out['relianceByColours'] = [dict(colours=int(c), took=float(g.took.mean()), n=int(len(g)))
                                 for c, g in df.groupby('ncolours') if len(g) >= 10]
 
@@ -855,8 +901,17 @@ def analyse_disposition(sess, people) -> dict:
     zb = stats.norm.ppf(.8) + stats.norm.ppf(.975)
     detectable = f(np.tanh(zb / np.sqrt(max(n - 3, 1))))
 
+    # 7 · the observed spread of every measure, for the page's hover glossary -- "0.6 on a 1-7
+    # scale" only means something next to what this sample actually scored.
+    def spread(vals):
+        v = [x for x in vals if x is not None]
+        return dict(mean=f(np.mean(v)), lo=f(min(v)), hi=f(max(v)), n=len(v)) if v else None
+    dist = {k: spread([people[p].get(k) for p in ids]) for k, _ in predictors}
+    dist.update({k: spread([per[p][k] for p in ids])
+                 for k in [b for b, _ in BEHAVIOURS] + ['rtlx', 'trust_s', 'trust_t']})
+
     return dict(
-        sample=sample, batteries=batteries,
+        sample=sample, batteries=batteries, dist=dist,
         coverage=dict(n=len(ids), withBattery=n,
                       missing=[p for p in ids if people[p].get('aias') is None]),
         cells=cells, onTrust=onTrust, tierGap=tierGap, groups=groups,
@@ -990,8 +1045,11 @@ def main() -> None:
     print('%d decisions, %d participants, %d quotes from %d participants'
           % (payload['computed']['n']['decisions'], payload['computed']['n']['participants'],
              len(payload['narration']['quotes']), len(payload['narration']['participants'])))
-    print('NOTE: written into the gitignored Results/Narration/ tree -- it holds verbatim participant')
-    print('      speech, so it moves by hand with the rest of the identifiable data, not via git.')
+    if not payload['narration']['quotes']:
+        print('WARNING: no quotes found in Results/Narration/*_s1/quotes.json -- the page was built')
+        print('         WITHOUT them. Results/Narration/ is gitignored, so a fresh clone never has it;')
+        print('         copy that folder over from the machine that ran the narration pipeline.')
+    print('NOTE: this file is committed but holds verbatim participant speech -- do not circulate it.')
     if args.print:
         print(json.dumps(payload['computed'], indent=1, default=float))
 

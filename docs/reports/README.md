@@ -1,6 +1,6 @@
 # Aggregate reports
 
-## `findings_synthesis.html` — built into `Results/Narration/`, not into this folder
+## `findings_synthesis.html` — built into `Results/`, not into this folder
 
 The narrative results page: what the study found, argued in order, with the behavioural numbers and
 the debrief quotes on the same page. The other two pages each answer half the question —
@@ -13,14 +13,14 @@ python scripts/build_findings_synthesis.py          # needs numpy/scipy/pandas/s
 python scripts/build_findings_synthesis.py --print  # also dump the computed numbers
 ```
 
-> **The page is written to `Results/Narration/findings_synthesis.html`, not to `docs/reports/`.**
-> It embeds verbatim participant speech alongside the pooled numbers, so it is identifiable data
-> under the same terms as the recordings and interviews, and it sits in the same gitignored tree
-> as `decision-cards.html` and the audio it came from — moved between machines by hand, like
-> the rest of `Results/`. Do not paste it into a hosted tool.
+> **The page is written to `Results/findings_synthesis.html`, not to `docs/reports/`, and it is
+> committed** so it can be read on any machine with a clone. It embeds verbatim participant speech
+> (anonymous IDs only), so treat it as identifiable data: do not circulate it or paste it into a
+> hosted tool.
 >
-> Everything needed to rebuild it is committed, so the page is reproducible from the repo plus a
-> copy of `Results/`. Only the rendered artefact stays out.
+> Its quote inputs, `Results/Narration/*_s1/quotes.json`, stay gitignored and move between machines
+> by hand. Rebuild on a machine that has them — on one that doesn't, the page comes out with no
+> quotes and the builder prints a `WARNING`.
 
 Sections: the argument in one page · who the operators were · what they said between the scenarios
 (NASA-TLX and the two trust scales) · what they brought with them (the AI-disposition batteries and
@@ -29,6 +29,12 @@ manual is slower and what it actually buys · when simple rules look wrong · th
 Conservative card · does an illogical card change anything afterwards · verification as a price ·
 where the two streams disagree · failure recovery · performance · learning · performance against a
 near-perfect operator · what operators asked for · limitations · every coded quote by theme.
+
+The reliance section has a **model explorer**: every subset of six terms (scenario, illogical card,
+colours needed, drones needed, category, run + time in session) is fitted on two samples (all
+decisions / genuine missions only), 126 GEE fits in total, and the page shows whichever one is
+ticked. The three presets are the nested models the argument uses. The page warns when category is
+ticked while residual missions are in the sample.
 
 Three conventions worth knowing before reading it:
 

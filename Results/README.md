@@ -14,6 +14,7 @@ faces, though, so handle the folder as identifiable data.
 | `Interviews/` | Post-study interview transcripts | **no** (gitignored) |
 | `Narration/` | `scripts/narration_pipeline.py` output (audio, transcripts, clips, `decision-cards.html`) | **no** (gitignored) |
 | `Supplements/` | Filled-in supplementary questionnaires | **no** (gitignored) |
+| `findings_synthesis.html` | The narrative findings page, built by `scripts/build_findings_synthesis.py` from `Participants/` + `Narration/` quotes — see `docs/reports/README.md` | yes — embeds quotes, do not circulate |
 
 Dev/test fixtures that are not people (`logs/Pilots/auto`, `M`, `W`, `W2`, `newPilot.json`,
 `logs/debug`, `logs/manualAddOnline`) stay in `logs/`.

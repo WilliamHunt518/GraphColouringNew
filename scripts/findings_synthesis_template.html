@@ -118,6 +118,17 @@ details.tbl summary:hover { color: var(--s-strat); }
   border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: 12.5px/1.45 var(--sans);
   box-shadow: 0 6px 20px rgba(0,0,0,.14); opacity: 0; transition: opacity .1s; max-width: 260px; }
 #tip b { font-weight: 600; }
+#tip.wide { max-width: 380px; }
+#tip .g-term { font-weight: 600; display: block; margin-bottom: 3px; }
+#tip .g-read { display: block; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+#tip .g-here { display: block; margin-top: 4px; font: 400 11.5px/1.45 var(--mono); color: var(--ink-3); }
+.gl { text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; cursor: help; }
+svg text[data-g] { cursor: help; text-decoration: underline dotted; }
+dl.gloss { margin: 0; }
+dl.gloss dt { font-weight: 600; margin-top: 14px; }
+dl.gloss dd { margin: 3px 0 0; font-size: 14px; color: var(--ink-2); max-width: 74ch; }
+dl.gloss dd .g-read { display: block; margin-top: 3px; }
+dl.gloss dd .g-here { display: block; font: 400 12px var(--mono); color: var(--ink-3); margin-top: 2px; }
 .qgrid details { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin: 8px 0; padding: 10px 14px; }
 .qgrid summary { font: 500 14px var(--sans); cursor: pointer; }
 .qgrid summary .c { font: 400 12px var(--mono); color: var(--ink-3); margin-left: 8px; }
@@ -127,6 +138,22 @@ details.tbl summary:hover { color: var(--s-strat); }
   border: 1px solid var(--line); border-radius: 5px; padding: 5px 9px; cursor: pointer; }
 .themebar button:hover { color: var(--ink); border-color: var(--ink-3); }
 @media print { .themebar, nav.toc { display: none; } }
+.picker { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 4px 0 10px; font-size: 13px; }
+.picker .lbl { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); min-width: 74px; }
+.picker label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--ink-2); }
+.picker input { accent-color: var(--s-strat); margin: 0; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: 500 12px var(--sans); background: var(--surface); color: var(--ink-2); border: 0;
+  border-left: 1px solid var(--line); padding: 5px 11px; cursor: pointer; }
+.seg button:first-child { border-left: 0; }
+.seg button.on { background: var(--s-strat); color: #fff; }
+.warnline { font-size: 12.5px; color: var(--warn); margin: 4px 0; }
+.formula { font: 400 12px var(--mono); color: var(--ink-3); margin: 2px 0 6px; }
+.scroll { overflow-x: auto; }
+table.heat td.cell { text-align: center; font-family: var(--mono); font-variant-numeric: tabular-nums; min-width: 72px; }
+table.heat td.cell.sig { outline: 2px solid var(--ink); outline-offset: -3px; font-weight: 600; }
+table.heat th { text-align: center; vertical-align: bottom; text-transform: none; letter-spacing: 0; font-size: 11.5px; }
+table.heat th:first-child { text-align: left; }
 </style>
 </head>
 <body>
@@ -169,8 +196,9 @@ function pClass(p) { return p != null && p < 0.05 ? 'sig' : 'ns'; }
 
 /* tooltip */
 const tip = $('tip');
-function showTip(e, html) {
+function showTip(e, html, wide) {
   tip.innerHTML = html;
+  tip.classList.toggle('wide', !!wide);
   tip.style.opacity = 1;
   const r = tip.getBoundingClientRect();
   let x = e.clientX + 14, y = e.clientY - r.height - 10;
@@ -207,7 +235,10 @@ function tableFor(host, cols, rows, label) {
   const tb = h('tbody', {}, t);
   rows.forEach(r => {
     const x = h('tr', {}, tb);
-    r.forEach((v, i) => h('td', { text: v, class: i ? 'num' : '' }, x));
+    r.forEach((v, i) => {
+      const td = h('td', { text: v && v.g ? v.text : v, class: i ? 'num' : '' }, x);
+      if (v && v.g) glNode(td, v.g);
+    });
   });
 }
 
@@ -340,10 +371,10 @@ function barsDiverging(host, rows, o = {}) {
 
 /* Coefficient plot with confidence intervals -- for the three nested models. */
 function forest(host, rows, o = {}) {
-  const W = 700, rowH = 34, padL = 210, padR = 90, padT = 12;
+  const W = 700, rowH = 34, padL = o.padL || 210, padR = 90, padT = 12;
   const H = padT + rows.length * rowH + 48;
   const s = svgRoot(host, W, H);
-  const lim = Math.max(...rows.flatMap(r => [Math.abs(r.lo), Math.abs(r.hi)])) * 1.15 || 1;
+  const lim = o.lim || Math.max(...rows.flatMap(r => [Math.abs(r.lo), Math.abs(r.hi)])) * 1.15 || 1;
   const mid = padL + (W - padL - padR) / 2;
   const half = (W - padL - padR) / 2;
   const x = v => mid + half * (v / lim);
@@ -368,8 +399,10 @@ function forest(host, rows, o = {}) {
                'font-family': css('--mono') }, s).textContent = 'more likely →';
   rows.forEach((r, i) => {
     const y = padT + i * rowH + rowH / 2;
-    el('text', { x: padL - 12, y: y + 4, 'text-anchor': 'end', fill: css('--ink-2'),
-                 'font-size': 12.5 }, s).textContent = r.label;
+    const lt = el('text', { x: padL - 12, y: y + 4, 'text-anchor': 'end', fill: css('--ink-2'),
+                            'font-size': 12.5 }, s);
+    lt.textContent = r.label;
+    if (r.g) lt.setAttribute('data-g', r.g);
     const sig = r.p < 0.05;
     const col = sig ? css('--mark') : css('--mark-soft');
     el('line', { x1: x(r.lo), x2: x(r.hi), y1: y, y2: y, stroke: col, 'stroke-width': 2,
@@ -535,6 +568,260 @@ const C = DATA.computed, S = DATA.study, N = DATA.narration;
 const SR = DATA.selfreport, DP = DATA.disposition;
 const main = $('main');
 
+/* ───────────────────────── glossary ─────────────────────────
+   One entry per term the page uses. `what` says what it measures, `read` says how to read the
+   number shown for it, and `here` (where the builder supplies a spread) says what this sample
+   actually scored, because "4.2 on a 1–7 scale" means little without that. Any element carrying
+   data-g="<key>" shows the entry on hover, and the Glossary section at the end lists them all. */
+const spreadOf = (key, fmt) => {
+  const d = (DP.dist || {})[key];
+  return d ? `In this sample (n = ${d.n} operators): average ${fmt(d.mean)}, `
+    + `lowest ${fmt(d.lo)}, highest ${fmt(d.hi)}.` : '';
+};
+const alphaOf = i => DP.batteries && DP.batteries[i] ? num(DP.batteries[i].alpha, 2) : '—';
+const f1 = v => num(v, 1), f2 = v => num(v, 2), fp = v => pct(v, 0);
+const EXP_READ = 'Each answer is coded None = 0, A little = 1, Moderate = 2, Extensive = 3.';
+const SPLIT_READ = 'Operators are split at the median answer; the “more experienced half” '
+  + 'is everyone above it.';
+const PER_PERSON = ' In the disposition grid each operator’s value is the average of their two sessions.';
+const GLOSS = {
+  // — what operators brought with them —
+  aias: { term: 'AIAS-4 attitude to AI', group: 'Disposition (pre-study questionnaire)',
+    what: 'A published, validated four-item questionnaire on general attitude to AI (Grassini, '
+      + '2023): “AI will improve my life”, “AI will improve my work”, “I will use AI technology in '
+      + 'the future”, “AI technology is positive for humanity”.',
+    read: 'The average of the four answers, each on a 1–10 scale. 1 = entirely negative about AI, '
+      + '10 = entirely positive.', here: () => spreadOf('aias', f1) },
+  verification: { term: 'Verification propensity', group: 'Disposition (pre-study questionnaire)',
+    what: 'How much someone habitually checks an AI’s output before relying on it. Six statements '
+      + 'written for this study, e.g. “I usually check an AI tool’s work before relying on it” and, '
+      + 'worded the other way round, “Most AI tools are reliable enough that checking their work '
+      + 'is unnecessary”.',
+    read: () => 'The average on a 1–7 scale, after flipping the three statements worded the other '
+      + 'way. 1 = happy to use AI output unchecked, 7 = always wants to check it. The six items '
+      + `do not hang together well (α = ${alphaOf(1)}), so this score is noisy.`,
+    here: () => spreadOf('verification', f2) },
+  delegation: { term: 'Delegation boundary', group: 'Disposition (pre-study questionnaire)',
+    what: 'Where someone draws the line on handing decisions to an AI: how much authority they '
+      + 'think should stay with a human. Five statements written for this study: a human should '
+      + 'make the final decision; I trust AI more for suggesting options than for making decisions; '
+      + 'I would rather do a task myself even if slower; AI should not be relied on when lives are '
+      + 'at stake; and, worded the other way round, in an urgent situation an AI recommendation is '
+      + 'better than none.',
+    read: () => 'The average on a 1–7 scale, after flipping the reversed statement. 1 = happy to '
+      + 'hand decisions to AI, 7 = humans should keep the authority. The five items do not hang '
+      + `together well (α = ${alphaOf(2)}), so this score is noisy.`,
+    here: () => spreadOf('delegation', f2) },
+  delegTrustSuggestOverDecide: { term: '“Trust AI more for suggesting than deciding”',
+    group: 'Disposition (pre-study questionnaire)',
+    what: 'One delegation statement on its own: “I trust AI more for suggesting options than for '
+      + 'making decisions.” Written to mirror this study’s two tiers: the Strategic Assistant '
+      + 'suggests, the Tactical Assistant plans what actually happens.',
+    read: 'A single answer, 1 = strongly disagree to 7 = strongly agree.',
+    here: () => spreadOf('delegTrustSuggestOverDecide', f1) },
+  delegHumanFinalSay: { term: '“A human should make the final decision”',
+    group: 'Disposition (pre-study questionnaire)',
+    what: 'One delegation statement on its own: “A human should make the final decision even when '
+      + 'an AI recommendation is available.”',
+    read: 'A single answer, 1 = strongly disagree to 7 = strongly agree.',
+    here: () => spreadOf('delegHumanFinalSay', f1) },
+  errorDetectability: { term: '“Hard to tell when AI has erred”',
+    group: 'Disposition (pre-study questionnaire)',
+    what: '“I find it difficult to tell when an AI tool has made a mistake.” Asked alongside the '
+      + 'verification items but kept out of that score: it is about how hard errors are to spot, '
+      + 'not about a habit of checking.',
+    read: 'A single answer, 1 = strongly disagree (errors are easy to spot) to 7 = strongly agree '
+      + '(errors are hard to spot).', here: () => spreadOf('errorDetectability', f1) },
+  experienceMean: { term: 'Prior experience (mean of five items)',
+    group: 'Disposition (pre-study questionnaire)',
+    what: 'Five questions on prior experience: simulation software; real-time strategy games; '
+      + 'operating drones; automation / AI assistants; emergency dispatch, air traffic control or '
+      + 'military command.',
+    read: EXP_READ + ' The five are averaged, so 0 = no experience of any of them and 3 = '
+      + 'extensive experience of all of them.', here: () => spreadOf('experienceMean', f2) },
+  autonomyExperience: { term: 'Experience with automation / AI',
+    group: 'Disposition (pre-study questionnaire)',
+    what: 'One question: “Experience working with automation, AI assistants, or autonomous systems.”',
+    read: EXP_READ, here: () => spreadOf('autonomyExperience', f1) },
+
+  // — prior-experience axes used in the median split —
+  autonomy_experience: { term: 'Automation / AI assistants', group: 'Prior experience',
+    what: '“Experience working with automation, AI assistants, or autonomous systems.”',
+    read: EXP_READ + ' ' + SPLIT_READ },
+  strategy_experience: { term: 'Real-time strategy games', group: 'Prior experience',
+    what: '“Experience with real-time strategy or resource-management games.”',
+    read: EXP_READ + ' ' + SPLIT_READ },
+  sim_experience: { term: 'Simulation software', group: 'Prior experience',
+    what: '“Experience with simulation software or simulation games.”',
+    read: EXP_READ + ' ' + SPLIT_READ },
+  command_experience: { term: 'Dispatch / command / ATC', group: 'Prior experience',
+    what: '“Experience with emergency management, dispatch, air traffic control, or military command.”',
+    read: EXP_READ + ' ' + SPLIT_READ + ' Most operators answered None, so here the “more '
+      + 'experienced half” just means anyone with any experience.' },
+  drone_experience: { term: 'Operating drones', group: 'Prior experience',
+    what: '“Experience operating drones or UAVs.”',
+    read: EXP_READ + ' ' + SPLIT_READ + ' Most operators answered None, so here the “more '
+      + 'experienced half” just means anyone with any experience.' },
+  gaming_frequency: { term: 'Plays video games', group: 'Prior experience',
+    what: 'How often they play video games.',
+    read: 'Coded Never = 0, Rarely = 1, Occasionally = 2, Weekly = 3, Daily = 4. ' + SPLIT_READ },
+
+  // — what operators did —
+  took: { term: 'Took a strategy card', group: 'Behaviour (from the event logs)',
+    what: 'Each mission the operator allocates is one strategic decision: take the Aggressive card, '
+      + 'take the Conservative card, or allocate drones by hand (Manual). This is the share of '
+      + 'those decisions that went to one of the two cards.',
+    read: 'A proportion. 60% means 6 in every 10 missions were allocated by accepting a card as '
+      + 'offered; the other 4 were Manual.' + PER_PERSON, here: () => spreadOf('took', fp) },
+  consult: { term: 'Consulted the tactical plan', group: 'Behaviour (from the event logs)',
+    what: 'After allocating, the operator assigns drones to tasks in the tactical planner, which '
+      + 'starts empty. This is the share of deployed plans where they pressed Suggest at least '
+      + 'once to see the Tactical Assistant’s plan. Pressing it is a deliberate choice.',
+    read: 'A proportion. 40% means they looked at the assistant’s plan for 4 in every 10 '
+      + 'plans they deployed.' + PER_PERSON, here: () => spreadOf('consult', fp) },
+  accept: { term: 'Took the tactical plan unmodified', group: 'Behaviour (from the event logs)',
+    what: 'The share of deployed tactical plans where the operator pressed Suggest and then '
+      + 'deployed the assistant’s plan exactly as given, without changing a single assignment.',
+    read: 'A proportion of all deployed plans, not just the consulted ones. 20% means 2 in '
+      + 'every 10 plans were the assistant’s, untouched.' + PER_PERSON,
+    here: () => spreadOf('accept', fp) },
+  secs: { term: 'Strategic decision time', group: 'Behaviour (from the event logs)',
+    what: 'Seconds from the strategic panel opening to the operator’s choice (a card or Manual). '
+      + 'The cards stay unreadable for the first 4–5 seconds, so taking a card can never be '
+      + 'quicker than that.',
+    read: 'The median over that session’s decisions, in seconds. Higher = slower.' + PER_PERSON,
+    here: () => spreadOf('secs', v => num(v, 1) + 's') },
+  score: { term: 'Session score', group: 'Behaviour (from the event logs)',
+    what: 'Points for every task completed (20 to 100 depending on task type, bigger tasks worth '
+      + 'more), minus a penalty that builds up every second a mission’s tasks are left unfinished. '
+      + 'Higher-category missions build penalty faster. It never goes below 0.',
+    read: 'Points for one 8-minute session. Higher = better.' + PER_PERSON,
+    here: () => spreadOf('score', v => num(v, 0)) },
+
+  // — what operators reported after each session —
+  trust_s: { term: 'Reported trust in the Strategic Assistant', group: 'Self-report (after each session)',
+    what: 'Six statements answered after each session: it is reliable; I trust its recommendations; '
+      + 'it performs well; I feel confident using it; it provides useful guidance; I would follow '
+      + 'its suggestions without hesitation.',
+    read: 'The average of the six, each 1 = strongly disagree to 7 = strongly agree. 4 is neutral.',
+    here: () => spreadOf('trust_s', f2) },
+  trust_t: { term: 'Reported trust in the Tactical Assistant', group: 'Self-report (after each session)',
+    what: 'The same six statements as the strategic trust scale, asked about the Tactical Assistant.',
+    read: 'The average of the six, each 1 = strongly disagree to 7 = strongly agree. 4 is neutral.',
+    here: () => spreadOf('trust_t', f2) },
+  rtlx: { term: 'Reported workload (raw NASA-TLX)', group: 'Self-report (after each session)',
+    what: 'The NASA Task Load Index: six sliders on mental demand, physical demand, time pressure, '
+      + 'own performance (high = felt they failed), effort and frustration.',
+    read: 'The plain average of the six sliders, 0–20. Higher = more demanding.',
+    here: () => spreadOf('rtlx', f1) },
+
+  // — model terms —
+  scenario: { term: 'Scenario (Tactical Heavy vs Strategic Heavy)', group: 'Model terms',
+    what: 'Each operator played both scenarios. Strategic Heavy sends many small missions (one '
+      + 'every ~37 s on average); Tactical Heavy sends fewer, larger ones (~75 s apart). Same '
+      + 'fleet, same task types.',
+    read: 'How the odds of taking a card change for a decision made in Tactical Heavy compared '
+      + 'with one made in Strategic Heavy.' },
+  odd: { term: 'Illogical card', group: 'Model terms',
+    what: 'The Conservative card on that mission committed a drone type the mission had no use '
+      + 'for, e.g. a Camera drone on a mission with no camera task. It comes from the simple rules '
+      + 'the cards are built with, not from a deliberate fault.',
+    read: 'Yes or no. How the odds of taking a card change when the Conservative card was illogical.' },
+  ncolours: { term: 'Colours needed', group: 'Model terms',
+    what: 'How many of the three drone types (Fast, Lifter, Camera) the mission’s tasks call for: '
+      + '1, 2 or 3.',
+    read: 'How the odds of taking a card change for each extra drone type the mission needs.' },
+  ndrones: { term: 'Drones needed', group: 'Model terms',
+    what: 'The total number of drones the mission’s task badges ask for, added up across its '
+      + 'tasks. It is not the minimum needed to finish, because drones can do tasks one after '
+      + 'another.',
+    read: 'How the odds of taking a card change for each extra drone the mission needs.' },
+  category: { term: 'Mission category A–E', group: 'Model terms',
+    what: 'The mission’s designed size and urgency rating. On a genuine mission it is exactly the '
+      + 'task count (A = 2 tasks … E = 6) and it sets how fast the penalty builds. A residual '
+      + 'mission keeps its parent’s category with fewer tasks, which is why the category term '
+      + 'should be read on genuine missions only.',
+    read: 'Coded A = 1 to E = 5. How the odds of taking a card change for each step up.' },
+  time: { term: 'Run + time in session', group: 'Model terms',
+    what: 'Two control terms added together: which of their two sessions it was, and how far '
+      + 'into that session the decision fell. Together they soak up learning and fatigue.',
+    read: 'See the two entries below.' },
+  run: { term: 'Second run (vs first)', group: 'Model terms',
+    what: 'Whether the decision was made in the operator’s second 8-minute session, whichever '
+      + 'scenario that was.',
+    read: 'How the odds of taking a card change in the second session compared with the first.' },
+  idx: { term: 'Each further decision into the session', group: 'Model terms',
+    what: 'How many strategic decisions the operator had already made earlier in the same session.',
+    read: 'How the odds of taking a card change with each earlier decision. A small multiplier '
+      + 'adds up: ×1.03 per decision is about ×1.34 after ten.' },
+  residual: { term: 'Residual mission', group: 'Model terms',
+    what: 'When an operator abandons a mission in flight, its unfinished tasks come back as a new '
+      + 'mission (its id ends in -R). It keeps the parent’s category but holds only the leftover '
+      + 'tasks, so a residual E mission averages under 3 tasks where a genuine E has 6. “Genuine '
+      + 'missions only” drops these decisions.',
+    read: '' },
+
+  // — statistics —
+  rho: { term: 'Spearman ρ (rho)', group: 'Statistics',
+    what: 'A rank correlation: do operators who rank high on one measure also rank high on the other?',
+    read: '−1 = exactly opposite order, 0 = unrelated, +1 = exactly the same order. As a rough '
+      + 'guide, about .1 is small, .3 moderate and .5 large.' },
+  holm: { term: 'Holm correction', group: 'Statistics',
+    what: 'An adjustment for running many tests at once. With 40 tests, about 2 will pass '
+      + 'p < .05 by chance alone even when nothing is going on.',
+    read: 'Each p-value is raised so the whole family of tests has only a 5% chance of producing '
+      + 'any false alarm. A Holm-adjusted p under .05 is a result that survives that.' },
+  odds: { term: 'Odds multiplier (odds ratio)', group: 'Statistics',
+    what: 'How a term changes the odds of taking a card, holding the other terms in the model fixed.',
+    read: '×1.00 = no change, ×2.00 = odds doubled, ×0.50 = odds halved. Odds are not '
+      + 'probability: going from a 50% to a 67% chance is ×2 in odds.' },
+  gee: { term: 'GEE, clustered on participant', group: 'Statistics',
+    what: 'A regression (generalised estimating equations) that allows for each operator '
+      + 'contributing many decisions, so the uncertainty is not understated and one prolific '
+      + 'operator cannot dominate.',
+    read: '' },
+  ci: { term: '95% interval', group: 'Statistics',
+    what: 'The range of effect sizes the data are consistent with.',
+    read: 'If the interval includes ×1.00 (crosses the centre line), the term cannot be told '
+      + 'apart from no effect.' },
+  alpha: { term: 'Cronbach’s α (alpha)', group: 'Statistics',
+    what: 'Whether the statements in a questionnaire hang together as measuring one thing.',
+    read: '0 to 1. 0.7 or above is the usual bar for an acceptable scale; below it the averaged '
+      + 'score is noisy and a null result from it is weak evidence.' },
+  welch: { term: 'Welch test', group: 'Statistics',
+    what: 'Compares the averages of two groups without assuming they are equally spread out.',
+    read: 'The p is the chance of seeing a gap at least this big if the two groups were really '
+      + 'the same.' },
+};
+const gv = x => typeof x === 'function' ? x() : (x || '');
+function glossHtml(key) {
+  const g = GLOSS[key];
+  if (!g) return '';
+  const read = gv(g.read), here = gv(g.here);
+  return `<span class="g-term">${g.term}</span>${gv(g.what)}`
+    + (read ? `<span class="g-read">${read}</span>` : '')
+    + (here ? `<span class="g-here">${here}</span>` : '');
+}
+// `gl` is for HTML strings, `glNode` for an element already built.
+const gl = (key, text) => `<span class="gl" data-g="${key}">${text || GLOSS[key].term}</span>`;
+function glNode(n, key) {
+  if (!GLOSS[key]) return n;
+  n.setAttribute('data-g', key);
+  if (n.classList) n.classList.add('gl');
+  return n;
+}
+// One listener for every glossary hover, including ones re-rendered later. It runs in the
+// capture phase so that leaving a glossary term hides its box BEFORE a chart's own hover handler
+// shows the next one.
+let glossOn = false;
+document.addEventListener('mousemove', e => {
+  const n = e.target.closest ? e.target.closest('[data-g]') : null;
+  if (n && GLOSS[n.getAttribute('data-g')]) {
+    showTip(e, glossHtml(n.getAttribute('data-g')), true);
+    glossOn = true;
+  } else if (glossOn) { hideTip(); glossOn = false; }
+}, true);
+
 /* — masthead — */
 h('div', { class: 'kicker', text: 'Human–autonomy trust study · results synthesis' }, main);
 h('h1', { text: 'Two tiers, and what people said' }, main);
@@ -546,8 +833,7 @@ h('p', { class: 'lede', html:
 const ban = h('div', { class: 'banner' }, main);
 ban.innerHTML = '<b>Identifiable data — do not circulate.</b> This page embeds verbatim participant '
   + 'speech alongside the pooled numbers, so it is identifiable under the same terms as the '
-  + 'recordings. It lives in the gitignored <code>Results/Narration/</code> tree and moves by hand '
-  + 'with the rest of that data. Do not paste it into a hosted tool. Rebuild it with '
+  + 'recordings. Do not paste it into a hosted tool. Rebuild it with '
   + '<code>python scripts/build_findings_synthesis.py</code>.';
 
 h('p', { class: 'meta', text:
@@ -824,9 +1110,9 @@ reg('disposition', 'What they brought with them');
 {
   const s = section('disposition', 'Disposition', 'Nothing operators brought with them predicted how they used either tier');
   para(s, 'Before session 1 every operator (from <code>study-v1.3</code> on) completed three '
-    + 'Likert batteries: the validated four-item AIAS-4 on general attitude to AI, a bespoke '
-    + 'verification-propensity scale, and a bespoke delegation-boundary scale on how much authority '
-    + 'a human should keep. With five prior-experience items alongside them, that is eight '
+    + 'Likert batteries: the validated four-item ' + gl('aias', 'AIAS-4') + ' on general attitude '
+    + 'to AI, a bespoke ' + gl('verification', 'verification-propensity') + ' scale, and a bespoke '
+    + gl('delegation', 'delegation-boundary') + ' scale on how much authority a human should keep. With five prior-experience items alongside them, that is eight '
     + 'candidate individual-difference predictors of reliance. They were scored and then never '
     + 'reported. Here is what they predict.');
   tiles(s, [
@@ -839,12 +1125,14 @@ reg('disposition', 'What they brought with them');
   const cB = card(s, 'The three batteries');
   const tB = h('table', {}, cB);
   const thB = h('tr', {}, h('thead', {}, tB));
-  ['Battery', 'Scale', 'Mean (SD)', 'Observed range', 'α', 'n'].forEach((x, i) =>
-    h('th', { text: x, class: i ? 'num' : '' }, thB));
+  ['Battery', 'Scale', 'Mean (SD)', 'Observed range', 'α', 'n'].forEach((x, i) => {
+    const th = h('th', { text: x, class: i ? 'num' : '' }, thB);
+    if (x === 'α') glNode(th, 'alpha');
+  });
   const tbB = h('tbody', {}, tB);
   DP.batteries.forEach(b => {
     const tr = h('tr', {}, tbB);
-    h('td', { html: b.label + (b.validated ? ' <span class="badge">VALIDATED</span>' : '') }, tr);
+    h('td', { html: gl(b.key, b.label) + (b.validated ? ' <span class="badge">VALIDATED</span>' : '') }, tr);
     h('td', { text: b.scale, class: 'num' }, tr);
     h('td', { text: `${num(b.mean, 2)} (${num(b.sd, 2)})`, class: 'num' }, tr);
     h('td', { text: `${num(b.lo, 2)}–${num(b.hi, 2)}`, class: 'num' }, tr);
@@ -860,34 +1148,48 @@ reg('disposition', 'What they brought with them');
     + `${num(DP.batteries[0].alpha, 2)} for the validated AIAS-4. Each was five or six items `
     + 'written for this study and never piloted as a scale.' }, cB);
 
-  const cD = card(s, 'Every disposition against every reliance measure (Spearman ρ)');
-  // Row labels have to name BOTH sides of the correlation or four rows read as the same predictor,
-  // so each side gets a short form and the gutter is widened to fit them.
-  const SHORT_P = {
-    aias: 'AIAS-4 attitude', verification: 'Verification propensity',
-    delegation: 'Delegation boundary', delegTrustSuggestOverDecide: '“suggest > decide”',
-    delegHumanFinalSay: '“human decides”', errorDetectability: '“errors hard to spot”',
-    experienceMean: 'Prior experience', autonomyExperience: 'Automation experience',
-  };
-  const SHORT_B = { took: 'card uptake', consult: 'tactical consulting',
-                    accept: 'tactical unmodified', secs: 'decision time', score: 'score' };
-  const strong = DP.cells.slice().sort((a, b) => Math.abs(b.rho || 0) - Math.abs(a.rho || 0)).slice(0, 12);
-  barsDiverging(h('div', { class: 'chart' }, cD),
-    strong.map(c => ({ label: `${SHORT_P[c.predictor] || c.predictor} → ${SHORT_B[c.behaviour]}`,
-                       value: c.rho, faint: !(c.p < 0.05),
-                       sub: `${c.predictorLabel.replace(/[“”]/g, '"')} vs ${c.behaviourLabel}`
-                         + `<br>${pval(c.p)} · Holm ${pval(c.holm)} · n = ${c.n}` })),
-    { zeroLabel: 'no association', unit: '', padL: 230, fmt: v => 'ρ = ' + sgn(v, 2) });
-  h('p', { class: 'cap', html: 'The twelve largest of ' + DP.nTests + ' correlations, strongest '
-    + 'first; hover for the full item wording and both p-values. Solid bars are nominally '
-    + 'significant, soft bars are not. <b>Every bar here is small, and none survives '
-    + 'correction.</b>' }, cD);
+  const cD = card(s, 'Every disposition against every behaviour (Spearman ρ)');
+  // A grid, not a ranked list: rows are what operators brought with them, columns are what they
+  // did, so each correlation has one obvious place and no label has to name two things at once.
+  const preds = [...new Set(DP.cells.map(c => c.predictor))];
+  const behs = [...new Set(DP.cells.map(c => c.behaviour))];
+  const COL_NAME = { took: 'Took a strategy card', consult: 'Consulted tactical plan',
+                     accept: 'Tactical plan unmodified', secs: 'Strategic decision time',
+                     score: 'Session score' };
+  const tH = h('table', { class: 'heat' }, h('div', { class: 'scroll' }, cD));
+  const hrH = h('tr', {}, h('thead', {}, tH));
+  h('th', { text: 'Disposition' }, hrH);
+  behs.forEach(bk => glNode(h('th', { text: COL_NAME[bk] || bk }, hrH), bk));
+  const tbH = h('tbody', {}, tH);
+  const pos = css('--s-strat'), neg = css('--s-tac');
+  preds.forEach(pk => {
+    const tr = h('tr', {}, tbH);
+    glNode(h('td', { text: DP.cells.find(c => c.predictor === pk).predictorLabel }, tr), pk);
+    behs.forEach(bk => {
+      const c = DP.cells.find(x => x.predictor === pk && x.behaviour === bk);
+      const td = h('td', { class: 'cell' + (c && c.p < 0.05 ? ' sig' : '') }, tr);
+      if (!c || c.rho == null) { td.textContent = '—'; return; }
+      const a = Math.min(1, Math.abs(c.rho) / 0.5);  // full colour at |ρ| = .5
+      td.style.background = `color-mix(in srgb, ${c.rho >= 0 ? pos : neg} ${Math.round(a * 55)}%, transparent)`;
+      td.textContent = sgn(c.rho, 2);
+      hoverable(td, `<b>${c.predictorLabel}</b><br>vs ${c.behaviourLabel}<br>ρ = ${sgn(c.rho, 2)} · `
+        + `${pval(c.p)} · Holm ${pval(c.holm)} · n = ${c.n}`);
+    });
+  });
+  h('p', { class: 'cap', html: 'Each number is a ' + gl('rho') + '. Hover any row or column name '
+    + 'for what it measures and what its numbers mean. '
+    + 'Each row is something operators brought with them; each column is '
+    + 'something they did. <b>Blue</b>: operators higher on that disposition did <i>more</i> of the '
+    + 'behaviour (or took longer, or scored higher). <b>Orange</b>: less. Deeper colour means a '
+    + 'stronger correlation. A <b>boxed</b> cell is significant at p &lt; .05 before correction; '
+    + '<b>none survives ' + gl('holm') + '</b>. Hover a cell for the item wording and both p-values.' }, cD);
   tableFor(cD, ['Disposition', 'Behaviour', 'ρ', 'p', 'Holm-adjusted p', 'n'],
     DP.cells.slice().sort((a, b) => (a.p == null) - (b.p == null) || a.p - b.p)
-      .map(c => [c.predictorLabel.replace(/[“”]/g, '"'), c.behaviourLabel, num(c.rho, 2),
+      .map(c => [{ text: c.predictorLabel.replace(/[“”]/g, '"'), g: c.predictor },
+                 { text: c.behaviourLabel, g: c.behaviour }, num(c.rho, 2),
                  pval(c.p).replace('p = ', '').replace('p < ', '<'),
                  pval(c.holm).replace('p = ', '').replace('p < ', '<'), c.n]),
-    `Show all ${DP.nTests} tests`);
+    `Show all ${DP.nTests} tests as a list`);
   para(s, `Three of the ${DP.nTests} clear p &lt; .05 before correction and none of them clears Holm. `
     + 'The three are at least coherent rather than random — operators who scored higher on the '
     + 'delegation-boundary scale consulted the tactical plan less and took it unmodified less '
@@ -905,7 +1207,7 @@ reg('disposition', 'What they brought with them');
     + 'tier, not either level alone. It predicts nothing.');
   const cT = card(s, 'Predicting the difference between strategic uptake and tactical consulting');
   tableFor(cT, ['Disposition', 'ρ with the tier gap', 'p', 'n'],
-    DP.tierGap.map(r => [r.label.replace(/[“”]/g, '"'), num(r.rho, 2),
+    DP.tierGap.map(r => [{ text: r.label.replace(/[“”]/g, '"'), g: r.predictor }, num(r.rho, 2),
                          pval(r.p).replace('p = ', ''), r.n]), 'Show the tier-gap tests');
   const tg = DP.tierGap[0];
   para(cT, `The designed test comes out at ρ = ${num(tg.rho, 2)}, ${pval(tg.p)}. Operators do hold `
@@ -916,7 +1218,8 @@ reg('disposition', 'What they brought with them');
   h('h3', { text: 'Nor does disposition predict what they reported afterwards' }, s);
   tableFor(card(s, 'Disposition against the post-session questionnaires'),
     ['Disposition', 'Reported measure', 'ρ', 'p', 'n'],
-    DP.onTrust.map(r => [r.predictorLabel.replace(/[“”]/g, '"'), r.behaviourLabel, num(r.rho, 2),
+    DP.onTrust.map(r => [{ text: r.predictorLabel.replace(/[“”]/g, '"'), g: r.predictor },
+                         { text: r.behaviourLabel, g: r.behaviour }, num(r.rho, 2),
                          pval(r.p).replace('p = ', ''), r.n]), 'Show the tests');
   para(s, 'This is the more interesting null of the two. If post-session trust were a disposition '
     + 'being expressed, a general attitude to AI should predict it. It does not — not for either '
@@ -930,31 +1233,46 @@ reg('disposition', 'What they brought with them');
   para(s, 'Each experience item is ordinal, so the only defensible grouping is a median split, '
     + 'tested with the same Welch contrast the log-only report uses between order groups.');
   const cG = card(s, 'Median split on each experience axis');
-  const tG = h('table', {}, cG);
-  const thG = h('tr', {}, h('thead', {}, tG));
-  ['Experience axis', 'Groups', 'Card uptake', 'Tactical consulting', 'Score'].forEach((x, i) =>
-    h('th', { text: x, class: i ? 'num' : '' }, thG));
-  const tbG = h('tbody', {}, tG);
-  DP.groups.forEach(g => {
-    const pick = k => g.rows.find(r => r.behaviour === k);
-    const tr = h('tr', {}, tbG);
-    h('td', { html: g.label + (g.floored ? ' <span class="ns">· floored</span>' : '') }, tr);
-    h('td', { text: `${g.nLow} / ${g.nHigh}`, class: 'num' }, tr);
-    ['took', 'consult', 'score'].forEach(k => {
-      const r = pick(k);
-      if (!r) { h('td', { text: '—', class: 'num' }, tr); return; }
-      const fv = k === 'score' ? v => num(v, 0) : v => pct(v, 0);
-      h('td', { html: `${fv(r.low)} → ${fv(r.high)}<br><span class="${pClass(r.p)}">`
-        + `${pval(r.p)}</span>`, class: 'num' }, tr);
-    });
+  const GB = [['took', 'Card uptake', v => pct(v, 0)], ['consult', 'Tactical consulting', v => pct(v, 0)],
+              ['accept', 'Tactical unmodified', v => pct(v, 0)], ['secs', 'Decision time', v => num(v, 1) + 's'],
+              ['score', 'Score', v => num(v, 0)]];
+  const rowG = h('div', { class: 'picker' }, cG);
+  h('span', { class: 'lbl', text: 'Behaviour' }, rowG);
+  const segG = h('div', { class: 'seg' }, rowG);
+  const gHost = h('div', { class: 'scroll' }, cG);
+  const gBtns = GB.map(([k, label]) => {
+    const btn = glNode(h('button', { text: label }, segG), k);
+    btn.onclick = () => drawG(k);
+    return [btn, k];
   });
-  h('p', { class: 'cap', html: 'Lower group → higher group, with the Welch p. '
-    + `All ${DP.groups.reduce((n, g) => n + g.rows.length, 0)} contrasts across every axis and every `
-    + 'behaviour are null; the three columns shown are representative. “Floored” marks an axis '
-    + 'where one group has fewer than eight people, so the contrast is reported but underpowered '
-    + 'to the point of being uninformative. On the two axes where most operators answered “None” '
-    + '— drones and dispatch/command — the median sits at zero, so the “higher” group there means '
-    + 'nothing more than <i>any</i> experience at all.' }, cG);
+  function drawG(k) {
+    gBtns.forEach(([btn, kk]) => btn.classList.toggle('on', kk === k));
+    const fv = GB.find(g => g[0] === k)[2];
+    gHost.innerHTML = '';
+    const tG = h('table', {}, gHost);
+    const thG = h('tr', {}, h('thead', {}, tG));
+    ['Experience axis', 'Less experienced half', 'More experienced half', 'p (Welch)'].forEach((x, i) => {
+      const th = h('th', { text: x, class: i ? 'num' : '' }, thG);
+      if (i === 3) glNode(th, 'welch');
+    });
+    const tbG = h('tbody', {}, tG);
+    DP.groups.forEach(g => {
+      const r = g.rows.find(x => x.behaviour === k);
+      const tr = h('tr', {}, tbG);
+      h('td', { html: gl(g.key, g.label) + (g.floored ? ' <span class="ns">· too few for a fair test</span>' : '') }, tr);
+      h('td', { text: r ? `${fv(r.low)}  (n = ${g.nLow})` : '—', class: 'num' }, tr);
+      h('td', { text: r ? `${fv(r.high)}  (n = ${g.nHigh})` : '—', class: 'num' }, tr);
+      h('td', { text: r ? pval(r.p).replace('p ', '') : '—', class: 'num ' + (r ? pClass(r.p) : '') }, tr);
+    });
+  }
+  drawG('took');
+  h('p', { class: 'cap', html: 'Pick a behaviour. Each row splits operators at the median of one '
+    + 'experience item and compares the two halves. '
+    + `All ${DP.groups.reduce((n, g) => n + g.rows.length, 0)} contrasts, across every axis and every `
+    + 'behaviour, are null. “Too few for a fair test” marks an axis where one half has fewer than '
+    + 'eight people. On the two axes where most operators answered “None” (drones, and '
+    + 'dispatch/command) the median is zero, so the “more experienced” half there just means '
+    + '<i>any</i> experience at all.' }, cG);
 
   note(s, '<b>How much of this null is the operators, and how much is the measurement?</b> Three '
     + 'things argue for caution before reading it as “individual differences do not matter here”. '
@@ -981,31 +1299,104 @@ reg('drivers', 'What actually drives reliance');
   const s = section('drivers', 'Finding', 'Mission composition drives reliance, not the scenario');
   para(s, 'The obvious result is that operators took the strategic card more often in the Tactical '
     + 'Heavy scenario than in the Strategic Heavy one. That is true, and it survives nothing.');
-  const c = card(s, 'Effect on taking a strategy card (binomial GEE, clustered on participant)');
-  const rows = [];
-  const MODEL_NAME = { 'Scenario only': 'Model 1', '+ artefact': 'Model 2', '+ composition': 'Model 3' };
-  C.drivers.forEach(m => {
-    const mn = MODEL_NAME[m.label] || m.label;
-    rows.push({ label: mn + ' \u00b7 Tactical Heavy scenario', b: m.scenario.b, lo: m.scenario.lo, hi: m.scenario.hi, p: m.scenario.p });
-    if (m.odd) rows.push({ label: mn + ' \u00b7 illogical card shown', b: m.odd.b, lo: m.odd.lo, hi: m.odd.hi, p: m.odd.p });
-    if (m.ncolours) rows.push({ label: mn + ' \u00b7 each extra drone colour', b: m.ncolours.b, lo: m.ncolours.lo, hi: m.ncolours.hi, p: m.ncolours.p });
+  const c = card(s, 'Model explorer: what predicts taking a strategy card');
+  para(c, 'Every combination of the terms below has been fitted (' + gl('gee', 'binomial GEE, '
+    + 'clustered on participant') + '). Hover any term for what it means. Tick the terms you want and the chart shows that model. The three presets are '
+    + 'the models the argument uses: click them in order and watch the scenario effect shrink as '
+    + 'mission composition is added.');
+  const X = C.explorer;
+  const COEF_G = { 'C(scenario)[T.tactical]': 'scenario', odd: 'odd', ncolours: 'ncolours',
+                   ndrones: 'ndrones', criticality: 'category', 'C(run)[T.2]': 'run', idx: 'idx' };
+  const presets = [
+    ['1 · scenario', ['scenario', 'time']],
+    ['2 · + illogical card', ['scenario', 'odd', 'time']],
+    ['3 · + composition', ['scenario', 'odd', 'ncolours', 'ndrones', 'time']],
+  ];
+  const state = { sample: 'all', on: new Set(presets[0][1]) };
+  const rowP = h('div', { class: 'picker' }, c);
+  h('span', { class: 'lbl', text: 'Presets' }, rowP);
+  const segP = h('div', { class: 'seg' }, rowP);
+  const presetBtns = presets.map(([label, keys]) => {
+    const btn = h('button', { text: 'Model ' + label }, segP);
+    btn.onclick = () => { state.on = new Set(keys); render(); };
+    return [btn, keys];
   });
-  const ch = h('div', { class: 'chart' }, c);
-  forest(ch, rows);
-  h('p', { class: 'cap', html: '<b>How to read it.</b> Each row is one term from one model. The dot '
-    + 'is that term’s estimated effect on the odds of taking a card; the bar is its 95% interval. '
-    + 'The axis is log-odds, with the odds multiplier underneath — <b>×1.00 means no change</b>, '
-    + '×1.50 means the odds are half again as large. A bar crossing the centre line is not '
-    + 'distinguishable from no effect. Dark = significant at .05, pale = not.' }, c);
-  h('p', { class: 'cap', html: '<b>The three models</b> are nested, and all of them also contain which '
-    + 'run it was and how far into the session the decision fell. <b>Model 1</b>: scenario only. '
-    + '<b>Model 2</b>: adds whether the Conservative card on that mission was illogical — whether it '
-    + 'committed a drone colour the mission had no use for. <b>Model 3</b>: adds the mission’s own '
-    + 'composition, meaning how many drone colours and how many drones it needed. The scenario effect '
-    + 'halves in Model 2 and vanishes in Model 3; the illogical-card effect does exactly the same. '
-    + 'Only mission composition survives.' }, c);
-  tableFor(c, ['Term', 'b', '95% low', '95% high', 'p'],
-    rows.map(r => [r.label, sgn(r.b, 3), num(r.lo, 3), num(r.hi, 3), pval(r.p).replace('p ', '')]));
+  const rowT = h('div', { class: 'picker' }, c);
+  h('span', { class: 'lbl', text: 'Terms' }, rowT);
+  const TERM_SHORT = { scenario: 'Scenario', odd: 'Illogical card', ncolours: 'Colours needed',
+                       ndrones: 'Drones needed', category: 'Category A–E', time: 'Run + time in session' };
+  const boxes = X.terms.map(t => {
+    const lab = h('label', {}, rowT);
+    const box = h('input', { type: 'checkbox' }, lab);
+    glNode(h('span', { text: TERM_SHORT[t.key] || t.label }, lab), t.key);
+    box.onchange = () => { box.checked ? state.on.add(t.key) : state.on.delete(t.key); render(); };
+    return [box, t.key];
+  });
+  const rowS = h('div', { class: 'picker' }, c);
+  h('span', { class: 'lbl', text: 'Sample' }, rowS);
+  const segS = h('div', { class: 'seg' }, rowS);
+  const sampleBtns = X.samples.map(sm => {
+    const btn = h('button', { text: sm.label }, segS);
+    if (sm.key === 'genuine') glNode(btn, 'residual');
+    btn.onclick = () => { state.sample = sm.key; render(); };
+    return [btn, sm.key];
+  });
+  const info = h('div', {}, c);
+  const fch = h('div', { class: 'chart' }, c);
+  const tbl = h('div', { class: 'scroll' }, c);
+  // One axis for every model, so clicking between them moves the dots instead of the scale.
+  const allTerms = Object.values(X.models).flatMap(m => m.terms || []);
+  const LIM = Math.min(3, Math.max(...allTerms.flatMap(t => [Math.abs(t.lo), Math.abs(t.hi)])) * 1.1);
+  function render() {
+    boxes.forEach(([box, k]) => { box.checked = state.on.has(k); });
+    sampleBtns.forEach(([btn, k]) => btn.classList.toggle('on', k === state.sample));
+    presetBtns.forEach(([btn, keys]) => btn.classList.toggle('on',
+      keys.length === state.on.size && keys.every(k => state.on.has(k))));
+    info.innerHTML = ''; fch.innerHTML = ''; tbl.innerHTML = '';
+    const keys = X.terms.map(t => t.key).filter(k => state.on.has(k));
+    if (!keys.length) { h('p', { class: 'warnline', text: 'Tick at least one term.' }, info); return; }
+    const m = X.models[state.sample + '|' + keys.join('+')];
+    if (!m || m.error) {
+      h('p', { class: 'warnline', text: 'This model did not fit: ' + (m ? m.error : 'missing') }, info);
+      return;
+    }
+    h('p', { class: 'formula', text: `${m.formula}  ·  n = ${m.n} decisions from ${m.nPid} participants` }, info);
+    if (state.on.has('category') && state.sample === 'all')
+      h('p', { class: 'warnline', html: '⚠ Category is in the model but residual missions are '
+        + 'included. A residual keeps its parent’s category while holding only the leftover tasks, '
+        + 'so switch the sample to <b>genuine missions only</b> before reading the category term.' }, info);
+    forest(fch, m.terms.map(t => ({ label: t.label, b: t.b, lo: t.lo, hi: t.hi, p: t.p, g: COEF_G[t.coef] })),
+      { lim: LIM, padL: 300 });
+    const t = h('table', {}, tbl);
+    const hr = h('tr', {}, h('thead', {}, t));
+    ['Term', 'Odds ×', '95% interval', 'p', 'In plain words'].forEach((x, i) => {
+      const th = h('th', { text: x, class: i && i < 4 ? 'num' : '' }, hr);
+      if (i === 1) glNode(th, 'odds'); else if (i === 2) glNode(th, 'ci');
+    });
+    const tb = h('tbody', {}, t);
+    m.terms.forEach(r => {
+      const tr = h('tr', {}, tb);
+      const or = Math.exp(r.b);
+      glNode(h('td', { text: r.label }, tr), COEF_G[r.coef]);
+      h('td', { text: '×' + or.toFixed(2), class: 'num' }, tr);
+      h('td', { text: `×${Math.exp(r.lo).toFixed(2)} to ×${Math.exp(r.hi).toFixed(2)}`, class: 'num' }, tr);
+      h('td', { text: pval(r.p).replace('p ', ''), class: 'num ' + pClass(r.p) }, tr);
+      const words = r.p >= 0.05 ? 'no clear effect'
+        : or > 1 ? `odds of taking a card ${or.toFixed(2)}× higher`
+                 : `odds of taking a card ${(1 / or).toFixed(2)}× lower`;
+      h('td', { text: words, style: 'text-align:left' }, tr);
+    });
+  }
+  render();
+  h('p', { class: 'cap', html: '<b>How to read it.</b> Each row is one term in the chosen model. The '
+    + 'dot is that term’s effect on the ' + gl('odds', 'odds') + ' of taking a card, holding the '
+    + 'other ticked terms fixed; the bar is its ' + gl('ci') + '. <b>×1.00 means no change.</b> A bar crossing the centre line '
+    + 'cannot be told apart from no effect. Dark = significant at .05, pale = not. The axis is the '
+    + 'same for every model, so clicking between them moves the dots, not the scale.' }, c);
+  h('p', { class: 'cap', html: '<b>What the presets show.</b> In Model 1 the Tactical Heavy scenario '
+    + 'clearly raises uptake. Adding whether the Conservative card was illogical (Model 2) halves it. '
+    + 'Adding the mission’s own composition, meaning how many drone colours and drones it needs '
+    + '(Model 3), makes both disappear. Only composition survives.' }, c);
 
   const L = C.load;
   const g2 = h('div', { class: 'grid2' }, s);
@@ -1641,6 +2032,25 @@ reg('limits', 'Limitations');
       + 'that care about this group by game, not by run.'],
   ];
   items.forEach(([t, b]) => { h('h3', { text: t }, s); para(s, b); });
+}
+
+/* — 12b · glossary — */
+reg('glossary', 'Glossary');
+{
+  const s = section('glossary', 'Reference', 'Glossary');
+  para(s, 'Every term with a dotted underline on this page shows its entry on hover. They are all '
+    + 'collected here.');
+  const groups = [...new Set(Object.values(GLOSS).map(g => g.group))];
+  groups.forEach(grp => {
+    h('h3', { text: grp }, s);
+    const dl = h('dl', { class: 'gloss' }, card(s));
+    Object.entries(GLOSS).filter(([, g]) => g.group === grp).forEach(([, g]) => {
+      h('dt', { text: g.term }, dl);
+      const read = gv(g.read), here = gv(g.here);
+      h('dd', { html: gv(g.what) + (read ? `<span class="g-read">${read}</span>` : '')
+        + (here ? `<span class="g-here">${here}</span>` : '') }, dl);
+    });
+  });
 }
 
 /* — 13 · quote appendix — */

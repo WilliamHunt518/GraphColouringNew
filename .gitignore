@@ -36,8 +36,8 @@ Results/Interviews/
 # The blank template in Forms/ has no participant data and is fine to commit.
 Results/Supplements/
 
-# Embeds verbatim interview quotes (identifiable) alongside the pooled numbers — unlike everything
-# else in docs/reports/, this one isn't safe to commit. Regenerate locally, never commit it.
+# Old output path for the findings page, kept as a backstop. It now builds to
+# Results/findings_synthesis.html, which is committed on purpose -- see docs/reports/README.md.
 docs/reports/findings_synthesis.html
 
 # The name<->anon-ID key. The ONLY place real names live -- never commit or push it.
