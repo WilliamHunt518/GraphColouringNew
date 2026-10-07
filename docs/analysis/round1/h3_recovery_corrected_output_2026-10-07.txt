@@ -1,0 +1,119 @@
+episodes (P09 excluded): 194 from 33 participants
+outcomes: {'recovered': 116, 'abandoned': 67, 'unresolved': 11}
+
+## Reconstruction checks
+idle pool reconstructed == logged onMissionDroneIds: 188/194 | mean |sym diff| when not: 1.5
+idle-fixable reconstructed == logged flag: 193/194
+fixability crosstab (logged idle-only flag, corrected all-drones, original feasibleWithBusy):
+  {(True, True, True): 159, (False, False, False): 16, (True, True, False): 4, (False, True, True): 10, (False, False, True): 5}
+  idle-fixable but not all-fixable (should be 0): 0
+
+## Descriptive Suggest split
+  fixAll        all   {'n': 164, 'people': 32, 'withSuggest': '14/70 abandoned (20%)', 'withoutSuggest': '34/94 abandoned (36%)', 'peopleWithWithinVariation': 17, 'episodesFromThem': 104, 'peopleAllSuggest': 9, 'peopleNoSuggest': 6, 'peopleWithAnyAbandon': 22}
+  fixAll        v112  {'n': 99, 'people': 23, 'withSuggest': '11/52 abandoned (21%)', 'withoutSuggest': '25/47 abandoned (53%)', 'peopleWithWithinVariation': 8, 'episodesFromThem': 39, 'peopleAllSuggest': 9, 'peopleNoSuggest': 6, 'peopleWithAnyAbandon': 14}
+  fixIdleLogged all   {'n': 155, 'people': 32, 'withSuggest': '11/66 abandoned (17%)', 'withoutSuggest': '29/89 abandoned (33%)', 'peopleWithWithinVariation': 17, 'episodesFromThem': 97, 'peopleAllSuggest': 9, 'peopleNoSuggest': 6, 'peopleWithAnyAbandon': 18}
+  fixIdleLogged v112  {'n': 94, 'people': 23, 'withSuggest': '9/49 abandoned (18%)', 'withoutSuggest': '23/45 abandoned (51%)', 'peopleWithWithinVariation': 8, 'episodesFromThem': 36, 'peopleAllSuggest': 9, 'peopleNoSuggest': 6, 'peopleWithAnyAbandon': 13}
+
+## PRIMARY: GEE logit abandoned ~ usedSuggest + person-mean(usedSuggest), fixable (all live mission drones)
+  all: {'OR': 0.404, 'lo': 0.214, 'hi': 0.762, 'p': 0.005, 'b': -0.906, 'n': 164, 'people': 32, 'between_pm_sug': {'OR': 1.045, 'lo': 0.203, 'hi': 5.393, 'p': 0.958, 'b': 0.044}, 'detectable': {'se': 0.323, 'minDetectableOR_protective': 0.404}}
+  v112: {'OR': 0.291, 'lo': 0.124, 'hi': 0.683, 'p': 0.005, 'b': -1.234, 'n': 99, 'people': 23, 'between_pm_sug': {'OR': 0.913, 'lo': 0.132, 'hi': 6.339, 'p': 0.927, 'b': -0.091}, 'detectable': {'se': 0.435, 'minDetectableOR_protective': 0.295}}
+
+## Robustness (analysis log)
+  R1 fixable = logged idle-only flag (as the page split): {'OR': 0.422, 'lo': 0.199, 'hi': 0.894, 'p': 0.024, 'b': -0.862, 'n': 155, 'people': 32}
+  R1b same, v1.12+: {'OR': 0.234, 'lo': 0.099, 'hi': 0.553, 'p': 0.001, 'b': -1.451, 'n': 94, 'people': 23}
+  R2 fixable = original study_analysis feasibleWithBusy: {'OR': 0.357, 'lo': 0.199, 'hi': 0.641, 'p': 0.001, 'b': -1.029, 'n': 164, 'people': 32}
+  R3 unresolved counted as not recovered: {'OR': 0.315, 'lo': 0.174, 'hi': 0.572, 'p': 0.0, 'b': -1.154, 'n': 173, 'people': 33}
+  R4 + run, scenario: {'OR': 0.427, 'lo': 0.222, 'hi': 0.821, 'p': 0.011, 'b': -0.852, 'n': 164, 'people': 32}
+  R5 + run, scenario, time left, idle-fixable, category: {'OR': 0.457, 'lo': 0.216, 'hi': 0.965, 'p': 0.04, 'b': -0.783, 'n': 164, 'people': 32}
+  R6 v1.5+ only (current Suggest pool): {'OR': 0.43, 'lo': 0.216, 'hi': 0.857, 'p': 0.016, 'b': -0.844, 'n': 131, 'people': 29}
+  R7 pooled (no person-mean): total association: {'OR': 0.409, 'lo': 0.234, 'hi': 0.716, 'p': 0.002, 'b': -0.894, 'n': 164, 'people': 32}
+  R7b pooled, v1.12+: {'OR': 0.285, 'lo': 0.134, 'hi': 0.605, 'p': 0.001, 'b': -1.256, 'n': 99, 'people': 23}
+  R8 within-centred Suggest (w_sug) + pm: {'OR': 0.404, 'lo': 0.214, 'hi': 0.762, 'p': 0.005, 'b': -0.906, 'n': 164, 'people': 32}
+  R9 conditional (fixed-effect) logit, all: {'OR': 0.319, 'lo': 0.092, 'hi': 1.114, 'p': 0.073, 'n': 83, 'people': 13}
+  R9b conditional logit, idle-fixable, all: {'OR': 0.299, 'lo': 0.071, 'hi': 1.252, 'p': 0.099, 'n': 62, 'people': 10}
+  R9 conditional (fixed-effect) logit, v112: {'OR': 0.135, 'lo': 0.015, 'hi': 1.2, 'p': 0.072, 'n': 23, 'people': 5}
+  R9b conditional logit, idle-fixable, v112: {'OR': 0.109, 'lo': 0.011, 'hi': 1.053, 'p': 0.055, 'n': 21, 'people': 5}
+  R11 median episode latency (s) by Suggest x outcome: {(False, 'abandoned'): 29.0, (False, 'recovered'): 18.7, (True, 'abandoned'): 26.6, (True, 'recovered'): 21.8}
+  R12 three-way split abandoned rate: Suggest gave a plan 3/51 | Suggest pressed but gave nothing 11/19 | no Suggest 34/94
+  R12 GEE sugGot + sugEmpty + person means: {'got': {'OR': 0.062, 'lo': 0.012, 'hi': 0.325, 'p': 0.001, 'b': -2.783}, 'empty': {'OR': 1.703, 'lo': 0.77, 'hi': 3.768, 'p': 0.189, 'b': 0.533}}
+  R13 attempted episodes only (drag or Suggest), all: {'OR': 0.935, 'lo': 0.272, 'hi': 3.218, 'p': 0.915, 'b': -0.067, 'n': 137, 'people': 29} | Suggest 14/70 | drags only 7/67
+  R13 attempted episodes only (drag or Suggest), v112: {'OR': 0.738, 'lo': 0.093, 'hi': 5.861, 'p': 0.774, 'b': -0.304, 'n': 76, 'people': 20} | Suggest 11/52 | drags only 2/24
+  R14 attempt type x outcome (fixable, resolved): {('-D', 'recovered'): 60, ('SD', 'recovered'): 14, ('-D', 'abandoned'): 7, ('--', 'abandoned'): 27, ('S-', 'recovered'): 42, ('S-', 'abandoned'): 14}
+  R15 Suggest as first move: {'OR': 0.641, 'lo': 0.285, 'hi': 1.439, 'p': 0.281, 'b': -0.445}
+  R16 bias-reduced SE, all: {'OR': 0.404, 'lo': 0.206, 'hi': 0.792, 'p': 0.008}
+  R16 bias-reduced SE, v112: {'OR': 0.291, 'lo': 0.11, 'hi': 0.773, 'p': 0.013}
+  R17 paired person-level, all: people=17, mean diff (Suggest - not) = -0.230, lower with Suggest 10, higher 3, equal 4, Wilcoxon p = 0.03
+  R17 paired person-level, v112: people=8, mean diff (Suggest - not) = -0.388, lower with Suggest 5, higher 0, equal 3, Wilcoxon p = 0.042
+
+## Suggest presses in recovery
+  total presses: 97 | episodes with >=1 press: 79 | people: 26
+  result: {'failed': 36, 'solved': 50, 'noop': 8, 'partial': 3}
+  result, pre-v1.5: {'failed': 4, 'solved': 1, 'noop': 1} | v1.5+: {'failed': 32, 'solved': 49, 'noop': 7, 'partial': 3}
+  failed/partial with the fix available via a busy drone (blind spot): 23 | failed/partial and not fixable even with busy drones: 16
+  validation v1.6+ recovered-with-press episodes, (wasAgentSuggested, reconstructed non-empty): {(True, True): 45, (False, False): 6, (False, True): 2}
+  solved presses followed by deploy with no edits: 41 / solved 50
+  next action after press, by result:
+    solved   n= 50 {'retry Suggest': 5, 'deploy': 41, 'abandon': 2, 'edit by hand': 2} | episode outcome: {'recovered': 47, 'abandoned': 3}
+    partial  n=  3 {'deploy': 1, 'retry Suggest': 1, 'abandon': 1} | episode outcome: {'recovered': 1, 'abandoned': 2}
+    failed   n= 36 {'retry Suggest': 10, 'edit by hand': 7, 'abandon': 19} | episode outcome: {'recovered': 9, 'abandoned': 27}
+    noop     n=  8 {'deploy': 3, 'retry Suggest': 2, 'edit by hand': 2, 'abandon': 1} | episode outcome: {'recovered': 7, 'abandoned': 1}
+  BLIND-SPOT presses (failed/partial, fixable with a busy drone): n = 23 people = 14 episodes = 17
+    next action: {'retry Suggest': 6, 'edit by hand': 7, 'deploy': 1, 'abandon': 9}
+    episode outcome: {'recovered': 8, 'abandoned': 9} | recovered with an agent plan in the end: 1 | edited by hand after the failed press: 7
+    patterns: {'recovered-manual': 7, 'recovered-agent': 1, 'suggest-then-abandon': 7, 'abandon-busy': 2}
+      P01 run 1 M006 t=412 recovered recovered-manual [(8.3, 'suggest', 'failed'), (17.1, 'suggest', 'failed'), (20.4, 'drag', 'assign'), (22.4, 'drag', 'assign'), (24.4, 'drag', 'assign'), (27.2, 'drag', 'assign'), (29.5, 'drag', 'chain'), (33.5, 'drag', 'chain'), (36.8, 'drag', 'chain'), (38.2, 'drag', 'chain'), (38.8, 'recovered', None)]
+      P02 run 2 M003 t=244 recovered recovered-manual [(4.0, 'drag', 'chain'), (6.0, 'drag', 'chain'), (9.9, 'drag', 'chain'), (11.8, 'suggest', 'failed'), (13.9, 'suggest', 'failed'), (36.9, 'drag', 'chain'), (38.2, 'drag', 'chain'), (39.6, 'drag', 'chain'), (47.6, 'drag', 'chain'), (48.5, 'recovered', None)]
+      P05 run 2 M010 t=388 recovered recovered-manual [(17.5, 'suggest', 'failed'), (27.1, 'drag', 'assign'), (29.5, 'drag', 'unassign'), (30.6, 'drag', 'assign'), (33.1, 'drag', 'chain'), (35.4, 'recovered', None)]
+      P06 run 2 M003 t=211 recovered recovered-manual [(21.3, 'drag', 'assign'), (22.7, 'drag', 'assign'), (25.3, 'drag', 'assign'), (33.5, 'drag', 'assign'), (36.8, 'suggest', 'failed'), (51.0, 'drag', 'chain'), (55.6, 'drag', 'chain'), (58.7, 'drag', 'chain'), (62.2, 'drag', 'chain'), (66.6, 'drag', 'chain'), (68.5, 'drag', 'chain'), (70.6, 'drag', 'chain')]
+      P10 run 2 M008 t=313 recovered recovered-agent [(18.6, 'suggest', 'partial'), (21.5, 'recovered', None)]
+      P11 run 1 M003 t=160 abandoned suggest-then-abandon [(21.2, 'suggest', 'failed'), (26.8, 'abandoned', None)]
+      P11 run 1 M001 t=252 recovered recovered-manual [(13.9, 'drag', 'chain'), (17.0, 'suggest', 'failed'), (38.1, 'drag', 'assign'), (39.8, 'drag', 'assign'), (40.8, 'recovered', None)]
+      P12 run 2 M004 t=183 abandoned abandon-busy [(3.5, 'suggest', 'failed'), (7.4, 'suggest', 'failed'), (10.8, 'abandoned', None)]
+      P16 run 2 M004 t=160 abandoned suggest-then-abandon [(26.0, 'suggest', 'failed'), (27.6, 'abandoned', None)]
+      P19 run 1 M003 t=201 abandoned suggest-then-abandon [(15.4, 'suggest', 'failed'), (18.4, 'abandoned', None)]
+      P26 run 1 M007 t=313 abandoned suggest-then-abandon [(8.1, 'suggest', 'failed'), (14.9, 'abandoned', None)]
+      P26 run 2 M003 t=160 abandoned abandon-busy [(21.5, 'suggest', 'failed'), (22.9, 'suggest', 'failed'), (24.0, 'abandoned', None)]
+      P28 run 1 M009 t=211 recovered recovered-manual [(16.6, 'suggest', 'failed'), (29.6, 'drag', 'assign'), (31.3, 'drag', 'assign'), (33.2, 'drag', 'chain'), (34.1, 'recovered', None)]
+      P28 run 2 M004 t=160 recovered recovered-manual [(5.8, 'suggest', 'failed'), (11.4, 'drag', 'chain'), (12.3, 'recovered', None)]
+      P32 run 2 M001 t=201 abandoned suggest-then-abandon [(16.3, 'suggest', 'failed'), (23.7, 'abandoned', None)]
+      P34 run 2 M006 t=388 abandoned suggest-then-abandon [(15.1, 'suggest', 'failed'), (25.2, 'suggest', 'failed'), (28.9, 'suggest', 'failed'), (32.7, 'abandoned', None)]
+      P35 run 2 M006-R t=362 abandoned suggest-then-abandon [(24.6, 'suggest', 'failed'), (32.2, 'abandoned', None)]
+  failed/partial presses by (pre-v1.5, idle-fixable at open, all-fixable at open, fixable w/ busy at press): {(True, True, True, True): 4, (False, False, True, False): 1, (False, True, True, True): 14, (False, False, False, False): 14, (False, False, True, True): 5, (False, True, True, False): 1}
+  non-blind failed/partial presses: next action {'abandon': 11, 'retry Suggest': 5} | outcome {'abandoned': 16}
+  "suggest-then-abandon" episodes: 11 | press results: {('solved',): 2, ('failed',): 7, ('solved', 'noop'): 1, ('failed', 'failed', 'failed'): 1} | v1.12+: 9 | median press->abandon s: 6.698
+  abandoned, all: orig abandon-busy pattern 12 | corrected (idle-unfixable, fixable with busy drones at failure): 8 | corrected & Suggest pressed: 3 | abandon-untried (fixable idle): 23
+  abandoned, v112: orig abandon-busy pattern 7 | corrected (idle-unfixable, fixable with busy drones at failure): 4 | corrected & Suggest pressed: 2 | abandon-untried (fixable idle): 21
+  first press per episode: {'failed': 25, 'solved': 50, 'partial': 3, 'noop': 1}
+    first press failed: next {'retry Suggest': 7, 'abandon': 13, 'edit by hand': 5} outcome {'recovered': 7, 'abandoned': 18} | fixable w/ busy: 16
+    first press partial: next {'deploy': 1, 'retry Suggest': 1, 'abandon': 1} outcome {'recovered': 1, 'abandoned': 2} | fixable w/ busy: 1
+  episode patterns all 33: {'recovered-manual': 70, 'abandon-infeasible': 15, 'tried-then-abandon': 6, 'abandon-untried': 23, 'unresolved': 11, 'abandon-busy': 12, 'recovered-agent': 46, 'suggest-then-abandon': 11}
+  episode patterns v1.12+: {'abandon-infeasible': 9, 'recovered-agent': 36, 'abandon-busy': 7, 'recovered-manual': 27, 'tried-then-abandon': 2, 'abandon-untried': 21, 'suggest-then-abandon': 9, 'unresolved': 7}
+  abandoned episodes by fixability (idleLogged, all): {(False, False): 19, (True, True): 40, (False, True): 8} | of which Suggest pressed: {(False, False, False): 10, (True, True, False): 29, (False, True, False): 5, (False, True, True): 3, (True, True, True): 11, (False, False, True): 9}
+
+## Exposure to a failed Suggest (blind-spot press)
+  recoverySuggestUsers: 26
+  exposedPeople: ['P01', 'P02', 'P05', 'P06', 'P10', 'P11', 'P12', 'P16', 'P19', 'P26', 'P28', 'P32', 'P34', 'P35']
+  nExposed: 14
+  pressesPerPerson: {'exposed': 3.571, 'unexposedUsers': 3.917}
+  laterUse: {'n': 99, 'people': 25, 'afterFailure': '17/53', 'noPriorFailure': '34/46', 'gee': {'OR': 0.291, 'lo': 0.116, 'hi': 0.731, 'p': 0.009, 'b': -1.234}}
+  exposedPrePost: [{'pid': 'P01', 'preRate': 0.167, 'nPre': 6, 'postRate': 0.0, 'nPost': 13}, {'pid': 'P02', 'preRate': 0.1, 'nPre': 10, 'postRate': 0.0, 'nPost': 7}, {'pid': 'P05', 'preRate': 0.2, 'nPre': 5, 'postRate': 0.0, 'nPost': 1}, {'pid': 'P06', 'preRate': 0.333, 'nPre': 3, 'postRate': 1.0, 'nPost': 2}, {'pid': 'P10', 'preRate': 0.286, 'nPre': 7, 'postRate': None, 'nPost': 0}, {'pid': 'P11', 'preRate': 1.0, 'nPre': 1, 'postRate': 0.2, 'nPost': 5}, {'pid': 'P12', 'preRate': 1.0, 'nPre': 3, 'postRate': 1.0, 'nPost': 2}, {'pid': 'P16', 'preRate': 1.0, 'nPre': 3, 'postRate': 1.0, 'nPost': 4}, {'pid': 'P19', 'preRate': 1.0, 'nPre': 1, 'postRate': 0.5, 'nPost': 4}, {'pid': 'P26', 'preRate': 1.0, 'nPre': 2, 'postRate': 0.6, 'nPost': 5}, {'pid': 'P28', 'preRate': 1.0, 'nPre': 1, 'postRate': 0.286, 'nPost': 7}, {'pid': 'P32', 'preRate': 1.0, 'nPre': 1, 'postRate': 1.0, 'nPost': 1}, {'pid': 'P34', 'preRate': 1.0, 'nPre': 3, 'postRate': None, 'nPost': 0}, {'pid': 'P35', 'preRate': 0.429, 'nPre': 7, 'postRate': 0.0, 'nPost': 2}]
+  tacticalKeep: {'cells': {'exposed=0,post=0': {'rate': 0.653, 'n': 75}, 'exposed=0,post=1': {'rate': 0.782, 'n': 133}, 'exposed=1,post=0': {'rate': 0.746, 'n': 173}, 'exposed=1,post=1': {'rate': 0.816, 'n': 103}}, 'did': {'OR': 1.123, 'lo': 0.551, 'hi': 2.287, 'p': 0.75, 'b': 0.116}, 'didConsultedOnly': {'OR': 0.984, 'lo': 0.578, 'hi': 1.676, 'p': 0.954, 'b': -0.016}, 'didConsult': {'OR': 0.894, 'lo': 0.388, 'hi': 2.062, 'p': 0.793, 'b': -0.112}}
+  trustSession: {'sessionsWithFailure': {'mean': 5.302, 'n': 16}, 'sessionsPressNoFailure': {'mean': 5.645, 'n': 23}, 'gee_amongPressSessions': {'b': 0.622, 'p': 0.173, 'lo': -0.273, 'hi': 1.516}, 'gee_allSessions': {'b': -0.238, 'p': 0.377, 'lo': -0.764, 'hi': 0.289}}
+  trustChange: {'exposedS1': {'mean': 0.467, 'n': 5}, 'pressedS1NoFailure': {'mean': 0.051, 'n': 13}, 'noPressS1': {'mean': 0.133, 'n': 15}, 'mannWhitney_exposed_vs_pressedOK': 0.843}
+  trustPerson: {'exposed': {'mean': 5.399, 'n': 14}, 'unexposedUsers': {'mean': 5.486, 'n': 12}, 'mannWhitneyP': 0.979}
+  -- v1.5+ only (current Suggest pool; drops P01-P03) --
+  nExposed: 12
+  exposedPeople: ['P05', 'P06', 'P10', 'P11', 'P12', 'P16', 'P19', 'P26', 'P28', 'P32', 'P34', 'P35']
+  pressesPerPerson: {'exposed': 3.833, 'unexposedUsers': 4.091}
+  laterUse: {'n': 76, 'people': 22, 'afterFailure': '17/33', 'noPriorFailure': '34/43', 'gee': {'OR': 0.307, 'lo': 0.121, 'hi': 0.777, 'p': 0.013, 'b': -1.181}}
+  tacticalKeep: {'cells': {'exposed=0,post=0': {'rate': 0.671, 'n': 73}, 'exposed=0,post=1': {'rate': 0.816, 'n': 125}, 'exposed=1,post=0': {'rate': 0.791, 'n': 153}, 'exposed=1,post=1': {'rate': 0.831, 'n': 83}}, 'did': {'OR': 1.402, 'lo': 0.503, 'hi': 3.913, 'p': 0.518, 'b': 0.338}, 'didConsultedOnly': {'OR': 1.225, 'lo': 0.625, 'hi': 2.402, 'p': 0.555, 'b': 0.203}, 'didConsult': {'OR': 0.995, 'lo': 0.305, 'hi': 3.247, 'p': 0.994, 'b': -0.005}}
+  trustSession: {'sessionsWithFailure': {'mean': 5.405, 'n': 14}, 'sessionsPressNoFailure': {'mean': 5.659, 'n': 22}, 'gee_amongPressSessions': {'b': 0.498, 'p': 0.179, 'lo': -0.229, 'hi': 1.226}, 'gee_allSessions': {'b': -0.289, 'p': 0.311, 'lo': -0.849, 'hi': 0.27}}
+  trustChange: {'exposedS1': {'mean': 0.833, 'n': 4}, 'pressedS1NoFailure': {'mean': 0.042, 'n': 12}, 'noPressS1': {'mean': 0.119, 'n': 14}, 'mannWhitney_exposed_vs_pressedOK': 0.669}
+  trustPerson: {'exposed': {'mean': 5.59, 'n': 12}, 'unexposedUsers': {'mean': 5.492, 'n': 11}, 'mannWhitneyP': 0.6}
+  -- v1.12+ only --
+  nExposed: 8
+  laterUse: {'n': 60, 'people': 16, 'afterFailure': '14/25', 'noPriorFailure': '29/35', 'gee': {'OR': 0.198, 'lo': 0.059, 'hi': 0.663, 'p': 0.009, 'b': -1.618}}
+  tacticalKeep: {'cells': {'exposed=0,post=0': {'rate': 0.661, 'n': 62}, 'exposed=0,post=1': {'rate': 0.832, 'n': 101}, 'exposed=1,post=0': {'rate': 0.779, 'n': 104}, 'exposed=1,post=1': {'rate': 0.948, 'n': 58}}, 'did': {'OR': 2.24, 'lo': 0.693, 'hi': 7.237, 'p': 0.178, 'b': 0.806}, 'didConsultedOnly': {'OR': 0.706, 'lo': 0.332, 'hi': 1.502, 'p': 0.366, 'b': -0.348}, 'didConsult': {'OR': 2.18, 'lo': 0.643, 'hi': 7.391, 'p': 0.211, 'b': 0.779}}
+  trustSession: {'sessionsWithFailure': {'mean': 5.35, 'n': 10}, 'sessionsPressNoFailure': {'mean': 5.684, 'n': 19}, 'gee_amongPressSessions': {'b': 0.506, 'p': 0.141, 'lo': -0.167, 'hi': 1.179}, 'gee_allSessions': {'b': 0.123, 'p': 0.541, 'lo': -0.271, 'hi': 0.517}}
+  trustChange: {'exposedS1': {'mean': 0.222, 'n': 3}, 'pressedS1NoFailure': {'mean': 0.117, 'n': 10}, 'noPressS1': {'mean': 0.242, 'n': 11}, 'mannWhitney_exposed_vs_pressedOK': 0.549}
+  trustPerson: {'exposed': {'mean': 5.385, 'n': 8}, 'unexposedUsers': {'mean': 5.509, 'n': 9}, 'mannWhitneyP': 0.847}

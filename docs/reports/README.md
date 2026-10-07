@@ -30,6 +30,15 @@ Conservative card · does an illogical card change anything afterwards · verifi
 where the two streams disagree · failure recovery · performance · learning · performance against a
 near-perfect operator · what operators asked for · limitations · every coded quote by theme.
 
+**`Results/findings_brief.html`** is built in the same run from the same payload: the six findings
+the data can defend, each marked strong/moderate/suggestive, with its caveat and the debrief quotes
+behind every headcount (a headcount is the size of the quote list it expands to, so it cannot drift).
+Its template is `scripts/findings_brief_template.html`. Chart forms, content helpers and the hover
+glossary are shared by both pages from `scripts/findings_common.css` / `findings_common.js`, which
+the builder inlines at the `COMMON_*` markers — edit those, not either generated page. The person-level
+numbers the brief adds (session-to-session stability, pseudo-R² of person vs mission, within-person
+effects, change in strategic trust) come from `individual()` in the builder.
+
 The reliance section has a **model explorer**: every subset of six terms (scenario, illogical card,
 colours needed, drones needed, category, run + time in session) is fitted on two samples (all
 decisions / genuine missions only), 126 GEE fits in total, and the page shows whichever one is

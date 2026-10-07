@@ -1,0 +1,213 @@
+{
+ "_note": "Round-2 results as verified by the supervisor (every spec table reproduced byte-identical; pooled BH in round2_pooled.csv). Rendered into Results/analysis_round2.html by scripts/build_findings_synthesis.py.",
+ "date": "2026-10-07",
+ "counts": {
+  "tests": 817,
+  "pooled": 716,
+  "q10": 34,
+  "gates": 33,
+  "afterArtefacts": 32,
+  "findings": 6,
+  "replications": 1
+ },
+ "findings": [
+  {
+   "id": "R2-1",
+   "ws": "F",
+   "short": "Pre-empting the cards is a personal trait",
+   "level": "strong",
+   "text": "Whether someone decides before the cards load is mostly about who they are: their session-1 rate predicts their session-2 rate (ρ = .56), and about a quarter of the variation belongs to the person against about 5% to the mission. 15 of 33 never pre-empted at all.",
+   "p": 0.00065,
+   "q": 0.0352885714285714,
+   "row": "F:F4.3"
+  },
+  {
+   "id": "R2-2",
+   "ws": "B",
+   "short": "Bigger jobs go to the assistant, on both tiers",
+   "level": "strong",
+   "text": "Within the same person, Suggest is consulted far more on bigger tactical plans (odds ×2.57 each time plan size — drones × tasks — grows about 2.7-fold), and cards are taken more on three-type missions (OR 1.84). The tactical half is new; the strategic half repeats the brief's Finding 2, now holding the game fixed.",
+   "p": 3.68649e-08,
+   "q": 4.3992114e-06,
+   "row": "B:B5a"
+  },
+  {
+   "id": "R2-3",
+   "ws": "C",
+   "short": "Cards save decision time on three-type missions",
+   "level": "strong",
+   "text": "On three-type missions, taking a card is much faster than building by hand, net of the forced reveal; the saving is concentrated there (card × three-type interaction). Confirms round 1's exploratory speed result.",
+   "p": 0.0,
+   "q": 1.4320000000000002e-298,
+   "row": "C:C3",
+   "pNote": "below the 5-decimal precision the spec table records"
+  },
+  {
+   "id": "R2-4",
+   "ws": "G",
+   "short": "Decisions speed up with practice",
+   "level": "strong",
+   "text": "Strategic decisions get about 31% faster over an 8-minute session, net of the forced waits — within a session the scenario and game are fixed, so they cannot cause it. Session 2 is also faster than session 1 on both tiers, though for strategic decisions the game is not ruled out (p = .16 with game fixed).",
+   "p": 0.00013,
+   "q": 0.009308,
+   "row": "G:G4.5"
+  },
+  {
+   "id": "R2-5",
+   "ws": "C",
+   "short": "Reliance pays through throughput",
+   "level": "moderate",
+   "text": "When the same person relies more in one session than the other, fewer missions are left never allocated (−0.78 missions per SD of reliance). But taking the card alone does not do it, and the score does not rise.",
+   "p": 0.00086,
+   "q": 0.0383270588235294,
+   "row": "C:C2"
+  },
+  {
+   "id": "R2-6",
+   "ws": "A",
+   "short": "Low-reliance operators attempt recovery less",
+   "level": "suggestive",
+   "text": "People lower on the reliance trait try to fix fewer of their fixable failures (ρ = .54). Between people only, and carried by four people who never attempted a fix.",
+   "p": 0.0012,
+   "q": 0.0407241272727272,
+   "row": "A:A4c"
+  },
+  {
+   "id": "R2-7",
+   "ws": "D",
+   "short": "Strategic trust falls between sessions",
+   "level": "replication",
+   "text": "Strategic trust falls from session 1 to 2 (−0.78 on the 1–7 scale; −1.23 with the game fixed). It is not a game S2 effect: a second-session drop and a smaller Strategic Heavy penalty stack.",
+   "p": 0.00091,
+   "q": 0.0383270588235294,
+   "row": "D:D2a.run2"
+  }
+ ],
+ "workstreams": [
+  {
+   "id": "A",
+   "title": "Recovery — what makes operators attempt a fix?",
+   "from": "H3",
+   "tests": 197,
+   "tried": "Time left in the session; mission size and reward at stake; drones left on the mission; recent failures; the person's reliance trait; abandoning a working Suggest plan; the effect of a failed Suggest press; three-type missions only.",
+   "found": [
+    "R2-6"
+   ],
+   "nulls": [
+    "Reward at stake, drones left on the mission and recent failures: all null.",
+    "After a failed Suggest press, later attempts rise rather than fall; the design itself leans towards finding a drop (null simulation mean OR .73)."
+   ],
+   "notes": [
+    "“Time left in the session” looked like an effect (OR 1.26 per minute) but is an artefact: 8 of the 9 failures left open began with 12 s or less on the clock, and operators take a median 14 s to make a first move. Removing failures with under 31 s left drops it to OR 1.12, p = .20.",
+    "Under the scoring rules, abandoning late is never better than leaving the mission open."
+   ]
+  },
+  {
+   "id": "B",
+   "title": "Load and pace — does pressure show up somewhere else?",
+   "from": "H9",
+   "tests": 90,
+   "tried": "Five new load measures (waiting time, missions in flight, recent failures, reserve depletion, scheduled arrivals); the final 90 s; the opposite hypothesis (pre-empting under load); the tactical tier and three-type missions only; speed as the reason; spoken overload in the narration.",
+   "found": [
+    "R2-2"
+   ],
+   "nulls": [
+    "Pressure does not raise reliance most where the assistant saves time (queue × plan size OR 0.99).",
+    "Pre-empting the cards does not rise under any of the new load measures (ORs 0.93–1.10).",
+    "Spoken overload: 10 strict moments from 4 people; the queue then is no higher than at random speech (p = .87). Suggestive only."
+   ],
+   "notes": [
+    "Tactical Suggest use rises when a strategic backlog is waiting (OR 1.20, q = .04), but not once time-in-session is controlled (q = .33): practice, not pressure.",
+    "Data issue: the narration alignment for P01_s1, P06_s1 and PIL03_s1 stores the session-2 timer offset."
+   ]
+  },
+  {
+   "id": "C",
+   "title": "The reliance trait and its payoff, and how hard each game was",
+   "from": "H1, H10, H4",
+   "tests": 178,
+   "tried": "What predicts the reliance trait; throughput (missions allocated, time to allocate) rather than per-mission success; card vs manual by mission type; penalty per mission; game difficulty and order in one model with four performance measures.",
+   "found": [
+    "R2-3",
+    "R2-5"
+   ],
+   "nulls": [
+    "Within person, reliance does not improve score on any of the four performance measures (all p ≥ .6).",
+    "Penalty per mission and completion on three-type missions: null."
+   ],
+   "notes": [
+    "Difficulty: S1 has the lowest score efficiency (.43) and T1 the highest (.61), but on share of the best human score the four games are the same (.65–.70). The scenario difference in efficiency reflects how many points each game offers, not how hard people found it. No order effect on score.",
+    "Strategic Heavy leaves far more missions never allocated — a property of the scenario design, reported as context."
+   ]
+  },
+  {
+   "id": "D",
+   "title": "Trust — separating order from game",
+   "from": "H5",
+   "tests": 125,
+   "tried": "Session-1-only comparison; the six swapped participants; game as a fixed effect; what in a session predicts its trust rating; the tactical tier; whether trust leads behaviour.",
+   "found": [
+    "R2-7"
+   ],
+   "nulls": [
+    "Trust does not lead behaviour: session-1 trust does not predict how card use changes in session 2.",
+    "With the game fixed, nothing measured in a session predicts its trust rating (small-mission share, bad cards seen, card failures, score).",
+    "Tactical trust tracks tactical behaviour between people but not within a person."
+   ],
+   "notes": [
+    "The six swapped people rate Strategic Heavy lower when played second for both games, and rate game S2 higher than S1 in both positions: not a game S2 effect. Cells of three — direction only."
+   ]
+  },
+  {
+   "id": "E",
+   "title": "What people say, done reliably",
+   "from": "H6",
+   "tests": 101,
+   "tried": "A third coding with the agreed codebook; stated reasons (speed, visible errors, can't check) against behaviour; stated scale-dependence against each person's own composition effect.",
+   "found": [],
+   "nulls": [
+    "Stated scale-dependence does not match card behaviour (OR 1.27, p = .61).",
+    "Speed and “can't check” reasons point the predicted way but are all non-significant."
+   ],
+   "notes": [
+    "Agreement with the round-1 second coding is κ = .96 — but both were the same AI model with near-identical codebooks, so this is closer to a re-test than to two independent coders. A human second coder is still needed.",
+    "Closest result: people who mention a specific card error go manual more on single-type missions (OR 2.72, p = .046), not significant after correction."
+   ]
+  },
+  {
+   "id": "F",
+   "title": "How operators handle the strategic cards",
+   "from": "new",
+   "tests": 72,
+   "tried": "Anchoring on the card numbers; whether edits remove unneeded drone types; avoiding a bad card in the moment, and whether previewing both cards helps; pre-emption as trait vs situation.",
+   "found": [
+    "R2-1"
+   ],
+   "nulls": [
+    "On three-type missions, operators do not avoid a dominated Conservative card (OR 1.10).",
+    "Operators almost never preview both cards (19 of 606 decisions), so previewing cannot be how they avoid a bad card."
+   ],
+   "notes": [
+    "Anchoring: manual allocations track the card numbers (+0.76 drones per card drone, p = .022) but only in session 2 and one order — learning, game and order cannot be told apart.",
+    "Edits trim drone types the card over-provides (OR 3.4, p = .015) but rest on 10 people."
+   ]
+  },
+  {
+   "id": "G",
+   "title": "Learning and calibration across the sessions",
+   "from": "new",
+   "tests": 54,
+   "tried": "Whether reliance becomes better targeted with experience; within-session learning curves with composition held fixed; learning to avoid dominated cards; decision speed over time net of the forced waits.",
+   "found": [
+    "R2-4"
+   ],
+   "nulls": [
+    "Reliance does not become better targeted with experience: every composition × session estimate is below 1 (OR 0.55–0.86, all p > .12).",
+    "Operators do not learn to avoid dominated cards."
+   ],
+   "notes": [
+    "The synthesis page's caption “This is where the learning effect shows up” is not supported once the game is fixed — it is driven by the unreliable Tactical game 2 benchmark. To correct."
+   ]
+  }
+ ]
+}

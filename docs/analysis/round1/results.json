@@ -1,0 +1,325 @@
+{
+ "_note": "Round-1 results as verified by the supervisor (every number re-run; see SUPERVISOR_LOG.md). Read by scripts/build_findings_synthesis.py to render Results/analysis_round1.html. correctedP = small-sample (bias-reduced) GEE p where applicable; adjustedP = Holm across all ten primaries.",
+ "date": "2026-10-07",
+ "hypotheses": [
+  {
+   "id": "H1",
+   "short": "Distinct operator types?",
+   "question": "Do operators fall into distinct types of assistant use?",
+   "result": "One group fits about as well as two (ΔBIC 1.9; needed > 10). The two groups were unstable under resampling (Jaccard .76 and .47) and different in session 1 vs 2 (ARI .04).",
+   "correctedP": 0.42,
+   "pNote": "session-agreement permutation p",
+   "adjustedP": 1.0,
+   "verdict": "not",
+   "verdictText": "Not supported: a continuum, not types",
+   "test": "Group operators on ten behaviours (card uptake, pre-emption, tactical consulting and keeping, recovery Suggest, decision time, drones committed, card previews) using a mixture model with 1–4 groups.",
+   "bar": "Two or more groups must beat one clearly (ΔBIC > 10), stay stable under resampling (Jaccard ≥ .75 for every group), and come out the same when sessions 1 and 2 are grouped separately."
+  },
+  {
+   "id": "H2",
+   "short": "Checking cost explains the tier gap?",
+   "question": "Does the cost of checking a plan explain why the tactical assistant is trusted more?",
+   "result": "All three required parts pointed the predicted way: bigger plans kept unmodified more often (OR 1.76), checked less per drone, with the interaction (OR 0.70). The result depends on how 'kept unmodified' is defined.",
+   "correctedP": 0.0654,
+   "pNote": "largest of three parts",
+   "adjustedP": 0.523,
+   "verdict": "not",
+   "verdictText": "Not supported after the small-sample correction (was p = .019)",
+   "test": "Within the tactical tier: do bigger plans get kept unmodified more often (A), get checked less per drone (B), and do the two interact (C)? Decision-level models, each operator compared with themselves.",
+   "bar": "All three parts in the predicted direction, each with p < .05; the test’s p is the largest of the three."
+  },
+  {
+   "id": "H3",
+   "short": "Suggest reduces abandonment in recovery?",
+   "question": "On fixable failures, does pressing Suggest go with fewer abandoned missions, within the same person?",
+   "result": "OR 0.40 [0.21, 0.79]: the odds of abandoning were cut by 60% when Suggest was pressed. But every no-attempt failure was abandoned; among attempted fixes, Suggest and hand-fixing do equally well.",
+   "correctedP": 0.008,
+   "adjustedP": 0.08,
+   "verdict": "partial",
+   "verdictText": "Supported on its own; just misses the family-wide bar",
+   "test": "Recovery episodes the logs show were fixable: does pressing Suggest go with fewer abandonments, comparing each operator with themselves?",
+   "bar": "Odds ratio below 1 with its 95% interval excluding 1."
+  },
+  {
+   "id": "H4",
+   "short": "Manual work explains the benchmark shortfall?",
+   "question": "Is the bigger shortfall against the near-perfect operator in Strategic Heavy explained by manual work?",
+   "result": "Adding manual rate shrinks the gap by only 13% (needed 50%). The gap itself is mostly one game whose benchmark run was unusually unlucky.",
+   "correctedP": 0.334,
+   "adjustedP": 1.0,
+   "verdict": "not",
+   "verdictText": "Not supported",
+   "test": "Per session, the share of the near-perfect operator’s score reached, against that session’s manual rate, with the game and the person accounted for.",
+   "bar": "Manual rate lowers the share, and adding it shrinks the Strategic-vs-Tactical gap by at least half."
+  },
+  {
+   "id": "H5",
+   "short": "Bad session-1 experience explains the trust drop?",
+   "question": "Does a bad session-1 experience with the cards explain the drop in strategic trust?",
+   "result": "ρ = −0.05: unrelated. Card missions do not even fail more often than manual ones. The drop follows scenario order instead.",
+   "correctedP": 0.778,
+   "adjustedP": 1.0,
+   "verdict": "not",
+   "verdictText": "Not supported",
+   "test": "Correlation between each person’s change in strategic trust (session 1 → 2) and how many of their session-1 card missions failed or were abandoned.",
+   "bar": "A negative correlation with its 95% interval excluding 0."
+  },
+  {
+   "id": "H6",
+   "short": "People say they prefer tactical?",
+   "question": "In the debriefs and interviews, do people say they prefer the tactical assistant?",
+   "result": "17 prefer tactical against 6 strategic, but agreement with the original coding was κ = .27 (needed ≥ .6), mainly over what counts as a 'conditional' preference.",
+   "correctedP": 0.0347,
+   "pNote": "sign test; also needed κ ≥ .6",
+   "adjustedP": 0.312,
+   "verdict": "not",
+   "verdictText": "Not supported: right direction, coding not reliable enough",
+   "test": "A second, independent coding of every debrief and interview for which assistant each person prefers; a sign test on tactical vs strategic, plus agreement with the original coding.",
+   "bar": "Significantly more people prefer tactical (p < .05) AND the two codings agree at κ ≥ .6."
+  },
+  {
+   "id": "H7",
+   "short": "Attitude to AI predicts card-taking?",
+   "question": "Does general attitude to AI (AIAS-4) predict taking the strategic card?",
+   "result": "OR 0.80 per standard deviation: no effect, and no difference between the two assistants. Only an effect of about OR 2 would have been detectable.",
+   "correctedP": 0.4006,
+   "adjustedP": 1.0,
+   "verdict": "not",
+   "verdictText": "Not supported",
+   "test": "General attitude to AI (AIAS-4, the only reliable attitude scale) as a predictor of taking the strategic card, allowing for the mission’s make-up, scenario, session and timing.",
+   "bar": "Odds ratio per standard deviation with its 95% interval excluding 1."
+  },
+  {
+   "id": "H8",
+   "short": "Noticing the illogical card lowers card use?",
+   "question": "Does card use fall once an operator has noticed that the illogical card can happen?",
+   "result": "The apparent drop (OR 0.12) is produced by how 'noticed' was defined. Against a simulation with no real change, it disappears.",
+   "correctedP": 0.297,
+   "pNote": "null-calibrated",
+   "adjustedP": 1.0,
+   "verdict": "invalid",
+   "verdictText": "Not supported: the planned test was flawed",
+   "test": "Single-type missions only: card use before vs after the first time each person rejected an illogical card (taken as the moment they noticed it).",
+   "bar": "Card use lower after, with the odds ratio’s 95% interval excluding 1."
+  },
+  {
+   "id": "H9",
+   "short": "A fuller queue pushes people onto the cards?",
+   "question": "Does a fuller queue of waiting missions push operators onto the strategic cards?",
+   "result": "OR 1.04 per extra queued mission. The test could have caught an effect as small as OR 1.14, and ~20 variants agree.",
+   "correctedP": 0.4352,
+   "adjustedP": 1.0,
+   "verdict": "not",
+   "verdictText": "Not supported: an informative null",
+   "test": "At each strategic decision, the number of missions waiting in the queue (relative to that person’s own average) as a predictor of taking a card, allowing for the mission’s make-up, scenario and session.",
+   "bar": "Odds ratio above 1 per extra queued mission, interval excluding 1."
+  },
+  {
+   "id": "H10",
+   "short": "Taking a card makes a mission more likely to complete?",
+   "question": "For the same person, are card missions more likely to complete than manual ones?",
+   "result": "OR 0.81 [0.54, 1.20]. The test could have caught OR ≤ 0.58 or ≥ 1.73.",
+   "correctedP": 0.2912,
+   "adjustedP": 1.0,
+   "verdict": "not",
+   "verdictText": "Not supported",
+   "test": "Does each mission complete in full, card vs manual, comparing each operator with themselves and allowing for the mission’s make-up and the game?",
+   "bar": "Odds ratio with its 95% interval excluding 1, in either direction."
+  }
+ ],
+ "recovery": {
+  "noAttempt": {
+   "abandoned": 27,
+   "n": 27
+  },
+  "suggest": {
+   "abandoned": 14,
+   "n": 70
+  },
+  "handOnly": {
+   "abandoned": 7,
+   "n": 67
+  },
+  "presses": {
+   "solved": 50,
+   "failed": 36,
+   "partial": 3,
+   "noop": 8
+  },
+  "blindSpot": 23,
+  "blindSpotPeople": 14,
+  "blindSpotRecovered": 8,
+  "blindSpotEpisodes": 17,
+  "abandonAfterWorkingPlan": 3,
+  "suggestThenAbandon": 11,
+  "correctedNote": "2026-10-07: press rebuild fixed (tasks cut short by abandonment now count as executing). Was: solved 58 / failed 24 / noop 12; blind spot 11 presses, 8 people, 9 episodes (8 recovered); 9 of 11 suggest-then-abandon had a working plan."
+ },
+ "load": {
+  "or": 1.039,
+  "lo": 0.944,
+  "hi": 1.144,
+  "detectable": 1.14,
+  "variants": 20,
+  "cardSavesNetS": 7.2,
+  "suggestFasterPct": 16,
+  "parallelX": 4.8,
+  "handBuiltLaterS": 5
+ },
+ "trait": {
+  "variance": 0.307,
+  "sessionRho": 0.65,
+  "trustRho": 0.54,
+  "loadings": [
+   [
+    "Took a strategy card",
+    0.92
+   ],
+   [
+    "Previewed the cards",
+    0.88
+   ],
+   [
+    "Consulted the tactical plan",
+    0.62
+   ],
+   [
+    "Committed more drones on small missions",
+    0.5
+   ],
+   [
+    "Used Suggest in recovery",
+    0.46
+   ],
+   [
+    "Kept the tactical plan unmodified",
+    0.42
+   ],
+   [
+    "Went manual before the cards loaded",
+    -0.34
+   ],
+   [
+    "Decision time (net of the forced wait)",
+    -0.48
+   ]
+  ]
+ },
+ "payoff": {
+  "betweenOR": 3.06,
+  "betweenP": 0.004,
+  "withinOR": 0.81,
+  "withinP": 0.29
+ },
+ "trustOrder": [
+  {
+   "label": "Strategic Heavy first",
+   "mean": -0.29,
+   "fell": 7,
+   "n": 17
+  },
+  {
+   "label": "Strategic Heavy second",
+   "mean": -1.26,
+   "fell": 13,
+   "n": 16
+  }
+ ],
+ "preference": {
+  "tactical": 17,
+  "strategic": 6,
+  "tacticalNoBorderline": 17,
+  "strategicNoBorderline": 3,
+  "originalTactical": 12,
+  "originalStrategic": 1,
+  "kappa": 0.27,
+  "kappaBinary": 0.47
+ },
+ "benchmark": [
+  {
+   "label": "Strategic game 1 + Tactical game 2",
+   "strategic": 0.58,
+   "tactical": 0.836,
+   "n": 17
+  },
+  {
+   "label": "Strategic game 2 + Tactical game 1",
+   "strategic": 0.636,
+   "tactical": 0.664,
+   "n": 16
+  }
+ ],
+ "unallocated": {
+  "strategic": 2.4,
+  "strategicPts": 424,
+  "tactical": 0.5,
+  "tacticalPts": 140
+ },
+ "h1": {
+  "dbic": 1.9,
+  "jaccard": [
+   0.76,
+   0.47
+  ],
+  "ari": 0.04,
+  "nullDbicShare": 0.42
+ },
+ "h2": {
+  "A": {
+   "or": 1.76,
+   "lo": 1.27,
+   "hi": 2.44
+  },
+  "B": {
+   "b": -0.26,
+   "lo": -0.41,
+   "hi": -0.11
+  },
+  "C": {
+   "or": 0.7,
+   "lo": 0.52,
+   "hi": 0.94
+  },
+  "pUncorrected": 0.019,
+  "consultedOnlyA": 0.67,
+  "checkSecs": 3,
+  "personRho": -0.51,
+  "personP": 0.002
+ },
+ "h7": {
+  "or": 0.8,
+  "lo": 0.5,
+  "hi": 1.27,
+  "detectable": 2.0,
+  "steigerPRange": [
+   0.16,
+   0.49
+  ],
+  "detectableRhoDiff": 0.6
+ },
+ "h8": {
+  "or": 0.12,
+  "lo": 0.02,
+  "hi": 0.65,
+  "nullOr": 0.37,
+  "placeboOr": 0.22,
+  "calibratedP": 0.3,
+  "biasCorrectedPP": -10,
+  "beforeCardTakes": 13,
+  "beforeN": 18,
+  "n": 69,
+  "people": 17
+ },
+ "h5": {
+  "rho": -0.05,
+  "lo": -0.39,
+  "hi": 0.3,
+  "cardVsManualFailOr": 1.22
+ },
+ "h10": {
+  "lo": 0.54,
+  "hi": 1.2,
+  "detectableLo": 0.58,
+  "detectableHi": 1.73,
+  "tacticalKeepBetween": 0.51
+ }
+}

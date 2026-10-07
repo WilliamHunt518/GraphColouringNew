@@ -1,0 +1,3521 @@
+{
+ "generated": "2026-10-07 19:48",
+ "fingerprint": {
+  "n": 33,
+  "features": [
+   {
+    "k": "took",
+    "label": "Takes the strategy card"
+   },
+   {
+    "k": "preempt",
+    "label": "Goes manual before the cards load"
+   },
+   {
+    "k": "edit",
+    "label": "Edits a card rather than taking it"
+   },
+   {
+    "k": "consult",
+    "label": "Presses Suggest on tactical plans"
+   },
+   {
+    "k": "keep",
+    "label": "Keeps the Suggest plan unchanged"
+   },
+   {
+    "k": "recSug",
+    "label": "Presses Suggest in recovery"
+   },
+   {
+    "k": "netSecs",
+    "label": "Time spent per strategic decision"
+   },
+   {
+    "k": "dSmall",
+    "label": "Drones vs card, single-type missions"
+   },
+   {
+    "k": "dLarge",
+    "label": "Drones vs card, multi-type missions"
+   },
+   {
+    "k": "previews",
+    "label": "Previews cards before choosing"
+   }
+  ],
+  "imputed": {
+   "preempt": 15,
+   "keep": 2,
+   "recSug": 4,
+   "dSmall": 19
+  },
+  "nSessions": 66,
+  "pc1Share": 0.26852112041394693,
+  "pc1Loadings": {
+   "took": 0.557,
+   "preempt": -0.131,
+   "edit": -0.083,
+   "consult": 0.374,
+   "keep": 0.152,
+   "recSug": 0.353,
+   "netSecs": -0.216,
+   "dSmall": 0.188,
+   "dLarge": 0.122,
+   "previews": 0.53
+  },
+  "all": {
+   "hit": 0.18181818181818182,
+   "hitsAB": 7,
+   "hitsBA": 5,
+   "chance": 0.030303030303030304,
+   "null95": 0.07575757575757576,
+   "pHit": 9.999000099990002e-05,
+   "meanRank": 8.166666666666666,
+   "nullRank": 16.99996515151515,
+   "pRank": 9.999000099990002e-05,
+   "top5": 0.5151515151515151,
+   "ranks": [
+    5,
+    1,
+    1,
+    3,
+    3,
+    21,
+    7,
+    8,
+    12,
+    1,
+    25,
+    1,
+    29,
+    2,
+    1,
+    3,
+    15,
+    5,
+    12,
+    1,
+    6,
+    10,
+    1,
+    6,
+    8,
+    12,
+    9,
+    8,
+    24,
+    2,
+    5,
+    16,
+    19
+   ],
+   "ranksBA": [
+    1,
+    1,
+    2,
+    1,
+    8,
+    23,
+    3,
+    12,
+    28,
+    2,
+    33,
+    6,
+    2,
+    2,
+    2,
+    5,
+    7,
+    2,
+    5,
+    1,
+    19,
+    8,
+    1,
+    6,
+    5,
+    14,
+    3,
+    14,
+    21,
+    3,
+    3,
+    9,
+    5
+   ]
+  },
+  "beyond": {
+   "hit": 0.18181818181818182,
+   "hitsAB": 6,
+   "hitsBA": 6,
+   "chance": 0.030303030303030304,
+   "null95": 0.07575757575757576,
+   "pHit": 0.00019998000199980003,
+   "meanRank": 10.136363636363637,
+   "nullRank": 17.002701515151514,
+   "pRank": 9.999000099990002e-05,
+   "top5": 0.40909090909090906,
+   "ranks": [
+    6,
+    1,
+    5,
+    2,
+    5,
+    22,
+    11,
+    5,
+    14,
+    1,
+    20,
+    1,
+    31,
+    2,
+    1,
+    2,
+    25,
+    8,
+    30,
+    1,
+    7,
+    12,
+    1,
+    7,
+    12,
+    15,
+    3,
+    8,
+    23,
+    3,
+    7,
+    17,
+    22
+   ],
+   "ranksBA": [
+    1,
+    1,
+    5,
+    1,
+    10,
+    20,
+    6,
+    4,
+    31,
+    4,
+    33,
+    12,
+    3,
+    3,
+    1,
+    8,
+    9,
+    7,
+    23,
+    1,
+    26,
+    17,
+    1,
+    12,
+    7,
+    21,
+    2,
+    19,
+    21,
+    2,
+    9,
+    13,
+    6
+   ]
+  },
+  "relianceOnly": {
+   "hit": 0.12121212121212122,
+   "hitsAB": 4,
+   "hitsBA": 4,
+   "chance": 0.030303030303030304,
+   "null95": 0.07575757575757576,
+   "pHit": 0.004899510048995101,
+   "meanRank": 11.136363636363637,
+   "nullRank": 17.017022727272728,
+   "pRank": 0.00029997000299970003,
+   "top5": 0.3787878787878788,
+   "ranks": [
+    8,
+    5,
+    1,
+    18,
+    11,
+    20,
+    9,
+    21,
+    9,
+    2,
+    25,
+    1,
+    15,
+    10,
+    18,
+    21,
+    2,
+    5,
+    1,
+    2,
+    16,
+    17,
+    2,
+    13,
+    4,
+    16,
+    25,
+    16,
+    23,
+    13,
+    2,
+    17,
+    1
+   ],
+   "ranksBA": [
+    7,
+    5,
+    1,
+    23,
+    16,
+    28,
+    11,
+    26,
+    14,
+    1,
+    21,
+    1,
+    8,
+    11,
+    25,
+    19,
+    2,
+    5,
+    3,
+    1,
+    9,
+    9,
+    2,
+    4,
+    3,
+    16,
+    19,
+    18,
+    27,
+    12,
+    2,
+    12,
+    5
+   ]
+  },
+  "retest": [
+   {
+    "k": "took",
+    "label": "Takes the strategy card",
+    "rho": 0.621,
+    "p": 0.0001,
+    "rhoBeyond": 0.458,
+    "pBeyond": 0.0074,
+    "loading": 0.557
+   },
+   {
+    "k": "preempt",
+    "label": "Goes manual before the cards load",
+    "rho": 0.362,
+    "p": 0.0384,
+    "rhoBeyond": 0.358,
+    "pBeyond": 0.0408,
+    "loading": -0.131
+   },
+   {
+    "k": "edit",
+    "label": "Edits a card rather than taking it",
+    "rho": 0.409,
+    "p": 0.0182,
+    "rhoBeyond": 0.579,
+    "pBeyond": 0.0004,
+    "loading": -0.083
+   },
+   {
+    "k": "consult",
+    "label": "Presses Suggest on tactical plans",
+    "rho": 0.645,
+    "p": 0.0001,
+    "rhoBeyond": 0.682,
+    "pBeyond": 0.0,
+    "loading": 0.374
+   },
+   {
+    "k": "keep",
+    "label": "Keeps the Suggest plan unchanged",
+    "rho": 0.651,
+    "p": 0.0,
+    "rhoBeyond": 0.539,
+    "pBeyond": 0.0012,
+    "loading": 0.152
+   },
+   {
+    "k": "recSug",
+    "label": "Presses Suggest in recovery",
+    "rho": 0.485,
+    "p": 0.0042,
+    "rhoBeyond": 0.513,
+    "pBeyond": 0.0022,
+    "loading": 0.353
+   },
+   {
+    "k": "netSecs",
+    "label": "Time spent per strategic decision",
+    "rho": 0.521,
+    "p": 0.0019,
+    "rhoBeyond": 0.458,
+    "pBeyond": 0.0074,
+    "loading": -0.216
+   },
+   {
+    "k": "dSmall",
+    "label": "Drones vs card, single-type missions",
+    "rho": -0.093,
+    "p": 0.6073,
+    "rhoBeyond": -0.28,
+    "pBeyond": 0.1149,
+    "loading": 0.188
+   },
+   {
+    "k": "dLarge",
+    "label": "Drones vs card, multi-type missions",
+    "rho": 0.344,
+    "p": 0.0503,
+    "rhoBeyond": 0.318,
+    "pBeyond": 0.0715,
+    "loading": 0.122
+   },
+   {
+    "k": "previews",
+    "label": "Previews cards before choosing",
+    "rho": 0.561,
+    "p": 0.0007,
+    "rhoBeyond": 0.364,
+    "pBeyond": 0.0373,
+    "loading": 0.53
+   }
+  ],
+  "points": [
+   {
+    "pid": "P01",
+    "run": 1,
+    "tx": -8.921,
+    "ty": -6.572,
+    "px": 1.001,
+    "py": -0.262,
+    "rel": 1.001,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.167,
+    "netSecs": 2.208,
+    "dSmall": 0.0,
+    "dLarge": 0.8,
+    "previews": 1.167
+   },
+   {
+    "pid": "P01",
+    "run": 2,
+    "tx": -6.14,
+    "ty": -8.431,
+    "px": 1.509,
+    "py": -1.083,
+    "rel": 1.509,
+    "game": "strategic|2",
+    "took": 0.846,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.001,
+    "dSmall": -0.857,
+    "dLarge": 0.167,
+    "previews": 1.231
+   },
+   {
+    "pid": "P02",
+    "run": 1,
+    "tx": 7.967,
+    "ty": 2.215,
+    "px": -2.596,
+    "py": 3.352,
+    "rel": -2.596,
+    "game": "strategic|1",
+    "took": 0.4,
+    "preempt": 0.667,
+    "edit": 0.1,
+    "consult": 0.2,
+    "keep": 0.5,
+    "recSug": 0.0,
+    "netSecs": 1.749,
+    "dSmall": -0.5,
+    "dLarge": -0.143,
+    "previews": 0.5
+   },
+   {
+    "pid": "P02",
+    "run": 2,
+    "tx": 6.684,
+    "ty": 3.125,
+    "px": -1.894,
+    "py": 2.685,
+    "rel": -1.894,
+    "game": "tactical|2",
+    "took": 0.625,
+    "preempt": 0.333,
+    "edit": 0.0,
+    "consult": 0.333,
+    "keep": 0.333,
+    "recSug": 0.091,
+    "netSecs": 1.78,
+    "dSmall": null,
+    "dLarge": 3.857,
+    "previews": 0.625
+   },
+   {
+    "pid": "P03",
+    "run": 1,
+    "tx": 13.328,
+    "ty": 15.696,
+    "px": -2.98,
+    "py": -1.666,
+    "rel": -2.98,
+    "game": "tactical|1",
+    "took": 0.333,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.0,
+    "keep": null,
+    "recSug": 0.333,
+    "netSecs": 3.774,
+    "dSmall": null,
+    "dLarge": -0.333,
+    "previews": 0.333
+   },
+   {
+    "pid": "P03",
+    "run": 2,
+    "tx": 11.477,
+    "ty": 16.131,
+    "px": -2.864,
+    "py": -1.371,
+    "rel": -2.864,
+    "game": "strategic|2",
+    "took": 0.143,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.286,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 3.5,
+    "dSmall": -1.25,
+    "dLarge": 1.333,
+    "previews": 0.143
+   },
+   {
+    "pid": "P04",
+    "run": 1,
+    "tx": -3.165,
+    "ty": 8.082,
+    "px": 1.466,
+    "py": 1.735,
+    "rel": 1.466,
+    "game": "strategic|1",
+    "took": 0.556,
+    "preempt": 0.0,
+    "edit": 0.444,
+    "consult": 0.75,
+    "keep": 0.833,
+    "recSug": 1.0,
+    "netSecs": 2.494,
+    "dSmall": -0.25,
+    "dLarge": 1.2,
+    "previews": 1.222
+   },
+   {
+    "pid": "P04",
+    "run": 2,
+    "tx": -1.105,
+    "ty": 8.814,
+    "px": -0.275,
+    "py": 1.863,
+    "rel": -0.275,
+    "game": "tactical|2",
+    "took": 0.333,
+    "preempt": 0.0,
+    "edit": 0.667,
+    "consult": 1.0,
+    "keep": 0.286,
+    "recSug": 0.75,
+    "netSecs": 2.124,
+    "dSmall": null,
+    "dLarge": 2.333,
+    "previews": 1.0
+   },
+   {
+    "pid": "P05",
+    "run": 1,
+    "tx": 3.329,
+    "ty": -8.485,
+    "px": 0.019,
+    "py": 0.425,
+    "rel": 0.019,
+    "game": "tactical|1",
+    "took": 0.833,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 1.591,
+    "dSmall": 0.0,
+    "dLarge": 0.6,
+    "previews": 0.833
+   },
+   {
+    "pid": "P05",
+    "run": 2,
+    "tx": -7.576,
+    "ty": -5.107,
+    "px": 1.128,
+    "py": -0.721,
+    "rel": 1.128,
+    "game": "strategic|2",
+    "took": 0.833,
+    "preempt": 0.5,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.2,
+    "netSecs": 2.083,
+    "dSmall": -0.286,
+    "dLarge": 0.0,
+    "previews": 0.917
+   },
+   {
+    "pid": "P06",
+    "run": 1,
+    "tx": 8.57,
+    "ty": 16.687,
+    "px": -1.326,
+    "py": -0.965,
+    "rel": -1.326,
+    "game": "strategic|1",
+    "took": 0.556,
+    "preempt": 0.25,
+    "edit": 0.0,
+    "consult": 0.667,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.883,
+    "dSmall": -2.25,
+    "dLarge": 0.4,
+    "previews": 0.556
+   },
+   {
+    "pid": "P06",
+    "run": 2,
+    "tx": -5.293,
+    "ty": -2.345,
+    "px": 1.035,
+    "py": -0.788,
+    "rel": 1.035,
+    "game": "tactical|2",
+    "took": 0.889,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.318,
+    "dSmall": null,
+    "dLarge": 0.625,
+    "previews": 0.889
+   },
+   {
+    "pid": "P07",
+    "run": 1,
+    "tx": -7.735,
+    "ty": -3.369,
+    "px": 0.85,
+    "py": -0.914,
+    "rel": 0.85,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.5,
+    "netSecs": 2.485,
+    "dSmall": 0.0,
+    "dLarge": 0.0,
+    "previews": 1.0
+   },
+   {
+    "pid": "P07",
+    "run": 2,
+    "tx": -11.225,
+    "ty": -7.961,
+    "px": 1.677,
+    "py": 0.477,
+    "rel": 1.677,
+    "game": "strategic|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 0.929,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 1.587,
+    "dSmall": 0.0,
+    "dLarge": 0.6,
+    "previews": 1.0
+   },
+   {
+    "pid": "P10",
+    "run": 1,
+    "tx": 9.979,
+    "ty": 10.134,
+    "px": -0.964,
+    "py": 0.288,
+    "rel": -0.964,
+    "game": "strategic|1",
+    "took": 0.4,
+    "preempt": 0.0,
+    "edit": 0.1,
+    "consult": 0.7,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.428,
+    "dSmall": 0.0,
+    "dLarge": 0.5,
+    "previews": 0.5
+   },
+   {
+    "pid": "P10",
+    "run": 2,
+    "tx": -4.715,
+    "ty": 6.827,
+    "px": 1.15,
+    "py": 1.095,
+    "rel": 1.15,
+    "game": "tactical|2",
+    "took": 0.667,
+    "preempt": 0.0,
+    "edit": 0.333,
+    "consult": 0.875,
+    "keep": 1.0,
+    "recSug": 0.667,
+    "netSecs": 1.62,
+    "dSmall": null,
+    "dLarge": 3.667,
+    "previews": 1.0
+   },
+   {
+    "pid": "P11",
+    "run": 1,
+    "tx": 5.15,
+    "ty": -16.635,
+    "px": -0.002,
+    "py": 2.067,
+    "rel": -0.002,
+    "game": "tactical|1",
+    "took": 0.714,
+    "preempt": 0.5,
+    "edit": 0.143,
+    "consult": 0.429,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.005,
+    "dSmall": 1.0,
+    "dLarge": 1.8,
+    "previews": 0.857
+   },
+   {
+    "pid": "P11",
+    "run": 2,
+    "tx": 6.273,
+    "ty": -5.042,
+    "px": -1.035,
+    "py": 1.186,
+    "rel": -1.035,
+    "game": "strategic|2",
+    "took": 0.538,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.308,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 1.714,
+    "dSmall": -0.833,
+    "dLarge": 1.333,
+    "previews": 0.538
+   },
+   {
+    "pid": "P12",
+    "run": 1,
+    "tx": -17.388,
+    "ty": -4.565,
+    "px": 2.236,
+    "py": 0.283,
+    "rel": 2.236,
+    "game": "strategic|1",
+    "took": 0.929,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.643,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.234,
+    "dSmall": -1.0,
+    "dLarge": -0.667,
+    "previews": 1.0
+   },
+   {
+    "pid": "P12",
+    "run": 2,
+    "tx": -16.061,
+    "ty": -2.956,
+    "px": 2.387,
+    "py": 0.106,
+    "rel": 2.387,
+    "game": "tactical|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.354,
+    "dSmall": null,
+    "dLarge": 1.571,
+    "previews": 1.0
+   },
+   {
+    "pid": "P13",
+    "run": 1,
+    "tx": 6.793,
+    "ty": 0.169,
+    "px": 0.533,
+    "py": 2.707,
+    "rel": 0.533,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 0.8,
+    "keep": 0.75,
+    "recSug": 0.0,
+    "netSecs": 2.104,
+    "dSmall": 3.0,
+    "dLarge": 1.5,
+    "previews": 1.2
+   },
+   {
+    "pid": "P13",
+    "run": 2,
+    "tx": 12.361,
+    "ty": -5.568,
+    "px": -1.558,
+    "py": -0.674,
+    "rel": -1.558,
+    "game": "strategic|2",
+    "took": 0.5,
+    "preempt": 0.8,
+    "edit": 0.0,
+    "consult": 0.3,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.276,
+    "dSmall": -1.0,
+    "dLarge": -0.4,
+    "previews": 0.6
+   },
+   {
+    "pid": "P14",
+    "run": 1,
+    "tx": -7.2,
+    "ty": 0.86,
+    "px": 2.137,
+    "py": -0.8,
+    "rel": 2.137,
+    "game": "strategic|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 0.875,
+    "recSug": 1.0,
+    "netSecs": 3.155,
+    "dSmall": 0.0,
+    "dLarge": -0.5,
+    "previews": 1.0
+   },
+   {
+    "pid": "P14",
+    "run": 2,
+    "tx": -9.151,
+    "ty": -0.53,
+    "px": 2.125,
+    "py": -1.105,
+    "rel": 2.125,
+    "game": "tactical|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.337,
+    "dSmall": null,
+    "dLarge": 0.857,
+    "previews": 1.125
+   },
+   {
+    "pid": "P15",
+    "run": 1,
+    "tx": 6.144,
+    "ty": -6.995,
+    "px": -0.962,
+    "py": 1.03,
+    "rel": -0.962,
+    "game": "tactical|1",
+    "took": 0.667,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.556,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 1.949,
+    "dSmall": 1.0,
+    "dLarge": 1.4,
+    "previews": 0.667
+   },
+   {
+    "pid": "P15",
+    "run": 2,
+    "tx": 6.545,
+    "ty": -16.284,
+    "px": -2.069,
+    "py": 3.37,
+    "rel": -2.069,
+    "game": "strategic|2",
+    "took": 0.125,
+    "preempt": 0.857,
+    "edit": 0.062,
+    "consult": 0.278,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 0.944,
+    "dSmall": 0.25,
+    "dLarge": 1.0,
+    "previews": 0.188
+   },
+   {
+    "pid": "P16",
+    "run": 1,
+    "tx": 16.907,
+    "ty": 1.686,
+    "px": -1.498,
+    "py": -1.361,
+    "rel": -1.498,
+    "game": "strategic|1",
+    "took": 0.286,
+    "preempt": 0.5,
+    "edit": 0.0,
+    "consult": 0.786,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.995,
+    "dSmall": -2.75,
+    "dLarge": -0.75,
+    "previews": 0.286
+   },
+   {
+    "pid": "P16",
+    "run": 2,
+    "tx": 15.66,
+    "ty": -1.629,
+    "px": -0.77,
+    "py": -1.052,
+    "rel": -0.77,
+    "game": "tactical|2",
+    "took": 0.5,
+    "preempt": 0.75,
+    "edit": 0.0,
+    "consult": 0.917,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.993,
+    "dSmall": null,
+    "dLarge": -0.333,
+    "previews": 0.5
+   },
+   {
+    "pid": "P17",
+    "run": 1,
+    "tx": 5.645,
+    "ty": 13.165,
+    "px": -1.594,
+    "py": -2.284,
+    "rel": -1.594,
+    "game": "tactical|1",
+    "took": 0.5,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.858,
+    "dSmall": -3.0,
+    "dLarge": 0.0,
+    "previews": 0.5
+   },
+   {
+    "pid": "P17",
+    "run": 2,
+    "tx": 4.09,
+    "ty": 14.469,
+    "px": 0.021,
+    "py": -1.654,
+    "rel": 0.021,
+    "game": "strategic|2",
+    "took": 0.643,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.14,
+    "dSmall": -1.25,
+    "dLarge": 0.2,
+    "previews": 0.643
+   },
+   {
+    "pid": "P18",
+    "run": 1,
+    "tx": 0.517,
+    "ty": -10.627,
+    "px": 0.53,
+    "py": 1.205,
+    "rel": 0.53,
+    "game": "strategic|1",
+    "took": 0.818,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.455,
+    "keep": 1.0,
+    "recSug": 0.5,
+    "netSecs": 1.553,
+    "dSmall": -1.0,
+    "dLarge": -0.571,
+    "previews": 0.909
+   },
+   {
+    "pid": "P18",
+    "run": 2,
+    "tx": 9.135,
+    "ty": -4.406,
+    "px": -1.173,
+    "py": 0.121,
+    "rel": -1.173,
+    "game": "tactical|2",
+    "took": 0.571,
+    "preempt": 0.667,
+    "edit": 0.0,
+    "consult": 0.556,
+    "keep": 1.0,
+    "recSug": null,
+    "netSecs": 1.856,
+    "dSmall": null,
+    "dLarge": 0.857,
+    "previews": 0.571
+   },
+   {
+    "pid": "P19",
+    "run": 1,
+    "tx": -13.119,
+    "ty": -7.2,
+    "px": 1.551,
+    "py": 0.683,
+    "rel": 1.551,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.5,
+    "netSecs": 2.052,
+    "dSmall": 3.0,
+    "dLarge": 1.8,
+    "previews": 1.0
+   },
+   {
+    "pid": "P19",
+    "run": 2,
+    "tx": -10.264,
+    "ty": 9.558,
+    "px": 1.446,
+    "py": -0.611,
+    "rel": 1.446,
+    "game": "strategic|2",
+    "took": 0.778,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.667,
+    "netSecs": 2.831,
+    "dSmall": -0.5,
+    "dLarge": 2.0,
+    "previews": 0.778
+   },
+   {
+    "pid": "P20",
+    "run": 1,
+    "tx": -2.403,
+    "ty": -1.526,
+    "px": -0.094,
+    "py": -0.856,
+    "rel": -0.094,
+    "game": "strategic|1",
+    "took": 0.714,
+    "preempt": 0.5,
+    "edit": 0.0,
+    "consult": 0.5,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.912,
+    "dSmall": -1.333,
+    "dLarge": -0.5,
+    "previews": 0.714
+   },
+   {
+    "pid": "P20",
+    "run": 2,
+    "tx": -15.687,
+    "ty": 6.786,
+    "px": -0.515,
+    "py": -0.661,
+    "rel": -0.515,
+    "game": "tactical|2",
+    "took": 0.6,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.6,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.957,
+    "dSmall": null,
+    "dLarge": 0.8,
+    "previews": 0.6
+   },
+   {
+    "pid": "P21",
+    "run": 1,
+    "tx": 15.733,
+    "ty": -7.437,
+    "px": -4.733,
+    "py": -0.771,
+    "rel": -4.733,
+    "game": "tactical|1",
+    "took": 0.0,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.0,
+    "keep": null,
+    "recSug": 0.0,
+    "netSecs": 3.392,
+    "dSmall": null,
+    "dLarge": -0.75,
+    "previews": 0.0
+   },
+   {
+    "pid": "P21",
+    "run": 2,
+    "tx": 11.748,
+    "ty": 1.652,
+    "px": -3.195,
+    "py": 0.351,
+    "rel": -3.195,
+    "game": "strategic|2",
+    "took": 0.111,
+    "preempt": 0.75,
+    "edit": 0.0,
+    "consult": 0.444,
+    "keep": 0.5,
+    "recSug": 0.5,
+    "netSecs": 2.401,
+    "dSmall": -1.6,
+    "dLarge": 0.0,
+    "previews": 0.111
+   },
+   {
+    "pid": "P22",
+    "run": 1,
+    "tx": 3.909,
+    "ty": 0.209,
+    "px": -0.525,
+    "py": 1.77,
+    "rel": -0.525,
+    "game": "strategic|1",
+    "took": 0.556,
+    "preempt": 0.5,
+    "edit": 0.111,
+    "consult": 0.545,
+    "keep": 0.833,
+    "recSug": 0.0,
+    "netSecs": 1.912,
+    "dSmall": -1.333,
+    "dLarge": 0.667,
+    "previews": 0.889
+   },
+   {
+    "pid": "P22",
+    "run": 2,
+    "tx": 3.044,
+    "ty": 1.337,
+    "px": -0.512,
+    "py": 2.297,
+    "rel": -0.512,
+    "game": "tactical|2",
+    "took": 0.571,
+    "preempt": 0.333,
+    "edit": 0.286,
+    "consult": 0.75,
+    "keep": 0.667,
+    "recSug": 0.0,
+    "netSecs": 1.606,
+    "dSmall": null,
+    "dLarge": 4.0,
+    "previews": 0.857
+   },
+   {
+    "pid": "P24",
+    "run": 1,
+    "tx": 1.502,
+    "ty": 11.405,
+    "px": -0.859,
+    "py": -0.203,
+    "rel": -0.859,
+    "game": "strategic|1",
+    "took": 0.214,
+    "preempt": 0.0,
+    "edit": 0.786,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.011,
+    "dSmall": -2.5,
+    "dLarge": -1.0,
+    "previews": 1.0
+   },
+   {
+    "pid": "P24",
+    "run": 2,
+    "tx": 9.929,
+    "ty": 12.617,
+    "px": -2.226,
+    "py": -0.73,
+    "rel": -2.226,
+    "game": "tactical|2",
+    "took": 0.143,
+    "preempt": 0.333,
+    "edit": 0.286,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.844,
+    "dSmall": null,
+    "dLarge": 2.6,
+    "previews": 0.571
+   },
+   {
+    "pid": "P25",
+    "run": 1,
+    "tx": -9.169,
+    "ty": -11.106,
+    "px": 1.326,
+    "py": 0.763,
+    "rel": 1.326,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 0.5,
+    "keep": 1.0,
+    "recSug": null,
+    "netSecs": 1.45,
+    "dSmall": 0.0,
+    "dLarge": 0.6,
+    "previews": 1.5
+   },
+   {
+    "pid": "P25",
+    "run": 2,
+    "tx": -15.429,
+    "ty": -1.263,
+    "px": 2.912,
+    "py": 0.844,
+    "rel": 2.912,
+    "game": "strategic|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.085,
+    "dSmall": -0.125,
+    "dLarge": 1.167,
+    "previews": 1.0
+   },
+   {
+    "pid": "P26",
+    "run": 1,
+    "tx": 8.213,
+    "ty": -8.729,
+    "px": -0.795,
+    "py": 0.789,
+    "rel": -0.795,
+    "game": "strategic|1",
+    "took": 0.4,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.778,
+    "keep": 1.0,
+    "recSug": 0.667,
+    "netSecs": 2.112,
+    "dSmall": -0.75,
+    "dLarge": 0.833,
+    "previews": 0.4
+   },
+   {
+    "pid": "P26",
+    "run": 2,
+    "tx": 8.331,
+    "ty": -6.636,
+    "px": -0.639,
+    "py": 0.441,
+    "rel": -0.639,
+    "game": "tactical|2",
+    "took": 0.625,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.714,
+    "keep": 1.0,
+    "recSug": 0.75,
+    "netSecs": 1.946,
+    "dSmall": null,
+    "dLarge": 2.143,
+    "previews": 0.625
+   },
+   {
+    "pid": "P27",
+    "run": 1,
+    "tx": -8.405,
+    "ty": 7.905,
+    "px": 1.782,
+    "py": 0.54,
+    "rel": 1.782,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.02,
+    "dSmall": 0.0,
+    "dLarge": 3.25,
+    "previews": 1.0
+   },
+   {
+    "pid": "P27",
+    "run": 2,
+    "tx": -13.348,
+    "ty": -1.57,
+    "px": 2.546,
+    "py": -0.103,
+    "rel": 2.546,
+    "game": "strategic|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.892,
+    "dSmall": 0.0,
+    "dLarge": 0.6,
+    "previews": 1.0
+   },
+   {
+    "pid": "P28",
+    "run": 1,
+    "tx": -12.413,
+    "ty": 1.758,
+    "px": 1.581,
+    "py": -0.926,
+    "rel": 1.581,
+    "game": "strategic|1",
+    "took": 0.8,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.9,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.007,
+    "dSmall": -1.25,
+    "dLarge": -0.5,
+    "previews": 0.8
+   },
+   {
+    "pid": "P28",
+    "run": 2,
+    "tx": -8.485,
+    "ty": -8.368,
+    "px": 1.728,
+    "py": -0.43,
+    "rel": 1.728,
+    "game": "tactical|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.286,
+    "netSecs": 1.846,
+    "dSmall": null,
+    "dLarge": 0.75,
+    "previews": 1.111
+   },
+   {
+    "pid": "P29",
+    "run": 1,
+    "tx": 6.565,
+    "ty": 16.431,
+    "px": 0.072,
+    "py": -1.029,
+    "rel": 0.072,
+    "game": "tactical|1",
+    "took": 0.857,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.857,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 3.001,
+    "dSmall": -1.0,
+    "dLarge": 1.6,
+    "previews": 1.0
+   },
+   {
+    "pid": "P29",
+    "run": 2,
+    "tx": 11.382,
+    "ty": -2.488,
+    "px": -1.213,
+    "py": 0.253,
+    "rel": -1.213,
+    "game": "strategic|2",
+    "took": 0.462,
+    "preempt": 0.571,
+    "edit": 0.0,
+    "consult": 0.538,
+    "keep": 0.857,
+    "recSug": 0.0,
+    "netSecs": 1.891,
+    "dSmall": -0.429,
+    "dLarge": 0.0,
+    "previews": 0.462
+   },
+   {
+    "pid": "P30",
+    "run": 1,
+    "tx": 3.328,
+    "ty": 15.719,
+    "px": 0.17,
+    "py": -1.857,
+    "rel": 0.17,
+    "game": "strategic|1",
+    "took": 0.6,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": null,
+    "netSecs": 2.545,
+    "dSmall": -2.0,
+    "dLarge": -0.429,
+    "previews": 0.6
+   },
+   {
+    "pid": "P30",
+    "run": 2,
+    "tx": 7.998,
+    "ty": 12.455,
+    "px": -1.889,
+    "py": -1.743,
+    "rel": -1.889,
+    "game": "tactical|2",
+    "took": 0.333,
+    "preempt": 0.0,
+    "edit": 0.167,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.0,
+    "netSecs": 2.561,
+    "dSmall": null,
+    "dLarge": 0.0,
+    "previews": 0.5
+   },
+   {
+    "pid": "P31",
+    "run": 1,
+    "tx": 1.829,
+    "ty": -9.617,
+    "px": -0.032,
+    "py": 0.928,
+    "rel": -0.032,
+    "game": "tactical|2",
+    "took": 0.889,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.75,
+    "keep": 0.833,
+    "recSug": 0.0,
+    "netSecs": 1.504,
+    "dSmall": null,
+    "dLarge": 0.111,
+    "previews": 0.889
+   },
+   {
+    "pid": "P31",
+    "run": 2,
+    "tx": -10.284,
+    "ty": -5.02,
+    "px": 1.288,
+    "py": 0.029,
+    "rel": 1.288,
+    "game": "strategic|1",
+    "took": 0.692,
+    "preempt": 0.5,
+    "edit": 0.154,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.667,
+    "netSecs": 1.923,
+    "dSmall": -1.25,
+    "dLarge": -0.125,
+    "previews": 0.923
+   },
+   {
+    "pid": "P32",
+    "run": 1,
+    "tx": 10.666,
+    "ty": -6.043,
+    "px": -1.302,
+    "py": -0.024,
+    "rel": -1.302,
+    "game": "strategic|2",
+    "took": 0.455,
+    "preempt": 1.0,
+    "edit": 0.0,
+    "consult": 0.5,
+    "keep": 1.0,
+    "recSug": null,
+    "netSecs": 2.041,
+    "dSmall": -1.0,
+    "dLarge": 0.4,
+    "previews": 0.545
+   },
+   {
+    "pid": "P32",
+    "run": 2,
+    "tx": -12.539,
+    "ty": 4.41,
+    "px": 1.224,
+    "py": -0.852,
+    "rel": 1.224,
+    "game": "tactical|1",
+    "took": 0.857,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.476,
+    "dSmall": 1.0,
+    "dLarge": 1.2,
+    "previews": 0.857
+   },
+   {
+    "pid": "P33",
+    "run": 1,
+    "tx": -10.77,
+    "ty": -0.344,
+    "px": 1.685,
+    "py": -0.834,
+    "rel": 1.685,
+    "game": "tactical|2",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 0.875,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.998,
+    "dSmall": null,
+    "dLarge": 0.125,
+    "previews": 1.0
+   },
+   {
+    "pid": "P33",
+    "run": 2,
+    "tx": -13.919,
+    "ty": 3.473,
+    "px": 0.85,
+    "py": -1.133,
+    "rel": 0.85,
+    "game": "strategic|1",
+    "took": 0.667,
+    "preempt": 0.0,
+    "edit": 0.083,
+    "consult": 0.818,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.418,
+    "dSmall": -0.667,
+    "dLarge": -1.0,
+    "previews": 0.75
+   },
+   {
+    "pid": "P34",
+    "run": 1,
+    "tx": -10.49,
+    "ty": 3.871,
+    "px": 2.081,
+    "py": -0.088,
+    "rel": 2.081,
+    "game": "strategic|2",
+    "took": 0.917,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 0.545,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 2.066,
+    "dSmall": -0.167,
+    "dLarge": 0.833,
+    "previews": 1.083
+   },
+   {
+    "pid": "P34",
+    "run": 2,
+    "tx": -7.574,
+    "ty": 6.856,
+    "px": 1.898,
+    "py": 0.816,
+    "rel": 1.898,
+    "game": "tactical|1",
+    "took": 1.0,
+    "preempt": null,
+    "edit": 0.0,
+    "consult": 0.857,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.765,
+    "dSmall": 0.0,
+    "dLarge": 3.0,
+    "previews": 1.143
+   },
+   {
+    "pid": "P35",
+    "run": 1,
+    "tx": 4.571,
+    "ty": 17.651,
+    "px": -0.186,
+    "py": -2.194,
+    "rel": -0.186,
+    "game": "tactical|2",
+    "took": 0.75,
+    "preempt": 0.0,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 0.25,
+    "netSecs": 2.795,
+    "dSmall": null,
+    "dLarge": 0.0,
+    "previews": 0.75
+   },
+   {
+    "pid": "P35",
+    "run": 2,
+    "tx": 17.133,
+    "ty": -2.732,
+    "px": -1.601,
+    "py": -1.349,
+    "rel": -1.601,
+    "game": "strategic|1",
+    "took": 0.286,
+    "preempt": 0.6,
+    "edit": 0.0,
+    "consult": 0.929,
+    "keep": 1.0,
+    "recSug": 0.4,
+    "netSecs": 2.074,
+    "dSmall": -1.0,
+    "dLarge": -1.857,
+    "previews": 0.286
+   },
+   {
+    "pid": "P36",
+    "run": 1,
+    "tx": 13.933,
+    "ty": -2.155,
+    "px": -0.082,
+    "py": -0.151,
+    "rel": -0.082,
+    "game": "strategic|2",
+    "took": 0.462,
+    "preempt": 0.714,
+    "edit": 0.0,
+    "consult": 0.786,
+    "keep": 1.0,
+    "recSug": 0.5,
+    "netSecs": 1.93,
+    "dSmall": -0.25,
+    "dLarge": 0.4,
+    "previews": 0.538
+   },
+   {
+    "pid": "P36",
+    "run": 2,
+    "tx": 17.91,
+    "ty": 2.634,
+    "px": 0.016,
+    "py": -1.253,
+    "rel": 0.016,
+    "game": "tactical|1",
+    "took": 0.667,
+    "preempt": 0.5,
+    "edit": 0.0,
+    "consult": 1.0,
+    "keep": 1.0,
+    "recSug": 1.0,
+    "netSecs": 1.635,
+    "dSmall": -3.0,
+    "dLarge": -0.2,
+    "previews": 0.667
+   }
+  ],
+  "mapPairRatio": 0.4923914074897766
+ },
+ "deepQueue": {
+  "strategic": {
+   "nDecisions": 606,
+   "nHi": 102,
+   "peopleHi": 25,
+   "shareHi": 0.16831683168316833,
+   "within": {
+    "OR": 1.1345588026291176,
+    "lo": 0.6922191192178369,
+    "hi": 1.8595609986584845,
+    "p": 0.6165263573697343
+   },
+   "between": {
+    "OR": 0.052262363852618274,
+    "lo": 0.0022054529369244435,
+    "hi": 1.2384552078777977,
+    "p": 0.06761861299467231
+   },
+   "bins": [
+    {
+     "k": 0,
+     "label": "0",
+     "rate": 0.6666666666666666,
+     "n": 192,
+     "people": 33
+    },
+    {
+     "k": 1,
+     "label": "1",
+     "rate": 0.708029197080292,
+     "n": 137,
+     "people": 32
+    },
+    {
+     "k": 2,
+     "label": "2",
+     "rate": 0.6796116504854369,
+     "n": 103,
+     "people": 32
+    },
+    {
+     "k": 3,
+     "label": "3",
+     "rate": 0.6111111111111112,
+     "n": 72,
+     "people": 27
+    },
+    {
+     "k": 4,
+     "label": "4",
+     "rate": 0.5106382978723404,
+     "n": 47,
+     "people": 22
+    },
+    {
+     "k": 5,
+     "label": "5+",
+     "rate": 0.6181818181818182,
+     "n": 55,
+     "people": 17
+    }
+   ],
+   "higher": 9,
+   "lower": 12,
+   "same": 4,
+   "meanDiff": -0.023717472414066857,
+   "wilcoxonP": 0.46541110925309226,
+   "byType": [
+    {
+     "types": 1,
+     "hi": 0,
+     "rate": 0.5594405594405595,
+     "n": 143
+    },
+    {
+     "types": 1,
+     "hi": 1,
+     "rate": 0.3684210526315789,
+     "n": 38
+    },
+    {
+     "types": 3,
+     "hi": 0,
+     "rate": 0.7207977207977208,
+     "n": 351
+    },
+    {
+     "types": 3,
+     "hi": 1,
+     "rate": 0.6935483870967742,
+     "n": 62
+    }
+   ],
+   "preempt": {
+    "rateHi": 0.5681818181818182,
+    "rateLo": 0.43636363636363634,
+    "nHi": 44,
+    "within": {
+     "OR": 0.8450958398530711,
+     "lo": 0.3216885139605871,
+     "hi": 2.220119611185337,
+     "p": 0.7327047148842591
+    }
+   }
+  },
+  "tactical": {
+   "nDecisions": 630,
+   "nHi": 130,
+   "peopleHi": 30,
+   "shareHi": 0.20634920634920634,
+   "within": {
+    "OR": 1.3780102937993703,
+    "lo": 0.7909993317353141,
+    "hi": 2.4006497776061906,
+    "p": 0.2575797017126681
+   },
+   "between": {
+    "OR": 0.009328578021837106,
+    "lo": 0.00026937984731523873,
+    "hi": 0.3230470607835236,
+    "p": 0.009745067047866707
+   },
+   "bins": [
+    {
+     "k": 0,
+     "label": "0",
+     "rate": 0.7299270072992701,
+     "n": 137,
+     "people": 31
+    },
+    {
+     "k": 1,
+     "label": "1",
+     "rate": 0.7862068965517242,
+     "n": 145,
+     "people": 33
+    },
+    {
+     "k": 2,
+     "label": "2",
+     "rate": 0.8267716535433071,
+     "n": 127,
+     "people": 31
+    },
+    {
+     "k": 3,
+     "label": "3",
+     "rate": 0.7912087912087912,
+     "n": 91,
+     "people": 31
+    },
+    {
+     "k": 4,
+     "label": "4",
+     "rate": 0.7627118644067796,
+     "n": 59,
+     "people": 27
+    },
+    {
+     "k": 5,
+     "label": "5+",
+     "rate": 0.704225352112676,
+     "n": 71,
+     "people": 22
+    }
+   ],
+   "higher": 14,
+   "lower": 8,
+   "same": 8,
+   "meanDiff": -0.00707879398685698,
+   "wilcoxonP": 0.3464149424062066
+  }
+ },
+ "givingUp": {
+  "nEpisodes": 162,
+  "nAttempted": 133,
+  "nPeople": 32,
+  "allAttempt": 20,
+  "neverAttempt": [
+   "P15",
+   "P24",
+   "P29"
+  ],
+  "understandDist": {
+   "5.8": 1,
+   "6.0": 10,
+   "6.2": 2,
+   "6.4": 1,
+   "6.6": 1,
+   "6.8": 4,
+   "7.0": 13
+  },
+  "understandMin": 5.8,
+  "understandMean": 6.54375,
+  "correlates": [
+   {
+    "k": "understand",
+    "label": "Self-rated understanding (pre-study, 5 items)",
+    "rho": -0.186,
+    "p": 0.3073,
+    "n": 32
+   },
+   {
+    "k": "understandTac",
+    "label": "Understood the tactical planner",
+    "rho": -0.039,
+    "p": 0.8311,
+    "n": 32
+   },
+   {
+    "k": "gaming",
+    "label": "Gaming frequency",
+    "rho": -0.039,
+    "p": 0.833,
+    "n": 32
+   },
+   {
+    "k": "sim",
+    "label": "Simulation experience",
+    "rho": 0.229,
+    "p": 0.2073,
+    "n": 32
+   },
+   {
+    "k": "strategy",
+    "label": "Strategy-game experience",
+    "rho": 0.101,
+    "p": 0.5837,
+    "n": 32
+   },
+   {
+    "k": "reliance",
+    "label": "Reliance trait (PC1)",
+    "rho": 0.481,
+    "p": 0.0053,
+    "n": 32
+   }
+  ],
+  "byRun": [
+   {
+    "run": 1,
+    "rate": 0.7619047619047619,
+    "n": 63
+   },
+   {
+    "run": 2,
+    "rate": 0.8585858585858586,
+    "n": 99
+   }
+  ],
+  "byNth": [
+   {
+    "k": "1",
+    "rate": 0.8125,
+    "n": 32
+   },
+   {
+    "k": "2",
+    "rate": 0.875,
+    "n": 32
+   },
+   {
+    "k": "3",
+    "rate": 0.6923076923076923,
+    "n": 26
+   },
+   {
+    "k": "4+",
+    "rate": 0.8472222222222222,
+    "n": 72
+   }
+  ],
+  "nthModel": {
+   "OR": 1.079907378738992,
+   "lo": 0.9329761929825786,
+   "hi": 1.2499782474907124,
+   "p": 0.30289968086372254
+  },
+  "lowAttemptersByRun": [
+   {
+    "pid": "P02",
+    "run": 1,
+    "rate": 0.8,
+    "n": 5
+   },
+   {
+    "pid": "P02",
+    "run": 2,
+    "rate": 1.0,
+    "n": 11
+   },
+   {
+    "pid": "P03",
+    "run": 1,
+    "rate": 0.5,
+    "n": 2
+   },
+   {
+    "pid": "P03",
+    "run": 2,
+    "rate": 1.0,
+    "n": 2
+   },
+   {
+    "pid": "P07",
+    "run": 1,
+    "rate": 1.0,
+    "n": 2
+   },
+   {
+    "pid": "P07",
+    "run": 2,
+    "rate": 0.5,
+    "n": 2
+   },
+   {
+    "pid": "P11",
+    "run": 1,
+    "rate": 1.0,
+    "n": 2
+   },
+   {
+    "pid": "P11",
+    "run": 2,
+    "rate": 0.6666666666666666,
+    "n": 3
+   },
+   {
+    "pid": "P15",
+    "run": 1,
+    "rate": 0.0,
+    "n": 3
+   },
+   {
+    "pid": "P15",
+    "run": 2,
+    "rate": 0.0,
+    "n": 5
+   },
+   {
+    "pid": "P19",
+    "run": 1,
+    "rate": 0.5,
+    "n": 2
+   },
+   {
+    "pid": "P19",
+    "run": 2,
+    "rate": 0.5,
+    "n": 2
+   },
+   {
+    "pid": "P21",
+    "run": 1,
+    "rate": 0.6666666666666666,
+    "n": 3
+   },
+   {
+    "pid": "P21",
+    "run": 2,
+    "rate": 1.0,
+    "n": 3
+   },
+   {
+    "pid": "P24",
+    "run": 1,
+    "rate": 0.0,
+    "n": 2
+   },
+   {
+    "pid": "P24",
+    "run": 2,
+    "rate": 0.0,
+    "n": 2
+   },
+   {
+    "pid": "P26",
+    "run": 1,
+    "rate": 0.6666666666666666,
+    "n": 3
+   },
+   {
+    "pid": "P26",
+    "run": 2,
+    "rate": 1.0,
+    "n": 4
+   },
+   {
+    "pid": "P29",
+    "run": 1,
+    "rate": 0.0,
+    "n": 1
+   },
+   {
+    "pid": "P29",
+    "run": 2,
+    "rate": 0.0,
+    "n": 2
+   },
+   {
+    "pid": "P31",
+    "run": 1,
+    "rate": 0.0,
+    "n": 1
+   },
+   {
+    "pid": "P31",
+    "run": 2,
+    "rate": 1.0,
+    "n": 1
+   },
+   {
+    "pid": "P35",
+    "run": 1,
+    "rate": 0.25,
+    "n": 4
+   },
+   {
+    "pid": "P35",
+    "run": 2,
+    "rate": 0.5,
+    "n": 4
+   }
+  ],
+  "abandonWait": {
+   "n": 27,
+   "median": 23.384000000000015,
+   "q1": 10.332999999999998,
+   "q3": 36.39,
+   "under10": 6,
+   "over30": 12,
+   "values": [
+    {
+     "pid": "P02",
+     "wait": 18.5
+    },
+    {
+     "pid": "P03",
+     "wait": 23.2
+    },
+    {
+     "pid": "P07",
+     "wait": 10.1
+    },
+    {
+     "pid": "P11",
+     "wait": 33.2
+    },
+    {
+     "pid": "P15",
+     "wait": 18.1
+    },
+    {
+     "pid": "P15",
+     "wait": 8.4
+    },
+    {
+     "pid": "P15",
+     "wait": 5.3
+    },
+    {
+     "pid": "P15",
+     "wait": 34.3
+    },
+    {
+     "pid": "P15",
+     "wait": 7.8
+    },
+    {
+     "pid": "P15",
+     "wait": 23.4
+    },
+    {
+     "pid": "P15",
+     "wait": 8.5
+    },
+    {
+     "pid": "P15",
+     "wait": 3.3
+    },
+    {
+     "pid": "P19",
+     "wait": 39.5
+    },
+    {
+     "pid": "P19",
+     "wait": 30.1
+    },
+    {
+     "pid": "P24",
+     "wait": 55.9
+    },
+    {
+     "pid": "P24",
+     "wait": 32.1
+    },
+    {
+     "pid": "P24",
+     "wait": 46.9
+    },
+    {
+     "pid": "P24",
+     "wait": 10.6
+    },
+    {
+     "pid": "P26",
+     "wait": 38.4
+    },
+    {
+     "pid": "P29",
+     "wait": 13.4
+    },
+    {
+     "pid": "P29",
+     "wait": 8.7
+    },
+    {
+     "pid": "P29",
+     "wait": 17.2
+    },
+    {
+     "pid": "P31",
+     "wait": 164.1
+    },
+    {
+     "pid": "P35",
+     "wait": 65.8
+    },
+    {
+     "pid": "P35",
+     "wait": 28.3
+    },
+    {
+     "pid": "P35",
+     "wait": 45.9
+    },
+    {
+     "pid": "P35",
+     "wait": 30.3
+    }
+   ]
+  },
+  "byDifficulty": [
+   {
+    "k": "needed a drone busy on another task",
+    "rate": 0.5,
+    "n": 10
+   },
+   {
+    "k": "idle drones could fix it",
+    "rate": 0.8421052631578947,
+    "n": 152
+   }
+  ],
+  "difficultyFisherP": 0.0173065317095782,
+  "neverEpisodes": {
+   "n": 15,
+   "idleFixable": 14
+  }
+ },
+ "flaws": {
+  "narrated": [
+   "P01",
+   "P03",
+   "P04",
+   "P05",
+   "P06",
+   "P07",
+   "P10",
+   "P11",
+   "P12",
+   "P13",
+   "P14",
+   "P15",
+   "P17",
+   "P18",
+   "P19",
+   "P20",
+   "P21",
+   "P22",
+   "P24",
+   "P25",
+   "P26",
+   "P27",
+   "P28",
+   "P29",
+   "P30",
+   "P31",
+   "P32",
+   "P33",
+   "P35",
+   "P36"
+  ],
+  "strategic": {
+   "people": 33,
+   "saidPeople": [
+    "P02",
+    "P03",
+    "P04",
+    "P13",
+    "P16",
+    "P17",
+    "P19",
+    "P20",
+    "P21",
+    "P28",
+    "P29",
+    "P30",
+    "P33",
+    "P35",
+    "P36"
+   ],
+   "qualSaid": [
+    "P02",
+    "P13",
+    "P16",
+    "P17",
+    "P19",
+    "P20",
+    "P21",
+    "P28",
+    "P29",
+    "P33",
+    "P35",
+    "P36"
+   ],
+   "spokenStrict": [
+    "P03",
+    "P04",
+    "P17",
+    "P19",
+    "P20",
+    "P29",
+    "P30"
+   ],
+   "firstRel": {
+    "median": 1.0
+   },
+   "all": [
+    {
+     "rel": -6,
+     "rate": 1.0,
+     "n": 6,
+     "people": 6
+    },
+    {
+     "rel": -5,
+     "rate": 0.75,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": -4,
+     "rate": 0.8666666666666667,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": -3,
+     "rate": 0.9375,
+     "n": 16,
+     "people": 16
+    },
+    {
+     "rel": -2,
+     "rate": 0.6875,
+     "n": 16,
+     "people": 16
+    },
+    {
+     "rel": -1,
+     "rate": 0.6,
+     "n": 30,
+     "people": 30
+    },
+    {
+     "rel": 0,
+     "rate": 0.5151515151515151,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 1,
+     "rate": 0.5757575757575758,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 2,
+     "rate": 0.5757575757575758,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 3,
+     "rate": 0.6666666666666666,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 4,
+     "rate": 0.6060606060606061,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 5,
+     "rate": 0.48484848484848486,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 6,
+     "rate": 0.6060606060606061,
+     "n": 33,
+     "people": 33
+    },
+    {
+     "rel": 7,
+     "rate": 0.71875,
+     "n": 32,
+     "people": 32
+    },
+    {
+     "rel": 8,
+     "rate": 0.53125,
+     "n": 32,
+     "people": 32
+    },
+    {
+     "rel": 9,
+     "rate": 0.6333333333333333,
+     "n": 30,
+     "people": 30
+    },
+    {
+     "rel": 10,
+     "rate": 0.6896551724137931,
+     "n": 29,
+     "people": 29
+    },
+    {
+     "rel": 11,
+     "rate": 0.6296296296296297,
+     "n": 27,
+     "people": 27
+    },
+    {
+     "rel": 12,
+     "rate": 0.7692307692307693,
+     "n": 26,
+     "people": 26
+    }
+   ],
+   "matched": [
+    {
+     "rel": -6,
+     "rate": 1.0,
+     "n": 6,
+     "people": 6
+    },
+    {
+     "rel": -5,
+     "rate": 0.75,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": -4,
+     "rate": 0.8666666666666667,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": -3,
+     "rate": 0.9333333333333333,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": -2,
+     "rate": 0.7333333333333333,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": -1,
+     "rate": 0.5714285714285714,
+     "n": 28,
+     "people": 28
+    },
+    {
+     "rel": 1,
+     "rate": 0.6071428571428571,
+     "n": 28,
+     "people": 28
+    },
+    {
+     "rel": 2,
+     "rate": 0.6363636363636364,
+     "n": 11,
+     "people": 11
+    },
+    {
+     "rel": 3,
+     "rate": 0.6470588235294118,
+     "n": 17,
+     "people": 17
+    },
+    {
+     "rel": 4,
+     "rate": 0.6666666666666666,
+     "n": 24,
+     "people": 24
+    },
+    {
+     "rel": 5,
+     "rate": 0.6666666666666666,
+     "n": 18,
+     "people": 18
+    },
+    {
+     "rel": 6,
+     "rate": 0.7333333333333333,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": 7,
+     "rate": 0.8260869565217391,
+     "n": 23,
+     "people": 23
+    },
+    {
+     "rel": 8,
+     "rate": 0.5,
+     "n": 22,
+     "people": 22
+    },
+    {
+     "rel": 9,
+     "rate": 0.7,
+     "n": 20,
+     "people": 20
+    },
+    {
+     "rel": 10,
+     "rate": 0.7142857142857143,
+     "n": 21,
+     "people": 21
+    },
+    {
+     "rel": 11,
+     "rate": 0.6956521739130435,
+     "n": 23,
+     "people": 23
+    },
+    {
+     "rel": 12,
+     "rate": 0.8947368421052632,
+     "n": 19,
+     "people": 19
+    }
+   ],
+   "matchedSaid": [
+    {
+     "rel": -5,
+     "rate": 0.8,
+     "n": 5,
+     "people": 5
+    },
+    {
+     "rel": -4,
+     "rate": 0.8571428571428571,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": -3,
+     "rate": 0.875,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": -2,
+     "rate": 0.5,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": -1,
+     "rate": 0.5833333333333334,
+     "n": 12,
+     "people": 12
+    },
+    {
+     "rel": 1,
+     "rate": 0.5,
+     "n": 12,
+     "people": 12
+    },
+    {
+     "rel": 2,
+     "rate": 0.3333333333333333,
+     "n": 6,
+     "people": 6
+    },
+    {
+     "rel": 3,
+     "rate": 0.3333333333333333,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 4,
+     "rate": 0.5384615384615384,
+     "n": 13,
+     "people": 13
+    },
+    {
+     "rel": 5,
+     "rate": 0.5714285714285714,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": 6,
+     "rate": 0.625,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": 7,
+     "rate": 0.6666666666666666,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 8,
+     "rate": 0.4444444444444444,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 9,
+     "rate": 0.6666666666666666,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 10,
+     "rate": 0.6666666666666666,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 11,
+     "rate": 0.5714285714285714,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": 12,
+     "rate": 0.875,
+     "n": 8,
+     "people": 8
+    }
+   ],
+   "matchedNotSaid": [
+    {
+     "rel": -4,
+     "rate": 0.875,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": -3,
+     "rate": 1.0,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": -2,
+     "rate": 1.0,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": -1,
+     "rate": 0.5625,
+     "n": 16,
+     "people": 16
+    },
+    {
+     "rel": 1,
+     "rate": 0.6875,
+     "n": 16,
+     "people": 16
+    },
+    {
+     "rel": 2,
+     "rate": 1.0,
+     "n": 5,
+     "people": 5
+    },
+    {
+     "rel": 3,
+     "rate": 1.0,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": 4,
+     "rate": 0.8181818181818182,
+     "n": 11,
+     "people": 11
+    },
+    {
+     "rel": 5,
+     "rate": 0.7272727272727273,
+     "n": 11,
+     "people": 11
+    },
+    {
+     "rel": 6,
+     "rate": 0.8571428571428571,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": 7,
+     "rate": 0.9285714285714286,
+     "n": 14,
+     "people": 14
+    },
+    {
+     "rel": 8,
+     "rate": 0.5384615384615384,
+     "n": 13,
+     "people": 13
+    },
+    {
+     "rel": 9,
+     "rate": 0.7272727272727273,
+     "n": 11,
+     "people": 11
+    },
+    {
+     "rel": 10,
+     "rate": 0.75,
+     "n": 12,
+     "people": 12
+    },
+    {
+     "rel": 11,
+     "rate": 0.75,
+     "n": 16,
+     "people": 16
+    },
+    {
+     "rel": 12,
+     "rate": 0.9090909090909091,
+     "n": 11,
+     "people": 11
+    }
+   ],
+   "binsSaid": [
+    {
+     "k": "before",
+     "rate": 0.7450980392156863,
+     "n": 51
+    },
+    {
+     "k": "1\u20135 after",
+     "rate": 0.46808510638297873,
+     "n": 47
+    },
+    {
+     "k": "6\u201315 after",
+     "rate": 0.6533333333333333,
+     "n": 75
+    },
+    {
+     "k": "16+ after",
+     "rate": 0.7142857142857143,
+     "n": 7
+    }
+   ],
+   "binsNotSaid": [
+    {
+     "k": "before",
+     "rate": 0.7884615384615384,
+     "n": 52
+    },
+    {
+     "k": "1\u20135 after",
+     "rate": 0.803921568627451,
+     "n": 51
+    },
+    {
+     "k": "6\u201315 after",
+     "rate": 0.7777777777777778,
+     "n": 117
+    },
+    {
+     "k": "16+ after",
+     "rate": 0.6923076923076923,
+     "n": 13
+    }
+   ],
+   "model": {
+    "OR": 0.7234788761033111,
+    "lo": 0.2560278730233842,
+    "hi": 2.0443933622801436,
+    "p": 0.5413836557409419
+   },
+   "model_said": {
+    "OR": 0.20650547306502037,
+    "lo": 0.04079618948771421,
+    "hi": 1.0453062146564023,
+    "p": 0.056596649151650566
+   },
+   "model_notSaid": {
+    "OR": 2.7547438321544773,
+    "lo": 0.4753157501873593,
+    "hi": 15.965415784774363,
+    "p": 0.2583429210059316
+   },
+   "interaction": {
+    "OR": 0.45921797128900677,
+    "lo": 0.1378346097500405,
+    "hi": 1.529957864263689,
+    "p": 0.20500491952495448
+   }
+  },
+  "spokenStrategic": {
+   "people": [
+    {
+     "pid": "P03",
+     "run": 2,
+     "t": 63.8,
+     "gist": "a card includes Lifters the mission does not need",
+     "before": 0.333,
+     "nBefore": 3,
+     "after": 0.0,
+     "nAfter": 3,
+     "beforeAll": 0.25,
+     "afterAll": 0.167
+    },
+    {
+     "pid": "P04",
+     "run": 1,
+     "t": 45.0,
+     "gist": "drones \"literally not needed for that one\"",
+     "before": 1.0,
+     "nBefore": 1,
+     "after": 0.4,
+     "nAfter": 10,
+     "beforeAll": 1.0,
+     "afterAll": 0.429
+    },
+    {
+     "pid": "P17",
+     "run": 1,
+     "t": 323.7,
+     "gist": "asks why a card sends Camera/Lifter drones the mission does not use",
+     "before": 0.75,
+     "nBefore": 4,
+     "after": 0.833,
+     "nAfter": 6,
+     "beforeAll": 0.75,
+     "afterAll": 0.562
+    },
+    {
+     "pid": "P19",
+     "run": 2,
+     "t": 36.4,
+     "gist": "the card \"sends a bunch of extra of these even though it doesn't need it\"",
+     "before": 1.0,
+     "nBefore": 7,
+     "after": 0.8,
+     "nAfter": 5,
+     "beforeAll": 1.0,
+     "afterAll": 0.778
+    },
+    {
+     "pid": "P20",
+     "run": 1,
+     "t": 239.7,
+     "gist": "Conservative card \"doesn't make sense\" -- no Lifters or Cameras needed",
+     "before": 0.5,
+     "nBefore": 2,
+     "after": 0.714,
+     "nAfter": 7,
+     "beforeAll": 0.667,
+     "afterAll": 0.667
+    },
+    {
+     "pid": "P29",
+     "run": 2,
+     "t": 80.1,
+     "gist": "a card \"sent some green and red ones for no reason\"",
+     "before": 0.833,
+     "nBefore": 6,
+     "after": 0.667,
+     "nAfter": 6,
+     "beforeAll": 0.889,
+     "afterAll": 0.364
+    },
+    {
+     "pid": "P30",
+     "run": 1,
+     "t": 61.2,
+     "gist": "no Lifters or Cameras needed on a Conservative card",
+     "before": 1.0,
+     "nBefore": 1,
+     "after": 0.5,
+     "nAfter": 12,
+     "beforeAll": 1.0,
+     "afterAll": 0.467
+    }
+   ],
+   "model": {
+    "OR": 0.2576549493743093,
+    "lo": 0.003651535055427688,
+    "hi": 18.180319216270632,
+    "p": 0.5323291939459601
+   },
+   "lower": 5,
+   "higher": 2,
+   "same": 0
+  },
+  "tactical": {
+   "refusals": 39,
+   "presses": 97,
+   "refusalPeople": 18,
+   "blindPresses": 23,
+   "blindPeople": [
+    "P01",
+    "P02",
+    "P05",
+    "P06",
+    "P10",
+    "P11",
+    "P12",
+    "P16",
+    "P19",
+    "P26",
+    "P28",
+    "P32",
+    "P34",
+    "P35"
+   ],
+   "firstBlind": 12,
+   "people": 18,
+   "series": [
+    {
+     "rel": -8,
+     "rate": 0.7,
+     "n": 10,
+     "people": 10
+    },
+    {
+     "rel": -7,
+     "rate": 0.9,
+     "n": 10,
+     "people": 10
+    },
+    {
+     "rel": -6,
+     "rate": 0.8181818181818182,
+     "n": 11,
+     "people": 11
+    },
+    {
+     "rel": -5,
+     "rate": 0.75,
+     "n": 12,
+     "people": 12
+    },
+    {
+     "rel": -4,
+     "rate": 0.7333333333333333,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": -3,
+     "rate": 0.8235294117647058,
+     "n": 17,
+     "people": 17
+    },
+    {
+     "rel": -2,
+     "rate": 0.9444444444444444,
+     "n": 18,
+     "people": 18
+    },
+    {
+     "rel": -1,
+     "rate": 0.8888888888888888,
+     "n": 18,
+     "people": 18
+    },
+    {
+     "rel": 0,
+     "rate": 0.8888888888888888,
+     "n": 18,
+     "people": 18
+    },
+    {
+     "rel": 1,
+     "rate": 0.8888888888888888,
+     "n": 18,
+     "people": 18
+    },
+    {
+     "rel": 2,
+     "rate": 0.8666666666666667,
+     "n": 15,
+     "people": 15
+    },
+    {
+     "rel": 3,
+     "rate": 0.7692307692307693,
+     "n": 13,
+     "people": 13
+    },
+    {
+     "rel": 4,
+     "rate": 0.8333333333333334,
+     "n": 12,
+     "people": 12
+    },
+    {
+     "rel": 5,
+     "rate": 1.0,
+     "n": 10,
+     "people": 10
+    },
+    {
+     "rel": 6,
+     "rate": 0.7777777777777778,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 7,
+     "rate": 0.8888888888888888,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 8,
+     "rate": 0.8888888888888888,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 9,
+     "rate": 0.7777777777777778,
+     "n": 9,
+     "people": 9
+    },
+    {
+     "rel": 10,
+     "rate": 0.875,
+     "n": 8,
+     "people": 8
+    },
+    {
+     "rel": 11,
+     "rate": 1.0,
+     "n": 7,
+     "people": 7
+    },
+    {
+     "rel": 12,
+     "rate": 0.8571428571428571,
+     "n": 7,
+     "people": 7
+    }
+   ],
+   "model": {
+    "OR": 0.901381519961961,
+    "lo": 0.4036254783589034,
+    "hi": 2.012976603539559,
+    "p": 0.8000509373839805
+   },
+   "before": 0.7806122448979592,
+   "after": 0.8653846153846154,
+   "nBefore": 196,
+   "nAfter": 156,
+   "spoken": [
+    "P11",
+    "P19",
+    "P28",
+    "P31",
+    "P32"
+   ],
+   "spokenInData": [
+    "P11",
+    "P19",
+    "P28",
+    "P31",
+    "P32"
+   ],
+   "rate_blind": {
+    "before": 0.755,
+    "after": 0.802,
+    "nBefore": 139,
+    "nAfter": 86,
+    "people": 12
+   },
+   "model_blind": {
+    "OR": 0.7399366572458921,
+    "lo": 0.3101342014476941,
+    "hi": 1.7653849661871777,
+    "p": 0.4972165373283902
+   },
+   "rate_correct": {
+    "before": 0.842,
+    "after": 0.943,
+    "nBefore": 57,
+    "nAfter": 70,
+    "people": 6
+   },
+   "model_correct": {
+    "OR": 1.3270085170477945,
+    "lo": 0.07106660467170098,
+    "hi": 24.778890344519375,
+    "p": 0.8497415797286754
+   },
+   "perPerson": [
+    {
+     "pid": "P01",
+     "before": 1.0,
+     "after": 1.0,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P02",
+     "before": 0.333,
+     "after": 0.0,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P04",
+     "before": 0.6,
+     "after": 1.0,
+     "blind": 0,
+     "said": 0
+    },
+    {
+     "pid": "P05",
+     "before": 1.0,
+     "after": 1.0,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P06",
+     "before": 0.769,
+     "after": 1.0,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P10",
+     "before": 0.765,
+     "after": 1.0,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P11",
+     "before": 0.333,
+     "after": 0.353,
+     "blind": 1,
+     "said": 1
+    },
+    {
+     "pid": "P12",
+     "before": 0.6,
+     "after": 0.933,
+     "blind": 0,
+     "said": 0
+    },
+    {
+     "pid": "P14",
+     "before": 1.0,
+     "after": 1.0,
+     "blind": 0,
+     "said": 0
+    },
+    {
+     "pid": "P16",
+     "before": 0.8,
+     "after": 0.857,
+     "blind": 0,
+     "said": 0
+    },
+    {
+     "pid": "P19",
+     "before": 1.0,
+     "after": 1.0,
+     "blind": 1,
+     "said": 1
+    },
+    {
+     "pid": "P26",
+     "before": 0.714,
+     "after": 0.778,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P27",
+     "before": 1.0,
+     "after": 1.0,
+     "blind": 0,
+     "said": 0
+    },
+    {
+     "pid": "P28",
+     "before": 0.8,
+     "after": 1.0,
+     "blind": 1,
+     "said": 1
+    },
+    {
+     "pid": "P31",
+     "before": 0.882,
+     "after": 1.0,
+     "blind": 0,
+     "said": 1
+    },
+    {
+     "pid": "P32",
+     "before": 0.643,
+     "after": 1.0,
+     "blind": 1,
+     "said": 1
+    },
+    {
+     "pid": "P34",
+     "before": 0.647,
+     "after": 1.0,
+     "blind": 1,
+     "said": 0
+    },
+    {
+     "pid": "P35",
+     "before": 0.952,
+     "after": 1.0,
+     "blind": 1,
+     "said": 0
+    }
+   ],
+   "recovery": {
+    "before": 0.492,
+    "nBefore": 59,
+    "after": 0.457,
+    "nAfter": 70
+   },
+   "nextAfterRefusal": {
+    "abandon": 20,
+    "retry Suggest": 11,
+    "edit by hand": 7,
+    "deploy": 1
+   },
+   "nextAfterBlind": {
+    "abandon": 9,
+    "edit by hand": 7,
+    "retry Suggest": 6,
+    "deploy": 1
+   },
+   "spokenMatch": [
+    {
+     "pid": "P11",
+     "run": 1,
+     "t": 186.5,
+     "gist": "\"No workable plan.\"",
+     "press": "failed",
+     "blind": true,
+     "lag": 5.3
+    },
+    {
+     "pid": "P19",
+     "run": 1,
+     "t": 216.8,
+     "gist": "\"It's just no workable plan ... looks like we have to abandon\"",
+     "press": "failed",
+     "blind": true,
+     "lag": 0.4
+    },
+    {
+     "pid": "P28",
+     "run": 1,
+     "t": 267.7,
+     "gist": "Suggest says no drones available because one \"is working for the next task\"",
+     "press": "failed",
+     "blind": true,
+     "lag": 40.1
+    },
+    {
+     "pid": "P31",
+     "run": 2,
+     "t": 341.8,
+     "gist": "\"Oh, no workable plan. Ah, okay, abandon them.\"",
+     "press": "partial",
+     "blind": false,
+     "lag": -1.1
+    },
+    {
+     "pid": "P32",
+     "run": 2,
+     "t": 222.1,
+     "gist": "\"There's no workable plan. Oh well. We'll have to abandon it then.\"",
+     "press": "failed",
+     "blind": true,
+     "lag": 4.8
+    }
+   ]
+  }
+ },
+ "narrationQuotes": [
+  {
+   "pid": "P15",
+   "run": 1,
+   "t": 195,
+   "text": "fail this this mission is fell so i need to abandon it \u2026",
+   "theme": "recovery"
+  },
+  {
+   "pid": "P29",
+   "run": 1,
+   "t": 466,
+   "text": "Well, I think I did it once, and then that one time, it, it had to get aborted, because I didn't give enough spare once, and then one of them failed.",
+   "theme": "recovery"
+  },
+  {
+   "pid": "P19",
+   "run": 1,
+   "t": 217,
+   "text": "It's just no workable plan. Okay. It looks like we have to abandon.",
+   "theme": "refusal"
+  },
+  {
+   "pid": "P32",
+   "run": 2,
+   "t": 222,
+   "text": "There's no workable plan. Oh well. We'll have to abandon it then.",
+   "theme": "refusal"
+  },
+  {
+   "pid": "P28",
+   "run": 1,
+   "t": 268,
+   "text": "It is working for the next task, so it cannot show me the suggestion. So I should manually setting the green drones to finish, to do this next task when finishing the last one.",
+   "theme": "refusal"
+  },
+  {
+   "pid": "P17",
+   "run": 1,
+   "t": 325,
+   "text": "Why is it that the green ones, there's no green or red, unless I'm missing something.",
+   "theme": "card"
+  },
+  {
+   "pid": "P19",
+   "run": 2,
+   "t": 36,
+   "text": "Oh, this just sends a bunch of extra of these even though it doesn't need it?",
+   "theme": "card"
+  },
+  {
+   "pid": "P20",
+   "run": 1,
+   "t": 240,
+   "text": "I don't think because I don't need any red or blue chair drones.",
+   "theme": "card"
+  }
+ ],
+ "spokenStrategic": {
+  "P03": {
+   "run": 2,
+   "t": 63.8,
+   "strict": true,
+   "gist": "a card includes Lifters the mission does not need"
+  },
+  "P04": {
+   "run": 1,
+   "t": 45.0,
+   "strict": true,
+   "gist": "drones \"literally not needed for that one\""
+  },
+  "P17": {
+   "run": 1,
+   "t": 323.7,
+   "strict": true,
+   "gist": "asks why a card sends Camera/Lifter drones the mission does not use"
+  },
+  "P19": {
+   "run": 2,
+   "t": 36.4,
+   "strict": true,
+   "gist": "the card \"sends a bunch of extra of these even though it doesn't need it\""
+  },
+  "P20": {
+   "run": 1,
+   "t": 239.7,
+   "strict": true,
+   "gist": "Conservative card \"doesn't make sense\" -- no Lifters or Cameras needed"
+  },
+  "P29": {
+   "run": 2,
+   "t": 80.1,
+   "strict": true,
+   "gist": "a card \"sent some green and red ones for no reason\""
+  },
+  "P30": {
+   "run": 1,
+   "t": 61.2,
+   "strict": true,
+   "gist": "no Lifters or Cameras needed on a Conservative card"
+  },
+  "P01": {
+   "run": 2,
+   "t": 301.2,
+   "strict": false,
+   "gist": "\"I'm not sending four. I don't need three either.\""
+  },
+  "P10": {
+   "run": 1,
+   "t": 343.9,
+   "strict": false,
+   "gist": "\"It sends one extra blue. I don't want that.\""
+  },
+  "P13": {
+   "run": 1,
+   "t": 250.0,
+   "strict": false,
+   "gist": "\"Why does it have a buffer of five fast drones?\""
+  },
+  "P27": {
+   "run": 2,
+   "t": 127.0,
+   "strict": false,
+   "gist": "\"only one extra blue ... maybe some bugs\""
+  },
+  "P15": {
+   "run": 2,
+   "t": 162.4,
+   "strict": false,
+   "gist": "calls the AI \"stupid\" over one mistake"
+  }
+ },
+ "spokenTactical": {
+  "P11": {
+   "run": 1,
+   "t": 186.5,
+   "strict": true,
+   "gist": "\"No workable plan.\""
+  },
+  "P19": {
+   "run": 1,
+   "t": 216.8,
+   "strict": true,
+   "gist": "\"It's just no workable plan ... looks like we have to abandon\""
+  },
+  "P28": {
+   "run": 1,
+   "t": 267.7,
+   "strict": true,
+   "gist": "Suggest says no drones available because one \"is working for the next task\""
+  },
+  "P31": {
+   "run": 2,
+   "t": 341.8,
+   "strict": true,
+   "gist": "\"Oh, no workable plan. Ah, okay, abandon them.\""
+  },
+  "P32": {
+   "run": 2,
+   "t": 222.1,
+   "strict": true,
+   "gist": "\"There's no workable plan. Oh well. We'll have to abandon it then.\""
+  }
+ }
+}

@@ -1,0 +1,256 @@
+pid,code,source,location,led,excerpt
+P01,C21,debrief,0:28:06,0,I was just getting crazy drone failure. Yeah. It felt like I sent the same mission out like three times and had the exact same failure
+P02,C03,interview,para4,0,"If simple, easier to do manually, also reserve size."
+P02,C03,interview,para7,0,Lots of drones means more likely to use agent
+P02,C09,interview,para3,0,Often took it as a suggestion but edited
+P02,C12,interview,para2,0,Confidence diminished when spares weren’t always correct.
+P02,C13,interview,para6,0,"Again, fragile confidence – didn’t saturate tasks and not great performance or overloading"
+P02,C26,interview,para11,0,AI tools are fine if they’re understandable (deterministic not stochastic)
+P03,C01,interview,para9,0,Checked always. Worked it out first and saw if It agreed.
+P03,C10,debrief,0:24:11,0,"So I say, okay, I need four. I need five. And it does."
+P03,C10,interview,para9,0,Checked always. Worked it out first and saw if It agreed.
+P03,C18,debrief,0:23:59,0,I think I have to look at it very well every time. I have to check what it's suggesting.
+P03,C18,interview,para9,0,Checked always. Worked it out first and saw if It agreed.
+P03,C20,interview,para5,0,“You can’t blame the tactical for drone failures but you can blame the strategic for not having redundancy”
+P03,C25,interview,para10,0,Strategic human should be fully in the loop.
+P04,C04,debrief,0:24:49,1,"So first thing is, you mentioned that you're mostly using the agents for time-saving, right? Yeah."
+P04,C04,interview,para3,0,"Used more, as bigger time save and more trust"
+P04,C04,interview,para6,0,Mostly using agents for time saving
+P04,C18,debrief,0:25:40,0,"Yeah, I was using it for easy first numbers, if I don't want to assign. But I was checking whether it had a really large number."
+P04,C18,interview,para1,0,"For easy stuff, always checking"
+P05,C01,interview,para10,0,“Put me in a position of overall reviewer of the entire system so I could outsource my brainpower to the agents. It was very easy for me then to check it.”
+P05,C11,interview,para9,0,When workload gets higher you rely on AI much more
+P05,C17,interview,para12,0,Time to take and criticality was what dictated the time to review.
+P05,C25,interview,para13,0,"AI should be doing menial tasks, with humans at the higher level."
+P06,C04,interview,para10,0,Main reason to use AI was to save time under high workload
+P06,C04,interview,para3,0,Used AI more (and earlier) because it’s more time consuming
+P06,C06,interview,para4,0,Over time lost a little faith as it was slow
+P06,C11,interview,para10,0,Main reason to use AI was to save time under high workload
+P06,C16,interview,para11,0,“Over time my trust in the strategic AI went up”
+P06,C20,interview,para12,0,Blamed failures on the tactical
+P07,C04,interview,para6,0,Mainly speed as was faster than doing it manually
+P07,C08,interview,para3,0,“Maybe if there was a third button for manual allocation I would use it more”
+P10,C01,debrief,0:26:20,0,my strategy was okay make sure that you as long as i am able always send drones at a number that minimizes or possibly completely removes the need for chaining
+P10,C05,debrief,0:26:44,0,if i just hit the suggest button then i can focus on something else
+P10,C05,debrief,0:27:28,0,at which point it's like okay hit the suggest button while that loads look at the next mission the second the suggest button it's done
+P10,C07,debrief,0:25:46,0,"a little bit extra time on mission six. Six might enable you to, at the same time start mission seven, because you're a bit more conservative with your redundancy, basically, with the amount of drones you sent off."
+P10,C10,debrief,0:24:49,0,"I mean, I think part of it was a little bit of experimenting"
+P10,C10,interview,para9,0,Experimenting the two agents
+P10,C16,debrief,0:26:12,0,"And once that clicked to me, and I properly started not just understanding, I think I trusted the strategic"
+P10,C16,interview,para6,0,Trusted strategic agent more.
+P10,C19,debrief,0:28:53,0,i sent only one drone out green or whatever it was one green out um that then happened to be the drone that failed and because i didn't have any redundancy that mission was done for
+P10,C22,debrief,0:22:39,0,And I could definitely feel that there is absolutely a learning effect.
+P10,C22,debrief,0:22:57,0,"there was definitely an improvement further throughout session one, and in session two, you really find your stride"
+P10,C22,interview,para8,0,Big learning effect
+P10,C27,debrief,0:29:22,0,you will have some numbers presumably about so what's the likelihood for drone failure right yes and that will based on historic data and that will presumably bias um or inform not bias but inform your selection
+P10,C27,interview,para10,0,In reality a prior on failure chance would be known to the operator
+P11,C01,debrief,0:29:11,0,"I think that's the trade-off that I make. Like, I suppose it's going to do a small mission just as well, but I feel like I can do a small mission faster."
+P11,C02,debrief,0:27:26,0,"And I guess I do feel I want to use my solution, and I don't want to like, oh, you know, of course the computer thinks it's better."
+P11,C02,debrief,0:30:55,0,"I don't want to be reduced to pressing allocate, suggest, deploy, because otherwise I might as well be in the next room. You want to be actually connected to it."
+P11,C02,debrief,0:31:15,0,"And I'm like, oh, I can just do that. Don't worry. I'll do that. Done. And I feel satisfaction."
+P11,C02,interview,para9,0,“A sense of ownership over my own solution… injured pride if it does it better than me”
+P11,C03,debrief,0:28:41,0,"either it's a really big mission, and it's like, oh, I can trust it with a large mission. […] Or it's a simple mission, and I'll be like, oh, I can just bang it up myself."
+P11,C03,interview,para4,0,"Especially trusted with a large mission – “I feel I can do a small mission faster, and this gives a sense of control over it compared to using the agent”"
+P11,C04,debrief,0:30:11,0,"I think even if the tactical agent gave me a dodgy suggestion and the mission failed and I lost points, I probably would have gained more points from the time saved..."
+P11,C04,interview,para5,0,“For big missions. I would have gained more points from the time saved using the tactical agent even if there is a small error”
+P11,C05,debrief,0:31:33,0,Because I can then go and start worrying about another mission.
+P11,C05,debrief,0:31:51,0,But I've probably sent off another mission in that time that I saved by using the agent.
+P11,C11,debrief,0:32:55,0,"And each task had, there was a lot more decisions to be made. And so I'm more likely to get overwhelmed and think, oh, the agent could probably just do that for me."
+P11,C11,interview,para6,0,as opposed to the first where it was more beyond [my] abilities so relied on agent more
+P11,C22,debrief,0:32:16,0,"partly this is due to the experience, I suppose. And I was better at it the second time."
+P11,C23,interview,para5,0,“For big missions. I would have gained more points from the time saved using the tactical agent even if there is a small error”
+P12,C03,interview,para5,0,More inclined to do quick tasks myself
+P12,C26,interview,para6,0,“I would want an understanding of how it goes about developing its optimum paths”
+P12,C27,interview,para6,0,“In a real-world scenario I’d want to get a better sense of what the system’s strengths and weaknesses are… and whether [I] could do more effective tactical deployments [myself compared to the agent]”
+P13,C12,debrief,0:22:43,0,"It has a lot of redundancy. I mean, redundancy is good, but I think it's too many resources at this point."
+P13,C12,debrief,0:29:55,0,"But in conservator, you don't need camera or lifters, yet it adds it as reserve. Mm-hmm. Even for tasks it doesn't do. That doesn't make sense."
+P13,C12,interview,para1,0,Could be better. A lot of redundancy – too much
+P13,C27,debrief,0:24:29,0,"Based on that, I think you can have a pretty good guess of what the probability of failure would be. If you could know that, it would be a lot better while assigning resources."
+P13,C27,interview,para6,0,"“Knowing the weather conditions and topology of the deployment area would give you a rough idea of what the chance of failure would be for a given drone, factor that into the allocation algorithm"
+P13,C28,debrief,0:27:49,0,"Honestly, I think I am doing a lot of work right now, and they can be a lot more automated."
+P13,C28,debrief,0:28:20,0,You can have a system for most of it. That would work just fine. I feel like the user is handling a lot.
+P13,C28,interview,para7,0,These tools could both be a lot more automated
+P14,C18,debrief,0:25:45,0,"I was like sort of rechecking the strategic plan and, uh, the technical plan that was used them for almost. Every allocation that was made"
+P14,C18,debrief,0:26:30,0,"But in the tactical interface, I had to sort of hover over every drone that was there, sort of look at the trajectory […] and then had to sort of deploy if it was fine."
+P14,C18,interview,para2,0,"“I did not trust the agents entirely – I was checking the plans, but I did use them for almost every allocation”"
+P15,C01,debrief,0:29:49,0,yeah if the like too many decisions or too many drum i need to arrange i will use use the ai
+P15,C03,debrief,0:30:12,0,yeah if the like too many decisions or too many drum i need to arrange i will use use the ai
+P15,C03,interview,para3,0,"Automated larger, more complex tasks more, but smaller tasks could do himself"
+P15,C05,debrief,0:30:26,0,it's not fast but also i in the other screen i have something to do so i can leave some time for it to suggest my the arrangement
+P15,C05,interview,para9,0,Multitasking
+P15,C06,debrief,0:29:26,0,many many of the arrangements like how many blue how many green how many red i can see in one second it will take maybe four or five seconds
+P15,C06,debrief,0:32:16,0,i definitely think it's very useful but it should be smart and faster
+P15,C06,interview,para8,0,Both felt too slow
+P15,C15,debrief,0:33:05,0,the second round side because i have more experience after the first round and now i can check the whether the uh in these screens that tour i can find that it makes mistakes
+P15,C15,interview,para4,0,2nd scenario had more missions and participant had learned more and identified the mistakes it was making.
+P15,C22,debrief,0:33:05,0,because i have more experience after the first round and now i can check
+P16,C06,interview,para1,0,Slow and options weren’t that good.
+P16,C08,interview,para1,0,"Sometimes the same, and often too extreme (far too aggressive and far too conservative). Manually overrode most of the time"
+P16,C12,interview,para1,0,"Sometimes the same, and often too extreme (far too aggressive and far too conservative). Manually overrode most of the time"
+P16,C26,interview,para9,0,“I would use them even more if I knew how they worked”
+P17,C04,debrief,0:24:33,0,"And that would be then my balance because sometimes it's, even if it's not effective, as long as it's there and something's happening, it's better."
+P17,C04,interview,para5,0,Suspect that tactical agent is fast enough that time save from more accurate allocation may not be worth it
+P17,C08,debrief,0:23:38,0,"But whenever I clicked manual, it's either been for the cause of setting too much, or I want it to be somewhere between those two levels."
+P17,C08,interview,para4,0,When using manual is either to reduce or to gap between he cards
+P17,C12,debrief,0:23:13,0,"What I've noticed is that the strategic one, there was quite a lot for wrong ones in there."
+P17,C12,debrief,0:23:38,0,"But whenever I clicked manual, it's either been for the cause of setting too much, or I want it to be somewhere between those two levels."
+P17,C12,interview,para3,0,"Always enough, but sometimes too many"
+P17,C15,debrief,0:25:21,0,"I think in the beginning for the couple of first ones where I didn't, but then I slowly got into a habit."
+P17,C15,debrief,0:26:15,0,"And then there were also more misallocations of the, mostly the conservative actually."
+P17,C18,debrief,0:24:43,0,I didn't. I just checked if everything was done.
+P17,C18,debrief,0:25:21,0,I think I always checked if everything was done. Yes.
+P17,C18,interview,para6,0,Almost always used tactical. Always checked everything was covered
+P18,C01,debrief,0:26:01,1,"settled on a strategy of how you were going to use the agents at all, the assistants? Yeah. I think it sort of changed from the first one, but yeah, I think so."
+P18,C01,debrief,0:26:17,0,"So I think if, at first glance, I felt really overwhelmed by the amount of drones to be assigned. I would use the assistant to sort of, yeah."
+P18,C03,debrief,0:26:17,0,"So I think if, at first glance, I felt really overwhelmed by the amount of drones to be assigned. I would use the assistant to sort of, yeah."
+P18,C05,debrief,0:26:44,0,To do some of the tasks at the same time.
+P18,C05,debrief,0:28:03,0,"I guess I'll be able to do some of the tasks and some of the allocation myself. To do some of the tasks. To, I guess, to work in parallel, I guess."
+P18,C11,debrief,0:26:17,0,"So I think if, at first glance, I felt really overwhelmed by the amount of drones to be assigned. I would use the assistant to sort of, yeah."
+P18,C11,debrief,0:27:41,0,"If I was overwhelmed, I would use the assistant, or if lots of tasks at the same time, or if there were... Okay."
+P18,C20,debrief,0:28:31,0,"I think in the first round, there was a few missions that failed after having it set to conservative. So I was a bit, I guess, doubtful after that, too."
+P18,C21,debrief,0:28:43,0,"Yeah, basically. So then I had to abandon them."
+P19,C09,debrief,0:33:57,0,"it's like asking ChatGPT to write you a first draft paragraph of something that you need written, versus looking at a blank paper. You can deal with a block of text and adjust it later."
+P19,C09,debrief,0:34:10,0,You can fix bad. You can't fix nothing. Yeah. I think it gives you that seed.
+P19,C12,debrief,0:31:47,0,I think I was trusting this guy too much this time. And he was over assigning blue drones to blue only missions.
+P19,C12,debrief,0:32:07,0,"Oh, not even that. I think he was over assigning blue only drones to blue only missions."
+P19,C15,debrief,0:33:19,0,"I will say, in this case, you were less reliable, Strat. I'm sorry. I come to like you, but this time, you dropped the ball a little. In this case, I was being more careful, for sure."
+P19,C15,debrief,0:34:25,0,Tactical assistant. I paid a bit more attention to you this time
+P19,C19,debrief,0:31:10,0,And something that I don't think I engaged with effectively was giving them more drones on the repeat performance.
+P19,C19,debrief,0:34:25,0,"There were some drone failures. I think those were my failures, though, if I'm being honest with you. Not assigning enough drones the next time around."
+P20,C04,debrief,0:27:00,0,The strategic one maybe seemed a bit more useful. Because I think that one actually saved me a little more time.
+P20,C11,debrief,0:28:46,0,"You can have a lot of tasks to be overloaded and try and offload some of that work to AI and then for the very complex stuff, maybe you don't."
+P20,C11,debrief,0:29:16,1,I would say it increases.
+P20,C12,debrief,0:25:51,0,there was one example in the first round where it was required all fast drones. And I think the AI assistant recommended I add some red and green drones.
+P20,C12,debrief,0:26:11,0,"And then when it came to assigning them, I noticed, oh, okay, it's made a mistake."
+P21,C01,debrief,0:32:58,0,"So technically, with the way I've set up most of them, every drone basically was going through every base in a in a sequential manner. Always cope with at least one failure"
+P21,C01,debrief,0:33:25,0,"I was adding the contingency plans from the start, which didn't require that intervention."
+P21,C05,debrief,0:29:37,0,"No, it was a bit more mentally demanding, I think, because I was able to multitask better."
+P21,C07,debrief,0:34:27,0,I think I did well to some extent. I always had a spare fleet of drones without being excessive.
+P21,C12,debrief,0:35:03,0,"I mean, it was giving me the wrong type of drones. It required only blue drones and kept giving me red and green ones."
+P21,C12,debrief,0:35:16,0,"The aggressive ones seemed to be better, but I felt like it was wasting some of the some additional drones"
+P21,C13,debrief,0:30:18,0,"So the way that the assistant was allocating them was, OK, go there, do the thing you have to do. But in case of something failed, there wasn't a backup drone coming around"
+P21,C13,debrief,0:37:35,0,"It does a job. It doesn't have redundancy, but it's reliable. It doesn't account for that, but it is."
+P21,C22,debrief,0:29:55,0,"Also, I also previously was my first attempt. So I'm not sure if it's completely dependent on the assistance, but I also optimized the way that they worked with the assistance as well"
+P22,C01,debrief,0:28:28,0,"So the strategic tool, I think I generally approached it as it was a good suggestion, but I felt that I could find maybe some more optimal policies"
+P22,C01,debrief,0:29:22,0,"So I felt comfortable assessing and then overriding the strategic assistant. With the tactical assistant, especially in the more complex tasks, I felt like I just kind of had to take its word for it"
+P22,C03,debrief,0:29:36,0,"unless the task is extremely simple, where it's either all one type of drones and it's just assigned the nearest one"
+P22,C03,debrief,0:30:06,0,"But in those ones, I felt like I can maybe maybe felt that, you know, fractions of a percent that I was slightly faster than the AI algorithm."
+P22,C07,debrief,0:28:57,0,"But then also then that meant that you'd keep some more in reserve. So it wasn't just fully because it's cautious, it was also because it was actually to keep some in reserve for other tasks"
+P22,C08,debrief,0:28:57,0,"I felt like sometimes I could find like a middle ground that had like maybe a little bit of gambling in there, essentially, that you wouldn't have the necessary coverage."
+P22,C08,debrief,0:29:22,0,"So I felt that often I could find, I could strike a middle ground."
+P22,C14,debrief,0:29:36,0,I felt like I just kind of had to take its word for it because the task is so complex. And because it's real time and I have to make that instantaneous decision
+P22,C14,debrief,0:30:06,0,"as soon as it got to any sort of non-linear, difficult, high dimensional problem, I just took the AI's word for it, essentially, probably because I couldn't assess in the time"
+P22,C17,debrief,0:30:34,0,"whereas in the strategic view, I felt like I could very quickly assess or do I need more drone coverage […] I can do that quite quickly because it's a shorter task, a simpler task"
+P22,C25,debrief,0:32:19,0,"But having a human in the loop, then I guess there's still a person who's acting as an agent. They're making a final decision on the AI's assistance suggestions."
+P24,C01,debrief,0:25:48,0,I cannot just use all of the joints for one task. I want to save more. Yes. That's my next strategy.
+P24,C04,debrief,0:25:10,0,"A little bit complicated, so I will use a lot of time to allocate and if I just use AI suggestions, that would be better and more effective to save the person, save the people."
+P24,C04,debrief,0:28:09,0,I think I just want to click that ASAP to save.
+P24,C05,debrief,0:28:09,1,because I noticed as well you were pressing it and then going over and dealing with strategic stuff. Was that part of the idea of the plan that you could have? Yes.
+P24,C07,debrief,0:25:48,0,"Yeah, because I want to save some joints for the other task. I cannot just use all of the joints for one task. I want to save more."
+P24,C07,debrief,0:26:15,0,I'm not sure I'm better than the AI suggestion. I just want to use less joints to do more things.
+P24,C09,debrief,0:25:48,1,"And the strategic agent, I noticed a lot of the time you were waiting for its suggestion and then changing it. Yes."
+P24,C14,debrief,0:27:40,0,Did you feel you had time to check the plan? No. I don't have time to hesitate. But did you trust it? Yeah. I just trusted it.
+P24,C14,debrief,0:28:09,0,"Because even though it may have, may fail, but and actually, I have no doubt that it that moment I don't know the best choice or best suggestion. I think I just want to click that ASAP"
+P24,C25,debrief,0:30:12,0,"I really trust AI, which is bad actually, but I still think there has to be like a human to make the final decision, to have like a rough check, something like that."
+P25,C11,debrief,0:23:39,0,I think it's very helpful in the second session it's more because the task is quite complicated than the previous one. The first one I don't have enough time
+P25,C17,debrief,0:24:50,0,the second is because in the second task all the processes were really quick. I don't have enough time to evaluate each actions.
+P25,C25,debrief,0:26:29,0,I think that humans should supervise the AI systems.
+P25,C26,debrief,0:25:19,0,Each task I just click the buttons to finish the task but I'm not sure how the process if and of all the tasks I can get a summary of the process would be very good.
+P25,C26,debrief,0:26:03,0,Can we just audit them or we can just have more explainable for all AI systems? This is very important for us.
+P25,C26,debrief,0:26:29,0,But we should have more explainability of the AI system.
+P26,C01,debrief,0:28:37,0,"Yeah, when I located, I think sometimes the AI will take a little longer. […] And in this tactical, sometimes it's very complicated. And I think, so at this time, I prefer to use the suggest, please."
+P26,C03,debrief,0:29:05,0,"And in this tactical, sometimes it's very complicated. And I think, so at this time, I prefer to use the suggest, please."
+P26,C03,debrief,0:29:05,1,"Would you say that you were doing some of the simpler tasks manually yourself on the tactical? Yeah, sometimes I will do it."
+P26,C04,debrief,0:29:34,0,"Yeah, much faster."
+P26,C04,debrief,0:30:28,0,"if you use human's knowledge to do it, it will take a longer time, much longer time. But in this situation, in some situations, the time is very limited. So the AI will give much quickly."
+P26,C06,debrief,0:28:37,0,"Yeah, when I located, I think sometimes the AI will take a little longer. And I just mess up my strategy"
+P26,C16,debrief,0:29:34,0,"I think with more successful when I use it, I will trust it more."
+P26,C16,debrief,0:30:01,0,"The second one, I'm more confident with this."
+P26,C17,debrief,0:31:25,1,"Did you ever find yourself just kind of accepting without really checking? Yeah, yeah, yeah. Sometimes it is."
+P26,C25,debrief,0:31:01,1,probably a human should still be involved. Is that what you think? That they would still... Yeah. You need to click the button.
+P27,C06,debrief,0:29:10,0,"So, when we are trying to do with the tactical screen, I find the agent is quite slow."
+P27,C14,debrief,0:30:28,0,"But for me, maybe I find the tactical agent is much, much useful. […] Because I think I don't want to just check in the details because it's quite emergent."
+P27,C28,debrief,0:26:26,0,"So, I'd prefer to put the task which cannot be done for now to the end of the list."
+P27,C28,debrief,0:28:39,0,"So, maybe there's only some task, some notification on the right top corner that no workable joins. So, maybe it can just highlight the abort button."
+P28,C01,debrief,0:28:05,0,"So in most time, I'm trying to be more defensive in the strategy, so I'm trying to reserve more and more drones in the base"
+P28,C04,debrief,0:29:56,0,"I think it's less reliable than before, but I still use its suggestion, and that's the case. Yeah, because at least it saves time."
+P28,C04,debrief,0:30:33,0,"I know there is a better choice, but I have no time to tune everything."
+P28,C04,debrief,0:32:10,0,I think the key strength when I using the agent is it can help me to save the time and energy to those specific deployments
+P28,C07,debrief,0:28:05,0,"I'm trying to reserve more and more drones in the base, rather than send them out to finish the task quickly, because I cannot predict when the next task will appear."
+P28,C08,debrief,0:32:35,0,maybe we should have a more customized method to adding our own ideas in here
+P28,C08,debrief,0:33:03,0,I think in most case it could only provide some fixed options it is still insufficient for some case
+P28,C12,debrief,0:29:56,0,"It's always trying to send out more drones than I expect, actually. So from my view, I actually expect to using fewer numbers of drones"
+P28,C18,debrief,0:33:33,0,"Yes, I actually check every answer. Yeah, I have a look, a quick browse to have a quick idea about what happens in here"
+P28,C19,debrief,0:28:54,0,"So if I only send out one drone for one specific color, and it fails, then I have to abort that mission, and I only abort one of them"
+P28,C21,debrief,0:28:54,0,"So if I only send out one drone for one specific color, and it fails, then I have to abort that mission, and I only abort one of them"
+P28,C25,debrief,0:34:08,0,"In most times, we cannot guarantee what type of answers it will provide to us, so, yeah, humans should make that decision."
+P29,C01,debrief,0:23:59,0,"I just thought it was, like, I thought sometimes the AI would take kind of a long time to generate, uh, an answer, which was good on more complicated, uh, like, missions"
+P29,C03,debrief,0:24:29,0,"But when it was just one color, I could just kind of count how many is necessary and then add, like, one extra more. Mm-hmm. And that was usually enough. So, it was fast for me to just click manual"
+P29,C03,debrief,0:24:54,0,I did feel like some of them I should do myself and I trusted it more with the complicated tasks
+P29,C06,debrief,0:23:59,0,"I thought sometimes the AI would take kind of a long time to generate, uh, an answer, which was good on more complicated, uh, like, missions"
+P29,C10,debrief,0:25:15,0,"I'm not really sure why I decided to do the simple ones myself. I guess I just felt like I sh, I should see if it's better."
+P29,C10,debrief,0:25:59,0,"I did kind of want to test it more at the beginning, like comparing it, like doing a few manual ones myself to see, like, whether, yeah, whether it would be better, faster."
+P29,C12,debrief,0:28:40,0,"I think sometimes it was, it would send more than I would have"
+P29,C17,debrief,0:28:13,1,"Yeah, I suppose that's true. Like I can't say I was completely checking everything I did."
+P29,C19,debrief,0:26:26,0,but I noticed that the ones that failed were normally cause I'd just done a manual one. So I guess that made me want to use the AI more often.
+P29,C19,debrief,0:28:40,0,"but then you kind of saw that that was a good thing because when I sent it myself, it would sometimes have to abort."
+P29,C21,debrief,0:28:40,0,"but then you kind of saw that that was a good thing because when I sent it myself, it would sometimes have to abort."
+P29,C23,debrief,0:24:54,0,"trying to do it manually was one of, like, most of the things that , like, one of my faults, because I think I was quite slow"
+P29,C23,debrief,0:28:13,0,"And even if like maybe human would do it better in some occasions, like overall, I think it's, it's better."
+P30,C01,debrief,0:23:25,0,yeah exactly roughly you should look how many which ones you need how many you need and then you see how many are being deployed and then you work from that really
+P30,C04,debrief,0:25:40,0,yeah yeah i think so yeah especially with here like it was so quick i just need to click suggest
+P30,C05,debrief,0:22:01,1,this is about freeing up your mind more than anything else i think so yeah
+P30,C05,debrief,0:25:40,0,i just need to click suggest and why i can focus on this and it just suggests and i trust it
+P30,C07,debrief,0:22:55,0,but i just think looking forward i do need to save a bit just in case there's some sort of like um there's some sort of buffer that you need just in case something happens
+P30,C10,debrief,0:23:25,0,yeah exactly roughly you should look how many which ones you need how many you need and then you see how many are being deployed and then you work from that really
+P30,C22,debrief,0:23:52,0,i think it was easier because i had to i sort of got into the rhythm of having to anticipate other problems
+P30,C25,debrief,0:22:29,0,because i think it needs a bit more of a human element […] so you kind of have to have that human element where you're like i need to anticipate things
+P30,C28,debrief,0:21:34,0,but i think that could be a case of if something fails and there is spares you put the spares towards it it'll take longer but that's what you should do i think that's what should happen
+P30,C28,debrief,0:24:38,0,if something fails then you can sort of like essentially optimize the other ones to sort of take over that sort of work the workload that one of the failed drones has
+P31,C04,debrief,0:29:10,0,The top advantage in this situation was the speed of response.
+P31,C09,debrief,0:32:19,0,"even if it was, like, recommending something and then I was tweaking it afterwards, I was tweaking it, like, knowing that that recommendation was a pretty decent starting place."
+P31,C13,debrief,0:32:47,0,you'd have it on the opposite side of the circle. The ordering of the tasks didn't seem logical.
+P31,C13,debrief,0:33:14,0,"they were picking tasks, like, left to right […] whereas they could have been doing, like, a, you know, Dijkstra's or something, get the lowest possible fly time between them."
+P31,C17,debrief,0:31:42,0,"in the very beginning, doing too much checking and feeling the negative impacts of that, and by the end, possibly doing not enough checking for the point optimization, it was all about, like, finding a balance between them."
+P31,C23,debrief,0:29:10,0,"if you were to challenge yourself to play through this game and not use any of the automation systems, you'd get massively overwhelmed […] and you'd just rack up a lot more negative points."
+P31,C27,debrief,0:30:07,0,"Then again, was the nudging that I was doing improving things or making them worse? I have no feedback on that, so I don't actually know."
+P31,C28,debrief,0:26:37,0,that sort of problem of optimizing a path of a given number of drones could be done better with an automated system.
+P31,C28,debrief,0:26:53,0,"I think that like there's a larger opportunity for automation where the human does not need to be, not necessarily not involved, but not making the decisions"
+P32,C01,debrief,0:23:52,0,So I guess it was very much comparing them to what I do. And then letting the tactical one get on with it.
+P32,C04,debrief,0:24:41,0,So I think I had some missions that I hadn't done the first time. So I was using it more because it was quicker.
+P32,C10,debrief,0:23:52,0,"By, I guess, comparing them to what I would have done."
+P32,C10,debrief,0:23:52,0,So I guess it was very much comparing them to what I do. And then letting the tactical one get on with it.
+P32,C11,debrief,0:24:41,0,So I think I had some missions that I hadn't done the first time. So I was using it more because it was quicker.
+P32,C11,debrief,0:25:18,0,Yes. Very much about workload.
+P32,C16,debrief,0:23:52,0,So the tactical one seemed to be doing what I was doing. So quite reliably. And obviously the strategic one wasn't.
+P32,C17,debrief,0:24:57,0,"Whereas I felt, certainly in the second one where I didn't, where I was well on top of it, that I had more time to be checking in more detail."
+P32,C22,debrief,0:23:52,0,"And I mean, I understood the task more as I went."
+P32,C27,debrief,0:26:49,0,"I'd want more analytics on, I guess, like drone utilization and mission success. I feel like that would be a good place to be making these decisions."
+P32,C27,debrief,0:27:21,0,"I'd want to understand empirically actually how it was performing, who should be doing what."
+P33,C04,debrief,0:27:33,1,"So, more about speed than necessarily being better than you. It just is really quick. Yeah."
+P33,C11,debrief,0:27:33,0,"I think the first one, I feel the pace is very, very fast. So, I can't do it very well in a very short time. So, I used a lot of AI suggestions."
+P33,C12,debrief,0:26:48,0,"In the second one, I found a lot of drones wasted here."
+P33,C12,debrief,0:27:13,0,They assigned more drones than needed.
+P33,C12,debrief,0:28:11,0,They're not necessary to be there. They were assigned.
+P33,C15,debrief,0:26:48,0,"In the second one, I found a lot of drones wasted here."
+P33,C15,debrief,0:29:49,0,"Yeah, in the first test I don't have enough time to fill it in."
+P33,C17,debrief,0:28:24,0,"So, if I have enough time or I get more familiar with this system, I will have a check."
+P33,C17,debrief,0:29:49,0,"Yeah, in the first test I don't have enough time to fill it in."
+P34,C03,interview,para3,0,“When they only needed a single colour of drone I tended to do it manually”
+P34,C04,interview,para4,0,More about speed than accuracy (tactical is faster)
+P34,C05,interview,para5,0,Assistants helped multitasking a lot.
+P35,C03,debrief,0:28:49,0,"Yeah, because the time is limited. So if the task is too complicated, so I will rely more on AI, whether it gave me the right answer or not."
+P35,C04,debrief,0:28:49,1,So it's really a speed versus accuracy trade-off thing for you. Yeah. Yes. Yes.
+P35,C11,debrief,0:28:19,0,"But in an urgent situation and the number of the swarm is not enough, so I need to consider about the strategies and I think I need the help of AI assistant."
+P35,C12,debrief,0:29:53,0,"sometimes the mission don't need the blue one, and it suggests me to allocate two or three blue ones to that task and it's easier to find it out."
+P35,C17,debrief,0:29:17,0,I will choose to just trust it. But if I have enough time... I think I will maybe check twice or I think more on myself and then read that.
+P35,C17,debrief,0:30:23,0,But sometimes when there are too many tasks in a mission. Yeah. Yeah. And I think maybe I don't have time to check it.
+P35,C25,debrief,0:30:58,0,"It's better if there are AI systems with humans, I think it can help a lot."
+P35,C25,debrief,0:31:23,0,"although the AI give you the suggestion, don't rely on it, even if in an urgent situation."
+P36,C01,debrief,0:33:43,0,I'm very visual so looking at a glance yes it's allocated what I needed to allocate it cool let's start running with it
+P36,C08,debrief,0:31:32,0,but then I probably just tweak the AI do stop over allocating resource just give me this give me if it's a critical task give me two reserve if it's a moderate task give me one
+P36,C08,debrief,0:39:26,0,and then a human's going in and going give me something between that one and that one because i don't like that one for this and i don't like that one for that
+P36,C12,debrief,0:31:32,0,for the strategic a lot of it's a lot of over allocation of resource
+P36,C26,debrief,0:36:43,0,as long as you have trust in how they've come up with those answers then you're going to and if it looks right because you've gone through the process yourself
+P36,C26,debrief,0:39:55,0,i think one of the good things about ai is that you can have an agent whose only job is to go and red team all of your outputs very quickly
+P36,C27,debrief,0:31:32,0,the big thing that's missing in those sorts of things is data […] when I did allocate resources in that way and I ran that stochastically like a thousand times this is how many times my task failed

@@ -76,7 +76,26 @@ PARTICIPANTS = BASE / 'Results' / 'Participants'
 NARRATION = BASE / 'Results' / 'Narration'
 STUDY_JSON = BASE / 'docs' / 'reports' / 'study_analysis.json'
 TEMPLATE = BASE / 'scripts' / 'findings_synthesis_template.html'
+BRIEF_TEMPLATE = BASE / 'scripts' / 'findings_brief_template.html'
+ROUND1_TEMPLATE = BASE / 'scripts' / 'analysis_round1_template.html'
+# Verified round-1 hypothesis results (docs/analysis/round1/): numbers the supervisor re-ran, kept
+# as data so the results page renders them rather than restating them by hand.
+ROUND1_RESULTS = BASE / 'docs' / 'analysis' / 'round1' / 'results.json'
+ROUND2_TEMPLATE = BASE / 'scripts' / 'analysis_round2_template.html'
+ROUND2_RESULTS = BASE / 'docs' / 'analysis' / 'round2' / 'results.json'
+COMBINED_TEMPLATE = BASE / 'scripts' / 'findings_combined_template.html'
+QUAL = BASE / 'docs' / 'analysis' / 'qual'
+# follow-up analyses for the combined page, from scripts/analysis_combined/extras.py
+EXTRAS = BASE / 'docs' / 'analysis' / 'combined' / 'extras.json'
+COMMON_CSS = BASE / 'scripts' / 'findings_common.css'
+COMMON_JS = BASE / 'scripts' / 'findings_common.js'
 OUT_HTML = BASE / 'Results' / 'findings_synthesis.html'
+# The short version: the handful of findings the data can actually defend, built from the same
+# payload so the two pages can never quote different numbers.
+OUT_BRIEF = BASE / 'Results' / 'findings_brief.html'
+OUT_ROUND1 = BASE / 'Results' / 'analysis_round1.html'
+OUT_ROUND2 = BASE / 'Results' / 'analysis_round2.html'
+OUT_COMBINED = BASE / 'Results' / 'findings_combined.html'
 
 EXCLUDE = {'P09'}
 CRITICALITY = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5}
@@ -920,6 +939,56 @@ def analyse_disposition(sess, people) -> dict:
         detectable=detectable, nDetect=n)
 
 
+# ── how much of reliance belongs to the person ───────────────────────────────────────────────
+
+def individual(df: pd.DataFrame, sess) -> dict:
+    """How much card uptake is a property of the operator rather than of the mission.
+
+    Three readings. (1) Stability: the same person's rate in run 1 against run 2, which were
+    different scenarios, so a high correlation is a style that survives a change of task. (2) Share
+    of variation: McFadden pseudo-R2 of a logit with mission terms only, the person only, and both.
+    Fixed-effect logits are biased at ~18 decisions per person, so these are descriptive, not tests.
+    (3) Within-person effects: the composition and run terms once each person is their own control.
+    """
+    by = {}
+    for x in sess:
+        by.setdefault(x['pid'], {})[x['run']] = x
+    pairs = [(v[1], v[2]) for v in by.values() if 1 in v and 2 in v]
+
+    def stab(k):
+        xs = [(a[k], b[k]) for a, b in pairs if a[k] is not None and b[k] is not None]
+        r = stats.spearmanr([x for x, _ in xs], [y for _, y in xs])
+        return dict(rho=f(r.correlation), p=f(r.pvalue), n=len(xs))
+
+    def change(k):
+        d = [b[k] - a[k] for a, b in pairs if a[k] is not None and b[k] is not None]
+        return dict(fell=sum(x < 0 for x in d), rose=sum(x > 0 for x in d),
+                    same=sum(x == 0 for x in d), mean=f(np.mean(d)))
+
+    dt = [b['trust_s'] - a['trust_s'] for a, b in pairs]
+    du = [b['took'] - a['took'] for a, b in pairs]
+    r = stats.spearmanr(dt, du)
+
+    fit = lambda formula: _quietly(lambda: smf.logit(formula, df).fit(disp=0, method='bfgs',
+                                                                       maxiter=4000))
+    mission = 'ncolours + ndrones + C(scenario) + C(run) + idx'
+    m_mission, m_person, m_both = fit('took ~ ' + mission), fit('took ~ C(pid)'),         fit('took ~ ' + mission + ' + C(pid)')
+    within = lambda name: dict(b=f(m_both.params[name]), p=f(m_both.pvalues[name]))
+    rates = df.groupby('pid').took.mean()
+    return dict(
+        stability={k: stab(k) for k in ('took', 'consult', 'accept', 'trust_s', 'trust_t')},
+        r2=dict(mission=f(m_mission.prsquared), person=f(m_person.prsquared),
+                both=f(m_both.prsquared)),
+        within=dict(ncolours=within('ncolours'), run=within('C(run)[T.2]'),
+                    scenario=within('C(scenario)[T.tactical]')),
+        rates=dict(q=[f(v) for v in rates.quantile([0, .25, .5, .75, 1])],
+                   high=int((rates >= .9).sum()), low=int((rates <= .25).sum()), n=int(len(rates))),
+        trustPairs=[dict(pid=a['pid'], a=f(a['trust_s']), b=f(b['trust_s'])) for a, b in pairs
+                    if a['trust_s'] is not None and b['trust_s'] is not None],
+        trustChange=dict(strategic=change('trust_s'), tactical=change('trust_t'),
+                         vsUptake=dict(rho=f(r.correlation), p=f(r.pvalue), n=len(dt))))
+
+
 # ── the other two sources ─────────────────────────────────────────────────────────────────────
 
 def benchmark(df: pd.DataFrame) -> dict:
@@ -1020,6 +1089,29 @@ def load_quotes() -> dict:
     return dict(quotes=quotes, participants=sorted(set(coded)))
 
 
+def load_qual():
+    """The whole-transcript coding (docs/analysis/qual/): one 0/1 row per participant per code, the
+    evidence excerpts behind every code, and the tier-preference coding from round 2. None until the
+    coding exists, so the combined page can say so rather than fail."""
+    matrix, evidence = QUAL / 'codes_matrix.csv', QUAL / 'evidence.csv'
+    if not (matrix.exists() and evidence.exists()):
+        return None
+    m = pd.read_csv(matrix)
+    codes = [c for c in m.columns if c[:1] == 'C' and c[1:3].isdigit()]
+    ev = pd.read_csv(evidence).fillna('')
+    pref_path = BASE / 'docs' / 'analysis' / 'round2' / 'wE_codes.csv'
+    pref = pd.read_csv(pref_path)[['pid', 'pref', 'cond']].fillna('') if pref_path.exists() else None
+    return dict(
+        n=int(len(m)),
+        counts={c: int(m[c].fillna(0).astype(int).sum()) for c in codes},
+        who={c: sorted(m.loc[m[c].fillna(0).astype(int) == 1, 'pid'].tolist()) for c in codes},
+        evidence=[dict(pid=r.pid, code=str(r.code).split()[0], source=r.source, at=str(r.location),
+                       led=int(r.led or 0), text=r.excerpt) for r in ev.itertuples()],
+        preference=None if pref is None else dict(
+            counts={k: int(v) for k, v in pref['pref'].value_counts().items()},
+            who={k: sorted(g.pid.tolist()) for k, g in pref.groupby('pref')}))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--print', action='store_true')
@@ -1033,15 +1125,27 @@ def main() -> None:
                    disposition=analyse_disposition(sess, people),
                    benchmark=benchmark(df),
                    study=from_study_analysis(),
-                   narration=load_quotes())
+                   individual=individual(df, sess),
+                   narration=load_quotes(),
+                   round1=json.loads(ROUND1_RESULTS.read_text(encoding='utf-8'))
+                   if ROUND1_RESULTS.exists() else None,
+                   round2=json.loads(ROUND2_RESULTS.read_text(encoding='utf-8'))
+                   if ROUND2_RESULTS.exists() else None,
+                   qual=load_qual(),
+                   extras=json.loads(EXTRAS.read_text(encoding='utf-8')) if EXTRAS.exists() else None)
 
-    if not TEMPLATE.exists():
-        raise SystemExit('missing template: %s' % TEMPLATE)
-    html = TEMPLATE.read_text(encoding='utf-8')
     blob = json.dumps(payload, separators=(',', ':'), ensure_ascii=True,
                       default=float).replace('</', '<\\/')
-    OUT_HTML.write_text(html.replace('/*__DATA__*/null', blob), encoding='utf-8')
-    print('wrote %s (%.0f KB)' % (OUT_HTML.relative_to(BASE), OUT_HTML.stat().st_size / 1024))
+    css, js = COMMON_CSS.read_text(encoding='utf-8'), COMMON_JS.read_text(encoding='utf-8')
+    for template, out in ((TEMPLATE, OUT_HTML), (BRIEF_TEMPLATE, OUT_BRIEF),
+                          (ROUND1_TEMPLATE, OUT_ROUND1), (ROUND2_TEMPLATE, OUT_ROUND2),
+                          (COMBINED_TEMPLATE, OUT_COMBINED)):
+        if not template.exists():
+            raise SystemExit('missing template: %s' % template)
+        html = (template.read_text(encoding='utf-8')
+                .replace('/*__COMMON_CSS__*/', css).replace('/*__COMMON_JS__*/', js))
+        out.write_text(html.replace('/*__DATA__*/null', blob), encoding='utf-8')
+        print('wrote %s (%.0f KB)' % (out.relative_to(BASE), out.stat().st_size / 1024))
     print('%d decisions, %d participants, %d quotes from %d participants'
           % (payload['computed']['n']['decisions'], payload['computed']['n']['participants'],
              len(payload['narration']['quotes']), len(payload['narration']['participants'])))
@@ -1049,7 +1153,7 @@ def main() -> None:
         print('WARNING: no quotes found in Results/Narration/*_s1/quotes.json -- the page was built')
         print('         WITHOUT them. Results/Narration/ is gitignored, so a fresh clone never has it;')
         print('         copy that folder over from the machine that ran the narration pipeline.')
-    print('NOTE: this file is committed but holds verbatim participant speech -- do not circulate it.')
+    print('NOTE: both pages hold verbatim participant speech -- do not circulate them.')
     if args.print:
         print(json.dumps(payload['computed'], indent=1, default=float))
 
