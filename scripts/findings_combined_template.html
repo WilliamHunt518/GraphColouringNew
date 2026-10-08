@@ -31,7 +31,16 @@ ul.tight a { color: var(--ink); text-decoration: none; }
 .tiles { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 .tile .v { font-size: 26px; }
 table.method td { text-align: left; vertical-align: top; font-size: 13.5px; }
-.btnrow { display: flex; gap: 6px; margin: 0 0 6px; }
+.btnrow { display: flex; gap: 6px; margin: 0 0 6px; flex-wrap: wrap; align-items: center; }
+section.fold .sec-head { cursor: pointer; position: relative; padding-right: 34px; }
+section.fold .sec-head::after { content: '−'; position: absolute; right: 6px; top: 22px; font: 500 22px var(--mono); color: var(--ink-3); }
+section.fold.closed .sec-head::after { content: '+'; }
+section.fold.closed > :not(.sec-head) { display: none; }
+section.fold.closed { margin-top: 0; }
+section.fold.closed .sec-head { margin-bottom: 0; padding-bottom: 14px; }
+section.fold .sec-head:hover h2 { color: var(--s-strat); }
+.foldbar { margin-top: 30px; }
+.btnlab { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); width: 76px; }
 .btnrow button { font: 500 12px var(--mono); padding: 4px 10px; border-radius: 5px; border: 1px solid var(--line);
   background: var(--surface); color: var(--ink-2); cursor: pointer; }
 .btnrow button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
@@ -86,13 +95,72 @@ function together(host, html) { h('div', { class: 'together', html: '<b>Together
 function caveat(host, html) { h('div', { class: 'caveat', html: '<b>Caveat.</b> ' + html }, host); }
 
 /* Bar per code: how many of the 33 said it. Hover lists who. */
+/* The averages of a group of participants: score, workload (raw NASA-TLX, 0–20) and post-session trust in
+   each assistant (1–7), each the mean of a person's sessions. P01/P02 have no score (half task weights). */
+const PS = DATA.personSummary || {};
+function groupMeans(pids) {
+  const m = k => { const v = pids.map(p => PS[p] && PS[p][k]).filter(x => x != null);
+                   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  return { score: m('score'), rtlx: m('rtlx'), trustS: m('trustS'), trustT: m('trustT') };
+}
+const ALL_PIDS = Object.keys(PS);
+const MEAN_COLS = [['score', 'Score', v => num(v, 0)], ['rtlx', 'Workload', v => num(v, 1)],
+                   ['trustS', 'Trust S', v => num(v, 1)], ['trustT', 'Trust T', v => num(v, 1)]];
+
+/* Bars of "X of N participants", each followed by that group's average score, workload and trust.
+   rows: {label, pids, sub}. The last row is everyone, for comparison. */
+const GT = DATA.groupTests || {};
+const stars = p => p == null ? '' : p < 0.001 ? '***' : p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.10 ? '†' : '';
+function whoBars(host, rows, n) {
+  const all = groupMeans(ALL_PIDS);
+  const W = 780, rowH = 36, padL = 280, barW = 160, padT = 26;
+  const H = padT + (rows.length + 1) * rowH + 10;
+  const svg = svgRoot(host, W, H);
+  const colX = [padL + barW + 78, padL + barW + 142, padL + barW + 206, padL + barW + 270];
+  const txt = (x, y, t, o = {}) => { const e = el('text', Object.assign({ x, y, fill: css('--ink-2'), 'font-size': 12,
+    'font-family': css('--mono'), 'text-anchor': 'end' }, o), svg); e.textContent = t; return e; };
+  txt(padL + barW + 12, 14, `of ${n}`, { 'text-anchor': 'start', fill: css('--ink-3'), 'font-size': 10.5 });
+  MEAN_COLS.forEach(([, lab], i) => txt(colX[i], 14, lab, { fill: css('--ink-3'), 'font-size': 10.5 }));
+  const draw = (r, i, isAll) => {
+    const y = padT + i * rowH, cy = y + rowH / 2, k = r.pids.length, g = isAll ? all : groupMeans(r.pids);
+    const T = !isAll && r.key ? (GT[r.key] || {}) : {};
+    el('text', { x: padL - 10, y: cy, 'text-anchor': 'end', fill: isAll ? css('--ink-3') : css('--ink-2'), 'font-size': 12.5,
+                 'font-style': isAll ? 'italic' : 'normal' }, svg).textContent = r.label;
+    el('rect', { x: padL, y: y + 10, width: barW, height: rowH - 20, rx: 3, fill: css('--surface-2') }, svg);
+    el('rect', { x: padL, y: y + 10, width: barW * k / n, height: rowH - 20, rx: 3,
+                 fill: isAll ? css('--mark-soft') : css('--mark') }, svg);
+    txt(padL + barW + 12, cy, `${k}`, { 'text-anchor': 'start', 'font-weight': 600, fill: css('--ink') });
+    MEAN_COLS.forEach(([key, , fmt], j) => {
+      const v = g[key], t = T[key], pp = t ? t.p : null;
+      const colr = isAll || !k ? css('--ink-3') : pp != null && pp < 0.10 ? pColour(pp) : css('--ink-2');
+      const e = txt(colX[j], cy, k ? fmt(v) + stars(pp) : '—', { fill: colr, 'font-weight': pp != null && pp < 0.10 ? 700 : 400 });
+      if (pp != null) txt(colX[j], cy + 12, pval(pp).replace('p ', ''), { fill: pp < 0.10 ? colr : css('--ink-3'), 'font-size': 9.5 });
+    });
+    const hit = el('rect', { x: 0, y, width: W, height: rowH, fill: 'transparent' }, svg);
+    const tests = isAll ? '' : MEAN_COLS.map(([key, lab, fmt]) => T[key]
+      ? `${lab}: ${fmt(T[key].inMean)} vs ${fmt(T[key].restMean)} for the other ${T[key].nRest} · ${pv(T[key].p)}` : '').filter(Boolean).join('<br>');
+    hoverable(hit, `<b>${r.label}</b><br>${k} of ${n}${r.sub ? ' · ' + r.sub : ''}`
+      + (isAll ? '' : `<br>${r.pids.join(', ') || 'nobody'}`) + (tests ? '<br>' + tests : '')
+      + `<br>score ${num(g.score, 0)} · workload ${num(g.rtlx, 1)} / 20 · trust strategic ${num(g.trustS, 1)} · tactical ${num(g.trustT, 1)} (1–7)`
+      + (isAll ? '' : `<br><span style="opacity:.75">everyone: ${num(all.score, 0)} · ${num(all.rtlx, 1)} · ${num(all.trustS, 1)} · ${num(all.trustT, 1)}</span>`));
+  };
+  rows.forEach((r, i) => draw(r, i, false));
+  draw({ label: `All ${n} participants`, pids: ALL_PIDS }, rows.length, true);
+}
+const MEANS_CAP = 'After each bar: that group’s average <b>score</b> (points per session; P01/P02 left out, they played on '
+  + 'half task weights), <b>workload</b> (raw NASA-TLX, 0–20, higher = more demanding) and post-session <b>trust</b> in the '
+  + 'Strategic (S) and Tactical (T) Assistant (1–7), each person averaged over their two sessions. The bottom row is everyone. '
+  + 'Each number is tested against <b>everyone not in the group</b> (two-sided Mann–Whitney U); the p-value sits under it, '
+  + 'coloured by threshold, with * < .05, ** < .01, *** < .001, † < .10. Hover a row for both means. These are screening '
+  + 'tests, uncorrected: across 28 codes × 4 measures about 6 would reach p < .05 by chance alone, so treat a lone '
+  + 'asterisk as a lead, not a finding.';
+
 function codeBars(host, codes, title) {
   const c = card(host, title || `How many of the ${NQ} participants said so`);
-  barsH(h('div', { class: 'chart' }, c), codes.map(k => ({
-    label: CODE_LABEL[k], value: nOf(k) / NQ,
-    sub: `${nOf(k)} of ${NQ}` + (strictOf(k) < nOf(k) ? `, ${strictOf(k)} without a leading question` : '')
-      + `<br>${who(k).join(', ') || 'nobody'}` })),
-    { max: 1, padL: 290, rowH: 28, fmt: v => Math.round(v * NQ) + ' / ' + NQ });
+  whoBars(h('div', { class: 'chart' }, c), codes.map(k => ({
+    label: CODE_LABEL[k], pids: who(k), key: k,
+    sub: strictOf(k) < nOf(k) ? `${strictOf(k)} without a leading question` : '' })), NQ);
+  h('p', { class: 'cap', html: MEANS_CAP }, c);
   return c;
 }
 
@@ -119,9 +187,12 @@ function pairBarsH(host, rows, o = {}) {
       if (v == null) return;
       const se = o.series[j], by = y + rowH / 2 - bh - 1 + j * (bh + 2);
       el('rect', { x: Math.min(x(0), x(v)), y: by, width: Math.abs(x(v) - x(0)), height: bh, rx: 3, fill: se.color }, svg);
-      const t = el('text', { x: (v >= 0 ? x(v) + 6 : x(v) - 6), y: by + bh - 2, 'text-anchor': v >= 0 ? 'start' : 'end',
+      // negative bars are labelled to the right of zero, so the text never runs into the row labels
+      const t = el('text', { x: (v >= 0 ? x(v) + 6 : x(0) + 6), y: by + bh - 2, 'text-anchor': 'start',
                              fill: css('--ink-2'), 'font-size': 11, 'font-family': css('--mono') }, svg);
-      t.textContent = fmt(v);
+      const pp = r[k + 'P'];
+      t.textContent = fmt(v) + (pp != null ? ' ' + stars(pp) + '  ' + pval(pp) : '');
+      if (pp != null) { t.setAttribute('fill', pColour(pp)); if (pp < 0.10) t.setAttribute('font-weight', 600); }
       const hit = el('rect', { x: padL, y: by - 1, width: W - padL - padR, height: bh + 2, fill: 'transparent' }, svg);
       hoverable(hit, `<b>${r.label}</b><br>${se.label}: ${fmt(v)}${r[k + 'Sub'] ? '<br>' + r[k + 'Sub'] : ''}`);
     });
@@ -138,7 +209,7 @@ function mixHex(c1, c2, t) {
 }
 
 /* Style map: one dot per session, a line joining each operator's two sessions. */
-function styleMap(host, pts, mode) {
+function styleMap(host, pts, mode, keep = () => true) {
   host.innerHTML = '';
   const W = 700, H = 440, pad = 34;
   const svg = svgRoot(host, W, H);
@@ -149,8 +220,10 @@ function styleMap(host, pts, mode) {
   const sy = v => H - pad - (H - 2 * pad) * (v - y0) / (y1 - y0 || 1);
   const rels = pts.map(p => p.rel), rlo = Math.min(...rels), rhi = Math.max(...rels);
   const col = v => mixHex(css('--s-tac'), css('--s-strat'), (v - rlo) / (rhi - rlo || 1));
+  // axes are fixed by every session, so filtering hides dots without moving the rest
+  const shown = pts.filter(keep);
   const byPid = {};
-  pts.forEach(p => (byPid[p.pid] = byPid[p.pid] || []).push(p));
+  shown.forEach(p => (byPid[p.pid] = byPid[p.pid] || []).push(p));
   const lines = {}, dots = {};
   Object.entries(byPid).forEach(([pid, ps]) => {
     if (ps.length === 2) lines[pid] = el('line', { x1: sx(ps[0][xk]), y1: sy(ps[0][yk]), x2: sx(ps[1][xk]), y2: sy(ps[1][yk]),
@@ -158,7 +231,7 @@ function styleMap(host, pts, mode) {
   });
   const fmtF = (k, v) => v == null ? '—' : (['took', 'preempt', 'edit', 'consult', 'keep', 'recSug'].includes(k) ? pct(v, 0)
     : k === 'netSecs' ? num(Math.expm1(v), 1) + ' s' : num(v, 2));
-  pts.forEach(p => {
+  shown.forEach(p => {
     const c = el(p.run === 1 ? 'circle' : 'rect', p.run === 1
       ? { cx: sx(p[xk]), cy: sy(p[yk]), r: 6, fill: col(p.rel), stroke: css('--surface'), 'stroke-width': 1.5 }
       : { x: sx(p[xk]) - 5.5, y: sy(p[yk]) - 5.5, width: 11, height: 11, rx: 2, fill: col(p.rel), stroke: css('--surface'), 'stroke-width': 1.5 }, svg);
@@ -183,6 +256,180 @@ function styleMap(host, pts, mode) {
     .textContent = mode === 'tsne' ? 't-SNE axes have no units' : 'PC1 (reliance) →';
   if (mode !== 'tsne') el('text', { x: 10, y: pad - 12, fill: css('--ink-3'), 'font-size': 10.5, 'font-family': css('--mono') }, svg)
     .textContent = '↑ PC2';
+}
+
+/* diverging colour for a z-score: low = tactical orange, 0 = surface, high = strategic blue */
+const zCol = (v, lim = 2) => v == null ? css('--surface-2') : v >= 0
+  ? mixHex(css('--surface-2'), css('--s-strat'), Math.min(1, v / lim)) : mixHex(css('--surface-2'), css('--s-tac'), Math.min(1, -v / lim));
+const SHORT = { took: 'Takes card', preempt: 'Manual early', edit: 'Edits card', consult: 'Suggest (plan)', keep: 'Keeps plan',
+                recSug: 'Suggest (recovery)', netSecs: 'Decision time', dSmall: '± drones, small', dLarge: '± drones, large',
+                previews: 'Previews cards' };
+
+/* People × habits heatmap, rows in clustering order, with the clustering tree on the left. */
+function heatTree(host, H, archOf) {
+  const nR = H.pids.length, nC = H.cols.length, cw = 46, rh = 15, treeW = 120, labW = 40, top = 92;
+  const W = treeW + labW + nC * cw + 20, Ht = top + nR * rh + 10;
+  const svg = svgRoot(host, W, Ht);
+  const x0 = treeW + labW;
+  H.cols.forEach((c, j) => {
+    const t = el('text', { x: x0 + j * cw + cw / 2, y: top - 8, fill: css('--ink-2'), 'font-size': 11,
+                           transform: `rotate(-40 ${x0 + j * cw + cw / 2} ${top - 8})` }, svg);
+    t.textContent = SHORT[c] || c;
+  });
+  H.values.forEach((row, i) => {
+    const y = top + i * rh;
+    el('text', { x: x0 - 6, y: y + rh - 4, 'text-anchor': 'end', fill: css('--ink-2'), 'font-size': 10,
+                 'font-family': css('--mono') }, svg).textContent = H.pids[i];
+    if (archOf && archOf[H.pids[i]]) el('rect', { x: x0 - labW - 2, y: y + 3, width: 6, height: rh - 6, rx: 1.5,
+      fill: archOf[H.pids[i]].color }, svg);
+    row.forEach((v, j) => {
+      const c = el('rect', { x: x0 + j * cw + 1, y: y + 1, width: cw - 2, height: rh - 2, rx: 2, fill: zCol(v) }, svg);
+      hoverable(c, `<b>${H.pids[i]}</b> · ${SHORT[H.cols[j]]}<br>${sgn(v, 2)} SD from the average operator (game-adjusted)`);
+    });
+  });
+  // dendrogram from the scipy linkage matrix
+  const n = nR, pos = {}, ht = {};
+  const maxD = Math.max(...H.linkage.map(l => l[2]));
+  const xs = d => treeW - 6 - (treeW - 14) * (d / maxD);
+  // leaves: scipy numbers leaves 0..n-1 in ORIGINAL order; H.leaf gives original index -> row
+  H.leaf.forEach((orig, row) => { pos[orig] = top + row * rh + rh / 2; ht[orig] = 0; });
+  H.linkage.forEach(([a, b, d], k) => {
+    const id = n + k, ya = pos[a], yb = pos[b], xa = xs(ht[a]), xb = xs(ht[b]), xd = xs(d);
+    el('path', { d: `M${xa} ${ya}H${xd}V${yb}H${xb}`, fill: 'none', stroke: css('--ink-3'), 'stroke-width': 1 }, svg);
+    pos[id] = (ya + yb) / 2; ht[id] = d;
+  });
+}
+
+/* Spearman correlations between habits, lower triangle, coloured by ρ, starred by p. */
+function corrGrid(host, Cg) {
+  const k = Cg.cols.length, cs = 52, left = 130, top = 16;
+  const svg = svgRoot(host, left + k * cs + 10, top + k * cs + 70);
+  Cg.cols.forEach((c, i) => {
+    el('text', { x: left - 8, y: top + i * cs + cs / 2 + 4, 'text-anchor': 'end', fill: css('--ink-2'), 'font-size': 11.5 }, svg)
+      .textContent = SHORT[c];
+    const t = el('text', { x: left + i * cs + cs / 2, y: top + k * cs + 12, fill: css('--ink-2'), 'font-size': 11,
+                           transform: `rotate(35 ${left + i * cs + cs / 2} ${top + k * cs + 12})` }, svg);
+    t.textContent = SHORT[c];
+    for (let j = 0; j < i; j++) {
+      const v = Cg.rho[i][j], pp = Cg.p[i][j];
+      const r_ = el('rect', { x: left + j * cs + 1, y: top + i * cs + 1, width: cs - 2, height: cs - 2, rx: 3, fill: zCol(v, 1) }, svg);
+      const t2 = el('text', { x: left + j * cs + cs / 2, y: top + i * cs + cs / 2 + 4, 'text-anchor': 'middle',
+                              fill: Math.abs(v) > 0.55 ? '#fff' : css('--ink'), 'font-size': 11, 'font-family': css('--mono'),
+                              'font-weight': pp < 0.05 ? 700 : 400 }, svg);
+      t2.textContent = num(v, 2).replace('0.', '.') + stars(pp);
+      hoverable(r_, `<b>${SHORT[Cg.cols[i]]} ~ ${SHORT[Cg.cols[j]]}</b><br>ρ = ${num(v, 2)}, ${pv(pp)}`);
+    }
+  });
+}
+
+/* The two main directions of style, with their ends named in words. One dot per operator (mean of their two
+   sessions), coloured by closest archetype; the three archetypes are marked where their profiles fall. */
+function styleAxes(host, pts, B, cols, archOf, AR, NAMES, COLS, ends) {
+  const W = 700, H = 470, padL = 70, padR = 70, padT = 40, padB = 50;
+  const svg = svgRoot(host, W, H);
+  const byP = {};
+  pts.forEach(p => (byP[p.pid] = byP[p.pid] || []).push(p));
+  const pp = Object.entries(byP).map(([pid, ps]) => ({ pid, x: ps.reduce((a, b) => a + b.px, 0) / ps.length,
+                                                        y: ps.reduce((a, b) => a + b.py, 0) / ps.length }));
+  const arch = AR.profiles.map(z => ({ x: z.reduce((a, v, j) => a + v * B.pc1[j], 0), y: z.reduce((a, v, j) => a + v * B.pc2[j], 0) }));
+  const all = pp.concat(arch);
+  const lx = Math.max(...all.map(p => Math.abs(p.x))) * 1.08, ly = Math.max(...all.map(p => Math.abs(p.y))) * 1.12;
+  const sx = v => padL + (W - padL - padR) * (v + lx) / (2 * lx), sy = v => padT + (H - padT - padB) * (ly - v) / (2 * ly);
+  const cx = sx(0), cy = sy(0);
+  // quadrant shading and axes
+  el('rect', { x: padL, y: padT, width: W - padL - padR, height: H - padT - padB, fill: css('--surface'), stroke: css('--line') }, svg);
+  el('line', { x1: padL, x2: W - padR, y1: cy, y2: cy, stroke: css('--line'), 'stroke-dasharray': '3 3' }, svg);
+  el('line', { x1: cx, x2: cx, y1: padT, y2: H - padB, stroke: css('--line'), 'stroke-dasharray': '3 3' }, svg);
+  const lab = (x, y, t, anchor, extra = {}) => { const e = el('text', Object.assign({ x, y, 'text-anchor': anchor,
+    fill: css('--ink-2'), 'font-size': 12, 'font-weight': 600 }, extra), svg); e.textContent = t; return e; };
+  lab(padL + 4, H - padB + 20, '← ' + ends.left, 'start');
+  lab(W - padR - 4, H - padB + 20, ends.right + ' →', 'end');
+  lab(cx, padT - 12, '↑ ' + ends.up, 'middle');
+  lab(cx, H - 10, '↓ ' + ends.down, 'middle');
+  el('text', { x: W - padR, y: H - padB + 36, 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10, 'font-family': css('--mono') }, svg)
+    .textContent = `horizontal = reliance axis (${pct(B.share[0], 0)} of variation) · vertical = second axis (${pct(B.share[1], 0)})`;
+  pp.forEach(p => {
+    const a = archOf[p.pid];
+    const c = el('circle', { cx: sx(p.x), cy: sy(p.y), r: 6, fill: a ? a.color : css('--mark-soft'), opacity: .85,
+                             stroke: css('--surface'), 'stroke-width': 1.2 }, svg);
+    hoverable(c, `<b>${p.pid}</b>${a ? '<br>closest style: ' + a.name + ' (' + pct(a.w, 0) + ')' : ''}`);
+  });
+  arch.forEach((a, i) => {
+    const x = sx(a.x), y = sy(a.y);
+    el('path', { d: `M${x} ${y - 11} L${x + 10} ${y + 7} L${x - 10} ${y + 7} Z`, fill: COLS[i], stroke: css('--ink'), 'stroke-width': 1.4 }, svg);
+    const t = el('text', { x: x + (x > cx ? -14 : 14), y: y + 4, 'text-anchor': x > cx ? 'end' : 'start', fill: COLS[i],
+                           'font-size': 12.5, 'font-weight': 700, 'paint-order': 'stroke', stroke: css('--surface'), 'stroke-width': 4 }, svg);
+    t.textContent = 'pure ' + NAMES[i];
+  });
+}
+
+/* Which habits move an operator along one axis: signed weights, largest first. */
+function axisBars(host, title, load, cols, posLabel, negLabel, colPos, colNeg) {
+  const rows = cols.map((c, i) => ({ c, v: load[i] })).filter(r => Math.abs(r.v) >= 0.12).sort((a, b) => b.v - a.v);
+  const W = 340, rowH = 22, padL = 128, padT = 24, H = padT + rows.length * rowH + 6;
+  const svg = svgRoot(host, W, H);
+  el('text', { x: 0, y: 14, fill: css('--ink'), 'font-size': 12.5, 'font-weight': 600 }, svg).textContent = title;
+  const lim = Math.max(...rows.map(r => Math.abs(r.v)));
+  const mid = padL + (W - padL - 10) / 2, half = (W - padL - 10) / 2;
+  rows.forEach((r, i) => {
+    const y = padT + i * rowH;
+    el('text', { x: padL - 8, y: y + 15, 'text-anchor': 'end', fill: css('--ink-2'), 'font-size': 11.5 }, svg).textContent = SHORT[r.c];
+    el('rect', { x: Math.min(mid, mid + half * r.v / lim), y: y + 5, width: Math.abs(half * r.v / lim), height: 12, rx: 2,
+                 fill: r.v >= 0 ? colPos : colNeg }, svg);
+  });
+  el('line', { x1: mid, x2: mid, y1: padT, y2: H - 4, stroke: css('--ink-3') }, svg);
+  el('text', { x: W - 10, y: H, 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10 }, svg);
+}
+
+/* simple line chart over a numeric x */
+function lineChart(host, series, o = {}) {
+  const W = 700, H = o.height || 240, padL = 50, padR = 110, padT = 14, padB = 40;
+  const svg = svgRoot(host, W, H);
+  const xs = series.flatMap(se => se.points.map(p => p.x)), ys = series.flatMap(se => se.points.map(p => p.y));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y1 = o.yMax || Math.max(...ys) * 1.1;
+  const sx = v => padL + (W - padL - padR) * (v - x0) / (x1 - x0 || 1), sy = v => H - padB - (H - padB - padT) * v / y1;
+  (o.yTicks || [0, y1 / 2, y1]).forEach(v => {
+    el('line', { x1: padL, x2: W - padR, y1: sy(v), y2: sy(v), stroke: css('--grid') }, svg);
+    el('text', { x: padL - 8, y: sy(v) + 4, 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 11, 'font-family': css('--mono') }, svg)
+      .textContent = (o.yFmt || (v => num(v, 0)))(v);
+  });
+  [...new Set(xs)].forEach(v => el('text', { x: sx(v), y: H - padB + 16, 'text-anchor': 'middle', fill: css('--ink-3'),
+    'font-size': 10.5, 'font-family': css('--mono') }, svg).textContent = (o.xFmt || String)(v));
+  el('text', { x: (padL + W - padR) / 2, y: H - 6, 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 }, svg).textContent = o.xLabel || '';
+  series.forEach(se => {
+    const pts = se.points.slice().sort((a, b) => a.x - b.x);
+    el('path', { d: pts.map((p, i) => (i ? 'L' : 'M') + sx(p.x) + ' ' + sy(p.y)).join(' '), fill: 'none', stroke: se.color,
+                 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, svg);
+    pts.forEach(p => { const c = el('circle', { cx: sx(p.x), cy: sy(p.y), r: 4, fill: se.color, stroke: css('--surface'), 'stroke-width': 1.5 }, svg);
+      hoverable(c, `<b>${se.label}</b><br>${(o.xFmt || String)(p.x)}: ${(o.yFmt || (v => num(v, 1)))(p.y)}${p.n ? '<br>n = ' + p.n : ''}`); });
+    const last = pts[pts.length - 1];
+    el('text', { x: sx(last.x) + 10, y: sy(last.y) + 4, fill: se.color, 'font-size': 12, 'font-weight': 600 }, svg).textContent = se.label;
+  });
+}
+
+/* Three archetypes as the corners of a triangle; each person sits at their mix of the three. */
+function ternary(host, AR, names, colors) {
+  const W = 700, H = 440, side = 440, ox = (W - side) / 2, oy = H - 50, hgt = side * Math.sqrt(3) / 2;
+  const svg = svgRoot(host, W, H);
+  const C = [[ox + side / 2, oy - hgt], [ox, oy], [ox + side, oy]];
+  el('path', { d: `M${C[0]}L${C[1]}L${C[2]}Z`, fill: css('--surface-2'), stroke: css('--line'), 'stroke-width': 1.2 }, svg);
+  [0.25, 0.5, 0.75].forEach(f => C.forEach((_, i) => {
+    const a = C[i], b = C[(i + 1) % 3], c = C[(i + 2) % 3];
+    const p1 = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], p2 = [a[0] + (c[0] - a[0]) * f, a[1] + (c[1] - a[1]) * f];
+    el('line', { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: css('--grid'), 'stroke-width': 1 }, svg);
+  }));
+  names.forEach((nm, i) => {
+    const [x, y] = C[i];
+    const t = el('text', { x, y: i === 0 ? y - 12 : y + 22, 'text-anchor': i === 1 ? 'start' : i === 2 ? 'end' : 'middle',
+                           fill: colors[i], 'font-size': 13, 'font-weight': 700 }, svg);
+    t.textContent = nm;
+  });
+  AR.weights.forEach(({ pid, w }) => {
+    const x = w[0] * C[0][0] + w[1] * C[1][0] + w[2] * C[2][0], y = w[0] * C[0][1] + w[1] * C[1][1] + w[2] * C[2][1];
+    const d = w.indexOf(Math.max(...w));
+    const c = el('circle', { cx: x, cy: y, r: 6, fill: colors[d], opacity: .8, stroke: css('--surface'), 'stroke-width': 1.2 }, svg);
+    hoverable(c, `<b>${pid}</b><br>${names.map((nm, i) => `${nm}: ${pct(w[i], 0)}`).join('<br>')}`);
+  });
 }
 
 /* A remark made during play, from the session recording's machine transcript. */
@@ -285,6 +532,22 @@ function register(id, text) { SUMMARY.push([id, text]); }
       + `becomes a profile of ${FP.features.length} behaviours (listed under the map), each scored against everyone who played the `
       + `<b>same game</b>, so the game’s own demands are taken out. Then each operator’s session-1 profile is compared with all `
       + `${FP.n} session-2 profiles.`);
+    const LD = FP.pc1Loadings, LAB = Object.fromEntries(FP.features.map(f => [f.k, f.label]));
+    const top = Object.entries(LD).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    const explain = card(s, 'What “the reliance axis” is');
+    para(explain, `Take the ${FP.features.length} behaviours for all ${FP.nSessions} sessions and ask which single direction through `
+      + `them accounts for the most variation between sessions (the first principal component, PC1). That direction is the `
+      + `reliance axis. It accounts for <b>${pct(FP.pc1Share, 0)}</b> of the variation — the largest single pattern, but far from `
+      + `all of it. A session’s <b>reliance score</b> is a weighted sum of its (game-adjusted) behaviours, using these weights:`);
+    pairBarsH(h('div', { class: 'chart' }, explain), top.map(([k, v]) => ({ label: LAB[k], a: v, b: null })),
+      { series: [{ label: 'weight on the reliance axis', color: css('--s-strat') }, { label: '', color: 'transparent' }],
+        min: -0.3, max: 0.6, ticks: [-0.25, 0, 0.25, 0.5], padL: 270, rowH: 26 });
+    para(explain, `So a high reliance score means a session in which the operator <b>takes the strategy cards, previews them, `
+      + `presses Suggest on tactical plans and in recovery, and decides quickly</b>; a low score means building by hand, often `
+      + `before the cards load, and deliberating longer. It is the same axis round 1 found (there built from each person’s two `
+      + `sessions pooled), and round 2 used it as the “reliance trait”. <b>Removing the axis</b> means taking each session’s `
+      + `profile and subtracting its position along that one direction, leaving only how it differs in the other nine — so a `
+      + `match that survives is made from habits that have nothing to do with how much someone relies overall.`);
     tiles(s, [
       { v: `${A.hitsAB} / ${FP.n}`, k: 'operators whose nearest session-2 profile is their own', s: `chance ≈ 1 · ${pv(A.pHit)}` },
       { v: num(A.meanRank, 1), k: `average rank of their own session 2, out of ${FP.n}`, s: `chance ${num(A.nullRank, 0)}` },
@@ -300,26 +563,197 @@ function register(id, text) { SUMMARY.push([id, text]); }
       + `they deliberate. But it is a <b>fingerprint, not a type</b>: it tells individuals apart well above chance without sorting `
       + `them into groups, and for most people their own session is a near neighbour rather than the nearest.`);
     const cm = card(s, 'Style map: each dot is a session, each line joins one operator’s two sessions');
-    const bar = h('div', { class: 'btnrow' }, cm);
+    const MAP = { mode: 'tsne', run: 'both', scen: 'both' };
+    const groups = [
+      ['mode', 'Map', [['tsne', 't-SNE (neighbourhoods)'], ['pca', 'PCA (reliance across)']]],
+      ['run', 'Session', [['both', 'Both'], ['1', 'Session 1'], ['2', 'Session 2']]],
+      ['scen', 'Scenario', [['both', 'Both'], ['strategic', 'Strategic Heavy'], ['tactical', 'Tactical Heavy']]],
+    ];
+    const rowsEl = groups.map(([key, lab, opts]) => {
+      const bar = h('div', { class: 'btnrow' }, cm);
+      h('span', { class: 'btnlab', text: lab }, bar);
+      opts.forEach(([v, t]) => { const b = h('button', { text: t }, bar); b.dataset.k = key; b.dataset.v = v;
+                                 b.onclick = () => { MAP[key] = v; draw(); }; });
+      return bar;
+    });
     const host = h('div', { class: 'chart' }, cm);
-    const draw = mode => { styleMap(host, FP.points, mode); bar.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === mode)); };
-    [['tsne', 't-SNE (neighbourhoods)'], ['pca', 'PCA (reliance across)']].forEach(([m, t]) => {
-      const b = h('button', { text: t }, bar); b.dataset.m = m; b.onclick = () => draw(m); });
-    draw('tsne');
+    const status = h('p', { class: 'cap' }, cm);
+    const draw = () => {
+      const keep = p => (MAP.run === 'both' || String(p.run) === MAP.run)
+        && (MAP.scen === 'both' || p.game.split('|')[0] === MAP.scen);
+      styleMap(host, FP.points, MAP.mode, keep);
+      rowsEl.forEach(bar => bar.querySelectorAll('button').forEach(b => b.classList.toggle('on', MAP[b.dataset.k] === b.dataset.v)));
+      const n = FP.points.filter(keep).length;
+      status.innerHTML = `Showing <b>${n}</b> of ${FP.points.length} sessions.` + (MAP.run !== 'both' || MAP.scen !== 'both'
+        ? ' Each operator played one session of each scenario, so filtering to one session or one scenario leaves one dot per '
+          + 'person and no joining lines. The map itself was drawn from all sessions; filtering only hides dots.' : '');
+    };
+    draw();
     legend(cm, [{ label: 'low reliance', color: css('--s-tac') }, { label: 'high reliance', color: css('--s-strat') },
                 { label: '● session 1   ■ session 2', color: 'transparent' }]);
     h('p', { class: 'cap', html: `Short lines mean an operator behaved alike in both sessions. On the t-SNE map a person’s two `
       + `sessions sit at about <b>${pct(FP.mapPairRatio, 0)}</b> of the typical distance between different people. t-SNE only keeps `
       + `neighbourhoods, so its distances and axes mean nothing on their own — the map is a picture of the test above, not the `
       + `test. Hover a dot for the person’s profile. Behaviours: ${FP.features.map(f => f.label.toLowerCase()).join('; ')}.` }, cm);
+    const cu = card(s, 'How identifiable is each operator? Rank of their own other session among all 33');
+    const BINS = [[1, 1, 'nearest (1st)'], [2, 5, '2nd–5th'], [6, 10, '6th–10th'], [11, 20, '11th–20th'], [21, 33, '21st–33rd']];
+    const cnt = (rs, a, b) => rs.filter(x => x >= a && x <= b).length;
+    barsGrouped(h('div', { class: 'chart' }, cu), BINS.map(b => b[2]), [
+      { label: 'all ten behaviours', color: css('--mark'), values: BINS.map(([a, b]) => (cnt(A.ranks, a, b) + cnt(A.ranksBA, a, b)) / 2) },
+      { label: 'reliance removed', color: css('--lad-2'), values: BINS.map(([a, b]) => (cnt(B.ranks, a, b) + cnt(B.ranksBA, a, b)) / 2) },
+      { label: 'chance', color: css('--mark-soft'), values: BINS.map(([a, b]) => (b - a + 1)) },
+    ], { fmt: v => num(v, 1).replace('.0', ''), height: 220, ticks: 4 });
+    legend(cu, [{ label: 'all ten behaviours', color: css('--mark') }, { label: 'reliance axis removed', color: css('--lad-2') },
+                { label: 'expected by chance', color: css('--mark-soft') }]);
+    h('p', { class: 'cap', html: 'This is the per-person view. For each operator, all 33 second sessions are ranked by how close '
+      + 'they are to that operator’s first session; 1 means their own is the closest. Counts are averaged over both directions '
+      + `(session 1 → 2 and 2 → 1). By chance each rank is equally likely, so 1 person per rank. Observed, about `
+      + `${num((cnt(A.ranks, 1, 5) + cnt(A.ranksBA, 1, 5)) / 2, 0)} operators have their own session in the top five (chance 5), and `
+      + 'the bottom bin is thinner than chance: a few people are very consistent, most are somewhat, and a handful changed style '
+      + 'between sessions.' }, cu);
     const cr = card(s, 'Which habits carry over from session 1 to session 2 (Spearman ρ)');
     legend(cr, [{ label: 'as measured', color: css('--mark') }, { label: 'with the reliance axis removed', color: css('--lad-2') }]);
     pairBarsH(h('div', { class: 'chart' }, cr), FP.retest.map(r => ({ label: r.label, a: r.rho, b: r.rhoBeyond,
-      aSub: `ρ = ${num(r.rho, 2)}, ${pv(r.p)}`, bSub: `ρ = ${num(r.rhoBeyond, 2)}, ${pv(r.pBeyond)}` })),
+      aP: r.pHolm, bP: r.pBeyond,
+      aSub: `ρ = ${num(r.rho, 2)} [${num(r.lo, 2)}, ${num(r.hi, 2)}], ${pv(r.p)}, Holm-adjusted ${pv(r.pHolm)}`,
+      bSub: `ρ = ${num(r.rhoBeyond, 2)}, ${pv(r.pBeyond)}` })),
       { series: [{ label: 'as measured', color: css('--mark') }, { label: 'reliance removed', color: css('--lad-2') }],
-        min: -0.4, max: 1, ticks: [-0.25, 0, 0.25, 0.5, 0.75, 1], padL: 270 });
-    h('p', { class: 'cap', html: 'Every habit except trimming drones on single-type missions carries over, most of them '
-      + 'about as strongly once reliance is taken out. Hover a bar for its p-value.' }, cr);
+        min: -0.4, max: 1.25, ticks: [-0.25, 0, 0.25, 0.5, 0.75, 1], padL: 270 });
+    h('p', { class: 'cap', html: '<b>What a bar means.</b> This is per habit, not per person. For one behaviour, line up the 33 '
+      + 'operators by their session-1 value and again by their session-2 value; Spearman ρ says how well the two orderings '
+      + 'agree. ρ = 1: everyone keeps exactly their place (whoever pressed Suggest most in session 1 also did in session 2); '
+      + 'ρ = 0: session 1 tells you nothing about session 2. So a long bar marks a habit that is <b>stable and personal</b> — '
+      + 'the raw material of the fingerprint — not how unique any one person is (the chart above shows that). The pale bar '
+      + 'repeats it after each session’s reliance score has been regressed out of that behaviour: a habit still stable there '
+      + 'is stable for reasons other than overall reliance. Every habit except trimming drones on single-type missions carries '
+      + 'over, most of them about as strongly once reliance is taken out. Each bar is labelled ρ, stars and p: the dark bar’s p is '
+      + 'Holm-adjusted for the ten habits, the pale bar’s is unadjusted.' }, cr);
+    const stab = h('table', { class: 'method' }, cr);
+    const th = h('thead', {}, stab), thr = h('tr', {}, th);
+    ['Habit', 'ρ', '95% CI', 'p', 'Holm p', 'Distinct levels, 1 session', '2 sessions', 'Gap to tell 2 people apart']
+      .forEach((t, i) => h('th', { text: t, class: i ? 'num' : '' }, thr));
+    const tb = h('tbody', {}, stab);
+    FP.retest.slice().sort((a, b) => b.rho - a.rho).forEach(r => {
+      const tr = h('tr', {}, tb);
+      h('td', { text: r.label }, tr);
+      h('td', { class: 'num', html: num(r.rho, 2) + stars(r.pHolm) }, tr);
+      h('td', { class: 'num', text: `${num(r.lo, 2)} to ${num(r.hi, 2)}` }, tr);
+      h('td', { class: 'num', html: pv(r.p) }, tr);
+      h('td', { class: 'num', html: pv(r.pHolm) }, tr);
+      h('td', { class: 'num', text: num(r.strata1, 1) }, tr);
+      h('td', { class: 'num', text: num(r.strata2, 1) }, tr);
+      h('td', { class: 'num', text: r.rho > 0 ? num(r.minDiffSD, 1) + ' SD' : '—' }, tr);
+    });
+    const nHolm = FP.retest.filter(r => r.pHolm < 0.05).length;
+    para(cr, `<b>How to read the table.</b> <i>p</i> tests only whether ρ is above zero; with ${FP.n} people that needs ρ ≈ .34 `
+      + `for p &lt; .05. <i>Holm p</i> corrects for testing ten habits at once — <b>${nHolm} of ${FP.retest.length}</b> survive it. `
+      + 'The confidence interval shows how well ρ is pinned down by 33 people: wide. <i>Distinct levels</i> (separation strata, '
+      + '(4G + 1)/3 with G = √(ρ / (1 − ρ))) is how many statistically distinguishable groups the habit can sort people into: '
+      + 'about 2 means it reliably tells high from low, 1 means not at all; averaging both sessions raises reliability to '
+      + '2ρ/(1 + ρ). <i>Gap</i> is how far apart two people’s session values must be, in standard deviations of that habit, '
+      + 'to say they genuinely differ (95%): 2.77 × √(1 − ρ). So the strongest habits separate operators into a reliable '
+      + '<b>high and low</b> from one 8-minute session, and roughly <b>three levels</b> from two sessions — not a fine ranking.');
+    if (FP.types) {
+      const TY = FP.types, AR = TY.arch, LABC = Object.fromEntries(FP.features.map(f => [f.k, f.label]));
+      // name the three archetypes by what defines them
+      const ci = k => FP.features.findIndex(f => f.k === k);
+      const iDel = AR.profiles.map((z, i) => [z[ci('took')], i]).sort((a, b) => b[0] - a[0])[0][1];
+      const iTin = AR.profiles.map((z, i) => [z[ci('edit')], i]).filter(x => x[1] !== iDel).sort((a, b) => b[0] - a[0])[0][1];
+      const iDeli = [0, 1, 2].find(i => i !== iDel && i !== iTin);
+      const NAMES = [], COLS = [];
+      NAMES[iDel] = 'Delegator'; NAMES[iTin] = 'Fast tinkerer'; NAMES[iDeli] = 'Deliberate builder';
+      COLS[iDel] = css('--s-strat'); COLS[iTin] = css('--s-tac'); COLS[iDeli] = css('--r-cons');
+      const archOf = Object.fromEntries(AR.weights.map(({ pid, w }) => { const d = w.indexOf(Math.max(...w));
+        return [pid, { name: NAMES[d], color: COLS[d], w: w[d] }]; }));
+      const nDom = [0, 1, 2].map(i => AR.weights.filter(x => x.w.indexOf(Math.max(...x.w)) === i).length);
+      const maxW = AR.weights.map(x => Math.max(...x.w)).sort((a, b) => a - b);
+      const medW = maxW[Math.floor(maxW.length / 2)];
+      h('h3', { text: 'Are there types of operator? Four ways of looking' }, s);
+      para(s, 'Round 1’s formal test found no distinct groups. These four views ask the question more gently, each on the '
+        + 'same game-adjusted profiles (each person = the average of their two sessions). They go from “show me the raw '
+        + 'pattern” to “describe people as mixes of a few extreme styles”.');
+
+      const c1 = card(s, '1 · Every operator’s profile, with similar operators placed together');
+      heatTree(h('div', { class: 'chart' }, c1), TY.heat, archOf);
+      legend(c1, [{ label: 'below average', color: css('--s-tac') }, { label: 'above average', color: css('--s-strat') },
+                  ...NAMES.map((n, i) => ({ label: 'closest archetype: ' + n, color: COLS[i] }))]);
+      const ag = TY.heatAgree;
+      h('p', { class: 'cap', html: 'Rows are operators, columns habits; colour is how far above (blue) or below (orange) the '
+        + 'average operator they were, in standard deviations. The tree joins the most similar operators first. <b>Look for '
+        + 'blocks</b>: a type would show as a band of rows sharing a colour pattern. What appears is a gradient with a few '
+        + `loose families. Grouping each session on its own and comparing: two groups do not recur (agreement ARI `
+        + `${num(ag[0].ari, 2)}, ${pv(ag[0].p)}); three and four groups recur weakly (ARI ${num(ag[1].ari, 2)}, ${pv(ag[1].p)}; `
+        + `${num(ag[2].ari, 2)}, ${pv(ag[2].p)}) — above chance, far below the .5 that would mark clear types. The coloured tick `
+        + 'by each operator is their closest archetype (view 4).' }, c1);
+
+      const c2 = card(s, '2 · Which habits go together (Spearman ρ between operators)');
+      corrGrid(h('div', { class: 'chart' }, c2), TY.corr);
+      h('p', { class: 'cap', html: `Each square: across the 33 operators, does being high on one habit go with being high (blue) `
+        + `or low (orange) on the other? ${TY.corrSig.n} of ${TY.corrSig.of} pairs reach p < .05, against about `
+        + `${num(TY.corrSig.of * 0.05, 0)} by chance. The strong block is <b>taking cards with previewing them</b>; going manual `
+        + 'before the cards load sits against using Suggest and previewing; trimming drones on small and on large missions '
+        + 'go together. Strategic and tactical reliance are only loosely linked. These pairings are what a “style” is made of.' }, c2);
+
+      const c3 = card(s, '3 · The two biggest differences between operators, with their ends named');
+      para(c3, 'If you had to place every operator on just two scales, these are the two that capture the most difference '
+        + 'between them (the first two principal components). The bars say what each scale is made of: a habit with a long '
+        + 'bar moves you a long way along it, and its colour says which end it pushes you towards.');
+      const g3 = h('div', { class: 'grid2' }, c3);
+      axisBars(h('div', { class: 'chart' }, g3), 'Left ↔ right: what moves an operator right', TY.biplot.pc1, TY.heat.cols,
+        '', '', css('--s-strat'), css('--r-cons'));
+      axisBars(h('div', { class: 'chart' }, g3), 'Down ↔ up: what moves an operator up', TY.biplot.pc2, TY.heat.cols,
+        '', '', css('--s-tac'), css('--mark-soft'));
+      styleAxes(h('div', { class: 'chart' }, c3), FP.points, TY.biplot, TY.heat.cols, archOf, AR, NAMES, COLS,
+        { left: 'builds by hand, slower', right: 'takes the advice, previews, fast', up: 'overrides: edits cards, adds drones, decides early',
+          down: 'accepts Suggest’s plan, takes time' });
+      h('p', { class: 'cap', html: 'Each dot is an operator (the average of their two sessions), coloured by their closest '
+        + 'style; triangles mark where a <i>pure</i> example of each style would sit. <b>Reading it:</b> the horizontal scale is '
+        + 'reliance — right means taking the cards, previewing them and pressing Suggest. The vertical scale is a second, '
+        + 'separate way operators differ: up means <b>overriding</b> (editing cards, adding drones beyond the card, deciding '
+        + 'before the cards load), down means <b>accepting</b> Suggest’s plan as given and taking longer. The three styles sit '
+        + 'at three corners of this picture: Delegators right, Deliberate builders bottom-left, Fast tinkerers top-left. '
+        + 'Operators fill the space between them rather than clumping at the corners.' }, c3);
+
+      const c4 = card(s, '4 · Archetypes: three extreme styles, and each operator as a mix of them');
+      para(c4, '<b>How the styles are found.</b> Each operator is a point in a ten-habit space (their profile). Archetypal '
+        + 'analysis looks for the three profiles at the <b>outer edge</b> of that cloud such that every operator is, as closely '
+        + 'as possible, a <b>blend</b> of them — so much of style A, so much of B, so much of C, adding to 100%. The three '
+        + 'archetypes are themselves blends of real operators, so they are extreme but realistic, not invented ideals. '
+        + 'Three was chosen because it is the first number with a clear meaning for every corner; two leaves the hand-builders '
+        + 'mixed together, four or five split hairs (see the variation figures below).');
+      para(c4, `<b>How people are classified.</b> Every operator gets three percentages. Their “closest style” is simply the `
+        + `largest of the three: ${nDom[iDel]} operators lean towards Delegator, ${nDom[iDeli]} towards Deliberate builder and `
+        + `${nDom[iTin]} towards Fast tinkerer. The lean is usually clear but rarely total: the median operator’s largest share is `
+        + `${pct(medW, 0)}. So “P14 is a Delegator” (94%) is near-pure, while “P20 is a Deliberate builder” (52%) is a close call; use the triangle `
+        + 'to see how mixed each person is.');
+      const hdrArch = [...Array(3).keys()];
+      const tb = h('table', { class: 'method' }, c4), tr0 = h('tr', {}, h('thead', {}, tb));
+      h('th', { text: 'Habit' }, tr0);
+      hdrArch.forEach(i => h('th', { class: 'num', html: `<span style="color:${COLS[i]}">${NAMES[i]}</span>` }, tr0));
+      const tbd = h('tbody', {}, tb);
+      FP.features.forEach((f, j) => {
+        const tr = h('tr', {}, tbd);
+        h('td', { text: f.label }, tr);
+        hdrArch.forEach(i => { const v = AR.profiles[i][j];
+          h('td', { class: 'num', text: sgn(v, 1), style: `background:${zCol(v)};` }, tr); });
+      });
+      ternary(h('div', { class: 'chart' }, c4), AR, NAMES, COLS);
+      const st = TY.archStability;
+      const curve = AR.curve.map(c => `${c.k}: ${pct(c.explained, 0)}`).join(', ');
+      h('p', { class: 'cap', html: 'Archetypal analysis finds the few most extreme profiles that every operator can be described '
+        + 'as a blend of (each operator’s weights sum to 100%). The table gives each archetype’s profile in SD from average. '
+        + `<b>${NAMES[iDel]}</b>: takes the cards, previews them, presses Suggest, decides fast. <b>${NAMES[iTin]}</b>: goes manual `
+        + `early, edits cards, rarely uses Suggest, adds drones, decides fast. <b>${NAMES[iDeli]}</b>: builds by hand, deliberates `
+        + `longest, trims drones. In the triangle each dot is an operator; corners are pure styles. Variation explained by `
+        + `1–5 archetypes: ${curve}. ${AR.pure.reduce((a, b) => a + b, 0)} operators are near-pure (≥ 80% one style); `
+        + `${AR.mixed} are clearly mixed (no style above 60%).` }, c4);
+      para(c4, `<b>Do the archetypes come back?</b> Fitting them on session 1 and session 2 separately gives nearly the same `
+        + `profiles for two of them (ρ = ${st.profileR.slice().sort((a, b) => b - a).map(v => num(v, 2)).join(', ')} between the `
+        + `matched profiles), and ${pct(st.sameDominant, 0)} of operators are closest to the same archetype in both sessions, `
+        + `against ${pct(st.nullSame, 0)} by chance (${pv(st.p)}). So the <b>poles are real and reproducible</b>; what is not true `
+        + 'is that people fall into three boxes. The defensible language: <b>three recurring styles that operators blend</b>, '
+        + 'most of them leaning towards one.');
+    }
     caveat(s, `Exploratory, run after rounds 1–2. ${Object.values(FP.imputed).reduce((a, b) => a + b, 0)} of `
       + `${FP.nSessions * FP.features.length} session values could not be computed (e.g. no manual choices to time) and filled with the `
       + 'game median, which can only make people look more alike. The same people play both sessions under different '
@@ -481,8 +915,9 @@ function register(id, text) { SUMMARY.push([id, text]); }
     const PC = QL.preference.counts, order = ['tactical', 'strategic', 'both', 'conditional', 'none'];
     const LBL = { tactical: 'Prefers the tactical assistant', strategic: 'Prefers the strategic assistant',
                   both: 'Values both equally', conditional: 'Depends on the situation', none: 'No preference stated' };
-    barsH(h('div', { class: 'chart' }, card(s, `Stated preference, ${NQ} participants`)), order.filter(k => PC[k]).map(k => ({
-      label: LBL[k], value: PC[k], sub: (QL.preference.who[k] || []).join(', ') })), { padL: 230, rowH: 28, fmt: v => v + ' / ' + NQ });
+    const cp = card(s, `Stated preference, ${NQ} participants`);
+    whoBars(h('div', { class: 'chart' }, cp), order.filter(k => PC[k]).map(k => ({ label: LBL[k], pids: QL.preference.who[k] || [], key: 'pref:' + k })), NQ);
+    h('p', { class: 'cap', html: MEANS_CAP }, cp);
     para(s, `<b>${PC.tactical || 0} of ${NQ}</b> prefer the tactical assistant against <b>${PC.strategic || 0}</b> the strategic one.`);
   }
   codeBars(s, ['C12', 'C13', 'C14']);
@@ -707,6 +1142,33 @@ function register(id, text) { SUMMARY.push([id, text]); }
     + 'is faster than session 1 on both tiers. But reliance does <b>not</b> become better targeted with experience: the '
     + 'tendency to take cards on big missions and go manual on small ones is no sharper in session 2, and operators do '
     + 'not learn to avoid the weaker card.');
+  if (X && X.learning) {
+    const LN = X.learning;
+    const g = h('div', { class: 'grid2' }, s);
+    const ca = card(g, 'A · Faster: seconds spent per strategic decision, beyond the forced card reveal');
+    lineChart(h('div', { class: 'chart' }, ca), [1, 2].map(rn => ({ label: 'Session ' + rn,
+      color: rn === 1 ? css('--mark-soft') : css('--s-strat'),
+      points: LN.speed.filter(x => x.run === rn).map(x => ({ x: x.minute + 1, y: x.median, n: x.n })) })),
+      { yMax: 14, yTicks: [0, 5, 10], xLabel: 'minute of the 8-minute session', yFmt: v => num(v, 0) + ' s', height: 230 });
+    h('p', { class: 'cap', html: `Median per minute. Within a session the extra time falls by about `
+      + `${num(-LN.slopePerMin, 2)} s every minute (${pv(LN.slopeP)}), and session 2 starts where session 1 ended.` }, ca);
+    const cb = card(g, 'B · Not better targeted: card uptake on small vs big missions');
+    const cell = (rn, k) => LN.cells.find(c => c.run === rn && c.types === k) || {};
+    barsGrouped(h('div', { class: 'chart' }, cb), ['Session 1', 'Session 2'], [
+      { label: 'single-type missions', color: css('--mark-soft'), values: [cell(1, 1).rate, cell(2, 1).rate],
+        subs: [`n = ${cell(1, 1).n}`, `n = ${cell(2, 1).n}`] },
+      { label: 'three-type missions', color: css('--s-strat'), values: [cell(1, 3).rate, cell(2, 3).rate],
+        subs: [`n = ${cell(1, 3).n}`, `n = ${cell(2, 3).n}`] }], { max: 1, fmt: v => pct(v, 0), height: 230 });
+    legend(cb, [{ label: 'single-type (small)', color: css('--mark-soft') }, { label: 'three-type (big)', color: css('--s-strat') }]);
+    h('p', { class: 'cap', html: `If practice taught people <i>when</i> to rely, the gap between the bars would widen in `
+      + `session 2. It does not: ${pct(LN.gap1, 0)} in session 1, ${pct(LN.gap2, 0)} in session 2 — if anything narrower, but `
+      + `not reliably (${pv(LN.interaction.p)}). Of the ${LN.persons.length} operators who met both kinds of mission in both `
+      + `sessions, ${LN.sharper} got sharper and ${LN.blunter} blunter.` }, cb);
+    para(s, '<b>What this means.</b> Practice changes <i>how fast</i> operators work, not <i>what</i> they hand over. Each '
+      + 'person’s split between big jobs (to the assistant) and small ones (by hand) is set from the start and stays put; '
+      + 'what improves is execution. That fits theme 1 — reliance is a stable personal style — and suggests that training '
+      + 'aimed at calibration would need to target the decision rule itself, because experience alone does not move it.');
+  }
   strand(s, 'In what they said');
   codeBars(s, ['C22']);
   para(s, `${xOf('C22')} said they got better, faster or more confident with practice.`);
@@ -746,6 +1208,26 @@ function register(id, text) { SUMMARY.push([id, text]); }
     ['Limits', 'Single coding pass by an AI coder: counts are indicative until a human second coder checks them. Debriefs are post-session, not aligned to individual decisions. A convenience sample of 33, mostly computing postgraduates.'],
   ].forEach(([k, v]) => { const tr = h('tr', {}, tb); h('td', { html: `<b>${k}</b>` }, tr); h('td', { text: v }, tr); });
 }
+
+/* Every section folds: by default only its heading shows. Clicking a heading toggles it; a summary link opens its
+   theme; the buttons open or close everything. */
+const SECS = [...document.querySelectorAll('main > section')];
+SECS.forEach(sec => {
+  sec.classList.add('fold', 'closed');
+  const hd = sec.querySelector('.sec-head');
+  hd.setAttribute('role', 'button'); hd.tabIndex = 0;
+  const toggle = () => sec.classList.toggle('closed');
+  hd.addEventListener('click', toggle);
+  hd.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+});
+const foldBar = h('div', { class: 'btnrow foldbar' });
+main.insertBefore(foldBar, SECS[0] || null);
+[['Open all themes', false], ['Close all', true]].forEach(([t, closed]) => {
+  const b = h('button', { text: t }, foldBar); b.onclick = () => SECS.forEach(x => x.classList.toggle('closed', closed)); });
+const openHash = () => { const t = location.hash && document.getElementById(location.hash.slice(1));
+  if (t && t.classList.contains('fold')) { t.classList.remove('closed'); t.scrollIntoView(); } };
+window.addEventListener('hashchange', openHash);
+setTimeout(openHash, 0);
 
 /* summary list, now that every theme has registered */
 SUMMARY.forEach(([id, text]) => { const li = h('li', {}, sumList); li.innerHTML = `<a href="#${id}">${text}</a>`; });

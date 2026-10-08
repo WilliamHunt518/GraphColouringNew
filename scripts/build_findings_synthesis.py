@@ -1112,6 +1112,45 @@ def load_qual():
             who={k: sorted(g.pid.tolist()) for k, g in pref.groupby('pref')}))
 
 
+def person_summary(sess) -> dict:
+    """Per participant, the mean over their sessions of score, raw NASA-TLX workload (0-20) and post-
+    session trust in each assistant (1-7), so a group of participants (e.g. everyone who said X) can
+    be described by its averages. P01/P02 played on half task weights, so their score is left out."""
+    d = pd.DataFrame(sess)
+    out = {}
+    for pid, g in d.groupby('pid'):
+        sc = None if pid in ('P01', 'P02') else g.score.dropna().mean()
+        out[pid] = dict(score=f(sc) if sc is not None else None, rtlx=f(g.rtlx.dropna().mean()),
+                        trustS=f(g.trust_s.dropna().mean()), trustT=f(g.trust_t.dropna().mean()))
+    return out
+
+
+def group_tests(qual, ps) -> dict:
+    """For every 'X of 33 said ...' group (each code, and each stated-preference category): is the group's
+    score / workload / trust different from everyone else's? Two-sided Mann-Whitney U, group vs the rest
+    (not vs the overall mean, which contains the group). Exact p where scipy can (small groups, no ties),
+    otherwise the normal approximation. Descriptive screening: 28 codes x 4 measures, uncorrected."""
+    if not qual:
+        return {}
+    from scipy.stats import mannwhitneyu
+    groups = {c: set(v) for c, v in qual['who'].items()}
+    if qual.get('preference'):
+        groups.update({'pref:' + k: set(v) for k, v in qual['preference']['who'].items()})
+    out = {}
+    for g, members in groups.items():
+        res = {}
+        for k in ('score', 'rtlx', 'trustS', 'trustT'):
+            a = [ps[p][k] for p in ps if p in members and ps[p][k] is not None]
+            b = [ps[p][k] for p in ps if p not in members and ps[p][k] is not None]
+            if len(a) < 2 or len(b) < 2:
+                res[k] = None
+                continue
+            r = mannwhitneyu(a, b, alternative='two-sided')
+            res[k] = dict(p=f(r.pvalue), inMean=f(np.mean(a)), restMean=f(np.mean(b)), nIn=len(a), nRest=len(b))
+        out[g] = res
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--print', action='store_true')
@@ -1132,8 +1171,10 @@ def main() -> None:
                    round2=json.loads(ROUND2_RESULTS.read_text(encoding='utf-8'))
                    if ROUND2_RESULTS.exists() else None,
                    qual=load_qual(),
+                   personSummary=person_summary(sess),
                    extras=json.loads(EXTRAS.read_text(encoding='utf-8')) if EXTRAS.exists() else None)
 
+    payload['groupTests'] = group_tests(payload['qual'], payload['personSummary'])
     blob = json.dumps(payload, separators=(',', ':'), ensure_ascii=True,
                       default=float).replace('</', '<\\/')
     css, js = COMMON_CSS.read_text(encoding='utf-8'), COMMON_JS.read_text(encoding='utf-8')

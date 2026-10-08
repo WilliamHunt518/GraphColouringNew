@@ -199,6 +199,36 @@ def fingerprint():
                          loading=r(load1[c])))
         print('  %-40s rho %.2f (p %.3f)   beyond reliance %.2f (p %.3f)   PC1 loading %.2f'
               % (FEATURE_LABEL[c], rho, p, rho2, p2, load1[c]))
+    # how far the stability can be trusted: bootstrap CI (people resampled), Holm across the ten habits,
+    # and what the reliability buys -- the smallest difference that separates two people (in SD) and the
+    # number of statistically distinct levels ("separation strata", (4G+1)/3 with G = sqrt(r/(1-r))),
+    # for one session and for the mean of two (Spearman-Brown, 2r/(1+r)).
+    brng = np.random.default_rng(SEED + 1)
+    s1, s2 = Z[Z.run == 1].set_index('pid'), Z[Z.run == 2].set_index('pid')
+    s2 = s2.loc[s1.index]
+    for row in rows:
+        c = row['k']
+        a_, b_ = s1[c].to_numpy(), s2[c].to_numpy()
+        boots = []
+        for _ in range(2000):
+            ix = brng.integers(0, len(a_), len(a_))
+            if np.ptp(a_[ix]) > 0 and np.ptp(b_[ix]) > 0:
+                boots.append(stats.spearmanr(a_[ix], b_[ix])[0])
+        row['lo'], row['hi'] = r(np.percentile(boots, 2.5)), r(np.percentile(boots, 97.5))
+        rel = max(row['rho'], 0.0)
+        rel2 = 2 * rel / (1 + rel) if rel > 0 else 0.0
+        strata = lambda q: (4 * np.sqrt(q / (1 - q)) + 1) / 3 if 0 < q < 1 else 1.0
+        row['strata1'], row['strata2'] = r(strata(rel), 2), r(strata(rel2), 2)
+        row['minDiffSD'] = r(2.77 * np.sqrt(1 - rel), 2)
+        row['rel2'] = r(rel2)
+    order = sorted(range(len(rows)), key=lambda i: rows[i]['p'])
+    running = 0.0
+    for k_, i in enumerate(order):
+        running = max(running, min(1.0, rows[i]['p'] * (len(rows) - k_)))
+        rows[i]['pHolm'] = r(running, 4)
+    for row in rows:
+        print('  %-40s 95%% CI [%.2f, %.2f]  Holm p %.4f  strata 1 session %.2f, 2 sessions %.2f  min diff %.2f SD'
+              % (row['label'], row['lo'], row['hi'], row['pHolm'], row['strata1'], row['strata2'], row['minDiffSD']))
     out['retest'] = rows
 
     # maps: t-SNE (picture only) and PCA
@@ -213,6 +243,119 @@ def fingerprint():
            if Z.pid[i] != Z.pid[j]]
     out['mapPairRatio'] = float(np.median(dmap) / np.median(rnd))
     print('t-SNE: median own-pair distance / median other-pair distance = %.2f' % out['mapPairRatio'])
+    out['types'] = types_views(Z, cols, pca, F)
+    return out
+
+
+# ── 1b · four ways of looking for "types" (all on per-person means of the game-adjusted profiles) ──
+def _archetypes(X, k, seed, iters=400):
+    """Archetypal analysis (Cutler & Breiman): X ~ A @ Zk, Zk = B @ X, rows of A and B convex. Alternating
+    non-negative least squares with the sum-to-one constraint enforced by a heavily weighted extra row."""
+    from scipy.optimize import nnls
+    rng = np.random.default_rng(seed)
+    n = len(X)
+    Zk = X[rng.choice(n, k, replace=False)].copy()
+    W = 200.0
+
+    def convex_fit(T, D):          # rows of T as convex combinations of rows of D
+        M = np.vstack([D.T, W * np.ones(len(D))])
+        return np.array([nnls(M, np.append(t, W))[0] for t in T])
+    for _ in range(iters):
+        A = convex_fit(X, Zk)
+        Zls = np.linalg.lstsq(A, X, rcond=None)[0]
+        B = convex_fit(Zls, X)
+        Znew = B @ X
+        if np.abs(Znew - Zk).max() < 1e-6:
+            Zk = Znew
+            break
+        Zk = Znew
+    A = convex_fit(X, Zk)
+    rss = float(((X - A @ Zk) ** 2).sum())
+    return A, Zk, rss
+
+
+def _best_archetypes(X, k, starts=20):
+    best = None
+    for s_ in range(starts):
+        A, Zk, rss = _archetypes(X, k, SEED + 31 * s_)
+        if best is None or rss < best[2]:
+            best = (A, Zk, rss)
+    return best
+
+
+def types_views(Z, cols, pca, F):
+    from scipy.cluster.hierarchy import linkage, leaves_list, fcluster
+    from sklearn.metrics import adjusted_rand_score
+    hdr('1b · Types? sorted heatmap, habit correlations, PCA arrows, archetypes')
+    M = Z.groupby('pid')[cols].mean()              # person = mean of their two game-adjusted sessions
+    X = M.to_numpy()
+    pids = M.index.tolist()
+    out = {}
+    # (1) sorted heatmap + dendrogram (Ward); do session-1 and session-2 trees agree?
+    L = linkage(X, 'ward')
+    order = leaves_list(L).tolist()
+    out['heat'] = dict(pids=[pids[i] for i in order], cols=cols, leaf=order,
+                       values=[[r(X[i, j], 2) for j in range(len(cols))] for i in order],
+                       linkage=[[int(a), int(b), r(d, 4), int(c)] for a, b, d, c in L])
+    agree = []
+    S1 = Z[Z.run == 1].set_index('pid').loc[pids, cols].to_numpy()
+    S2 = Z[Z.run == 2].set_index('pid').loc[pids, cols].to_numpy()
+    rng = np.random.default_rng(SEED + 7)
+    for k in (2, 3, 4):
+        l1 = fcluster(linkage(S1, 'ward'), k, 'maxclust')
+        l2 = fcluster(linkage(S2, 'ward'), k, 'maxclust')
+        ari = adjusted_rand_score(l1, l2)
+        null = [adjusted_rand_score(l1, rng.permutation(l2)) for _ in range(2000)]
+        p_ = (1 + sum(n_ >= ari for n_ in null)) / 2001
+        sizes = sorted(np.bincount(fcluster(L, k, 'maxclust'))[1:].tolist(), reverse=True)
+        agree.append(dict(k=k, ari=r(ari), p=r(p_, 4), sizes=sizes))
+        print('  Ward k=%d: group sizes %s; session-1 vs session-2 groupings ARI %.2f (p = %.3f)' % (k, sizes, ari, p_))
+    out['heatAgree'] = agree
+    # (2) habit correlation grid (Spearman, person means)
+    R, P_ = stats.spearmanr(X)
+    out['corr'] = dict(cols=cols, rho=[[r(R[i, j], 2) for j in range(len(cols))] for i in range(len(cols))],
+                       p=[[r(P_[i, j], 4) for j in range(len(cols))] for i in range(len(cols))])
+    npairs = len(cols) * (len(cols) - 1) // 2
+    nsig = sum(P_[i, j] < .05 for i in range(len(cols)) for j in range(i + 1, len(cols)))
+    out['corrSig'] = dict(n=int(nsig), of=npairs)
+    print('  habit pairs correlated at p < .05: %d of %d (about %.1f by chance)' % (nsig, npairs, .05 * npairs))
+    # (3) PCA arrows: loadings of the session-level PCA on PC1 and PC2 (PC1 oriented as in the map)
+    sign = 1 if pca.components_[0][cols.index('took')] >= 0 else -1
+    out['biplot'] = dict(pc1=[r(sign * v) for v in pca.components_[0]], pc2=[r(v) for v in pca.components_[1]],
+                         share=[r(pca.explained_variance_ratio_[0]), r(pca.explained_variance_ratio_[1])])
+    # (4) archetypes: how much each k explains, k = 3 in full, and is it the same when fitted per session?
+    tot = float(((X - X.mean(0)) ** 2).sum())
+    curve = []
+    for k in range(1, 6):
+        if k == 1:
+            curve.append(dict(k=1, explained=0.0))
+            continue
+        _, _, rss = _best_archetypes(X, k)
+        curve.append(dict(k=k, explained=r(1 - rss / tot)))
+    print('  archetypes, share of person-level variation explained:', [(c['k'], c['explained']) for c in curve])
+    A, Zk, rss = _best_archetypes(X, 3)
+    # name each archetype by its two most extreme habits
+    out['arch'] = dict(k=3, curve=curve, profiles=[[r(v, 2) for v in z] for z in Zk],
+                       weights=[dict(pid=p_, w=[r(v, 3) for v in A[i]]) for i, p_ in enumerate(pids)],
+                       pure=[int((A[:, j] >= .8).sum()) for j in range(3)],
+                       mixed=int((A.max(1) < .6).sum()))
+    # stability: fit on each session separately, match archetypes by profile correlation
+    A1, Z1, _ = _best_archetypes(S1, 3)
+    A2, Z2, _ = _best_archetypes(S2, 3)
+    from itertools import permutations
+    best = max(permutations(range(3)), key=lambda pm: sum(np.corrcoef(Z1[i], Z2[pm[i]])[0, 1] for i in range(3)))
+    prof_r = [r(np.corrcoef(Z1[i], Z2[best[i]])[0, 1]) for i in range(3)]
+    # does each person's dominant archetype in session 1 match session 2 (after matching)?
+    dom1 = A1.argmax(1)
+    dom2 = np.array([best.index(j) for j in A2.argmax(1)])
+    same = float((dom1 == dom2).mean())
+    nullsame = np.mean([(dom1 == rng.permutation(dom2)).mean() for _ in range(2000)])
+    psame = (1 + sum((dom1 == rng.permutation(dom2)).mean() >= same for _ in range(2000))) / 2001
+    out['archStability'] = dict(profileR=prof_r, sameDominant=same, nullSame=float(nullsame), p=float(psame))
+    print('  k=3 archetype profiles:', {i: dict(zip(cols, np.round(z, 2))) for i, z in enumerate(Zk)})
+    print('  near-pure members (weight >= .8):', out['arch']['pure'], '| clearly mixed (max < .6):', out['arch']['mixed'])
+    print('  per-session fits: profile correlations', prof_r, '| same dominant archetype %.2f vs chance %.2f (p = %.3f)'
+          % (same, nullsame, psame))
     return out
 
 
@@ -641,13 +784,61 @@ def narration_quotes():
     return out
 
 
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 5 · learning (theme 11): faster with practice, but no better targeted
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+def learning():
+    hdr('5 · Learning: speed by minute and session; does reliance get better targeted?')
+    import build_findings_synthesis as b
+    d = quiet(b.load_decisions)
+    d = d.copy()
+    # time beyond the forced card reveal (round 1's netSecs definition); a manual choice made before the
+    # cards loaded counts as 0 extra seconds
+    d['net'] = (d.secs - d.reveal / 1000.0).clip(lower=0)
+    d['minute'] = (d.elapsed // 60).clip(upper=7).astype(int)
+    d['game'] = d.scenario.astype(str) + '|' + d.planIndex.astype(str)
+    speed = [dict(run=int(r_), minute=int(m_), median=r(g.net.median(), 2), n=int(len(g)))
+             for (r_, m_), g in d.groupby(['run', 'minute']) if len(g) >= 8]
+    # targeting: uptake on single-type vs three-type missions, session 1 vs 2
+    t = d[d.ncolours.isin([1, 3]) & (d.residual == 0)].copy()
+    t['three'] = (t.ncolours == 3).astype(int)
+    t['run2'] = (t.run == 2).astype(int)
+    cells = [dict(run=int(r_), types=int(k), rate=r(g.took.mean()), n=int(len(g)), people=int(g.pid.nunique()))
+             for (r_, k), g in t.groupby(['run', 'ncolours'])]
+    m = gee('took ~ three * run2 + C(game)', t)
+    inter = orow(m, 'three:run2')
+    gap = {rr: (t[(t.run == rr) & (t.three == 1)].took.mean() - t[(t.run == rr) & (t.three == 0)].took.mean()) for rr in (1, 2)}
+    # per person: the gap in each session (people with both mission kinds in both sessions)
+    pp = t.groupby(['pid', 'run', 'three']).took.mean().unstack('three').dropna()
+    pp['gap'] = pp[1] - pp[0]
+    g2 = pp.gap.unstack('run').dropna()
+    persons = [dict(pid=p_, s1=r(row[1]), s2=r(row[2])) for p_, row in g2.iterrows()]
+    sharper = int((g2[2] > g2[1]).sum()); blunter = int((g2[2] < g2[1]).sum())
+    wil = stats.wilcoxon(g2[2], g2[1]) if len(g2) > 5 else None
+    mt = gee('net ~ elapsed + run2 + C(game)', d.assign(run2=(d.run == 2).astype(int)), binomial=False)
+    out = dict(speed=speed, cells=cells, interaction=inter, gap1=float(gap[1]), gap2=float(gap[2]),
+               persons=persons, sharper=sharper, blunter=blunter, wilcoxonP=float(wil.pvalue) if wil else None,
+               slopePerMin=float(mt.params['elapsed'] * 60), slopeP=float(mt.pvalues['elapsed']),
+               run2=float(mt.params['run2']), run2P=float(mt.pvalues['run2']))
+    print('  median extra seconds by minute:', [(x['run'], x['minute'], x['median']) for x in speed])
+    print('  uptake 1-type vs 3-type:', [(c['run'], c['types'], c['rate'], c['n']) for c in cells])
+    print('  gap (3-type minus 1-type): s1 %.2f, s2 %.2f; interaction OR %.2f [%.2f, %.2f] p = %.3f'
+          % (gap[1], gap[2], inter['OR'], inter['lo'], inter['hi'], inter['p']))
+    print('  per person (%d with both kinds both sessions): sharper %d, blunter %d, Wilcoxon p = %s'
+          % (len(g2), sharper, blunter, out['wilcoxonP']))
+    print('  net seconds: %+.2f per minute of session (p = %.4f); session 2 %+.2f s (p = %.4f)'
+          % (out['slopePerMin'], out['slopeP'], out['run2'], out['run2P']))
+    return out
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     fp = fingerprint()
     pc1 = pd.DataFrame(fp['points']).groupby('pid').rel.mean()
     res = dict(generated=pd.Timestamp.now().strftime('%Y-%m-%d %H:%M'),
                fingerprint=fp, deepQueue=deep_queue(), givingUp=giving_up(pc1), flaws=flaws(),
-               narrationQuotes=narration_quotes(),
+               narrationQuotes=narration_quotes(), learning=learning(),
                spokenStrategic={k: dict(run=v[0], t=v[1], strict=v[2], gist=v[3]) for k, v in SPOKEN_STRAT.items()},
                spokenTactical={k: dict(run=v[0], t=v[1], strict=v[2], gist=v[3]) for k, v in SPOKEN_TAC.items()})
     OUT.write_text(json.dumps(res, indent=1, default=lambda o: o.item() if hasattr(o, 'item') else str(o)),
