@@ -98,29 +98,39 @@ function caveat(host, html) { h('div', { class: 'caveat', html: '<b>Caveat.</b> 
 /* The averages of a group of participants: score, workload (raw NASA-TLX, 0–20) and post-session trust in
    each assistant (1–7), each the mean of a person's sessions. P01/P02 have no score (half task weights). */
 const PS = DATA.personSummary || {};
+const MEAN_SETS = {
+  feel: { label: 'Outcome & feeling', cols: [['score', 'Score', v => num(v, 0)], ['rtlx', 'Workload', v => num(v, 1)],
+                                            ['trustS', 'Trust S', v => num(v, 1)], ['trustT', 'Trust T', v => num(v, 1)]] },
+  work: { label: 'Work rate', cols: [['tasks', 'Tasks', v => num(v, 1)], ['missions', 'Missions', v => num(v, 1)],
+                                     ['alloc', 'Alloc/min', v => num(v, 2)], ['penalty', 'Penalty', v => num(v, 0)]] },
+  use:  { label: 'Assistant use', cols: [['took', 'Cards', v => v == null ? '—' : pct(v, 0)],
+                                         ['suggest', 'Suggest', v => v == null ? '—' : pct(v, 0)],
+                                         ['decide', 'Decide s', v => num(v, 1)]] },
+};
+let MEAN_SET = 'feel';
+const WHO_CHARTS = [];
 function groupMeans(pids) {
   const m = k => { const v = pids.map(p => PS[p] && PS[p][k]).filter(x => x != null);
                    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
-  return { score: m('score'), rtlx: m('rtlx'), trustS: m('trustS'), trustT: m('trustT') };
+  return Object.fromEntries(Object.values(MEAN_SETS).flatMap(st => st.cols).map(([k]) => [k, m(k)]));
 }
 const ALL_PIDS = Object.keys(PS);
-const MEAN_COLS = [['score', 'Score', v => num(v, 0)], ['rtlx', 'Workload', v => num(v, 1)],
-                   ['trustS', 'Trust S', v => num(v, 1)], ['trustT', 'Trust T', v => num(v, 1)]];
 
-/* Bars of "X of N participants", each followed by that group's average score, workload and trust.
-   rows: {label, pids, sub}. The last row is everyone, for comparison. */
+/* Bars of "X of N participants", each followed by that group's averages on the measure set picked above
+   the chart (synced across the page). rows: {label, pids, sub}. The last row is everyone, for comparison. */
 const GT = DATA.groupTests || {};
 const stars = p => p == null ? '' : p < 0.001 ? '***' : p < 0.01 ? '**' : p < 0.05 ? '*' : p < 0.10 ? '†' : '';
 function whoBars(host, rows, n) {
-  const all = groupMeans(ALL_PIDS);
+  const all = groupMeans(ALL_PIDS), COLS = MEAN_SETS[MEAN_SET].cols;
   const W = 780, rowH = 36, padL = 280, barW = 160, padT = 26;
   const H = padT + (rows.length + 1) * rowH + 10;
   const svg = svgRoot(host, W, H);
-  const colX = [padL + barW + 78, padL + barW + 142, padL + barW + 206, padL + barW + 270];
+  const colX = COLS.map((_, i) => padL + barW + 78 + i * 64);
   const txt = (x, y, t, o = {}) => { const e = el('text', Object.assign({ x, y, fill: css('--ink-2'), 'font-size': 12,
     'font-family': css('--mono'), 'text-anchor': 'end' }, o), svg); e.textContent = t; return e; };
   txt(padL + barW + 12, 14, `of ${n}`, { 'text-anchor': 'start', fill: css('--ink-3'), 'font-size': 10.5 });
-  MEAN_COLS.forEach(([, lab], i) => txt(colX[i], 14, lab, { fill: css('--ink-3'), 'font-size': 10.5 }));
+  COLS.forEach(([, lab], i) => txt(colX[i], 14, lab, { fill: css('--ink-3'), 'font-size': 10.5 }));
+  const ALLC = Object.values(MEAN_SETS).flatMap(st => st.cols);
   const draw = (r, i, isAll) => {
     const y = padT + i * rowH, cy = y + rowH / 2, k = r.pids.length, g = isAll ? all : groupMeans(r.pids);
     const T = !isAll && r.key ? (GT[r.key] || {}) : {};
@@ -130,39 +140,64 @@ function whoBars(host, rows, n) {
     el('rect', { x: padL, y: y + 10, width: barW * k / n, height: rowH - 20, rx: 3,
                  fill: isAll ? css('--mark-soft') : css('--mark') }, svg);
     txt(padL + barW + 12, cy, `${k}`, { 'text-anchor': 'start', 'font-weight': 600, fill: css('--ink') });
-    MEAN_COLS.forEach(([key, , fmt], j) => {
+    COLS.forEach(([key, , fmt], j) => {
       const v = g[key], t = T[key], pp = t ? t.p : null;
       const colr = isAll || !k ? css('--ink-3') : pp != null && pp < 0.10 ? pColour(pp) : css('--ink-2');
-      const e = txt(colX[j], cy, k ? fmt(v) + stars(pp) : '—', { fill: colr, 'font-weight': pp != null && pp < 0.10 ? 700 : 400 });
+      txt(colX[j], cy, k ? fmt(v) + stars(pp) : '—', { fill: colr, 'font-weight': pp != null && pp < 0.10 ? 700 : 400 });
       if (pp != null) txt(colX[j], cy + 12, pval(pp).replace('p ', ''), { fill: pp < 0.10 ? colr : css('--ink-3'), 'font-size': 9.5 });
     });
     const hit = el('rect', { x: 0, y, width: W, height: rowH, fill: 'transparent' }, svg);
-    const tests = isAll ? '' : MEAN_COLS.map(([key, lab, fmt]) => T[key]
+    const tests = isAll ? '' : ALLC.map(([key, lab, fmt]) => T[key]
       ? `${lab}: ${fmt(T[key].inMean)} vs ${fmt(T[key].restMean)} for the other ${T[key].nRest} · ${pv(T[key].p)}` : '').filter(Boolean).join('<br>');
     hoverable(hit, `<b>${r.label}</b><br>${k} of ${n}${r.sub ? ' · ' + r.sub : ''}`
       + (isAll ? '' : `<br>${r.pids.join(', ') || 'nobody'}`) + (tests ? '<br>' + tests : '')
-      + `<br>score ${num(g.score, 0)} · workload ${num(g.rtlx, 1)} / 20 · trust strategic ${num(g.trustS, 1)} · tactical ${num(g.trustT, 1)} (1–7)`
-      + (isAll ? '' : `<br><span style="opacity:.75">everyone: ${num(all.score, 0)} · ${num(all.rtlx, 1)} · ${num(all.trustS, 1)} · ${num(all.trustT, 1)}</span>`));
+      + (isAll ? '<br>' + ALLC.map(([key, lab, fmt]) => `${lab} ${fmt(all[key])}`).join(' · ') : ''));
   };
   rows.forEach((r, i) => draw(r, i, false));
   draw({ label: `All ${n} participants`, pids: ALL_PIDS }, rows.length, true);
 }
-const MEANS_CAP = 'After each bar: that group’s average <b>score</b> (points per session; P01/P02 left out, they played on '
-  + 'half task weights), <b>workload</b> (raw NASA-TLX, 0–20, higher = more demanding) and post-session <b>trust</b> in the '
-  + 'Strategic (S) and Tactical (T) Assistant (1–7), each person averaged over their two sessions. The bottom row is everyone. '
-  + 'Each number is tested against <b>everyone not in the group</b> (two-sided Mann–Whitney U); the p-value sits under it, '
-  + 'coloured by threshold, with * < .05, ** < .01, *** < .001, † < .10. Hover a row for both means. These are screening '
-  + 'tests, uncorrected: across 28 codes × 4 measures about 6 would reach p < .05 by chance alone, so treat a lone '
-  + 'asterisk as a lead, not a finding.';
+/* The switcher above each group chart. One choice drives every group chart on the page. */
+function whoSwitch(host) {
+  const bar = h('div', { class: 'btnrow' }, host);
+  h('span', { class: 'btnlab', text: 'Show' }, bar);
+  Object.entries(MEAN_SETS).forEach(([k, st]) => {
+    const b = h('button', { text: st.label, class: k === MEAN_SET ? 'on' : '' }, bar);
+    b.dataset.set = k;
+    b.onclick = () => {
+      MEAN_SET = k;
+      WHO_CHARTS.forEach(f => f());
+      document.querySelectorAll('.btnrow button[data-set]').forEach(x => x.classList.toggle('on', x.dataset.set === k));
+    };
+  });
+}
+const MEANS_CAP = 'After each bar, that group’s averages on the measures picked with the buttons above (the choice applies to '
+  + 'every such chart on the page). <b>Outcome & feeling</b>: score (points per session; P01/P02 left out, they played on '
+  + 'half task weights), workload (raw NASA-TLX, 0–20) and post-session trust in the Strategic (S) and Tactical (T) '
+  + 'Assistant (1–7). <b>Work rate</b>: tasks and missions completed per session, missions allocated per minute, and '
+  + 'waiting penalty per session. <b>Assistant use</b>: share of strategy cards taken, share of tactical plans where '
+  + 'Suggest was pressed, and the median seconds a strategic decision took. Each person is averaged over their two '
+  + 'sessions; the bottom row is everyone. Each number is tested against <b>everyone not in the group</b> (two-sided '
+  + 'Mann–Whitney U); the p-value sits under it, coloured by threshold, with * < .05, ** < .01, *** < .001, † < .10. '
+  + 'Work-rate and assistant-use measures are tested on <b>game-centred</b> values (each session minus the average for '
+  + 'that game), because the four games differ almost twofold in load and which pair a person played depends on when '
+  + 'they took part; the means shown are the raw ones. Hover a row for every measure. These are screening tests, '
+  + 'uncorrected: across 28 codes × 11 measures about 15 would reach p < .05 by chance alone, so treat a lone asterisk '
+  + 'as a lead, not a finding.';
 
 function codeBars(host, codes, title) {
   const c = card(host, title || `How many of the ${NQ} participants said so`);
-  whoBars(h('div', { class: 'chart' }, c), codes.map(k => ({
+  whoSwitch(c);
+  const box = h('div', { class: 'chart' }, c);
+  const draw = () => whoBars(box, codes.map(k => ({
     label: CODE_LABEL[k], pids: who(k), key: k,
     sub: strictOf(k) < nOf(k) ? `${strictOf(k)} without a leading question` : '' })), NQ);
+  draw();
+  WHO_CHARTS.push(draw);
   h('p', { class: 'cap', html: MEANS_CAP }, c);
   return c;
 }
+
+const X2 = DATA.extras2;   // second follow-ups: scripts/analysis_combined/extras2.py
 
 /* Two bars per row, horizontal, so long labels stay readable. rows: {label, a, b, aSub, bSub}. */
 function pairBarsH(host, rows, o = {}) {
@@ -753,6 +788,51 @@ function register(id, text) { SUMMARY.push([id, text]); }
         + `against ${pct(st.nullSame, 0)} by chance (${pv(st.p)}). So the <b>poles are real and reproducible</b>; what is not true `
         + 'is that people fall into three boxes. The defensible language: <b>three recurring styles that operators blend</b>, '
         + 'most of them leaning towards one.');
+      if (X2 && X2.archNull) {
+        const AN = X2.archNull, O = AN.observed, NA = AN.nulls.stable, NB = AN.nulls.nocorr;
+        const c5 = card(s, '5 · Signal or noise? The archetypes against operators with no types at all');
+        para(c5, '<b>The worry.</b> Archetypal analysis <i>always</i> returns k corners: give it any cloud of points and it will '
+          + 'name three extremes and describe everyone as a blend. Its explained variance always rises with k, and refitting '
+          + 'on a second session will always find similar corners if people are merely <i>consistent</i>. So none of the '
+          + 'numbers in view 4 can show types on their own; they need a baseline of what the same method finds when there '
+          + 'are none.');
+        para(c5, `<b>The baseline.</b> ${AN.n} simulated studies of 33 operators each, drawn from a <b>single continuous cloud</b> `
+          + 'that copies the real data in every respect but types: each habit has its real distribution, the habits are '
+          + 'correlated with each other exactly as observed, and each habit carries over from session 1 to session 2 as strongly '
+          + 'as it really does (a Gaussian copula fitted to all twenty session-habit columns). The identical pipeline — game '
+          + 'adjustment aside, already done — is run on every simulated study. A second, harsher baseline shuffles each habit '
+          + 'independently between people, destroying any style while keeping each habit’s session-to-session stability.');
+        const F_ = { pct: v => pct(v, 0), n1: v => num(v, 1), r2: v => num(v, 2) };
+        const rows = [
+          ['Variation explained, 3 archetypes', 'expl3', F_.pct], ['Gain from 2 → 3 archetypes', 'gain3', F_.pct],
+          ['Near-pure operators (≥ 80% one style)', 'pure', F_.n1], ['Median operator’s largest share', 'medMax', F_.pct],
+          ['Best-matched profile, session 1 vs 2 (r)', 'prof1', F_.r2], ['Second profile (r)', 'prof2', F_.r2],
+          ['Third profile (r)', 'prof3', F_.r2], ['Same closest archetype in both sessions', 'same', F_.pct],
+        ].map(([label, k, fmt]) => ({ label, obs: O[k], a: NA[k], b: NB[k], fmt }));
+        nullStrip(h('div', { class: 'chart' }, c5), rows);
+        legend(c5, [{ label: 'observed', color: css('--s-strat') },
+                    { label: 'no types, same habits, correlations and stability (95% of simulations; tick = average)', color: css('--mark-soft') },
+                    { label: 'habits shuffled between people', color: css('--s-tac') }]);
+        h('p', { class: 'cap', html: 'p = share of no-types simulations at least as high as observed (one-sided). Hover a row for both baselines.' }, c5);
+        const beats = rows.filter(r => r.a.pAbove < 0.05).map(r => r.label.toLowerCase());
+        para(c5, `<b>The verdict.</b> Everything that would mark <i>types</i> sits inside what a no-types continuum produces: `
+          + `variation explained (${pct(O.expl3, 0)} against ${pct(NA.expl3.mean, 0)}, ${pval(NA.expl3.pAbove)}), the gain from a third `
+          + `archetype, the number of near-pure operators (${O.pure} against ${num(NA.pure.mean, 0)}), how lopsided people’s mixes are, `
+          + `and how often a person keeps the same closest archetype across sessions (${pct(O.same, 0)} against ${pct(NA.same.mean, 0)}, `
+          + `${pval(NA.same.pAbove)}). The method finds as much “type-ness” in a featureless cloud as in these operators. What does `
+          + `beat the continuum is the <b>shape</b>: the two clearest archetype profiles are rebuilt almost identically from session 1 `
+          + `and session 2 (r = ${num(O.prof1, 2)} and ${num(O.prof2, 2)}, against ${num(NA.prof1.mean, 2)} and ${num(NA.prof2.mean, 2)}; `
+          + `${pval(NA.prof1.pAbove)} and ${pval(NA.prof2.pAbove)}) — though eight measures were checked and neither survives a Holm `
+          + `correction. Against the harsher baseline the habits clearly hang together (variation explained ${pct(O.expl3, 0)} against `
+          + `${pct(NB.expl3.mean, 0)} when habits are shuffled between people, ${pval(NB.expl3.pAbove)}). <b>So: operators do not come in `
+          + `types. They differ along a couple of stable directions, and the archetypes are a convenient way to name the ends of those `
+          + `directions</b> — which is how the “three recurring styles” above should be read.`);
+        para(c5, `<b>Why the archetypes look the way they do.</b> Each operator’s three archetype shares are almost entirely `
+          + `predicted by their position on the first two principal axes (R² = ${AN.weightsFromPC12.map(v => num(v, 2)).join(', ')} `
+          + `for the three shares): the archetypes are a re-description of the reliance axis and the override-vs-accept axis, `
+          + `with corners placed at the edge of the cloud. And there is no gap along the reliance axis — its bimodality `
+          + `coefficient is ${num(AN.bimodalityPC1, 2)}, below the .555 that would hint at two groups.`);
+      }
     }
     caveat(s, `Exploratory, run after rounds 1–2. ${Object.values(FP.imputed).reduce((a, b) => a + b, 0)} of `
       + `${FP.nSessions * FP.features.length} session values could not be computed (e.g. no manual choices to time) and filled with the `
@@ -838,11 +918,13 @@ function register(id, text) { SUMMARY.push([id, text]); }
     h('h3', { text: 'What about genuinely long queues — four or more missions waiting?' }, s);
     const c = card(s, 'Reliance by how many other missions were waiting when the decision opened');
     legend(c, [{ label: 'Strategic: card taken', color: css('--s-strat') }, { label: 'Tactical: Suggest pressed', color: css('--s-tac') }]);
-    barsGrouped(h('div', { class: 'chart' }, c), ST.bins.map(b => b.label + ' waiting'),
-      [{ label: 'Strategic: card taken', color: css('--s-strat'), values: ST.bins.map(b => b.rate),
-         subs: ST.bins.map(b => `n = ${b.n} decisions from ${b.people} people`) },
-       { label: 'Tactical: Suggest pressed', color: css('--s-tac'), values: TA.bins.map(b => b.rate),
-         subs: TA.bins.map(b => `n = ${b.n} plans from ${b.people} people`) }],
+    const QS = X2 && X2.deepQueue2 ? X2.deepQueue2.strategic.bins : ST.bins.map(b => Object.assign({}, b, { label: b.label }));
+    const QT = X2 && X2.deepQueue2 ? X2.deepQueue2.tactical.bins : TA.bins.map(b => Object.assign({}, b, { label: b.label }));
+    barsGrouped(h('div', { class: 'chart' }, c), QS.map(b => b.label + ' waiting'),
+      [{ label: 'Strategic: card taken', color: css('--s-strat'), values: QS.map(b => b.rate),
+         subs: QS.map(b => `n = ${b.n} decisions from ${b.people} people`) },
+       { label: 'Tactical: Suggest pressed', color: css('--s-tac'), values: QT.map(b => b.rate),
+         subs: QT.map(b => `n = ${b.n} plans from ${b.people} people`) }],
       { max: 1, fmt: v => pct(v, 0), height: 220 });
     h('p', { class: 'cap', text: 'Raw rates, not adjusted for mission size or practice; the tests below are.' }, c);
     const one = ST.byType.filter(r => r.types === 1);
@@ -857,6 +939,128 @@ function register(id, text) { SUMMARY.push([id, text]); }
     para(s, `Between people the sign flips: operators who spend more of their time facing a deep queue rely <i>less</i> `
       + `(strategic ${pv(ST.between.p)}, tactical ${pv(TA.between.p)}). That is most likely the reverse direction — building by `
       + 'hand is slower, so manual operators accumulate their own queues — and it is why the within-person comparison is the test.');
+  }
+  if (X2 && X2.deepQueue2) {
+    const Q = X2.deepQueue2, QS = Q.strategic, QT = Q.tactical, V = Q.visible;
+    h('h3', { text: 'Long queues, looked at seven ways' }, s);
+    para(s, 'The raw strategic bars above dip at three and four missions waiting, rise at five and dip again at six or more. '
+      + 'Read naively, that is the opposite of “busy people hand over”: <b>less</b> assistant use as the queue lengthens. '
+      + 'Everything below asks whether that dip survives once the obvious alternatives are taken out: what the operator '
+      + 'could see, when in the session the queue was long, what kind of mission was being decided, which mission they '
+      + 'chose to open, and who was deciding.');
+
+    // a · what can be seen
+    const cv = card(s, 'a · How many queued missions can an operator actually see?');
+    const pics = h('div', { class: 'grid2' }, cv);
+    [['img/queue_at_rest.jpg', 'At rest: three full cards and the header of a fourth (a taller browser window showed four).'],
+     ['img/queue_decision_open.jpg', 'Deciding: the strategy cards open inside the queue column and push every other waiting mission off-screen.']]
+      .forEach(([src, cap]) => { const f = h('figure', { style: 'margin:0' }, pics);
+        h('img', { src, alt: cap, style: 'width:100%;max-width:300px;border-radius:6px;border:1px solid var(--line);display:block' }, f);
+        h('figcaption', { class: 'cap', text: cap }, f); });
+    para(cv, `Read off the screen recordings (P19, P30). The queue column holds <b>about ${V} cards</b> before it scrolls, `
+      + 'and the panel for the mission being decided expands <i>inside</i> that column, so while a strategic decision is '
+      + 'open the operator sees <b>at most one other</b> waiting mission there. The map still shows every waiting mission as '
+      + 'an orange circle, and missions can be opened from the map, so the backlog is never invisible, only out of the list. '
+      + `So “more than ${V} waiting” is where extra missions stop adding anything the operator sees in the queue itself.`);
+
+    // b · four ways to balance the bars
+    const cb = card(s, 'b · The same bars, balanced four ways');
+    const bx = h('div', { class: 'chart' }, cb);
+    const VIEWS = {
+      raw: ['Raw', b => b.rate, 'The raw share, as above.'],
+      dev: ['Within-person', b => b.dev, 'Each decision minus that operator’s own overall rate, averaged: above 0 means people '
+        + 'used the assistant more than usual for them at that queue depth. Removes who tends to have long queues.'],
+      adj: ['Adjusted for mission, time and person', b => b.adjusted, 'Observed minus the rate a model expects from the mission '
+        + '(drones, tasks, drone types), the minute of the session, the game and the person — put back on the overall level. '
+        + 'The queue itself is left out of that model, so anything left here is the queue.'],
+      std: ['Standardised over time', (b, i, which) => which.standardised[i].rate, 'Each bar re-weighted so every queue depth '
+        + 'has the same spread over the first, middle and last third of the session as the whole sample. Removes the fact '
+        + 'that long queues happen late, when operators are faster and more practised. Thin at 6+.'],
+    };
+    const vcap = h('p', { class: 'cap' }, cb);
+    const drawV = k => {
+      const [, f, txt] = VIEWS[k], dev = k === 'dev';
+      const vals = which => which.bins.map((b, i) => f(b, i, which));
+      barsGrouped(bx, QS.bins.map(b => b.label + ' waiting'),
+        [{ label: 'Strategic', color: css('--s-strat'), values: vals(QS), subs: QS.bins.map(b => `n = ${b.n}`) },
+         { label: 'Tactical', color: css('--s-tac'), values: vals(QT), subs: QT.bins.map(b => `n = ${b.n}`) }],
+        dev ? { min: -0.25, max: 0.25, fmt: v => sgn(100 * v, 0) + ' pts', height: 220 } : { max: 1, fmt: v => pct(v, 0), height: 220 });
+      vcap.innerHTML = txt;
+    };
+    cb.insertBefore(btnBar(cb, 'View', Object.entries(VIEWS).map(([k, v]) => [k, v[0]]), 'adj', drawV), bx);
+    legend(cb, [{ label: 'Strategic: card taken', color: css('--s-strat') }, { label: 'Tactical: Suggest pressed', color: css('--s-tac') }]);
+    drawV('adj');
+    const nbAdj = QS.bins.map(b => b.adjusted).filter(v => v != null);
+    para(s, `Once mission, time and person are accounted for, strategic uptake runs between <b>${pct(Math.min(...nbAdj), 0)} and `
+      + `${pct(Math.max(...nbAdj), 0)}</b> across queue depths with no trend either way (the extremes are the thinnest bins), and `
+      + `the raw dip at three to four waiting is gone (${pct(QS.bins[3].adjusted, 0)} and ${pct(QS.bins[4].adjusted, 0)}). The `
+      + `within-person view says the same: nobody’s own rate moves much with the queue. Long queues come late in a session `
+      + `(queue length and minute correlate ρ = ${num(QS.corrQminute, 2)}), which is why time has to be held fixed.`);
+
+    // c · composition: what each bar is made of
+    tableFor(s, ['Others waiting', 'n', 'raw', 'expected', 'adjusted', 'drones needed', 'tasks', 'three-type', 'minute', 'manual before cards', 'median s'],
+      QS.bins.map(b => [b.label, b.n, pct(b.rate, 0), pct(b.expected, 0), pct(b.adjusted, 0), num(b.ndrones, 1), num(b.ntasks, 1),
+                        pct(b.three, 0), num(b.minute, 1), pct(b.early, 0), num(b.secs, 1)]),
+      'Show what each strategic bar is made of (mission size, time, pre-emptive manual)');
+
+    // d · time
+    const ct = card(s, 'c · Within each third of the session, strategic uptake by queue depth');
+    const TH = QS.thirds;
+    barsGrouped(h('div', { class: 'chart' }, ct), QS.bins.map(b => b.label + ' waiting'),
+      TH.map((t, i) => ({ label: t.label, color: css(['--lad-3', '--lad-2', '--lad-1'][i]),
+                          values: t.bins.map(b => b.n >= 5 ? b.rate : null), subs: t.bins.map(b => `n = ${b.n}`) })),
+      { max: 1, fmt: v => pct(v, 0), height: 220 });
+    legend(ct, TH.map((t, i) => ({ label: `${t.label} (mean queue ${num(t.meanQ, 1)})`, color: css(['--lad-3', '--lad-2', '--lad-1'][i]) })));
+    h('p', { class: 'cap', text: 'Bars with fewer than 5 decisions are left out. Long queues barely exist in the first third, '
+      + 'which is the point: a raw queue comparison is partly a comparison of early with late.' }, ct);
+
+    // e · which mission gets opened
+    const pk = QS.pick || Q.strategic.pick, longP = pk.find(x => x.k.startsWith('more')), shortP = pk.find(x => !x.k.startsWith('more'));
+    const cp = card(s, `d · Which mission do operators open when more than ${V} are waiting?`);
+    tiles(cp, [
+      { v: pct(longP.oldest, 0), k: 'open the oldest waiting mission', s: `${pct(shortP.oldest, 0)} with ${V} or fewer waiting` },
+      { v: pct(longP.visible, 0), k: `open one of the top ${V} in the list (arrival order)`, s: `${pct(shortP.visible, 0)} otherwise` },
+      { v: num(longP.ndrones, 1), k: 'drones the opened mission needs', s: `${num(shortP.ndrones, 1)} otherwise` },
+      { v: pct(longP.early, 0), k: 'decided by hand before the cards loaded', s: `${pct(shortP.early, 0)} otherwise` },
+    ]);
+    para(cp, `With a long queue operators stop working through it in order: they open the oldest mission only `
+      + `${pct(longP.oldest, 0)} of the time, and about half the time open one that is <b>not among the top ${V}</b> in the `
+      + `list — so they are picking, mostly off the map. What they pick is <b>smaller</b> (${num(longP.ndrones, 1)} drones against `
+      + `${num(shortP.ndrones, 1)}), and small missions are the ones people build by hand (theme 2), more often before the cards `
+      + `even load. That is the mechanism behind the raw dip: <b>under a long queue operators clear small jobs quickly by hand</b>, `
+      + 'which lowers the raw share of cards taken without any change in how they treat a mission of a given size.');
+
+    // f · every model
+    const TL = { q_w: 'per extra mission waiting', qlo_w: `per extra mission, up to ${V}`, qhi_w: `per extra mission beyond ${V}`,
+                 qt_w: 'per extra task waiting' };
+    const modelRows = Qx => Object.entries(Qx.models).flatMap(([spec, terms]) => Object.entries(terms)
+      .filter(([, v]) => v.est != null)
+      .map(([t, v]) => ({ label: `${spec} — ${TL[t]}`, b: Math.log(v.est), lo: Math.log(v.lo), hi: Math.log(v.hi), p: v.p })));
+    const cm = card(s, 'e · Every model of the queue, within person (odds of using the assistant)');
+    [['Strategic: card taken', QS], ['Tactical: Suggest pressed', QT]].forEach(([lab, Qx]) => {
+      h('h4', { text: lab }, cm);
+      forest(h('div', { class: 'chart' }, cm), modelRows(Qx), { padL: 330, lim: 0.6 });
+    });
+    h('p', { class: 'cap', html: 'All within-person (each operator’s queue centred on their own average). “Time” adds minute and game; '
+      + '“this card” adds the mission’s drones, tasks and drone types. The hinge splits the slope at what the queue list can show. '
+      + '“Tasks waiting” counts the work in the queue rather than the missions. Tactical Suggest use creeps up with the queue '
+      + 'until the plan’s own size is held fixed, then it does not: bigger plans arrive when the queue is long.' }, cm);
+
+    // g · each person, short vs long
+    const P_ = QS.persons;
+    const cs = card(s, `f · Each operator who met both: card uptake with ${V} or fewer waiting, and with more`);
+    slopes(h('div', { class: 'chart' }, cs), P_.points.map(x => ({ label: x.pid, a: x.short, b: x.long })),
+      { aLabel: `${V} or fewer`, bLabel: `more than ${V}`, height: 220 });
+    h('p', { class: 'cap', html: `${P_.n} operators: ${P_.higher} took cards more often with a long queue, ${P_.lower} less, `
+      + `${P_.same} the same (Wilcoxon ${pv(P_.p)}). Raw rates — the long-queue missions are smaller.` }, cs);
+    caveat(s, `The queue counts are rebuilt from the event log and match the logged count for ${pct(QS.rebuildAgree, 0)} of decisions. `
+      + 'The cards-visible figure is from two recordings on the study machine; window height varied a little between sessions. '
+      + 'The thirds and the 6+ bin are thin, so the standardised view is the noisiest of the four.');
+    note(s, '<b>So, for theme 4.</b> The inverse pattern is real in the raw numbers and explained by what gets picked.</b> With a long queue, '
+      + 'operators skip ahead to small missions and do them by hand — fast, often before the cards load — so the raw share of '
+      + 'cards taken falls. Holding the mission, the time and the person fixed, the queue has no effect on either tier, '
+      + 'including beyond the point where the list stops showing more. Busy operators change <i>what</i> they work on, not '
+      + '<i>how</i> they treat it.');
   }
   strand(s, 'In what they said');
   codeBars(s, ['C11']);
@@ -916,7 +1120,11 @@ function register(id, text) { SUMMARY.push([id, text]); }
     const LBL = { tactical: 'Prefers the tactical assistant', strategic: 'Prefers the strategic assistant',
                   both: 'Values both equally', conditional: 'Depends on the situation', none: 'No preference stated' };
     const cp = card(s, `Stated preference, ${NQ} participants`);
-    whoBars(h('div', { class: 'chart' }, cp), order.filter(k => PC[k]).map(k => ({ label: LBL[k], pids: QL.preference.who[k] || [], key: 'pref:' + k })), NQ);
+    whoSwitch(cp);
+    const pbox = h('div', { class: 'chart' }, cp);
+    const pdraw = () => whoBars(pbox, order.filter(k => PC[k]).map(k => ({ label: LBL[k], pids: QL.preference.who[k] || [], key: 'pref:' + k })), NQ);
+    pdraw();
+    WHO_CHARTS.push(pdraw);
     h('p', { class: 'cap', html: MEANS_CAP }, cp);
     para(s, `<b>${PC.tactical || 0} of ${NQ}</b> prefer the tactical assistant against <b>${PC.strategic || 0}</b> the strategic one.`);
   }
@@ -973,11 +1181,22 @@ function register(id, text) { SUMMARY.push([id, text]); }
     const c1 = card(s, 'Card uptake on three-type missions, either side of the first illogical card');
     legend(c1, [{ label: `said they noticed (${FS.saidPeople.length})`, color: css('--bad') },
                 { label: `never said so (${FS.people - FS.saidPeople.length})`, color: css('--s-strat') }]);
-    linesAt(h('div', { class: 'chart' }, c1), [
-      { label: 'noticed', color: css('--bad'), points: FS.matchedSaid.map(pt => ({ x: pt.rel, y: pt.rate, n: pt.n })) },
-      { label: 'not said', color: css('--s-strat'), points: FS.matchedNotSaid.map(pt => ({ x: pt.rel, y: pt.rate, n: pt.n })) },
-    ], { height: 280, padR: 80, xLabel: 'strategic decisions relative to the first illogical card (three-type missions shown)' });
-    h('p', { class: 'cap', text: 'Each point needs at least 4 decisions; hover for n. Few people contribute to any single point, so read the shape, not the wiggles.' }, c1);
+    const OS = X2 && X2.events && X2.events.oddSplit;
+    if (OS) {
+      const box1 = h('div', { class: 'chart' }, c1);
+      const g1 = [{ label: 'noticed', color: css('--bad'), E: OS.said }, { label: 'not said', color: css('--s-strat'), E: OS.notSaid }];
+      const d1 = m => eventLines(box1, g1, m, { padR: 120, zeroLabel: 'first illogical card',
+        xLabel: 'strategic decisions relative to the first illogical card (three-type missions shown)' });
+      c1.insertBefore(btnBar(c1, 'Show', EV_MODES, 'obs', d1), box1);
+      d1('obs');
+      h('p', { class: 'cap', html: 'Each point needs at least 4 decisions. ' + EV_MODE_CAP }, c1);
+    } else {
+      linesAt(h('div', { class: 'chart' }, c1), [
+        { label: 'noticed', color: css('--bad'), points: FS.matchedSaid.map(pt => ({ x: pt.rel, y: pt.rate, n: pt.n })) },
+        { label: 'not said', color: css('--s-strat'), points: FS.matchedNotSaid.map(pt => ({ x: pt.rel, y: pt.rate, n: pt.n })) },
+      ], { height: 280, padR: 80, xLabel: 'strategic decisions relative to the first illogical card (three-type missions shown)' });
+      h('p', { class: 'cap', text: 'Each point needs at least 4 decisions; hover for n. Few people contribute to any single point, so read the shape, not the wiggles.' }, c1);
+    }
     tableFor(c1, ['Window', 'said they noticed', 'n', 'never said so', 'n'],
       FS.binsSaid.map((b, i) => [b.k, pct(b.rate, 0), b.n, pct(FS.binsNotSaid[i].rate, 0), FS.binsNotSaid[i].n]),
       'Show the windows');
@@ -1006,10 +1225,19 @@ function register(id, text) { SUMMARY.push([id, text]); }
       + `${FT.nextAfterBlind.abandon || 0} times, fixed it by hand ${FT.nextAfterBlind['edit by hand'] || 0} times and retried `
       + `${FT.nextAfterBlind['retry Suggest'] || 0} times.`);
     const c2 = card(s, 'Suggest use on tactical plans, either side of the first “No workable plan”');
-    linesAt(h('div', { class: 'chart' }, c2), [
-      { label: 'Suggest pressed', color: css('--s-tac'),
-        points: FT.series.map(pt => ({ x: pt.rel <= 0 ? pt.rel - 1 : pt.rel, y: pt.rate, n: pt.n })) },
-    ], { height: 240, padR: 110, zeroLabel: 'first refusal', xLabel: 'tactical plans relative to the first refusal' });
+    const ER = X2 && X2.events && X2.events.refusal;
+    if (ER) {
+      const box2 = h('div', { class: 'chart' }, c2);
+      const d2 = m => eventLines(box2, [{ label: 'Suggest pressed', short: 'Suggest', color: css('--s-tac'), E: ER.tactical }], m,
+        { padR: 130, zeroLabel: 'first refusal', xLabel: 'tactical plans relative to the first refusal' });
+      c2.insertBefore(btnBar(c2, 'Show', EV_MODES, 'obs', d2), box2);
+      d2('obs');
+    } else {
+      linesAt(h('div', { class: 'chart' }, c2), [
+        { label: 'Suggest pressed', color: css('--s-tac'),
+          points: FT.series.map(pt => ({ x: pt.rel <= 0 ? pt.rel - 1 : pt.rel, y: pt.rate, n: pt.n })) },
+      ], { height: 240, padR: 110, zeroLabel: 'first refusal', xLabel: 'tactical plans relative to the first refusal' });
+    }
     h('p', { class: 'cap', text: `${FT.people} operators who met at least one refusal. Every tactical plan they confirmed, in order across both sessions.` }, c2);
     para(s, `Tactical Suggest use does not fall after the first refusal: ${pct(FT.before, 0)} of plans before, ${pct(FT.after, 0)} after `
       + `(odds ×${num(FT.model.OR, 2)}, ${pv(FT.model.p)}, with practice held fixed). The same holds when the first refusal was a `
@@ -1026,6 +1254,104 @@ function register(id, text) { SUMMARY.push([id, text]); }
       + '“No workable plan” aloud seconds after presses scored as successful gave it away. Corrected, <b>8 of those 11 had '
       + 'been refused</b>, and only 3 had a working plan. The round-1 test of Suggest and abandonment is unaffected; the '
       + 'corrections are logged in docs/analysis/round1/SUPERVISOR_LOG.md.');
+  }
+  if (X2 && X2.blindAbandons) {
+    const BA = X2.blindAbandons, VF = BA.verified;
+    h('h3', { text: 'The case tracked down: Suggest wrongly says “No workable plan”, and the mission is abandoned' }, s);
+    para(s, `Of the ${BA.nPresses} wrong refusals (${BA.nPeople} operators, ${BA.nEpisodes} failures), <b>${BA.nAbandoned} ended with `
+      + `the operator abandoning a mission that could have been saved</b> (${BA.nAbandonedPeople} operators), usually within seconds `
+      + `(median ${num(BA.medianSecsToAbandon, 0)} s after the press); ${BA.nRecovered} were fixed by hand instead. `
+      + 'One, checked frame by frame on the recording:');
+    const cf = card(s, `${VF.pid}, session ${VF.run}, mission ${VF.mission}`);
+    h('img', { src: 'img/suggest_wrong_refusal_P19.jpg', alt: 'Recovery planner showing “No workable plan with the drones left on this mission”',
+               style: 'width:100%;border-radius:6px;border:1px solid var(--line);display:block' }, cf);
+    h('p', { class: 'cap', html: VF.note.replace('"No workable plan', '<b>“No workable plan').replace('mission"', 'mission”</b>')
+      + ' Narrated as it happened: “It’s just no workable plan … looks like we have to abandon.” (Clip, with audio, in the '
+      + 'gitignored Results/Narration/_clips/ on the analysis machine.)' }, cf);
+    tableFor(s, ['Operator', 'Session', 'Mission', 'Category', 'Pressed at', 'Abandoned after', 'Session time left'],
+      BA.abandonedEpisodes.map(e => [e.pid, e.run, e.mission, e.category, mmss(Math.round(e.press)), `${num(e.secsToClose, 1)} s`,
+                                     mmss(Math.round(e.timeLeft))]),
+      `Show all ${BA.nAbandoned} wrong refusals that ended in abandonment`);
+    para(s, '<b>Set against the event study above</b>, this failure is costly at the moment and invisible afterwards. In the moment '
+      + 'it decides the outcome: the operator takes the assistant’s “no” as the system’s verdict and gives the mission up. '
+      + 'Afterwards, the same operators press Suggest on later plans as often as before. So the harm of the blind spot is not '
+      + 'lost trust, it is <b>misplaced trust in a refusal</b> — an answer operators took at its word about half the time.');
+  }
+  if (X2 && X2.events) {
+    const EVS = X2.events;
+    h('h3', { text: 'Other moments that might change use — five anchors, both assistants' }, s);
+    para(s, 'Some operators said that after a failure they leant less on one assistant or the other, because they blamed it. '
+      + 'The chart lines up every operator’s decisions on one moment of their choosing and shows use of either assistant '
+      + 'before and after. The moments: the <b>first illogical card</b>, the <b>first “No workable plan”</b>, the first '
+      + '<b>wrong</b> one, the <b>first drone failure</b>, and the <b>first mission abandoned</b>. Practice changes behaviour on '
+      + 'its own, so every “after minus before” is compared with the same quantity at <b>random</b> moments in each person’s '
+      + 'own sequence (the placebo), and modelled with practice held fixed.');
+    const ce = card(s, 'Use of each assistant either side of a chosen moment');
+    const AK = ['odd', 'refusal', 'blind', 'failure', 'abandon'], OUTS = [['strategic', 'Strategic: all missions'],
+      ['strategic3', 'Strategic: three-type missions'], ['tactical', 'Tactical: Suggest']];
+    let ak = 'abandon', ok = 'strategic3', mode = 'exp';
+    const ebox = h('div', { class: 'chart' }), stat = h('p', { class: 'cap' });
+    const draw = () => {
+      const E = EVS[ak][ok];
+      const col = ok === 'tactical' ? css('--s-tac') : css('--s-strat');
+      eventLines(ebox, [{ label: OUTS.find(o => o[0] === ok)[1].split(':')[0], color: col, E }], mode,
+        { padR: 130, zeroLabel: EVS[ak].label.replace('first ', 'first '), xLabel: `${ok === 'tactical' ? 'tactical plans' : 'strategic decisions'} relative to the ${EVS[ak].label}` });
+      if (!E) { stat.innerHTML = 'Too few operators.'; return; }
+      const M = E.model, A = E.modelAdj, PL = E.placebo || {};
+      stat.innerHTML = `${E.people} operators. Before <b>${pct(E.before, 0)}</b> (n ${E.nBefore}) → after <b>${pct(E.after, 0)}</b> `
+        + `(n ${E.nAfter}); expected from mission, time and person ${pct(E.expBefore, 0)} → ${pct(E.expAfter, 0)}. `
+        + `Practice held fixed: odds ×${num(M && M.est, 2)} [${num(M && M.lo, 2)}, ${num(M && M.hi, 2)}], ${pv(M && M.p)}. `
+        + `Adjusted for mission, time and person: ${sgn(100 * (A && A.est), 1)} points, ${pv(A && A.p)}. `
+        + `Per person, after minus before: ${sgn(100 * E.personDiff, 1)} points against ${sgn(100 * PL.mean, 1)} at random moments `
+        + `(placebo ${pv(PL.p)}); ${E.higher} rose, ${E.lower} fell.`;
+    };
+    ce.appendChild(btnBar(ce, 'Moment', AK.map(k => [k, EVS[k].label.replace('first ', '')]), ak, k => { ak = k; draw(); }));
+    ce.appendChild(btnBar(ce, 'Outcome', OUTS, ok, k => { ok = k; draw(); }));
+    ce.appendChild(btnBar(ce, 'Show', EV_MODES, mode, k => { mode = k; draw(); }));
+    ce.appendChild(ebox); ce.appendChild(stat);
+    h('p', { class: 'cap', html: EV_MODE_CAP + ' Three-type missions never carry the illogical card, so they compare like with '
+      + 'like across the first anchor.' }, ce);
+    draw();
+
+    const frows = [];
+    AK.forEach(k => {
+      frows.push({ head: EVS[k].label[0].toUpperCase() + EVS[k].label.slice(1) });
+      OUTS.forEach(([o, lab]) => { const A = EVS[k][o] && EVS[k][o].modelAdj; if (A && A.est != null)
+        frows.push({ label: lab, est: A.est, lo: A.lo, hi: A.hi, p: A.p, color: o === 'tactical' ? css('--s-tac') : css('--s-strat'),
+                     sub: `${EVS[k][o].people} operators · raw ${pct(EVS[k][o].before, 0)} → ${pct(EVS[k][o].after, 0)} · placebo ${pv((EVS[k][o].placebo || {}).p)}` }); });
+    });
+    const cf2 = card(s, 'All fifteen at once: change after the moment, adjusted for mission, time and person');
+    diffForest(h('div', { class: 'chart' }, cf2), frows, { padL: 250, lim: 0.3 });
+    h('p', { class: 'cap', html: 'Each row: how much higher (right) or lower (left) use of that assistant was after the moment than '
+      + 'before, in percentage points, once mission, minute, game and person are accounted for, with practice held fixed '
+      + '(GEE on the residual, clustered by person). Coloured where p < .05. Fifteen tests: about one would reach .05 by chance.' }, cf2);
+    tableFor(s, ['Moment', 'Outcome', 'people', 'before', 'after', 'expected before', 'expected after', 'odds (practice fixed)', 'p', 'adj. points', 'p', 'placebo p'],
+      AK.flatMap(k => OUTS.filter(([o]) => EVS[k][o]).map(([o, lab]) => { const E = EVS[k][o];
+        return [EVS[k].label, lab, E.people, pct(E.before, 0), pct(E.after, 0), pct(E.expBefore, 0), pct(E.expAfter, 0),
+                E.model ? '×' + num(E.model.est, 2) : '—', E.model ? pval(E.model.p) : '—',
+                E.modelAdj ? sgn(100 * E.modelAdj.est, 1) : '—', E.modelAdj ? pval(E.modelAdj.p) : '—',
+                E.placebo ? pval(E.placebo.p) : '—']; })),
+      'Show every number');
+    const AS = EVS.abandonSplit;
+    if (AS) {
+      const AO = EVS.abandon.strategic3, OW = AS.own.strategic3, AR_ = AS.afterRefusal;
+      para(s, `<b>Does abandoning change use — and is it blame?</b> Of the fifteen, only the first <b>abandoned mission</b> is `
+        + `followed by a change that survives adjustment: card uptake on three-type missions ${pct(AO.before, 0)} → ${pct(AO.after, 0)}, `
+        + `${sgn(100 * AO.modelAdj.est, 0)} points once mission, time and person are held fixed (${pv(AO.modelAdj.p)}). Per person it is `
+        + `weaker — ${AO.lower} operators took fewer cards afterwards, ${AO.higher} more, and the average person’s change is within what `
+        + `random moments give (placebo ${pv(AO.placebo.p)}) — so part of the pooled drop is who goes on to make more decisions. `
+        + `Splitting the ${EVS.abandon.nPeople} operators by what came just before reverses the blame story. For the `
+        + `${AR_.strategic.people} whose first abandonment came within 20 s of a Suggest refusal — where the assistant could be `
+        + `blamed — nothing changes on either tier (strategic ${sgn(100 * AR_.strategic.modelAdj.est, 0)} points, ${pv(AR_.strategic.modelAdj.p)}; `
+        + `Suggest use rose for ${AR_.tactical.higher} of them and fell for ${AR_.tactical.lower}). For the ${OW.people} who abandoned `
+        + `<b>on their own</b>, uptake of three-type cards fell from ${pct(OW.before, 0)} to ${pct(OW.after, 0)} (${sgn(100 * OW.modelAdj.est, 0)} `
+        + `points adjusted, ${pv(OW.modelAdj.p)}; ${OW.lower} fell, ${OW.higher} rose), still within the placebo range per person `
+        + `(${pv(OW.placebo.p)}). So if anything, <b>giving a mission up yourself</b> is followed by committing fewer cards — more caution `
+        + `with drones — while an assistant’s refusal leaves use untouched. Suggest use does not move after any of the five moments.`);
+    }
+    caveat(s, 'The moments overlap: the first abandonment usually comes seconds after a refusal when there was one, and a drone '
+      + 'failure precedes both. They are not independent tests. Anchors that most people meet (drone failure, illogical card) '
+      + 'have many operators; the refusals have 12–18.');
   }
   strand(s, 'In what they said');
   codeBars(s, ['C15', 'C16', 'C12']);

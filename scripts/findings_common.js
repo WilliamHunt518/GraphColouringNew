@@ -196,7 +196,8 @@ function barsGrouped(host, cats, series, o = {}) {
   const s = svgRoot(host, W, H);
   const all = series.flatMap(se => se.values.filter(v => v != null));
   const max = o.max != null ? o.max : Math.max(...all) * 1.12;
-  const y = v => H - padB - (H - padB - padT) * (v / max);
+  const min = o.min || 0;                          // a negative min lets bars grow down from zero
+  const y = v => H - padB - (H - padB - padT) * ((v - min) / (max - min));
   const bandW = (W - padL - padR) / cats.length;
   const gap = 2, bw = Math.min(42, (bandW - 26 - gap * (series.length - 1)) / series.length);
   // `o.ticks` is the number of INTERVALS, so n+1 gridlines are drawn and the top one lands on the
@@ -205,8 +206,8 @@ function barsGrouped(host, cats, series, o = {}) {
   // 4 is unchanged by the fix.)
   const nTicks = o.ticks == null ? 4 : o.ticks;
   nTicks && [...Array(nTicks + 1).keys()].forEach(i => {
-    const v = max * i / nTicks;
-    el('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: css('--grid'), 'stroke-width': 1 }, s);
+    const v = min + (max - min) * i / nTicks;
+    el('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: css(v === 0 && min < 0 ? '--ink-3' : '--grid'), 'stroke-width': 1 }, s);
     el('text', { x: padL - 8, y: y(v) + 4, 'text-anchor': 'end', fill: css('--ink-3'),
                  'font-size': 11, 'font-family': css('--mono') }, s).textContent = o.fmt ? o.fmt(v) : num(v, 0);
   });
@@ -219,9 +220,10 @@ function barsGrouped(host, cats, series, o = {}) {
       const v = se.values[ci];
       if (v == null) return;
       const bx = cx - total / 2 + si * (bw + gap);
-      el('rect', { x: bx, y: y(v), width: bw, height: Math.max(0, H - padB - y(v)), rx: 4,
+      const y0 = y(Math.max(0, min));
+      el('rect', { x: bx, y: Math.min(y(v), y0), width: bw, height: Math.abs(y0 - y(v)), rx: 4,
                    fill: se.color }, s);
-      const t = el('text', { x: bx + bw / 2, y: y(v) - 5, 'text-anchor': 'middle',
+      const t = el('text', { x: bx + bw / 2, y: v >= 0 ? y(v) - 5 : y(v) + 13, 'text-anchor': 'middle',
                              fill: css('--ink-2'), 'font-size': 11, 'font-family': css('--mono') }, s);
       t.textContent = o.fmt ? o.fmt(v) : num(v, 1);
       const hit = el('rect', { x: bx, y: padT, width: bw, height: H - padB - padT, fill: 'transparent' }, s);
@@ -370,14 +372,17 @@ function linesAt(host, series, o = {}) {
   series.forEach(se => {
     const pts = se.points.slice().sort((a, b) => a.x - b.x);
     const d = pts.map((pt, i) => (i ? 'L' : 'M') + x(pt.x) + ' ' + y(pt.y)).join(' ');
-    el('path', { d, fill: 'none', stroke: se.color, 'stroke-width': 2, 'stroke-linejoin': 'round',
-                 'stroke-linecap': 'round', opacity: se.faint ? .5 : 1 }, s);
+    const pa = { d, fill: 'none', stroke: se.color, 'stroke-width': 2, 'stroke-linejoin': 'round',
+                 'stroke-linecap': 'round', opacity: se.faint ? .5 : 1 };
+    if (se.dash) pa['stroke-dasharray'] = '5 4';
+    el('path', pa, s);
     pts.forEach(pt => {
-      el('circle', { cx: x(pt.x), cy: y(pt.y), r: 4, fill: se.color, stroke: css('--surface'),
-                     'stroke-width': 1.5 }, s);
+      // a dashed (reference) series gets hollow markers so it never reads as data of the same kind
+      el('circle', { cx: x(pt.x), cy: y(pt.y), r: se.dash ? 3 : 4, fill: se.dash ? css('--surface') : se.color,
+                     stroke: se.dash ? se.color : css('--surface'), 'stroke-width': 1.5 }, s);
       const hit = el('circle', { cx: x(pt.x), cy: y(pt.y), r: 12, fill: 'transparent' }, s);
       hoverable(hit, '<b>' + se.label + '</b><br>' + (pt.x > 0 ? '+' : '') + pt.x + ': '
-        + pct(pt.y) + (pt.n ? '<br>n = ' + pt.n : ''));
+        + pct(pt.y) + (pt.n ? '<br>n = ' + pt.n : '') + (pt.tip ? '<br>' + pt.tip : ''));
     });
     const last = pts[pts.length - 1];
     el('text', { x: x(last.x) + 10, y: y(last.y) + 4, fill: se.color, 'font-size': 11.5,
@@ -484,6 +489,106 @@ function tiles(host, items) {
     h('span', { class: 'v', text: i.v }, d);
     h('span', { class: 'k', text: i.k }, d);
     if (i.s) h('span', { class: 's', text: i.s }, d);
+  });
+}
+
+/* ───────── event-study lines, null strips, point-difference forests (combined + review pages) ───────── */
+/* A row of toggle buttons; onPick(key) on click. opts: [[key, label], ...] */
+function btnBar(host, label, opts, initial, onPick) {
+  const bar = h('div', { class: 'btnrow' }, host);
+  if (label) h('span', { class: 'btnlab', text: label }, bar);
+  const bs = opts.map(([k, lab]) => {
+    const b = h('button', { text: lab, class: k === initial ? 'on' : '' }, bar);
+    b.onclick = () => { bs.forEach(x => x.classList.toggle('on', x === b)); onPick(k); };
+    return b;
+  });
+  return bar;
+}
+/* What is behind one event-study dot, for its tooltip. */
+const dotTip = pt => `${pt.people} people · missions averaging ${num(pt.ndrones, 1)} drones, ${num(pt.ntasks, 1)} tasks · `
+  + `${pct(pt.three, 0)} three-type<br>${num(pt.queue, 1)} other missions waiting · minute ${num(pt.minute, 1)} · `
+  + `${pct(pt.session2, 0)} from session 2<br>expected from mission, time, game and person: <b>${pct(pt.expected, 0)}</b>`;
+const evX = rel => rel <= 0 ? rel - 1 : rel;   // the anchor sits at 0, between the last decision before and the first after
+/* Event-study lines. groups: [{label, color, E}] (E = an extras2 event study). mode: 'obs' observed;
+   'exp' observed + expected (dashed, hollow); 'adj' observed minus expected, put back on the overall level. */
+function eventLines(host, groups, mode, o = {}) {
+  const series = [];
+  groups.forEach(g => {
+    if (!g.E || !g.E.series.length) return;
+    const pts = key => g.E.series.map(pt => ({ x: evX(pt.rel), y: pt[key], n: pt.n, tip: dotTip(pt) }));
+    if (mode === 'adj') series.push({ label: g.label + ' (adj.)', color: g.color, points: pts('adjusted') });
+    else series.push({ label: g.label, color: g.color, points: pts('rate') });
+    if (mode === 'exp') series.push({ label: (g.short || g.label) + ' expected', color: g.color, dash: true, points: pts('expected') });
+  });
+  if (series.length) linesAt(host, series, Object.assign({ height: 290, padR: 130 }, o));
+}
+const EV_MODES = [['obs', 'Observed'], ['exp', 'Observed + expected'], ['adj', 'Adjusted']];
+const EV_MODE_CAP = '<b>Observed</b>: the raw rate at each position. <b>Observed + expected</b>: the dashed hollow line is '
+  + 'the rate a model predicts for exactly those decisions from what they were (drones, tasks and drone types the mission '
+  + 'needed), when (minute of session, game) and who made them (each person’s rate on their other decisions) — a dot that '
+  + 'jumps with its dashed partner was made of easy or hard missions, or of different people, not of a change in trust. '
+  + '<b>Adjusted</b>: observed minus expected, put back on the overall level — what is left once mission, time and person '
+  + 'are accounted for. Hover any dot for what it is made of.';
+
+/* Differences in percentage points with 95% CIs, one row each; rows with {head} are group headings. */
+function diffForest(host, rows, o = {}) {
+  const W = 700, rowH = 28, padL = o.padL || 300, padR = 74, padT = 14;
+  const H = padT + rows.length * rowH + 36;
+  const s = svgRoot(host, W, H);
+  const lim = o.lim || Math.max(0.1, ...rows.filter(r => !r.head).flatMap(r => [Math.abs(r.lo), Math.abs(r.hi)])) * 1.1;
+  const x = v => padL + (W - padL - padR) * (v + lim) / (2 * lim);
+  const base = padT + rows.length * rowH;
+  [-lim, -lim / 2, 0, lim / 2, lim].forEach(v => {
+    el('line', { x1: x(v), x2: x(v), y1: padT - 4, y2: base, stroke: v === 0 ? css('--ink-3') : css('--grid'),
+                 'stroke-width': v === 0 ? 1.5 : 1 }, s);
+    el('text', { x: x(v), y: base + 15, 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 10.5,
+                 'font-family': css('--mono') }, s).textContent = (v > 0 ? '+' : '') + (100 * v).toFixed(0);
+  });
+  el('text', { x: x(0), y: base + 30, 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 10.5 }, s)
+    .textContent = o.xLabel || 'change after, percentage points';
+  rows.forEach((r, i) => {
+    const y = padT + i * rowH + rowH / 2;
+    if (r.head) {
+      el('text', { x: 8, y: y + 4, fill: css('--ink'), 'font-size': 12, 'font-weight': 600 }, s).textContent = r.head;
+      return;
+    }
+    el('text', { x: padL - 10, y: y + 4, 'text-anchor': 'end', fill: css('--ink-2'), 'font-size': 12 }, s).textContent = r.label;
+    const col = r.p < 0.05 ? (r.color || css('--mark')) : css('--mark-soft');
+    el('line', { x1: x(Math.max(-lim, r.lo)), x2: x(Math.min(lim, r.hi)), y1: y, y2: y, stroke: col, 'stroke-width': 2,
+                 'stroke-linecap': 'round' }, s);
+    el('circle', { cx: x(r.est), cy: y, r: 4.5, fill: col, stroke: css('--surface'), 'stroke-width': 2 }, s);
+    el('text', { x: W - padR + 8, y: y + 4, fill: pColour(r.p), 'font-weight': r.p < 0.10 ? 600 : 400, 'font-size': 11,
+                 'font-family': css('--mono') }, s).textContent = pval(r.p);
+    const hit = el('rect', { x: padL, y: y - rowH / 2, width: W - padL - padR, height: rowH, fill: 'transparent' }, s);
+    hoverable(hit, `<b>${r.label}</b><br>${sgn(100 * r.est, 1)} points [${sgn(100 * r.lo, 1)}, ${sgn(100 * r.hi, 1)}] · ${pval(r.p)}`
+      + (r.sub ? '<br>' + r.sub : ''));
+  });
+}
+
+/* Observed value against a null distribution, one row per measure, each row on its own scale.
+   rows: {label, obs, a: {mean, lo, hi, pAbove}, b: {...} (optional second null), fmt} */
+function nullStrip(host, rows, o = {}) {
+  const W = 700, rowH = 40, padL = o.padL || 260, padR = 86, padT = 8;
+  const H = padT + rows.length * rowH + 8;
+  const s = svgRoot(host, W, H);
+  rows.forEach((r, i) => {
+    const y = padT + i * rowH + rowH / 2;
+    const vals = [r.obs, r.a.lo, r.a.hi, ...(r.b ? [r.b.lo, r.b.hi] : [])];
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = (hi - lo) * 0.08 || 0.05; lo -= pad; hi += pad;
+    const x = v => padL + (W - padL - padR) * (v - lo) / (hi - lo);
+    el('text', { x: padL - 10, y: y + 4, 'text-anchor': 'end', fill: css('--ink-2'), 'font-size': 12 }, s).textContent = r.label;
+    el('rect', { x: x(r.a.lo), y: y - 7, width: Math.max(2, x(r.a.hi) - x(r.a.lo)), height: 9, rx: 3, fill: css('--mark-soft') }, s);
+    el('line', { x1: x(r.a.mean), x2: x(r.a.mean), y1: y - 9, y2: y + 4, stroke: css('--ink-3'), 'stroke-width': 1.5 }, s);
+    if (r.b) el('rect', { x: x(r.b.lo), y: y + 6, width: Math.max(2, x(r.b.hi) - x(r.b.lo)), height: 4, rx: 2,
+                          fill: css('--s-tac'), opacity: .55 }, s);
+    el('circle', { cx: x(r.obs), cy: y - 2.5, r: 5.5, fill: css('--s-strat'), stroke: css('--surface'), 'stroke-width': 2 }, s);
+    el('text', { x: W - padR + 8, y: y + 4, fill: pColour(r.a.pAbove), 'font-size': 11, 'font-family': css('--mono'),
+                 'font-weight': r.a.pAbove < 0.10 ? 600 : 400 }, s).textContent = pval(r.a.pAbove);
+    const hit = el('rect', { x: padL, y: y - rowH / 2, width: W - padL - padR, height: rowH, fill: 'transparent' }, s);
+    hoverable(hit, `<b>${r.label}</b><br>observed <b>${r.fmt(r.obs)}</b><br>no types, same habits and stability: `
+      + `${r.fmt(r.a.mean)} on average, 95% of simulations ${r.fmt(r.a.lo)}–${r.fmt(r.a.hi)}; observed this high or higher `
+      + `${pval(r.a.pAbove)}` + (r.b ? `<br>habits shuffled between people: ${r.fmt(r.b.mean)} (${r.fmt(r.b.lo)}–${r.fmt(r.b.hi)}), ${pval(r.b.pAbove)}` : ''));
   });
 }
 

@@ -76,6 +76,14 @@ waypoint).
 
 **What the study build actually does, and every decision behind it, is [`docs/STUDY_BUILD.md`](docs/STUDY_BUILD.md)** (currently `study-v1.13` — the doc has one numbered section per build version, and the version matches the `appVersion` in every session's `session_start`). Read it before answering any "was X on when we collected that data?" question, and add a section + a new tag whenever one of those decisions changes.
 
+**Analysis is in a researcher-led review loop** (from 2026-10-08): every finding is a card in
+[`docs/analysis/register/cards.yaml`](docs/analysis/register/cards.yaml), reviewed by the researcher in passes on
+`Results/findings_review.html` (double-click `scripts/register/review.bat`). Before any analysis work, read the
+**Status** block in [`docs/analysis/register/README.md`](docs/analysis/register/README.md) — it says which pass
+is open and what Claude does next. The combined findings page is `Results/findings_combined.html`
+(`scripts/build_findings_synthesis.py`; follow-ups in `scripts/analysis_combined/`). On a machine without
+`Results/Narration/*/quotes.json` the build carries quotes over from the previously built page — never delete it first.
+
 ## Tech Stack
 
 - **React 18 + Vite 5 + TypeScript** — SPA, no backend

@@ -1,0 +1,1281 @@
+# Findings register — the source of truth for the review page (Results/findings_review.html).
+#
+# One card per distinct claim. Duplicates across rounds are merged into one card; `lineage` records
+# every round-1 hypothesis (H*), round-2 finding (R2-*), combined-page theme (T*) or follow-up
+# (extras / extras2) it absorbed, so nothing is dropped silently.
+#
+# Fields
+#   id          stable slug; links and responses key on it -- never rename, retire instead (status)
+#   group       review area (order of first appearance = order on the page)
+#   kind        finding | null | qual | observation | method
+#   title       the claim in a few words
+#   claim       one to three sentences, plain
+#   numbers     the figures that carry it
+#   confidence  strong | moderate | suggestive | null | n/a   (the analysis' own label, not yours)
+#   lineage     where it came from
+#   sources     scripts / docs that hold the detail
+#   chart       key of a chart drawn on the page from the combined payload (scripts/register/review_template.html)
+#   codes       qualitative codes whose evidence excerpts the card shows
+#   links       suggested links to other cards, each with a reason -- yours are recorded separately
+#   thoughts    Claude's reading: what it might mean, doubts, what would strengthen or kill it
+#   status      active (default) | merged:<id> | retired  -- set between passes, never delete a card
+#
+# Built 2026-10-08 from rounds 1-2, the qualitative coding and the combined-page follow-ups.
+
+pass: 1
+
+cards:
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Who the operator is
+  id: style-trait
+  kind: finding
+  title: "Reliance is a stable personal trait"
+  claim: "How much an operator takes the assistants' advice is mostly about who they are. Each person's card uptake carries over from session 1 to session 2 even though the scenario changes."
+  numbers:
+    - Card uptake ranges 8%–100% across operators
+    - Session 1 vs 2 ρ = .64
+    - Person explains ~24% of whether a card is taken; mission, scenario and timing together ~4%
+  confidence: strong
+  lineage: [H1, T1, round 1 trait]
+  sources: [scripts/analysis_round1/h1_archetypes.py, docs/analysis/round1/h1_archetypes.md]
+  chart: uptakeSlopes
+  links:
+    - {to: style-axis, why: 'the trait is one axis spanning three tiers'}
+    - {to: style-fingerprint, why: 'there is more to style than this one number'}
+    - {to: style-disposition-null, why: 'and nothing measured beforehand predicts it'}
+    - {to: learn-calibration-null, why: 'practice does not move it either'}
+  thoughts: "The single most robust result. Worth asking what a 24% person share means against the literature on automation reliance — it is large. The open question is what the trait IS (a speed preference? a verification habit? confidence?), since dispositions do not predict it."
+
+- group: Who the operator is
+  id: style-axis
+  kind: finding
+  title: "One reliance axis spans all three tiers"
+  claim: "Taking strategy cards, previewing them, pressing Suggest on tactical plans and in recovery all load on a single direction; going manual early and deliberating longer load against it."
+  numbers:
+    - PC1 = 31% of variation between sessions
+    - Loadings — took card .92, previewed .88, consulted tactical .62, recovery Suggest .46, manual before cards −.34, decision time −.48
+    - PC1 session 1 vs 2 ρ = .65
+  confidence: strong
+  lineage: [H1, round 1 trait]
+  sources: [scripts/analysis_round1/h1_archetypes.py]
+  chart: pcLoadings
+  links:
+    - {to: style-trait, why: 'the axis is the trait'}
+    - {to: rec-low-reliance-attempt, why: 'recovery attempts follow the same axis'}
+    - {to: tier-trust-gap, why: 'strategic and tactical reliance are only loosely linked despite one axis'}
+  thoughts: "Strategic and tactical reliance share an axis but the habit correlations between them are loose (theme 1 view 2). A paper could frame this as \"general reliance\" vs \"tier-specific reliance\"."
+
+- group: Who the operator is
+  id: style-types-null
+  kind: 'null'
+  title: "No distinct operator types (clustering)"
+  claim: "Behaviour does not fall into groups. One group fits about as well as two, and groupings found in session 1 do not recur in session 2."
+  numbers:
+    - ΔBIC 1.9 for two groups (needed > 10)
+    - Group stability Jaccard .76 / .47
+    - Session 1 vs 2 grouping agreement ARI .04
+  confidence: 'null'
+  lineage: [H1]
+  sources: [docs/analysis/round1/h1_archetypes.md]
+  chart: h1Tiles
+  links:
+    - {to: style-archetypes, why: 'archetypes were the gentler attempt at types'}
+    - {to: style-fingerprint, why: 'individuals are distinct even though groups are not'}
+  thoughts: "A clean, publishable null. Pairs naturally with the fingerprint result — \"individuals, not types\"."
+
+- group: Who the operator is
+  id: style-fingerprint
+  kind: finding
+  title: "A personal style beyond reliance (fingerprint)"
+  claim: "From ten habits alone, an operator's session-1 profile picks out their own session 2 among 33 far more often than chance — and still does with the reliance axis removed."
+  numbers:
+    - Nearest match is the same person 7 of 33 (5 the other way); chance ≈ 1; p < .001
+    - Reliance axis removed — 6 of 33, p < .001
+    - Reliance alone — 4 of 33
+  confidence: moderate
+  lineage: [T1, extras fingerprint]
+  sources: [scripts/analysis_combined/extras.py]
+  chart: fingerprintRanks
+  links:
+    - {to: style-retest, why: 'which habits carry the fingerprint'}
+    - {to: style-types-null, why: 'distinct individuals without types'}
+  thoughts: "Exploratory and post hoc, but the permutation test is clean. 7/33 is still mostly \"near neighbour\", not identification. Would strengthen with a third session."
+
+- group: Who the operator is
+  id: style-retest
+  kind: finding
+  title: "Which habits are stable session to session"
+  claim: "Per-habit test–retest correlations, game-adjusted. The strongest habits separate operators into reliable high and low from one 8-minute session, roughly three levels from two sessions."
+  numbers:
+    - See chart for ρ per habit with bootstrap intervals; Holm-corrected survivors listed on the combined page
+  confidence: moderate
+  lineage: [extras fingerprint retest]
+  sources: [scripts/analysis_combined/extras.py]
+  chart: retestBars
+  links:
+    - {to: style-preempt-trait, why: 'pre-empting is one of the stable habits'}
+    - {to: style-fingerprint, why: 'these habits make up the fingerprint'}
+  thoughts: "Useful as a measurement result in its own right — which logged behaviours are trait-like enough to use as individual-difference measures in future studies."
+
+- group: Who the operator is
+  id: style-archetypes
+  kind: 'null'
+  title: "Three archetypes — names for directions, not types"
+  claim: "Archetypal analysis finds three extreme styles (Delegator, Deliberate builder, Fast tinkerer), but a simulated continuum with the same habits, correlations and stability produces the same amount of \"type-ness\". Only the shape of the two clearest profiles reproduces across sessions better than the continuum."
+  numbers:
+    - Variation explained 46% vs continuum 50% (p = .83)
+    - Near-pure members 11 vs 11; same archetype both sessions 61% vs 53% (p = .32)
+    - Profile reproducibility r .96 / .88 vs .73 / .56 (p .01 / .015; not Holm-surviving)
+    - Archetype shares predicted by PC1 + PC2 at R² .86–.96
+  confidence: 'null'
+  lineage: [T1, extras types, extras2 archNull]
+  sources: [scripts/analysis_combined/extras.py, scripts/analysis_combined/extras2.py]
+  chart: archNull
+  links:
+    - {to: style-types-null, why: 'same conclusion by a different route'}
+    - {to: style-axis, why: 'archetypes are re-descriptions of PC1 + PC2'}
+  thoughts: "Probably a figure-worthy illustration but not a finding. If kept, present the two axes (reliance; override vs accept) and use the archetype names only as labels for their ends."
+
+- group: Who the operator is
+  id: style-preempt-trait
+  kind: finding
+  title: "Deciding before the cards load is a personal trait"
+  claim: "Whether someone goes manual before the strategy cards have loaded is mostly about who they are."
+  numbers:
+    - Session 1 vs 2 ρ = .56
+    - About a quarter of the variation belongs to the person, ~5% to the mission
+    - 15 of 33 never did it; 47% of all manual choices were pre-emptive
+  confidence: strong
+  lineage: [R2-1, F4.3]
+  sources: [scripts/analysis_round2/wF_cards.py]
+  chart: preemptBars
+  links:
+    - {to: manual-preempt, why: 'the same behaviour seen as part of "manual"'}
+    - {to: style-trait, why: 'a component of the reliance trait'}
+  thoughts: "Survived round 2's false-discovery correction (q = .035). Pre-empting is the clearest \"I don't wait for advice\" behaviour; worth asking whether it reflects speed-seeking or distrust — single-type missions dominate it."
+
+- group: Who the operator is
+  id: style-disposition-null
+  kind: 'null'
+  title: "Attitudes to AI and experience do not predict reliance"
+  claim: "Forty tests of AI attitude (AIAS-4), verification propensity, delegation views and prior experience against reliance and trust — none survives correction."
+  numbers:
+    - AIAS-4 OR 0.80 per SD for card-taking [0.50, 1.27]; detectable only at OR ≈ 2
+    - 0 of 40 tests survive Holm; 3 nominal
+    - AIAS-4 averages 8.0 / 10 — a ceiling
+  confidence: 'null'
+  lineage: [H7, T1, synthesis disposition]
+  sources: [docs/analysis/round1/h7_disposition.md]
+  chart: dispositionTiles
+  links:
+    - {to: style-trait, why: 'the trait exists but is not predicted by self-report'}
+    - {to: ask-views-null, why: 'stated views about AI authority also predict nothing'}
+  thoughts: "A sample problem as much as a finding — almost no AI sceptics, nearly all STEM. Frame as \"within an AI-positive sample, disposition does not explain the large individual differences\"."
+
+- group: Who the operator is
+  id: style-trust-link
+  kind: finding
+  title: "Reliance tracks trust between people, not within"
+  claim: "Operators who rely more report higher strategic trust, but a person's trust going up or down between sessions does not go with their reliance changing."
+  numbers:
+    - Reliance trait vs strategic trust ρ = .54 between people
+    - Within person — no link; tactical trust likewise tracks behaviour between people only
+  confidence: moderate
+  lineage: [H1, R2 D nulls]
+  sources: [docs/analysis/round2/wD_trust.md]
+  chart: null
+  links:
+    - {to: trust-not-lead, why: 'same decoupling seen from the trust side'}
+    - {to: pay-between-within, why: 'the same between-vs-within split as performance'}
+  thoughts: "The between/within split recurs (trust, performance). Possibly a general point for the paper — trait-level associations that do not hold as states."
+
+- group: Who the operator is
+  id: q-C01
+  kind: qual
+  title: "Said: a consistent personal strategy"
+  claim: "Operators described a strategy of their own that governed how they used the assistants."
+  numbers:
+    - "15 of 33, all unprompted"
+  confidence: n/a
+  lineage: [qual C01, T1]
+  codes: [C01]
+  chart: codeWho
+  links:
+    - {to: style-trait, why: 'the behavioural trait they are describing'}
+  thoughts: "Those who said this take fewer cards (53% vs 77%, p = .007) — a \"strategy\" is more often a hand-building strategy."
+
+- group: Who the operator is
+  id: q-C02
+  kind: qual
+  title: "Said: wants control for its own sake"
+  claim: "Wanting to do it themselves, as a value rather than a judgement about the assistant."
+  numbers:
+    - "1 of 33 (P11)"
+  confidence: n/a
+  lineage: [qual C02]
+  codes: [C02]
+  chart: codeWho
+  links:
+    - {to: manual-not-rejection, why: 'control is rarely the reason for going manual'}
+  thoughts: "Its rarity is the point — candidates for pruning as a standalone card, keep as a line under \"manual is not rejection\"."
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Job size and speed
+  id: size-decides
+  kind: finding
+  title: "Job size decides when to hand over, on both tiers"
+  claim: "Within a person, small jobs are done by hand and big ones go to the assistant. The apparent scenario difference is this in disguise — Strategic Heavy serves more small missions."
+  numbers:
+    - Card taken on 52% of single-type vs 72% of three-type missions
+    - Each extra drone type ×1.63 odds (within person); three-type OR 1.84
+    - Tactical Suggest ×2.57 per ~2.7-fold increase in plan size (p < .0001)
+  confidence: strong
+  lineage: [R2-2, T2, H9 exploratory]
+  sources: [scripts/analysis_round2/wB_load.py]
+  chart: sizeUptake
+  links:
+    - {to: speed-big-jobs, why: 'the rule matches where the assistant saves time'}
+    - {to: q-C03, why: 'operators state this rule'}
+    - {to: learn-calibration-null, why: 'the rule does not sharpen with practice'}
+    - {to: load-pick-small, why: 'under a long queue operators pick small jobs — which they do by hand'}
+  thoughts: "The clearest place where words and logs line up. Could anchor the paper: reliance is a sensible, size-based rule applied with a personal threshold (style-trait)."
+
+- group: Job size and speed
+  id: speed-big-jobs
+  kind: finding
+  title: "The assistant is faster — but only on big jobs"
+  claim: "Taking a card is much faster than building by hand on three-type missions and not on single-type ones, where deciding before the cards load is quickest."
+  numbers:
+    - Card saves ~7.2 s net of the forced reveal on three-type missions only (card × three-type interaction)
+    - Median decision 16.7 s manual vs ~11 s card on three-type; ~10 s either way on single-type
+  confidence: strong
+  lineage: [R2-3, H9 exploratory, T3]
+  sources: [scripts/analysis_round2/wC_analysis.py]
+  chart: timingBars
+  links:
+    - {to: size-decides, why: 'explains why the size rule is sensible'}
+    - {to: q-C04, why: 'speed is what operators value'}
+    - {to: q-C06, why: 'and some found it slow — on small jobs'}
+  thoughts: "Strongest statistic in round 2. Makes the assistant's value a time/throughput story, which connects to the payoff results."
+
+- group: Job size and speed
+  id: speed-parallel
+  kind: finding
+  title: "Suggest lets operators work in parallel"
+  claim: "A kept Suggest plan is faster than building by hand, and Suggest users start the next mission while a plan fills in."
+  numbers:
+    - Kept Suggest plan ~16% faster than hand-building
+    - Suggest users 4.8× more likely to start the next mission during the fill
+  confidence: moderate
+  lineage: [H9 exploratory, T3]
+  sources: [docs/analysis/round1/h9_workload_speed.md]
+  chart: null
+  links:
+    - {to: q-C05, why: 'operators describe doing this'}
+    - {to: pay-throughput, why: 'parallel work is the mechanism for throughput'}
+  thoughts: "Exploratory in round 1, not re-tested in round 2. A mechanism worth one confirmatory analysis if it is going in the paper."
+
+- group: Job size and speed
+  id: q-C03
+  kind: qual
+  title: "Said: small jobs myself, big jobs to the assistant"
+  claim: "Operators stated the job-size rule in their own words."
+  numbers:
+    - "10 of 33, all unprompted"
+  confidence: n/a
+  lineage: [qual C03, T2]
+  codes: [C03]
+  chart: codeWho
+  links:
+    - {to: size-decides, why: 'the behaviour matches'}
+  thoughts: "They press Suggest less overall (61% vs 82%, p = .004) — the people who articulate the rule apply it to the tactical tier too."
+
+- group: Job size and speed
+  id: q-C04
+  kind: qual
+  title: "Said: values the assistant for speed"
+  claim: "The assistant's value is speed rather than accuracy."
+  numbers:
+    - "15 of 33, 13 unprompted"
+  confidence: n/a
+  lineage: [qual C04, T3]
+  codes: [C04]
+  chart: codeWho
+  links:
+    - {to: speed-big-jobs, why: 'they are right — on big jobs'}
+  thoughts: "The most common reason given for using the assistant."
+
+- group: Job size and speed
+  id: q-C05
+  kind: qual
+  title: "Said: works in parallel while it runs"
+  claim: "Using the assistant's time to work on something else."
+  numbers:
+    - "8 of 33, 7 unprompted"
+  confidence: n/a
+  lineage: [qual C05, T3]
+  codes: [C05]
+  chart: codeWho
+  links:
+    - {to: speed-parallel, why: 'the logged behaviour'}
+  thoughts: null
+
+- group: Job size and speed
+  id: q-C06
+  kind: qual
+  title: "Said: finds the assistant slow"
+  claim: "Complaints that the forced waits cost time."
+  numbers:
+    - "6 of 33"
+  confidence: n/a
+  lineage: [qual C06, T3]
+  codes: [C06]
+  chart: codeWho
+  links:
+    - {to: speed-big-jobs, why: 'true on small jobs, where the wait costs more than it saves'}
+  thoughts: "A design point about forced reveal delays more than a finding."
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Load and queues
+  id: load-null
+  kind: 'null'
+  title: "Momentary workload does not push people onto the assistant"
+  claim: "A fuller queue at the moment of decision does not raise card-taking — a well-powered null that holds across ~20 load measures, the final 90 s, the tactical tier, and moments of spoken overload."
+  numbers:
+    - OR 1.04 per extra queued mission [0.94, 1.14]; could detect ×1.14
+    - Five other load measures, ORs 0.93–1.10; queue × plan size OR 0.99
+    - Spoken overload — queue no higher than at random speech (p = .87)
+  confidence: 'null'
+  lineage: [H9, R2 B, T4]
+  sources: [docs/analysis/round1/h9_workload_speed.md, docs/analysis/round2/wB_load.md]
+  chart: queueBins
+  links:
+    - {to: q-C11, why: 'the account operators give says the opposite'}
+    - {to: load-pick-small, why: 'what busy operators do instead'}
+    - {to: size-decides, why: 'job size is the likely real driver'}
+  thoughts: "One of the paper's strongest messages may be this null set against the debrief account. Make sure the power statement travels with it."
+
+- group: Load and queues
+  id: load-backlog-practice
+  kind: method
+  title: "Suggest rising with backlog is practice, not pressure"
+  claim: "Tactical Suggest use rises when a strategic backlog is waiting, but not once time in the session is held fixed."
+  numbers:
+    - "OR 1.20 (q = .04) → q = .33 with time-in-session"
+  confidence: 'null'
+  lineage: [R2 B note]
+  sources: [docs/analysis/round2/wB_load.md]
+  chart: null
+  links:
+    - {to: learn-speed, why: 'practice is the confound'}
+    - {to: load-null, why: 'removes the one apparent exception'}
+  thoughts: "A methods point — any load measure correlated with time-in-session needs time held fixed."
+
+- group: Load and queues
+  id: load-deep-queue
+  kind: 'null'
+  title: "Deep queues (4+ waiting) do not raise reliance either"
+  claim: "17% of strategic decisions were made with four or more other missions waiting, by 25 of 33 operators. Comparing each operator with themselves, a deep queue raises reliance on neither tier; between people the sign flips (manual operators accumulate their own queues)."
+  numbers:
+    - Strategic within-person OR 1.13 [0.69, 1.86] p = .62; tactical 1.38 [0.79, 2.40] p = .26
+    - Between people — less reliance with more deep-queue time (strategic p = .068, tactical p = .010)
+  confidence: 'null'
+  lineage: [extras deepQueue, T4]
+  sources: [scripts/analysis_combined/extras.py]
+  chart: null
+  links:
+    - {to: load-null, why: 'the same null at the extreme'}
+    - {to: load-pick-small, why: 'the raw dip is explained by what gets picked'}
+  thoughts: "The between-person reversal is a nice illustration of why within-person tests matter here."
+
+- group: Load and queues
+  id: load-visible
+  kind: observation
+  title: "What the operator can see of the queue"
+  claim: "The queue column shows three full cards (four in a taller window). While a strategic decision is open, the strategy panel expands inside that column and leaves at most one other waiting mission visible; the map still shows all of them."
+  numbers:
+    - "Read off recordings P19, P30"
+  confidence: n/a
+  lineage: [extras2 theme 4]
+  sources: [Results/img/queue_at_rest.jpg, Results/img/queue_decision_open.jpg]
+  chart: queueImages
+  links:
+    - {to: load-pick-small, why: 'beyond what the list shows, operators pick off the map'}
+    - {to: load-null, why: 'no effect even past the visible limit (hinge model)'}
+  thoughts: "An interface detail with a design implication — the decision panel hides the backlog at the moment of decision. Possibly why queue length has so little effect."
+
+- group: Load and queues
+  id: load-pick-small
+  kind: finding
+  title: "Busy operators change what they work on, not how"
+  claim: "With more than three missions waiting, operators stop working in order and pick smaller missions, often by hand before the cards load. That makes raw card uptake fall as queues lengthen; holding mission, time and person fixed, the queue has no effect."
+  numbers:
+    - Open the oldest waiting mission 32% (vs 71%); one in the top 3 of the list 54% (vs 97%)
+    - Opened mission needs 7.2 drones (vs 8.7); decided before cards load 25% (vs 14%)
+    - Adjusted uptake 59–74% across queue depths with no trend; within-person queue OR ~1.0 in every model
+  confidence: moderate
+  lineage: [extras2 deepQueue2, T4]
+  sources: [scripts/analysis_combined/extras2.py]
+  chart: queuePick
+  links:
+    - {to: size-decides, why: 'they pick the jobs they do by hand anyway'}
+    - {to: load-visible, why: 'picking beyond the list happens off the map'}
+    - {to: style-preempt-trait, why: 'pre-empting rises with long queues'}
+  thoughts: "Exploratory (asked after seeing the raw dip). A clean story, but the \"picking\" mechanism would need a confirmatory test — e.g. do operators preferentially open single-type missions when the queue is long, against what was waiting?"
+
+- group: Load and queues
+  id: q-C11
+  kind: qual
+  title: "Said: hands over when overloaded"
+  claim: "Operators said they lean on the assistant more when busy, overwhelmed or rushed."
+  numbers:
+    - "9 of 33, all unprompted"
+  confidence: n/a
+  lineage: [qual C11, T4]
+  codes: [C11]
+  chart: codeWho
+  links:
+    - {to: load-null, why: 'the logs do not show it'}
+    - {to: size-decides, why: 'likely reconciliation — busy sessions are big-mission sessions'}
+  thoughts: "The main place where what people say and what they do disagree. Valuable as a disagreement."
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Manual and the cards
+  id: manual-preempt
+  kind: finding
+  title: "About half of \"manual\" is decided before the advice exists"
+  claim: "47% of manual allocations are made before the strategy cards have loaded — they cannot be a rejection of advice the operator has not seen. Pre-empting is concentrated on single-type missions."
+  numbers:
+    - 47% of 207 manual choices pre-emptive; 57% on single-type missions vs 37% on three-type
+  confidence: strong
+  lineage: [T5, synthesis preemption]
+  sources: [scripts/build_findings_synthesis.py]
+  chart: preemptBars
+  links:
+    - {to: style-preempt-trait, why: 'a stable personal habit'}
+    - {to: manual-anchored, why: 'the other half sits around the cards'}
+  thoughts: "Methodologically important for anyone using \"manual\" as a distrust measure."
+
+- group: Manual and the cards
+  id: manual-anchored
+  kind: finding
+  title: "Manual allocations sit around the cards, trimmed or padded by size"
+  claim: "Manual choices fall between or just below the two cards, not away from them. Operators trim drones on small missions and add them on large ones."
+  numbers:
+    - 48% between the two cards, 44% below both, 8% above both
+    - Drones vs Conservative card — small −1.3, mid 0, large +1.0
+    - Manual tracks card numbers +0.76 drones per card drone (session 2 and one order only)
+  confidence: strong
+  lineage: [T5, R2 F notes]
+  sources: [scripts/build_findings_synthesis.py, docs/analysis/round2/wF_cards.md]
+  chart: manualDelta
+  links:
+    - {to: q-C07, why: 'trimming small missions is reserve-keeping'}
+    - {to: q-C08, why: 'between-the-cards is wanting a middle ground'}
+    - {to: q-C09, why: 'cards as a first draft'}
+  thoughts: "Anchoring is the obvious frame. The \"only session 2, one order\" caveat on the anchoring slope matters."
+
+- group: Manual and the cards
+  id: manual-not-rejection
+  kind: finding
+  title: '"Manual" is mostly not a rejection of the advice'
+  claim: "Combining the two above with what operators say — reserve-keeping, wanting something in between, editing a card as a first draft — a reliance measure that scores Manual as distrust misreads most of it."
+  numbers:
+    - "See the two cards above and codes C07–C10"
+  confidence: strong
+  lineage: [T5]
+  sources: [Results/findings_combined.html theme 5]
+  chart: null
+  links:
+    - {to: manual-preempt, why: 'half is before the advice'}
+    - {to: manual-anchored, why: 'the rest is anchored on it'}
+  thoughts: "A synthesis card — it could be the headline and the two above its evidence, or merged with them."
+
+- group: Manual and the cards
+  id: manual-card-error
+  kind: finding
+  title: "People who mention a card error go manual more on single-type missions"
+  claim: "Operators who named a specific card error in the debrief went manual more on single-type missions — the ones where the illogical card appears."
+  numbers:
+    - "OR 2.72 [1.02, 7.30], p = .046 — between people, not significant after correction"
+  confidence: suggestive
+  lineage: [R2 E note]
+  sources: [docs/analysis/round2/wE_stated.md]
+  chart: null
+  links:
+    - {to: flaw-odd-card, why: 'the only trace of the illogical card in behaviour'}
+    - {to: q-C12, why: 'the same people'}
+  thoughts: "If anything connects noticing the flaw to behaviour, this is it — but between people, so it could be that hand-builders notice more."
+
+- group: Manual and the cards
+  id: cards-dominated-null
+  kind: 'null'
+  title: "Operators do not avoid the weaker card, and rarely compare both"
+  claim: "On three-type missions operators do not avoid a dominated Conservative card, and almost never preview both cards."
+  numbers:
+    - "Dominated card OR 1.10; both cards previewed in 19 of 606 decisions; 22% of cards carry the illogical extra type"
+  confidence: 'null'
+  lineage: [R2 F nulls, R2 G nulls]
+  sources: [docs/analysis/round2/wF_cards.md]
+  chart: null
+  links:
+    - {to: learn-calibration-null, why: 'and they do not learn to'}
+    - {to: tier-flaw-visibility, why: 'strategic flaws are visible yet not acted on'}
+  thoughts: "Card choice looks heuristic (Aggressive/Conservative label, not content)."
+
+- group: Manual and the cards
+  id: q-C07
+  kind: qual
+  title: "Said: holds drones in reserve"
+  claim: "Keeping drones back for later missions."
+  numbers:
+    - "6 of 33"
+  confidence: n/a
+  lineage: [qual C07, T5]
+  codes: [C07]
+  chart: codeWho
+  links: [{to: manual-anchored, why: 'trimming on small missions'}]
+  thoughts: null
+
+- group: Manual and the cards
+  id: q-C08
+  kind: qual
+  title: "Said: wanted a middle ground / more options"
+  claim: "Wanting something between the two cards, or more than two options."
+  numbers:
+    - "6 of 33"
+  confidence: n/a
+  lineage: [qual C08, T5, T12]
+  codes: [C08]
+  chart: codeWho
+  links: [{to: manual-anchored, why: 'between-the-cards placements'}, {to: ask-wants, why: 'also a design request'}]
+  thoughts: null
+
+- group: Manual and the cards
+  id: q-C09
+  kind: qual
+  title: "Said: edits the card as a first draft"
+  claim: "Treating a card as a starting point."
+  numbers:
+    - "4 of 33, 3 unprompted"
+  confidence: n/a
+  lineage: [qual C09, T5]
+  codes: [C09]
+  chart: codeWho
+  links: [{to: manual-anchored, why: 'edits trim over-provided types (OR 3.4, 10 people)'}]
+  thoughts: null
+
+- group: Manual and the cards
+  id: q-C10
+  kind: qual
+  title: "Said: tested the assistant against themselves"
+  claim: "Deliberately building by hand to compare with the assistant."
+  numbers:
+    - "5 of 33"
+  confidence: n/a
+  lineage: [qual C10, T5]
+  codes: [C10]
+  chart: codeWho
+  links: [{to: manual-not-rejection, why: 'manual as an experiment'}]
+  thoughts: "They decide slower (20 s vs 12.6 s, p = .04) — consistent with genuinely comparing."
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Trust and the two tiers
+  id: tier-trust-gap
+  kind: finding
+  title: "The tactical assistant is trusted more"
+  claim: "Reported trust is higher for the tactical assistant, and operators consult and keep its plans most of the time."
+  numbers:
+    - Trust 5.44 vs 4.61 (1–7); 26 of 33 higher for tactical; p = .001, dz .62
+    - Tactical plan consulted on 76% of plans, kept unmodified on 72%
+  confidence: moderate
+  lineage: [T6, synthesis selfreport]
+  sources: [scripts/build_findings_synthesis.py]
+  chart: trustGap
+  links:
+    - {to: tier-flaw-visibility, why: 'not like-for-like'}
+    - {to: tier-preference, why: 'the stated preference agrees'}
+    - {to: tier-checking-cost, why: 'proposed mechanism'}
+  thoughts: "Robust as a description; the interpretation is the issue — the tiers differ in flaw visibility and checking cost, not only in level."
+
+- group: Trust and the two tiers
+  id: tier-preference
+  kind: finding
+  title: "Stated preference is for the tactical assistant"
+  claim: "In their own words, more operators prefer the tactical assistant. The coding is not yet reliable enough to claim."
+  numbers:
+    - 17 prefer tactical vs 7 strategic (4 conditional, 3 both, 2 none); sign test p = .035–.064
+    - Coder agreement κ = .27 (needed ≥ .6) in round 1; round 2 κ .96 but same AI model
+  confidence: suggestive
+  lineage: [H6, R2 E, T6]
+  sources: [docs/analysis/round1/h6_stated_preference.md, docs/analysis/round2/wE_stated.md]
+  chart: preferenceBars
+  links:
+    - {to: tier-trust-gap, why: 'agrees with the ratings'}
+    - {to: meth-qual-coder, why: 'needs a human second coder'}
+  thoughts: "Direction consistent across all codings; reliability is the blocker."
+
+- group: Trust and the two tiers
+  id: tier-flaw-visibility
+  kind: finding
+  title: "Strategic flaws are visible; tactical flaws are hidden"
+  claim: "The two tiers are not compared like-for-like. The strategic cards' simple rules visibly over-allocate; the tactical plans' flaws are hard to see."
+  numbers:
+    - 12 of 33 noticed the strategic over-allocation; 3 of 33 noticed any tactical flaw
+    - Illogical card on 22% of strategic decisions
+  confidence: moderate
+  lineage: [T6, qual C12/C13]
+  sources: [Results/findings_combined.html theme 6]
+  chart: null
+  links:
+    - {to: q-C12, why: 'who noticed'}
+    - {to: q-C13, why: 'tactical flaws noticed'}
+    - {to: flaw-odd-card, why: 'noticing it changed nothing lasting'}
+  thoughts: "Could reframe the tier gap as a visibility gap — an argument the paper could make carefully."
+
+- group: Trust and the two tiers
+  id: tier-checking-cost
+  kind: 'null'
+  title: "Checking cost as the reason the tactical plan is kept (H2)"
+  claim: "Keeping the tactical plan rises with plan size and checking per drone falls — all predicted parts in the right direction — but the test does not survive small-sample correction and is fragile to definitions."
+  numbers:
+    - Keeping vs plan size OR 1.76; p = .065 corrected (.019 uncorrected); adjusted .52
+    - Passes uncorrected on the v1.12+ cohort (p = .023)
+  confidence: 'null'
+  lineage: [H2, T7]
+  sources: [docs/analysis/round1/h2_verification_cost.md]
+  chart: null
+  links:
+    - {to: q-C17, why: 'operators describe exactly this'}
+    - {to: tier-trust-gap, why: 'the proposed mechanism for the gap'}
+  thoughts: "Probably real but small; logs cannot measure checking. A design for a future study (eye tracking, or a plan summary)."
+
+- group: Trust and the two tiers
+  id: trust-drop
+  kind: finding
+  title: "Strategic trust falls between sessions"
+  claim: "Trust in the strategic assistant falls from session 1 to session 2; Strategic Heavy adds a smaller penalty on top. Tactical trust does not move."
+  numbers:
+    - −0.78 on the 1–7 scale (−1.23 with game fixed), p = .0009, q = .04
+    - Strategic Heavy second — 13 of 16 fell (mean −1.26) vs −0.29 the other order
+    - Tactical Heavy +0.48 (p ≈ .04)
+  confidence: moderate
+  lineage: [R2-7, H5, T8]
+  sources: [docs/analysis/round2/wD_trust.md]
+  chart: trustOrder
+  links:
+    - {to: trust-own-failures-null, why: 'not explained by own failures'}
+    - {to: trust-not-lead, why: 'and behaviour does not follow'}
+    - {to: q-C15, why: 'some describe noticing more later'}
+  thoughts: "Mechanism unknown. Debriefs (P15, P32, P33) suggest more spare attention in session 2 to notice the cards' flaws — testable via when C12-style remarks happen in narration."
+
+- group: Trust and the two tiers
+  id: trust-own-failures-null
+  kind: 'null'
+  title: "Own bad experiences do not explain the trust drop"
+  claim: "A bad session-1 experience with the cards does not predict the drop in strategic trust, and nothing measured in a session predicts its trust rating once the game is fixed."
+  numbers:
+    - "ρ = −.05 [−.39, .30]; small-mission share, bad cards seen, card failures, score — all null"
+  confidence: 'null'
+  lineage: [H5, R2 D nulls]
+  sources: [docs/analysis/round1/h5_trust_drop.md]
+  chart: null
+  links: [{to: trust-drop, why: 'rules out the obvious cause'}]
+  thoughts: null
+
+- group: Trust and the two tiers
+  id: trust-not-lead
+  kind: 'null'
+  title: "Trust does not lead behaviour"
+  claim: "Session-1 trust does not predict how card use changes in session 2. Trust ratings read an operator's opinion of the assistant more than they predict their next choice."
+  numbers:
+    - "Session-1 trust vs change in uptake — null; trust vs next decision after an odd card ρ = −.07"
+  confidence: 'null'
+  lineage: [R2 D nulls, T8]
+  sources: [docs/analysis/round2/wD_trust.md]
+  chart: null
+  links:
+    - {to: style-trust-link, why: 'between-person link only'}
+    - {to: flaw-anchors-null, why: 'experiences of flaws do not change behaviour either'}
+  thoughts: "Combined with flaw-anchors-null this is main finding 4 in the précis. Important for the trust-calibration literature."
+
+- group: Trust and the two tiers
+  id: q-C12
+  kind: qual
+  title: "Said: noticed strategic over-allocation"
+  claim: "Noticing the cards send too many drones or drone types a mission does not need."
+  numbers:
+    - "12 of 33, all unprompted; 7 said so aloud during play"
+  confidence: n/a
+  lineage: [qual C12, T6, T8]
+  codes: [C12]
+  chart: codeWho
+  links: [{to: tier-flaw-visibility, why: 'the visible flaw'}, {to: flaw-odd-card, why: 'their behaviour around it'}]
+  thoughts: null
+
+- group: Trust and the two tiers
+  id: q-C13
+  kind: qual
+  title: "Said: noticed a tactical flaw"
+  claim: "Noticing a flaw in a tactical plan."
+  numbers:
+    - "3 of 33"
+  confidence: n/a
+  lineage: [qual C13, T6]
+  codes: [C13]
+  chart: codeWho
+  links: [{to: tier-flaw-visibility, why: 'tactical flaws stay hidden'}]
+  thoughts: null
+
+- group: Trust and the two tiers
+  id: q-C14
+  kind: qual
+  title: "Said: took the tactical plan without checking"
+  claim: "Accepting the plan because it was too complex or too fast to check."
+  numbers:
+    - "3 of 33"
+  confidence: n/a
+  lineage: [qual C14, T6]
+  codes: [C14]
+  chart: codeWho
+  links: [{to: tier-checking-cost, why: 'checking cost'}]
+  thoughts: null
+
+- group: Trust and the two tiers
+  id: q-C17
+  kind: qual
+  title: "Said: checks when cheap, skips under pressure"
+  claim: "Checking depends on time and effort."
+  numbers:
+    - "9 of 33, 7 unprompted"
+  confidence: n/a
+  lineage: [qual C17, T7]
+  codes: [C17]
+  chart: codeWho
+  links: [{to: tier-checking-cost, why: 'the mechanism H2 tried to test'}, {to: q-C18, why: 'the opposite stance'}]
+  thoughts: null
+
+- group: Trust and the two tiers
+  id: q-C18
+  kind: qual
+  title: "Said: checked (nearly) everything"
+  claim: "Checking every plan or card."
+  numbers:
+    - "5 of 33"
+  confidence: n/a
+  lineage: [qual C18, T7]
+  codes: [C18]
+  chart: codeWho
+  links: [{to: q-C17, why: 'opposite stance'}]
+  thoughts: "They decide slower (20.7 s vs 12.5 s, p = .045) — consistent with the claim."
+
+- group: Trust and the two tiers
+  id: q-C15
+  kind: qual
+  title: "Said: noticed more / grew careful later"
+  claim: "Noticing the assistant's errors more, or becoming more careful, as the study went on."
+  numbers:
+    - "4 of 33"
+  confidence: n/a
+  lineage: [qual C15, T8]
+  codes: [C15]
+  chart: codeWho
+  links: [{to: trust-drop, why: 'a possible mechanism for the drop'}]
+  thoughts: null
+
+- group: Trust and the two tiers
+  id: q-C16
+  kind: qual
+  title: "Said: trust grew with experience"
+  claim: "Trust increasing over the study."
+  numbers:
+    - "4 of 33"
+  confidence: n/a
+  lineage: [qual C16, T8]
+  codes: [C16]
+  chart: codeWho
+  links: [{to: trust-drop, why: 'runs against the average'}]
+  thoughts: null
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Flaws and later use
+  id: flaw-odd-card
+  kind: 'null'
+  title: "The illogical card leaves no lasting mark on use"
+  claim: "Lined up on the first illogical card each operator saw, uptake on three-type missions (which never carry the flaw) is no lower afterwards. Those who said they noticed it show at most a brief dip that recovers within ~15 decisions."
+  numbers:
+    - Overall after vs before OR 0.72, p = .54
+    - Said-noticed — 47% in next five vs 75% before, recovers to 65% (OR 0.21, p = .057); interaction p = .21
+    - Lined up on the spoken moment (7 people) — 5 fell, 2 rose
+  confidence: 'null'
+  lineage: [H8, extras flaws, extras2 oddSplit, T8]
+  sources: [scripts/analysis_combined/extras.py, scripts/analysis_combined/extras2.py]
+  chart: oddEvent
+  links:
+    - {to: flaw-dots, why: 'what each dot is made of'}
+    - {to: meth-h8-invalid, why: 'the pre-registered version was invalid'}
+    - {to: manual-card-error, why: 'the only behavioural trace'}
+  thoughts: "The brief dip is the kind of thing worth a human look — see flaw-dots for whether it is easy/hard missions."
+
+- group: Flaws and later use
+  id: flaw-dots
+  kind: observation
+  title: "What each event-study dot is made of"
+  claim: "Every point on the event-study lines can be broken down into the missions behind it (drones, tasks, types, queue, minute, session) and the rate a model of mission, time, game and person expects. Dots that jump with their expected value are composition, not trust."
+  numbers:
+    - "Toggle observed / expected / adjusted on the chart; hover for each dot's make-up"
+  confidence: n/a
+  lineage: [extras2 events]
+  sources: [scripts/analysis_combined/extras2.py]
+  chart: oddEventExp
+  links: [{to: flaw-odd-card, why: 'same data'}]
+  thoughts: "A tool card rather than a finding — candidate to merge into flaw-odd-card."
+
+- group: Flaws and later use
+  id: flaw-anchors-null
+  kind: 'null'
+  title: "Refusals and drone failures do not change later use"
+  claim: "Lined up on the first Suggest refusal, the first wrong refusal and the first drone failure, neither assistant's use changes afterwards once practice is held fixed and against random-moment placebos."
+  numbers:
+    - Adjusted changes −5 to +5 points, all p > .1; placebo p .19–.92
+    - Tactical Suggest after the first refusal 78% → 86% (practice); 12 rose, 1 fell
+  confidence: 'null'
+  lineage: [extras flaws, extras2 events]
+  sources: [scripts/analysis_combined/extras2.py]
+  chart: anchorsForest
+  links:
+    - {to: trust-not-lead, why: 'experience does not travel into behaviour'}
+    - {to: rec-blind-spot, why: 'the refusal is costly at the moment, invisible afterwards'}
+  thoughts: "Contradicts several debrief accounts of losing faith after a failure — a say/do gap worth naming."
+
+- group: Flaws and later use
+  id: flaw-abandon-caution
+  kind: finding
+  title: "A self-initiated abandonment may be followed by fewer cards"
+  claim: "Of five moments tested, only the first abandoned mission is followed by a change — and only for those who abandoned on their own, not after a Suggest refusal. It does not hold person by person against random moments."
+  numbers:
+    - Own abandoners (16) — three-type uptake 81% → 57%; adjusted −21 points, p < .001; 9 fell, 1 rose; placebo p = .22
+    - After a refusal (10) — no change (+1 point, p = .67)
+  confidence: suggestive
+  lineage: [extras2 abandonSplit]
+  sources: [scripts/analysis_combined/extras2.py]
+  chart: abandonSplit
+  links:
+    - {to: rec-attempt, why: 'abandoning is the recovery decision'}
+    - {to: flaw-anchors-null, why: 'the one exception'}
+  thoughts: "\"Blame the assistant\" is clearly absent. \"Self-doubt / caution after giving up\" is a possible story — would need a confirmatory test, perhaps on later missions' drone counts (do they over-provision?)."
+
+- group: Flaws and later use
+  id: q-C19
+  kind: qual
+  title: "Said: blames themselves for failures"
+  claim: "Attributing mission failures to their own choices."
+  numbers:
+    - "4 of 33"
+  confidence: n/a
+  lineage: [qual C19, T9]
+  codes: [C19]
+  chart: codeWho
+  links: [{to: flaw-abandon-caution, why: 'self-blame fits caution after own abandonment'}]
+  thoughts: null
+
+- group: Flaws and later use
+  id: q-C20
+  kind: qual
+  title: "Said: blames the assistant for failures"
+  claim: "Attributing failures to the assistant."
+  numbers:
+    - "3 of 33"
+  confidence: n/a
+  lineage: [qual C20, T9]
+  codes: [C20]
+  chart: codeWho
+  links: [{to: flaw-anchors-null, why: 'blame does not show in later use'}]
+  thoughts: null
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Recovery from drone failures
+  id: rec-attempt
+  kind: finding
+  title: "In recovery, attempting a fix is what matters"
+  claim: "Every fixable failure where nothing was tried was abandoned. Among attempted fixes, Suggest and fixing by hand do equally well. Within a person, pressing Suggest goes with far fewer abandonments — because it is the cheap way to attempt."
+  numbers:
+    - All 27 untried fixable failures abandoned
+    - Suggest vs abandonment OR 0.40 [0.21, 0.79], p = .008 (adjusted .08 across round 1)
+    - Suggest vs hand fix among attempts OR 0.94
+  confidence: moderate
+  lineage: [H3, T9]
+  sources: [docs/analysis/round1/h3_recovery.md]
+  chart: recoveryPatterns
+  links:
+    - {to: rec-blind-spot, why: 'Suggest''s own failure mode'}
+    - {to: rec-never-attempt, why: 'who does not try'}
+    - {to: rec-low-reliance-attempt, why: 'attempting follows the reliance trait'}
+  thoughts: "Closest of round 1's primaries to surviving correction. The reframing (attempting, not Suggest) is the important part."
+
+- group: Recovery from drone failures
+  id: rec-blind-spot
+  kind: finding
+  title: "Suggest's wrong \"No workable plan\" ends saveable missions"
+  claim: "Suggest only considers idle drones, so when the needed drone is busy on another task it refuses although chaining that drone on would work. Operators take the refusal at its word and abandon about half the time."
+  numbers:
+    - 23 wrong refusals, 14 operators, 17 failures
+    - 9 failures (8 operators) abandoned, median 4 s after the press; 8 fixed by hand
+    - Verified frame by frame — P19 session 1, M003
+  confidence: moderate
+  lineage: [H3 corrected, extras flaws, extras2 blindAbandons, T8, T9]
+  sources: [scripts/analysis_round1/h3_recovery.py, scripts/analysis_combined/extras2.py]
+  chart: blindCase
+  links:
+    - {to: flaw-anchors-null, why: 'costly now, invisible later'}
+    - {to: rec-attempt, why: 'a refusal ends the attempt'}
+    - {to: meth-blind-erratum, why: 'round 1 undercounted it'}
+  thoughts: "Small n (9 episodes), but the mechanism is concrete and verified. Strong design implication — an assistant's \"can't\" is trusted more than its \"here's a plan\". Your call whether this is main or lesser."
+
+- group: Recovery from drone failures
+  id: rec-never-attempt
+  kind: finding
+  title: "Three operators never attempted any fixable failure"
+  claim: "P15, P24 and P29 never attempted a fix in either session — 15 failures, 14 fixable with idle drones alone, so Suggest would have worked. It does not look like misunderstanding."
+  numbers:
+    - 133 of 162 fixable failures attempted (≥ 31 s left); 20 of 32 attempted every one
+    - Self-rated understanding at ceiling; attempts do not rise with exposure
+  confidence: moderate
+  lineage: [extras givingUp, T9]
+  sources: [scripts/analysis_combined/extras.py]
+  chart: attemptByNth
+  links:
+    - {to: q-C21, why: '"abort rather than repair" — P29 among them'}
+    - {to: rec-low-reliance-attempt, why: 'the between-person correlation is carried by them'}
+  thoughts: "Could be a belief that failed missions must be abandoned. Their debriefs are the place to look."
+
+- group: Recovery from drone failures
+  id: rec-low-reliance-attempt
+  kind: finding
+  title: "Lower-reliance operators attempt fewer recoveries"
+  claim: "People lower on the reliance trait try to fix fewer of their fixable failures."
+  numbers:
+    - "ρ = .54, p = .001, q = .04 — between people; carried by four never-attempters"
+  confidence: suggestive
+  lineage: [R2-6]
+  sources: [docs/analysis/round2/wA_recovery.md]
+  chart: null
+  links: [{to: style-axis, why: 'recovery sits on the reliance axis'}, {to: rec-never-attempt, why: 'who carries it'}]
+  thoughts: "Between people and driven by a few — fragile."
+
+- group: Recovery from drone failures
+  id: rec-after-refusal
+  kind: 'null'
+  title: "After a failed Suggest press, later attempts rise rather than fall"
+  claim: "Operators do not stop attempting recoveries after Suggest fails them; reward at stake, drones left and recent failures do not predict attempts either."
+  numbers:
+    - "Null simulation mean OR .73 — the design leans towards finding a drop, yet none appears"
+  confidence: 'null'
+  lineage: [R2 A nulls]
+  sources: [docs/analysis/round2/wA_recovery.md]
+  chart: null
+  links: [{to: flaw-anchors-null, why: 'same pattern'}]
+  thoughts: null
+
+- group: Recovery from drone failures
+  id: q-C21
+  kind: qual
+  title: "Said: aborts rather than repairs"
+  claim: "Describing aborting or re-sending a mission rather than repairing it."
+  numbers:
+    - "4 of 33"
+  confidence: n/a
+  lineage: [qual C21, T9]
+  codes: [C21]
+  chart: codeWho
+  links: [{to: rec-never-attempt, why: 'the never-attempters'}]
+  thoughts: null
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Payoff and performance
+  id: pay-between-within
+  kind: finding
+  title: "Better operators rely more; relying does not make them better"
+  claim: "Between people, the more reliant complete more. Within a person, card missions do no better than manual ones and no performance measure rises with reliance."
+  numbers:
+    - Between people OR 3.06 (p = .004)
+    - Within person OR 0.81 [0.54, 1.20], p = .29; could detect ≤ 0.58 or ≥ 1.73
+    - Within person, score not improved on any of four measures (all p ≥ .6)
+  confidence: moderate
+  lineage: [H10, R2 C, T10]
+  sources: [docs/analysis/round1/h10_reliance_payoff.md]
+  chart: payoffTiles
+  links:
+    - {to: pay-throughput, why: 'what reliance does buy'}
+    - {to: style-trust-link, why: 'same between/within split'}
+  thoughts: "Classic between/within confound. The paper should be careful not to say \"relying improves performance\"."
+
+- group: Payoff and performance
+  id: pay-throughput
+  kind: finding
+  title: "Reliance pays through throughput"
+  claim: "When the same person relies more in one session than the other, fewer missions are left never allocated — but the score does not rise."
+  numbers:
+    - "−0.78 missions never allocated per SD of reliance, p = .0009, q = .04"
+  confidence: moderate
+  lineage: [R2-5]
+  sources: [docs/analysis/round2/wC_analysis.py]
+  chart: null
+  links: [{to: speed-parallel, why: 'the mechanism'}, {to: speed-big-jobs, why: 'speed is the value'}]
+  thoughts: "Fits the speed story neatly. Why throughput does not translate into score is worth one look (penalty structure?)."
+
+- group: Payoff and performance
+  id: pay-benchmark-null
+  kind: 'null'
+  title: "Manual work does not explain the benchmark shortfall"
+  claim: "Strategic Heavy's apparent bigger shortfall against the automated benchmark is barely touched by manual rate, and the gap itself comes from one game whose benchmark run had many drone failures."
+  numbers:
+    - "Gap shrinks 13% (needed 50%); benchmark run had 12 failures vs participants' 4.5; 7 of 17 beat it there and nowhere else"
+  confidence: 'null'
+  lineage: [H4]
+  sources: [docs/analysis/round1/h4_benchmark_shortfall.md]
+  chart: benchmarkGames
+  links: [{to: meth-games, why: 'a game artefact'}]
+  thoughts: "Retire the \"61% vs 75%\" comparison."
+
+- group: Payoff and performance
+  id: q-C23
+  kind: qual
+  title: "Said: the assistant improved results / did better by hand"
+  claim: "Judgements of the assistant on outcomes."
+  numbers:
+    - "3 of 33 believed it improved results; 0 of 33 believed they did better by hand"
+  confidence: n/a
+  lineage: [qual C23, C24, T10]
+  codes: [C23, C24]
+  chart: codeWho
+  links: [{to: pay-between-within, why: 'operators rarely judge it on outcomes — rightly'}]
+  thoughts: null
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Learning
+  id: learn-speed
+  kind: finding
+  title: "Decisions get faster with practice"
+  claim: "Strategic decisions get about 31% faster over an 8-minute session, net of forced waits; session 2 is faster than session 1 on both tiers."
+  numbers:
+    - "−0.046 log-s per minute [−0.070, −0.023], p = .0001, q = .009; holds without the final 90 s and in session 2 alone"
+  confidence: strong
+  lineage: [R2-4, T11]
+  sources: [docs/analysis/round2/wG_learning.md]
+  chart: speedByMinute
+  links: [{to: learn-calibration-null, why: 'faster, not better targeted'}, {to: load-backlog-practice, why: 'practice confounds load'}]
+  thoughts: "Solid but expected. Mainly important as a control in other analyses."
+
+- group: Learning
+  id: learn-calibration-null
+  kind: 'null'
+  title: "Reliance does not become better targeted with practice"
+  claim: "The big-jobs-to-the-assistant rule is no sharper in session 2, and operators do not learn to avoid the weaker card."
+  numbers:
+    - "Composition × session OR 0.55–0.86, all p > .12; three-type minus single-type gap s1 .25 vs s2 .14"
+  confidence: 'null'
+  lineage: [R2 G nulls, T11]
+  sources: [docs/analysis/round2/wG_learning.md, scripts/analysis_combined/extras.py]
+  chart: calibrationBars
+  links: [{to: size-decides, why: 'the rule is fixed from the start'}, {to: style-trait, why: 'fits a stable style'}]
+  thoughts: "Implication for training — experience alone does not calibrate reliance."
+
+- group: Learning
+  id: q-C22
+  kind: qual
+  title: "Said: got better with practice"
+  claim: "Feeling better, faster or more confident with practice."
+  numbers:
+    - "6 of 33"
+  confidence: n/a
+  lineage: [qual C22, T11, follow-up c22_got_better]
+  codes: [C22]
+  chart: codeWho
+  links: [{to: learn-speed, why: 'right about speed'}, {to: learn-calibration-null, why: 'not about calibration'}]
+  thoughts: "They take fewer cards (46% vs 71%, p = .03). Follow-up report — docs/analysis/combined/c22_got_better.md."
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: What operators want
+  id: ask-wants
+  kind: finding
+  title: "A human in charge, and more to go on"
+  claim: "Operators want the final say, and more information to decide with — failure data, reasoning, more options; a few want more automation."
+  numbers:
+    - "Human final say 9 of 33 (8 unprompted); failure data 6; more options 6; reasoning 5; more automation 4"
+  confidence: suggestive
+  lineage: [T12]
+  sources: [docs/analysis/qual/CODEBOOK.md]
+  chart: null
+  links: [{to: ask-views-null, why: 'these views do not predict behaviour'}, {to: rec-blind-spot, why: 'reasoning would expose a wrong refusal'}]
+  thoughts: "Design requirements rather than findings. The link to the blind spot is worth making — an explained refusal could be checked."
+
+- group: What operators want
+  id: ask-views-null
+  kind: 'null'
+  title: "Views about AI authority do not predict behaviour"
+  claim: "The delegation and attitude scales are null against every reliance measure."
+  numbers:
+    - "See style-disposition-null"
+  confidence: 'null'
+  lineage: [T12, H7]
+  sources: [docs/analysis/round1/h7_disposition.md]
+  chart: null
+  links: [{to: style-disposition-null, why: 'same tests'}]
+  thoughts: "Candidate to merge into style-disposition-null."
+
+- group: What operators want
+  id: q-C25
+  kind: qual
+  title: "Said: a human should have the final say"
+  claim: "Keeping the human as the final decision-maker."
+  numbers:
+    - "9 of 33, 8 unprompted"
+  confidence: n/a
+  lineage: [qual C25, T12]
+  codes: [C25]
+  chart: codeWho
+  links: [{to: ask-wants, why: 'part of the set'}]
+  thoughts: null
+
+- group: What operators want
+  id: q-C26
+  kind: qual
+  title: "Said: wants the assistant's reasoning"
+  claim: "Wanting to see why the assistant suggested what it did."
+  numbers:
+    - "5 of 33"
+  confidence: n/a
+  lineage: [qual C26, T12, follow-up c26_wants_reasoning]
+  codes: [C26]
+  chart: codeWho
+  links: [{to: ask-wants, why: 'part of the set'}]
+  thoughts: "They decide faster (9.0 s vs 14.6 s) and complete more missions — fast, high-throughput operators want reasoning. Follow-up report — docs/analysis/combined/c26_wants_reasoning.md."
+
+- group: What operators want
+  id: q-C27
+  kind: qual
+  title: "Said: wants failure data / analytics"
+  claim: "Wanting failure probabilities or performance data."
+  numbers:
+    - "6 of 33"
+  confidence: n/a
+  lineage: [qual C27, T12]
+  codes: [C27]
+  chart: codeWho
+  links: [{to: ask-wants, why: 'part of the set'}]
+  thoughts: null
+
+- group: What operators want
+  id: q-C28
+  kind: qual
+  title: "Said: wants more automation"
+  claim: "Wanting the assistant to do more."
+  numbers:
+    - "4 of 33"
+  confidence: n/a
+  lineage: [qual C28, T12]
+  codes: [C28]
+  chart: codeWho
+  links: [{to: ask-wants, why: 'the minority view'}]
+  thoughts: null
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+- group: Method and data notes
+  id: meth-games
+  kind: method
+  title: "Four games, not two scenarios"
+  claim: "The fixed seed gives four games that differ almost twofold in load; which pair a person played depends on when they took part. Analyses must group by game."
+  numbers:
+    - "Tasks completed per session by game — see chart"
+  confidence: n/a
+  lineage: [study-v1.13, docs/STUDY_BUILD.md §20]
+  sources: [docs/STUDY_BUILD.md, scripts/analysis_combined/extras2.py]
+  chart: gameLoad
+  links: [{to: pay-benchmark-null, why: 'a game artefact'}]
+  thoughts: "Not a finding, but every paper claim must survive it."
+
+- group: Method and data notes
+  id: meth-h8-invalid
+  kind: method
+  title: "The pre-registered illogical-card test was invalid"
+  claim: "H8's \"noticed\" marker selected its own \"before\" window, manufacturing a drop. A null simulation exposed it; every event-defined test since gets a placebo first."
+  numbers:
+    - "Apparent OR 0.12; null simulation OR 0.37; calibrated p = .30"
+  confidence: n/a
+  lineage: [H8]
+  sources: [docs/analysis/round1/h8_illogical_card.md]
+  chart: null
+  links: [{to: flaw-odd-card, why: 'the valid version'}]
+  thoughts: "Worth a methods footnote — event studies anchored on self-selected moments need placebos."
+
+- group: Method and data notes
+  id: meth-time-left
+  kind: method
+  title: '"Time left" in recovery was an artefact'
+  claim: "Attempt rates looked to rise with time left, but 8 of 9 failures left open began with ≤ 12 s on the clock and operators take a median 14 s to make a first move."
+  numbers:
+    - "OR 1.26 per minute → 1.12, p = .20 once failures under 31 s left are removed"
+  confidence: n/a
+  lineage: [R2 A note]
+  sources: [docs/analysis/round2/wA_recovery.md]
+  chart: null
+  links: [{to: rec-attempt, why: 'why the last 31 s are excluded'}]
+  thoughts: null
+
+- group: Method and data notes
+  id: meth-blind-erratum
+  kind: method
+  title: "Round 1 undercounted Suggest's blind spot"
+  claim: "Round 1's rebuild of what Suggest could see missed tasks cut short by abandonment. Corrected — 23 presses / 14 people (not 11 / 8); of 11 Suggest-then-abandon cases only 3 had a working plan."
+  numbers:
+    - "Corrected 2026-10-07; errata in both supervisor logs"
+  confidence: n/a
+  lineage: [H3 erratum]
+  sources: [docs/analysis/round1/SUPERVISOR_LOG.md]
+  chart: null
+  links: [{to: rec-blind-spot, why: 'the corrected numbers'}]
+  thoughts: null
+
+- group: Method and data notes
+  id: meth-qual-coder
+  kind: method
+  title: "Qualitative coding needs a human second coder"
+  claim: "All \"X of 33 said\" counts come from one AI coder. Agreement with a second AI pass (κ .96) is closer to test–retest than independent coding."
+  numbers:
+    - "Round 1 two-coder κ = .27 on stated preference"
+  confidence: n/a
+  lineage: [H6, R2 E]
+  sources: [docs/analysis/qual/coding_notes.md]
+  chart: null
+  links: [{to: tier-preference, why: 'the most affected claim'}]
+  thoughts: "Blocks publishing any \"X of 33\" number as a finding."
+
+- group: Method and data notes
+  id: meth-group-screen
+  kind: method
+  title: "Group-measure screen is at chance level"
+  claim: "Testing each \"said X\" group against everyone else on 11 measures — 13 of 217 new tests reach p < .05, about what chance gives."
+  numbers:
+    - "13 / 217 at p < .05; ~11 expected"
+  confidence: n/a
+  lineage: [extras2 personExtra]
+  sources: [scripts/build_findings_synthesis.py group_tests]
+  chart: null
+  links: [{to: meth-qual-coder, why: 'use the group means descriptively only'}]
+  thoughts: "The few sensible hits (C10, C18 slower; C03 less Suggest) are better read as validating the coding."
+
+- group: Method and data notes
+  id: meth-half-weights
+  kind: method
+  title: "P01 and P02 played on half task weights"
+  claim: "Study-v1.0 and v1.2 scored tasks at half the later weights; raw scores must exclude or rescale them. Score efficiency is unaffected."
+  numbers:
+    - "10–50 vs 20–100 points per task"
+  confidence: n/a
+  lineage: [round 1 code problems]
+  sources: [docs/STUDY_BUILD.md]
+  chart: null
+  links: [{to: meth-games, why: 'another between-session comparability issue'}]
+  thoughts: null

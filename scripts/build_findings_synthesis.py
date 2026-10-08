@@ -87,6 +87,8 @@ COMBINED_TEMPLATE = BASE / 'scripts' / 'findings_combined_template.html'
 QUAL = BASE / 'docs' / 'analysis' / 'qual'
 # follow-up analyses for the combined page, from scripts/analysis_combined/extras.py
 EXTRAS = BASE / 'docs' / 'analysis' / 'combined' / 'extras.json'
+# second set of follow-ups, from scripts/analysis_combined/extras2.py (needs no narration)
+EXTRAS2 = BASE / 'docs' / 'analysis' / 'combined' / 'extras2.json'
 COMMON_CSS = BASE / 'scripts' / 'findings_common.css'
 COMMON_JS = BASE / 'scripts' / 'findings_common.js'
 OUT_HTML = BASE / 'Results' / 'findings_synthesis.html'
@@ -1112,16 +1114,21 @@ def load_qual():
             who={k: sorted(g.pid.tolist()) for k, g in pref.groupby('pref')}))
 
 
-def person_summary(sess) -> dict:
+def person_summary(sess, extra=None) -> dict:
     """Per participant, the mean over their sessions of score, raw NASA-TLX workload (0-20) and post-
     session trust in each assistant (1-7), so a group of participants (e.g. everyone who said X) can
-    be described by its averages. P01/P02 played on half task weights, so their score is left out."""
+    be described by its averages. P01/P02 played on half task weights, so their score is left out.
+    `extra` (extras2.json personExtra) adds work-rate and reliance measures, each with a game-centred
+    twin (`<key>_c`) that the group tests use."""
     d = pd.DataFrame(sess)
     out = {}
     for pid, g in d.groupby('pid'):
         sc = None if pid in ('P01', 'P02') else g.score.dropna().mean()
         out[pid] = dict(score=f(sc) if sc is not None else None, rtlx=f(g.rtlx.dropna().mean()),
-                        trustS=f(g.trust_s.dropna().mean()), trustT=f(g.trust_t.dropna().mean()))
+                        trustS=f(g.trust_s.dropna().mean()),
+                        trustT=f(g.trust_t.dropna().mean()))
+        if extra and pid in extra['people']:
+            out[pid].update(extra['people'][pid])
     return out
 
 
@@ -1139,16 +1146,44 @@ def group_tests(qual, ps) -> dict:
     out = {}
     for g, members in groups.items():
         res = {}
-        for k in ('score', 'rtlx', 'trustS', 'trustT'):
-            a = [ps[p][k] for p in ps if p in members and ps[p][k] is not None]
-            b = [ps[p][k] for p in ps if p not in members and ps[p][k] is not None]
+        # work-rate / reliance measures (extras2) are tested on their game-centred twin -- the four
+        # games differ ~1.9x in load -- but the means shown are the raw ones
+        extra = [k for k in next(iter(ps.values())) if k + '_c' in next(iter(ps.values()))]
+        for k in ('score', 'rtlx', 'trustS', 'trustT', *extra):
+            kt = k + '_c' if k in extra else k
+            val = lambda p, key: ps[p].get(key)
+            a = [val(p, kt) for p in ps if p in members and val(p, kt) is not None]
+            b = [val(p, kt) for p in ps if p not in members and val(p, kt) is not None]
             if len(a) < 2 or len(b) < 2:
                 res[k] = None
                 continue
             r = mannwhitneyu(a, b, alternative='two-sided')
-            res[k] = dict(p=f(r.pvalue), inMean=f(np.mean(a)), restMean=f(np.mean(b)), nIn=len(a), nRest=len(b))
+            am = [val(p, k) for p in ps if p in members and val(p, k) is not None]
+            bm = [val(p, k) for p in ps if p not in members and val(p, k) is not None]
+            res[k] = dict(p=f(r.pvalue), inMean=f(np.mean(am)), restMean=f(np.mean(bm)), nIn=len(a), nRest=len(b))
         out[g] = res
     return out
+
+
+def carry_over_narration(payload) -> bool:
+    """Results/Narration/ is gitignored, so on any machine but the one that ran the narration pipeline
+    the quotes come back empty and a rebuild would silently strip them from every page. If that happens
+    and a previously built page exists, reuse ITS narration block (and the debrief stance counts, which
+    read the same files) rather than publish a page without them."""
+    if payload['narration']['quotes'] or not OUT_COMBINED.exists():
+        return False
+    html = OUT_COMBINED.read_text(encoding='utf-8')
+    i = html.find('{"generated"')
+    if i < 0:
+        return False
+    old, _ = json.JSONDecoder().raw_decode(html[i:].replace('<\\/', '</'))
+    if not (old.get('narration') or {}).get('quotes'):
+        return False
+    payload['narration'] = old['narration']
+    for k in ('stance', 'stanceCoded'):
+        if k in (old.get('selfreport') or {}):
+            payload['selfreport'][k] = old['selfreport'][k]
+    return True
 
 
 def main() -> None:
@@ -1171,8 +1206,10 @@ def main() -> None:
                    round2=json.loads(ROUND2_RESULTS.read_text(encoding='utf-8'))
                    if ROUND2_RESULTS.exists() else None,
                    qual=load_qual(),
-                   personSummary=person_summary(sess),
-                   extras=json.loads(EXTRAS.read_text(encoding='utf-8')) if EXTRAS.exists() else None)
+                   extras=json.loads(EXTRAS.read_text(encoding='utf-8')) if EXTRAS.exists() else None,
+                   extras2=json.loads(EXTRAS2.read_text(encoding='utf-8')) if EXTRAS2.exists() else None)
+    payload['personSummary'] = person_summary(sess, (payload['extras2'] or {}).get('personExtra'))
+    carried = carry_over_narration(payload)
 
     payload['groupTests'] = group_tests(payload['qual'], payload['personSummary'])
     blob = json.dumps(payload, separators=(',', ':'), ensure_ascii=True,
@@ -1190,7 +1227,11 @@ def main() -> None:
     print('%d decisions, %d participants, %d quotes from %d participants'
           % (payload['computed']['n']['decisions'], payload['computed']['n']['participants'],
              len(payload['narration']['quotes']), len(payload['narration']['participants'])))
-    if not payload['narration']['quotes']:
+    if carried:
+        print('NOTE: no local Results/Narration/*/quotes.json -- the %d quotes and the debrief stance counts'
+              % len(payload['narration']['quotes']))
+        print('      were carried over from the previously built %s.' % OUT_COMBINED.relative_to(BASE))
+    elif not payload['narration']['quotes']:
         print('WARNING: no quotes found in Results/Narration/*_s1/quotes.json -- the page was built')
         print('         WITHOUT them. Results/Narration/ is gitignored, so a fresh clone never has it;')
         print('         copy that folder over from the machine that ran the narration pipeline.')
