@@ -1,0 +1,160 @@
+{
+ "pass": 1,
+ "cards": {
+  "style-trait": {
+   "verdict": "keep",
+   "note": "This is important as an opening finding and segues into personal style. We'll probably build something around this. I don't however this the graph here is hugely useful. It more shows similarity between the two sessions.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T11:24:23.882Z"
+  },
+  "style-fingerprint": {
+   "verdict": "core",
+   "note": "This is probably the better way of making the points in this section. I think if we can succinctly convey this, then saying \"we can very reliably predict how you'll behave in future after 8 minutes of testing\" is a better way to say that people have a personal style compared to some of the other graphs",
+   "links": [
+    {
+     "to": "style-trait",
+     "note": ""
+    }
+   ],
+   "tags": [],
+   "updated": "2026-10-09T12:03:41.701Z"
+  },
+  "style-axis": {
+   "verdict": "check",
+   "note": "I suspect this is useful to this section, but I find this data hard to understand. We need to better present it either through more explaination on what these numbers really mean (+0.92 more 'what' taking a strategy card?). Is it comparing strat and tac useage? I like this but the presentation is limiting",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T11:29:25.719Z"
+  },
+  "style-types-null": {
+   "verdict": "merge",
+   "note": "We'll probably merge this into the other traits in this section. I liked the anlaysis we did but if isn't reliable, that's noteworthy. I suppose we can say that people have an idiosyncratic style but not one that conforms to a type. Actually you've convinced me this is a useful null, if and only if we can succinctly explain it along with the unique stle thing",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T11:59:57.843Z"
+  },
+  "style-retest": {
+   "verdict": "check",
+   "note": "THis is another one I suspect is useful but I don't really understand. it needs a bit more of an explaination here into what all these spearmans actually mean. What is each thing correlated to?",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:09:44.192Z"
+  },
+  "style-archetypes": {
+   "verdict": "merge",
+   "note": "As I understand it, this is saying we couldn't find evidence for archetypes. If so, it's part of previous null finding",
+   "links": [
+    {
+     "to": "style-types-null",
+     "note": ""
+    }
+   ],
+   "tags": [],
+   "updated": "2026-10-09T12:10:42.439Z"
+  },
+  "style-preempt-trait": {
+   "verdict": "merge",
+   "note": "Another link to the notion of a personal strategy I think. But this graph isn't particularly indicative of that",
+   "links": [
+    {
+     "to": "style-trait",
+     "note": ""
+    },
+    {
+     "to": "style-fingerprint",
+     "note": ""
+    }
+   ],
+   "tags": [],
+   "updated": "2026-10-09T12:11:46.276Z"
+  },
+  "style-disposition-null": {
+   "verdict": "merge",
+   "note": "This feels to me part of the fact there are no architypes, and possiblky also the fact there are idiosynchratic styles. I suppose we can use this to point out that there isn't a set of styles, and there aren't styles informed by this stuff",
+   "links": [
+    {
+     "to": "style-archetypes",
+     "note": ""
+    }
+   ],
+   "tags": [],
+   "updated": "2026-10-09T12:12:55.312Z"
+  },
+  "style-trust-link": {
+   "verdict": "reframe",
+   "note": "First, I'd like a graph or something here that is clearer to understand. Second, I suppose maybe this fits into the personal style? perhaps something else. On its own it doens't give much but can reinforce something else probably.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:16:03.504Z"
+  },
+  "q-C01": {
+   "verdict": "merge",
+   "note": "Fits naturally into the personal style stuff",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:16:29.375Z"
+  },
+  "q-C02": {
+   "verdict": "check",
+   "note": "Check if these people used the assistants less. Might be useful if they had a different strategy profile",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:17:03.986Z"
+  },
+  "size-decides": {
+   "verdict": "core",
+   "note": "The notion of doing simple stuff themselves and automating complex stuff is very interesting and will be a core part of this work. We will later have to look at literature and see how it lines up, because I would argue this is a counterintuitive finding. Very important. Note that you say both tiers, but idk if this is separate for strat and tac. The graph showing them separately as well as combined would be good.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:32:45.855Z"
+  },
+  "speed-big-jobs": {
+   "verdict": "keep",
+   "note": "This is nice, and probably links strongly with our 'when they automate' questions. ",
+   "links": [
+    {
+     "to": "size-decides",
+     "note": ""
+    }
+   ],
+   "tags": [],
+   "updated": "2026-10-09T12:32:10.109Z"
+  },
+  "speed-parallel": {
+   "verdict": "keep",
+   "note": "Also useful for 'when they automate' and may link to literature (we'll look later). the 'Suggest users 4.8× more likely to start the next mission during the fill' part is interesting. A slightly more verbose explaination of where those numbers come from or a graph would be nice.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:34:05.351Z"
+  },
+  "q-C03": {
+   "verdict": "merge",
+   "note": "Reinforces many findings in this section",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:34:25.329Z"
+  },
+  "q-C04": {
+   "verdict": "merge",
+   "note": "Reinforces many findings in this section",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:34:39.993Z"
+  },
+  "q-C05": {
+   "verdict": "merge",
+   "note": "Reinforces many findings in this section",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:34:41.688Z"
+  },
+  "q-C06": {
+   "verdict": "reframe",
+   "note": "Interesting counterpoint. We should look into who said this and what their other stats were. It may be a nice balance at the end of this to point out the paradox or the exceptions. Important  to understand this",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-09T12:35:26.711Z"
+  }
+ }
+}

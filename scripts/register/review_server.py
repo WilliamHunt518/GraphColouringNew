@@ -46,7 +46,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path.split('?')[0] == '/api/responses':
             if RESPONSES.exists():
                 return self._json(200, json.loads(RESPONSES.read_text(encoding='utf-8')))
-            return self._json(404, {'error': 'no responses yet'})
+            return self._json(200, {'cards': {}})      # no notes yet; 200 so the page knows the server is here
         return super().do_GET()
 
     def do_POST(self):

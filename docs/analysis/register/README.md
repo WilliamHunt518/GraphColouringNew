@@ -6,8 +6,11 @@ remains is the curated set of findings and the links between them — the web th
 ## Status (read this first)
 
 - **2026-10-08** — register built (79 cards from rounds 1–2, the qualitative coding and the combined-page
-  follow-ups) and the review page tested. **Pass 1 has not started.** The researcher will do it on their
-  other machine.
+  follow-ups) and the review page tested.
+- **2026-10-09** — **pass 1 in progress on this machine** (18/79 cards answered so far; notes in
+  `responses.json`). Fixed: the server 404'd `/api/responses` before the first save, so the page never
+  connected and kept notes browser-only; it now pushes browser-held notes to disk on connect. Needs PyYAML
+  (`python -m pip install --user pyyaml`).
 - **Next step for Claude:** when the researcher says pass 1 is done, `responses.json` will be in this folder
   (committed from the other machine, or handed over as an exported `review_pass1_*.json` — if so, save it
   here as `responses.json`). Then follow *Between passes* below. Do not edit cards before reading the
