@@ -1,0 +1,2404 @@
+# Findings -- the review units from pass 2 on (Results/findings_review.html).
+#
+# Each finding is one page: a headline and several sections, each with its own chart, a plain
+# "how this was worked out", the figures, the pass-1 cards (atoms, in cards.yaml) it stands for and the
+# qualitative codes whose quotes support it. An atom may sit in more than one finding; a section repeated
+# in another finding is marked `sharedWith`. `replies` answer the researcher's pass-1 note on each atom.
+# Charts are drawn by scripts/register/pass2/<area>.charts.js from docs/analysis/register/pass2/<area>.json,
+# which scripts/register/pass2/<area>.py writes.
+#
+# Assembled 2026-10-12 by scripts/register/assemble_findings.py from the pass-2 area fragments; edited directly
+# between passes after that. Never rename an id -- responses key on it.
+
+findings:
+- id: f-personal-style
+  area: Who the operator is
+  title: Each operator has a personal style — individual, not a type
+  headline: 'How someone uses the assistants in one 8-minute session predicts how they use them in the next, even
+    though the second session is a different scenario: from ten logged habits alone, a person''s session-2 profile
+    resembles their own session 1 (median r = .48) and essentially nobody else''s (median r = −.01), and their own
+    session lands in the closest three of 33 four times as often as chance (41% vs 9%). Who the operator is explains
+    about six times more of card-taking than the mission does. But the styles do not fall into types, and nothing
+    measured beforehand — attitude to AI, views on human authority, experience — predicts them. Strong evidence
+    for a stable personal style; good evidence against types; "no evidence" (not "evidence of no effect") for disposition.'
+  confidence: strong
+  absorbs:
+  - style-fingerprint
+  - style-trait
+  - style-retest
+  - style-preempt-trait
+  - style-axis
+  - style-types-null
+  - style-archetypes
+  - style-disposition-null
+  - ask-views-null
+  - style-trust-link
+  - q-C01
+  - q-C02
+  sections:
+  - id: fingerprint
+    title: After one session we can recognise a person's style in the next
+    text: 'Each session is summarised as ten habits (below). Comparing everyone''s session-1 profile with everyone''s
+      session-2 profile, the closest match is far more often the <b>same person</b> than chance allows. It is a
+      "near neighbour" result, not exact identification: the own session is the single closest match for 7 of 33
+      people (chance: 1), but in the closest three for 41% (chance 9%), and on average ranks 8th of 33 (chance 17th).
+      It survives taking the reliance axis out — so the style is more than "how much do you lean on the assistants".
+      In the matrix, every row is one person''s session 1, every column a session 2, darker = closer; the outlined
+      diagonal is each person against themselves.'
+    how: 'Rows: 66 sessions (33 people × 2). Each session becomes a vector of ten habits: share of strategy cards
+      taken; share of manual choices made before the cards loaded; share of cards edited; share of tactical plans
+      where Suggest was pressed; share of Suggest plans kept unchanged; share of recovery episodes with Suggest
+      pressed; time per strategic decision beyond the forced card delay (log); drones committed vs the Conservative
+      card on single-type and on multi-type missions; card previews per decision. Each habit is turned into a z-score
+      <i>within the game played</i> (so a hard game does not make everyone in it look alike; a habit with no data
+      in a session, e.g. no recoveries, is set to that game''s median). For each person''s session-1 vector we measure
+      the straight-line (Euclidean) distance to all 33 session-2 vectors and rank them; "rank 1" means their own
+      session 2 is the nearest. Done both ways (session 1 looking among session 2s and vice versa). The p-value
+      comes from shuffling who-is-who in session 2 10 000 times and counting how often chance does as well. "Reliance
+      axis removed": the single strongest direction of variation (PC1, see below) is subtracted from every vector
+      first. The profile correlation r is the Pearson correlation between a person''s two ten-habit vectors (1 =
+      same shape, 0 = unrelated). Exploratory and post hoc; the permutation test is clean. People are ordered by
+      reliance in the matrix, so neighbours look alike — the claim is that the diagonal beats them.'
+    chart: style.fingerprintMatrix
+    numbers:
+    - 'Own session nearest: 7 of 33 (session 1 → 2) and 5 of 33 (2 → 1); chance ≈ 1; permutation p < .001'
+    - 'Own session in the closest 3: 41% vs 9% by chance; mean rank 8.2 of 33 vs 17.0 (p < .001)'
+    - 'Reliance axis removed: 6 and 6 of 33, top-3 32%, mean rank 10.1 (p < .001) — the style is more than reliance'
+    - 'Reliance axis alone: 4 and 4 of 33, top-3 27%, mean rank 11.1'
+    - 'Profile correlation with own other session: median r = .48; with other people''s: median r = −.01; own closer
+      for 29 of 33 (sign test p < .001)'
+    atoms:
+    - style-fingerprint
+  - id: fingerprint-ranks
+    title: Where each person's own session ranks
+    text: 'The same result as a distribution: the blue bars (own session ranked 1st–3rd) stand far above the dashed
+      chance line, the long tail sits below it. Toggle to see that it holds with reliance removed.'
+    how: 66 look-ups (each person's session 1 searching the 33 session-2 profiles, and the reverse). Under chance
+      every rank 1–33 is equally likely, so the dashed line is 66 × (ranks in bin) / 33.
+    chart: style.fingerprintRanks
+    numbers:
+    - 'Ranked 1st: 12 of 66 look-ups vs 2 expected; ranked 1st–3rd: 27 vs 6'
+    atoms:
+    - style-fingerprint
+  - id: profiles
+    title: What a personal style looks like
+    text: Every person's ten habits in session 1 (light) and session 2 (dark). The top rows are people whose two
+      sessions have almost the same shape (r up to .89); at the bottom are the few whose style changed (P13, P29,
+      P32). Most people repeat themselves.
+    how: 'Each line joins the ten habit z-scores (within game, clipped at ±2.5 for drawing). r = correlation of
+      the two lines; #k = where their own session 2 ranked among 33 (1 = nearest). Hover a panel for the values.'
+    chart: style.profilePairs
+    numbers:
+    - 24 of 33 people have r ≥ .27 between their two sessions; 4 have r < 0
+    atoms:
+    - style-fingerprint
+    - style-trait
+  - id: who-vs-what
+    title: Who decides matters more than what is being decided
+    text: Card uptake runs from 8% to 100% across people (median 61%). Knowing <i>who</i> is deciding predicts whether
+      a card is taken about six times better than knowing everything about the mission and when it arrived.
+    how: '606 strategic decisions. Three logistic models of "card taken": (a) mission and timing only — drone types
+      needed, drones needed, scenario, session 1 or 2, decision number; (b) the person only (one term each); (c)
+      both. McFadden pseudo-R² = how much each improves on predicting the overall rate for everyone (0 = no better,
+      1 = perfect). Descriptive, not a test: with ~18 decisions each, the person-only model flatters itself a little.
+      Retest of raw card uptake session 1 vs 2: ρ = .57 (.62 once game-adjusted, next section).'
+    chart: style.whoVsWhat
+    numbers:
+    - 'Pseudo-R²: mission + timing 4%; person 24%; both 30%'
+    - Card uptake per person 8%–100%, median 61%; 6 people ≥ 90%, 3 people ≤ 25%
+    atoms:
+    - style-trait
+  - id: habit-by-habit
+    title: Which habits carry over — and what each correlation means
+    text: 'Each small scatter is one habit: a dot is a person, x = that habit in session 1, y = the same habit in
+      session 2. If people kept their place in the queue exactly, the dots would lie on the dashed line; if session
+      1 told us nothing, they would be a shapeless cloud. Six of the ten habits carry over clearly: keeping Suggest
+      plans, pressing Suggest, taking cards, previewing cards, decision time, and Suggest in recovery. Topping up
+      drones on single-type missions does not carry over at all.'
+    how: 'ρ (Spearman) for habit X = the correlation, across the 33 people, between their rank on X in session 1
+      and their rank on X in session 2, each session first adjusted for the game played (z within game). ρ = .62
+      for "takes the strategy card" means people keep roughly the same order: high card-takers in session 1 are
+      mostly high in session 2, though not exactly. 95% intervals come from resampling people 2000 times; Holm corrects
+      for testing ten habits. "Distinct levels" (separation strata) says how many groups of people the habit can
+      tell apart reliably: one session of card uptake separates about 2 (high vs low), the average of two sessions
+      about 3. Caution on "keeps the Suggest plan": 24 of 33 people kept every Suggest plan unchanged in both sessions
+      (a ceiling), so its high ρ mostly says that the nine who ever edit a plan tend to do so in both sessions.
+      The pre-empting habit here is "share of <i>manual</i> choices made before the cards loaded" (undefined for
+      15 people who never chose manual in a session); the clearer per-decision version is in the next section.'
+    chart: style.retestGrid
+    numbers:
+    - 'Survive Holm: keeps Suggest plan ρ .65 [.34, .84]; presses Suggest .65 [.34, .84]; takes card .62 [.33, .78];
+      previews .56 [.25, .77]; decision time .52 [.20, .74]; Suggest in recovery .48 [.14, .74]'
+    - 'Do not: edits a card .41; manual-before-cards (share of manual) .36; drones on multi-type .34; drones on
+      single-type −.09'
+    - 'Card uptake: ~2 distinct levels of people from one session, ~3 from two'
+    - 'Score on the reliance axis, session 1 vs 2: ρ = .65 [.38, .82]'
+    atoms:
+    - style-retest
+    - style-trait
+  - id: retest-summary
+    title: The same correlations side by side
+    text: One line per habit, ranked; coloured = survives correction.
+    how: 'As above: Spearman ρ session 1 vs 2, game-adjusted, bootstrap 95% intervals, Holm across ten.'
+    chart: style.retestDots
+    atoms:
+    - style-retest
+  - id: preempt
+    title: Not waiting for the cards is one of those habits
+    text: Committing a manual allocation before the strategy cards have even loaded is something some people do
+      and others never do. People who did it in session 1 did it on a quarter of their decisions in session 2; people
+      who did not, on 8%. Fifteen people never did it in either session.
+    how: 'Rows: 564 non-residual strategic decisions. Per person and session: share of decisions committed manually
+      before the cards appeared (logged <code>manualBeforeCardsLoaded</code>). ρ = Spearman of the session-1 share
+      against the session-2 share across 33 people. Variance shares (person ~24%, mission ~5%) are from round 2
+      (F4.1, crossed random intercepts for person and the exact mission, which repeats across people because games
+      are fixed). The 15 "never" people sit together at the origin; ρ is driven both by them staying at zero and
+      by the regular pre-empters staying high.'
+    chart: style.preemptPairs
+    numbers:
+    - 'Session 1 vs 2: ρ = .56 [.25, .77], p < .001, n = 33'
+    - Session-2 rate 25% for those who pre-empted in session 1 (n = 14) vs 8% for those who did not (n = 19)
+    - 86 of 564 decisions pre-empted; 46% of all manual choices; 15 of 33 never did it
+    - 'Round 2: person share of variance .24, mission .05'
+    atoms:
+    - style-preempt-trait
+  - id: axis
+    title: The biggest single dimension of style is reliance — what that axis is
+    text: 'A principal component is one score per person built by weighting all ten habits, with the weights chosen
+      so that this single score captures as much of the differences between people as any one number can. It is
+      <b>not</b> a comparison of strategic against tactical use. A <b>loading</b> is the correlation between one
+      habit and that score: +.92 for "takes the strategy card" means people with a high score are almost exactly
+      the people who take many cards; +.62 for "presses Suggest" means they also tend, less tightly, to press Suggest;
+      −.48 for decision time means they decide faster. So the axis is "leans on both assistants and moves quickly".
+      It captures 31% of the differences; it is the largest of three dimensions, not the only one — which is why
+      the fingerprint survives its removal.'
+    how: Per person, the ten habits pooled over both sessions, standardised; principal component analysis; first
+      component oriented so higher = more card-taking. Loading = component weight × √eigenvalue = correlation of
+      habit with score. Three components have eigenvalue > 1 (Kaiser). Session-level scores on the same axis (habits
+      standardised within session × scenario) give the session 1 vs 2 ρ.
+    chart: style.axisLoadings
+    numbers:
+    - Axis captures 31% of the between-person spread (eigenvalue 3.1 of 10); three dimensions pass Kaiser
+    - 'Loadings: takes card +.92, previews +.88, Suggest on plans +.62, drones on single-type +.50, Suggest in recovery
+      +.46, keeps Suggest plan +.42, decision time −.48, manual before cards −.34'
+    - 'Session 1 vs 2 on the axis: ρ = .65 [.38, .82]'
+    atoms:
+    - style-axis
+  - id: axis-scatter
+    title: Strategic and tactical reliance go together only loosely
+    text: 'Each dot is a person: x = share of strategy cards taken, y = share of tactical plans where Suggest was
+      pressed, colour = score on the reliance axis. The axis runs from the bottom-left (hand-builders) to the top-right
+      (delegators), but the cloud is wide: plenty of people use Suggest almost always while taking only half the
+      cards. The habit grid shows which habits move together; only 11 of 45 habit pairs correlate at p < .05. Use
+      the toggle to ring the people who said they had a personal strategy (C01) or wanted control (C02).'
+    how: Person level, both sessions pooled (n = 33); Spearman ρ with a Fisher interval. The grid is the Spearman
+      correlation between every pair of the ten pooled habits.
+    chart: style.axisScatter
+    numbers:
+    - 'Card uptake vs Suggest use: ρ = .37 [.01, .65], p = .033'
+    - 'Card taking and previewing: ρ = .79 (largely mechanical: choosing a card means clicking it)'
+    atoms:
+    - style-axis
+  - id: habit-grid
+    title: Which habits move together
+    text: The correlation grid behind the axis, habits sorted by loading.
+    how: Spearman ρ between pooled habits across 33 people; bold = p < .05 uncorrected (~2 of 45 expected by chance).
+    chart: style.habitCorr
+    numbers:
+    - 11 of 45 pairs at p < .05
+    atoms:
+    - style-axis
+  - id: not-types
+    title: Individual, not types
+    text: Distinct people, but not distinct kinds of people. Two groups fit no better than one smooth spread; groups
+      found in session 1 do not reappear in session 2; and three "archetypes" (Delegator, Deliberate builder, Fast
+      tinkerer) explain no more than they do in simulated operators who have the same habits and stability but no
+      types at all. The archetype names are best kept as labels for the ends of the two main axes (reliance; accept
+      vs override).
+    how: 'Round 1 (H1): mixture models on the person profiles, one to four groups, compared by BIC (a gain above
+      10 would mean real groups); groups refitted on each session separately and compared (ARI: 1 = identical groupings,
+      0 = chance). Archetypal analysis (extras2): the same pipeline run on 200 simulated samples of 33 operators
+      drawn from one continuous cloud with the observed habits, correlations and session-to-session stability; band
+      = the 95% range of those simulations. The one thing that beats the no-types simulation — the shape of the
+      two clearest archetype profiles recurs across sessions (r .96 / .88 vs up to .94 / .85) — does not survive
+      correction.'
+    chart: style.typesNull
+    numbers:
+    - 'Two groups vs one: ΔBIC 1.9 (needed > 10); 42% of no-type simulations did at least as well'
+    - 'Session-1 vs session-2 grouping agreement: ARI .04 (0 = chance); group stability (Jaccard) .76 / .47'
+    - Three archetypes explain 46% vs 43–59% in the no-types continuum (p = .83); same archetype both sessions 61%
+      vs 30–79% (p = .32)
+    - Archetype profile shape r .96 / .88 vs continuum (p = .010 / .015, not Holm-surviving)
+    atoms:
+    - style-types-null
+    - style-archetypes
+  - id: not-disposition
+    title: Nothing measured beforehand predicts the style
+    text: 'Attitude to AI (AIAS-4), verification propensity, views on human authority over AI (delegation scale
+      and its single items, including "a human should make the final decision"), and prior experience: 40 tests
+      against five behaviours, none survives correction. This is "no evidence", not proof of no link — the sample
+      could only have detected fairly strong correlations (|ρ| ≥ .48), and it is almost uniformly AI-positive (AIAS-4
+      averages 8.0 / 10) and from computing or engineering (32 of 33). Within this sample, the large differences
+      in style are not explained by what people say they think about AI.'
+    how: 'Per person: each questionnaire score (taken before session 1) against the average over both sessions of:
+      card uptake, Suggest consulted, Suggest plan kept unmodified, strategic decision time, session score. Spearman
+      ρ per cell; Holm correction across all 40 together (build_findings_synthesis <code>analyse_disposition</code>).
+      Detectable effect = the correlation the sample had an 80% chance to find at α = .05 (n = 32 with questionnaires).
+      Round 1 H7''s decision-level model gives the same answer for AIAS-4: odds of taking a card × 0.80 per SD [0.50,
+      1.27].'
+    chart: style.dispositionGrid
+    numbers:
+    - 0 of 40 tests survive Holm; 3 nominal (verification × score ρ −.41; delegation × Suggest consulted −.38 and
+      × plan kept −.40)
+    - AIAS-4 × card uptake ρ −.15; “A human should make the final decision” × card uptake ρ −.08
+    - AIAS-4 odds ratio for card taking 0.80 per SD [0.50, 1.27]; detectable only at about ×2
+    - AIAS-4 mean 8.0 / 10 (SD 1.2); 32 of 33 from computing / engineering; detectable |ρ| ≥ .48
+    atoms:
+    - style-disposition-null
+    - ask-views-null
+    sharedWith:
+    - f-operator-wants
+  - id: trust
+    title: Trust goes with style between people, not within a person
+    text: People who rely more on the Strategic Assistant report trusting it more (left). But when the same person
+      relies more in one session than the other, their trust does not move with it (right). So trust and reliance
+      are both part of who someone is, rather than one driving the other session by session. The tactical side shows
+      the same shape, more weakly. This is the same between-vs-within split as the performance result (next finding).
+    how: 'Session rows (66). Card uptake (or Suggest use) and post-session trust (mean of six 1–7 items) are each
+      game-adjusted by subtracting the mean of everyone who played that game. Left: each person''s average over
+      the two sessions (n = 33). Right: session 2 minus session 1 for each person (n = 33). Spearman ρ with Fisher
+      intervals; the grey line is a least-squares guide. A regression with both terms (GEE, game fixed) agrees:
+      per +25 points of card uptake, between people +0.71 trust points [0.42, 1.00], within a person +0.20 [−0.52,
+      0.93].'
+    chart: style.trustBW
+    numbers:
+    - 'Strategic: between ρ = .57 [.26, .77], p < .001; within ρ = .09 [−.28, .44], p = .63'
+    - 'Tactical: between ρ = .30 [−.07, .60], p = .086 (GEE between p = .036); within ρ = .13 [−.24, .47], p = .46'
+    - 'Per +25 points card uptake: trust +0.71 between people vs +0.20 within (1–7 scale)'
+    atoms:
+    - style-trust-link
+    sharedWith:
+    - f-who-does-better
+  - id: said
+    title: What they said about their own strategy
+    text: 'Fifteen of 33 described, unprompted, a consistent strategy of their own. Their style is visibly different:
+      they take fewer cards (51% vs 76%), pre-empt the cards more (25% vs 8% of decisions) and sit lower on the
+      reliance axis — a "personal strategy" is usually a hand-building strategy. Only one person (P11) said they
+      wanted control for its own sake; P11 takes cards at a typical rate (60%, 44th percentile) but rarely presses
+      Suggest on tactical plans (35%, 11th percentile) and often pre-empts the cards (33% of decisions, 86th percentile).
+      One person cannot carry a group comparison.'
+    how: Codes from the debrief / interview coding (codes_matrix.csv; one AI coder — see Methods). Group vs everyone
+      else on per-person measures, Mann–Whitney, descriptive only (not corrected; the code was not chosen in advance
+      for this comparison). Percentiles for P11 are among the 33 people.
+    chart: style.axisScatter
+    numbers:
+    - 'C01 personal strategy: 15 of 33, all unprompted; cards 51% vs 76% (p = .009); pre-empt 25% vs 8% (p = .025);
+      reliance axis −0.49 vs +0.41 SD (p = .022); Suggest 67% vs 82% (p = .10)'
+    - 'C02 wants control: 1 of 33 (P11): cards 60% (44th pct), Suggest 35% (11th), pre-empt 33% (86th), reliance
+      axis 32nd pct'
+    atoms:
+    - q-C01
+    - q-C02
+    codes:
+    - C01
+    - C02
+  replies:
+  - card: style-trait
+    text: 'Kept as the opening of the style finding, but the slope chart is gone (you were right: it only showed
+      two similar sessions). The trait is now shown three ways: the person × person fingerprint matrix (diagonal
+      = same person), each person''s ten-habit profile in both sessions as small multiples, and a "who vs what"
+      bar (person explains 24% of card-taking, mission and timing 4%).'
+  - card: style-fingerprint
+    text: 'Made the headline. Plain method: each session → ten habits, adjusted for the game; we look for each person''s
+      session-1 profile among all 33 session-2 profiles. Honest framing: "recognise" rather than "identify" — own
+      session is the single nearest for 7 of 33 (chance 1) but in the nearest three for 41% (chance 9%), and a person''s
+      two sessions correlate r = .48 against −.01 with anyone else (29 of 33). So "after 8 minutes we can tell your
+      style apart from almost everyone''s", not "we can predict exactly what you will do".'
+  - card: style-axis
+    text: 'Explained in plain words in the section (one weighted score per person; a loading is the correlation
+      of a habit with that score; it is not strategic-vs-tactical). New visuals: loadings coloured by tier, a per-person
+      scatter of card uptake vs Suggest use coloured by axis score, and the habit correlation grid. Check outcome:
+      the axis is real (stable, ρ .65) but only loosely joins the two tiers (cards vs Suggest ρ .37).'
+  - card: style-retest
+    text: Each ρ correlates habit X in session 1 with the same habit X in session 2, across the 33 people, after
+      adjusting each session for its game. Now one small scatter per habit (x = session 1, y = session 2), plus
+      the ranked dot chart. Six of ten survive Holm; caution added for "keeps the Suggest plan" (24 of 33 kept every
+      plan in both sessions — a ceiling).
+  - card: style-preempt-trait
+    text: 'Replaced the bars-by-mission-type chart with session 1 vs session 2 per person: ρ = .56; people who pre-empted
+      in session 1 did it on 25% of session-2 decisions vs 8% for the rest; 15 never did.'
+  - card: style-types-null
+    text: Merged with the archetypes null into one short section, "Individual, not types", with one compact chart
+      (observed vs what no-types simulations give).
+  - card: style-archetypes
+    text: Yes — no evidence for archetypes beyond what a smooth continuum produces; merged into the types null.
+  - card: style-disposition-null
+    text: Merged as "nothing measured beforehand predicts the style", stated succinctly with the power caveat and
+      the AI-positive sample; one grid shows all 40 tests.
+  - card: ask-views-null
+    text: Folded into the same disposition section (the delegation items, incl. “a human should make the final decision”,
+      are in the grid); linked to the operator-wants finding.
+  - card: style-trust-link
+    text: 'Reframed as part of the style story with the clearer two-panel graph you asked for: between people (ρ
+      .57) vs within a person (ρ .09), same scales, strategic/tactical toggle. It reinforces that trust, like reliance,
+      is a property of the person.'
+  - card: q-C01
+    text: 'Merged into the style finding: the 15 who described a personal strategy take fewer cards (51% vs 76%)
+      and pre-empt more — mostly a hand-building strategy.'
+  - card: q-C02
+    text: 'Checked, but it is one person (P11), so no group test is possible. P11''s profile: typical card uptake
+      (44th percentile), low Suggest use (11th), frequent pre-empting (86th). Consistent with "wants to do it myself"
+      on the tactical side, but cannot carry a claim.'
+  open:
+  - The fingerprint is exploratory and post hoc (permutation test is clean). Is “we can recognise your style after
+    one session” the wording you want in the paper, rather than “predict”?
+  - Do you want the trust between/within section here (as reinforcement) or only in the trust area? It is marked
+    shared with the performance finding.
+  source: style
+- id: f-who-does-better
+  area: Who the operator is
+  title: More-reliant operators complete more; relying more does not make anyone better
+  headline: 'Between people, those who take more strategy cards complete more of their missions in full (odds ×1.32
+    per 25 points of card uptake, p = .004). Within a person, it does not hold: their card missions do no better
+    than their own manual ones (odds ×0.81, p = .27; 19 of 26 people did slightly worse on cards), and no score
+    measure rises in a session where they relied more. The difference sits in the people, not in the advice. Relying
+    more in a session does leave fewer missions waiting (throughput), but that does not show up in the score. Moderate:
+    the between-person link on session <i>score</i> is weaker (p = .15).'
+  confidence: moderate
+  absorbs:
+  - pay-between-within
+  - pay-throughput
+  - q-C23
+  sections:
+  - id: between-within
+    title: Between people vs within a person
+    text: 'Left: each dot is a person. People who take more cards complete more of their missions in full than the
+      size of those missions would predict. Right: each dot is a person''s own card missions against their own manual
+      missions; above the dashed line would mean "the card did better for me". Most people are on or below it. Whatever
+      makes the better operators better, it is not the card itself — plausibly the same competence or speed that
+      makes them comfortable delegating.'
+    how: 'Rows: 606 strategic decisions; "completed in full" = every task of the mission finished (abandoned, partial
+      and still-running at the buzzer count as not). Left: per person, observed full-completion rate minus the rate
+      expected from a model of mission size, drone types and game (no person terms); Spearman with card uptake,
+      n = 33. Right: people with at least two card and two manual missions (n = 26); the size-adjusted difference
+      (card minus manual) tested with Wilcoxon. The formal model (round 1 H10 primary): GEE logistic regression
+      of full completion on card vs manual, drone types, drones needed, game, and the person''s own card rate —
+      the card term is the within-person effect, the person-rate term the between-person one.'
+    chart: style.payoffBW
+    numbers:
+    - 'Between: completion beyond expected vs card uptake ρ = .46 [.12, .70], p = .007'
+    - 'Within: card better for 7, worse for 19 of 26; median size-adjusted difference −6 points (Wilcoxon p = .071)'
+    - 'Model: between people OR ×3.06 from 0% to 100% uptake (×1.32 per 25 points) [1.42, 6.58], p = .004; within
+      OR 0.81 [0.55, 1.18], p = .27'
+    - Within could have detected an OR ≤ 0.58 or ≥ 1.73 — so a large card benefit is ruled out, a small one is not
+    - 'Raw: card missions 60% completed in full, manual 62%'
+    atoms:
+    - pay-between-within
+  - id: estimates
+    title: The estimates, and what reliance does buy
+    text: 'On session score, the between-person link points the same way but is not clear (+0.26 SD per 25 points
+      of uptake, p = .15), and within a person it is flat (−0.10 SD). What reliance does change within a person
+      is throughput: a session in which someone leans on the assistants more (cards, Suggest and faster decisions
+      together) leaves fewer missions never allocated — about 0.8 fewer per SD, against an average of 1.5 per session.
+      Card uptake on its own does not show it; the effect lives in the wider style (Suggest use and speed). Fewer
+      missions left waiting, but no detectable gain in points — the extra missions are probably late or low-value.'
+    how: 'Session rows (66), GEE with the small-sample correction, game and session (1st/2nd) fixed; card uptake
+      split into the person''s average (between) and the session''s deviation from it (within). Outcomes standardised
+      within game, so estimates are SD per +25 points of card uptake. Score efficiency, share of the best human
+      score and benchmark share are all session score divided by a per-game constant, so within a game they are
+      the same measure (r ≥ .99) — one score test, not four. Throughput (round 2 C2): missions never allocated on
+      the session score of the reliance axis; rerun with decision speed removed from the axis and with card uptake
+      alone.'
+    chart: style.payoffForest
+    numbers:
+    - 'Score, per +25 points uptake: between +0.26 SD [−0.10, 0.61], p = .15; within −0.10 SD [−0.47, 0.27], p =
+      .61'
+    - 'Never allocated, per +25 points uptake: between −0.30 SD (p = .17); within −0.19 SD (p = .14)'
+    - 'Never allocated, per SD of session reliance axis: within −0.78 missions [−1.24, −0.32], p < .001 (round 2
+      q = .04); without decision speed −0.58, p = .011; card uptake alone p = .32'
+    - 'P01/P02 (half task weights) excluded: between OR 3.36, within 0.83; score between +0.31 SD (p = .10), within
+      −0.07'
+    atoms:
+    - pay-between-within
+    - pay-throughput
+  - id: trust-parallel
+    title: The same split as trust
+    text: Reliance tracks trust between people but not within a person — the same pattern (see the style finding).
+    how: As in f-personal-style § trust.
+    chart: style.trustBW
+    atoms:
+    - style-trust-link
+    sharedWith:
+    - f-personal-style
+  - id: said
+    title: Operators rarely judged the assistant by outcomes — rightly
+    text: 'Three of 33 said using the assistant improved their results; none said they did better by hand. Most
+      never judged it on outcomes at all, which fits the data: the outcome difference is between people, not something
+      the assistant did for any one of them.'
+    how: Qualitative codes C23 / C24 (one AI coder; see Methods). Counts only.
+    chart: style.wantsBars
+    numbers:
+    - 'C23 assistant improved results: 3 of 33; C24 did better by hand: 0 of 33'
+    atoms:
+    - q-C23
+    codes:
+    - C23
+    - C24
+  replies:
+  - card: pay-between-within
+    text: 'Kept and given graphs: a between/within two-panel scatter and an estimates plot. Wording avoids "more
+      AI = better": the better operators rely more, but relying more did not improve any person''s own results.
+      Also new and honest: on session score the between-person link is weaker (p = .15) — the strong between result
+      is mission full completion.'
+  - card: pay-throughput
+    text: 'Merged as the "what reliance does buy" part: fewer missions never allocated within a person (−0.78 per
+      SD, p < .001), carried by the wider style (Suggest + speed), not card uptake alone, and not reaching the score.'
+  - card: q-C23
+    text: Kept as a supporting line (3 of 33 credited the assistant; 0 said manual did better).
+  open:
+  - Is “who does better” its own finding (as here) or a section of the style finding? Kept separate because it answers
+    a different question (does reliance pay?).
+  - The between-person payoff is clear on mission completion but not on session score — which outcome should the
+    paper lead with?
+  source: style
+- id: f-operator-wants
+  area: Who the operator is
+  title: Operators want to stay in charge — and to be told more
+  headline: 'Unprompted, operators asked for a human to keep the final say (9 of 33), for failure data and performance
+    analytics (6), more options between the two cards (6), the assistant''s reasoning (5), and a minority for more
+    automation (4). These wishes do not show in behaviour: people who said them use the assistants about as much
+    as everyone else, just as the questionnaire views on AI authority predict nothing. Suggestive — single-coder
+    counts, small groups.'
+  confidence: suggestive
+  absorbs:
+  - ask-wants
+  - q-C25
+  - q-C26
+  - q-C27
+  - q-C28
+  sections:
+  - id: wants
+    title: What they asked for
+    text: 'The common thread is control plus information: keep the human in the decision and give them more to decide
+      with (why the assistant suggested it, how likely drones are to fail, options in between). Only four wanted
+      the assistant to do more. These are design requirements more than findings — and the "reasoning" request links
+      to the tactical blind spot, where an explained refusal could have been checked.'
+    how: 'Debrief transcripts and interview notes coded against the codebook (CODEBOOK.md): C25 human final say,
+      C27 failure data, C08 middle ground / more options, C26 reasoning, C28 more automation. "Unprompted" = at
+      least one piece of evidence not given as a bare yes to a leading question. Hover a bar for who and for how
+      that group used the assistants.'
+    chart: style.wantsBars
+    numbers:
+    - Human final say 9 of 33 (8 unprompted); failure data 6; more options 6; reasoning 5; more automation 4 (all
+      unprompted)
+    atoms:
+    - ask-wants
+    - q-C25
+    - q-C26
+    - q-C27
+    - q-C28
+    codes:
+    - C25
+    - C26
+    - C27
+    - C28
+    - C08
+  - id: not-behaviour
+    title: Wanting something is not using the assistants differently
+    text: 'The groups who voiced each wish look like everyone else in how they used the assistants — the same message
+      as the questionnaires, where views on human authority predicted no behaviour. The one oddity: the five who
+      wanted reasoning scored higher and decided faster, but they relied on the assistants no more than anyone else
+      (follow-up C26 report); that group was found by screening many groups, so treat it as a lead.'
+    how: Group vs everyone else, per-person means, Mann–Whitney, descriptive and uncorrected. Disposition tests
+      as in f-personal-style § not-disposition.
+    chart: style.dispositionGrid
+    numbers:
+    - 'Human final say (C25): cards 57% vs 68% (p = .25); Suggest 82% vs 73% (p = .29)'
+    - 'Reasoning (C26): cards 67% vs 64%; Suggest 72% vs 76%; failure data (C27): 68% vs 64%; more automation (C28):
+      74% vs 64% (all p ≥ .49)'
+    - Questionnaire “A human should make the final decision” × card uptake ρ −.08
+    atoms:
+    - ask-wants
+    - q-C25
+    - q-C26
+    sharedWith:
+    - f-personal-style
+  replies:
+  - card: ask-wants
+    text: 'Kept as its own small finding with a bar chart, linked to the disposition null: stated wishes do not
+      show in behaviour.'
+  - card: q-C25
+    text: 'Kept: 9 of 33 (8 unprompted); no difference in use (cards 57% vs 68%, p = .25).'
+  - card: q-C26
+    text: 'Kept: 5 of 33; relied no more than others; the score difference is the separate C26 follow-up.'
+  - card: q-C27
+    text: 'Kept: 6 of 33.'
+  - card: q-C28
+    text: 'Kept: 4 of 33, the minority view.'
+  open:
+  - C08 (more options / middle ground) is shown here for completeness; it may belong to another area's finding on
+    manual allocation.
+  source: style
+- id: f-methods
+  area: Who the operator is
+  title: Methods notes
+  headline: 'Three things every claim in this register has to survive: the study has four fixed games of very different
+    load, so analyses compare people within the game they played; P01 and P02 played on half task weights and are
+    rescaled (no result here changes when they are dropped); and every "X of 33 said" count comes from one AI coder,
+    so it needs a human second coder before publication.'
+  confidence: strong
+  absorbs:
+  - meth-games
+  - meth-half-weights
+  - meth-qual-coder
+  sections:
+  - id: games
+    title: Four games, not two scenarios
+    text: The fixed seed gives four mission streams (Strategic Heavy 1 and 2, Tactical Heavy 1 and 2) that differ
+      ~1.5× in tasks completed and ~2× in waiting penalty; which pair a person played depends on when they took
+      part. All between-person comparisons here are made within game (z-scores, game means subtracted, or game as
+      a fixed effect), and final graphs show adjusted values rather than splitting by game.
+    how: Per-game means of tasks completed, missions completed and penalty per session (extras2 personExtra).
+    chart: gameLoad
+    numbers:
+    - 'Tasks completed per session by game: S1 25.1, S2 28.9, T1 21.5, T2 32.8 (max / min 1.5); penalty T2 549 vs
+      232–288 elsewhere'
+    atoms:
+    - meth-games
+  - id: half-weights
+    title: P01 and P02
+    text: 'Scored at half the later task weights; rescaled (2 × points − penalty) wherever a raw score is used,
+      and scale-free measures need nothing. Checked: dropping them changes no conclusion here.'
+    how: Payoff models rerun without P01/P02 (style.py, sessionNoHalf / decisionNoHalf).
+    numbers:
+    - Between OR 3.06 → 3.36; within 0.81 → 0.83; score within −0.10 → −0.07 SD
+    atoms:
+    - meth-half-weights
+  - id: qual-coder
+    title: Qualitative counts need a human second coder
+    text: All "X of 33 said" counts come from one AI coder. Agreement with a second AI pass (κ = .96) is closer
+      to test–retest than to independent coding; the one independent check (round 1, stated preference) gave κ =
+      .27. Use the counts descriptively until you have checked the coding (a tool for that can come later).
+    how: docs/analysis/qual/coding_notes.md; round 1 H6 / round 2 E.
+    numbers:
+    - Round 1 two-coder κ = .27 on stated preference; AI vs AI κ = .96
+    atoms:
+    - meth-qual-coder
+  replies:
+  - card: meth-games
+    text: Kept in Methods; all style and payoff numbers are game-adjusted and no final graph splits by game.
+  - card: meth-half-weights
+    text: 'Checked: adjusted everywhere, and dropping P01/P02 changes nothing here (between OR 3.06 → 3.36). Kept
+      as one line in Methods, as you suggested.'
+  - card: meth-qual-coder
+    text: Kept; noted that you will check the coding and may want a tool for it.
+  open: []
+  source: style
+- id: f-size-decides
+  area: When operators hand over
+  title: Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time
+  headline: 'The bigger the job, the more likely an operator hands it to an assistant: on the strategic tier the
+    card is taken on 52% of one-type missions vs 72% of three-type ones, on the tactical tier Suggest is pressed
+    on 57% of the smallest plans vs 92% of the largest. Comparing each person only with themselves, every doubling
+    of the job multiplies the odds of handing over by about 1.6 (strategic, drones needed) and 2.1 (tactical, drones
+    in the plan; 2.9 if measured by drones needed); 21 of 31 and 23 of 33 people show it individually. It survives
+    every check we tried, including dropping the illogical Conservative cards. One honest qualification: on the
+    strategic tier most of the effect is operators deciding small missions themselves before the cards have even
+    loaded — once the cards are on screen, size matters only weakly. The rule is sensible: that is exactly where
+    the assistant saves time (cards ~27% faster on three-type missions, no faster on one-type), and Suggest lets
+    operators start other missions while a plan fills in.'
+  confidence: strong
+  absorbs:
+  - size-decides
+  - speed-big-jobs
+  - speed-parallel
+  - q-C03
+  - q-C04
+  - q-C05
+  - q-C06
+  sections:
+  - id: both
+    title: 'Both tiers on one axis: the bigger the mission, the more it is handed over'
+    text: For every mission, the share of decisions where the operator handed over — took a strategy card as offered
+      (strategic, blue) or pressed Suggest in the tactical planner (tactical, orange) — against how many drones
+      the mission needs. Both rise. The tactical tier rises more steeply and keeps rising; the strategic tier climbs
+      from about 45–55% on small missions to about 75% and then levels off.
+    how: '<b>Rows.</b> Strategic: all 606 strategy-card decisions (one per strategic choice). Tactical: all 627
+      non-recovery tactical plans whose mission size is known (630 minus 3 residual missions with no recorded need).
+      <b>Size</b> = drones the mission needs: the sum of the primary requirements over its tasks — the number an
+      operator reads off the task badges, the same for both tiers. Binned so each bin has ≥ 59 decisions. <b>Intervals</b>:
+      we resample whole people (2,000 times) and recompute the rate, so a person''s decisions travel together and
+      one heavy user cannot make an interval look tight. <b>Model</b>: a logistic GEE (a regression for yes/no outcomes
+      that allows each person''s decisions to be correlated) with size split into two parts — this decision''s size
+      minus the person''s own average size (the <i>within-person</i> part) and the person''s average (the between
+      part); game and session are held fixed. The within-person odds ratio answers: "when the same person meets
+      a mission twice as big, how much do the odds that they hand it over change?" Odds ×2 means, for example, a
+      60% chance becomes 75%. Both tiers in one model: the two tables stacked, one shared within-person slope plus
+      a tier term; the tier × size term tests whether the slopes differ.'
+    chart: handover.sizeBoth
+    numbers:
+    - 'Strategic, per doubling of drones needed: odds ×1.62 [1.23, 2.15], p < .001 (606 decisions, 33 people)'
+    - 'Tactical, per doubling of drones needed: odds ×2.91 [2.03, 4.17], p < .001 (627 plans)'
+    - 'Both tiers, one shared slope: ×2.07 [1.64, 2.61], p < .001 (1,233 decisions); the tactical slope is steeper
+      than the strategic one by ×1.38 [0.99, 1.91], p = .056 — suggestive, not shown'
+    - 'Raw rates, smallest to largest bin: strategic 56% → 75%, tactical 54% → 91%'
+    atoms:
+    - size-decides
+  - id: strategic
+    title: 'Strategic tier: drone types matter more than drone count'
+    text: 'Split by how many drone types the mission needs, the strategic picture is mostly one step: one-type missions
+      get a card about half the time whatever their size (3, 5 or 6 drones), three-type missions about 70%. Among
+      three-type missions more drones still raise uptake (×1.53 per doubling), but unevenly (the 10–11 and 18-drone
+      bins dip). Tasks per mission barely matter on this tier.'
+    how: 'Same rows and model as above, with three measures of size fitted one at a time (they are too entangled
+      to fit together: every one-type mission needs ≤ 6 drones). "Per extra type" treats types as 1/2/3; two-type
+      missions are rare (12 decisions) and left out of the chart but kept in the models. The within-three-type and
+      within-one-type rows refit the drone-count model inside each group, so type is held fixed.'
+    chart: handover.sizeStrat
+    numbers:
+    - 'Card taken: one type 52% (181 decisions), two types 58% (12), three types 72% (413)'
+    - 'Within person, each extra drone type: odds ×1.50 [1.23, 1.83], p < .001; three-type vs not ×2.15 [1.48, 3.12]'
+    - 'Each extra task: ×1.18 [0.95, 1.45], p = .13 (not distinguishable from no effect)'
+    - 'Doubling of drones inside three-type missions: ×1.53 [1.05, 2.21], p = .026; inside one-type missions: ×0.98
+      [0.53, 1.79], p = .94'
+    atoms:
+    - size-decides
+  - id: strategic-steps
+    title: 'Strategic tier, honestly: most of it is deciding small missions before the cards arrive'
+    text: A strategic decision has two steps. The cards take about 4.7 s to load; before that the operator can already
+      build an allocation by hand ("pre-emptive manual"). Pre-emption is common on small missions (25–34% of decisions
+      needing ≤ 5 drones) and rare on big ones (7–9%). Once the cards are on screen, operators take one 67–75% of
+      the time on small missions and 81–83% on big ones — a weaker slope that on its own is not distinguishable
+      from flat. So on this tier "small jobs myself" mostly means "I don't wait for the advice on small jobs". That
+      is still a hand-over decision driven by size, but it is a decision about whether to wait for the assistant
+      at all, not a verdict on its advice.
+    how: 'The same 606 decisions split by the logged flag <i>manualBeforeCardsLoaded</i> (97 pre-emptive manuals).
+      Two within-person GEEs: (1) pre-emptive manual (yes/no) ~ size, on all 606; (2) card taken ~ size, on the
+      509 decisions where the cards had loaded first. Dropping pre-emptive decisions removes only manual choices,
+      so (2) is a conditional view, not an artefact-free one — it shows how much of the size effect lives in each
+      step.'
+    chart: handover.sizeStratSteps
+    numbers:
+    - 'Pre-emptive manual, per doubling of drones: odds ×0.48 [0.33, 0.69], p < .001; three-type vs one-type ×0.34
+      [0.21, 0.57]'
+    - 'Card taken once cards are on screen, per doubling: ×1.26 [0.94, 1.69], p = .12; three-type vs not ×1.51 [0.93,
+      2.44], p = .09'
+    atoms:
+    - size-decides
+  - id: tactical
+    title: 'Tactical tier: Suggest rises steadily with plan size, whatever happened strategically'
+    text: 'In the tactical planner the dose-response is smooth: Suggest pressed on 57% of plans with ≤ 8 drone-task
+      slots, 68%, 81%, 83%, 82% and 92% for plans of 51+. It rises with tasks (65% at 2 tasks → 95% at 6), with
+      drone types and with drones. It holds whether the mission was allocated from a card or by hand (the two faint
+      lines) — people who built the strategic allocation themselves still hand the big plans to Suggest.'
+    how: '<b>Rows</b>: the 630 non-recovery tactical plans that were confirmed (the planner starts empty, so pressing
+      Suggest is a deliberate choice). <b>Plan size</b> = drones in the committed team × tasks in the mission —
+      the number of drone-to-task decisions the operator would otherwise make by hand (median 24). Model as above,
+      per doubling of plan size. The by-route lines split plans by the strategic choice for that mission.'
+    chart: handover.sizeTac
+    numbers:
+    - 'Within person, per doubling of plan size: odds ×2.08 [1.67, 2.59], p < .001'
+    - 'Per extra task: ×2.04 [1.59, 2.62]; per extra drone type: ×1.73 [1.30, 2.31]; per doubling of drones needed:
+      ×2.91 [2.03, 4.17] (all p < .001)'
+    - 'Inside three-type missions: ×2.31 [1.61, 3.33]; inside one-type missions: ×1.77 [1.23, 2.53] — size matters
+      on this tier even with type held fixed'
+    - 'Mission allocated by hand: ×1.75 [1.20, 2.56]; allocated from a card: ×2.04 [1.48, 2.79]'
+    atoms:
+    - size-decides
+  - id: measures
+    title: 'Other ways of measuring size: drone types and tasks, both tiers'
+    text: 'The researcher asked for size as drones, tasks and types. Drones is shown above; this view switches between
+      types and tasks. Types separate the tiers less than tasks do: tasks move the tactical tier a lot and the strategic
+      tier little, which fits what each assistant does (the tactical one sequences tasks; the strategic one counts
+      drones per type).'
+    how: Same rows and person-resampled intervals as the first chart; residual missions left out of the tasks view
+      (a residual keeps only the tasks left over).
+    chart: handover.sizeMeasures
+    numbers:
+    - 'Strategic by tasks (2→6): 56%, 58%, 73%, 75%, 67%'
+    - 'Tactical by tasks (2→6): 65%, 71%, 76%, 86%, 95%'
+    atoms:
+    - size-decides
+  - id: models
+    title: 'Person-adjusted: every size measure, both tiers, one picture'
+    text: 'Each row is one within-person estimate: how the odds of handing over change when the same person meets
+      a bigger job. Rows right of the line mean "bigger → hand over more". All size measures point the same way
+      on both tiers; the two that do not clear the line are strategic tasks and the strategic slope once the cards
+      are on screen.'
+    how: 'GEE logistic models clustered on person (exchangeable correlation, small-sample "bias-reduced" standard
+      errors), size split into within- and between-person parts, game and session held fixed. Odds ratio = how many
+      times the odds of handing over multiply per unit of size. Read ×1.6 per doubling as: a person who takes the
+      card on 60% of 6-drone missions would be expected to take it on about 71% of 12-drone ones.'
+    chart: handover.sizeModels
+    numbers:
+    - See chart; every estimate is listed with n and p in its tooltip
+    atoms:
+    - size-decides
+  - id: people
+    title: Person by person
+    text: 'The same rule seen per person, no model: each line is one operator''s hand-over rate on small jobs (left)
+      and big jobs (right). Most lines go up; flat lines are mostly people who always (or never) hand over on that
+      tier.'
+    how: 'Strategic: card-taken rate on one-type vs three-type missions, for the 31 people with at least 3 decisions
+      of each. Tactical: Suggest rate on plans at or below vs above the overall median plan size (24), all 33 people.
+      Sign test = are "up" lines more common than "down" lines than a coin flip would give (ties dropped).'
+    chart: handover.sizePeople
+    numbers:
+    - 'Strategic: higher on three-type missions for 21 of 31 people, lower for 6, equal for 4 (sign test p = .006)'
+    - 'Tactical: higher on big plans for 23 of 33, lower for 2, equal for 8 (p < .001)'
+    atoms:
+    - size-decides
+  - id: artefacts
+    title: Is it an artefact? Checks, all reported
+    text: 'The worry: the illogical Conservative card (one that adds a drone of a type the mission does not need)
+      appears only on one- and two-type missions — 71% of one-type decisions, none of the three-type ones — so "people
+      avoid the card on small missions" could be "people avoid a visibly odd card". It is not: on one-type missions
+      uptake is the same with an odd card (50%, 129 decisions) and without one (56%, 52 decisions), and with every
+      odd-card decision removed the size effect is still there (×1.46 per doubling; clean one-type vs three-type
+      ×1.83). No ε-corrupted (deliberately wrong) cards were shown in any session, so card quality did not otherwise
+      vary by size. The rule also holds with queue length held fixed, with the minute of session held fixed, per
+      session, per scenario, without the half-weight participants and in a person-fixed-effects model. Two strategic
+      rows do not reach p < .05: Tactical Heavy sessions alone (few one-type missions there) and cards-on-screen
+      only (above). The tactical rule clears every row.'
+    how: 'Each row refits the main within-person model on a subset or with one more control. Illogical card: the
+      <i>odd</i> flag from build_findings_synthesis.load_decisions (Conservative card carries a type the mission
+      needs none of). Queue held fixed: the number of missions waiting at the decision, split within/between person
+      (the queue story itself is f-workload''s). Conditional logit: a different model family that compares each
+      person only with themselves by construction (people who always or never hand over drop out, hence fewer people).
+      The odd-card story itself is f-flaw-odd''s — here it is only checked as a confound.'
+    chart: handover.sizeRobust
+    numbers:
+    - 'Strategic, illogical card excluded: ×1.46 [1.12, 1.92], p = .006 (474 decisions); conditional logit ×1.92
+      [1.31, 2.82]'
+    - 'One-type missions, odd card vs clean card: odds ×0.77 [0.33, 1.78], p = .55 — no difference'
+    - 'Strategic range across 14 specifications: ×1.26 to ×2.20; tactical range across 15: ×1.75 to ×2.64'
+    - 'Tactical, illogical-card missions excluded: ×1.87 [1.47, 2.39]; strategic route held fixed ×1.98'
+    atoms:
+    - size-decides
+    sharedWith:
+    - f-flaw-odd
+    - f-workload
+  - id: speed
+    title: 'Why the rule makes sense: the assistant is faster only on big jobs'
+    text: 'Strategic: on three-type missions, taking a card (≈ 11 s) is much quicker than building by hand after
+      looking at the cards (≈ 20–21 s). On one-type missions a card (9.8 s) is still quicker than a considered manual
+      build (15.8 s) but slower than simply deciding before the cards appear (6.4 s) — and that is what people do
+      there. Tactical: on small plans Suggest and hand-building take the same ~14–15 s; on large plans hand-building
+      takes 45 s against 25 s with Suggest. The forced waits (4.7 s card reveal; 1 s per Suggest entry, median 9
+      entries) are a fixed cost that only pays back on big jobs.'
+    how: '<b>Times</b> are seconds from opening the panel to the choice (strategic) or from planner open to confirm
+      (tactical), as the operator lived them — forced waits included. Medians per route × size with person-resampled
+      intervals. <b>Model</b> (strategic): Gaussian GEE on log seconds with card × three-type, drones, game, session
+      and minute held fixed, the person''s own card rate as a control; a log-scale coefficient converts to "% faster".
+      All manual decisions (pre-emptive and after) are the comparison. Net time (forced reveal subtracted from card
+      decisions) shown too: it flatters the card. Tactical: kept Suggest plans vs hand-built, within person, plan
+      size held fixed.'
+    chart: handover.speedSize
+    numbers:
+    - 'Strategic, seconds spent, card vs manual: three-type −27% [−35, −17], p < .001; one-type +22% [−3, +55],
+      p = .09; difference between the two p < .001'
+    - 'Net of the forced reveal: three-type −59%, one-type −35% (both p < .01) — the reveal is what erases the card''s
+      edge on small missions'
+    - 'Tactical, kept Suggest vs hand-built, plan size held: −14% [−26, +1], p = .06 (round 1 reported −16%, p =
+      .023, with scenario rather than game held fixed); Suggest × plan size p = .13'
+    - 'Tactical medians, hand vs kept Suggest: small 14.2 vs 14.9 s, mid 23.9 vs 21.5 s, large 44.6 vs 25.4 s'
+    atoms:
+    - speed-big-jobs
+    codes:
+    - C04
+  - id: speed-model
+    title: The speed difference as estimates
+    text: 'The same comparison as model estimates: negative means the assistant route was faster for the same person.'
+    how: As in the section above. Each row is a within-person % change in decision time with its 95% interval.
+    chart: handover.speedModel
+    numbers: []
+    atoms:
+    - speed-big-jobs
+  - id: parallel
+    title: While a Suggest plan fills in, operators start other missions
+    text: 'After pressing Suggest the plan appears one drone-task entry per second and Deploy waits until it is
+      done (the "fill": median 9 s). Operators use that time. Of the 486 plans where Suggest was pressed, 45% had
+      the Strategic Assistant panel for another mission opened before the plan was confirmed, against 19% of the
+      144 hand-built plans; 28% vs 11% actually allocated another mission in that time. About half of the Suggest
+      cases (22% of Suggest plans) opened the other panel inside the fill window itself. The difference holds when
+      planners open for the same length of time are compared (15–25 s open: 43% vs 5%).'
+    how: '<b>Where "4.8×" comes from.</b> Round 1 (H9) took every confirmed tactical plan (630) and asked: between
+      opening this planner and confirming it, did the operator open the strategic panel for a <i>different</i> mission
+      ("interleaving")? Outcome yes/no. Predictor: Suggest pressed in this plan, within person (so each person''s
+      Suggest plans are compared with their own hand-built plans). Held fixed: log plan size, log time the planner
+      was open, scenario, session. The 4.8 is an <b>odds ratio</b>: the odds of interleaving are 4.8 times higher
+      on a Suggest plan, for the same person, plan size and open time — not "4.8 times as many". In raw shares it
+      is 45% vs 19%. <b>New checks</b>: the same with game instead of scenario and missions waiting held fixed;
+      only plans opened while at least one other mission was waiting (otherwise there is nothing to start); edited
+      Suggest plans dropped; without holding open time fixed (smaller, because hand plans that run long also interleave);
+      and the outcome changed to actually allocating another mission. The "during the fill" share uses each Suggest
+      press''s own window (press time to press + 1 s per entry). Direction of cause is open: pressing Suggest may
+      free the time, or operators who want to move on may press Suggest.'
+    chart: handover.parallel
+    numbers:
+    - 'Round-1 specification re-run: odds ×4.83 [2.24, 10.40], p < .001 (630 plans, 33 people) — reproduced exactly'
+    - 'Only plans opened with ≥1 mission waiting: 54% vs 25%, ×5.48 [2.59, 11.62]'
+    - 'Outcome = another mission actually allocated: 28% vs 11%, ×3.43 [1.57, 7.51], p = .002'
+    - 'Without holding open time fixed: ×2.38 [1.16, 4.85], p = .017'
+    - 22% of Suggest plans had another strategic panel opened inside the fill window itself
+    atoms:
+    - speed-parallel
+    codes:
+    - C05
+  - id: parallel-specs
+    title: The parallel-work estimate under each specification
+    text: Every specification tried, so none is cherry-picked.
+    how: Within-person logistic GEE as described above; one row per variant.
+    chart: handover.parallelSpecs
+    numbers: []
+    atoms:
+    - speed-parallel
+  - id: said
+    title: What operators say
+    text: 'Ten of 33 state the rule unprompted (C03: small/simple myself, big/complex to the assistant); 15 value
+      the assistant for speed rather than accuracy (C04, the most common reason given); 8 describe working on something
+      else while it runs (C05). The behaviour matches the words. People who state the rule press Suggest less overall
+      (59% vs 86% of plans) and their size slope is, if anything, steeper on the tactical tier (×1.43 steeper, p
+      = .10) — not reliably different from everyone else''s, so stating the rule is not what makes someone follow
+      it.'
+    how: 'Codes from the qualitative coding (docs/analysis/qual/codes_matrix.csv); excerpts are pulled by code on
+      the page. Slope comparison: the within-person size model with a size × C03 term (ratio of the two groups''
+      odds ratios).'
+    chart: null
+    numbers:
+    - C03 10 of 33; C04 15 of 33; C05 8 of 33
+    - 'C03 vs others, size slope ratio: strategic ×1.28 [0.69, 2.38], p = .43; tactical ×1.43 [0.93, 2.20], p =
+      .10'
+    atoms:
+    - q-C03
+    - q-C04
+    - q-C05
+    codes:
+    - C03
+    - C04
+    - C05
+  - id: slow
+    title: 'The exception that proves the rule: the people who call the assistant slow'
+    text: 'Six people complain that the assistant is slow (C06: P06, P15, P16, P26, P27, P29). They are not low-reliance
+      or struggling operators. They take cards and press Suggest at the same rate as everyone, keep Suggest plans
+      unedited, and score a little above average. What sets them apart is that they apply the size rule <i>harder</i>:
+      they pre-empt the cards more than twice as often (30% vs 13% of decisions), their three-type minus one-type
+      card gap is twice everyone else''s (+40 vs +19 points), they make more strategic decisions per session (10.2
+      vs 9.0) and they build tactical plans faster (19.9 vs 25.8 s). The complaint and the rule are the same observation:
+      the fixed wait is not worth it on small jobs. One of them (P29) says as much — the wait was long, but worth
+      it on the complicated missions. The paradox is only apparent: the people most bothered by the assistant''s
+      speed are fast operators who route around it on small jobs and still use it on big ones. With six people none
+      of these differences is reliable on its own.'
+    how: Per-person measures, averaged over the person's two sessions, for the six C06 people against the other
+      27. Score = session score (P01/P02 rescaled for their half task weights) standardised within each of the four
+      games. Size gaps as in the per-person chart. p = two-sided permutation test (group labels reshuffled 20,000
+      times); 10 comparisons, uncorrected — expect about one p below .10 by chance.
+    chart: handover.c06Profile
+    numbers:
+    - Pre-emptive share 30% vs 13% (p = .055); three-type minus one-type card gap +40 vs +19 points (p = .09); decisions
+      per session 10.2 vs 9.0 (p = .09)
+    - Tactical plan time 19.9 vs 25.8 s (p = .16); score +0.32 vs −0.07 SD (p = .34)
+    - Card uptake 58% vs 66% (p = .51); Suggest 74% vs 76% (p = .90) — reliance itself does not differ
+    atoms:
+    - q-C06
+    codes:
+    - C06
+  replies:
+  - card: size-decides
+    text: 'Shown separately for strategic (card taken) and tactical (Suggest pressed) and combined, as a dose-response
+      over drones needed, drone types, tasks and plan size, with person-resampled intervals and a within-person
+      model (each person compared only with themselves). Both tiers show it; the tactical tier more steeply (×2.1
+      per doubling of plan size vs ×1.6 per doubling of drones strategic). Artefact check: it survives dropping
+      every illogical Conservative card (×1.46, p = .006), and on one-type missions uptake does not depend on whether
+      the card was illogical. New nuance: on the strategic tier most of the effect is deciding small missions before
+      the cards load; with the cards on screen the slope is weak (×1.26, p = .12).'
+  - card: speed-big-jobs
+    text: 'Graphed as decision time by route × size, both tiers, raw seconds. Holds: cards −27% on three-type missions,
+      no gain (+22%, p = .09) on one-type ones, where deciding before the cards appear is fastest (6.4 s). Tactical:
+      same time on small plans, 45 vs 25 s on large. Linked into f-size-decides as the reason the rule is sensible.'
+  - card: speed-parallel
+    text: 'The 4.8 is an odds ratio from round 1''s model on the 630 tactical plans: Suggest plan vs the same person''s
+      hand-built plans, outcome "opened another mission''s strategic panel before confirming", plan size and open
+      time held fixed. Raw: 45% vs 19%. "During the fill" was loose wording — the measure is the whole time the
+      planner is open; 22% of Suggest plans had it inside the fill window itself. Reproduced exactly (×4.83) and
+      robust (×2.4 to ×6.4 across six specifications; 28% vs 11% actually allocated another mission). Graph is time-matched.'
+  - card: q-C06
+    text: 'C06 = P06, P15, P16, P26, P27, P29. Profiled against everyone: same reliance, slightly better scores,
+      but they pre-empt the cards twice as often, show a bigger small-vs-big gap and decide faster — the size rule
+      applied hardest. Placed as the closing "exceptions" section of f-size-decides.'
+  - card: q-C03
+    text: Merged as supporting evidence (section 'What operators say'); their size slope is not reliably steeper
+      than others'.
+  - card: q-C04
+    text: Merged into the speed section and 'What operators say'.
+  - card: q-C05
+    text: Merged into the parallel-work section.
+  open:
+  - 'Framing the strategic tier: the size rule there is mostly ''do not wait for the advice on small missions''
+    (pre-emption). Do you want the headline to say ''decides when to consult'' rather than ''decides whether to
+    accept''?'
+  - Literature positioning of 'automate the complex, do the simple yourself' is still to do (your note).
+  - 'Parallel work: direction of cause cannot be separated here (Suggest frees time vs people who want to move on
+    press Suggest).'
+  source: handover
+- id: f-practice
+  area: When operators hand over
+  title: Practice makes operators faster, not better at choosing when to hand over
+  headline: 'Decisions speed up steadily: about 6% faster per minute within a session on both tiers (≈ 38% over
+    the eight minutes) and about 20% faster in session 2 than session 1, with forced waits removed. But the size
+    rule does not sharpen: the big-minus-small hand-over gap is the same or slightly smaller in session 2 on both
+    tiers, and no test of sharpening comes close. Reliance is targeted from the start and stays a personal style.
+    The six people who say they got better did improve their scores (all six, against 37% of others) — their speed
+    gains are not reliably larger.'
+  confidence: moderate
+  absorbs:
+  - learn-speed
+  - learn-calibration-null
+  - q-C22
+  sections:
+  - id: speed
+    title: Faster with every minute, and faster in session 2
+    text: Median net decision time per minute of the session, session 1 (grey) and session 2 (colour). Both tiers
+      fall across the session and session 2 sits mostly below session 1. Small, expected, solid.
+    how: '<b>Net time</b> = seconds to decide minus the forced wait (the card reveal for card choices; 1 s per entry
+      for Suggest plans), as round 2 defined it. <b>Model</b>: Gaussian GEE on log net time, clustered on person,
+      with minute of session and session 2 as predictors, and route, mission size and scenario held fixed. A log-scale
+      coefficient converts to "% faster". Round 2''s figure (−31% over a session) used fewer controls; the direction
+      and size agree.'
+    chart: handover.learnSpeed
+    numbers:
+    - 'Strategic: −5.7% per minute [−7.8, −3.6], ≈ −38% over 8 minutes, p < .001; session 2 vs 1 −19% [−30, −6],
+      p = .005'
+    - 'Tactical: −5.7% per minute [−9.1, −2.2], p = .002; session 2 vs 1 −24% [−36, −9], p = .002'
+    atoms:
+    - learn-speed
+  - id: calibration
+    title: The size rule does not sharpen with practice
+    text: 'If practice taught operators where the assistant pays, the gap between big and small jobs would widen
+      in session 2. It does not, on either tier: strategic +25 points in session 1, +15 in session 2; tactical +16
+      then +14. Within a session the tactical gap even narrows slightly with time (one of five tests, p = .047,
+      likely noise). The rule is there from the first session and stays put — another sign of a stable personal
+      style rather than something learned.'
+    how: 'Gap = hand-over rate on big jobs minus small jobs (strategic: three-type minus one-type missions; tactical:
+      plans above minus at/below the median size), per session, with person-resampled intervals. Tests: logistic
+      GEE with size × session (strategic, all sessions and Strategic Heavy only; tactical) and size × minute of
+      session (both tiers). A ratio of odds ratios above 1 would mean the rule sharpens. Caveat from round 2: one-type
+      missions occur almost only in Strategic Heavy, so the strategic session comparison is partly between people
+      who played that scenario first or second. "No evidence of sharpening", not proof that none happens — the intervals
+      still allow a modest change either way.'
+    chart: handover.learnGap
+    numbers:
+    - 'Size × session: strategic ×0.69 [0.33, 1.44], p = .32; Strategic Heavy only ×0.73, p = .49; tactical ×0.80
+      [0.54, 1.17], p = .25'
+    - 'Size × minute: strategic ×1.04, p = .59; tactical ×0.93 [0.87, 1.00], p = .047 (uncorrected, opposite to
+      sharpening)'
+    - 'Gap: strategic s1 +25 [+12, +38] → s2 +15 [−1, +30]; tactical s1 +16 [+4, +29] → s2 +14 [0, +30]'
+    atoms:
+    - learn-calibration-null
+    sharedWith:
+    - f-size-decides
+  - id: c22
+    title: Does 'I got better with practice' match the logs? For score yes, for speed partly
+    text: 'Six people say they got better, faster or more confident (C22: P10, P11, P15, P21, P30, P32). All six
+      raised their within-game score from session 1 to 2, against 10 of 27 others. Their tactical planning sped
+      up more than others'' on average (5 of 6 faster), but not reliably; their strategic decisions did not speed
+      up more (3 of 6 faster, vs 18 of 27 others). So the self-report matches the outcome they cared about, not
+      a measurable change in how they used the assistants (the earlier follow-up found their reliance moved in opposite
+      directions — two less, one more).'
+    how: 'Per person: session 2 minus session 1 in (a) score standardised within game, (b) log median net strategic
+      time, (c) log median net tactical time. Group mean vs the other 27, two-sided permutation p (20,000 reshuffles).
+      Follows docs/analysis/combined/c22_got_better.md, which has the reliance and workload side. With P01/P02 left
+      out of the game means P21''s score change is slightly negative (five of six, not six).'
+    chart: handover.c22
+    numbers:
+    - 'Score change: C22 +0.86 SD vs others −0.09, p = .020'
+    - 'Tactical time change (log): −0.83 vs −0.26, p = .14; strategic: −0.13 vs −0.18, p = .83'
+    atoms:
+    - q-C22
+    codes:
+    - C22
+  replies:
+  - card: learn-speed
+    text: Kept as a short section with a graph by minute and session; both tiers speed up (~6% per minute, ~20%
+      session 2).
+  - card: learn-calibration-null
+    text: Kept; re-checked for both tiers (round 2 had the strategic tier only). No sharpening on either; the gap
+      is if anything smaller in session 2. Linked to the personal-style reading and to f-size-decides.
+  - card: q-C22
+    text: 'Checked: the self-report matches score (all six improved within game, p = .02) but not speed in a reliable
+      way, and not reliance. So "got better" is right about outcomes, not about better-targeted use of the assistants.'
+  open:
+  - Whether to fold this whole finding into the style/learning area if another analyst owns 'personal style'.
+  source: handover
+- id: f-manual-cards
+  area: When operators hand over
+  title: Manual allocations are anchored on the cards — and the 'trimming small missions' was mostly dropping the
+    illogical spare
+  headline: 'When operators allocate by hand after seeing the cards, their numbers track the cards: one more drone
+    on the Conservative card means about half a drone more in the manual build, beyond what the mission needs. Operators
+    who decided before the cards appeared show no such link — a clean control, so this is anchoring, not both tracking
+    the mission. Manual builds sit at or below the cards (44% below both, 33% equal to one, 14% between, 8% above).
+    The earlier "trim small missions, pad big ones" mostly dissolves: on one-type missions the ''trim'' is almost
+    entirely dropping the Conservative card''s spare drones of types the mission does not need.'
+  confidence: moderate
+  absorbs:
+  - manual-anchored
+  - q-C07
+  - q-C08
+  - q-C09
+  - q-C10
+  sections:
+  - id: dots
+    title: Each manual decision against the Conservative card
+    text: 'Every manual allocation (209) as one dot: drones committed minus drones on the Conservative card, against
+      the drones the mission needs. Switch to "needed types only" and the band of one-type missions moves up to
+      zero: on the types the mission actually needs, manual builds on small missions match the Conservative card
+      (+0.05 drones on average); the −1.2 drones on all types is the card''s spare of each unneeded type being left
+      off. On big three-type missions manual builds sit about one drone above the Conservative card (and still far
+      below the drones the mission lists, since drones are reused across tasks in series).'
+    how: 'Rows: strategic choices of type manual. The cards'' true asset counts per colour come from the last <i>strategic_modal_opened</i>
+      before the choice; the operator''s counts from <i>assetsChosen</i>. "Needed types" = colours with a primary
+      requirement in the mission. Kinds: pre-emptive (decided before the cards loaded — the cards existed in the
+      log but were never on screen), edited a card (started from a card, then changed it), built after seeing the
+      cards. Size slope: Gaussian within-person GEE of the difference on log2 drones needed.'
+    chart: handover.manualDots
+    numbers:
+    - 'Mean manual − Conservative: −0.55 drones overall = −0.51 on unneeded types + −0.04 on needed types'
+    - 'One-type missions: −1.17 overall, +0.05 on needed types, −1.22 on unneeded; three-type with 10+ drones: +0.95'
+    - 'Per doubling of mission size the difference grows by +1.51 drones [0.53, 2.49] (after seeing the cards) and
+      +1.09 [0.47, 1.72] (pre-emptive): the size pattern is just as strong in people who never saw the cards, so
+      it is not a reaction to the card'
+    - 'Needed types only, after seeing the cards: +0.93 per doubling [−0.18, 2.04], p = .10'
+    atoms:
+    - manual-anchored
+    codes:
+    - C07
+    sharedWith:
+    - f-flaw-odd
+  - id: anchor
+    title: 'The anchoring test: does the card''s number move the operator''s number?'
+    text: 'Holding the mission''s need fixed, a bigger Conservative card goes with a bigger manual allocation —
+      but only if the operator saw the card. For those who saw it, about 0.5–0.7 extra drones per extra card drone;
+      for operators who decided before the cards loaded, zero. Since both groups face the same missions, the difference
+      is the card itself: the advice anchors the manual choice even when it is not accepted.'
+    how: 'Gaussian GEE clustered on person: committed drones ~ Conservative card drones + drones needed + number
+      of types. The coefficient on the card = extra manual drones per extra card drone with need held fixed. The
+      card''s total is not fully determined by need (need and types explain 64% of its variation; residual SD 1.2
+      drones — reserve state and spare rules move it), which is what gives the test something to work with. Fitted
+      separately for: saw the cards (all), built own after seeing (excludes edits, which start from the card mechanically),
+      edited a card, pre-emptive. Also on needed types only. This replaces round 2''s "+0.76 per card drone (session
+      2 and one order only)".'
+    chart: handover.manualAnchor
+    numbers:
+    - 'Saw the cards: +0.53 [0.24, 0.82] drones per card drone, p < .001 (112 decisions, 28 people); needed types
+      +0.67 [0.33, 1.02]'
+    - 'Built own after seeing (no edits): +0.37 [0.08, 0.67], p = .014; needed types +0.49 [0.17, 0.81], p = .003'
+    - 'Pre-emptive (never saw): −0.00 [−0.15, 0.15], p = .99 (97 decisions, 18 people); needed types −0.07, p =
+      .59'
+    atoms:
+    - manual-anchored
+  - id: position
+    title: Where manual builds sit relative to the two cards
+    text: Mostly below both cards or equal to one of them, rarely above. Pre-emptive builds — made without seeing
+      the cards — land equal to a card total more often than builds made after seeing them (39% vs 27%), so 'equal
+      to a card' is partly just the obvious allocation, not copying.
+    how: 'Each manual total compared with the two card totals (all types): below both, equal to either, strictly
+      between, above both. Counts per kind of manual decision.'
+    chart: handover.manualPos
+    numbers:
+    - 'All 209: below both 44%, equal to a card 33%, strictly between 14%, above both 8%'
+    - 'Built after seeing (77): 57% below, 27% equal, 9% between, 6% above; pre-emptive (97): 38%, 39%, 16%, 6%'
+    atoms:
+    - manual-anchored
+    codes:
+    - C08
+  - id: said
+    title: What operators say about building by hand
+    text: 'Four accounts of manual allocation sit alongside the numbers. Holding drones in reserve (C07, 6 people)
+      fits the ''below both cards'' mass — though in the logs these six are not lower than others on needed types
+      (+0.36 vs the Conservative card). Wanting a middle ground or more options (C08, 6 people) fits the wish, not
+      the behaviour: only 10% of their manual builds land strictly between the cards. Treating a card as a first
+      draft (C09, 4 people) shows in the logs — 16 of their 33 manual decisions are edited cards. Testing the assistant
+      against themselves (C10, 5 people) fits slower, deliberate manual builds (round 1: 20 s vs 12.6 s). All four
+      describe manual as working <i>with</i> the advice, not rejecting it.'
+    how: Codes from docs/analysis/qual/codes_matrix.csv; per-code manual numbers from the same rows as the dot chart
+      (small groups, descriptive only).
+    chart: null
+    numbers:
+    - 'C07: 55 manual decisions from 6 people, mean +0.36 vs Conservative on needed types, 21 edited cards'
+    - 'C08: 40 from 5 people, 10% strictly between the cards'
+    - 'C09: 33 from 4 people, 16 edited cards'
+    - 'C10: 40 from 5 people'
+    atoms:
+    - q-C07
+    - q-C08
+    - q-C09
+    - q-C10
+    codes:
+    - C07
+    - C08
+    - C09
+    - C10
+  replies:
+  - card: manual-anchored
+    text: 'Graphed per decision (manual − Conservative, by mission size, coloured by kind). Two changes to the card:
+      (1) the ''trim small missions'' was mostly the illogical spare drones being dropped — on needed types manual
+      ≈ Conservative on small missions; (2) a cleaner anchoring test: with need held fixed, the card''s number moves
+      the manual number only for those who saw the card (+0.5 per drone) and not at all for pre-emptive deciders.
+      The size pattern of the difference appears in both groups, so it reflects the card''s own scaling, not a reaction
+      to it.'
+  - card: q-C07
+    text: Attached to the manual finding; their manual numbers are not lower than others' on the types the mission
+      needs.
+  - card: q-C08
+    text: Attached; few of their builds land strictly between the cards — the wish is a design request (link ask-wants).
+  - card: q-C09
+    text: Attached; matches the logs (16 of their 33 manual decisions are edited cards).
+  - card: q-C10
+    text: Attached as part of 'manual works with the advice, not against it'.
+  open:
+  - manual-not-rejection was pruned, but the anchoring test is its strongest evidence; keep the phrase 'manual is
+    not a rejection' in this headline or leave it out?
+  - 'The illogical-spare correction touches f-flaw-odd: the analyst there may want to cite it.'
+  source: handover
+- id: f-workload
+  area: Workload and the queue
+  title: A busier moment does not push people onto the assistants — even though they say it does
+  headline: 'Comparing each operator with themselves, having more missions waiting does not change how often they
+    take a strategy card or press Suggest: the line is flat once we account for what each decision was (mission
+    size and drone types), when it came in the session, which game it was and who made it. This is "no evidence
+    of an effect", with enough data to rule out large effects (strategic: at most about +15 points of card-taking
+    going from 0 to 5 waiting). Nine of 33 said in the debrief that they hand over when overloaded; their own behaviour
+    moved with the queue no more than anyone else''s. In play they said overload-type things at slightly busier
+    moments, but their reliance around those moments did not change.'
+  confidence: 'null'
+  absorbs:
+  - load-null
+  - load-visible
+  - load-backlog-practice
+  - load-deep-queue
+  - q-C11
+  sections:
+  - id: raw-vs-adjusted
+    title: Queue depth against reliance — raw, and adjusted
+    text: 'Each point is the share of decisions where the operator took a strategy card (or pressed Suggest), grouped
+      by how many OTHER missions were waiting for a strategic decision at that moment. Whiskers are 95% intervals.
+      Switch the view: <b>Raw</b> shows the dip at 3–4 waiting that made the raw graph look like an effect; <b>Raw
+      + expected</b> shows that the dip is where it was expected anyway (dashed line); <b>Adjusted</b> removes it
+      — every adjusted point sits inside 59–74% with overlapping intervals and no trend. The dotted vertical line
+      marks where the queue list runs out of room (about 3.5 cards visible at rest, counting the one being opened):
+      beyond it, waiting missions are only on the strategic map. Nothing changes at that line either.'
+    how: '<b>Rows:</b> 564 strategic decisions on original (non-residual) missions and 630 tactical plans, 33 people
+      (P09 excluded). <b>Queue</b> = other missions that had arrived and not yet been given a strategic choice when
+      the decision panel opened, rebuilt from the event log (agrees with the logged count for 100% of decisions).
+      <b>Expected</b>: a logistic model predicts each decision''s chance of a card (or Suggest) from four things
+      only — the mission (drones needed, number of tasks, number of drone types), the minute of the session, the
+      game (one of four fixed scenarios), and the person (their own rate on all their OTHER decisions, so a decision
+      never predicts itself). The queue is deliberately left OUT. <b>Adjusted</b> for a bin = the overall rate +
+      the average of (observed − expected) in that bin. In plain words: ''given who made these decisions, on which
+      missions, at what point in which game, how much more or less did they rely on the assistant than we would
+      expect?'' If load mattered, the deep-queue bins would sit above what their missions and people predict; they
+      do not. <b>Worked example (strategic, 4 waiting, 41 decisions):</b> raw 51% looks like a drop from 67% at
+      0 waiting. But 90% of those decisions were in the two Strategic Heavy games, on missions averaging 6.9 drones
+      (vs 8.7) with fewer three-type missions (54% vs 66%), made by people whose usual rate is 56% (vs 66%). The
+      model expects 50%; observed is 51%; adjusted ≈ 67%. <b>Intervals</b>: people resampled with replacement 400
+      times, the expected-model re-fitted each time, so the interval includes the uncertainty of the adjustment
+      itself.'
+    chart: load.nullBins
+    numbers:
+    - 'Strategic raw: 67% (0 waiting), 70%, 68%, 58%, 51%, 71%, 50% (6+); adjusted: 66%, 65%, 65%, 61%, 67%, 74%,
+      59% — all intervals overlap.'
+    - 'Tactical raw: 73%, 79%, 83%, 79%, 76%, 73%, 67%; adjusted: 76%, 78%, 77%, 75%, 82%, 78%, 78%.'
+    - 'The queue rises with the minute (Spearman ρ = .49) but hardly with mission size (ρ = −.08): the adjustment
+      mostly removes WHO reaches deep queues and WHICH GAME they are in.'
+    - 'Deep queues are a Strategic Heavy phenomenon: 90–97% of decisions at 4+ waiting are in those two games.'
+    atoms:
+    - load-null
+    - load-visible
+  - id: robust
+    title: Every way of asking it gives the same answer
+    text: 'The within-person change in the odds of relying per extra mission waiting, under every specification
+      tried — including each game on its own, the heavier vs the lighter pair of games, a ''hinge'' that lets the
+      effect differ beyond the visible list, tasks waiting instead of missions, and missions that had just arrived
+      (which the operator cannot cause). Strategic: all 13 are compatible with no change. Tactical: the main model
+      is flat, but two of twelve variants reach p < .05 (without mission size; Strategic Heavy game 1 alone) — a
+      small upward lean that disappears once mission size is held fixed and is absent for the arrivals measure.'
+    how: 'GEE logistic regression (decisions clustered within person, bias-reduced standard errors). ''Within person''
+      means the queue is centred on that person''s own average, so the estimate compares a person when busier with
+      the same person when less busy; their average queue is kept as a separate term. ''Main'' adds mission size,
+      tasks, drone types, minute and game. An odds ratio of 1.04 means the odds of taking a card are 4% higher per
+      extra mission waiting. To make the interval concrete: at the main model''s upper limit (1.17) uptake would
+      rise from 65% at 0 waiting to 80% at 5; at its lower limit (0.92) it would fall to 56%. So the data rule out
+      a large effect but not a modest one either way.'
+    chart: load.robust
+    numbers:
+    - 'Strategic main: OR 1.04 [0.92, 1.17], p = .53 per extra mission waiting; range across 13 specs 0.91–1.60,
+      none p < .05.'
+    - 'Strategic hinge: 0–3 waiting OR 1.00 [0.82, 1.22]; beyond 3 OR 1.11 [0.86, 1.44] — no change at the visible
+      limit.'
+    - 'Tactical main: OR 1.08 [0.94, 1.24], p = .26; + minute and game only: 1.18 [1.03, 1.34], p = .017; arrivals
+      in last 60 s: 1.00 [0.90, 1.11].'
+    - 'Heavier games only (Strategic Heavy 1, Tactical Heavy 2): strategic 1.10 [0.93, 1.32], tactical 1.14 [0.98,
+      1.32].'
+    atoms:
+    - load-null
+  - id: said-did
+    title: 'Said vs did: the people who said they hand over when busy'
+    text: 'Nine operators (P05, P06, P11, P18, P20, P25, P32, P33, P35) said, unprompted, that they lean on the
+      assistant more when busy, overwhelmed or rushed. Each dot is one person''s own slope: how much their (adjusted)
+      reliance changed per extra mission waiting. If what they said described what they did, the red group would
+      sit clearly right of zero. It does not: on average they move about +2 points per extra mission, not distinguishable
+      from zero or from the other 24 people. Their claim usually compared sessions (''the first one was so fast
+      I used it a lot'') — so the second view checks that version: reliance in their heavier game minus their lighter
+      game. Again no difference.'
+    how: '<b>Moment to moment:</b> for each person with 6+ decisions and some spread in queue depth, a straight
+      line through their (observed − expected) values against queue depth; the slope is in percentage points per
+      extra mission waiting. Groups compared with a Mann–Whitney test; also tested as a queue × ''said'' interaction
+      in the GEE above. <b>Busier session:</b> the four games'' load measured by total drones demanded per session
+      (Tactical Heavy 2: 115; Strategic Heavy 1: 89; Strategic Heavy 2: 88; Tactical Heavy 1: 63); for each person,
+      their mean (observed − expected) in the heavier of their two games minus the lighter. With 9 people in the
+      ''said'' group, only a large difference could have been detected — this is absence of evidence for the claim,
+      and the point estimates are small.'
+    chart: load.saidDid
+    numbers:
+    - 'Strategic slopes: said +2.1 pp per extra mission (5 of 9 upward) vs not said −0.3 pp (11 of 24 upward); p
+      = .41.'
+    - 'Tactical slopes: said +2.5 pp (6 of 9 upward) vs −0.3 pp (9 of 24); p = .09 — the closest thing to support,
+      and not significant.'
+    - 'Queue × said interaction: strategic OR 1.13 [0.83, 1.53] p = .44; tactical 1.18 [0.91, 1.53] p = .20. Within
+      the ''said'' group alone the queue OR is 1.03 (strategic) and 0.97 (tactical).'
+    - 'Heavier minus lighter game, adjusted: said +3.8 pp strategic, +1.5 pp tactical; everyone −1.1 / +1.2 pp;
+      all intervals span zero.'
+    atoms:
+    - q-C11
+    - load-null
+    codes:
+    - C11
+  - id: spoken
+    title: 'In play: overload talk comes at slightly busier moments, reliance does not follow'
+    text: 'Using the narration recorded during play (30 people, 60 sessions), we found every moment someone said
+      an overload-type phrase (''too many'', ''can''t keep up'', ''oh no'', ''struggling''…): 51 moments from 24
+      people. All nine of the ''said'' group produced at least one. At those moments slightly more missions were
+      waiting than at a random utterance (2.4 vs 2.1; p = .09) — so what people feel as overload is weakly tied
+      to the queue. But in the minute either side, their card-taking and Suggest use were exactly what their missions
+      and habits predict. The felt pressure is real enough; it just does not turn into handing work over.'
+    how: 'Phrase list fixed in round 2 (before any behaviour was looked at), applied to the transcript of each session
+      window (from segments.json; utterances 20 s apart merged into one moment). For each moment: missions waiting
+      at that second (rebuilt from the log), and the mean (observed − expected) of strategic decisions and tactical
+      plans started within ±60 s. Null: the same number of utterances per session drawn at random from ALL that
+      session''s speech, 5,000 times — so the comparison is ''overload talk'' vs ''any talk'', in the same people
+      and sessions. Caveats: no speaker separation (researcher speech is in the transcripts); in round 2 about half
+      of matched phrases were genuine stress on reading; alignment uses file times for 24 of 30 people (±2 s).'
+    chart: load.spoken
+    numbers:
+    - Missions waiting at overload moments 2.41 vs 2.09 at random utterances (95% of random draws 1.71–2.45), p
+      = .09.
+    - 'Card-taking within ±60 s: −3.7 pp vs expected (random utterances +0.1), p = .38. Suggest: +3.5 pp (random
+      +2.1), p = .65.'
+    - 16 of the 51 moments came from the 9 people coded C11; 35 from others.
+    atoms:
+    - q-C11
+    codes:
+    - C11
+  - id: backlog-practice
+    title: 'Why Suggest seemed to rise with the backlog: the session was simply further along'
+    text: 'One earlier result looked like an exception: Suggest was pressed more often when strategic decisions
+      were waiting at the moment the operator started a tactical plan. The plain reading of this card: <b>that rise
+      is mostly practice, not pressure.</b> Both the backlog and Suggest use climb over the 8 minutes (second chart).
+      Because they climb together, a plan made with a long backlog is usually also a plan made later in the session.
+      Hold the minute fixed and the backlog effect shrinks to borderline. In the first chart, the grey dashed line
+      (adjusted for plan, game and person but NOT the minute) still rises with backlog; the solid line (adding the
+      minute) is flat within its intervals.'
+    how: 630 tactical plans, 33 people. Backlog = missions awaiting a strategic decision at the first planner action
+      (Suggest press or first drag). Within-person GEE with plan size, drone types and game; then the same with
+      minute of the session added. 'Adjusted' lines as in the first section, with the model either excluding or
+      including the minute.
+    chart: load.backlog
+    numbers:
+    - 'Without minute: OR 1.18 [1.07, 1.31] per extra mission in the backlog, p = .001. With minute: 1.11 [0.98,
+      1.26], p = .10.'
+    - 'The minute itself: Suggest odds ×1.13 per minute [1.03, 1.23]; backlog +0.23 missions per minute [0.16, 0.30].'
+    - 'Suggest use by minute: 73%, 70%, 77%, 81%, 73%, 83%, 83%, 77%.'
+    atoms:
+    - load-backlog-practice
+  - id: deep
+    title: 'Deep queues (4+ waiting): why the between-person picture points the wrong way'
+    text: '17% of strategic decisions were made with four or more other missions waiting (25 of 33 people). Plain
+      reading of this card: <b>across people</b>, those who often have deep queues rely LESS on the assistants —
+      but that is because people who do big missions by hand are slower and build up their own queues, not because
+      queues put them off. <b>Within a person</b>, their own deep-queue moments look like their shallow ones. It
+      is the same null as above at the extreme, plus a warning about why between-person comparisons mislead here.'
+    how: 'Each dot is a person: the share of their decisions made with 4+ waiting, against their overall rate. Spearman
+      correlation across people. The within-person test is the GEE with ''deep'' (4+ waiting, yes/no) centred on
+      each person''s own share, with the person''s share as a separate between-person term, plus mission, minute
+      and game.'
+    chart: load.deep
+    numbers:
+    - 'Strategic: within person OR 1.33 [0.80, 2.21], p = .27; between people ρ = −.32 (p = .07); a person''s deep-queue
+      share goes with bigger missions (ρ = .61).'
+    - 'Tactical: within OR 1.34 [0.77, 2.31], p = .30; between ρ = −.40 (p = .02).'
+    - 'People who met both: adjusted card-taking higher at deep queues for 16, lower for 9 (p = .47).'
+    atoms:
+    - load-deep-queue
+  - id: visible
+    title: What the operator can see of the queue
+    text: The queue column shows three full cards (four in a taller window); while a strategy decision is open the
+      panel fills that column and leaves at most one other waiting mission visible. This is the dotted line on the
+      graphs. No load measure changes at it (hinge model above), so 'missions out of sight' do not create a pressure
+      the visible ones did not.
+    how: Read off screen recordings of P19 and P30 (images below).
+    chart: queueImages
+    numbers:
+    - 'Hinge beyond the visible list: strategic OR 1.11 [0.86, 1.44]; tactical 1.19 [0.82, 1.71].'
+    atoms:
+    - load-visible
+    sharedWith:
+    - f-triage
+  replies:
+  - card: load-null
+    text: '(A) The new graph shows raw and adjusted side by side with person-bootstrap intervals; adjusted points
+      all sit between 59% and 74% with overlapping intervals, so it reads as flat. (B) The ''how'' of the first
+      section explains the adjustment in words with a worked example: the raw dip at 4 waiting is decisions by lower-uptake
+      people on smaller, single-type missions in the Strategic Heavy games — the model expects 50%, they did 51%.
+      (C) Said-vs-did now has its own graph: the nine C11 people''s slopes are not different from anyone else''s,
+      and in-play overload talk came at slightly busier moments without any change in reliance.'
+  - card: load-visible
+    text: Merged as a dotted line on every queue graph. On an 'other missions waiting' axis it sits at 2.5 (3.5
+      cards counting the one being opened); nothing changes there (hinge model ORs 1.11 / 1.19, n.s.).
+  - card: load-backlog-practice
+    text: 'Yes — you read it right. The rise of Suggest with backlog (OR 1.18, p = .001) is mostly the minute of
+      the session: both rise together, and with the minute held fixed it is 1.11, p = .10. Now a short section in
+      f-workload with a graph that shows the two adjusted lines.'
+  - card: load-deep-queue
+    text: 'It says the same null at 4+ waiting, plus a warning: comparing people, deep queues go with less reliance
+      (because manual workers on big missions build their own queues); comparing each person with themselves, nothing.
+      Now a section with a per-person scatter.'
+  - card: q-C11
+    text: Folded into f-workload's said-vs-did section, with a graph. The disparity is real in the sense that their
+      own data show no load-driven rise (strategic +2 pp per mission, tactical +2.5 pp, both n.s., and not different
+      from others'), but with 9 people it is absence of evidence, not proof of no effect.
+  open:
+  - Said-vs-did is 'they said X; we see no X' — not proof that X is false. With 9 people we could only have detected
+    a large difference. Decide whether to state it as a disagreement or as an unsupported claim.
+  - Tactical tier has a weak upward lean in some specifications (2 of 12 at p < .05, gone with mission size or with
+    exogenous arrivals). I report it as null; you may prefer 'no robust evidence'.
+  - The narration overload list is crude (no speaker separation, ~50% precision in round 2). A hand-coded pass of
+    the 51 moments would make the in-play section firmer.
+  source: load
+- id: f-triage
+  area: Workload and the queue
+  title: Busy operators speed up a little but do not change what they pick
+  headline: 'The earlier story — that with a long queue operators abandon order and pick smaller missions — does
+    not survive a fair comparison. Long queues happen almost only in the two Strategic Heavy games, where every
+    mission is small, so the opened mission is smaller simply because everything waiting is. Compared with what
+    was actually waiting, operators keep the same priorities at any queue length: a strong pull towards the oldest
+    mission, a mild preference for larger ones, and only falling ''oldest-first'' rates because chance falls as
+    more missions wait. What does change is pace: a bit more decisions per minute when more is waiting (suggestive).'
+  confidence: mixed
+  absorbs:
+  - load-pick-small
+  sections:
+  - id: games
+    title: Where long queues happen
+    text: The four games differ in how many missions arrive and how big they are. The Strategic Heavy games send
+      many small missions (13–14 per session, about 6.5 drones each); the Tactical Heavy games send few large ones.
+      96 of 102 decisions made with 4+ others waiting are in the Strategic Heavy games. Any comparison of 'long
+      vs short queue' is therefore also a comparison of games unless the game is held fixed.
+    how: 'Per session, from the event log: missions arrived (excluding residual re-queues), drones and tasks they
+      needed, and the mean queue met at strategic decisions.'
+    chart: load.games
+    numbers:
+    - 'Drones demanded per session: Tactical Heavy 2 115, Strategic Heavy 1 89, Strategic Heavy 2 88, Tactical Heavy
+      1 63.'
+    - 'Mean queue at a decision: Strategic Heavy 1 2.6, Strategic Heavy 2 2.0, Tactical Heavy 2 1.3, Tactical Heavy
+      1 0.9.'
+    - 'Decisions with 4+ others waiting: Strategic Heavy 1 64, Strategic Heavy 2 32, Tactical Heavy 2 6, Tactical
+      Heavy 1 0.'
+    atoms:
+    - load-pick-small
+  - id: order
+    title: 'Order: still oldest-first well above chance'
+    text: The share of decisions that open the oldest waiting mission falls as the queue grows (59% with one other
+      waiting, about 30% with five) — but so does the chance of hitting the oldest by picking at random (50% → 17%).
+      Measured against chance, the pull towards the oldest stays roughly the same. 'One of the top 3 in the list'
+      is near chance at every depth, so the list position itself does little beyond 'oldest first'.
+    how: '414 strategic decisions where at least one other mission was waiting (33 people). For each, the set of
+      missions waiting when the panel opened (arrival order from the log). Chance = 1 / (number waiting) for ''oldest'';
+      3 / (number waiting) for ''top 3''. Intervals: people resampled 400 times. Within-person test: (picked oldest
+      − chance) against queue depth, person-centred, with minute and game. Caveat: the list could be re-sorted by
+      score and that toggle was never logged.'
+    chart: load.pickOrder
+    numbers:
+    - 'Opened the oldest: 59% (1 other waiting; chance 50%), 48% (33%), 54% (25%), 40% (20%), 29% (17%), 20% (14%).'
+    - 'Within person, the excess over chance does not shrink with depth: +2.4 points per extra mission [−1.0, +5.7],
+      p = .16.'
+    atoms:
+    - load-pick-small
+  - id: size
+    title: 'Size: they do not pick small — the queue is small'
+    text: 'The opened mission needs fewer drones when the queue is long (about 6.4–8.0 vs 9.1), but so do the missions
+      left waiting, because those moments are in the Strategic Heavy games. The opened mission''s rank among those
+      waiting (0 = smallest, 1 = largest) sits at or slightly above the random-pick line at every depth — at 5+
+      waiting it is above it: they open bigger ones.'
+    how: 'Size rank = share of the other waiting missions that need fewer drones than the opened one (ties count
+      half). A random pick gives 0.5 on average at any queue length, so this measure cannot be fooled by which game
+      the queue is in. Within-person test: rank against queue depth, centred on the person, with minute and game.'
+    chart: load.pickSize
+    numbers:
+    - 'Size rank by depth: 0.56, 0.56, 0.48, 0.46, 0.67, 0.70 (1 to 6+ others waiting; 0.5 = random).'
+    - 'Within person: +0.011 per extra mission waiting [−0.026, +0.048], p = .57 — no shift towards small.'
+    - 'Opened the SMALLEST waiting mission at 5+ waiting: 10–12% vs 22–29% by chance.'
+    atoms:
+    - load-pick-small
+  - id: choice
+    title: What makes a waiting mission get opened, short vs long queues
+    text: 'Putting it together in one model of the choice among what was waiting: being the oldest roughly triples
+      a mission''s chance of being opened, being the newest arrival helps a little, and larger missions are slightly
+      preferred — and these pulls are about the same with 1–3 others waiting as with 4+. Under pressure, priorities
+      do not visibly change.'
+    how: 'Conditional logit: each decision is a choice among the missions waiting at that moment; the model estimates
+      how much each feature (oldest, newest, size relative to the set in units of 3 drones, residual) multiplies
+      a mission''s odds of being the one opened. Fitted separately for short (1–3 others) and long (4+) queues,
+      in the Strategic Heavy games only (like with like) and in all four. Intervals: people resampled 200 times.'
+    chart: load.choice
+    numbers:
+    - 'Strategic Heavy games, short queues (178 decisions): oldest ×3.8 [2.3, 7.2], newest ×1.3 [0.7, 2.4], +3 drones
+      ×1.36 [1.07, 1.77].'
+    - 'Strategic Heavy games, long queues (95 decisions): oldest ×2.8 [1.5, 5.9], newest ×1.9 [0.9, 3.3], +3 drones
+      ×1.50 [1.11, 2.63].'
+    atoms:
+    - load-pick-small
+  - id: pace
+    title: 'Pace: a little faster when more is waiting'
+    text: What does shift is speed. In minutes that start with more missions waiting, operators make more strategic
+      decisions (about 8% more per extra mission), and each decision is slightly quicker (about 3% per extra mission,
+      not significant). Deciding manually before the cards have loaded does not rise. Tactical plans take slightly
+      longer when the strategic queue is long (+4%, p = .05), plausibly because operators press Suggest and go back
+      to the queue while it fills in.
+    how: 'Decisions per minute: every person-minute that started with at least one mission waiting (367), Poisson
+      GEE on the queue at the minute start (person-centred) with minute-of-session and game. Decision time: log
+      seconds from panel open to choice, within person, with mission size, drone types, minute and game. Caveat
+      for the rate: a minute that starts with a long queue often follows a slow minute, so part of the rise may
+      be catching up rather than rushing — treat as suggestive.'
+    chart: load.pace
+    numbers:
+    - 'Decisions per minute ×1.08 per extra mission waiting [1.04, 1.12], p < .001 (raw: 1.0/min at 0–1 waiting,
+      1.4–1.7 at 4+).'
+    - Seconds per decision −2.7% per extra mission [−6.2%, +0.8%], p = .13; time beyond the forced card reveal −4.1%,
+      p = .06.
+    - 'Manual before the cards load: OR 1.02 [0.90, 1.15], p = .76.'
+    - Tactical plan time +4.3% per extra strategic mission waiting, p = .05.
+    atoms:
+    - load-pick-small
+  - id: visible-t
+    title: What the operator can see of the queue
+    text: Beyond about 3.5 cards the rest of the queue is only on the strategic map. Picks of missions outside the
+      top 3 are about as common as chance would give, so operators do pick off the map — but the oldest-first pull
+      stays, which suggests they track mission age rather than list position.
+    how: Read off the recordings (P19, P30); top-3 rates against chance as in the order section.
+    chart: queueImages
+    atoms:
+    - load-visible
+    sharedWith:
+    - f-workload
+  replies:
+  - card: load-pick-small
+    text: 'Checked it properly and it mostly does not survive. The ''smaller missions'' result is a game effect:
+      96 of 102 long-queue decisions are in the Strategic Heavy games, where all missions are small; against what
+      was actually waiting, operators pick the same way at any queue length (size rank within person +0.01 per mission,
+      p = .57; at 5+ waiting they open LARGER than average). The fall in ''oldest-first'' is mostly chance falling
+      as more missions wait. What does change is pace: more decisions per minute (×1.08 per extra mission). Now
+      graphs by depth with chance lines, a choice model, and a pace section.'
+  open:
+  - This reverses the card you liked. The honest finding is 'priorities do not change, pace changes a little'. Decide
+    whether f-triage stands as its own finding or becomes a section of f-workload ('busy operators do not hand over,
+    and they do not re-prioritise — they speed up').
+  - The queue sort toggle (arrival vs score) was never logged; any operator who switched to score order would see
+    big missions on top, which could produce the mild preference for larger missions.
+  source: load
+- id: f-flaw-odd
+  area: When the assistant gets it wrong
+  title: People who noticed the illogical card stopped using the cards where it appears; elsewhere they dipped for
+    a while, but the dip is not clearly caused by the card
+  headline: 'The Conservative card sometimes adds a drone type the mission does not use (22% of decisions, nearly
+    all on one-type missions). All 33 people saw it, usually on their 1st or 2nd decision. The clearest effect is
+    on the one-type missions where the extra type appears. The 15 people who said they noticed it took the cards
+    less with each such mission, until by their 4th–6th they took a card 0 times in 13. Instead they went manual
+    before the cards had even loaded. The 18 who never said it drifted the other way, taking more cards, the illogical
+    one included. The difference in these trends is very unlikely to be chance (p < .001). On three-type missions,
+    which never carry the flaw, noticers'' uptake dips (about −17 points adjusted, p = .06) and recovers by about
+    their 7th three-type decision, while non-noticers'' rises a little. But that dip is not tied to the moment of
+    the card: the card comes so early that other equally early cut points show the same drop. And ''noticed'' is
+    known only from what people said afterwards. Suggestive, not causal.'
+  confidence: suggestive
+  absorbs:
+  - flaw-odd-card
+  - flaw-dots
+  - manual-card-error
+  - meth-h8-invalid
+  - q-C12
+  - q-C15
+  sections:
+  - id: card
+    title: What the illogical card is, and when people first met it
+    text: 'The Conservative strategy tops up every drone type with 15% of the spare reserve, including types the
+      mission never uses. This is a deliberate, known feature of the build (STUDY_BUILD §19), not an injected error,
+      and no injected errors ran for anyone analysed. So on a mission that needs only Fast drones, the Conservative
+      card can also send a Lifter and a Camera. This happened on <b>132 of 606</b> strategic decisions: 129 on one-type
+      missions, 3 on two-type missions and none on three-type missions. Everyone met it early: <b>17 of 33</b> on
+      their 1st or 2nd strategic decision of the study, and 9 not until session 2. For most people, then, ''before
+      the card'' is just one or two decisions at the very start, when they are still learning the task. That limits
+      every before/after comparison below.'
+    how: 'Rows: every strategic decision (P09 excluded), in study order across both sessions. A decision is ''illogical''
+      when the Conservative card''s true drone counts include a type for which the mission''s tasks need 0 drones
+      (build_findings_synthesis.load_decisions, the odd flag). The anchor is each person''s first such decision.
+      The chart counts which decision number that was.'
+    chart: flaw.timing
+    numbers:
+    - 132 of 606 decisions (21.8%) carry the illogical card; 129 are on one-type missions
+    - 'First illogical card: median the person''s 2nd decision; 17 of 33 meet it on decision 1 or 2; 9 not until
+      session 2'
+    - 'Three-type decisions before it: median 1 per person; 3 people have none'
+    atoms:
+    - flaw-odd-card
+  - id: event
+    title: The event study, rebuilt so every dot can be trusted
+    text: 'Each person''s decisions are now numbered <i>within</i> the kind of mission plotted: their 1st, 2nd,
+      3rd three-type decision after the card, and so on. Everyone has a +1, a +2 and so on until their decisions
+      run out. The positions are then grouped (1st–3rd, 4th–6th, 7th–9th, 10th+). Each bin gets a 95% interval from
+      resampling people, and each person''s own line is drawn faintly behind the group mean. On <b>three-type missions</b>,
+      people who said they noticed went from 75% card uptake before to 47% in their 1st–3rd decisions after, 63%
+      in the 4th–6th and 72% in the 7th–9th: a dip, then a return. Non-noticers stayed between 72% and 83% throughout.
+      The same shape shows on all missions. Noticers fall from their first decisions; non-noticers rise slightly.
+      The gap between the two groups is about 15 points (p = .06–.09). It is concentrated in the first five three-type
+      decisions after the card (−25 points, p = .02) and gone from the 6th onwards (−2 points). That fits your reading
+      of a dip followed by recovery. But the five-decision window was chosen after seeing the curve, so treat its
+      p-value as descriptive.'
+    how: 'Rows: strategic decisions of the 33 people, split into those who said they noticed (debrief or interview
+      code C12, or a strict in-play remark; 15 people) and those who never said so (18). ''Before'' and ''after''
+      are relative to the first illogical card. That decision itself is excluded from both windows and shown as
+      its own point (''the card'') in the all-missions view. Change = the ''after'' coefficient in a linear model
+      of card uptake, with practice (decision number) held fixed and people clustered for the uncertainty. Raw version:
+      uptake ~ after + practice + game. Adjusted version: (observed − expected) ~ after + practice. The interaction
+      asks whether the after-step differs between the groups. Label shuffle: the said/never-said labels were shuffled
+      across people 5,000 times, to see how often a random split of the same people shows as large a difference
+      in their own after-minus-before. Each person counts once in that test, so it is exact.'
+    chart: flaw.events
+    numbers:
+    - 'Three-type, said they noticed (15 people): 75% before (n 51) → 59% after (n 129); adjusted change −17.5 points
+      [−36, +1], p = .06; 10 fell, 4 rose'
+    - 'Three-type, never said (18 people): 79% (n 52) → 78% (n 181); adjusted +10.8 points [−5, +27], p = .17; 5
+      fell, 11 rose'
+    - 'Difference between the groups: −14.7 points adjusted [−32, +2], p = .09; label shuffle p = .06 (three-type),
+      .05 (all missions)'
+    - 'Noticers by bin (adjusted): before 69%, 1st–3rd 50%, 4th–6th 61%, 7th–9th 68%, 10th+ 63%'
+    - 'Odds-ratio form, for continuity with the old card: noticers OR 0.21 [0.04, 1.05], p = .057'
+    atoms:
+    - flaw-odd-card
+    - flaw-dots
+    codes:
+    - C12
+  - id: nth
+    title: One dot per person per position (the 'everyone has a +1, +2' view)
+    text: 'This is the chart you described: the Nth three-type decision after the card, with exactly one decision
+      per person per dot. The n falls only as people run out of decisions. The dip shows at +1 to +3 for noticers
+      (53%, 33%, 53%). Each dot, though, is about 15 single yes/no decisions, so its interval runs roughly from
+      30% to 75%. Individual dots cannot carry a claim. The bins above are the readable version.'
+    how: 'Rows: three-type decisions; k = the decision''s rank among that person''s three-type decisions after (or,
+      counting back, before) the first illogical card. Rate = the share who took a card at that k. Interval = Wilson
+      95%.'
+    chart: flaw.nth
+    numbers:
+    - 'Noticers at +1/+2/+3: 53%, 33%, 53% (n 15 each)'
+    atoms:
+    - flaw-dots
+  - id: odd-missions
+    title: On the missions that carry the flaw, noticers stop using the cards
+    text: 'This is the cleanest behavioural trace, and it is where you would expect one. On their 1st illogical-card
+      mission, noticers took a card 47% of the time and never-said people 56%. With each further illogical-card
+      mission, noticers took a card about 14 points less often. By their 4th–6th they took one <b>0 times in 13</b>
+      (7 people), going manual instead, mostly <i>before the cards had loaded</i> (62%). Non-noticers moved the
+      other way: by their 4th–6th they took a card 74% of the time. Most of that was the illogical Conservative
+      card itself (52%), which noticers took 0 times in 13. The handover analyst''s check fits this: when people
+      build a one-type mission by hand rather than take the Conservative card, nearly all of the ''trim'' is dropping
+      the unneeded-type spares (−1.2 drones overall, +0.05 on the types the mission needs). So hand-builders strip
+      out exactly what is illogical; see f-manual-cards. The manual-card-error card''s version (people who mention
+      a card error go manual more on one-type missions) holds in direction. But the same people also go manual more
+      on three-type missions, where nothing is wrong (37% vs 22%). The one-type-<i>specific</i> part does not hold
+      between people (interaction OR 1.12, p = .78). What is specific to the flawed missions is the <i>trend</i>:
+      noticers learn to skip the cards there.'
+    how: 'Rows: the 132 illogical-card decisions, numbered per person (1st, 2nd, …). Each is coded by what happened:
+      took the Conservative card (the illogical one), took Aggressive, manual after the cards loaded, or manual
+      before they loaded (a pre-emptive choice that never saw the cards). Trend = a linear model of each outcome
+      on the card''s number (capped at 7) × group, with game held fixed and people clustered. The interaction p
+      is whether the two groups'' slopes differ. Between-person check (manual-card-error): manual ~ said + game
+      on one-type missions, then on three-type, then the said × one-type interaction (logistic GEE, people clustered).'
+    chart: flaw.oddMissions
+    numbers:
+    - 'Took any card, per extra illogical card: noticers −13.9 points [−25, −3]; never-said +5.3 [−2, +12]; difference
+      p < .001'
+    - 'Took the illogical Conservative card: noticers −3.5 points per card; never-said +9.3 [+1, +18]; difference
+      p = .001'
+    - 'Manual before the cards loaded: noticers +15.4 points per card [+2, +29]; never-said −5.8; difference p =
+      .012'
+    - '4th–6th illogical card: noticers took a card 0 of 13 (7 people); never-said 74% of 23 (11 people), 52% the
+      illogical card'
+    - 'Manual on one-type missions: noticers 63% vs 37%, OR 2.41 [0.92, 6.32], p = .07; on three-type 37% vs 22%,
+      OR 2.29, p = .06; one-type × noticed OR 1.12, p = .78'
+    atoms:
+    - manual-card-error
+    - flaw-odd-card
+    codes:
+    - C12
+    - C15
+  - id: not-time-locked
+    title: Why the three-type dip cannot be pinned on the card
+    text: 'Three checks stop us saying ''the card caused the dip''. <b>(1) Timing.</b> The card arrives so early
+      that ''after the card'' almost means ''after the first couple of decisions''. When each noticer''s anchor
+      is moved to a random but equally early point (drawn from the real anchor positions), their drop is just as
+      large: −13 vs −14 points on average, p = .92. With random anchors placed anywhere in the session, p = .20
+      (.07 for the first five decisions). So noticers drift down from their first decisions rather than step down
+      at the card. Non-noticers'' rise, by contrast, is larger than random anchors give (p = .01–.09). <b>(2) Who.</b>
+      Noticers are less card-reliant people overall: they took cards on 55% of decisions against 73% (p = .03).
+      Yet before the first card they took them on three-type missions at the same rate (68% vs 63%, p = .76). The
+      gap opens afterwards. That is consistent with noticing mattering, but also with the reverse: people who start
+      doing more by hand look harder at the cards and so notice more. <b>(3) ''Said'' is post hoc.</b> A person
+      who never said it may still have seen it. 17 of the 18 never-said people were narrating during play, which
+      makes their silence some evidence, but not proof.'
+    how: 'Timing-matched placebo: each person''s real anchor is replaced 2,000 times by a cut drawn from the real
+      anchor positions of their group. The statistic is the mean over people of (mean residual after − mean residual
+      before). p = how often the placebo differs from its own average by as much as the real one does. Uniform placebo:
+      the same, with the cut drawn anywhere in the person''s sequence. Group profile: per-person rates compared
+      with Mann–Whitney tests (15 vs 18 people).'
+    chart: flaw.people
+    numbers:
+    - 'Noticers'' drop vs timing-matched random anchors: −0.13 vs −0.14, p = .92; vs anywhere-anchors p = .20 (first
+      five: p = .07)'
+    - 'Non-noticers'' rise vs anywhere-anchors: +0.13 vs 0.00, p = .01'
+    - 'Card uptake, all decisions: noticers 55% vs never-said 73%, p = .03; three-type before the first card 68%
+      vs 63%, p = .76'
+    - 17 of 18 never-said people had in-play narration recorded
+    atoms:
+    - flaw-odd-card
+  - id: spoken
+    title: Lined up on the moment they said it
+    text: You suggested anchoring on the moment someone said, during play, that a card was wrong. We did. Seven
+      people made a strict remark ('a card sends types the mission does not need, or a specific card is wrong');
+      five more made broader 'too many drones' remarks. For four of the seven, an illogical card was on screen as
+      they spoke. P30's remark was about an illogical card that opened 5 s later, so the narration timing is only
+      good to a few seconds; it was moved onto that card. P29 spoke 28 s after taking the illogical card. P04's
+      remark was about too many drones on a three-type card, not about an unneeded type. Of the seven, five fell
+      and two rose. Their card uptake on all missions went from 80% to 49%, but the adjusted change is −21 points
+      [−49, +7], p = .11, and the timing-matched placebo p = .51. Two of them spoke within their first minute, so
+      they too have almost no 'before'. Seven people cannot settle it. The direction matches the main result.
+    how: The spoken moments were hand-coded from the in-play narration before any behaviour around them was computed
+      (extras.SPOKEN_STRAT, session time). A decision whose card was open at that moment is the anchor decision.
+      Otherwise, 'before' and 'after' are split at the remark. The same models and placebo as above are used.
+    chart: flaw.spoken
+    numbers:
+    - 'Strict remarks (7 people), all missions: 80% (n 30) → 49% (n 75); adjusted −21 points [−49, +7], p = .11;
+      5 fell, 2 rose; placebo p = .51'
+    - 'Strict, three-type: 79% → 57%; adjusted −16 points [−57, +26], p = .39'
+    - 'Broad remarks (12 people): adjusted −4 points, p = .60; 7 fell, 5 rose'
+    atoms:
+    - flaw-odd-card
+    - q-C12
+    codes:
+    - C12
+  - id: adjustment
+    title: What 'expected' and 'adjusted' mean
+    text: '<b>Expected</b> is the chance a model gives that this person takes a card on this decision. It knows
+      only what the decision was (drones, tasks and drone types the mission needed), when it was (minute of the
+      session, whether it was a re-queued mission, how many others were waiting), which of the four games was being
+      played, and how often <i>this person</i> took cards on all their <i>other</i> decisions. <b>Adjusted</b> =
+      the group''s overall rate + the average of (observed − expected) at that position. In plain terms: ''how far
+      above or below their usual self, given the mission in front of them, were people here?'' The person term does
+      most of the work (odds ×2.84 per unit; the model ranks takes above non-takes 81% of the time). So ''adjusted''
+      mostly means ''compared with that person''s normal habit''. Of the mission features, only the number of drone
+      types matters (×1.51 per extra type). Because adjusted is a shifted average residual and not a probability,
+      it can go above 100% at a small dot that sits far above its expectation. The old not-said +2 dot read 122%
+      for this reason.'
+    how: 'Logistic regression over all 606 decisions: took ~ drones + tasks + types + minute + game + queue length
+      + residual flag + logit(person''s leave-one-out rate, shrunk with +1/+2). The same specification as extras2.add_expected;
+      the script checks the fitted values are identical. The chart shows each term''s odds ratio with a 95% interval.'
+    chart: flaw.model
+    numbers:
+    - 'Person''s own rate elsewhere: odds ×2.84 [2.29, 3.51] per logit unit'
+    - 'Each extra drone type needed: ×1.51 [1.12, 2.04]; drones ×1.08, tasks ×0.98, minute ×1.05, queue ×0.98 (all
+      n.s.)'
+    - Model ranks takes above non-takes 81% of the time (AUC 0.81)
+    atoms:
+    - flaw-dots
+  - id: old-chart
+    title: 'The old chart: why n moved, the +8 dip and the never-said 100% dots'
+    text: The old chart was drawn correctly from what it computed, but what it computed was confusing. Its x position
+      counted <i>every</i> decision after the card, and only three-type ones were then kept for the rate. So a person
+      appeared at +2 only if their 2nd decision after the card happened to be three-type. That is why n went up
+      and down (4–16), why 0 never appeared (the card's own decision is never three-type), and why 'three-type 100%'
+      showed on every dot (true by construction). <b>The +8 dip</b> is 22 decisions, one per person, where 50% took
+      a card against 67% expected. The 11 who declined are 11 different people. Mission size there is ordinary (10.3
+      drones vs 10.2), with slightly more session starts (14% vs 6%). The same people took cards on 67% of their
+      other later three-type decisions. Measured as a surprise score it is z = −1.5. Two of the 33 old dots fall
+      outside ±1.96, where about 1.7 would by chance. It is noise, and it disappears in the binned view. <b>The
+      never-said 100% dots at +2/+3</b> are 13 decisions from 11 people who all took a card where 66% was expected.
+      That is unusual taken alone (about 0.2%), but it is the most extreme of 33 dots. They came at busy moments
+      (3.1 missions waiting against about 1.9 usually), when people tend to hand over (C11). The never-said group
+      are also the higher-reliance people (73% overall). The rebuilt chart has no 100% dots.
+    how: Each old dot was reproduced exactly from extras2.event_study (checked against extras2.json). Surprise score
+      z = (takes − expected takes) ÷ √Σ p(1−p) over the dot's decisions. The +8 rows were listed one by one and
+      compared with the same people's other later three-type decisions.
+    chart: flaw.oldDots
+    numbers:
+    - '+8: n 22, 50% took vs 67% expected, z = −1.5 (never-said dot); declines spread over 11 people; same people
+      elsewhere 67%'
+    - 'Old dots beyond |z| 1.96: 2 of 33 (1.7 expected)'
+    - 'Never-said +2/+3: 13 of 13 took a card; expected 66%; queue 3.1'
+    atoms:
+    - flaw-dots
+  - id: robustness
+    title: Every specification, whatever it shows
+    text: 'Fourteen versions of the before/after question. Noticers'' change is negative in every one (−10 to −26
+      points). Non-noticers'' is positive or flat in every one. The adjusted difference between groups is negative
+      in every one, with p mostly between .06 and .4. It weakens when the noticed group is the debrief code alone
+      (−8 points, p = .39) and when each session''s first decision is dropped (−7 points, p = .44). It is largest
+      in the short window (−25 points, p = .02, chosen after seeing the dip) and gone in the long run (−2 points).
+      The one-type-only version cannot be estimated: almost nobody has a one-type mission before their first illogical
+      card. The direction is stable. Its size and significance are not.'
+    how: 'Each row reruns the before/after and interaction models with one thing changed: the practice term, the
+      window, the missions, the anchor (first illogical card actually displayed rather than pre-empted), who counts
+      as ''noticed'', or who is excluded (P01/P02, who played on half task weights). Estimates are in percentage
+      points with 95% intervals, people clustered.'
+    chart: flaw.strip
+    numbers:
+    - 'Difference (noticers − never-said), adjusted: main −15 (p .09); no practice term −15 (.09); first 5 after
+      −25 (.02); 6th onward −2 (.83); all missions −15 (.06); without illogical-card missions −14 (.13); first card
+      displayed −12 (.12); C12 only −8 (.39); broad remarks −11 (.21); strict remarks only −16 (.10)'
+    atoms:
+    - flaw-odd-card
+    - flaw-dots
+  - id: h8
+    title: Why the pre-registered test (H8) was dropped
+    text: H8 asked whether uptake falls after an operator 'realises' the card can be illogical. Its marker for that
+      realisation was the first time a person went manual on an illogical-card mission and left out the unneeded
+      type. The trouble is that, by that definition, every illogical-card decision <i>before</i> the marker was
+      not such a manual choice. So the 'before' window was mostly forced to be card takes, near 100%. Any later
+      manual choice then shows up as a drop, even if the person never changed at all. A simulation confirmed it.
+      In simulated people who keep the same habits all study, the same marker produced a large 'drop' (average odds
+      ratio 0.37, against the real 0.12). Measured against that, the real drop was ordinary (calibrated p = .30,
+      about −10 points after correction). Defining the marker as the first manual choice on a <i>clean</i> card
+      produced the same kind of drop. H8 was replaced by tests whose anchor is not defined by the outcome (the first
+      illogical card shown; the moment someone said it), each checked against a placebo. Those are the tests in
+      this finding.
+    how: From docs/analysis/round1/h8_illogical_card.md. The null calibration redrew each person's choices 1,000
+      times from their own constant rate, reapplied the marker and refitted the same model.
+    numbers:
+    - Pre-registered estimate OR 0.12; the same test on no-change simulations averages OR 0.37; calibrated p = .30
+      (risk difference)
+    - 'Placebo marker on clean cards: OR 0.22, p = .03, the same kind of ''drop'''
+    atoms:
+    - meth-h8-invalid
+  replies:
+  - card: flaw-odd-card
+    text: 'Rebuilt. (1) The adjustment is explained in plain words, with the model''s terms charted. ''Adjusted''
+      mostly means ''compared with that person''s usual rate''. (2) Never-said ≈ 100%: two small old dots (13 decisions)
+      that came at busy moments, plus the fact that non-noticers are higher-reliance people. The rebuilt chart has
+      them at 72–84%. (3) +8: noise; 22 decisions, 11 different decliners, z = −1.5. (4) The graph was computed
+      correctly but its x-axis counted all decisions while plotting only three-type ones; now fixed. Your ''dip
+      then recovery'' reading does show for noticers (75% → 47% → 63% → 72%), and the group gap is concentrated
+      in the first five decisions. But it is not tied to the card''s moment, so I call it suggestive. The strongest
+      result is new: noticers stop taking cards on the illogical-card missions themselves.'
+  - card: flaw-dots
+    text: n moved because x counted every decision and only three-type ones were kept. 'Three-type 100%' was always
+      100% by construction. Now each person's Nth three-type decision is the x (everyone has a +1, +2, …), positions
+      are binned with person-resampled intervals, and individual lines sit behind the mean. Folded into f-flaw-odd
+      as the method sections.
+  - card: manual-card-error
+    text: 'Merged. It holds in direction (63% vs 37% manual on one-type missions), but noticers are equally more
+      manual on three-type missions (interaction p = .78), so it is a person difference rather than a one-type effect.
+      The specific, within-person version is the trend on illogical-card missions: noticers increasingly pre-empt
+      the cards there (difference in trends p = .01). See also f-manual-cards: hand-builds on one-type missions
+      drop the unneeded-type spares.'
+  - card: meth-h8-invalid
+    text: 'Explained plainly in the ''Why the pre-registered test was dropped'' section: the marker''s own definition
+      forced the ''before'' window to be card takes, so a drop appeared even in simulated people who never changed.'
+  - card: q-C12
+    text: Kept as the grouping and the supporting quotes. 12 coded in debrief or interview; 15 including strict
+      in-play remarks.
+  - card: q-C15
+    text: Kept as supporting evidence in the odd-missions section. 3 of the 4 who said they grew more careful later
+      are noticers (P17, P19, P33).
+  open:
+  - 'Which grouping should be primary: C12 ∪ strict in-play (15, used here) or C12 alone (12, a weaker difference)?
+    Decide before writing, not after seeing which is stronger.'
+  - The one-type-mission trend (noticers stop taking cards there) is the strongest result, but the groups were defined
+    after the fact. Is it worth a confirmatory look in a fresh cohort, or reporting it as exploratory?
+  - The short-window (first five decisions) difference, p = .02, was chosen after seeing the curve; report it as
+    descriptive only.
+  source: flaw
+- id: f-flaw-visibility
+  area: When the assistant gets it wrong
+  title: 'Only flaws people can see change what they do: wrong Suggest refusals and weaker cards leave no trace'
+  headline: 'The strategic tier''s flaw is visible at a glance: a drone type the mission does not use shows on the
+    card''s face. 12–15 of 33 people remarked on it, and those who did changed how they used the cards (f-flaw-odd).
+    The tactical tier''s flaw is hidden: Suggest says ''No workable plan'' when one exists. 14 people met at least
+    one such wrong refusal, and only 1 person ever said why it happened. After the first refusal, right or wrong,
+    neither strategic nor tactical use changes (adjusted changes −5 to +2 points, all p > .4). So the trouble does
+    not cascade up to the strategy cards. A Conservative card that is plainly worse on its own two numbers is not
+    avoided either. Moderate confidence for the visibility contrast; the nulls are ''no evidence of a change'',
+    with intervals of roughly ±10 points.'
+  confidence: moderate
+  absorbs:
+  - tier-flaw-visibility
+  - flaw-anchors-null
+  - cards-dominated-null
+  sections:
+  - id: visibility
+    title: Strategic flaws are visible; tactical flaws are hidden
+    text: 'Neither assistant had errors injected for anyone analysed (the ε manipulation ran only for the excluded
+      P09). Each tier still has a natural flaw. On the <b>strategic</b> side, it is the illogical extra drone type.
+      It sits on the card face next to the mission''s own requirements, everyone saw it, and 12 people mentioned
+      it in debrief or interview (15 counting in-play remarks). On the <b>tactical</b> side, it is the wrong refusal:
+      Suggest answers ''No workable plan'' when a fix existed using a drone busy on another task. To the operator
+      it looks exactly like a correct refusal. 14 people met one (23 wrong refusals out of 39). Four of them reacted
+      aloud and accepted it, most saying they would have to abandon. Only P28 named the cause. Only 3 people ever
+      described a tactical-plan flaw (C13), and just one of them had been wrongly refused. ''The strategic assistant
+      is distrusted more'' may partly be ''its mistakes are the ones you can see''.'
+    how: 'Strategic exposure: people with ≥1 illogical-card decision. Tactical exposure: people with ≥1 Suggest
+      press in a recovery that returned ''No workable plan'' or a partial plan while a fix using a busy drone existed
+      (the ''blind'' flag in h3_recovery). Noticing: qualitative codes C12 and C13 (debrief or interview), plus
+      the hand-coded in-play remarks (extras.SPOKEN_STRAT / SPOKEN_TAC), each matched to the nearest preceding Suggest
+      press.'
+    chart: flaw.visibility
+    numbers:
+    - 'Strategic: 33 of 33 saw the illogical card (132 of 606 decisions); 12 coded C12; 15 incl. strict in-play
+      remarks'
+    - 'Tactical: 14 of 33 got ≥1 wrong refusal (23 of 39 refusals); 3 coded C13, 1 of them among the 14; 4 reacted
+      aloud to a wrong refusal, 1 named why'
+    atoms:
+    - tier-flaw-visibility
+    sharedWith:
+    - f-tier-trust
+    codes:
+    - C12
+    - C13
+    - C14
+  - id: refusal
+    title: After the first Suggest refusal, nothing changes, on either tier
+    text: 'You asked whether the only thing that changes after the first refusal is that <i>strategic</i> use goes
+      down, with the problem cascading up the chain. <b>It does not.</b> After their first ''No workable plan''
+      (18 people), card uptake actually went <i>up</i> in raw terms (68% → 76%). The expected value went up just
+      as much, because these refusals tend to come later, when people have settled in. Adjusted, the change is +2
+      points [−6, +10], with 10 people falling and 8 rising. On three-type missions it is 0 points. Tactical Suggest
+      use also rose raw (78% → 87%) and is flat adjusted (−1 point). After the first <i>wrong</i> refusal (14 people)
+      the picture is the same: strategic −2.5 points [−16, +11], tactical 0. The first drone failure (33 people)
+      changes nothing either. These are absences of evidence, with intervals around ±10 points. They are not proof
+      of no effect, but no cascade is visible. The card''s wording, ''neither assistant''s use changes'', was right.'
+    how: Same rebuilt method as f-flaw-odd. Each person's strategic decisions (or tactical plans) are numbered within
+      the sample, after versus before the moment of their first refusal, with practice held fixed and people clustered.
+      Adjusted = observed minus the expected value. The placebo moves each anchor to a random point drawn from the
+      real anchor positions. All p-values are for the adjusted change.
+    chart: flaw.anchors
+    numbers:
+    - 'First refusal (18): strategy cards, all missions, adjusted +2.0 points [−6, +10], p = .62; three-type +0.4,
+      p = .91; tactical Suggest −0.6 [−6, +5], p = .83'
+    - 'First WRONG refusal (14): strategy cards −2.5 [−16, +11], p = .70; three-type −5.1, p = .43; tactical −0.2,
+      p = .93'
+    - 'First drone failure (33): strategy cards −1.0, p = .79; tactical +5.6, p = .08'
+    - After the first illogical card, tactical Suggest +5.4 points, p = .30 (no spill-down either)
+    atoms:
+    - flaw-anchors-null
+  - id: dominated
+    title: A card that is worse on its own numbers is not avoided
+    text: 'Usually the two cards are a trade-off. Aggressive sends more drones and finishes sooner; Conservative
+      sends fewer and is slower. Sometimes the trade-off vanishes. The Conservative card sends <i>at least as many</i>
+      drones and its displayed finish time is <i>no sooner</i>, so on the two numbers it shows there is no reason
+      to pick it. That is a <b>dominated</b> card. A typical one: Conservative 9 drones, Aggressive 8, both finishing
+      at 65 s. This happens on 45% of all decisions (77% of one-type missions, where it mostly coincides with the
+      illogical extra type, and 29% of three-type missions). On three-type missions, where nothing looks odd, people
+      chose a dominated Conservative card 29% of the time and a fair-trade-off one 38%. Once mission size and game
+      are allowed for, there is no sign they avoided it (odds ×1.19 [0.54, 2.63], p = .66), though the interval
+      cannot rule out a moderate avoidance. On ''rarely compare both'': highlighting a card is the click that selects
+      it. Both cards are always shown side by side, so the numbers can be read without clicking. People highlighted
+      both cards on only 19 of 606 decisions (14 people), and 380 of 397 card takes highlighted only the card they
+      took. Choosing looks driven by the label, not by comparing numbers across the two cards. A weakness you must
+      work out by comparing goes unnoticed; one you can see on the card face (an unneeded type) is the one people
+      reacted to.'
+    how: 'From both cards'' true drone totals and displayed completion times in the last strategic_modal_opened
+      before each choice: dominated = Conservative drones ≥ Aggressive drones AND Conservative time ≥ Aggressive
+      time. This matches load_decisions'' flag exactly (44.6%). The model is a logistic GEE on three-type, non-residual
+      decisions: chose Conservative ~ dominated + drones + tasks + game, people clustered. Bars: share of each choice,
+      with 95% intervals from resampling people. Previews: distinct cards highlighted (strategic_card_previewed)
+      before the choice.'
+    chart: flaw.dominated
+    numbers:
+    - 'Dominated Conservative card on 45% of decisions: 77% of one-type, 29% of three-type'
+    - 'Three-type: Conservative chosen 38% (trade-off, n 284) vs 29% (dominated, n 105); odds ×1.19 [0.54, 2.63],
+      p = .66 (round 2 found 1.10 with other covariates)'
+    - Both cards highlighted on 19 of 606 decisions (14 people); none highlighted on 174
+    atoms:
+    - cards-dominated-null
+  replies:
+  - card: flaw-anchors-null
+    text: 'Checked directly with the rebuilt method. No: strategic use does not go down after the first Suggest
+      refusal (adjusted +2 points [−6, +10]) or after the first wrong refusal (−2.5 [−16, +11]), and tactical use
+      is flat too. The raw rise is practice and mission mix. There is no cascade up the chain in behaviour; that
+      is no evidence of a change, not evidence of none.'
+  - card: cards-dominated-null
+    text: 'Explained: ''dominated'' = the Conservative card is no smaller and no faster than Aggressive, so it is
+      worse on both numbers it shows. On three-type missions people do not avoid it (OR 1.19, p = .66), and they
+      almost never click both cards (19 of 606), though both are always on screen. It leads into choices as ''label,
+      not numbers'', and contrasts with the visible illogical type, which people did react to.'
+  - card: tier-flaw-visibility
+    text: 'Kept and strengthened with exposure counts: everyone saw the strategic flaw and 12–15 remarked on it;
+      14 met the hidden tactical flaw and 1 explained it. Marked sharedWith f-tier-trust.'
+  open:
+  - 'f-tier-trust should carry the visibility section. Wording to agree: ''the trust gap may be partly a visibility
+    gap'' is an argument, not a measured effect.'
+  source: flaw
+- id: f-tier-trust
+  area: Trust, tiers and recovery
+  title: The Tactical Assistant is trusted more, and most people say so too
+  headline: 'On the post-session questionnaire, operators trusted the Tactical Assistant more than the Strategic
+    Assistant: 5.44 against 4.61 on a 1–7 scale, 26 of 33 people higher for tactical (p = .001). Most of the gap
+    opens in the second session and in Strategic Heavy games, and people who said in the debrief that they preferred
+    the tactical one also scored it higher. Tactical plans get only a few seconds of checking whatever their size,
+    which fits "checking is costly, so it is skipped", but that mechanism test is fragile. Stated trust and actual
+    use line up when people are ranked against each other, but not in size and not over time.'
+  confidence: moderate
+  absorbs:
+  - tier-trust-gap
+  - tier-preference
+  - tier-checking-cost
+  - trust-not-lead
+  - trust-own-failures-null
+  - q-C13
+  - q-C14
+  - q-C16
+  - q-C17
+  - q-C18
+  sections:
+  - id: gap
+    title: 'Trusted more: the basic result'
+    text: After every session operators rated each assistant on the same six statements ("is reliable", "I trust
+      its recommendations", …) from 1 to 7. Averaged over their two sessions, <b>26 of 33</b> rated the Tactical
+      Assistant higher, 6 the Strategic Assistant, and 1 the same. The average gap is <b>+0.83 points</b> on the
+      7-point scale. That is a medium-sized effect (dz = .62), and every one of the six items points the same way.
+    how: 'One value per person per assistant: the mean of the six items, averaged over that person''s two sessions
+      (33 people, P09 excluded). The test is a paired t-test on the difference tactical minus strategic, with a
+      Wilcoxon signed-rank test as the distribution-free check. dz is the mean difference divided by the SD of the
+      differences: .62 means the average person''s gap is about six-tenths of the person-to-person spread in gaps.
+      The 95% CI says the true average gap is very probably between +0.35 and +1.30 points. Items are tested the
+      same way, one at a time.'
+    chart: recovery.trustPairs
+    numbers:
+    - Strategic 4.61 [4.18, 5.04], Tactical 5.44 [5.15, 5.73] (1–7, person means)
+    - Gap +0.83 [+0.35, +1.30]; paired t p = .0012; Wilcoxon p = .0010; dz = .62; n = 33
+    - 26 higher for tactical, 6 for strategic, 1 tied
+    - 'Item gaps: follow its recommendations +1.11, I trust it +1.01, reliable +0.94, performs well +0.74, useful
+      +0.67 (all p < .01); confident in it +0.48 (p = .13)'
+    atoms:
+    - tier-trust-gap
+  - id: where
+    title: 'Where the gap comes from: the second session and Strategic Heavy games'
+    text: The gap is small after the first session (+0.37, CI crosses zero) and large after the second (+1.28).
+      By game it is about +1.1 in both Strategic Heavy games and about +0.5 in both Tactical Heavy games (CIs cross
+      zero). Tactical trust hardly moves (5.36 → 5.51); it is <b>strategic</b> trust that falls. So "trusted more"
+      largely means "the strategic one loses trust as people play more, especially in the scenario where its cards
+      are used most." That fall was its own card (trust-drop), now pruned. The researcher judged it not useful on
+      its own. It is kept here only as the context the gap needs. Four people said their trust <i>grew</i> with
+      experience (C16).
+    how: The same per-session tactical-minus-strategic difference, averaged within each session number (33 sessions
+      each) and within each of the four fixed games (16–17 sessions each). These are means with t-based 95% CIs
+      and no model. Session number and game are partly tangled (P31–P36 swapped game order), so the two splits are
+      views, not separate effects.
+    chart: recovery.trustSplits
+    numbers:
+    - Session 1 gap +0.37 [−0.15, +0.88]; session 2 +1.28 [+0.69, +1.87] (n = 33 each)
+    - Strategic Heavy game 1 +1.10 [+0.07, +2.13]; game 2 +1.17 [+0.44, +1.89]
+    - Tactical Heavy game 1 +0.48 [−0.25, +1.21]; game 2 +0.56 [−0.29, +1.40]
+    - Strategic trust 5.00 → 4.23 from session 1 to 2; tactical 5.36 → 5.51
+    atoms:
+    - tier-trust-gap
+    codes:
+    - C16
+  - id: own-failures
+    title: A bad first session with the cards does not explain who loses strategic trust
+    text: 'If strategic trust fell because people had bad experiences with the cards, then those who met more illogical
+      cards in session 1 should lose more trust. They do not. The raw correlation even points the other way (ρ =
+      +.40), but that comes entirely from scenario order: people who played Strategic Heavy first see the odd cards
+      early and lose the least trust (−0.29 against −1.26 for those who played it second). Once order is held constant,
+      the correlation is +.14 (p = .42). Round 1''s pre-registered version (missions that failed after a card) was
+      also null: ρ = −.05 [−.39, .30]. Read this as "no evidence that how much went wrong drives it", not as proof
+      that experience doesn''t matter.'
+    how: One row per person (33). The predictor is the count of decisions in session 1 where an illogical strategy
+      card was on screen (from load_decisions' odd flag). The outcome is session-2 minus session-1 strategic trust.
+      Spearman ρ uses a 4000-draw seeded bootstrap CI. The partial version ranks both variables, removes the part
+      explained by which scenario was played first, and correlates what is left. The ρ = −.05 is H5's primary test
+      (docs/analysis/round1/h5_trust_drop.md).
+    numbers:
+    - 'Illogical cards seen in session 1 vs change in strategic trust: ρ = +.40 [+.03, +.70], p = .02 — order artefact'
+    - 'Same, holding scenario order fixed: ρ = +.14, p = .42'
+    - Mean change in strategic trust −0.76; Strategic Heavy first −0.29, Tactical Heavy first −1.26
+    - 'H5 primary (card failures in session 1): ρ = −.05 [−.39, .30]'
+    atoms:
+    - trust-own-failures-null
+  - id: stated
+    title: What they said agrees with what they rated
+    text: In the debriefs and interviews, 17 operators named the Tactical Assistant as the one they preferred or
+      trusted, 7 the Strategic one, and 9 gave a conditional, "both" or no answer. Those who said tactical had a
+      questionnaire gap of +1.36 on average; those who said strategic were at −0.04. For 18 of the 24 who named
+      one side, the questionnaire points the same way. The coding is from one coder (an AI model) and has not been
+      second-coded, so treat the counts as suggestive.
+    how: Stated preference is the round-2 coding of each person's debrief and interview (docs/analysis/round2/wE_codes.csv,
+      field pref). Its sign test asks whether 17 of 24 is more lopsided than a coin toss (exact binomial, two-sided,
+      p = .064). The other test compares the questionnaire gap of tactical-sayers with strategic-sayers (Mann–Whitney,
+      p = .033). Round 1's independent coding agreed poorly with it (κ = .27), and round 2's κ = .96 came from the
+      same AI model. A human second coder is still needed (meth-qual-coder).
+    chart: recovery.prefGap
+    numbers:
+    - Said tactical 17, strategic 7, conditional 4, both 3, none 2
+    - 'Sign test 17 of 24: p = .064'
+    - 'Questionnaire gap: tactical-sayers +1.36 [+0.76, +1.97] vs strategic-sayers −0.04 [−1.27, +1.19]; Mann–Whitney
+      p = .033'
+    - Questionnaire agrees with the stated side for 18 of 24
+    atoms:
+    - tier-preference
+  - id: checking
+    title: 'Why the tactical plan is kept: checking it is brief and does not grow with the plan'
+    text: 'Bigger missions mean bigger tactical plans. As plans grow, operators press Suggest more often (68% →
+      85%) and keep the plan unmodified more often (about 60% → 80%). Once Deploy unlocks, they spend a median of
+      about <b>3 seconds</b> on the plan, whether it has 3 drones or 10. Per drone, checking therefore falls steeply
+      as plans grow. A strategy card gets about 9 s. Almost every consulted plan is deployed as it comes: 468 of
+      486. This is the speed-versus-accuracy trade-off the researcher expects to come back to. The more there is
+      to check, the less of it is checked proportionally, and the plan is taken. Operators describe exactly this.
+      Nine say they check when it is cheap and skip it under pressure (C17). Three say the plan was too complex
+      or too fast to check (C14). Five say they checked nearly everything, and they do decide more slowly (C18).
+      Only 3 of 33 ever mention noticing a tactical flaw (C13).<br><br><b>But</b> the pre-registered mechanism test
+      (H2) is fragile. All three predicted parts point the right way (p = .019 uncorrected), but it does not survive
+      correction for the round''s several tests (.065). Among consulted plans, larger ones are actually modified
+      a little <i>more</i>. Keeping goes up with size mainly because people consult more on big plans, not because
+      they check consulted plans more lightly. The logs also cannot tell "too costly to check" apart from "nothing
+      ever looked wrong". The tactical plan''s flaws are hard to see, while the cards'' over-allocation is visible.
+      That half of the explanation belongs to <i>tier-flaw-visibility</i> in f-flaw-odd and is not repeated here.'
+    how: '630 confirmed tactical plans from 33 people (h2_verification_cost.load). They are grouped by the number
+      of drones in the Tactical Assistant''s plan. "Consulted" means Suggest was pressed at least once. "Kept unmodified"
+      means consulted and deployed with no change. "Checking time" runs from the last Suggest press to Deploy, minus
+      the forced reveal: the planner adds one drone→task pair per second and Deploy is locked until it finishes,
+      so that wait is not checking. Effects per SD of plan size (drones × tasks) come from GEE models clustered
+      by person, adjusted for scenario and session. An odds ratio of 1.76 means each step up in plan size multiplies
+      the odds of keeping the plan by 1.76. The card comparison takes each person''s median net decision time on
+      strategic decisions: strategic_choice latency minus the card reveal, over all strategic decisions, manual
+      ones included. Round 1 measured it on a different subset and got 6.0 s. The H2 numbers are from docs/analysis/round1/h2_verification_cost.md.'
+    chart: recovery.checkCost
+    numbers:
+    - 'Kept unmodified rises with plan size: OR 1.76 per SD [1.25, 2.47], p = .001 (all 630 plans)'
+    - 'Consulted rises: OR 2.52 [1.87, 3.38]; kept | consulted FALLS: OR 0.68 [0.50, 0.94] (486 consulted plans)'
+    - 'Net checking time barely moves: +0.60 s per SD [−0.15, +1.35], p = .12; per drone −0.25 s [−0.40, −0.10]'
+    - 468 of 486 consulted plans deployed unmodified (96%)
+    - 'Person-median check: tactical 2.85 s vs strategy card 8.80 s (n = 33, Wilcoxon p < .0001)'
+    - H2 primary p = .019 uncorrected, .065 after Holm correction across round 1
+    atoms:
+    - tier-checking-cost
+    sharedWith:
+    - f-flaw-odd
+    codes:
+    - C13
+    - C14
+    - C17
+    - C18
+  - id: stated-revealed
+    title: 'Stated vs revealed preference: they line up in rank, not in size or over time'
+    text: 'Does the person who <i>says</i> (rates) the Tactical Assistant higher also <i>lean</i> on it more? Ranked
+      against each other, yes, moderately. The person-level trust gap correlates ρ = .47 with the usage gap (share
+      of tactical plans kept unmodified minus share of strategic decisions where a card was taken). 16 people favour
+      tactical on both measures and 3 favour strategic on both. Three things do <b>not</b> line up:<br> (1) <b>Size.</b>
+      Stated trust favours tactical strongly (26 of 33), but use barely does. Cards are taken on 64% of strategic
+      decisions and tactical plans kept on 72%, a gap of +8 points whose CI includes zero. Nine people rate tactical
+      higher yet use the strategic cards more.<br> (2) <b>Change.</b> Within a person, a rise or fall in trust from
+      session 1 to 2 does not go with a matching change in use (ρ = .16 strategic, .13 tactical).<br> (3) <b>Lead.</b>
+      Session-1 trust does not predict how card use changes in session 2 (ρ = .07). Trust ratings read like a stable
+      opinion of the assistant, while use follows the moment: mission size, queue, time.<br> This is the stated-versus-revealed
+      framing the researcher liked. The ratings describe the person; they do not forecast their next move.'
+    how: 'One dot per person, both sessions pooled. Stated = mean tactical trust minus mean strategic trust (1–7).
+      Revealed = share of their confirmed tactical plans kept unmodified minus share of their strategic decisions
+      where they took a card (the alternative "pressed Suggest at all" gives the same picture, ρ = .49). Spearman
+      ρ uses 4000-draw seeded bootstrap CIs. A caveat on (1): taking a card and keeping a plan are different acts
+      with different costs, so the <i>level</i> of the usage gap is not a pure preference; the ranking is the cleaner
+      comparison. "Change" correlates the session-2 minus session-1 differences within each person (33 people).
+      "Lead" correlates session-1 trust with the later change in use. Session-level links are also shown (66 sessions):
+      strategic trust ~ cards taken ρ = .49, tactical trust ~ plan kept ρ = .27. Note that the trust survey comes
+      <i>after</i> the session it follows, so a same-session link can be use shaping trust as easily as the reverse.'
+    chart: recovery.statedRevealed
+    numbers:
+    - 'Trust gap vs usage gap (kept − took): ρ = .47 [.10, .73], p = .006, n = 33'
+    - 'Quadrants: both favour tactical 16, both strategic 3, trust tactical/use strategic 9, trust strategic/use
+      tactical 3 (2 on a zero line)'
+    - 'Group use: took a card 64%, consulted the plan 76%, kept it 72%; usage gap +0.08 [−0.02, +0.17]'
+    - 'Within person, change in strategic trust vs change in card use: ρ = .16 [−.27, .52], p = .38'
+    - 'Session-1 strategic trust vs change in card use s1→s2: ρ = .07 [−.27, .40], p = .71; tactical .01'
+    - Between people, strategic trust vs cards taken ρ = .60 [.30, .78]; tactical trust vs plan kept ρ = .31, p
+      = .08
+    atoms:
+    - trust-not-lead
+  - id: trust-lead-strip
+    title: All the trust–use correlations in one view
+    text: Between people, trust and use move together, most clearly for the strategic tier. Within a person over
+      time, and as a predictor of the next session, the correlations are near zero.
+    how: Each row is a Spearman ρ with a 4000-draw seeded bootstrap 95% CI, at the person level (n = 33). A dark
+      dot means p < .05. These are the same numbers as the section above, in one picture.
+    chart: recovery.trustLead
+    atoms:
+    - trust-not-lead
+  replies:
+  - card: tier-trust-gap
+    text: 'Kept as the core of this finding. Re-run: 5.44 vs 4.61, 26 of 33 higher for tactical, gap +0.83 [0.35,
+      1.30], p = .001. Now with a per-person picture and splits by item, game and session. The split shows the gap
+      is mostly a second-session, Strategic-Heavy fall in strategic trust, which the headline should say.'
+  - card: tier-preference
+    text: Merged in as the 'what they said' section. Stated preference is 17 tactical vs 7 strategic (p = .064),
+      and it agrees with the questionnaire for 18 of 24 (tactical-sayers' gap +1.36 vs −0.04, p = .033). Still single-coder.
+  - card: tier-checking-cost
+    text: 'Kept, framed as speed vs accuracy. New graph: as plans grow, consulting and keeping rise, but checking
+      time stays at about 3 s, so checking per drone falls. The H2 test is still fragile (p = .065 corrected), and
+      keep | consulted runs the other way. The flaw-visibility half is referenced to f-flaw-odd, not redone.'
+  - card: trust-not-lead
+    text: 'Reframed as stated vs revealed, with the per-person scatter you asked for. Honest result: between people
+      they DO line up in rank (ρ = .47). They don''t line up in size (stated strongly tactical, use only +8 points),
+      within person over time (ρ = .16), or as a predictor of next-session change (ρ = .07). Nine people rate tactical
+      higher but use the cards more.'
+  - card: trust-own-failures-null
+    text: 'Kept as supporting. Re-checked: illogical cards seen in session 1 vs the trust change gives ρ = +.40,
+      but that is scenario order. Held at fixed order it is +.14 (p = .42). H5''s primary was −.05.'
+  - card: q-C13
+    text: 'Attached to the checking section (3 of 33 noticed a tactical flaw: P02, P21, P31).'
+  - card: q-C14
+    text: Attached to the checking section (P22, P24, P27 took the plan because it was too complex or fast to check).
+  - card: q-C16
+    text: Attached to the 'where the gap comes from' section as the counter-voice (P06, P10, P26, P32).
+  - card: q-C17
+    text: Attached to the checking section — the mechanism in their words (9 of 33).
+  - card: q-C18
+    text: Attached to the checking section — the opposite stance (5 of 33, slower deciders).
+  open:
+  - Should the headline lead with 'trusted more', or with 'strategic trust falls in session 2 and the gap opens
+    then'? The data supports both, and the second is more precise. trust-drop was pruned, but the gap cannot be
+    described honestly without it.
+  - 'The stated-vs-revealed result is mixed: aligned in rank, not in size or change. Decide which part the thesis
+    leans on.'
+  - Stated-preference counts still need a human second coder (meth-qual-coder).
+  source: recovery
+- id: f-recovery
+  area: Trust, tiers and recovery
+  title: When Suggest wrongly says “No workable plan”, half abandon within seconds without trying
+  headline: Suggest wrongly said “No workable plan” 23 times to 14 operators, in 17 drone failures that could have
+    been fixed by chaining a busy drone on. 9 of those 17 were abandoned, against 10 of 118 other attempted fixable
+    failures. In all 9 the operator abandoned without dragging a single drone, 8 of them within 10 s of the refusal.
+    The 8 who ignored the refusal and fixed it by hand all saved the mission. So for this data, "if the assistant
+    says no, about half take it at its word and abandon without visible checking" is a fair statement, though n
+    is small (9 episodes, 8 people) and looking at the map is not logged. A refusal does not make people give up
+    on later failures, and lower-reliance operators attempt fewer fixes overall.
+  confidence: moderate
+  absorbs:
+  - rec-blind-spot
+  - rec-after-refusal
+  - rec-low-reliance-attempt
+  - q-C19
+  - q-C20
+  - meth-blind-erratum
+  - meth-time-left
+  sections:
+  - id: rates
+    title: Abandonment by what Suggest said
+    text: 'Every drone failure that needed the operator is one recovery episode. Grouped by what Suggest answered:
+      a <b>wrong refusal</b> ended in abandonment 53% of the time (9 of 17). When Suggest gave a plan it was 6%
+      (3 of 51), and when operators fixed things by hand without Suggest it was 13% (9 of 69). A <b>correct refusal</b>,
+      where no fix existed with the drones on the mission, ended in abandonment every time (11 of 11), as it should.
+      The striking row is the first one. These were saveable missions, and the same 14 people abandoned only 6 of
+      their 61 other attempted fixable failures. Abandonment was not their habit; the refusal is what is different.
+      When nothing at all was tried, every failure was abandoned or left open (35 + 11).'
+    how: 'Recovery episodes are rebuilt by h3_recovery.load_all (194 episodes, 33 people). It is a time-local rebuild
+      of which drones were on the mission, idle or executing, at each Suggest press. A press is a <b>refusal</b>
+      when Suggest could not cover every task the operator''s live plan left short. A refusal is <b>wrong</b> when
+      those tasks could have been covered by drones still on the mission, counting ones busy on another task (chaining
+      them on). Suggest only offers drones that are not executing, which is its blind spot. An episode counts as
+      a wrong refusal if it had at least one wrong-refusal press; as a correct refusal if it had refusals and none
+      was wrong. Rates are abandoned ÷ (abandoned + recovered), with Wilson 95% CIs. The comparison counts wrong-refusal
+      episodes against every other fixable episode where something was attempted (Suggest gave a plan, or hand edits):
+      Fisher exact test, plus a GEE logit clustered by person (odds ratio 12 means the odds of abandoning were twelve
+      times higher).'
+    chart: recovery.abandonByType
+    numbers:
+    - 'Wrong refusal: 9 of 17 abandoned (53% [31%, 74%]), 14 people; all 17 fixable with drones on the mission'
+    - 'Correct refusal: 11 of 11 abandoned (100% [74%, 100%]), 6 people'
+    - 'Suggest gave a plan: 3 of 51 (6%); hand edits only: 9 of 69 (13%); nothing tried: 35 of 35 (+11 left open)'
+    - 'Wrong refusal vs other attempted fixable failures: 9/17 vs 10/118; odds ×12.2, Fisher p < .0001; GEE ×12.3
+      [3.2, 47.6], p = .0003'
+    - 'The same 14 people on their other attempted fixable failures: 6 of 61 abandoned'
+    atoms:
+    - rec-blind-spot
+  - id: checking-after
+    title: Do they check after a refusal? What the log shows between the refusal and the close
+    text: 'The timeline puts every refusal episode on one row, with 0 as the moment Suggest first said no. The answer
+      to the researcher''s question is in the top block. After a <b>wrong</b> refusal that ended in abandonment,
+      not one operator dragged a drone in the planner. Three pressed Suggest again, got the same answer, and abandoned.
+      None did anything on another mission in between, so they were not called away. 8 of the 9 abandoned within
+      10 s of the first refusal, at a median 3.8 s after the last one. That is time for a glance, not a re-plan.
+      The 8 who <b>did not</b> take the refusal at its word look completely different: 7 of 8 started dragging drones,
+      took a median 21 s, and saved the mission. After a correct refusal people behaved the same way as after a
+      wrong one (abandoned in a median 4.4 s, no drags). That is right in those cases, and it shows operators get
+      no cue to tell the two apart: the message is the same either way.<br><br> The verified case: P19, session
+      1, M003. Camera-2 failed. The Supply Drop needed a Camera. Two Lifters sat idle, and the only remaining Camera
+      was busy on Search & Service, due to finish in about 45 s. Suggest said “No workable plan”, and the operator
+      abandoned 3 s later. Chaining that Camera on would have saved it (checked frame by frame on the recording).
+      P19 later blamed themselves for failed missions (C19). No wrong-refusal abandoner is among the three who blamed
+      the assistant (C20).'
+    how: For each refusal episode the analysis takes the time of the first refusal and lists every logged operator
+      action from then until the mission was abandoned or redeployed. That includes drags in the recovery planner
+      (tactical_assignment_changed), further Suggest presses, and any action on another mission (strategic decisions,
+      tactical confirms, recalls, other recoveries), from the raw event log. "Checked" here can only mean a <i>logged</i>
+      action. Looking at the strategic map or the planner leaves no trace, so a fast abandonment could still hide
+      a quick look, and the narration recordings are the place to check that. Seconds are session time; the session
+      pauses if the primary window is hidden, so these are real play seconds.
+    chart: recovery.refusalTimeline
+    numbers:
+    - 'Wrong refusal → abandoned (9 episodes, 8 people): drags after the refusal 0 of 9; re-pressed Suggest 3 of
+      9; actions elsewhere 0 of 9; dragged before the refusal 0 of 9'
+    - 8 of 9 abandoned within 10 s of the first refusal; median 6.8 s from the first refusal, 3.8 s from the last
+    - 'Wrong refusal → fixed (8 episodes, 7 people): 7 of 8 dragged drones after; median 20.9 s to deploy'
+    - 'Correct refusal → abandoned (11, 6 people): 0 drags after, 3 retries, median 4.4 s from the last refusal'
+    - 'Verified: P19 s1 M003, abandoned ~3 s after the refusal'
+    atoms:
+    - rec-blind-spot
+    codes:
+    - C19
+    - C20
+  - id: speed
+    title: How fast people abandon, with and without a refusal
+    text: 'Abandoning right after a wrong refusal is as quick as abandoning right after one''s own failed hand attempt
+      (median about 4 s from the last action). Counted from the failure itself, wrong-refusal abandonments take
+      about as long (median 24 s) as abandoning with nothing tried at all (21 s). A plausible reading: the refusal
+      works as the operator''s "attempt". It takes the place of trying, and the operator then gives up on the usual
+      timetable.'
+    how: For every abandoned episode, the time from its trigger to the abandonment. For refusal episodes the trigger
+      is the last refusal. For hand-attempt episodes it is the operator's last drag or press. For untried failures
+      it is the failure itself. Medians only; the groups are small and the comparison is descriptive.
+    chart: recovery.secondsToAbandon
+    numbers:
+    - 'Last action → abandon: wrong refusal 3.8 s (n = 9), correct refusal 4.4 s (n = 11), own hand attempt 4.6
+      s (n = 9)'
+    - 'Failure → abandon: wrong refusal 24.1 s, nothing tried 21.0 s (n = 35)'
+    atoms:
+    - rec-blind-spot
+  - id: later
+    title: A refusal ends that recovery, not later ones
+    text: 'After someone''s first refusal, do they stop trying on later failures? No sign of it. In raw numbers,
+      later fixable failures were attempted <i>more</i> often (80% → 89%). That is the "attempts rise" in the original
+      card, and it is mostly the general rise into the second session. Once that is held constant, the odds point
+      slightly down (×0.50), with a CI from ×0.09 to ×2.9: no evidence of change in either direction. Round 2''s
+      null simulation showed that this design tends to produce a drop even when nothing happens (null mean ×0.72),
+      so a downward point estimate means even less. The cost of a wrong refusal is local: one saveable mission,
+      then business as usual. Whether a refusal changes later use of the <i>strategy cards</i> is checked by the
+      flaw analyst (event study on the refusal anchor; f-flaw-odd / f-refusal-cascade) and is not repeated here.'
+    how: 'Only people who ever received a refusal (18; 14 for a wrong one). For each, the fixable failures before
+      their first refusal and after it are compared, leaving out the episode that contained the refusal. Outcome:
+      was a fix attempted (any drag or Suggest press)? Model: GEE logit clustered by person, attempted ~ after +
+      session. Only 5 people have fixable failures on both sides, so this is weak. The null-simulation figure is
+      from docs/analysis/round2/wA_recovery_corrected_output_2026-10-07.txt (A7a).'
+    chart: recovery.afterRefusal
+    numbers:
+    - 'Any refusal (18 people): attempted 79.5% before (n = 39) → 89.1% after (n = 55); adjusted OR 0.50 [0.09,
+      2.86], p = .44; unadjusted 1.73'
+    - 'Wrong refusal (14 people): 81.1% → 85.4%; adjusted OR 0.30 [0.03, 3.5], p = .34'
+    - Only 5 people have failures both before and after
+    atoms:
+    - rec-after-refusal
+    sharedWith:
+    - f-flaw-odd
+  - id: reliance
+    title: Lower-reliance operators attempt fewer recoveries
+    text: 'Most people (20 of 32) attempted every fixable failure. Those lower on the reliance axis, who generally
+      lean less on both assistants, attempted fewer: ρ = .47 between the axis and the share of own fixable failures
+      attempted. Much of that is the three people who never attempted one (P15, P24, P29). Without them it drops
+      to ρ = .34 (CI touches zero). So this is a between-person pattern carried by a few people. It is not a rule
+      that applies to everyone.'
+    how: 'One dot per person: the share of their fixable failures (fixable with drones on the mission) where they
+      attempted anything, against their score on the reliance axis. The axis is the first principal component of
+      ten usage habits from round 1 (h1_archetypes), recomputed without its bootstrap; it explains 31% of the variance.
+      Main view: only failures with at least 31 s left, because nothing can be attempted in the last few seconds
+      (see the method note below). Spearman ρ uses bootstrap CIs. The axis includes one recovery item (share of
+      recoveries with Suggest), which overlaps the outcome. Without it, ρ is .43.'
+    chart: recovery.relianceAttempt
+    numbers:
+    - '≥ 31 s left (32 people, 162 failures, 133 attempted): ρ = .47 [.15, .73], p = .006'
+    - 'Axis without its recovery-Suggest item: ρ = .43, p = .015'
+    - 'Without the 3 never-attempters: ρ = .34 [−.05, .67], p = .07 (n = 29)'
+    - 'All failures incl. the last 30 s: ρ = .54 [.24, .76], p = .001 (P30''s only fixable failures were in the
+      last 30 s)'
+    atoms:
+    - rec-low-reliance-attempt
+  - id: method
+    title: 'Method notes: the session''s end, and round 1''s undercount'
+    text: '<b>The end of the session interrupts actions.</b> Attempt rates look like they rise with time left (36%
+      of failures with ≤ 30 s left were attempted, against 78–96% earlier). But operators take a median 14 s to
+      make a first move. 7 of the 9 fixable failures still open at the buzzer began with 12 s or less on the clock,
+      and the other 2 with 49 s. Once failures with under 31 s left are removed, the time-left effect is no longer
+      distinguishable from zero (OR 1.12 per minute, p = .20). Every recovery analysis here therefore uses failures
+      with ≥ 31 s left where time matters. (The card said 8 of 9 started with ≤ 12 s; this rebuild gives 7 of 9.)<br><br>
+      <b>Round 1 undercounted the blind spot.</b> Its rebuild of what Suggest could see missed tasks cut short by
+      abandonment, which are logged as task_requeued rather than completed or failed. Their drones looked free,
+      so refusals in exactly the episodes that ended in abandonment were scored as "solved". It was found because
+      three operators read “No workable plan” aloud seconds after presses scored as solved. Corrected 2026-10-07:
+      23 wrong-refusal presses by 14 people, not 11 by 8. Every number in this finding uses the corrected rebuild.'
+    how: Time left = 480 s minus the failure time. Attempt rates by band use Wilson 95% CIs. The time-left model
+      is a GEE logit, attempted ~ minutes left (within-person part) + person mean, clustered by person. "First move"
+      = the first drag or Suggest press after a fixable failure. The erratum is recorded in docs/analysis/round1/SUPERVISOR_LOG.md
+      and in the h3_recovery.py parse_session comment.
+    chart: recovery.timeLeft
+    numbers:
+    - 'Attempted by time left: ≤ 30 s 4/11 (7 left open); 31–90 s 11/16; 1.5–3 min 41/48; 3–5 min 58/74; 5–8 min
+      23/24'
+    - 'Time-left OR per minute (within person): 1.26 [1.02, 1.56], p = .03 with all failures → 1.12 [0.94, 1.34],
+      p = .20 with ≥ 31 s left'
+    - 'First move: median 13.9 s (IQR 6.2–21.2), n = 137'
+    - 'Suggest presses: 97 in all; 23 wrong refusals (14 people), 16 correct refusals'
+    atoms:
+    - meth-time-left
+    - meth-blind-erratum
+  replies:
+  - card: rec-blind-spot
+    text: 'Reframed around your question, answered from the logs. After a wrong refusal, 9 of 17 abandoned vs 10
+      of 118 other attempted fixable failures (odds ×12). None of the 9 dragged a drone after the refusal, 3 just
+      re-pressed Suggest, none were busy elsewhere, and 8 of 9 abandoned within 10 s. Everyone who did try by hand
+      saved the mission. Correct refusals get the same quick abandonment, which suggests operators cannot tell the
+      two apart. Caveat: looking is not logged. P19 is verified on video.'
+  - card: rec-after-refusal
+    text: 'Merged into the refusal finding. The ''rise'' is raw only (80% → 89%) and comes from the general session-2
+      rise. Adjusted it is ×0.50 [0.09, 2.86], and only 5 people have failures on both sides: no evidence either
+      way. The cost of a refusal stays in its own episode.'
+  - card: rec-low-reliance-attempt
+    text: Kept, with the per-person scatter. ρ = .47 on failures with ≥ 31 s left, .43 without the overlapping item,
+      .34 (p = .07) without the three never-attempters, so it is carried by a few people.
+  - card: q-C19
+    text: Attached to the refusal section. P19 (the verified wrong-refusal abandon) is one of the four who blame
+      themselves.
+  - card: q-C20
+    text: Attached to the refusal section. None of the three who blame the assistant (P03, P06, P18) abandoned after
+      a wrong refusal.
+  - card: meth-time-left
+    text: Kept as a method note inside this finding, with a chart of attempt rate by time left. Rebuild gives 7
+      of 9 open-at-buzzer failures starting with ≤ 12 s (card said 8 of 9).
+  - card: meth-blind-erratum
+    text: Kept as a method note here; all numbers use the corrected rebuild (23 presses / 14 people). The integrator
+      may also list it under f-methods.
+  open:
+  - 'Is this main or lesser? The mechanism is concrete and verified, and the design point is strong: the assistant''s
+    ''can''t'' is taken at its word more readily than its ''here''s a plan''. But it rests on 9 abandoned episodes
+    from 8 people.'
+  - Was there visual checking in the few seconds before abandoning? Only the narration/recordings can show it. Worth
+    clipping the 9 episodes (P19 is done).
+  - Wrong-refusal episodes may be a little harder than other fixable failures (the fix needs chaining a busy drone).
+    The 8 hand-fixes show they were doable, but a like-for-like comparison group (fixable only by chaining, no Suggest
+    pressed) has just 7 episodes, too few to use.
+  - meth-time-left and meth-blind-erratum are written as method notes here; the integrator may move or copy them
+    into f-methods.
+  source: recovery

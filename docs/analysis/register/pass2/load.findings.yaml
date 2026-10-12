@@ -1,0 +1,356 @@
+findings:
+  - id: f-workload
+    area: "Workload and the queue"
+    title: "A busier moment does not push people onto the assistants — even though they say it does"
+    headline: >-
+      Comparing each operator with themselves, having more missions waiting does not change how often
+      they take a strategy card or press Suggest: the line is flat once we account for what each
+      decision was (mission size and drone types), when it came in the session, which game it was and
+      who made it. This is "no evidence of an effect", with enough data to rule out large effects
+      (strategic: at most about +15 points of card-taking going from 0 to 5 waiting). Nine of 33 said
+      in the debrief that they hand over when overloaded; their own behaviour moved with the queue no
+      more than anyone else's. In play they said overload-type things at slightly busier moments,
+      but their reliance around those moments did not change.
+    confidence: "null"
+    absorbs: [load-null, load-visible, load-backlog-practice, load-deep-queue, q-C11]
+    sections:
+      - id: raw-vs-adjusted
+        title: "Queue depth against reliance — raw, and adjusted"
+        text: >-
+          Each point is the share of decisions where the operator took a strategy card (or pressed
+          Suggest), grouped by how many OTHER missions were waiting for a strategic decision at that
+          moment. Whiskers are 95% intervals. Switch the view: <b>Raw</b> shows the dip at 3–4 waiting
+          that made the raw graph look like an effect; <b>Raw + expected</b> shows that the dip is
+          where it was expected anyway (dashed line); <b>Adjusted</b> removes it — every adjusted point
+          sits inside 59–74% with overlapping intervals and no trend. The dotted vertical line marks
+          where the queue list runs out of room (about 3.5 cards visible at rest, counting the one
+          being opened): beyond it, waiting missions are only on the strategic map. Nothing changes
+          at that line either.
+        how: >-
+          <b>Rows:</b> 564 strategic decisions on original (non-residual) missions and 630 tactical
+          plans, 33 people (P09 excluded). <b>Queue</b> = other missions that had arrived and not yet
+          been given a strategic choice when the decision panel opened, rebuilt from the event log
+          (agrees with the logged count for 100% of decisions). <b>Expected</b>: a logistic model
+          predicts each decision's chance of a card (or Suggest) from four things only — the mission
+          (drones needed, number of tasks, number of drone types), the minute of the session, the game
+          (one of four fixed scenarios), and the person (their own rate on all their OTHER decisions,
+          so a decision never predicts itself). The queue is deliberately left OUT. <b>Adjusted</b>
+          for a bin = the overall rate + the average of (observed − expected) in that bin. In plain
+          words: 'given who made these decisions, on which missions, at what point in which game, how
+          much more or less did they rely on the assistant than we would expect?' If load mattered,
+          the deep-queue bins would sit above what their missions and people predict; they do not.
+          <b>Worked example (strategic, 4 waiting, 41 decisions):</b> raw 51% looks like a drop from
+          67% at 0 waiting. But 90% of those decisions were in the two Strategic Heavy games, on
+          missions averaging 6.9 drones (vs 8.7) with fewer three-type missions (54% vs 66%), made by
+          people whose usual rate is 56% (vs 66%). The model expects 50%; observed is 51%; adjusted
+          ≈ 67%. <b>Intervals</b>: people resampled with replacement 400 times, the expected-model
+          re-fitted each time, so the interval includes the uncertainty of the adjustment itself.
+        chart: load.nullBins
+        numbers:
+          - "Strategic raw: 67% (0 waiting), 70%, 68%, 58%, 51%, 71%, 50% (6+); adjusted: 66%, 65%, 65%, 61%, 67%, 74%, 59% — all intervals overlap."
+          - "Tactical raw: 73%, 79%, 83%, 79%, 76%, 73%, 67%; adjusted: 76%, 78%, 77%, 75%, 82%, 78%, 78%."
+          - "The queue rises with the minute (Spearman ρ = .49) but hardly with mission size (ρ = −.08): the adjustment mostly removes WHO reaches deep queues and WHICH GAME they are in."
+          - "Deep queues are a Strategic Heavy phenomenon: 90–97% of decisions at 4+ waiting are in those two games."
+        atoms: [load-null, load-visible]
+      - id: robust
+        title: "Every way of asking it gives the same answer"
+        text: >-
+          The within-person change in the odds of relying per extra mission waiting, under every
+          specification tried — including each game on its own, the heavier vs the lighter pair of
+          games, a 'hinge' that lets the effect differ beyond the visible list, tasks waiting instead
+          of missions, and missions that had just arrived (which the operator cannot cause). Strategic:
+          all 13 are compatible with no change. Tactical: the main model is flat, but two of twelve
+          variants reach p < .05 (without mission size; Strategic Heavy game 1 alone) — a small upward
+          lean that disappears once mission size is held fixed and is absent for the arrivals measure.
+        how: >-
+          GEE logistic regression (decisions clustered within person, bias-reduced standard errors).
+          'Within person' means the queue is centred on that person's own average, so the estimate
+          compares a person when busier with the same person when less busy; their average queue is
+          kept as a separate term. 'Main' adds mission size, tasks, drone types, minute and game.
+          An odds ratio of 1.04 means the odds of taking a card are 4% higher per extra mission waiting.
+          To make the interval concrete: at the main model's upper limit (1.17) uptake would rise from
+          65% at 0 waiting to 80% at 5; at its lower limit (0.92) it would fall to 56%. So the data rule
+          out a large effect but not a modest one either way.
+        chart: load.robust
+        numbers:
+          - "Strategic main: OR 1.04 [0.92, 1.17], p = .53 per extra mission waiting; range across 13 specs 0.91–1.60, none p < .05."
+          - "Strategic hinge: 0–3 waiting OR 1.00 [0.82, 1.22]; beyond 3 OR 1.11 [0.86, 1.44] — no change at the visible limit."
+          - "Tactical main: OR 1.08 [0.94, 1.24], p = .26; + minute and game only: 1.18 [1.03, 1.34], p = .017; arrivals in last 60 s: 1.00 [0.90, 1.11]."
+          - "Heavier games only (Strategic Heavy 1, Tactical Heavy 2): strategic 1.10 [0.93, 1.32], tactical 1.14 [0.98, 1.32]."
+        atoms: [load-null]
+      - id: said-did
+        title: "Said vs did: the people who said they hand over when busy"
+        text: >-
+          Nine operators (P05, P06, P11, P18, P20, P25, P32, P33, P35) said, unprompted, that they lean
+          on the assistant more when busy, overwhelmed or rushed. Each dot is one person's own slope:
+          how much their (adjusted) reliance changed per extra mission waiting. If what they said
+          described what they did, the red group would sit clearly right of zero. It does not: on
+          average they move about +2 points per extra mission, not distinguishable from zero or from
+          the other 24 people. Their claim usually compared sessions ('the first one was so fast I used
+          it a lot') — so the second view checks that version: reliance in their heavier game minus
+          their lighter game. Again no difference.
+        how: >-
+          <b>Moment to moment:</b> for each person with 6+ decisions and some spread in queue depth, a
+          straight line through their (observed − expected) values against queue depth; the slope is
+          in percentage points per extra mission waiting. Groups compared with a Mann–Whitney test;
+          also tested as a queue × 'said' interaction in the GEE above. <b>Busier session:</b> the four
+          games' load measured by total drones demanded per session (Tactical Heavy 2: 115; Strategic
+          Heavy 1: 89; Strategic Heavy 2: 88; Tactical Heavy 1: 63); for each person, their mean
+          (observed − expected) in the heavier of their two games minus the lighter. With 9 people in
+          the 'said' group, only a large difference could have been detected — this is absence of
+          evidence for the claim, and the point estimates are small.
+        chart: load.saidDid
+        numbers:
+          - "Strategic slopes: said +2.1 pp per extra mission (5 of 9 upward) vs not said −0.3 pp (11 of 24 upward); p = .41."
+          - "Tactical slopes: said +2.5 pp (6 of 9 upward) vs −0.3 pp (9 of 24); p = .09 — the closest thing to support, and not significant."
+          - "Queue × said interaction: strategic OR 1.13 [0.83, 1.53] p = .44; tactical 1.18 [0.91, 1.53] p = .20. Within the 'said' group alone the queue OR is 1.03 (strategic) and 0.97 (tactical)."
+          - "Heavier minus lighter game, adjusted: said +3.8 pp strategic, +1.5 pp tactical; everyone −1.1 / +1.2 pp; all intervals span zero."
+        atoms: [q-C11, load-null]
+        codes: [C11]
+      - id: spoken
+        title: "In play: overload talk comes at slightly busier moments, reliance does not follow"
+        text: >-
+          Using the narration recorded during play (30 people, 60 sessions), we found every moment
+          someone said an overload-type phrase ('too many', 'can't keep up', 'oh no', 'struggling'…):
+          51 moments from 24 people. All nine of the 'said' group produced at least one. At those
+          moments slightly more missions were waiting than at a random utterance (2.4 vs 2.1; p = .09)
+          — so what people feel as overload is weakly tied to the queue. But in the minute either side,
+          their card-taking and Suggest use were exactly what their missions and habits predict. The
+          felt pressure is real enough; it just does not turn into handing work over.
+        how: >-
+          Phrase list fixed in round 2 (before any behaviour was looked at), applied to the transcript
+          of each session window (from segments.json; utterances 20 s apart merged into one moment).
+          For each moment: missions waiting at that second (rebuilt from the log), and the mean
+          (observed − expected) of strategic decisions and tactical plans started within ±60 s.
+          Null: the same number of utterances per session drawn at random from ALL that session's
+          speech, 5,000 times — so the comparison is 'overload talk' vs 'any talk', in the same people
+          and sessions. Caveats: no speaker separation (researcher speech is in the transcripts); in
+          round 2 about half of matched phrases were genuine stress on reading; alignment uses file
+          times for 24 of 30 people (±2 s).
+        chart: load.spoken
+        numbers:
+          - "Missions waiting at overload moments 2.41 vs 2.09 at random utterances (95% of random draws 1.71–2.45), p = .09."
+          - "Card-taking within ±60 s: −3.7 pp vs expected (random utterances +0.1), p = .38. Suggest: +3.5 pp (random +2.1), p = .65."
+          - "16 of the 51 moments came from the 9 people coded C11; 35 from others."
+        atoms: [q-C11]
+        codes: [C11]
+      - id: backlog-practice
+        title: "Why Suggest seemed to rise with the backlog: the session was simply further along"
+        text: >-
+          One earlier result looked like an exception: Suggest was pressed more often when strategic
+          decisions were waiting at the moment the operator started a tactical plan. The plain reading
+          of this card: <b>that rise is mostly practice, not pressure.</b> Both the backlog and Suggest
+          use climb over the 8 minutes (second chart). Because they climb together, a plan made with a
+          long backlog is usually also a plan made later in the session. Hold the minute fixed and the
+          backlog effect shrinks to borderline. In the first chart, the grey dashed line (adjusted for
+          plan, game and person but NOT the minute) still rises with backlog; the solid line (adding
+          the minute) is flat within its intervals.
+        how: >-
+          630 tactical plans, 33 people. Backlog = missions awaiting a strategic decision at the first
+          planner action (Suggest press or first drag). Within-person GEE with plan size, drone types
+          and game; then the same with minute of the session added. 'Adjusted' lines as in the first
+          section, with the model either excluding or including the minute.
+        chart: load.backlog
+        numbers:
+          - "Without minute: OR 1.18 [1.07, 1.31] per extra mission in the backlog, p = .001. With minute: 1.11 [0.98, 1.26], p = .10."
+          - "The minute itself: Suggest odds ×1.13 per minute [1.03, 1.23]; backlog +0.23 missions per minute [0.16, 0.30]."
+          - "Suggest use by minute: 73%, 70%, 77%, 81%, 73%, 83%, 83%, 77%."
+        atoms: [load-backlog-practice]
+      - id: deep
+        title: "Deep queues (4+ waiting): why the between-person picture points the wrong way"
+        text: >-
+          17% of strategic decisions were made with four or more other missions waiting (25 of 33
+          people). Plain reading of this card: <b>across people</b>, those who often have deep queues
+          rely LESS on the assistants — but that is because people who do big missions by hand are
+          slower and build up their own queues, not because queues put them off. <b>Within a person</b>,
+          their own deep-queue moments look like their shallow ones. It is the same null as above at
+          the extreme, plus a warning about why between-person comparisons mislead here.
+        how: >-
+          Each dot is a person: the share of their decisions made with 4+ waiting, against their overall
+          rate. Spearman correlation across people. The within-person test is the GEE with 'deep'
+          (4+ waiting, yes/no) centred on each person's own share, with the person's share as a
+          separate between-person term, plus mission, minute and game.
+        chart: load.deep
+        numbers:
+          - "Strategic: within person OR 1.33 [0.80, 2.21], p = .27; between people ρ = −.32 (p = .07); a person's deep-queue share goes with bigger missions (ρ = .61)."
+          - "Tactical: within OR 1.34 [0.77, 2.31], p = .30; between ρ = −.40 (p = .02)."
+          - "People who met both: adjusted card-taking higher at deep queues for 16, lower for 9 (p = .47)."
+        atoms: [load-deep-queue]
+      - id: visible
+        title: "What the operator can see of the queue"
+        text: >-
+          The queue column shows three full cards (four in a taller window); while a strategy decision
+          is open the panel fills that column and leaves at most one other waiting mission visible.
+          This is the dotted line on the graphs. No load measure changes at it (hinge model above),
+          so 'missions out of sight' do not create a pressure the visible ones did not.
+        how: "Read off screen recordings of P19 and P30 (images below)."
+        chart: queueImages
+        numbers:
+          - "Hinge beyond the visible list: strategic OR 1.11 [0.86, 1.44]; tactical 1.19 [0.82, 1.71]."
+        atoms: [load-visible]
+        sharedWith: [f-triage]
+    replies:
+      - card: load-null
+        text: >-
+          (A) The new graph shows raw and adjusted side by side with person-bootstrap intervals; adjusted
+          points all sit between 59% and 74% with overlapping intervals, so it reads as flat. (B) The
+          'how' of the first section explains the adjustment in words with a worked example: the raw dip
+          at 4 waiting is decisions by lower-uptake people on smaller, single-type missions in the
+          Strategic Heavy games — the model expects 50%, they did 51%. (C) Said-vs-did now has its own
+          graph: the nine C11 people's slopes are not different from anyone else's, and in-play
+          overload talk came at slightly busier moments without any change in reliance.
+      - card: load-visible
+        text: >-
+          Merged as a dotted line on every queue graph. On an 'other missions waiting' axis it sits at 2.5
+          (3.5 cards counting the one being opened); nothing changes there (hinge model ORs 1.11 / 1.19, n.s.).
+      - card: load-backlog-practice
+        text: >-
+          Yes — you read it right. The rise of Suggest with backlog (OR 1.18, p = .001) is mostly the
+          minute of the session: both rise together, and with the minute held fixed it is 1.11, p = .10.
+          Now a short section in f-workload with a graph that shows the two adjusted lines.
+      - card: load-deep-queue
+        text: >-
+          It says the same null at 4+ waiting, plus a warning: comparing people, deep queues go with
+          less reliance (because manual workers on big missions build their own queues); comparing each
+          person with themselves, nothing. Now a section with a per-person scatter.
+      - card: q-C11
+        text: >-
+          Folded into f-workload's said-vs-did section, with a graph. The disparity is real in the sense
+          that their own data show no load-driven rise (strategic +2 pp per mission, tactical +2.5 pp, both
+          n.s., and not different from others'), but with 9 people it is absence of evidence, not proof
+          of no effect.
+    open:
+      - "Said-vs-did is 'they said X; we see no X' — not proof that X is false. With 9 people we could only have detected a large difference. Decide whether to state it as a disagreement or as an unsupported claim."
+      - "Tactical tier has a weak upward lean in some specifications (2 of 12 at p < .05, gone with mission size or with exogenous arrivals). I report it as null; you may prefer 'no robust evidence'."
+      - "The narration overload list is crude (no speaker separation, ~50% precision in round 2). A hand-coded pass of the 51 moments would make the in-play section firmer."
+
+  - id: f-triage
+    area: "Workload and the queue"
+    title: "Busy operators speed up a little but do not change what they pick"
+    headline: >-
+      The earlier story — that with a long queue operators abandon order and pick smaller missions — does
+      not survive a fair comparison. Long queues happen almost only in the two Strategic Heavy games,
+      where every mission is small, so the opened mission is smaller simply because everything waiting is.
+      Compared with what was actually waiting, operators keep the same priorities at any queue length:
+      a strong pull towards the oldest mission, a mild preference for larger ones, and only falling
+      'oldest-first' rates because chance falls as more missions wait. What does change is pace: a bit
+      more decisions per minute when more is waiting (suggestive).
+    confidence: mixed
+    absorbs: [load-pick-small]
+    sections:
+      - id: games
+        title: "Where long queues happen"
+        text: >-
+          The four games differ in how many missions arrive and how big they are. The Strategic Heavy games
+          send many small missions (13–14 per session, about 6.5 drones each); the Tactical Heavy games
+          send few large ones. 96 of 102 decisions made with 4+ others waiting are in the Strategic Heavy
+          games. Any comparison of 'long vs short queue' is therefore also a comparison of games unless the
+          game is held fixed.
+        how: "Per session, from the event log: missions arrived (excluding residual re-queues), drones and tasks they needed, and the mean queue met at strategic decisions."
+        chart: load.games
+        numbers:
+          - "Drones demanded per session: Tactical Heavy 2 115, Strategic Heavy 1 89, Strategic Heavy 2 88, Tactical Heavy 1 63."
+          - "Mean queue at a decision: Strategic Heavy 1 2.6, Strategic Heavy 2 2.0, Tactical Heavy 2 1.3, Tactical Heavy 1 0.9."
+          - "Decisions with 4+ others waiting: Strategic Heavy 1 64, Strategic Heavy 2 32, Tactical Heavy 2 6, Tactical Heavy 1 0."
+        atoms: [load-pick-small]
+      - id: order
+        title: "Order: still oldest-first well above chance"
+        text: >-
+          The share of decisions that open the oldest waiting mission falls as the queue grows (59% with one
+          other waiting, about 30% with five) — but so does the chance of hitting the oldest by picking at
+          random (50% → 17%). Measured against chance, the pull towards the oldest stays roughly the same.
+          'One of the top 3 in the list' is near chance at every depth, so the list position itself does
+          little beyond 'oldest first'.
+        how: >-
+          414 strategic decisions where at least one other mission was waiting (33 people). For each, the
+          set of missions waiting when the panel opened (arrival order from the log). Chance = 1 / (number
+          waiting) for 'oldest'; 3 / (number waiting) for 'top 3'. Intervals: people resampled 400 times.
+          Within-person test: (picked oldest − chance) against queue depth, person-centred, with minute and
+          game. Caveat: the list could be re-sorted by score and that toggle was never logged.
+        chart: load.pickOrder
+        numbers:
+          - "Opened the oldest: 59% (1 other waiting; chance 50%), 48% (33%), 54% (25%), 40% (20%), 29% (17%), 20% (14%)."
+          - "Within person, the excess over chance does not shrink with depth: +2.4 points per extra mission [−1.0, +5.7], p = .16."
+        atoms: [load-pick-small]
+      - id: size
+        title: "Size: they do not pick small — the queue is small"
+        text: >-
+          The opened mission needs fewer drones when the queue is long (about 6.4–8.0 vs 9.1), but so do the
+          missions left waiting, because those moments are in the Strategic Heavy games. The opened
+          mission's rank among those waiting (0 = smallest, 1 = largest) sits at or slightly above the
+          random-pick line at every depth — at 5+ waiting it is above it: they open bigger ones.
+        how: >-
+          Size rank = share of the other waiting missions that need fewer drones than the opened one (ties
+          count half). A random pick gives 0.5 on average at any queue length, so this measure cannot be
+          fooled by which game the queue is in. Within-person test: rank against queue depth, centred on
+          the person, with minute and game.
+        chart: load.pickSize
+        numbers:
+          - "Size rank by depth: 0.56, 0.56, 0.48, 0.46, 0.67, 0.70 (1 to 6+ others waiting; 0.5 = random)."
+          - "Within person: +0.011 per extra mission waiting [−0.026, +0.048], p = .57 — no shift towards small."
+          - "Opened the SMALLEST waiting mission at 5+ waiting: 10–12% vs 22–29% by chance."
+        atoms: [load-pick-small]
+      - id: choice
+        title: "What makes a waiting mission get opened, short vs long queues"
+        text: >-
+          Putting it together in one model of the choice among what was waiting: being the oldest roughly
+          triples a mission's chance of being opened, being the newest arrival helps a little, and larger
+          missions are slightly preferred — and these pulls are about the same with 1–3 others waiting as
+          with 4+. Under pressure, priorities do not visibly change.
+        how: >-
+          Conditional logit: each decision is a choice among the missions waiting at that moment; the model
+          estimates how much each feature (oldest, newest, size relative to the set in units of 3 drones,
+          residual) multiplies a mission's odds of being the one opened. Fitted separately for short (1–3
+          others) and long (4+) queues, in the Strategic Heavy games only (like with like) and in all four.
+          Intervals: people resampled 200 times.
+        chart: load.choice
+        numbers:
+          - "Strategic Heavy games, short queues (178 decisions): oldest ×3.8 [2.3, 7.2], newest ×1.3 [0.7, 2.4], +3 drones ×1.36 [1.07, 1.77]."
+          - "Strategic Heavy games, long queues (95 decisions): oldest ×2.8 [1.5, 5.9], newest ×1.9 [0.9, 3.3], +3 drones ×1.50 [1.11, 2.63]."
+        atoms: [load-pick-small]
+      - id: pace
+        title: "Pace: a little faster when more is waiting"
+        text: >-
+          What does shift is speed. In minutes that start with more missions waiting, operators make more
+          strategic decisions (about 8% more per extra mission), and each decision is slightly quicker
+          (about 3% per extra mission, not significant). Deciding manually before the cards have loaded does
+          not rise. Tactical plans take slightly longer when the strategic queue is long (+4%, p = .05),
+          plausibly because operators press Suggest and go back to the queue while it fills in.
+        how: >-
+          Decisions per minute: every person-minute that started with at least one mission waiting (367),
+          Poisson GEE on the queue at the minute start (person-centred) with minute-of-session and game.
+          Decision time: log seconds from panel open to choice, within person, with mission size, drone
+          types, minute and game. Caveat for the rate: a minute that starts with a long queue often follows
+          a slow minute, so part of the rise may be catching up rather than rushing — treat as suggestive.
+        chart: load.pace
+        numbers:
+          - "Decisions per minute ×1.08 per extra mission waiting [1.04, 1.12], p < .001 (raw: 1.0/min at 0–1 waiting, 1.4–1.7 at 4+)."
+          - "Seconds per decision −2.7% per extra mission [−6.2%, +0.8%], p = .13; time beyond the forced card reveal −4.1%, p = .06."
+          - "Manual before the cards load: OR 1.02 [0.90, 1.15], p = .76."
+          - "Tactical plan time +4.3% per extra strategic mission waiting, p = .05."
+        atoms: [load-pick-small]
+      - id: visible-t
+        title: "What the operator can see of the queue"
+        text: >-
+          Beyond about 3.5 cards the rest of the queue is only on the strategic map. Picks of missions outside
+          the top 3 are about as common as chance would give, so operators do pick off the map — but the
+          oldest-first pull stays, which suggests they track mission age rather than list position.
+        how: "Read off the recordings (P19, P30); top-3 rates against chance as in the order section."
+        chart: queueImages
+        atoms: [load-visible]
+        sharedWith: [f-workload]
+    replies:
+      - card: load-pick-small
+        text: >-
+          Checked it properly and it mostly does not survive. The 'smaller missions' result is a game effect:
+          96 of 102 long-queue decisions are in the Strategic Heavy games, where all missions are small;
+          against what was actually waiting, operators pick the same way at any queue length (size rank
+          within person +0.01 per mission, p = .57; at 5+ waiting they open LARGER than average). The fall in
+          'oldest-first' is mostly chance falling as more missions wait. What does change is pace: more
+          decisions per minute (×1.08 per extra mission). Now graphs by depth with chance lines, a choice
+          model, and a pace section.
+    open:
+      - "This reverses the card you liked. The honest finding is 'priorities do not change, pace changes a little'. Decide whether f-triage stands as its own finding or becomes a section of f-workload ('busy operators do not hand over, and they do not re-prioritise — they speed up')."
+      - "The queue sort toggle (arrival vs score) was never logged; any operator who switched to score order would see big missions on top, which could produce the mild preference for larger missions."
+
+retire: []

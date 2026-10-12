@@ -1,0 +1,543 @@
+# Pass 2 · AREA handover — "When operators hand over".
+# Numbers: scripts/register/pass2/handover.py -> docs/analysis/register/pass2/handover.json (DATA.pass2.handover).
+# Charts: scripts/register/pass2/handover.charts.js. P09 excluded throughout; 33 people, 606 strategic decisions,
+# 630 tactical plans. Every interval is 95%.
+findings:
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-size-decides
+    area: "When operators hand over"
+    title: "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time"
+    headline: >-
+      The bigger the job, the more likely an operator hands it to an assistant: on the strategic tier the card is
+      taken on 52% of one-type missions vs 72% of three-type ones, on the tactical tier Suggest is pressed on 57% of
+      the smallest plans vs 92% of the largest. Comparing each person only with themselves, every doubling of the job
+      multiplies the odds of handing over by about 1.6 (strategic, drones needed) and 2.1 (tactical, drones in the plan; 2.9 if measured by drones needed); 21 of 31 and 23 of 33 people
+      show it individually. It survives every check we tried, including dropping the illogical Conservative cards.
+      One honest qualification: on the strategic tier most of the effect is operators deciding small missions
+      themselves before the cards have even loaded — once the cards are on screen, size matters only weakly.
+      The rule is sensible: that is exactly where the assistant saves time (cards ~27% faster on three-type missions,
+      no faster on one-type), and Suggest lets operators start other missions while a plan fills in.
+    confidence: strong
+    absorbs: [size-decides, speed-big-jobs, speed-parallel, q-C03, q-C04, q-C05, q-C06]
+    sections:
+      - id: both
+        title: "Both tiers on one axis: the bigger the mission, the more it is handed over"
+        text: >-
+          For every mission, the share of decisions where the operator handed over — took a strategy card as offered
+          (strategic, blue) or pressed Suggest in the tactical planner (tactical, orange) — against how many drones the
+          mission needs. Both rise. The tactical tier rises more steeply and keeps rising; the strategic tier climbs
+          from about 45–55% on small missions to about 75% and then levels off.
+        how: >-
+          <b>Rows.</b> Strategic: all 606 strategy-card decisions (one per strategic choice). Tactical: all 627
+          non-recovery tactical plans whose mission size is known (630 minus 3 residual missions with no recorded
+          need). <b>Size</b> = drones the mission needs: the sum of the primary requirements over its tasks — the
+          number an operator reads off the task badges, the same for both tiers. Binned so each bin has ≥ 59
+          decisions. <b>Intervals</b>: we resample whole people (2,000 times) and recompute the rate, so a person's
+          decisions travel together and one heavy user cannot make an interval look tight. <b>Model</b>: a logistic
+          GEE (a regression for yes/no outcomes that allows each person's decisions to be correlated) with size
+          split into two parts — this decision's size minus the person's own average size (the <i>within-person</i>
+          part) and the person's average (the between part); game and session are held fixed. The within-person odds
+          ratio answers: "when the same person meets a mission twice as big, how much do the odds that they hand it
+          over change?" Odds ×2 means, for example, a 60% chance becomes 75%. Both tiers in one model: the two
+          tables stacked, one shared within-person slope plus a tier term; the tier × size term tests whether the
+          slopes differ.
+        chart: handover.sizeBoth
+        numbers:
+          - "Strategic, per doubling of drones needed: odds ×1.62 [1.23, 2.15], p < .001 (606 decisions, 33 people)"
+          - "Tactical, per doubling of drones needed: odds ×2.91 [2.03, 4.17], p < .001 (627 plans)"
+          - "Both tiers, one shared slope: ×2.07 [1.64, 2.61], p < .001 (1,233 decisions); the tactical slope is steeper than the strategic one by ×1.38 [0.99, 1.91], p = .056 — suggestive, not shown"
+          - "Raw rates, smallest to largest bin: strategic 56% → 75%, tactical 54% → 91%"
+        atoms: [size-decides]
+      - id: strategic
+        title: "Strategic tier: drone types matter more than drone count"
+        text: >-
+          Split by how many drone types the mission needs, the strategic picture is mostly one step: one-type
+          missions get a card about half the time whatever their size (3, 5 or 6 drones), three-type missions about
+          70%. Among three-type missions more drones still raise uptake (×1.53 per doubling), but unevenly (the 10–11
+          and 18-drone bins dip). Tasks per mission barely matter on this tier.
+        how: >-
+          Same rows and model as above, with three measures of size fitted one at a time (they are too entangled to
+          fit together: every one-type mission needs ≤ 6 drones). "Per extra type" treats types as 1/2/3; two-type
+          missions are rare (12 decisions) and left out of the chart but kept in the models. The within-three-type
+          and within-one-type rows refit the drone-count model inside each group, so type is held fixed.
+        chart: handover.sizeStrat
+        numbers:
+          - "Card taken: one type 52% (181 decisions), two types 58% (12), three types 72% (413)"
+          - "Within person, each extra drone type: odds ×1.50 [1.23, 1.83], p < .001; three-type vs not ×2.15 [1.48, 3.12]"
+          - "Each extra task: ×1.18 [0.95, 1.45], p = .13 (not distinguishable from no effect)"
+          - "Doubling of drones inside three-type missions: ×1.53 [1.05, 2.21], p = .026; inside one-type missions: ×0.98 [0.53, 1.79], p = .94"
+        atoms: [size-decides]
+      - id: strategic-steps
+        title: "Strategic tier, honestly: most of it is deciding small missions before the cards arrive"
+        text: >-
+          A strategic decision has two steps. The cards take about 4.7 s to load; before that the operator can
+          already build an allocation by hand ("pre-emptive manual"). Pre-emption is common on small missions (25–34%
+          of decisions needing ≤ 5 drones) and rare on big ones (7–9%). Once the cards are on screen, operators take
+          one 67–75% of the time on small missions and 81–83% on big ones — a weaker slope that on its own is not
+          distinguishable from flat. So on this tier "small jobs myself" mostly means "I don't wait for the advice on
+          small jobs". That is still a hand-over decision driven by size, but it is a decision about whether to wait
+          for the assistant at all, not a verdict on its advice.
+        how: >-
+          The same 606 decisions split by the logged flag <i>manualBeforeCardsLoaded</i> (97 pre-emptive manuals).
+          Two within-person GEEs: (1) pre-emptive manual (yes/no) ~ size, on all 606; (2) card taken ~ size, on the
+          509 decisions where the cards had loaded first. Dropping pre-emptive decisions removes only manual
+          choices, so (2) is a conditional view, not an artefact-free one — it shows how much of the size effect
+          lives in each step.
+        chart: handover.sizeStratSteps
+        numbers:
+          - "Pre-emptive manual, per doubling of drones: odds ×0.48 [0.33, 0.69], p < .001; three-type vs one-type ×0.34 [0.21, 0.57]"
+          - "Card taken once cards are on screen, per doubling: ×1.26 [0.94, 1.69], p = .12; three-type vs not ×1.51 [0.93, 2.44], p = .09"
+        atoms: [size-decides]
+      - id: tactical
+        title: "Tactical tier: Suggest rises steadily with plan size, whatever happened strategically"
+        text: >-
+          In the tactical planner the dose-response is smooth: Suggest pressed on 57% of plans with ≤ 8 drone-task
+          slots, 68%, 81%, 83%, 82% and 92% for plans of 51+. It rises with tasks (65% at 2 tasks → 95% at 6), with
+          drone types and with drones. It holds whether the mission was allocated from a card or by hand
+          (the two faint lines) — people who built the strategic allocation themselves still hand the big plans to
+          Suggest.
+        how: >-
+          <b>Rows</b>: the 630 non-recovery tactical plans that were confirmed (the planner starts empty, so pressing
+          Suggest is a deliberate choice). <b>Plan size</b> = drones in the committed team × tasks in the mission —
+          the number of drone-to-task decisions the operator would otherwise make by hand (median 24). Model as
+          above, per doubling of plan size. The by-route lines split plans by the strategic choice for that mission.
+        chart: handover.sizeTac
+        numbers:
+          - "Within person, per doubling of plan size: odds ×2.08 [1.67, 2.59], p < .001"
+          - "Per extra task: ×2.04 [1.59, 2.62]; per extra drone type: ×1.73 [1.30, 2.31]; per doubling of drones needed: ×2.91 [2.03, 4.17] (all p < .001)"
+          - "Inside three-type missions: ×2.31 [1.61, 3.33]; inside one-type missions: ×1.77 [1.23, 2.53] — size matters on this tier even with type held fixed"
+          - "Mission allocated by hand: ×1.75 [1.20, 2.56]; allocated from a card: ×2.04 [1.48, 2.79]"
+        atoms: [size-decides]
+      - id: measures
+        title: "Other ways of measuring size: drone types and tasks, both tiers"
+        text: >-
+          The researcher asked for size as drones, tasks and types. Drones is shown above; this view switches between
+          types and tasks. Types separate the tiers less than tasks do: tasks move the tactical tier a lot and the
+          strategic tier little, which fits what each assistant does (the tactical one sequences tasks; the
+          strategic one counts drones per type).
+        how: "Same rows and person-resampled intervals as the first chart; residual missions left out of the tasks view (a residual keeps only the tasks left over)."
+        chart: handover.sizeMeasures
+        numbers:
+          - "Strategic by tasks (2→6): 56%, 58%, 73%, 75%, 67%"
+          - "Tactical by tasks (2→6): 65%, 71%, 76%, 86%, 95%"
+        atoms: [size-decides]
+      - id: models
+        title: "Person-adjusted: every size measure, both tiers, one picture"
+        text: >-
+          Each row is one within-person estimate: how the odds of handing over change when the same person meets a
+          bigger job. Rows right of the line mean "bigger → hand over more". All size measures point the same way on
+          both tiers; the two that do not clear the line are strategic tasks and the strategic slope once the cards
+          are on screen.
+        how: >-
+          GEE logistic models clustered on person (exchangeable correlation, small-sample "bias-reduced" standard
+          errors), size split into within- and between-person parts, game and session held fixed. Odds ratio = how
+          many times the odds of handing over multiply per unit of size. Read ×1.6 per doubling as: a person who takes
+          the card on 60% of 6-drone missions would be expected to take it on about 71% of 12-drone ones.
+        chart: handover.sizeModels
+        numbers:
+          - "See chart; every estimate is listed with n and p in its tooltip"
+        atoms: [size-decides]
+      - id: people
+        title: "Person by person"
+        text: >-
+          The same rule seen per person, no model: each line is one operator's hand-over rate on small jobs (left)
+          and big jobs (right). Most lines go up; flat lines are mostly people who always (or never) hand over on
+          that tier.
+        how: >-
+          Strategic: card-taken rate on one-type vs three-type missions, for the 31 people with at least 3 decisions
+          of each. Tactical: Suggest rate on plans at or below vs above the overall median plan size (24), all 33
+          people. Sign test = are "up" lines more common than "down" lines than a coin flip would give (ties dropped).
+        chart: handover.sizePeople
+        numbers:
+          - "Strategic: higher on three-type missions for 21 of 31 people, lower for 6, equal for 4 (sign test p = .006)"
+          - "Tactical: higher on big plans for 23 of 33, lower for 2, equal for 8 (p < .001)"
+        atoms: [size-decides]
+      - id: artefacts
+        title: "Is it an artefact? Checks, all reported"
+        text: >-
+          The worry: the illogical Conservative card (one that adds a drone of a type the mission does not need)
+          appears only on one- and two-type missions — 71% of one-type decisions, none of the three-type ones — so
+          "people avoid the card on small missions" could be "people avoid a visibly odd card". It is not: on
+          one-type missions uptake is the same with an odd card (50%, 129 decisions) and without one (56%, 52
+          decisions), and with every odd-card decision removed the size effect is still there (×1.46 per doubling;
+          clean one-type vs three-type ×1.83). No ε-corrupted (deliberately wrong) cards were shown in any session,
+          so card quality did not otherwise vary by size. The rule also holds with queue length held fixed, with the
+          minute of session held fixed, per session, per scenario, without the half-weight participants and in a
+          person-fixed-effects model. Two strategic rows do not reach p < .05: Tactical Heavy sessions alone (few
+          one-type missions there) and cards-on-screen only (above). The tactical rule clears every row.
+        how: >-
+          Each row refits the main within-person model on a subset or with one more control. Illogical card: the
+          <i>odd</i> flag from build_findings_synthesis.load_decisions (Conservative card carries a type the mission
+          needs none of). Queue held fixed: the number of missions waiting at the decision, split within/between
+          person (the queue story itself is f-workload's). Conditional logit: a different model family that
+          compares each person only with themselves by construction (people who always or never hand over drop out,
+          hence fewer people). The odd-card story itself is f-flaw-odd's — here it is only checked as a confound.
+        chart: handover.sizeRobust
+        numbers:
+          - "Strategic, illogical card excluded: ×1.46 [1.12, 1.92], p = .006 (474 decisions); conditional logit ×1.92 [1.31, 2.82]"
+          - "One-type missions, odd card vs clean card: odds ×0.77 [0.33, 1.78], p = .55 — no difference"
+          - "Strategic range across 14 specifications: ×1.26 to ×2.20; tactical range across 15: ×1.75 to ×2.64"
+          - "Tactical, illogical-card missions excluded: ×1.87 [1.47, 2.39]; strategic route held fixed ×1.98"
+        atoms: [size-decides]
+        sharedWith: [f-flaw-odd, f-workload]
+      - id: speed
+        title: "Why the rule makes sense: the assistant is faster only on big jobs"
+        text: >-
+          Strategic: on three-type missions, taking a card (≈ 11 s) is much quicker than building by hand after
+          looking at the cards (≈ 20–21 s). On one-type missions a card (9.8 s) is still quicker than a considered
+          manual build (15.8 s) but slower than simply deciding before the cards appear (6.4 s) — and that is what
+          people do there. Tactical: on small plans Suggest and hand-building take the same ~14–15 s; on large plans
+          hand-building takes 45 s against 25 s with Suggest. The forced waits (4.7 s card reveal; 1 s per Suggest
+          entry, median 9 entries) are a fixed cost that only pays back on big jobs.
+        how: >-
+          <b>Times</b> are seconds from opening the panel to the choice (strategic) or from planner open to confirm
+          (tactical), as the operator lived them — forced waits included. Medians per route × size with
+          person-resampled intervals. <b>Model</b> (strategic): Gaussian GEE on log seconds with card × three-type,
+          drones, game, session and minute held fixed, the person's own card rate as a control; a log-scale
+          coefficient converts to "% faster". All manual decisions (pre-emptive and after) are the comparison.
+          Net time (forced reveal subtracted from card decisions) shown too: it flatters the card. Tactical: kept
+          Suggest plans vs hand-built, within person, plan size held fixed.
+        chart: handover.speedSize
+        numbers:
+          - "Strategic, seconds spent, card vs manual: three-type −27% [−35, −17], p < .001; one-type +22% [−3, +55], p = .09; difference between the two p < .001"
+          - "Net of the forced reveal: three-type −59%, one-type −35% (both p < .01) — the reveal is what erases the card's edge on small missions"
+          - "Tactical, kept Suggest vs hand-built, plan size held: −14% [−26, +1], p = .06 (round 1 reported −16%, p = .023, with scenario rather than game held fixed); Suggest × plan size p = .13"
+          - "Tactical medians, hand vs kept Suggest: small 14.2 vs 14.9 s, mid 23.9 vs 21.5 s, large 44.6 vs 25.4 s"
+        atoms: [speed-big-jobs]
+        codes: [C04]
+      - id: speed-model
+        title: "The speed difference as estimates"
+        text: "The same comparison as model estimates: negative means the assistant route was faster for the same person."
+        how: "As in the section above. Each row is a within-person % change in decision time with its 95% interval."
+        chart: handover.speedModel
+        numbers: []
+        atoms: [speed-big-jobs]
+      - id: parallel
+        title: "While a Suggest plan fills in, operators start other missions"
+        text: >-
+          After pressing Suggest the plan appears one drone-task entry per second and Deploy waits until it is done
+          (the "fill": median 9 s). Operators use that time. Of the 486 plans where Suggest was pressed, 45% had the
+          Strategic Assistant panel for another mission opened before the plan was confirmed, against 19% of the 144
+          hand-built plans; 28% vs 11% actually allocated another mission in that time. About half of the Suggest
+          cases (22% of Suggest plans) opened the other panel inside the fill window itself. The difference holds
+          when planners open for the same length of time are compared (15–25 s open: 43% vs 5%).
+        how: >-
+          <b>Where "4.8×" comes from.</b> Round 1 (H9) took every confirmed tactical plan (630) and asked: between
+          opening this planner and confirming it, did the operator open the strategic panel for a <i>different</i>
+          mission ("interleaving")? Outcome yes/no. Predictor: Suggest pressed in this plan, within person (so each
+          person's Suggest plans are compared with their own hand-built plans). Held fixed: log plan size, log time
+          the planner was open, scenario, session. The 4.8 is an <b>odds ratio</b>: the odds of interleaving are 4.8
+          times higher on a Suggest plan, for the same person, plan size and open time — not "4.8 times as many".
+          In raw shares it is 45% vs 19%. <b>New checks</b>: the same with game instead of scenario and missions
+          waiting held fixed; only plans opened while at least one other mission was waiting (otherwise there is
+          nothing to start); edited Suggest plans dropped; without holding open time fixed (smaller, because hand
+          plans that run long also interleave); and the outcome changed to actually allocating another mission. The
+          "during the fill" share uses each Suggest press's own window (press time to press + 1 s per entry).
+          Direction of cause is open: pressing Suggest may free the time, or operators who want to move on may press
+          Suggest.
+        chart: handover.parallel
+        numbers:
+          - "Round-1 specification re-run: odds ×4.83 [2.24, 10.40], p < .001 (630 plans, 33 people) — reproduced exactly"
+          - "Only plans opened with ≥1 mission waiting: 54% vs 25%, ×5.48 [2.59, 11.62]"
+          - "Outcome = another mission actually allocated: 28% vs 11%, ×3.43 [1.57, 7.51], p = .002"
+          - "Without holding open time fixed: ×2.38 [1.16, 4.85], p = .017"
+          - "22% of Suggest plans had another strategic panel opened inside the fill window itself"
+        atoms: [speed-parallel]
+        codes: [C05]
+      - id: parallel-specs
+        title: "The parallel-work estimate under each specification"
+        text: "Every specification tried, so none is cherry-picked."
+        how: "Within-person logistic GEE as described above; one row per variant."
+        chart: handover.parallelSpecs
+        numbers: []
+        atoms: [speed-parallel]
+      - id: said
+        title: "What operators say"
+        text: >-
+          Ten of 33 state the rule unprompted (C03: small/simple myself, big/complex to the assistant); 15 value the
+          assistant for speed rather than accuracy (C04, the most common reason given); 8 describe working on
+          something else while it runs (C05). The behaviour matches the words. People who state the rule press
+          Suggest less overall (59% vs 86% of plans) and their size slope is, if anything, steeper on the tactical
+          tier (×1.43 steeper, p = .10) — not reliably different from everyone else's, so stating the rule is not
+          what makes someone follow it.
+        how: >-
+          Codes from the qualitative coding (docs/analysis/qual/codes_matrix.csv); excerpts are pulled by code on the
+          page. Slope comparison: the within-person size model with a size × C03 term (ratio of the two groups'
+          odds ratios).
+        chart: null
+        numbers:
+          - "C03 10 of 33; C04 15 of 33; C05 8 of 33"
+          - "C03 vs others, size slope ratio: strategic ×1.28 [0.69, 2.38], p = .43; tactical ×1.43 [0.93, 2.20], p = .10"
+        atoms: [q-C03, q-C04, q-C05]
+        codes: [C03, C04, C05]
+      - id: slow
+        title: "The exception that proves the rule: the people who call the assistant slow"
+        text: >-
+          Six people complain that the assistant is slow (C06: P06, P15, P16, P26, P27, P29). They are not
+          low-reliance or struggling operators. They take cards and press Suggest at the same rate as everyone, keep
+          Suggest plans unedited, and score a little above average. What sets them apart is that they apply the size
+          rule <i>harder</i>: they pre-empt the cards more than twice as often (30% vs 13% of decisions), their
+          three-type minus one-type card gap is twice everyone else's (+40 vs +19 points), they make more strategic
+          decisions per session (10.2 vs 9.0) and they build tactical plans faster (19.9 vs 25.8 s). The complaint
+          and the rule are the same observation: the fixed wait is not worth it on small jobs. One of them (P29) says
+          as much — the wait was long, but worth it on the complicated missions. The paradox is only apparent: the
+          people most bothered by the assistant's speed are fast operators who route around it on small jobs and
+          still use it on big ones. With six people none of these differences is reliable on its own.
+        how: >-
+          Per-person measures, averaged over the person's two sessions, for the six C06 people against the other 27.
+          Score = session score (P01/P02 rescaled for their half task weights) standardised within each of the four
+          games. Size gaps as in the per-person chart. p = two-sided permutation test (group labels reshuffled 20,000
+          times); 10 comparisons, uncorrected — expect about one p below .10 by chance.
+        chart: handover.c06Profile
+        numbers:
+          - "Pre-emptive share 30% vs 13% (p = .055); three-type minus one-type card gap +40 vs +19 points (p = .09); decisions per session 10.2 vs 9.0 (p = .09)"
+          - "Tactical plan time 19.9 vs 25.8 s (p = .16); score +0.32 vs −0.07 SD (p = .34)"
+          - "Card uptake 58% vs 66% (p = .51); Suggest 74% vs 76% (p = .90) — reliance itself does not differ"
+        atoms: [q-C06]
+        codes: [C06]
+    replies:
+      - card: size-decides
+        text: >-
+          Shown separately for strategic (card taken) and tactical (Suggest pressed) and combined, as a dose-response
+          over drones needed, drone types, tasks and plan size, with person-resampled intervals and a within-person
+          model (each person compared only with themselves). Both tiers show it; the tactical tier more steeply (×2.1
+          per doubling of plan size vs ×1.6 per doubling of drones strategic). Artefact check: it survives dropping
+          every illogical Conservative card (×1.46, p = .006), and on one-type missions uptake does not depend on
+          whether the card was illogical. New nuance: on the strategic tier most of the effect is deciding small
+          missions before the cards load; with the cards on screen the slope is weak (×1.26, p = .12).
+      - card: speed-big-jobs
+        text: >-
+          Graphed as decision time by route × size, both tiers, raw seconds. Holds: cards −27% on three-type
+          missions, no gain (+22%, p = .09) on one-type ones, where deciding before the cards appear is fastest
+          (6.4 s). Tactical: same time on small plans, 45 vs 25 s on large. Linked into f-size-decides as the reason
+          the rule is sensible.
+      - card: speed-parallel
+        text: >-
+          The 4.8 is an odds ratio from round 1's model on the 630 tactical plans: Suggest plan vs the same person's
+          hand-built plans, outcome "opened another mission's strategic panel before confirming", plan size and
+          open time held fixed. Raw: 45% vs 19%. "During the fill" was loose wording — the measure is the whole time
+          the planner is open; 22% of Suggest plans had it inside the fill window itself. Reproduced exactly (×4.83)
+          and robust (×2.4 to ×6.4 across six specifications; 28% vs 11% actually allocated another mission). Graph
+          is time-matched.
+      - card: q-C06
+        text: >-
+          C06 = P06, P15, P16, P26, P27, P29. Profiled against everyone: same reliance, slightly better scores, but
+          they pre-empt the cards twice as often, show a bigger small-vs-big gap and decide faster — the size rule
+          applied hardest. Placed as the closing "exceptions" section of f-size-decides.
+      - card: q-C03
+        text: "Merged as supporting evidence (section 'What operators say'); their size slope is not reliably steeper than others'."
+      - card: q-C04
+        text: "Merged into the speed section and 'What operators say'."
+      - card: q-C05
+        text: "Merged into the parallel-work section."
+    open:
+      - "Framing the strategic tier: the size rule there is mostly 'do not wait for the advice on small missions' (pre-emption). Do you want the headline to say 'decides when to consult' rather than 'decides whether to accept'?"
+      - "Literature positioning of 'automate the complex, do the simple yourself' is still to do (your note)."
+      - "Parallel work: direction of cause cannot be separated here (Suggest frees time vs people who want to move on press Suggest)."
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-practice
+    area: "When operators hand over"
+    title: "Practice makes operators faster, not better at choosing when to hand over"
+    headline: >-
+      Decisions speed up steadily: about 6% faster per minute within a session on both tiers (≈ 38% over the eight
+      minutes) and about 20% faster in session 2 than session 1, with forced waits removed. But the size rule does
+      not sharpen: the big-minus-small hand-over gap is the same or slightly smaller in session 2 on both tiers, and
+      no test of sharpening comes close. Reliance is targeted from the start and stays a personal style. The six
+      people who say they got better did improve their scores (all six, against 37% of others) — their speed gains
+      are not reliably larger.
+    confidence: moderate
+    absorbs: [learn-speed, learn-calibration-null, q-C22]
+    sections:
+      - id: speed
+        title: "Faster with every minute, and faster in session 2"
+        text: >-
+          Median net decision time per minute of the session, session 1 (grey) and session 2 (colour). Both tiers
+          fall across the session and session 2 sits mostly below session 1. Small, expected, solid.
+        how: >-
+          <b>Net time</b> = seconds to decide minus the forced wait (the card reveal for card choices; 1 s per entry
+          for Suggest plans), as round 2 defined it. <b>Model</b>: Gaussian GEE on log net time, clustered on person,
+          with minute of session and session 2 as predictors, and route, mission size and scenario held fixed. A
+          log-scale coefficient converts to "% faster". Round 2's figure (−31% over a session) used fewer controls;
+          the direction and size agree.
+        chart: handover.learnSpeed
+        numbers:
+          - "Strategic: −5.7% per minute [−7.8, −3.6], ≈ −38% over 8 minutes, p < .001; session 2 vs 1 −19% [−30, −6], p = .005"
+          - "Tactical: −5.7% per minute [−9.1, −2.2], p = .002; session 2 vs 1 −24% [−36, −9], p = .002"
+        atoms: [learn-speed]
+      - id: calibration
+        title: "The size rule does not sharpen with practice"
+        text: >-
+          If practice taught operators where the assistant pays, the gap between big and small jobs would widen in
+          session 2. It does not, on either tier: strategic +25 points in session 1, +15 in session 2; tactical +16
+          then +14. Within a session the tactical gap even narrows slightly with time (one of five tests, p = .047,
+          likely noise). The rule is there from the first session and stays put — another sign of a stable personal
+          style rather than something learned.
+        how: >-
+          Gap = hand-over rate on big jobs minus small jobs (strategic: three-type minus one-type missions;
+          tactical: plans above minus at/below the median size), per session, with person-resampled intervals. Tests:
+          logistic GEE with size × session (strategic, all sessions and Strategic Heavy only; tactical) and size ×
+          minute of session (both tiers). A ratio of odds ratios above 1 would mean the rule sharpens. Caveat from
+          round 2: one-type missions occur almost only in Strategic Heavy, so the strategic session comparison is
+          partly between people who played that scenario first or second. "No evidence of sharpening", not proof
+          that none happens — the intervals still allow a modest change either way.
+        chart: handover.learnGap
+        numbers:
+          - "Size × session: strategic ×0.69 [0.33, 1.44], p = .32; Strategic Heavy only ×0.73, p = .49; tactical ×0.80 [0.54, 1.17], p = .25"
+          - "Size × minute: strategic ×1.04, p = .59; tactical ×0.93 [0.87, 1.00], p = .047 (uncorrected, opposite to sharpening)"
+          - "Gap: strategic s1 +25 [+12, +38] → s2 +15 [−1, +30]; tactical s1 +16 [+4, +29] → s2 +14 [0, +30]"
+        atoms: [learn-calibration-null]
+        sharedWith: [f-size-decides]
+      - id: c22
+        title: "Does 'I got better with practice' match the logs? For score yes, for speed partly"
+        text: >-
+          Six people say they got better, faster or more confident (C22: P10, P11, P15, P21, P30, P32). All six
+          raised their within-game score from session 1 to 2, against 10 of 27 others. Their tactical planning sped
+          up more than others' on average (5 of 6 faster), but not reliably; their strategic decisions did not speed
+          up more (3 of 6 faster, vs 18 of 27 others). So the self-report matches the outcome they cared about, not
+          a measurable change in how they used the assistants (the earlier follow-up found their reliance moved in
+          opposite directions — two less, one more).
+        how: >-
+          Per person: session 2 minus session 1 in (a) score standardised within game, (b) log median net strategic
+          time, (c) log median net tactical time. Group mean vs the other 27, two-sided permutation p (20,000
+          reshuffles). Follows docs/analysis/combined/c22_got_better.md, which has the reliance and workload side.
+          With P01/P02 left out of the game means P21's score change is slightly negative (five of six, not six).
+        chart: handover.c22
+        numbers:
+          - "Score change: C22 +0.86 SD vs others −0.09, p = .020"
+          - "Tactical time change (log): −0.83 vs −0.26, p = .14; strategic: −0.13 vs −0.18, p = .83"
+        atoms: [q-C22]
+        codes: [C22]
+    replies:
+      - card: learn-speed
+        text: "Kept as a short section with a graph by minute and session; both tiers speed up (~6% per minute, ~20% session 2)."
+      - card: learn-calibration-null
+        text: >-
+          Kept; re-checked for both tiers (round 2 had the strategic tier only). No sharpening on either; the gap is
+          if anything smaller in session 2. Linked to the personal-style reading and to f-size-decides.
+      - card: q-C22
+        text: >-
+          Checked: the self-report matches score (all six improved within game, p = .02) but not speed in a reliable
+          way, and not reliance. So "got better" is right about outcomes, not about better-targeted use of the assistants.
+    open:
+      - "Whether to fold this whole finding into the style/learning area if another analyst owns 'personal style'."
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-manual-cards
+    area: "When operators hand over"
+    title: "Manual allocations are anchored on the cards — and the 'trimming small missions' was mostly dropping the illogical spare"
+    headline: >-
+      When operators allocate by hand after seeing the cards, their numbers track the cards: one more drone on the
+      Conservative card means about half a drone more in the manual build, beyond what the mission needs. Operators
+      who decided before the cards appeared show no such link — a clean control, so this is anchoring, not both
+      tracking the mission. Manual builds sit at or below the cards (44% below both, 33% equal to one, 14% between,
+      8% above). The earlier "trim small missions, pad big ones" mostly dissolves: on one-type missions the 'trim'
+      is almost entirely dropping the Conservative card's spare drones of types the mission does not need.
+    confidence: moderate
+    absorbs: [manual-anchored, q-C07, q-C08, q-C09, q-C10]
+    sections:
+      - id: dots
+        title: "Each manual decision against the Conservative card"
+        text: >-
+          Every manual allocation (209) as one dot: drones committed minus drones on the Conservative card, against
+          the drones the mission needs. Switch to "needed types only" and the band of one-type missions moves up to
+          zero: on the types the mission actually needs, manual builds on small missions match the Conservative
+          card (+0.05 drones on average); the −1.2 drones on all types is the card's spare of each unneeded type
+          being left off. On big three-type missions manual builds sit about one drone above the Conservative card
+          (and still far below the drones the mission lists, since drones are reused across tasks in series).
+        how: >-
+          Rows: strategic choices of type manual. The cards' true asset counts per colour come from the last
+          <i>strategic_modal_opened</i> before the choice; the operator's counts from <i>assetsChosen</i>. "Needed
+          types" = colours with a primary requirement in the mission. Kinds: pre-emptive (decided before the cards
+          loaded — the cards existed in the log but were never on screen), edited a card (started from a card, then
+          changed it), built after seeing the cards. Size slope: Gaussian within-person GEE of the difference on log2
+          drones needed.
+        chart: handover.manualDots
+        numbers:
+          - "Mean manual − Conservative: −0.55 drones overall = −0.51 on unneeded types + −0.04 on needed types"
+          - "One-type missions: −1.17 overall, +0.05 on needed types, −1.22 on unneeded; three-type with 10+ drones: +0.95"
+          - "Per doubling of mission size the difference grows by +1.51 drones [0.53, 2.49] (after seeing the cards) and +1.09 [0.47, 1.72] (pre-emptive): the size pattern is just as strong in people who never saw the cards, so it is not a reaction to the card"
+          - "Needed types only, after seeing the cards: +0.93 per doubling [−0.18, 2.04], p = .10"
+        atoms: [manual-anchored]
+        codes: [C07]
+        sharedWith: [f-flaw-odd]
+      - id: anchor
+        title: "The anchoring test: does the card's number move the operator's number?"
+        text: >-
+          Holding the mission's need fixed, a bigger Conservative card goes with a bigger manual allocation — but
+          only if the operator saw the card. For those who saw it, about 0.5–0.7 extra drones per extra card drone;
+          for operators who decided before the cards loaded, zero. Since both groups face the same missions, the
+          difference is the card itself: the advice anchors the manual choice even when it is not accepted.
+        how: >-
+          Gaussian GEE clustered on person: committed drones ~ Conservative card drones + drones needed + number of
+          types. The coefficient on the card = extra manual drones per extra card drone with need held fixed. The
+          card's total is not fully determined by need (need and types explain 64% of its variation; residual SD 1.2
+          drones — reserve state and spare rules move it), which is what gives the test something to work with.
+          Fitted separately for: saw the cards (all), built own after seeing (excludes edits, which start from the
+          card mechanically), edited a card, pre-emptive. Also on needed types only. This replaces round 2's "+0.76
+          per card drone (session 2 and one order only)".
+        chart: handover.manualAnchor
+        numbers:
+          - "Saw the cards: +0.53 [0.24, 0.82] drones per card drone, p < .001 (112 decisions, 28 people); needed types +0.67 [0.33, 1.02]"
+          - "Built own after seeing (no edits): +0.37 [0.08, 0.67], p = .014; needed types +0.49 [0.17, 0.81], p = .003"
+          - "Pre-emptive (never saw): −0.00 [−0.15, 0.15], p = .99 (97 decisions, 18 people); needed types −0.07, p = .59"
+        atoms: [manual-anchored]
+      - id: position
+        title: "Where manual builds sit relative to the two cards"
+        text: >-
+          Mostly below both cards or equal to one of them, rarely above. Pre-emptive builds — made without seeing the
+          cards — land equal to a card total more often than builds made after seeing them (39% vs 27%), so 'equal to
+          a card' is partly just the obvious allocation, not copying.
+        how: >-
+          Each manual total compared with the two card totals (all types): below both, equal to either, strictly
+          between, above both. Counts per kind of manual decision.
+        chart: handover.manualPos
+        numbers:
+          - "All 209: below both 44%, equal to a card 33%, strictly between 14%, above both 8%"
+          - "Built after seeing (77): 57% below, 27% equal, 9% between, 6% above; pre-emptive (97): 38%, 39%, 16%, 6%"
+        atoms: [manual-anchored]
+        codes: [C08]
+      - id: said
+        title: "What operators say about building by hand"
+        text: >-
+          Four accounts of manual allocation sit alongside the numbers. Holding drones in reserve (C07, 6 people)
+          fits the 'below both cards' mass — though in the logs these six are not lower than others on needed types
+          (+0.36 vs the Conservative card). Wanting a middle ground or more options (C08, 6 people) fits the wish, not
+          the behaviour: only 10% of their manual builds land strictly between the cards. Treating a card as a first
+          draft (C09, 4 people) shows in the logs — 16 of their 33 manual decisions are edited cards. Testing the
+          assistant against themselves (C10, 5 people) fits slower, deliberate manual builds (round 1: 20 s vs 12.6 s).
+          All four describe manual as working <i>with</i> the advice, not rejecting it.
+        how: "Codes from docs/analysis/qual/codes_matrix.csv; per-code manual numbers from the same rows as the dot chart (small groups, descriptive only)."
+        chart: null
+        numbers:
+          - "C07: 55 manual decisions from 6 people, mean +0.36 vs Conservative on needed types, 21 edited cards"
+          - "C08: 40 from 5 people, 10% strictly between the cards"
+          - "C09: 33 from 4 people, 16 edited cards"
+          - "C10: 40 from 5 people"
+        atoms: [q-C07, q-C08, q-C09, q-C10]
+        codes: [C07, C08, C09, C10]
+    replies:
+      - card: manual-anchored
+        text: >-
+          Graphed per decision (manual − Conservative, by mission size, coloured by kind). Two changes to the card:
+          (1) the 'trim small missions' was mostly the illogical spare drones being dropped — on needed types manual
+          ≈ Conservative on small missions; (2) a cleaner anchoring test: with need held fixed, the card's number
+          moves the manual number only for those who saw the card (+0.5 per drone) and not at all for pre-emptive
+          deciders. The size pattern of the difference appears in both groups, so it reflects the card's own
+          scaling, not a reaction to it.
+      - card: q-C07
+        text: "Attached to the manual finding; their manual numbers are not lower than others' on the types the mission needs."
+      - card: q-C08
+        text: "Attached; few of their builds land strictly between the cards — the wish is a design request (link ask-wants)."
+      - card: q-C09
+        text: "Attached; matches the logs (16 of their 33 manual decisions are edited cards)."
+      - card: q-C10
+        text: "Attached as part of 'manual works with the advice, not against it'."
+    open:
+      - "manual-not-rejection was pruned, but the anchoring test is its strongest evidence; keep the phrase 'manual is not a rejection' in this headline or leave it out?"
+      - "The illogical-spare correction touches f-flaw-odd: the analyst there may want to cite it."
+
+retire:
+  - {card: manual-preempt, why: "Pruned by the researcher (two-type n = 5). Pre-emption survives only as a measured step inside f-size-decides and as the no-card control in f-manual-cards."}
+  - {card: manual-not-rejection, why: "Pruned by the researcher; its evidence (anchoring with a no-card control, codes C07–C10) now lives in f-manual-cards."}

@@ -11,7 +11,19 @@ remains is the curated set of findings and the links between them — the web th
   `responses.json`). Fixed: the server 404'd `/api/responses` before the first save, so the page never
   connected and kept notes browser-only; it now pushes browser-held notes to disk on connect. Needs PyYAML
   (`python -m pip install --user pyyaml`).
-- **Next step for Claude:** when the researcher says pass 1 is done, `responses.json` will be in this folder
+- **2026-10-12** — **pass 1 closed** (79/79 answered; frozen in `passes/pass1.json`). Between passes the 79 cards
+  were collected into **13 findings** in `findings.yaml`: bigger pages, each with several sections that have their own
+  chart, a plain "how this was worked out" and the cards they stand for. Cards may appear in more than one finding,
+  marked "shared". 9 pruned cards are `status: retired`. Each pass-1 note is answered in its finding's `replies`.
+  The work was split by area: for each area `scripts/register/pass2/<area>.py` writes `pass2/<area>.json`,
+  `<area>.charts.js` draws it, and `pass2/<area>.findings.yaml` was the draft that `scripts/register/assemble_findings.py`
+  combined (`pass2/BRIEF.md` was the analysts' brief). The area scripts need pandas + statsmodels; on this machine
+  that is `C:/Users/Work/anaconda3/python.exe`. **Pass 2 is open**: the page now reviews findings (one verdict per
+  finding, plus an optional note per section).
+- **Next step for Claude:** when the researcher says pass 2 is done, archive `responses.json` to `passes/pass2.json`
+  and act on the notes, editing `findings.yaml` directly; the per-area fragments are now history. Rerun an area's
+  `.py` when its numbers need to change.
+- **(pass 1, historical)** when the researcher said pass 1 was done, `responses.json` will be in this folder
   (committed from the other machine, or handed over as an exported `review_pass1_*.json` — if so, save it
   here as `responses.json`). Then follow *Between passes* below. Do not edit cards before reading the
   responses, and never delete or rename a card id.
@@ -25,6 +37,8 @@ Update this status block at the end of every pass.
 | File | What it is |
 |---|---|
 | `cards.yaml` | The register: every card, its numbers, chart, suggested links and Claude's reading. Source of truth; edited by Claude between passes. `pass:` at the top is the current pass. |
+| `findings.yaml` | From pass 2: the review units. Each finding is a page of sections (chart key, text, `how`, numbers, `atoms`, `sharedWith`, quote `codes`), plus `replies` to the previous pass's notes and `open` questions. |
+| `pass2/` | Each area's analysis output (`<area>.json`, embedded as `DATA.pass2.<area>`), the area drafts, and the brief. Charts are in `scripts/register/pass2/<area>.charts.js`. |
 | `responses.json` | The researcher's notes for the **current** pass (verdict, note, links, tags per card). Written by the review server as you type. |
 | `responses.bak.json` | The previous save, kept by the server so one bad write can be undone. |
 | `passes/passN.json` | Notes from finished passes, frozen. Shown on each card as history. |

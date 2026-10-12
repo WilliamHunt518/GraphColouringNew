@@ -1,0 +1,596 @@
+# Pass 2 · AREA `style` — "Who the operator is".
+# Numbers: scripts/register/pass2/style.py -> docs/analysis/register/pass2/style.json (charts: style.charts.js).
+# 33 people (P09 excluded), 66 sessions, 606 strategic decisions.
+
+findings:
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-personal-style
+    area: "Who the operator is"
+    title: "Each operator has a personal style — individual, not a type"
+    headline: >-
+      How someone uses the assistants in one 8-minute session predicts how they use them in the next,
+      even though the second session is a different scenario: from ten logged habits alone, a person's
+      session-2 profile resembles their own session 1 (median r = .48) and essentially nobody else's
+      (median r = −.01), and their own session lands in the closest three of 33 four times as often as
+      chance (41% vs 9%). Who the operator is explains about six times more of card-taking than the
+      mission does. But the styles do not fall into types, and nothing measured beforehand — attitude to
+      AI, views on human authority, experience — predicts them. Strong evidence for a stable personal
+      style; good evidence against types; "no evidence" (not "evidence of no effect") for disposition.
+    confidence: strong
+    absorbs: [style-fingerprint, style-trait, style-retest, style-preempt-trait, style-axis, style-types-null,
+              style-archetypes, style-disposition-null, ask-views-null, style-trust-link, q-C01, q-C02]
+    sections:
+
+      - id: fingerprint
+        title: "After one session we can recognise a person's style in the next"
+        text: >-
+          Each session is summarised as ten habits (below). Comparing everyone's session-1 profile with
+          everyone's session-2 profile, the closest match is far more often the <b>same person</b> than
+          chance allows. It is a "near neighbour" result, not exact identification: the own session is the
+          single closest match for 7 of 33 people (chance: 1), but in the closest three for 41% (chance 9%),
+          and on average ranks 8th of 33 (chance 17th). It survives taking the reliance axis out — so the
+          style is more than "how much do you lean on the assistants". In the matrix, every row is one
+          person's session 1, every column a session 2, darker = closer; the outlined diagonal is each
+          person against themselves.
+        how: >-
+          Rows: 66 sessions (33 people × 2). Each session becomes a vector of ten habits: share of strategy
+          cards taken; share of manual choices made before the cards loaded; share of cards edited; share of
+          tactical plans where Suggest was pressed; share of Suggest plans kept unchanged; share of recovery
+          episodes with Suggest pressed; time per strategic decision beyond the forced card delay (log);
+          drones committed vs the Conservative card on single-type and on multi-type missions; card previews
+          per decision. Each habit is turned into a z-score <i>within the game played</i> (so a hard game does
+          not make everyone in it look alike; a habit with no data in a session, e.g. no recoveries, is set
+          to that game's median). For each person's session-1 vector we measure the straight-line
+          (Euclidean) distance to all 33 session-2 vectors and rank them; "rank 1" means their own session 2
+          is the nearest. Done both ways (session 1 looking among session 2s and vice versa). The p-value
+          comes from shuffling who-is-who in session 2 10 000 times and counting how often chance does as
+          well. "Reliance axis removed": the single strongest direction of variation (PC1, see below) is
+          subtracted from every vector first. The profile correlation r is the Pearson correlation between a
+          person's two ten-habit vectors (1 = same shape, 0 = unrelated). Exploratory and post hoc; the
+          permutation test is clean. People are ordered by reliance in the matrix, so neighbours look alike
+          — the claim is that the diagonal beats them.
+        chart: style.fingerprintMatrix
+        numbers:
+          - "Own session nearest: 7 of 33 (session 1 → 2) and 5 of 33 (2 → 1); chance ≈ 1; permutation p < .001"
+          - "Own session in the closest 3: 41% vs 9% by chance; mean rank 8.2 of 33 vs 17.0 (p < .001)"
+          - "Reliance axis removed: 6 and 6 of 33, top-3 32%, mean rank 10.1 (p < .001) — the style is more than reliance"
+          - "Reliance axis alone: 4 and 4 of 33, top-3 27%, mean rank 11.1"
+          - "Profile correlation with own other session: median r = .48; with other people's: median r = −.01; own closer for 29 of 33 (sign test p < .001)"
+        atoms: [style-fingerprint]
+
+      - id: fingerprint-ranks
+        title: "Where each person's own session ranks"
+        text: >-
+          The same result as a distribution: the blue bars (own session ranked 1st–3rd) stand far above the
+          dashed chance line, the long tail sits below it. Toggle to see that it holds with reliance removed.
+        how: >-
+          66 look-ups (each person's session 1 searching the 33 session-2 profiles, and the reverse). Under
+          chance every rank 1–33 is equally likely, so the dashed line is 66 × (ranks in bin) / 33.
+        chart: style.fingerprintRanks
+        numbers:
+          - "Ranked 1st: 12 of 66 look-ups vs 2 expected; ranked 1st–3rd: 27 vs 6"
+        atoms: [style-fingerprint]
+
+      - id: profiles
+        title: "What a personal style looks like"
+        text: >-
+          Every person's ten habits in session 1 (light) and session 2 (dark). The top rows are people whose
+          two sessions have almost the same shape (r up to .89); at the bottom are the few whose style changed
+          (P13, P29, P32). Most people repeat themselves.
+        how: >-
+          Each line joins the ten habit z-scores (within game, clipped at ±2.5 for drawing). r = correlation of
+          the two lines; #k = where their own session 2 ranked among 33 (1 = nearest). Hover a panel for the
+          values.
+        chart: style.profilePairs
+        numbers:
+          - "24 of 33 people have r ≥ .27 between their two sessions; 4 have r < 0"
+        atoms: [style-fingerprint, style-trait]
+
+      - id: who-vs-what
+        title: "Who decides matters more than what is being decided"
+        text: >-
+          Card uptake runs from 8% to 100% across people (median 61%). Knowing <i>who</i> is deciding predicts
+          whether a card is taken about six times better than knowing everything about the mission and when
+          it arrived.
+        how: >-
+          606 strategic decisions. Three logistic models of "card taken": (a) mission and timing only — drone
+          types needed, drones needed, scenario, session 1 or 2, decision number; (b) the person only (one
+          term each); (c) both. McFadden pseudo-R² = how much each improves on predicting the overall rate
+          for everyone (0 = no better, 1 = perfect). Descriptive, not a test: with ~18 decisions each, the
+          person-only model flatters itself a little. Retest of raw card uptake session 1 vs 2: ρ = .57 (.62
+          once game-adjusted, next section).
+        chart: style.whoVsWhat
+        numbers:
+          - "Pseudo-R²: mission + timing 4%; person 24%; both 30%"
+          - "Card uptake per person 8%–100%, median 61%; 6 people ≥ 90%, 3 people ≤ 25%"
+        atoms: [style-trait]
+
+      - id: habit-by-habit
+        title: "Which habits carry over — and what each correlation means"
+        text: >-
+          Each small scatter is one habit: a dot is a person, x = that habit in session 1, y = the same habit
+          in session 2. If people kept their place in the queue exactly, the dots would lie on the dashed
+          line; if session 1 told us nothing, they would be a shapeless cloud. Six of the ten habits carry
+          over clearly: keeping Suggest plans, pressing Suggest, taking cards, previewing cards, decision time,
+          and Suggest in recovery. Topping up drones on single-type missions does not carry over at all.
+        how: >-
+          ρ (Spearman) for habit X = the correlation, across the 33 people, between their rank on X in
+          session 1 and their rank on X in session 2, each session first adjusted for the game played (z
+          within game). ρ = .62 for "takes the strategy card" means people keep roughly the same order: high
+          card-takers in session 1 are mostly high in session 2, though not exactly. 95% intervals come from
+          resampling people 2000 times; Holm corrects for testing ten habits. "Distinct levels" (separation
+          strata) says how many groups of people the habit can tell apart reliably: one session of card
+          uptake separates about 2 (high vs low), the average of two sessions about 3. Caution on "keeps the
+          Suggest plan": 24 of 33 people kept every Suggest plan unchanged in both sessions (a ceiling), so
+          its high ρ mostly says that the nine who ever edit a plan tend to do so in both sessions. The pre-empting habit here is "share of <i>manual</i> choices made before the
+          cards loaded" (undefined for 15 people who never chose manual in a session); the clearer
+          per-decision version is in the next section.
+        chart: style.retestGrid
+        numbers:
+          - "Survive Holm: keeps Suggest plan ρ .65 [.34, .84]; presses Suggest .65 [.34, .84]; takes card .62 [.33, .78]; previews .56 [.25, .77]; decision time .52 [.20, .74]; Suggest in recovery .48 [.14, .74]"
+          - "Do not: edits a card .41; manual-before-cards (share of manual) .36; drones on multi-type .34; drones on single-type −.09"
+          - "Card uptake: ~2 distinct levels of people from one session, ~3 from two"
+          - "Score on the reliance axis, session 1 vs 2: ρ = .65 [.38, .82]"
+        atoms: [style-retest, style-trait]
+
+      - id: retest-summary
+        title: "The same correlations side by side"
+        text: "One line per habit, ranked; coloured = survives correction."
+        how: "As above: Spearman ρ session 1 vs 2, game-adjusted, bootstrap 95% intervals, Holm across ten."
+        chart: style.retestDots
+        atoms: [style-retest]
+
+      - id: preempt
+        title: "Not waiting for the cards is one of those habits"
+        text: >-
+          Committing a manual allocation before the strategy cards have even loaded is something some people
+          do and others never do. People who did it in session 1 did it on a quarter of their decisions in
+          session 2; people who did not, on 8%. Fifteen people never did it in either session.
+        how: >-
+          Rows: 564 non-residual strategic decisions. Per person and session: share of decisions committed
+          manually before the cards appeared (logged <code>manualBeforeCardsLoaded</code>). ρ = Spearman of
+          the session-1 share against the session-2 share across 33 people. Variance shares (person ~24%,
+          mission ~5%) are from round 2 (F4.1, crossed random intercepts for person and the exact mission,
+          which repeats across people because games are fixed). The 15 "never" people sit together at the
+          origin; ρ is driven both by them staying at zero and by the regular pre-empters staying high.
+        chart: style.preemptPairs
+        numbers:
+          - "Session 1 vs 2: ρ = .56 [.25, .77], p < .001, n = 33"
+          - "Session-2 rate 25% for those who pre-empted in session 1 (n = 14) vs 8% for those who did not (n = 19)"
+          - "86 of 564 decisions pre-empted; 46% of all manual choices; 15 of 33 never did it"
+          - "Round 2: person share of variance .24, mission .05"
+        atoms: [style-preempt-trait]
+
+      - id: axis
+        title: "The biggest single dimension of style is reliance — what that axis is"
+        text: >-
+          A principal component is one score per person built by weighting all ten habits, with the weights
+          chosen so that this single score captures as much of the differences between people as any one
+          number can. It is <b>not</b> a comparison of strategic against tactical use. A <b>loading</b> is the
+          correlation between one habit and that score: +.92 for "takes the strategy card" means people with
+          a high score are almost exactly the people who take many cards; +.62 for "presses Suggest" means
+          they also tend, less tightly, to press Suggest; −.48 for decision time means they decide faster.
+          So the axis is "leans on both assistants and moves quickly". It captures 31% of the differences;
+          it is the largest of three dimensions, not the only one — which is why the fingerprint survives
+          its removal.
+        how: >-
+          Per person, the ten habits pooled over both sessions, standardised; principal component analysis;
+          first component oriented so higher = more card-taking. Loading = component weight × √eigenvalue =
+          correlation of habit with score. Three components have eigenvalue > 1 (Kaiser). Session-level scores
+          on the same axis (habits standardised within session × scenario) give the session 1 vs 2 ρ.
+        chart: style.axisLoadings
+        numbers:
+          - "Axis captures 31% of the between-person spread (eigenvalue 3.1 of 10); three dimensions pass Kaiser"
+          - "Loadings: takes card +.92, previews +.88, Suggest on plans +.62, drones on single-type +.50, Suggest in recovery +.46, keeps Suggest plan +.42, decision time −.48, manual before cards −.34"
+          - "Session 1 vs 2 on the axis: ρ = .65 [.38, .82]"
+        atoms: [style-axis]
+
+      - id: axis-scatter
+        title: "Strategic and tactical reliance go together only loosely"
+        text: >-
+          Each dot is a person: x = share of strategy cards taken, y = share of tactical plans where Suggest
+          was pressed, colour = score on the reliance axis. The axis runs from the bottom-left (hand-builders)
+          to the top-right (delegators), but the cloud is wide: plenty of people use Suggest almost always
+          while taking only half the cards. The habit grid shows which habits move together; only 11 of 45
+          habit pairs correlate at p < .05. Use the toggle to ring the people who said they had a personal
+          strategy (C01) or wanted control (C02).
+        how: >-
+          Person level, both sessions pooled (n = 33); Spearman ρ with a Fisher interval. The grid is the
+          Spearman correlation between every pair of the ten pooled habits.
+        chart: style.axisScatter
+        numbers:
+          - "Card uptake vs Suggest use: ρ = .37 [.01, .65], p = .033"
+          - "Card taking and previewing: ρ = .79 (largely mechanical: choosing a card means clicking it)"
+        atoms: [style-axis]
+
+      - id: habit-grid
+        title: "Which habits move together"
+        text: "The correlation grid behind the axis, habits sorted by loading."
+        how: "Spearman ρ between pooled habits across 33 people; bold = p < .05 uncorrected (~2 of 45 expected by chance)."
+        chart: style.habitCorr
+        numbers:
+          - "11 of 45 pairs at p < .05"
+        atoms: [style-axis]
+
+      - id: not-types
+        title: "Individual, not types"
+        text: >-
+          Distinct people, but not distinct kinds of people. Two groups fit no better than one smooth spread;
+          groups found in session 1 do not reappear in session 2; and three "archetypes" (Delegator,
+          Deliberate builder, Fast tinkerer) explain no more than they do in simulated operators who have the
+          same habits and stability but no types at all. The archetype names are best kept as labels for the
+          ends of the two main axes (reliance; accept vs override).
+        how: >-
+          Round 1 (H1): mixture models on the person profiles, one to four groups, compared by BIC (a gain
+          above 10 would mean real groups); groups refitted on each session separately and compared (ARI: 1 =
+          identical groupings, 0 = chance). Archetypal analysis (extras2): the same pipeline run on 200
+          simulated samples of 33 operators drawn from one continuous cloud with the observed habits,
+          correlations and session-to-session stability; band = the 95% range of those simulations. The one
+          thing that beats the no-types simulation — the shape of the two clearest archetype profiles recurs
+          across sessions (r .96 / .88 vs up to .94 / .85) — does not survive correction.
+        chart: style.typesNull
+        numbers:
+          - "Two groups vs one: ΔBIC 1.9 (needed > 10); 42% of no-type simulations did at least as well"
+          - "Session-1 vs session-2 grouping agreement: ARI .04 (0 = chance); group stability (Jaccard) .76 / .47"
+          - "Three archetypes explain 46% vs 43–59% in the no-types continuum (p = .83); same archetype both sessions 61% vs 30–79% (p = .32)"
+          - "Archetype profile shape r .96 / .88 vs continuum (p = .010 / .015, not Holm-surviving)"
+        atoms: [style-types-null, style-archetypes]
+
+      - id: not-disposition
+        title: "Nothing measured beforehand predicts the style"
+        text: >-
+          Attitude to AI (AIAS-4), verification propensity, views on human authority over AI (delegation
+          scale and its single items, including "a human should make the final decision"), and prior
+          experience: 40 tests against five behaviours, none survives correction. This is "no evidence", not
+          proof of no link — the sample could only have detected fairly strong correlations (|ρ| ≥ .48), and
+          it is almost uniformly AI-positive (AIAS-4 averages 8.0 / 10) and from computing or engineering
+          (32 of 33). Within this sample, the large differences in style are not explained by what people
+          say they think about AI.
+        how: >-
+          Per person: each questionnaire score (taken before session 1) against the average over both
+          sessions of: card uptake, Suggest consulted, Suggest plan kept unmodified, strategic decision time,
+          session score. Spearman ρ per cell; Holm correction across all 40 together (build_findings_synthesis
+          <code>analyse_disposition</code>). Detectable effect = the correlation the sample had an 80% chance
+          to find at α = .05 (n = 32 with questionnaires). Round 1 H7's decision-level model gives the same
+          answer for AIAS-4: odds of taking a card × 0.80 per SD [0.50, 1.27].
+        chart: style.dispositionGrid
+        numbers:
+          - "0 of 40 tests survive Holm; 3 nominal (verification × score ρ −.41; delegation × Suggest consulted −.38 and × plan kept −.40)"
+          - "AIAS-4 × card uptake ρ −.15; “A human should make the final decision” × card uptake ρ −.08"
+          - "AIAS-4 odds ratio for card taking 0.80 per SD [0.50, 1.27]; detectable only at about ×2"
+          - "AIAS-4 mean 8.0 / 10 (SD 1.2); 32 of 33 from computing / engineering; detectable |ρ| ≥ .48"
+        atoms: [style-disposition-null, ask-views-null]
+        sharedWith: [f-operator-wants]
+
+      - id: trust
+        title: "Trust goes with style between people, not within a person"
+        text: >-
+          People who rely more on the Strategic Assistant report trusting it more (left). But when the same
+          person relies more in one session than the other, their trust does not move with it (right). So
+          trust and reliance are both part of who someone is, rather than one driving the other session by
+          session. The tactical side shows the same shape, more weakly. This is the same between-vs-within
+          split as the performance result (next finding).
+        how: >-
+          Session rows (66). Card uptake (or Suggest use) and post-session trust (mean of six 1–7 items) are
+          each game-adjusted by subtracting the mean of everyone who played that game. Left: each person's
+          average over the two sessions (n = 33). Right: session 2 minus session 1 for each person (n = 33).
+          Spearman ρ with Fisher intervals; the grey line is a least-squares guide. A regression with both
+          terms (GEE, game fixed) agrees: per +25 points of card uptake, between people +0.71 trust points
+          [0.42, 1.00], within a person +0.20 [−0.52, 0.93].
+        chart: style.trustBW
+        numbers:
+          - "Strategic: between ρ = .57 [.26, .77], p < .001; within ρ = .09 [−.28, .44], p = .63"
+          - "Tactical: between ρ = .30 [−.07, .60], p = .086 (GEE between p = .036); within ρ = .13 [−.24, .47], p = .46"
+          - "Per +25 points card uptake: trust +0.71 between people vs +0.20 within (1–7 scale)"
+        atoms: [style-trust-link]
+        sharedWith: [f-who-does-better]
+
+      - id: said
+        title: "What they said about their own strategy"
+        text: >-
+          Fifteen of 33 described, unprompted, a consistent strategy of their own. Their style is visibly
+          different: they take fewer cards (51% vs 76%), pre-empt the cards more (25% vs 8% of decisions) and
+          sit lower on the reliance axis — a "personal strategy" is usually a hand-building strategy. Only one
+          person (P11) said they wanted control for its own sake; P11 takes cards at a typical rate (60%, 44th
+          percentile) but rarely presses Suggest on tactical plans (35%, 11th percentile) and often pre-empts
+          the cards (33% of decisions, 86th percentile). One person cannot carry a group comparison.
+        how: >-
+          Codes from the debrief / interview coding (codes_matrix.csv; one AI coder — see Methods). Group vs
+          everyone else on per-person measures, Mann–Whitney, descriptive only (not corrected; the code was
+          not chosen in advance for this comparison). Percentiles for P11 are among the 33 people.
+        chart: style.axisScatter
+        numbers:
+          - "C01 personal strategy: 15 of 33, all unprompted; cards 51% vs 76% (p = .009); pre-empt 25% vs 8% (p = .025); reliance axis −0.49 vs +0.41 SD (p = .022); Suggest 67% vs 82% (p = .10)"
+          - "C02 wants control: 1 of 33 (P11): cards 60% (44th pct), Suggest 35% (11th), pre-empt 33% (86th), reliance axis 32nd pct"
+        atoms: [q-C01, q-C02]
+        codes: [C01, C02]
+
+    replies:
+      - card: style-trait
+        text: >-
+          Kept as the opening of the style finding, but the slope chart is gone (you were right: it only
+          showed two similar sessions). The trait is now shown three ways: the person × person fingerprint
+          matrix (diagonal = same person), each person's ten-habit profile in both sessions as small
+          multiples, and a "who vs what" bar (person explains 24% of card-taking, mission and timing 4%).
+      - card: style-fingerprint
+        text: >-
+          Made the headline. Plain method: each session → ten habits, adjusted for the game; we look for each
+          person's session-1 profile among all 33 session-2 profiles. Honest framing: "recognise" rather than
+          "identify" — own session is the single nearest for 7 of 33 (chance 1) but in the nearest three for
+          41% (chance 9%), and a person's two sessions correlate r = .48 against −.01 with anyone else (29 of
+          33). So "after 8 minutes we can tell your style apart from almost everyone's", not "we can predict
+          exactly what you will do".
+      - card: style-axis
+        text: >-
+          Explained in plain words in the section (one weighted score per person; a loading is the
+          correlation of a habit with that score; it is not strategic-vs-tactical). New visuals: loadings
+          coloured by tier, a per-person scatter of card uptake vs Suggest use coloured by axis score, and the
+          habit correlation grid. Check outcome: the axis is real (stable, ρ .65) but only loosely joins the
+          two tiers (cards vs Suggest ρ .37).
+      - card: style-retest
+        text: >-
+          Each ρ correlates habit X in session 1 with the same habit X in session 2, across the 33 people,
+          after adjusting each session for its game. Now one small scatter per habit (x = session 1, y =
+          session 2), plus the ranked dot chart. Six of ten survive Holm; caution added for "keeps the Suggest
+          plan" (24 of 33 kept every plan in both sessions — a ceiling).
+      - card: style-preempt-trait
+        text: >-
+          Replaced the bars-by-mission-type chart with session 1 vs session 2 per person: ρ = .56; people who
+          pre-empted in session 1 did it on 25% of session-2 decisions vs 8% for the rest; 15 never did.
+      - card: style-types-null
+        text: >-
+          Merged with the archetypes null into one short section, "Individual, not types", with one compact
+          chart (observed vs what no-types simulations give).
+      - card: style-archetypes
+        text: "Yes — no evidence for archetypes beyond what a smooth continuum produces; merged into the types null."
+      - card: style-disposition-null
+        text: >-
+          Merged as "nothing measured beforehand predicts the style", stated succinctly with the power caveat
+          and the AI-positive sample; one grid shows all 40 tests.
+      - card: ask-views-null
+        text: "Folded into the same disposition section (the delegation items, incl. “a human should make the final decision”, are in the grid); linked to the operator-wants finding."
+      - card: style-trust-link
+        text: >-
+          Reframed as part of the style story with the clearer two-panel graph you asked for: between people
+          (ρ .57) vs within a person (ρ .09), same scales, strategic/tactical toggle. It reinforces that trust,
+          like reliance, is a property of the person.
+      - card: q-C01
+        text: "Merged into the style finding: the 15 who described a personal strategy take fewer cards (51% vs 76%) and pre-empt more — mostly a hand-building strategy."
+      - card: q-C02
+        text: >-
+          Checked, but it is one person (P11), so no group test is possible. P11's profile: typical card
+          uptake (44th percentile), low Suggest use (11th), frequent pre-empting (86th). Consistent with
+          "wants to do it myself" on the tactical side, but cannot carry a claim.
+    open:
+      - "The fingerprint is exploratory and post hoc (permutation test is clean). Is “we can recognise your style after one session” the wording you want in the paper, rather than “predict”?"
+      - "Do you want the trust between/within section here (as reinforcement) or only in the trust area? It is marked shared with the performance finding."
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-who-does-better
+    area: "Who the operator is"
+    title: "More-reliant operators complete more; relying more does not make anyone better"
+    headline: >-
+      Between people, those who take more strategy cards complete more of their missions in full (odds ×1.32
+      per 25 points of card uptake, p = .004). Within a person, it does not hold: their card missions do no
+      better than their own manual ones (odds ×0.81, p = .27; 19 of 26 people did slightly worse on cards),
+      and no score measure rises in a session where they relied more. The difference sits in the people, not
+      in the advice. Relying more in a session does leave fewer missions waiting (throughput), but that does
+      not show up in the score. Moderate: the between-person link on session <i>score</i> is weaker (p = .15).
+    confidence: moderate
+    absorbs: [pay-between-within, pay-throughput, q-C23]
+    sections:
+
+      - id: between-within
+        title: "Between people vs within a person"
+        text: >-
+          Left: each dot is a person. People who take more cards complete more of their missions in full than
+          the size of those missions would predict. Right: each dot is a person's own card missions against
+          their own manual missions; above the dashed line would mean "the card did better for me". Most
+          people are on or below it. Whatever makes the better operators better, it is not the card itself —
+          plausibly the same competence or speed that makes them comfortable delegating.
+        how: >-
+          Rows: 606 strategic decisions; "completed in full" = every task of the mission finished
+          (abandoned, partial and still-running at the buzzer count as not). Left: per person, observed
+          full-completion rate minus the rate expected from a model of mission size, drone types and game
+          (no person terms); Spearman with card uptake, n = 33. Right: people with at least two card and two
+          manual missions (n = 26); the size-adjusted difference (card minus manual) tested with Wilcoxon.
+          The formal model (round 1 H10 primary): GEE logistic regression of full completion on card vs
+          manual, drone types, drones needed, game, and the person's own card rate — the card term is the
+          within-person effect, the person-rate term the between-person one.
+        chart: style.payoffBW
+        numbers:
+          - "Between: completion beyond expected vs card uptake ρ = .46 [.12, .70], p = .007"
+          - "Within: card better for 7, worse for 19 of 26; median size-adjusted difference −6 points (Wilcoxon p = .071)"
+          - "Model: between people OR ×3.06 from 0% to 100% uptake (×1.32 per 25 points) [1.42, 6.58], p = .004; within OR 0.81 [0.55, 1.18], p = .27"
+          - "Within could have detected an OR ≤ 0.58 or ≥ 1.73 — so a large card benefit is ruled out, a small one is not"
+          - "Raw: card missions 60% completed in full, manual 62%"
+        atoms: [pay-between-within]
+
+      - id: estimates
+        title: "The estimates, and what reliance does buy"
+        text: >-
+          On session score, the between-person link points the same way but is not clear (+0.26 SD per 25
+          points of uptake, p = .15), and within a person it is flat (−0.10 SD). What reliance does change
+          within a person is throughput: a session in which someone leans on the assistants more (cards,
+          Suggest and faster decisions together) leaves fewer missions never allocated — about 0.8 fewer per
+          SD, against an average of 1.5 per session. Card uptake on its own does not show it; the effect
+          lives in the wider style (Suggest use and speed). Fewer missions left waiting, but no detectable gain
+          in points — the extra missions are probably late or low-value.
+        how: >-
+          Session rows (66), GEE with the small-sample correction, game and session (1st/2nd) fixed; card
+          uptake split into the person's average (between) and the session's deviation from it (within).
+          Outcomes standardised within game, so estimates are SD per +25 points of card uptake. Score
+          efficiency, share of the best human score and benchmark share are all session score divided by a
+          per-game constant, so within a game they are the same measure (r ≥ .99) — one score test, not
+          four. Throughput (round 2 C2): missions never allocated on the session score of the reliance axis;
+          rerun with decision speed removed from the axis and with card uptake alone.
+        chart: style.payoffForest
+        numbers:
+          - "Score, per +25 points uptake: between +0.26 SD [−0.10, 0.61], p = .15; within −0.10 SD [−0.47, 0.27], p = .61"
+          - "Never allocated, per +25 points uptake: between −0.30 SD (p = .17); within −0.19 SD (p = .14)"
+          - "Never allocated, per SD of session reliance axis: within −0.78 missions [−1.24, −0.32], p < .001 (round 2 q = .04); without decision speed −0.58, p = .011; card uptake alone p = .32"
+          - "P01/P02 (half task weights) excluded: between OR 3.36, within 0.83; score between +0.31 SD (p = .10), within −0.07"
+        atoms: [pay-between-within, pay-throughput]
+
+      - id: trust-parallel
+        title: "The same split as trust"
+        text: "Reliance tracks trust between people but not within a person — the same pattern (see the style finding)."
+        how: "As in f-personal-style § trust."
+        chart: style.trustBW
+        atoms: [style-trust-link]
+        sharedWith: [f-personal-style]
+
+      - id: said
+        title: "Operators rarely judged the assistant by outcomes — rightly"
+        text: >-
+          Three of 33 said using the assistant improved their results; none said they did better by hand.
+          Most never judged it on outcomes at all, which fits the data: the outcome difference is between
+          people, not something the assistant did for any one of them.
+        how: "Qualitative codes C23 / C24 (one AI coder; see Methods). Counts only."
+        chart: style.wantsBars
+        numbers:
+          - "C23 assistant improved results: 3 of 33; C24 did better by hand: 0 of 33"
+        atoms: [q-C23]
+        codes: [C23, C24]
+
+    replies:
+      - card: pay-between-within
+        text: >-
+          Kept and given graphs: a between/within two-panel scatter and an estimates plot. Wording avoids
+          "more AI = better": the better operators rely more, but relying more did not improve any person's
+          own results. Also new and honest: on session score the between-person link is weaker (p = .15) —
+          the strong between result is mission full completion.
+      - card: pay-throughput
+        text: >-
+          Merged as the "what reliance does buy" part: fewer missions never allocated within a person
+          (−0.78 per SD, p < .001), carried by the wider style (Suggest + speed), not card uptake alone, and
+          not reaching the score.
+      - card: q-C23
+        text: "Kept as a supporting line (3 of 33 credited the assistant; 0 said manual did better)."
+    open:
+      - "Is “who does better” its own finding (as here) or a section of the style finding? Kept separate because it answers a different question (does reliance pay?)."
+      - "The between-person payoff is clear on mission completion but not on session score — which outcome should the paper lead with?"
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-operator-wants
+    area: "Who the operator is"
+    title: "Operators want to stay in charge — and to be told more"
+    headline: >-
+      Unprompted, operators asked for a human to keep the final say (9 of 33), for failure data and
+      performance analytics (6), more options between the two cards (6), the assistant's reasoning (5), and
+      a minority for more automation (4). These wishes do not show in behaviour: people who said them use
+      the assistants about as much as everyone else, just as the questionnaire views on AI authority predict
+      nothing. Suggestive — single-coder counts, small groups.
+    confidence: suggestive
+    absorbs: [ask-wants, q-C25, q-C26, q-C27, q-C28]
+    sections:
+
+      - id: wants
+        title: "What they asked for"
+        text: >-
+          The common thread is control plus information: keep the human in the decision and give them more
+          to decide with (why the assistant suggested it, how likely drones are to fail, options in between).
+          Only four wanted the assistant to do more. These are design requirements more than findings — and
+          the "reasoning" request links to the tactical blind spot, where an explained refusal could have been
+          checked.
+        how: >-
+          Debrief transcripts and interview notes coded against the codebook (CODEBOOK.md): C25 human final
+          say, C27 failure data, C08 middle ground / more options, C26 reasoning, C28 more automation.
+          "Unprompted" = at least one piece of evidence not given as a bare yes to a leading question. Hover a
+          bar for who and for how that group used the assistants.
+        chart: style.wantsBars
+        numbers:
+          - "Human final say 9 of 33 (8 unprompted); failure data 6; more options 6; reasoning 5; more automation 4 (all unprompted)"
+        atoms: [ask-wants, q-C25, q-C26, q-C27, q-C28]
+        codes: [C25, C26, C27, C28, C08]
+
+      - id: not-behaviour
+        title: "Wanting something is not using the assistants differently"
+        text: >-
+          The groups who voiced each wish look like everyone else in how they used the assistants — the
+          same message as the questionnaires, where views on human authority predicted no behaviour. The one
+          oddity: the five who wanted reasoning scored higher and decided faster, but they relied on the
+          assistants no more than anyone else (follow-up C26 report); that group was found by screening many
+          groups, so treat it as a lead.
+        how: >-
+          Group vs everyone else, per-person means, Mann–Whitney, descriptive and uncorrected. Disposition
+          tests as in f-personal-style § not-disposition.
+        chart: style.dispositionGrid
+        numbers:
+          - "Human final say (C25): cards 57% vs 68% (p = .25); Suggest 82% vs 73% (p = .29)"
+          - "Reasoning (C26): cards 67% vs 64%; Suggest 72% vs 76%; failure data (C27): 68% vs 64%; more automation (C28): 74% vs 64% (all p ≥ .49)"
+          - "Questionnaire “A human should make the final decision” × card uptake ρ −.08"
+        atoms: [ask-wants, q-C25, q-C26]
+        sharedWith: [f-personal-style]
+    replies:
+      - card: ask-wants
+        text: "Kept as its own small finding with a bar chart, linked to the disposition null: stated wishes do not show in behaviour."
+      - card: q-C25
+        text: "Kept: 9 of 33 (8 unprompted); no difference in use (cards 57% vs 68%, p = .25)."
+      - card: q-C26
+        text: "Kept: 5 of 33; relied no more than others; the score difference is the separate C26 follow-up."
+      - card: q-C27
+        text: "Kept: 6 of 33."
+      - card: q-C28
+        text: "Kept: 4 of 33, the minority view."
+    open:
+      - "C08 (more options / middle ground) is shown here for completeness; it may belong to another area's finding on manual allocation."
+
+  # ═══════════════════════════════════════════════════════════════════════════════════════════
+  - id: f-methods
+    area: "Who the operator is"
+    title: "Methods notes"
+    headline: >-
+      Three things every claim in this register has to survive: the study has four fixed games of very
+      different load, so analyses compare people within the game they played; P01 and P02 played on half
+      task weights and are rescaled (no result here changes when they are dropped); and every "X of 33 said"
+      count comes from one AI coder, so it needs a human second coder before publication.
+    confidence: strong
+    absorbs: [meth-games, meth-half-weights, meth-qual-coder]
+    sections:
+      - id: games
+        title: "Four games, not two scenarios"
+        text: >-
+          The fixed seed gives four mission streams (Strategic Heavy 1 and 2, Tactical Heavy 1 and 2) that
+          differ ~1.5× in tasks completed and ~2× in waiting penalty; which pair a person played depends on
+          when they took part. All between-person comparisons here are made within game (z-scores, game
+          means subtracted, or game as a fixed effect), and final graphs show adjusted values rather than
+          splitting by game.
+        how: "Per-game means of tasks completed, missions completed and penalty per session (extras2 personExtra)."
+        chart: gameLoad
+        numbers:
+          - "Tasks completed per session by game: S1 25.1, S2 28.9, T1 21.5, T2 32.8 (max / min 1.5); penalty T2 549 vs 232–288 elsewhere"
+        atoms: [meth-games]
+      - id: half-weights
+        title: "P01 and P02"
+        text: >-
+          Scored at half the later task weights; rescaled (2 × points − penalty) wherever a raw score is used,
+          and scale-free measures need nothing. Checked: dropping them changes no conclusion here.
+        how: "Payoff models rerun without P01/P02 (style.py, sessionNoHalf / decisionNoHalf)."
+        numbers:
+          - "Between OR 3.06 → 3.36; within 0.81 → 0.83; score within −0.10 → −0.07 SD"
+        atoms: [meth-half-weights]
+      - id: qual-coder
+        title: "Qualitative counts need a human second coder"
+        text: >-
+          All "X of 33 said" counts come from one AI coder. Agreement with a second AI pass (κ = .96) is closer
+          to test–retest than to independent coding; the one independent check (round 1, stated preference)
+          gave κ = .27. Use the counts descriptively until you have checked the coding (a tool for that can
+          come later).
+        how: "docs/analysis/qual/coding_notes.md; round 1 H6 / round 2 E."
+        numbers:
+          - "Round 1 two-coder κ = .27 on stated preference; AI vs AI κ = .96"
+        atoms: [meth-qual-coder]
+    replies:
+      - card: meth-games
+        text: "Kept in Methods; all style and payoff numbers are game-adjusted and no final graph splits by game."
+      - card: meth-half-weights
+        text: "Checked: adjusted everywhere, and dropping P01/P02 changes nothing here (between OR 3.06 → 3.36). Kept as one line in Methods, as you suggested."
+      - card: meth-qual-coder
+        text: "Kept; noted that you will check the coding and may want a tool for it."
+    open: []
+
+retire:
+  - {card: pay-benchmark-null, why: "Pruned by the researcher: small, and only visible as a game 1 vs game 2 split, which the final graphs avoid."}
+  - {card: meth-group-screen, why: "Pruned by the researcher: the 217-test screen found about what chance gives; group means are used descriptively only."}

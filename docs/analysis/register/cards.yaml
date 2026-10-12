@@ -22,7 +22,7 @@
 #
 # Built 2026-10-08 from rounds 1-2, the qualitative coding and the combined-page follow-ups.
 
-pass: 1
+pass: 2
 
 cards:
 
@@ -443,6 +443,7 @@ cards:
 # ════════════════════════════════════════════════════════════════════════════════════════════
 - group: Manual and the cards
   id: manual-preempt
+  status: retired   # pass 1: Pruned by the researcher (two-type n = 5). Pre-emption survives only as a measured step inside f-size-decides and as the no-card control in f-manual-c
   kind: finding
   title: "About half of \"manual\" is decided before the advice exists"
   claim: "47% of manual allocations are made before the strategy cards have loaded — they cannot be a rejection of advice the operator has not seen. Pre-empting is concentrated on single-type missions."
@@ -478,6 +479,7 @@ cards:
 
 - group: Manual and the cards
   id: manual-not-rejection
+  status: retired   # pass 1: Pruned by the researcher; its evidence (anchoring with a no-card control, codes C07–C10) now lives in f-manual-cards.
   kind: finding
   title: '"Manual" is mostly not a rejection of the advice'
   claim: "Combining the two above with what operators say — reserve-keeping, wanting something in between, editing a card as a first draft — a reliance measure that scores Manual as distrust misreads most of it."
@@ -653,6 +655,7 @@ cards:
 
 - group: Trust and the two tiers
   id: trust-drop
+  status: retired   # pass 1: Pruned by the researcher ('doesn't give us much'); its numbers survive only as context in f-tier-trust § where the gap comes from.
   kind: finding
   title: "Strategic trust falls between sessions"
   claim: "Trust in the strategic assistant falls from session 1 to session 2; Strategic Heavy adds a smaller penalty on top. Tactical trust does not move."
@@ -851,6 +854,7 @@ cards:
 
 - group: Flaws and later use
   id: flaw-abandon-caution
+  status: retired   # pass 1: Pruned by the researcher; on the rebuilt method the drop after a first abandonment (−13 points on three-type missions) does not beat timing-matched pl
   kind: finding
   title: "A self-initiated abandonment may be followed by fewer cards"
   claim: "Of five moments tested, only the first abandoned mission is followed by a change — and only for those who abandoned on their own, not after a Suggest refusal. It does not hold person by person against random moments."
@@ -897,6 +901,7 @@ cards:
 # ════════════════════════════════════════════════════════════════════════════════════════════
 - group: Recovery from drone failures
   id: rec-attempt
+  status: retired   # pass 1: Pruned by the researcher; its 'nothing tried → all abandoned' row is shown in f-recovery's abandonment chart.
   kind: finding
   title: "In recovery, attempting a fix is what matters"
   claim: "Every fixable failure where nothing was tried was abandoned. Among attempted fixes, Suggest and fixing by hand do equally well. Within a person, pressing Suggest goes with far fewer abandonments — because it is the cheap way to attempt."
@@ -935,6 +940,7 @@ cards:
 
 - group: Recovery from drone failures
   id: rec-never-attempt
+  status: retired   # pass 1: Pruned by the researcher (n = 3 too low); the three are flagged on the reliance scatter.
   kind: finding
   title: "Three operators never attempted any fixable failure"
   claim: "P15, P24 and P29 never attempted a fix in either session — 15 failures, 14 fixable with idle drones alone, so Suggest would have worked. It does not look like misunderstanding."
@@ -980,6 +986,7 @@ cards:
 
 - group: Recovery from drone failures
   id: q-C21
+  status: retired   # pass 1: Pruned by the researcher.
   kind: qual
   title: "Said: aborts rather than repairs"
   claim: "Describing aborting or re-sending a mission rather than repairing it."
@@ -1027,6 +1034,7 @@ cards:
 
 - group: Payoff and performance
   id: pay-benchmark-null
+  status: retired   # pass 1: Pruned by the researcher: small, and only visible as a game 1 vs game 2 split, which the final graphs avoid.
   kind: 'null'
   title: "Manual work does not explain the benchmark shortfall"
   claim: "Strategic Heavy's apparent bigger shortfall against the automated benchmark is barely touched by manual rate, and the gap itself comes from one game whose benchmark run had many drone failures."
@@ -1254,6 +1262,7 @@ cards:
 
 - group: Method and data notes
   id: meth-group-screen
+  status: retired   # pass 1: Pruned by the researcher: the 217-test screen found about what chance gives; group means are used descriptively only.
   kind: method
   title: "Group-measure screen is at chance level"
   claim: "Testing each \"said X\" group against everyone else on 11 measures — 13 of 217 new tests reach p < .05, about what chance gives."

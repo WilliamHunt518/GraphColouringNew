@@ -1,0 +1,170 @@
+findings:
+  - id: f-flaw-odd
+    area: "When the assistant gets it wrong"
+    title: "People who noticed the illogical card stopped using the cards where it appears; elsewhere they dipped for a while, but the dip is not clearly caused by the card"
+    headline: "The Conservative card sometimes adds a drone type the mission does not use (22% of decisions, nearly all on one-type missions). All 33 people saw it, usually on their 1st or 2nd decision. The clearest effect is on the one-type missions where the extra type appears. The 15 people who said they noticed it took the cards less with each such mission, until by their 4th–6th they took a card 0 times in 13. Instead they went manual before the cards had even loaded. The 18 who never said it drifted the other way, taking more cards, the illogical one included. The difference in these trends is very unlikely to be chance (p < .001). On three-type missions, which never carry the flaw, noticers' uptake dips (about −17 points adjusted, p = .06) and recovers by about their 7th three-type decision, while non-noticers' rises a little. But that dip is not tied to the moment of the card: the card comes so early that other equally early cut points show the same drop. And 'noticed' is known only from what people said afterwards. Suggestive, not causal."
+    confidence: suggestive
+    absorbs: [flaw-odd-card, flaw-dots, manual-card-error, meth-h8-invalid, q-C12, q-C15]
+    sections:
+      - id: card
+        title: "What the illogical card is, and when people first met it"
+        text: "The Conservative strategy tops up every drone type with 15% of the spare reserve, including types the mission never uses. This is a deliberate, known feature of the build (STUDY_BUILD §19), not an injected error, and no injected errors ran for anyone analysed. So on a mission that needs only Fast drones, the Conservative card can also send a Lifter and a Camera. This happened on <b>132 of 606</b> strategic decisions: 129 on one-type missions, 3 on two-type missions and none on three-type missions. Everyone met it early: <b>17 of 33</b> on their 1st or 2nd strategic decision of the study, and 9 not until session 2. For most people, then, 'before the card' is just one or two decisions at the very start, when they are still learning the task. That limits every before/after comparison below."
+        how: "Rows: every strategic decision (P09 excluded), in study order across both sessions. A decision is 'illogical' when the Conservative card's true drone counts include a type for which the mission's tasks need 0 drones (build_findings_synthesis.load_decisions, the odd flag). The anchor is each person's first such decision. The chart counts which decision number that was."
+        chart: flaw.timing
+        numbers:
+          - "132 of 606 decisions (21.8%) carry the illogical card; 129 are on one-type missions"
+          - "First illogical card: median the person's 2nd decision; 17 of 33 meet it on decision 1 or 2; 9 not until session 2"
+          - "Three-type decisions before it: median 1 per person; 3 people have none"
+        atoms: [flaw-odd-card]
+      - id: event
+        title: "The event study, rebuilt so every dot can be trusted"
+        text: "Each person's decisions are now numbered <i>within</i> the kind of mission plotted: their 1st, 2nd, 3rd three-type decision after the card, and so on. Everyone has a +1, a +2 and so on until their decisions run out. The positions are then grouped (1st–3rd, 4th–6th, 7th–9th, 10th+). Each bin gets a 95% interval from resampling people, and each person's own line is drawn faintly behind the group mean. On <b>three-type missions</b>, people who said they noticed went from 75% card uptake before to 47% in their 1st–3rd decisions after, 63% in the 4th–6th and 72% in the 7th–9th: a dip, then a return. Non-noticers stayed between 72% and 83% throughout. The same shape shows on all missions. Noticers fall from their first decisions; non-noticers rise slightly. The gap between the two groups is about 15 points (p = .06–.09). It is concentrated in the first five three-type decisions after the card (−25 points, p = .02) and gone from the 6th onwards (−2 points). That fits your reading of a dip followed by recovery. But the five-decision window was chosen after seeing the curve, so treat its p-value as descriptive."
+        how: "Rows: strategic decisions of the 33 people, split into those who said they noticed (debrief or interview code C12, or a strict in-play remark; 15 people) and those who never said so (18). 'Before' and 'after' are relative to the first illogical card. That decision itself is excluded from both windows and shown as its own point ('the card') in the all-missions view. Change = the 'after' coefficient in a linear model of card uptake, with practice (decision number) held fixed and people clustered for the uncertainty. Raw version: uptake ~ after + practice + game. Adjusted version: (observed − expected) ~ after + practice. The interaction asks whether the after-step differs between the groups. Label shuffle: the said/never-said labels were shuffled across people 5,000 times, to see how often a random split of the same people shows as large a difference in their own after-minus-before. Each person counts once in that test, so it is exact."
+        chart: flaw.events
+        numbers:
+          - "Three-type, said they noticed (15 people): 75% before (n 51) → 59% after (n 129); adjusted change −17.5 points [−36, +1], p = .06; 10 fell, 4 rose"
+          - "Three-type, never said (18 people): 79% (n 52) → 78% (n 181); adjusted +10.8 points [−5, +27], p = .17; 5 fell, 11 rose"
+          - "Difference between the groups: −14.7 points adjusted [−32, +2], p = .09; label shuffle p = .06 (three-type), .05 (all missions)"
+          - "Noticers by bin (adjusted): before 69%, 1st–3rd 50%, 4th–6th 61%, 7th–9th 68%, 10th+ 63%"
+          - "Odds-ratio form, for continuity with the old card: noticers OR 0.21 [0.04, 1.05], p = .057"
+        atoms: [flaw-odd-card, flaw-dots]
+        codes: [C12]
+      - id: nth
+        title: "One dot per person per position (the 'everyone has a +1, +2' view)"
+        text: "This is the chart you described: the Nth three-type decision after the card, with exactly one decision per person per dot. The n falls only as people run out of decisions. The dip shows at +1 to +3 for noticers (53%, 33%, 53%). Each dot, though, is about 15 single yes/no decisions, so its interval runs roughly from 30% to 75%. Individual dots cannot carry a claim. The bins above are the readable version."
+        how: "Rows: three-type decisions; k = the decision's rank among that person's three-type decisions after (or, counting back, before) the first illogical card. Rate = the share who took a card at that k. Interval = Wilson 95%."
+        chart: flaw.nth
+        numbers:
+          - "Noticers at +1/+2/+3: 53%, 33%, 53% (n 15 each)"
+        atoms: [flaw-dots]
+      - id: odd-missions
+        title: "On the missions that carry the flaw, noticers stop using the cards"
+        text: "This is the cleanest behavioural trace, and it is where you would expect one. On their 1st illogical-card mission, noticers took a card 47% of the time and never-said people 56%. With each further illogical-card mission, noticers took a card about 14 points less often. By their 4th–6th they took one <b>0 times in 13</b> (7 people), going manual instead, mostly <i>before the cards had loaded</i> (62%). Non-noticers moved the other way: by their 4th–6th they took a card 74% of the time. Most of that was the illogical Conservative card itself (52%), which noticers took 0 times in 13. The handover analyst's check fits this: when people build a one-type mission by hand rather than take the Conservative card, nearly all of the 'trim' is dropping the unneeded-type spares (−1.2 drones overall, +0.05 on the types the mission needs). So hand-builders strip out exactly what is illogical; see f-manual-cards. The manual-card-error card's version (people who mention a card error go manual more on one-type missions) holds in direction. But the same people also go manual more on three-type missions, where nothing is wrong (37% vs 22%). The one-type-<i>specific</i> part does not hold between people (interaction OR 1.12, p = .78). What is specific to the flawed missions is the <i>trend</i>: noticers learn to skip the cards there."
+        how: "Rows: the 132 illogical-card decisions, numbered per person (1st, 2nd, …). Each is coded by what happened: took the Conservative card (the illogical one), took Aggressive, manual after the cards loaded, or manual before they loaded (a pre-emptive choice that never saw the cards). Trend = a linear model of each outcome on the card's number (capped at 7) × group, with game held fixed and people clustered. The interaction p is whether the two groups' slopes differ. Between-person check (manual-card-error): manual ~ said + game on one-type missions, then on three-type, then the said × one-type interaction (logistic GEE, people clustered)."
+        chart: flaw.oddMissions
+        numbers:
+          - "Took any card, per extra illogical card: noticers −13.9 points [−25, −3]; never-said +5.3 [−2, +12]; difference p < .001"
+          - "Took the illogical Conservative card: noticers −3.5 points per card; never-said +9.3 [+1, +18]; difference p = .001"
+          - "Manual before the cards loaded: noticers +15.4 points per card [+2, +29]; never-said −5.8; difference p = .012"
+          - "4th–6th illogical card: noticers took a card 0 of 13 (7 people); never-said 74% of 23 (11 people), 52% the illogical card"
+          - "Manual on one-type missions: noticers 63% vs 37%, OR 2.41 [0.92, 6.32], p = .07; on three-type 37% vs 22%, OR 2.29, p = .06; one-type × noticed OR 1.12, p = .78"
+        atoms: [manual-card-error, flaw-odd-card]
+        codes: [C12, C15]
+      - id: not-time-locked
+        title: "Why the three-type dip cannot be pinned on the card"
+        text: "Three checks stop us saying 'the card caused the dip'. <b>(1) Timing.</b> The card arrives so early that 'after the card' almost means 'after the first couple of decisions'. When each noticer's anchor is moved to a random but equally early point (drawn from the real anchor positions), their drop is just as large: −13 vs −14 points on average, p = .92. With random anchors placed anywhere in the session, p = .20 (.07 for the first five decisions). So noticers drift down from their first decisions rather than step down at the card. Non-noticers' rise, by contrast, is larger than random anchors give (p = .01–.09). <b>(2) Who.</b> Noticers are less card-reliant people overall: they took cards on 55% of decisions against 73% (p = .03). Yet before the first card they took them on three-type missions at the same rate (68% vs 63%, p = .76). The gap opens afterwards. That is consistent with noticing mattering, but also with the reverse: people who start doing more by hand look harder at the cards and so notice more. <b>(3) 'Said' is post hoc.</b> A person who never said it may still have seen it. 17 of the 18 never-said people were narrating during play, which makes their silence some evidence, but not proof."
+        how: "Timing-matched placebo: each person's real anchor is replaced 2,000 times by a cut drawn from the real anchor positions of their group. The statistic is the mean over people of (mean residual after − mean residual before). p = how often the placebo differs from its own average by as much as the real one does. Uniform placebo: the same, with the cut drawn anywhere in the person's sequence. Group profile: per-person rates compared with Mann–Whitney tests (15 vs 18 people)."
+        chart: flaw.people
+        numbers:
+          - "Noticers' drop vs timing-matched random anchors: −0.13 vs −0.14, p = .92; vs anywhere-anchors p = .20 (first five: p = .07)"
+          - "Non-noticers' rise vs anywhere-anchors: +0.13 vs 0.00, p = .01"
+          - "Card uptake, all decisions: noticers 55% vs never-said 73%, p = .03; three-type before the first card 68% vs 63%, p = .76"
+          - "17 of 18 never-said people had in-play narration recorded"
+        atoms: [flaw-odd-card]
+      - id: spoken
+        title: "Lined up on the moment they said it"
+        text: "You suggested anchoring on the moment someone said, during play, that a card was wrong. We did. Seven people made a strict remark ('a card sends types the mission does not need, or a specific card is wrong'); five more made broader 'too many drones' remarks. For four of the seven, an illogical card was on screen as they spoke. P30's remark was about an illogical card that opened 5 s later, so the narration timing is only good to a few seconds; it was moved onto that card. P29 spoke 28 s after taking the illogical card. P04's remark was about too many drones on a three-type card, not about an unneeded type. Of the seven, five fell and two rose. Their card uptake on all missions went from 80% to 49%, but the adjusted change is −21 points [−49, +7], p = .11, and the timing-matched placebo p = .51. Two of them spoke within their first minute, so they too have almost no 'before'. Seven people cannot settle it. The direction matches the main result."
+        how: "The spoken moments were hand-coded from the in-play narration before any behaviour around them was computed (extras.SPOKEN_STRAT, session time). A decision whose card was open at that moment is the anchor decision. Otherwise, 'before' and 'after' are split at the remark. The same models and placebo as above are used."
+        chart: flaw.spoken
+        numbers:
+          - "Strict remarks (7 people), all missions: 80% (n 30) → 49% (n 75); adjusted −21 points [−49, +7], p = .11; 5 fell, 2 rose; placebo p = .51"
+          - "Strict, three-type: 79% → 57%; adjusted −16 points [−57, +26], p = .39"
+          - "Broad remarks (12 people): adjusted −4 points, p = .60; 7 fell, 5 rose"
+        atoms: [flaw-odd-card, q-C12]
+        codes: [C12]
+      - id: adjustment
+        title: "What 'expected' and 'adjusted' mean"
+        text: "<b>Expected</b> is the chance a model gives that this person takes a card on this decision. It knows only what the decision was (drones, tasks and drone types the mission needed), when it was (minute of the session, whether it was a re-queued mission, how many others were waiting), which of the four games was being played, and how often <i>this person</i> took cards on all their <i>other</i> decisions. <b>Adjusted</b> = the group's overall rate + the average of (observed − expected) at that position. In plain terms: 'how far above or below their usual self, given the mission in front of them, were people here?' The person term does most of the work (odds ×2.84 per unit; the model ranks takes above non-takes 81% of the time). So 'adjusted' mostly means 'compared with that person's normal habit'. Of the mission features, only the number of drone types matters (×1.51 per extra type). Because adjusted is a shifted average residual and not a probability, it can go above 100% at a small dot that sits far above its expectation. The old not-said +2 dot read 122% for this reason."
+        how: "Logistic regression over all 606 decisions: took ~ drones + tasks + types + minute + game + queue length + residual flag + logit(person's leave-one-out rate, shrunk with +1/+2). The same specification as extras2.add_expected; the script checks the fitted values are identical. The chart shows each term's odds ratio with a 95% interval."
+        chart: flaw.model
+        numbers:
+          - "Person's own rate elsewhere: odds ×2.84 [2.29, 3.51] per logit unit"
+          - "Each extra drone type needed: ×1.51 [1.12, 2.04]; drones ×1.08, tasks ×0.98, minute ×1.05, queue ×0.98 (all n.s.)"
+          - "Model ranks takes above non-takes 81% of the time (AUC 0.81)"
+        atoms: [flaw-dots]
+      - id: old-chart
+        title: "The old chart: why n moved, the +8 dip and the never-said 100% dots"
+        text: "The old chart was drawn correctly from what it computed, but what it computed was confusing. Its x position counted <i>every</i> decision after the card, and only three-type ones were then kept for the rate. So a person appeared at +2 only if their 2nd decision after the card happened to be three-type. That is why n went up and down (4–16), why 0 never appeared (the card's own decision is never three-type), and why 'three-type 100%' showed on every dot (true by construction). <b>The +8 dip</b> is 22 decisions, one per person, where 50% took a card against 67% expected. The 11 who declined are 11 different people. Mission size there is ordinary (10.3 drones vs 10.2), with slightly more session starts (14% vs 6%). The same people took cards on 67% of their other later three-type decisions. Measured as a surprise score it is z = −1.5. Two of the 33 old dots fall outside ±1.96, where about 1.7 would by chance. It is noise, and it disappears in the binned view. <b>The never-said 100% dots at +2/+3</b> are 13 decisions from 11 people who all took a card where 66% was expected. That is unusual taken alone (about 0.2%), but it is the most extreme of 33 dots. They came at busy moments (3.1 missions waiting against about 1.9 usually), when people tend to hand over (C11). The never-said group are also the higher-reliance people (73% overall). The rebuilt chart has no 100% dots."
+        how: "Each old dot was reproduced exactly from extras2.event_study (checked against extras2.json). Surprise score z = (takes − expected takes) ÷ √Σ p(1−p) over the dot's decisions. The +8 rows were listed one by one and compared with the same people's other later three-type decisions."
+        chart: flaw.oldDots
+        numbers:
+          - "+8: n 22, 50% took vs 67% expected, z = −1.5 (never-said dot); declines spread over 11 people; same people elsewhere 67%"
+          - "Old dots beyond |z| 1.96: 2 of 33 (1.7 expected)"
+          - "Never-said +2/+3: 13 of 13 took a card; expected 66%; queue 3.1"
+        atoms: [flaw-dots]
+      - id: robustness
+        title: "Every specification, whatever it shows"
+        text: "Fourteen versions of the before/after question. Noticers' change is negative in every one (−10 to −26 points). Non-noticers' is positive or flat in every one. The adjusted difference between groups is negative in every one, with p mostly between .06 and .4. It weakens when the noticed group is the debrief code alone (−8 points, p = .39) and when each session's first decision is dropped (−7 points, p = .44). It is largest in the short window (−25 points, p = .02, chosen after seeing the dip) and gone in the long run (−2 points). The one-type-only version cannot be estimated: almost nobody has a one-type mission before their first illogical card. The direction is stable. Its size and significance are not."
+        how: "Each row reruns the before/after and interaction models with one thing changed: the practice term, the window, the missions, the anchor (first illogical card actually displayed rather than pre-empted), who counts as 'noticed', or who is excluded (P01/P02, who played on half task weights). Estimates are in percentage points with 95% intervals, people clustered."
+        chart: flaw.strip
+        numbers:
+          - "Difference (noticers − never-said), adjusted: main −15 (p .09); no practice term −15 (.09); first 5 after −25 (.02); 6th onward −2 (.83); all missions −15 (.06); without illogical-card missions −14 (.13); first card displayed −12 (.12); C12 only −8 (.39); broad remarks −11 (.21); strict remarks only −16 (.10)"
+        atoms: [flaw-odd-card, flaw-dots]
+      - id: h8
+        title: "Why the pre-registered test (H8) was dropped"
+        text: "H8 asked whether uptake falls after an operator 'realises' the card can be illogical. Its marker for that realisation was the first time a person went manual on an illogical-card mission and left out the unneeded type. The trouble is that, by that definition, every illogical-card decision <i>before</i> the marker was not such a manual choice. So the 'before' window was mostly forced to be card takes, near 100%. Any later manual choice then shows up as a drop, even if the person never changed at all. A simulation confirmed it. In simulated people who keep the same habits all study, the same marker produced a large 'drop' (average odds ratio 0.37, against the real 0.12). Measured against that, the real drop was ordinary (calibrated p = .30, about −10 points after correction). Defining the marker as the first manual choice on a <i>clean</i> card produced the same kind of drop. H8 was replaced by tests whose anchor is not defined by the outcome (the first illogical card shown; the moment someone said it), each checked against a placebo. Those are the tests in this finding."
+        how: "From docs/analysis/round1/h8_illogical_card.md. The null calibration redrew each person's choices 1,000 times from their own constant rate, reapplied the marker and refitted the same model."
+        numbers:
+          - "Pre-registered estimate OR 0.12; the same test on no-change simulations averages OR 0.37; calibrated p = .30 (risk difference)"
+          - "Placebo marker on clean cards: OR 0.22, p = .03, the same kind of 'drop'"
+        atoms: [meth-h8-invalid]
+    replies:
+      - {card: flaw-odd-card, text: "Rebuilt. (1) The adjustment is explained in plain words, with the model's terms charted. 'Adjusted' mostly means 'compared with that person's usual rate'. (2) Never-said ≈ 100%: two small old dots (13 decisions) that came at busy moments, plus the fact that non-noticers are higher-reliance people. The rebuilt chart has them at 72–84%. (3) +8: noise; 22 decisions, 11 different decliners, z = −1.5. (4) The graph was computed correctly but its x-axis counted all decisions while plotting only three-type ones; now fixed. Your 'dip then recovery' reading does show for noticers (75% → 47% → 63% → 72%), and the group gap is concentrated in the first five decisions. But it is not tied to the card's moment, so I call it suggestive. The strongest result is new: noticers stop taking cards on the illogical-card missions themselves."}
+      - {card: flaw-dots, text: "n moved because x counted every decision and only three-type ones were kept. 'Three-type 100%' was always 100% by construction. Now each person's Nth three-type decision is the x (everyone has a +1, +2, …), positions are binned with person-resampled intervals, and individual lines sit behind the mean. Folded into f-flaw-odd as the method sections."}
+      - {card: manual-card-error, text: "Merged. It holds in direction (63% vs 37% manual on one-type missions), but noticers are equally more manual on three-type missions (interaction p = .78), so it is a person difference rather than a one-type effect. The specific, within-person version is the trend on illogical-card missions: noticers increasingly pre-empt the cards there (difference in trends p = .01). See also f-manual-cards: hand-builds on one-type missions drop the unneeded-type spares."}
+      - {card: meth-h8-invalid, text: "Explained plainly in the 'Why the pre-registered test was dropped' section: the marker's own definition forced the 'before' window to be card takes, so a drop appeared even in simulated people who never changed."}
+      - {card: q-C12, text: "Kept as the grouping and the supporting quotes. 12 coded in debrief or interview; 15 including strict in-play remarks."}
+      - {card: q-C15, text: "Kept as supporting evidence in the odd-missions section. 3 of the 4 who said they grew more careful later are noticers (P17, P19, P33)."}
+    open:
+      - "Which grouping should be primary: C12 ∪ strict in-play (15, used here) or C12 alone (12, a weaker difference)? Decide before writing, not after seeing which is stronger."
+      - "The one-type-mission trend (noticers stop taking cards there) is the strongest result, but the groups were defined after the fact. Is it worth a confirmatory look in a fresh cohort, or reporting it as exploratory?"
+      - "The short-window (first five decisions) difference, p = .02, was chosen after seeing the curve; report it as descriptive only."
+
+  - id: f-flaw-visibility
+    area: "When the assistant gets it wrong"
+    title: "Only flaws people can see change what they do: wrong Suggest refusals and weaker cards leave no trace"
+    headline: "The strategic tier's flaw is visible at a glance: a drone type the mission does not use shows on the card's face. 12–15 of 33 people remarked on it, and those who did changed how they used the cards (f-flaw-odd). The tactical tier's flaw is hidden: Suggest says 'No workable plan' when one exists. 14 people met at least one such wrong refusal, and only 1 person ever said why it happened. After the first refusal, right or wrong, neither strategic nor tactical use changes (adjusted changes −5 to +2 points, all p > .4). So the trouble does not cascade up to the strategy cards. A Conservative card that is plainly worse on its own two numbers is not avoided either. Moderate confidence for the visibility contrast; the nulls are 'no evidence of a change', with intervals of roughly ±10 points."
+    confidence: moderate
+    absorbs: [tier-flaw-visibility, flaw-anchors-null, cards-dominated-null]
+    sections:
+      - id: visibility
+        title: "Strategic flaws are visible; tactical flaws are hidden"
+        text: "Neither assistant had errors injected for anyone analysed (the ε manipulation ran only for the excluded P09). Each tier still has a natural flaw. On the <b>strategic</b> side, it is the illogical extra drone type. It sits on the card face next to the mission's own requirements, everyone saw it, and 12 people mentioned it in debrief or interview (15 counting in-play remarks). On the <b>tactical</b> side, it is the wrong refusal: Suggest answers 'No workable plan' when a fix existed using a drone busy on another task. To the operator it looks exactly like a correct refusal. 14 people met one (23 wrong refusals out of 39). Four of them reacted aloud and accepted it, most saying they would have to abandon. Only P28 named the cause. Only 3 people ever described a tactical-plan flaw (C13), and just one of them had been wrongly refused. 'The strategic assistant is distrusted more' may partly be 'its mistakes are the ones you can see'."
+        how: "Strategic exposure: people with ≥1 illogical-card decision. Tactical exposure: people with ≥1 Suggest press in a recovery that returned 'No workable plan' or a partial plan while a fix using a busy drone existed (the 'blind' flag in h3_recovery). Noticing: qualitative codes C12 and C13 (debrief or interview), plus the hand-coded in-play remarks (extras.SPOKEN_STRAT / SPOKEN_TAC), each matched to the nearest preceding Suggest press."
+        chart: flaw.visibility
+        numbers:
+          - "Strategic: 33 of 33 saw the illogical card (132 of 606 decisions); 12 coded C12; 15 incl. strict in-play remarks"
+          - "Tactical: 14 of 33 got ≥1 wrong refusal (23 of 39 refusals); 3 coded C13, 1 of them among the 14; 4 reacted aloud to a wrong refusal, 1 named why"
+        atoms: [tier-flaw-visibility]
+        sharedWith: [f-tier-trust]
+        codes: [C12, C13, C14]
+      - id: refusal
+        title: "After the first Suggest refusal, nothing changes, on either tier"
+        text: "You asked whether the only thing that changes after the first refusal is that <i>strategic</i> use goes down, with the problem cascading up the chain. <b>It does not.</b> After their first 'No workable plan' (18 people), card uptake actually went <i>up</i> in raw terms (68% → 76%). The expected value went up just as much, because these refusals tend to come later, when people have settled in. Adjusted, the change is +2 points [−6, +10], with 10 people falling and 8 rising. On three-type missions it is 0 points. Tactical Suggest use also rose raw (78% → 87%) and is flat adjusted (−1 point). After the first <i>wrong</i> refusal (14 people) the picture is the same: strategic −2.5 points [−16, +11], tactical 0. The first drone failure (33 people) changes nothing either. These are absences of evidence, with intervals around ±10 points. They are not proof of no effect, but no cascade is visible. The card's wording, 'neither assistant's use changes', was right."
+        how: "Same rebuilt method as f-flaw-odd. Each person's strategic decisions (or tactical plans) are numbered within the sample, after versus before the moment of their first refusal, with practice held fixed and people clustered. Adjusted = observed minus the expected value. The placebo moves each anchor to a random point drawn from the real anchor positions. All p-values are for the adjusted change."
+        chart: flaw.anchors
+        numbers:
+          - "First refusal (18): strategy cards, all missions, adjusted +2.0 points [−6, +10], p = .62; three-type +0.4, p = .91; tactical Suggest −0.6 [−6, +5], p = .83"
+          - "First WRONG refusal (14): strategy cards −2.5 [−16, +11], p = .70; three-type −5.1, p = .43; tactical −0.2, p = .93"
+          - "First drone failure (33): strategy cards −1.0, p = .79; tactical +5.6, p = .08"
+          - "After the first illogical card, tactical Suggest +5.4 points, p = .30 (no spill-down either)"
+        atoms: [flaw-anchors-null]
+      - id: dominated
+        title: "A card that is worse on its own numbers is not avoided"
+        text: "Usually the two cards are a trade-off. Aggressive sends more drones and finishes sooner; Conservative sends fewer and is slower. Sometimes the trade-off vanishes. The Conservative card sends <i>at least as many</i> drones and its displayed finish time is <i>no sooner</i>, so on the two numbers it shows there is no reason to pick it. That is a <b>dominated</b> card. A typical one: Conservative 9 drones, Aggressive 8, both finishing at 65 s. This happens on 45% of all decisions (77% of one-type missions, where it mostly coincides with the illogical extra type, and 29% of three-type missions). On three-type missions, where nothing looks odd, people chose a dominated Conservative card 29% of the time and a fair-trade-off one 38%. Once mission size and game are allowed for, there is no sign they avoided it (odds ×1.19 [0.54, 2.63], p = .66), though the interval cannot rule out a moderate avoidance. On 'rarely compare both': highlighting a card is the click that selects it. Both cards are always shown side by side, so the numbers can be read without clicking. People highlighted both cards on only 19 of 606 decisions (14 people), and 380 of 397 card takes highlighted only the card they took. Choosing looks driven by the label, not by comparing numbers across the two cards. A weakness you must work out by comparing goes unnoticed; one you can see on the card face (an unneeded type) is the one people reacted to."
+        how: "From both cards' true drone totals and displayed completion times in the last strategic_modal_opened before each choice: dominated = Conservative drones ≥ Aggressive drones AND Conservative time ≥ Aggressive time. This matches load_decisions' flag exactly (44.6%). The model is a logistic GEE on three-type, non-residual decisions: chose Conservative ~ dominated + drones + tasks + game, people clustered. Bars: share of each choice, with 95% intervals from resampling people. Previews: distinct cards highlighted (strategic_card_previewed) before the choice."
+        chart: flaw.dominated
+        numbers:
+          - "Dominated Conservative card on 45% of decisions: 77% of one-type, 29% of three-type"
+          - "Three-type: Conservative chosen 38% (trade-off, n 284) vs 29% (dominated, n 105); odds ×1.19 [0.54, 2.63], p = .66 (round 2 found 1.10 with other covariates)"
+          - "Both cards highlighted on 19 of 606 decisions (14 people); none highlighted on 174"
+        atoms: [cards-dominated-null]
+    replies:
+      - {card: flaw-anchors-null, text: "Checked directly with the rebuilt method. No: strategic use does not go down after the first Suggest refusal (adjusted +2 points [−6, +10]) or after the first wrong refusal (−2.5 [−16, +11]), and tactical use is flat too. The raw rise is practice and mission mix. There is no cascade up the chain in behaviour; that is no evidence of a change, not evidence of none."}
+      - {card: cards-dominated-null, text: "Explained: 'dominated' = the Conservative card is no smaller and no faster than Aggressive, so it is worse on both numbers it shows. On three-type missions people do not avoid it (OR 1.19, p = .66), and they almost never click both cards (19 of 606), though both are always on screen. It leads into choices as 'label, not numbers', and contrasts with the visible illogical type, which people did react to."}
+      - {card: tier-flaw-visibility, text: "Kept and strengthened with exposure counts: everyone saw the strategic flaw and 12–15 remarked on it; 14 met the hidden tactical flaw and 1 explained it. Marked sharedWith f-tier-trust."}
+    open:
+      - "f-tier-trust should carry the visibility section. Wording to agree: 'the trust gap may be partly a visibility gap' is an argument, not a measured effect."
+
+retire:
+  - {card: flaw-abandon-caution, why: "Pruned by the researcher; on the rebuilt method the drop after a first abandonment (−13 points on three-type missions) does not beat timing-matched placebo anchors (p = .11)."}

@@ -97,6 +97,35 @@ table.reg td a { color: var(--ink); cursor: pointer; }
 .imgs { display: flex; gap: 14px; flex-wrap: wrap; }
 .imgs figure { margin: 0; max-width: 300px; }
 .imgs img { width: 100%; border-radius: 6px; border: 1px solid var(--line); display: block; }
+/* pass 2+: findings (multi-section pages that absorb atomic cards) */
+.cardview .headline { font-size: 17px; line-height: 1.55; max-width: 76ch; margin: 8px 0 14px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.toc a { font-size: 12.5px; padding: 3px 9px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink-2); text-decoration: none; cursor: pointer; }
+.toc a:hover { border-color: var(--s-strat); color: var(--ink); }
+.fsec { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 16px; scroll-margin-top: 10px; }
+.fsec h3 { font: 600 18px var(--sans); margin: 0 0 6px; }
+.fsec .stext { font-size: 15px; line-height: 1.55; max-width: 76ch; margin: 6px 0 10px; }
+.fsec .box.chartbox { max-width: 100%; }
+details.how { background: var(--surface-2); border-radius: 8px; padding: 8px 14px; margin: 10px 0; max-width: 80ch; }
+details.how summary { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); cursor: pointer; }
+details.how div { font-size: 14px; line-height: 1.55; margin-top: 6px; white-space: pre-line; }
+.atoms { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; font-size: 12px; color: var(--ink-3); }
+.atoms a { font-size: 12px; padding: 2px 8px; border-radius: 10px; border: 1px dashed var(--line); color: var(--ink-2); cursor: pointer; }
+.atoms a:hover { border-style: solid; border-color: var(--s-strat); }
+.shared { display: inline-block; font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; background: var(--hi);
+  color: var(--ink-2); border-radius: 4px; padding: 2px 7px; margin-left: 8px; vertical-align: 3px; }
+.shared a { color: inherit; cursor: pointer; text-decoration: underline; }
+textarea.secnote { width: 100%; max-width: 80ch; box-sizing: border-box; min-height: 54px; font: 13.5px/1.45 var(--sans); padding: 6px 9px;
+  border-radius: 6px; border: 1px dashed var(--line); background: var(--bg); color: var(--ink); resize: vertical; display: block; margin-top: 8px; }
+textarea.secnote:focus { border-style: solid; }
+.p1 { border: 1px solid var(--line); border-radius: 8px; margin: 10px 0; max-width: 80ch; background: var(--surface); }
+.p1 .q { padding: 8px 12px; font-size: 13.5px; }
+.p1 .a { padding: 8px 12px; font-size: 13.5px; background: var(--hi); border-radius: 0 0 8px 8px; }
+.openq li { margin: 5px 0; font-size: 14.5px; }
+.backbar { margin-bottom: 10px; }
+.backbar button { font: 500 12px var(--mono); padding: 4px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+aside.list a .cnt { margin-left: auto; font: 11px var(--mono); color: var(--ink-3); }
 @media (max-width: 1150px) {
   #app { height: auto; }
   .body { grid-template-columns: 1fr; }
@@ -126,9 +155,20 @@ const REG = /*__REGISTER__*/null;
 /*__COMMON_JS__*/
 
 /* ═══════════════════════════ state ═══════════════════════════ */
-const CARDS = REG.cards.filter(c => !c.status || c.status === 'active');
-const BYID = Object.fromEntries(REG.cards.map(c => [c.id, c]));
+const ATOMS = REG.cards.filter(c => !c.status || c.status === 'active');
+const FINDINGS = (REG.findings || []).map(f => Object.assign({ group: f.area, claim: f.headline }, f, {
+  // suggested links = the finding's own `links` plus every finding a section is shared with (both ways, added below)
+  links: [...(f.links || []), ...[...new Set((f.sections || []).flatMap(s => s.sharedWith || []))].map(to => ({ to, why: 'shares a section' }))] }));
+FINDINGS.forEach(f => f.links.forEach(l => { const o = FINDINGS.find(x => x.id === l.to);
+  if (o && !o.links.some(m => m.to === f.id)) o.links.push({ to: f.id, why: l.why }); }));
+const FMODE = FINDINGS.length > 0;                      // pass 2+: review findings; atoms are opened from them
+const CARDS = FMODE ? FINDINGS : ATOMS;                  // the review units
+const BYID = Object.fromEntries(REG.cards.concat(FINDINGS).map(c => [c.id, c]));
 const GROUPS = [...new Set(CARDS.map(c => c.group))];
+const ABSORBED_BY = {};                                   // atom id -> ids of the findings carrying it
+FINDINGS.forEach(f => new Set([...(f.absorbs || []), ...(f.sections || []).flatMap(s => s.atoms || [])])
+  .forEach(a => (ABSORBED_BY[a] = ABSORBED_BY[a] || []).push(f.id)));
+let ATOM = null;                                          // an atom opened from a finding (read-only)
 const PASS = REG.pass;
 const VERDICTS = [
   ['core', 'Core', '--good'], ['keep', 'Keep', '--s-strat'], ['reframe', 'Reframe', '--r-aggr'],
@@ -332,11 +372,14 @@ const CH = {
     });
   },
 };
+/* pass-2 chart modules (scripts/register/pass2/*.charts.js), inlined here by build_review.py */
+/*__PASS2_CHARTS__*/
 
 /* ═══════════════════════════ views ═══════════════════════════ */
 let VIEW = 'review', CUR = null, FILTER = { group: '', status: 'all', q: '' };
 try { const st = JSON.parse(localStorage.getItem(LSKEY + ':ui') || '{}'); if (st.cur && BYID[st.cur]) CUR = st.cur; if (st.view) VIEW = st.view; } catch (e) { }
-CUR = CUR || CARDS[0].id;
+{ const hid = decodeURIComponent(location.hash.slice(1)); if (hid && BYID[hid]) CUR = hid; }   // #<id> deep link
+CUR = CUR && CARDS.some(c => c.id === CUR) ? CUR : CARDS[0].id;
 const remember = () => { try { localStorage.setItem(LSKEY + ':ui', JSON.stringify({ cur: CUR, view: VIEW })); } catch (e) { } };
 
 function drawProgress() {
@@ -357,7 +400,12 @@ function visibleCards() {
     && (!q || (c.title + ' ' + c.claim + ' ' + c.id).toLowerCase().includes(q)));
 }
 
-function go(id) { CUR = id; VIEW = 'review'; remember(); render(); }
+function go(id) {
+  if (FMODE && !FINDINGS.some(f => f.id === id)) ATOM = id;
+  else { CUR = id; ATOM = null; remember(); }
+  VIEW = 'review'; render();
+  const cv = document.querySelector('.cardview'); if (cv) cv.scrollTop = 0;
+}
 function step(d) {
   const L = visibleCards(); let i = L.findIndex(c => c.id === CUR);
   if (i < 0) i = 0; else i = Math.min(L.length - 1, Math.max(0, i + d));
@@ -366,7 +414,7 @@ function step(d) {
 
 function render() {
   $('views').innerHTML = '';
-  [['review', 'Review'], ['table', 'All cards'], ['map', 'Link map']].forEach(([k, l]) => {
+  [['review', 'Review'], ['table', FMODE ? 'All pass-1 cards' : 'All cards'], ['map', 'Link map']].forEach(([k, l]) => {
     const b = h('button', { text: l, class: VIEW === k ? 'on' : '' }, $('views')); b.onclick = () => { VIEW = k; remember(); render(); };
   });
   drawProgress();
@@ -374,7 +422,12 @@ function render() {
   if (VIEW === 'table') return renderTable(body);
   if (VIEW === 'map') return renderMap(body);
   renderList(h('aside', { class: 'list' }, body));
-  renderCard(h('section', { class: 'cardview' }, body), BYID[CUR]);
+  const mid = h('section', { class: 'cardview' }, body);
+  if (FMODE && ATOM) {
+    h('button', { text: '← back to ' + BYID[CUR].title }, h('div', { class: 'backbar' }, mid)).onclick = () => { ATOM = null; render(); };
+    renderCard(mid, BYID[ATOM]);
+  } else if (FMODE) renderFinding(mid, BYID[CUR]);
+  else renderCard(mid, BYID[CUR]);
   renderResp(h('aside', { class: 'resp' }, body), BYID[CUR]);
 }
 
@@ -397,6 +450,7 @@ function renderList(host) {
     if (r.verdict) d.style.cssText = `background:var(${VCOL[r.verdict]});border-color:var(${VCOL[r.verdict]})`;
     else if ((r.note || '').trim()) d.style.cssText = 'background:var(--ink-3);border-color:var(--ink-3)';
     h('span', { text: c.title }, a);
+    if (FMODE) h('span', { class: 'cnt', text: (c.sections || []).length + ' §' }, a);
     a.onclick = () => go(c.id);
   });
   setTimeout(() => { const on = host.querySelector('a.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }, 0);
@@ -444,7 +498,76 @@ function renderCard(host, c) {
         h('div', { text: e.text }, q); });
     }
   }
+  if (FMODE) {                                            // an atom seen from a finding: your note on it, and where it went
+    ((REG.history || {})[c.id] || []).forEach(x => { const b = h('div', { class: 'box' }, host);
+      h('h4', { text: `Your pass ${x.pass} note · ${x.verdict || 'no verdict'}` }, b); if (x.note) h('p', { text: x.note, style: 'margin:0' }, b); });
+    FINDINGS.forEach(f => (f.replies || []).filter(r => r.card === c.id).forEach(r => { const b = h('div', { class: 'box thoughts' }, host);
+      h('h4', { text: `After pass ${PASS - 1}: what Claude did (in ${f.title})` }, b); h('p', { html: r.text, style: 'margin:0' }, b); }));
+    const inF = ABSORBED_BY[c.id] || [], b = h('div', { class: 'box links' }, host);
+    h('h4', { text: inF.length ? 'Now part of' : 'Status' }, b);
+    if (inF.length) inF.forEach(fid => { const a = h('a', { class: 'lk', text: BYID[fid].title }, b); a.onclick = () => go(fid); });
+    else h('span', { text: c.status || 'not carried into a finding' }, b);
+  }
   h('div', { class: 'meta2', html: `Lineage: ${(c.lineage || []).join(', ') || '—'}<br>Sources: ${(c.sources || []).join(' · ') || '—'}` }, host);
+}
+
+/* A finding: headline, then one block per section -- text, chart, numbers, how it was worked out, quotes, the atoms
+   it stands for, a note box -- then your pass-1 notes on its atoms with what was done about each, then open questions. */
+function renderFinding(host, f) {
+  h('div', { class: 'kick', text: `${f.area} · ${f.id}` }, host);
+  h('h2', { text: f.title }, host);
+  const chips = h('div', {}, host);
+  h('span', { class: 'chip k-finding', text: 'finding' }, chips);
+  if (f.confidence) h('span', { class: `chip c-${f.confidence === 'mixed' ? 'moderate' : f.confidence}`, text: f.confidence }, chips);
+  h('p', { class: 'headline', html: f.headline || '' }, host);
+  const secs = f.sections || [];
+  if (secs.length > 1) { const t = h('div', { class: 'toc' }, host);
+    secs.forEach((s, i) => { h('a', { text: `${i + 1}. ${s.title}` }, t).onclick = () => host.querySelector('#sec-' + s.id).scrollIntoView({ behavior: 'smooth' }); });
+    if ((f.replies || []).length) h('a', { text: 'Your pass-1 notes' }, t).onclick = () => host.querySelector('#sec-replies').scrollIntoView({ behavior: 'smooth' }); }
+  secs.forEach((s, i) => {
+    const d = h('div', { class: 'fsec', id: 'sec-' + s.id }, host), t = h('h3', { text: `${i + 1}. ${s.title}` }, d);
+    if ((s.sharedWith || []).length) { const sh = h('span', { class: 'shared', text: 'shared · also in ' }, t);
+      s.sharedWith.forEach((o, j) => { if (j) sh.append(', '); h('a', { text: (BYID[o] || { title: o }).title }, sh).onclick = () => go(o); }); }
+    if (s.text) h('p', { class: 'stext', html: s.text }, d);
+    if (s.chart) {
+      const ch = h('div', { class: 'chart' }, h('div', { class: 'box chartbox' }, d));
+      if (!CH[s.chart]) ch.textContent = 'No chart function for ' + s.chart;
+      else try { CH[s.chart](ch, s); } catch (e) { ch.textContent = 'Chart could not be drawn: ' + e.message; console.error(s.chart, e); }
+    }
+    if ((s.numbers || []).length) { const ul = h('ul', { class: 'nums' }, d); s.numbers.forEach(n => h('li', { html: n }, ul)); }
+    if (s.how) { const hw = h('details', { class: 'how', open: '' }, d); h('summary', { text: 'How this was worked out' }, hw); h('div', { html: s.how }, hw); }
+    const codes = s.codes || [], ev = codes.length && QL ? QL.evidence.filter(e => codes.includes(e.code)) : [];
+    if (ev.length) { const dd = h('details', { class: 'box' }, d); h('summary', { text: `What they said — ${ev.length} excerpts (${codes.join(', ')})` }, dd);
+      ev.forEach(e => { const q = h('div', { class: 'evid' + (e.led ? ' led' : '') }, dd);
+        h('div', { class: 'who', text: `${e.pid} · ${e.source}${e.at ? ' · ' + e.at : ''}${e.led ? ' · after a leading question' : ''}` }, q);
+        h('div', { text: e.text }, q); }); }
+    if ((s.atoms || []).length) { const at = h('div', { class: 'atoms', text: 'pass-1 cards: ' }, d);
+      s.atoms.forEach(a => { if (BYID[a]) h('a', { text: BYID[a].title, title: 'open the pass-1 card' }, at).onclick = () => go(a); }); }
+    const key = f.id + '#' + s.id, ta = h('textarea', { class: 'secnote', placeholder: 'Note on this section (optional)…' }, d);
+    ta.value = (RESP.cards[key] || {}).note || '';
+    ta.oninput = () => { resp(key).note = ta.value; save(key); };
+  });
+  const reps = f.replies || [];
+  if (reps.length) {
+    const d = h('div', { class: 'fsec', id: 'sec-replies' }, host);
+    h('h3', { text: 'Your pass-1 notes, and what was done' }, d);
+    reps.forEach(rp => { const T = BYID[rp.card] || { title: rp.card }, hs = ((REG.history || {})[rp.card] || []).slice(-1)[0] || {};
+      const b = h('div', { class: 'p1' }, d), q = h('div', { class: 'q' }, b);
+      h('a', { text: T.title, style: 'cursor:pointer;font-weight:600' }, q).onclick = () => go(rp.card);
+      q.append(` · ${hs.verdict || 'no verdict'}`);
+      if (hs.note) h('div', { text: hs.note, style: 'margin-top:4px;color:var(--ink-2)' }, q);
+      h('div', { class: 'a', html: rp.text }, b); });
+  }
+  if ((f.open || []).length) { const d = h('div', { class: 'fsec' }, host); h('h3', { text: 'Open — for you to decide' }, d);
+    const ul = h('ul', { class: 'openq' }, d); f.open.forEach(o => h('li', { html: o }, ul)); }
+  if (f.links.length) { const d = h('div', { class: 'box links' }, host); h('h4', { text: 'Related findings' }, d);
+    const mine = resp(f.id).links.map(l => l.to);
+    f.links.forEach(l => { const T = BYID[l.to]; if (!T) return; const row = h('div', { class: 'row' }, d);
+      h('a', { class: 'lk', text: T.title }, row).onclick = () => go(l.to); h('span', { class: 'why', text: l.why }, row);
+      if (!mine.includes(l.to)) h('button', { class: 'adopt', text: '+ mine', title: 'Add to your links' }, row).onclick = () => {
+        resp(f.id).links.push({ to: l.to, note: l.why }); save(f.id); render(); }; }); }
+  const all = [...new Set([...(f.absorbs || []), ...secs.flatMap(s => s.atoms || [])])];
+  h('div', { class: 'meta2', text: `Carries ${all.length} pass-1 cards: ${all.join(', ')}` }, host);
 }
 
 function renderResp(host, c) {
@@ -492,6 +615,18 @@ function renderResp(host, c) {
 
 function renderTable(body) {
   const w = h('div', { class: 'full' }, body);
+  if (FMODE) {                                            // every pass-1 card, your verdict on it, and where it went
+    const t = h('table', { class: 'reg' }, w), hr = h('tr', {}, h('thead', {}, t));
+    ['Area', 'Pass-1 card', 'Your verdict', 'Your note', 'Now in', 'Status'].forEach(x => h('th', { text: x }, hr));
+    const tb = h('tbody', {}, t);
+    REG.cards.forEach(c => { const hs = ((REG.history || {})[c.id] || []).slice(-1)[0] || {}, tr = h('tr', {}, tb);
+      h('td', { text: c.group }, tr); h('a', { text: c.title }, h('td', {}, tr)).onclick = () => go(c.id);
+      const v = h('td', { text: hs.verdict || '' }, tr); if (hs.verdict) v.style.color = `var(${VCOL[hs.verdict]})`;
+      h('td', { text: (hs.note || '').slice(0, 160) }, tr);
+      const inn = h('td', {}, tr); (ABSORBED_BY[c.id] || []).forEach(fid => { h('a', { text: BYID[fid].title, style: 'display:block' }, inn).onclick = () => go(fid); });
+      h('td', { text: c.status || 'active' }, tr); });
+    return;
+  }
   const t = h('table', { class: 'reg' }, w), hr = h('tr', {}, h('thead', {}, t));
   ['Area', 'Card', 'Kind', 'Confidence', 'Verdict', 'Note', 'Your links', 'Tags'].forEach(x => h('th', { text: x }, hr));
   const tb = h('tbody', {}, t);

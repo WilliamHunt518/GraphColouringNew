@@ -1,0 +1,410 @@
+findings:
+  - id: f-tier-trust
+    area: "Trust, tiers and recovery"
+    title: "The Tactical Assistant is trusted more, and most people say so too"
+    headline: >-
+      On the post-session questionnaire, operators trusted the Tactical Assistant more than the Strategic
+      Assistant: 5.44 against 4.61 on a 1–7 scale, 26 of 33 people higher for tactical (p = .001). Most of
+      the gap opens in the second session and in Strategic Heavy games, and people who said in the debrief
+      that they preferred the tactical one also scored it higher. Tactical plans get only a few seconds of
+      checking whatever their size, which fits "checking is costly, so it is skipped", but that mechanism
+      test is fragile. Stated trust and actual use line up when people are ranked against each other, but
+      not in size and not over time.
+    confidence: moderate
+    absorbs: [tier-trust-gap, tier-preference, tier-checking-cost, trust-not-lead, trust-own-failures-null,
+              q-C13, q-C14, q-C16, q-C17, q-C18]
+    sections:
+      - id: gap
+        title: "Trusted more: the basic result"
+        text: >-
+          After every session operators rated each assistant on the same six statements ("is reliable",
+          "I trust its recommendations", …) from 1 to 7. Averaged over their two sessions, <b>26 of 33</b>
+          rated the Tactical Assistant higher, 6 the Strategic Assistant, and 1 the same. The average gap is
+          <b>+0.83 points</b> on the 7-point scale. That is a medium-sized effect (dz = .62), and every one of
+          the six items points the same way.
+        how: >-
+          One value per person per assistant: the mean of the six items, averaged over that person's two
+          sessions (33 people, P09 excluded). The test is a paired t-test on the difference tactical minus
+          strategic, with a Wilcoxon signed-rank test as the distribution-free check. dz is the mean
+          difference divided by the SD of the differences: .62 means the average person's gap is about
+          six-tenths of the person-to-person spread in gaps. The 95% CI says the true average gap is very
+          probably between +0.35 and +1.30 points. Items are tested the same way, one at a time.
+        chart: recovery.trustPairs
+        numbers:
+          - "Strategic 4.61 [4.18, 5.04], Tactical 5.44 [5.15, 5.73] (1–7, person means)"
+          - "Gap +0.83 [+0.35, +1.30]; paired t p = .0012; Wilcoxon p = .0010; dz = .62; n = 33"
+          - "26 higher for tactical, 6 for strategic, 1 tied"
+          - "Item gaps: follow its recommendations +1.11, I trust it +1.01, reliable +0.94, performs well +0.74, useful +0.67 (all p < .01); confident in it +0.48 (p = .13)"
+        atoms: [tier-trust-gap]
+      - id: where
+        title: "Where the gap comes from: the second session and Strategic Heavy games"
+        text: >-
+          The gap is small after the first session (+0.37, CI crosses zero) and large after the second
+          (+1.28). By game it is about +1.1 in both Strategic Heavy games and about +0.5 in both Tactical
+          Heavy games (CIs cross zero). Tactical trust hardly moves (5.36 → 5.51); it is <b>strategic</b> trust
+          that falls. So "trusted more" largely means "the strategic one loses trust as people play
+          more, especially in the scenario where its cards are used most." That fall was its own card
+          (trust-drop), now pruned. The researcher judged it not useful on its own. It is kept here only as
+          the context the gap needs. Four people said their trust <i>grew</i> with experience (C16).
+        how: >-
+          The same per-session tactical-minus-strategic difference, averaged within each session number
+          (33 sessions each) and within each of the four fixed games (16–17 sessions each). These are
+          means with t-based 95% CIs and no model. Session number and game are partly tangled (P31–P36
+          swapped game order), so the two splits are views, not separate effects.
+        chart: recovery.trustSplits
+        numbers:
+          - "Session 1 gap +0.37 [−0.15, +0.88]; session 2 +1.28 [+0.69, +1.87] (n = 33 each)"
+          - "Strategic Heavy game 1 +1.10 [+0.07, +2.13]; game 2 +1.17 [+0.44, +1.89]"
+          - "Tactical Heavy game 1 +0.48 [−0.25, +1.21]; game 2 +0.56 [−0.29, +1.40]"
+          - "Strategic trust 5.00 → 4.23 from session 1 to 2; tactical 5.36 → 5.51"
+        atoms: [tier-trust-gap]
+        codes: [C16]
+      - id: own-failures
+        title: "A bad first session with the cards does not explain who loses strategic trust"
+        text: >-
+          If strategic trust fell because people had bad experiences with the cards, then those who met
+          more illogical cards in session 1 should lose more trust. They do not. The raw correlation even
+          points the other way (ρ = +.40), but that comes entirely from scenario order: people who played
+          Strategic Heavy first see the odd cards early and lose the least trust (−0.29 against −1.26 for
+          those who played it second). Once order is held constant, the correlation is +.14 (p = .42).
+          Round 1's pre-registered version (missions that failed after a card) was also null: ρ = −.05
+          [−.39, .30]. Read this as "no evidence that how much went wrong drives it", not as proof that
+          experience doesn't matter.
+        how: >-
+          One row per person (33). The predictor is the count of decisions in session 1 where an illogical
+          strategy card was on screen (from load_decisions' odd flag). The outcome is session-2 minus
+          session-1 strategic trust. Spearman ρ uses a 4000-draw seeded bootstrap CI. The partial version
+          ranks both variables, removes the part explained by which scenario was played first, and
+          correlates what is left. The ρ = −.05 is H5's primary test (docs/analysis/round1/h5_trust_drop.md).
+        numbers:
+          - "Illogical cards seen in session 1 vs change in strategic trust: ρ = +.40 [+.03, +.70], p = .02 — order artefact"
+          - "Same, holding scenario order fixed: ρ = +.14, p = .42"
+          - "Mean change in strategic trust −0.76; Strategic Heavy first −0.29, Tactical Heavy first −1.26"
+          - "H5 primary (card failures in session 1): ρ = −.05 [−.39, .30]"
+        atoms: [trust-own-failures-null]
+      - id: stated
+        title: "What they said agrees with what they rated"
+        text: >-
+          In the debriefs and interviews, 17 operators named the Tactical Assistant as the one they
+          preferred or trusted, 7 the Strategic one, and 9 gave a conditional, "both" or no answer. Those who
+          said tactical had a questionnaire gap of +1.36 on average; those who said strategic were at
+          −0.04. For 18 of the 24 who named one side, the questionnaire points the same way. The coding is
+          from one coder (an AI model) and has not been second-coded, so treat the counts as suggestive.
+        how: >-
+          Stated preference is the round-2 coding of each person's debrief and interview
+          (docs/analysis/round2/wE_codes.csv, field pref). Its sign test asks whether 17 of 24 is more lopsided
+          than a coin toss (exact binomial, two-sided, p = .064). The other test compares the questionnaire gap
+          of tactical-sayers with strategic-sayers (Mann–Whitney, p = .033). Round 1's independent coding agreed
+          poorly with it (κ = .27), and round 2's κ = .96 came from the same AI model. A human second coder is
+          still needed (meth-qual-coder).
+        chart: recovery.prefGap
+        numbers:
+          - "Said tactical 17, strategic 7, conditional 4, both 3, none 2"
+          - "Sign test 17 of 24: p = .064"
+          - "Questionnaire gap: tactical-sayers +1.36 [+0.76, +1.97] vs strategic-sayers −0.04 [−1.27, +1.19]; Mann–Whitney p = .033"
+          - "Questionnaire agrees with the stated side for 18 of 24"
+        atoms: [tier-preference]
+      - id: checking
+        title: "Why the tactical plan is kept: checking it is brief and does not grow with the plan"
+        text: >-
+          Bigger missions mean bigger tactical plans. As plans grow, operators press Suggest more often
+          (68% → 85%) and keep the plan unmodified more often (about 60% → 80%). Once Deploy unlocks, they
+          spend a median of about <b>3 seconds</b> on the plan, whether it has 3 drones or 10. Per drone,
+          checking therefore falls steeply as plans grow. A strategy card gets about 9 s. Almost every
+          consulted plan is deployed as it comes: 468 of 486. This is the speed-versus-accuracy trade-off
+          the researcher expects to come back to. The more there is to check, the less of it is checked
+          proportionally, and the plan is taken. Operators describe exactly this. Nine say they check when
+          it is cheap and skip it under pressure (C17). Three say the plan was too complex or too fast to
+          check (C14). Five say they checked nearly everything, and they do decide more slowly (C18). Only 3
+          of 33 ever mention noticing a tactical flaw (C13).<br><br><b>But</b> the pre-registered mechanism
+          test (H2) is fragile. All three predicted parts point the right way (p = .019 uncorrected), but it
+          does not survive correction for the round's several tests (.065). Among consulted plans, larger
+          ones are actually modified a little <i>more</i>. Keeping goes up with size mainly because people
+          consult more on big plans, not because they check consulted plans more lightly. The logs also
+          cannot tell "too costly to check" apart from "nothing ever looked wrong". The tactical plan's flaws
+          are hard to see, while the cards' over-allocation is visible. That half of the explanation belongs
+          to <i>tier-flaw-visibility</i> in f-flaw-odd and is not repeated here.
+        how: >-
+          630 confirmed tactical plans from 33 people (h2_verification_cost.load). They are grouped by the
+          number of drones in the Tactical Assistant's plan. "Consulted" means Suggest was pressed at least
+          once. "Kept unmodified" means consulted and deployed with no change. "Checking time" runs from the
+          last Suggest press to Deploy, minus the forced reveal: the planner adds one drone→task pair per
+          second and Deploy is locked until it finishes, so that wait is not checking. Effects per SD of plan
+          size (drones × tasks) come from GEE models clustered by person, adjusted for scenario and session.
+          An odds ratio of 1.76 means each step up in plan size multiplies the odds of keeping the plan by
+          1.76. The card comparison takes each person's median net decision time on strategic decisions:
+          strategic_choice latency minus the card reveal, over all strategic decisions, manual ones included.
+          Round 1 measured it on a different subset and got 6.0 s. The H2 numbers are from
+          docs/analysis/round1/h2_verification_cost.md.
+        chart: recovery.checkCost
+        numbers:
+          - "Kept unmodified rises with plan size: OR 1.76 per SD [1.25, 2.47], p = .001 (all 630 plans)"
+          - "Consulted rises: OR 2.52 [1.87, 3.38]; kept | consulted FALLS: OR 0.68 [0.50, 0.94] (486 consulted plans)"
+          - "Net checking time barely moves: +0.60 s per SD [−0.15, +1.35], p = .12; per drone −0.25 s [−0.40, −0.10]"
+          - "468 of 486 consulted plans deployed unmodified (96%)"
+          - "Person-median check: tactical 2.85 s vs strategy card 8.80 s (n = 33, Wilcoxon p < .0001)"
+          - "H2 primary p = .019 uncorrected, .065 after Holm correction across round 1"
+        atoms: [tier-checking-cost]
+        sharedWith: [f-flaw-odd]
+        codes: [C13, C14, C17, C18]
+      - id: stated-revealed
+        title: "Stated vs revealed preference: they line up in rank, not in size or over time"
+        text: >-
+          Does the person who <i>says</i> (rates) the Tactical Assistant higher also <i>lean</i> on it more?
+          Ranked against each other, yes, moderately. The person-level trust gap correlates ρ = .47 with
+          the usage gap (share of tactical plans kept unmodified minus share of strategic decisions where
+          a card was taken). 16 people favour tactical on both measures and 3 favour strategic on both.
+          Three things do <b>not</b> line up:<br>
+          (1) <b>Size.</b> Stated trust favours tactical strongly (26 of 33), but use barely does. Cards are
+          taken on 64% of strategic decisions and tactical plans kept on 72%, a gap of +8 points whose CI
+          includes zero. Nine people rate tactical higher yet use the strategic cards more.<br>
+          (2) <b>Change.</b> Within a person, a rise or fall in trust from session 1 to 2 does not go with a
+          matching change in use (ρ = .16 strategic, .13 tactical).<br>
+          (3) <b>Lead.</b> Session-1 trust does not predict how card use changes in session 2 (ρ = .07). Trust
+          ratings read like a stable opinion of the assistant, while use follows the moment: mission size,
+          queue, time.<br>
+          This is the stated-versus-revealed framing the researcher liked. The ratings describe the
+          person; they do not forecast their next move.
+        how: >-
+          One dot per person, both sessions pooled. Stated = mean tactical trust minus mean strategic trust
+          (1–7). Revealed = share of their confirmed tactical plans kept unmodified minus share of their
+          strategic decisions where they took a card (the alternative "pressed Suggest at all" gives the
+          same picture, ρ = .49). Spearman ρ uses 4000-draw seeded bootstrap CIs. A caveat on (1): taking a
+          card and keeping a plan are different acts with different costs, so the <i>level</i> of the usage
+          gap is not a pure preference; the ranking is the cleaner comparison. "Change" correlates the
+          session-2 minus session-1 differences within each person (33 people). "Lead" correlates session-1
+          trust with the later change in use. Session-level links are also shown (66 sessions):
+          strategic trust ~ cards taken ρ = .49, tactical trust ~ plan kept ρ = .27. Note that the trust
+          survey comes <i>after</i> the session it follows, so a same-session link can be use shaping trust
+          as easily as the reverse.
+        chart: recovery.statedRevealed
+        numbers:
+          - "Trust gap vs usage gap (kept − took): ρ = .47 [.10, .73], p = .006, n = 33"
+          - "Quadrants: both favour tactical 16, both strategic 3, trust tactical/use strategic 9, trust strategic/use tactical 3 (2 on a zero line)"
+          - "Group use: took a card 64%, consulted the plan 76%, kept it 72%; usage gap +0.08 [−0.02, +0.17]"
+          - "Within person, change in strategic trust vs change in card use: ρ = .16 [−.27, .52], p = .38"
+          - "Session-1 strategic trust vs change in card use s1→s2: ρ = .07 [−.27, .40], p = .71; tactical .01"
+          - "Between people, strategic trust vs cards taken ρ = .60 [.30, .78]; tactical trust vs plan kept ρ = .31, p = .08"
+        atoms: [trust-not-lead]
+      - id: trust-lead-strip
+        title: "All the trust–use correlations in one view"
+        text: >-
+          Between people, trust and use move together, most clearly for the strategic tier. Within a
+          person over time, and as a predictor of the next session, the correlations are near zero.
+        how: >-
+          Each row is a Spearman ρ with a 4000-draw seeded bootstrap 95% CI, at the person level (n = 33).
+          A dark dot means p < .05. These are the same numbers as the section above, in one picture.
+        chart: recovery.trustLead
+        atoms: [trust-not-lead]
+    replies:
+      - {card: tier-trust-gap, text: "Kept as the core of this finding. Re-run: 5.44 vs 4.61, 26 of 33 higher for tactical, gap +0.83 [0.35, 1.30], p = .001. Now with a per-person picture and splits by item, game and session. The split shows the gap is mostly a second-session, Strategic-Heavy fall in strategic trust, which the headline should say."}
+      - {card: tier-preference, text: "Merged in as the 'what they said' section. Stated preference is 17 tactical vs 7 strategic (p = .064), and it agrees with the questionnaire for 18 of 24 (tactical-sayers' gap +1.36 vs −0.04, p = .033). Still single-coder."}
+      - {card: tier-checking-cost, text: "Kept, framed as speed vs accuracy. New graph: as plans grow, consulting and keeping rise, but checking time stays at about 3 s, so checking per drone falls. The H2 test is still fragile (p = .065 corrected), and keep | consulted runs the other way. The flaw-visibility half is referenced to f-flaw-odd, not redone."}
+      - {card: trust-not-lead, text: "Reframed as stated vs revealed, with the per-person scatter you asked for. Honest result: between people they DO line up in rank (ρ = .47). They don't line up in size (stated strongly tactical, use only +8 points), within person over time (ρ = .16), or as a predictor of next-session change (ρ = .07). Nine people rate tactical higher but use the cards more."}
+      - {card: trust-own-failures-null, text: "Kept as supporting. Re-checked: illogical cards seen in session 1 vs the trust change gives ρ = +.40, but that is scenario order. Held at fixed order it is +.14 (p = .42). H5's primary was −.05."}
+      - {card: q-C13, text: "Attached to the checking section (3 of 33 noticed a tactical flaw: P02, P21, P31)."}
+      - {card: q-C14, text: "Attached to the checking section (P22, P24, P27 took the plan because it was too complex or fast to check)."}
+      - {card: q-C16, text: "Attached to the 'where the gap comes from' section as the counter-voice (P06, P10, P26, P32)."}
+      - {card: q-C17, text: "Attached to the checking section — the mechanism in their words (9 of 33)."}
+      - {card: q-C18, text: "Attached to the checking section — the opposite stance (5 of 33, slower deciders)."}
+    open:
+      - "Should the headline lead with 'trusted more', or with 'strategic trust falls in session 2 and the gap opens then'? The data supports both, and the second is more precise. trust-drop was pruned, but the gap cannot be described honestly without it."
+      - "The stated-vs-revealed result is mixed: aligned in rank, not in size or change. Decide which part the thesis leans on."
+      - "Stated-preference counts still need a human second coder (meth-qual-coder)."
+
+  - id: f-recovery
+    area: "Trust, tiers and recovery"
+    title: "When Suggest wrongly says “No workable plan”, half abandon within seconds without trying"
+    headline: >-
+      Suggest wrongly said “No workable plan” 23 times to 14 operators, in 17 drone failures that could
+      have been fixed by chaining a busy drone on. 9 of those 17 were abandoned, against 10 of 118 other
+      attempted fixable failures. In all 9 the operator abandoned without dragging a single drone, 8 of
+      them within 10 s of the refusal. The 8 who ignored the refusal and fixed it by hand all saved the
+      mission. So for this data, "if the assistant says no, about half take it at its word and abandon
+      without visible checking" is a fair statement, though n is small (9 episodes, 8 people) and looking
+      at the map is not logged.
+      A refusal does not make people give up on later failures, and lower-reliance operators attempt
+      fewer fixes overall.
+    confidence: moderate
+    absorbs: [rec-blind-spot, rec-after-refusal, rec-low-reliance-attempt, q-C19, q-C20, meth-blind-erratum, meth-time-left]
+    sections:
+      - id: rates
+        title: "Abandonment by what Suggest said"
+        text: >-
+          Every drone failure that needed the operator is one recovery episode. Grouped by what Suggest
+          answered: a <b>wrong refusal</b> ended in abandonment 53% of the time (9 of 17). When Suggest gave
+          a plan it was 6% (3 of 51), and when operators fixed things by hand without Suggest it was 13%
+          (9 of 69). A <b>correct refusal</b>, where no fix existed with the drones on the mission, ended in
+          abandonment every time (11 of 11), as it should. The striking row is the first one. These were
+          saveable missions, and the same 14 people abandoned only 6 of their 61 other attempted fixable
+          failures. Abandonment was not their habit; the refusal is what is different. When nothing at all
+          was tried, every failure was abandoned or left open (35 + 11).
+        how: >-
+          Recovery episodes are rebuilt by h3_recovery.load_all (194 episodes, 33 people). It is a
+          time-local rebuild of which drones were on the mission, idle or executing, at each Suggest press.
+          A press is a <b>refusal</b> when Suggest could not cover every task the operator's live plan left
+          short. A refusal is <b>wrong</b> when those tasks could have been covered by drones still on the
+          mission, counting ones busy on another task (chaining them on). Suggest only offers drones that are
+          not executing, which is its blind spot. An episode counts as a wrong refusal if it had at least one
+          wrong-refusal press; as a correct refusal if it had refusals and none was wrong. Rates are
+          abandoned ÷ (abandoned + recovered), with Wilson 95% CIs. The comparison counts wrong-refusal
+          episodes against every other fixable episode where something was attempted (Suggest gave a plan,
+          or hand edits): Fisher exact test, plus a GEE logit clustered by person (odds ratio 12 means the
+          odds of abandoning were twelve times higher).
+        chart: recovery.abandonByType
+        numbers:
+          - "Wrong refusal: 9 of 17 abandoned (53% [31%, 74%]), 14 people; all 17 fixable with drones on the mission"
+          - "Correct refusal: 11 of 11 abandoned (100% [74%, 100%]), 6 people"
+          - "Suggest gave a plan: 3 of 51 (6%); hand edits only: 9 of 69 (13%); nothing tried: 35 of 35 (+11 left open)"
+          - "Wrong refusal vs other attempted fixable failures: 9/17 vs 10/118; odds ×12.2, Fisher p < .0001; GEE ×12.3 [3.2, 47.6], p = .0003"
+          - "The same 14 people on their other attempted fixable failures: 6 of 61 abandoned"
+        atoms: [rec-blind-spot]
+      - id: checking-after
+        title: "Do they check after a refusal? What the log shows between the refusal and the close"
+        text: >-
+          The timeline puts every refusal episode on one row, with 0 as the moment Suggest first said no.
+          The answer to the researcher's question is in the top block. After a <b>wrong</b> refusal that
+          ended in abandonment, not one operator dragged a drone in the planner. Three pressed Suggest
+          again, got the same answer, and abandoned. None did anything on another mission in between, so
+          they were not called away. 8 of the 9 abandoned within 10 s of the first refusal, at a median
+          3.8 s after the last one. That is time for a glance, not a re-plan. The 8 who <b>did not</b> take
+          the refusal at its word look completely different: 7 of 8 started dragging drones, took a median
+          21 s, and saved the mission. After a correct refusal people behaved the same way as after a wrong
+          one (abandoned in a median 4.4 s, no drags). That is right in those cases, and it shows operators
+          get no cue to tell the two apart: the message is the same either way.<br><br>
+          The verified case: P19, session 1, M003. Camera-2 failed. The Supply Drop needed a Camera. Two
+          Lifters sat idle, and the only remaining Camera was busy on Search & Service, due to finish in about
+          45 s. Suggest said “No workable plan”, and the operator abandoned 3 s later. Chaining that Camera
+          on would have saved it (checked frame by frame on the recording). P19 later blamed themselves for
+          failed missions (C19). No wrong-refusal abandoner is among the three who blamed the assistant
+          (C20).
+        how: >-
+          For each refusal episode the analysis takes the time of the first refusal and lists every logged
+          operator action from then until the mission was abandoned or redeployed. That includes drags in
+          the recovery planner (tactical_assignment_changed), further Suggest presses, and any action on
+          another mission (strategic decisions, tactical confirms, recalls, other recoveries), from the raw
+          event log. "Checked" here can only mean a <i>logged</i> action. Looking at the strategic map or the
+          planner leaves no trace, so a fast abandonment could still hide a quick look, and the narration
+          recordings are the place to check that. Seconds are session time; the session pauses if the
+          primary window is hidden, so these are real play seconds.
+        chart: recovery.refusalTimeline
+        numbers:
+          - "Wrong refusal → abandoned (9 episodes, 8 people): drags after the refusal 0 of 9; re-pressed Suggest 3 of 9; actions elsewhere 0 of 9; dragged before the refusal 0 of 9"
+          - "8 of 9 abandoned within 10 s of the first refusal; median 6.8 s from the first refusal, 3.8 s from the last"
+          - "Wrong refusal → fixed (8 episodes, 7 people): 7 of 8 dragged drones after; median 20.9 s to deploy"
+          - "Correct refusal → abandoned (11, 6 people): 0 drags after, 3 retries, median 4.4 s from the last refusal"
+          - "Verified: P19 s1 M003, abandoned ~3 s after the refusal"
+        atoms: [rec-blind-spot]
+        codes: [C19, C20]
+      - id: speed
+        title: "How fast people abandon, with and without a refusal"
+        text: >-
+          Abandoning right after a wrong refusal is as quick as abandoning right after one's own failed hand
+          attempt (median about 4 s from the last action). Counted from the failure itself, wrong-refusal
+          abandonments take about as long (median 24 s) as abandoning with nothing tried at all (21 s). A
+          plausible reading: the refusal works as the operator's "attempt". It takes the place of trying,
+          and the operator then gives up on the usual timetable.
+        how: >-
+          For every abandoned episode, the time from its trigger to the abandonment. For refusal episodes
+          the trigger is the last refusal. For hand-attempt episodes it is the operator's last drag or press.
+          For untried failures it is the failure itself. Medians only; the groups are small and the
+          comparison is descriptive.
+        chart: recovery.secondsToAbandon
+        numbers:
+          - "Last action → abandon: wrong refusal 3.8 s (n = 9), correct refusal 4.4 s (n = 11), own hand attempt 4.6 s (n = 9)"
+          - "Failure → abandon: wrong refusal 24.1 s, nothing tried 21.0 s (n = 35)"
+        atoms: [rec-blind-spot]
+      - id: later
+        title: "A refusal ends that recovery, not later ones"
+        text: >-
+          After someone's first refusal, do they stop trying on later failures? No sign of it. In raw
+          numbers, later fixable failures were attempted <i>more</i> often (80% → 89%). That is the "attempts
+          rise" in the original card, and it is mostly the general rise into the second session. Once that is
+          held constant, the odds point slightly down (×0.50), with a CI from ×0.09 to ×2.9: no evidence of
+          change in either direction. Round 2's null simulation showed that this design tends to produce a
+          drop even when nothing happens (null mean ×0.72), so a downward point estimate means even less.
+          The cost of a wrong refusal is local: one saveable mission, then business as usual.
+          Whether a refusal changes later use of the <i>strategy cards</i> is checked by the flaw analyst
+          (event study on the refusal anchor; f-flaw-odd / f-refusal-cascade) and is not repeated here.
+        how: >-
+          Only people who ever received a refusal (18; 14 for a wrong one). For each, the fixable failures
+          before their first refusal and after it are compared, leaving out the episode that contained the
+          refusal. Outcome: was a fix attempted (any drag or Suggest press)? Model: GEE logit clustered by
+          person, attempted ~ after + session. Only 5 people have fixable failures on both sides, so this
+          is weak. The null-simulation figure is from docs/analysis/round2/wA_recovery_corrected_output_2026-10-07.txt (A7a).
+        chart: recovery.afterRefusal
+        numbers:
+          - "Any refusal (18 people): attempted 79.5% before (n = 39) → 89.1% after (n = 55); adjusted OR 0.50 [0.09, 2.86], p = .44; unadjusted 1.73"
+          - "Wrong refusal (14 people): 81.1% → 85.4%; adjusted OR 0.30 [0.03, 3.5], p = .34"
+          - "Only 5 people have failures both before and after"
+        atoms: [rec-after-refusal]
+        sharedWith: [f-flaw-odd]
+      - id: reliance
+        title: "Lower-reliance operators attempt fewer recoveries"
+        text: >-
+          Most people (20 of 32) attempted every fixable failure. Those lower on the reliance axis, who
+          generally lean less on both assistants, attempted fewer: ρ = .47 between the axis and the share of
+          own fixable failures attempted. Much of that is the three people who never attempted one (P15,
+          P24, P29). Without them it drops to ρ = .34 (CI touches zero). So this is a between-person
+          pattern carried by a few people. It is not a rule that applies to everyone.
+        how: >-
+          One dot per person: the share of their fixable failures (fixable with drones on the mission) where
+          they attempted anything, against their score on the reliance axis. The axis is the first principal
+          component of ten usage habits from round 1 (h1_archetypes), recomputed without its bootstrap; it
+          explains 31% of the variance. Main view: only failures with at least 31 s left, because nothing
+          can be attempted in the last few seconds (see the method note below). Spearman ρ uses bootstrap CIs.
+          The axis includes one recovery item (share of recoveries with Suggest), which overlaps the outcome.
+          Without it, ρ is .43.
+        chart: recovery.relianceAttempt
+        numbers:
+          - "≥ 31 s left (32 people, 162 failures, 133 attempted): ρ = .47 [.15, .73], p = .006"
+          - "Axis without its recovery-Suggest item: ρ = .43, p = .015"
+          - "Without the 3 never-attempters: ρ = .34 [−.05, .67], p = .07 (n = 29)"
+          - "All failures incl. the last 30 s: ρ = .54 [.24, .76], p = .001 (P30's only fixable failures were in the last 30 s)"
+        atoms: [rec-low-reliance-attempt]
+      - id: method
+        title: "Method notes: the session's end, and round 1's undercount"
+        text: >-
+          <b>The end of the session interrupts actions.</b> Attempt rates look like they rise with time
+          left (36% of failures with ≤ 30 s left were attempted, against 78–96% earlier). But operators take
+          a median 14 s to make a first move. 7 of the 9 fixable failures still open at the buzzer began with
+          12 s or less on the clock, and the other 2 with 49 s. Once failures with under 31 s left are removed,
+          the time-left effect is no longer distinguishable from zero (OR 1.12 per minute, p = .20). Every
+          recovery analysis here therefore uses failures with ≥ 31 s left where time matters. (The card said
+          8 of 9 started with ≤ 12 s; this rebuild gives 7 of 9.)<br><br>
+          <b>Round 1 undercounted the blind spot.</b> Its rebuild of what Suggest could see missed tasks cut
+          short by abandonment, which are logged as task_requeued rather than completed or failed. Their
+          drones looked free, so refusals in exactly the episodes that ended in abandonment were scored as
+          "solved". It was found because three operators read “No workable plan” aloud seconds after presses
+          scored as solved. Corrected 2026-10-07: 23 wrong-refusal presses by 14 people, not 11 by 8. Every
+          number in this finding uses the corrected rebuild.
+        how: >-
+          Time left = 480 s minus the failure time. Attempt rates by band use Wilson 95% CIs. The time-left
+          model is a GEE logit, attempted ~ minutes left (within-person part) + person mean, clustered by
+          person. "First move" = the first drag or Suggest press after a fixable failure. The erratum is
+          recorded in docs/analysis/round1/SUPERVISOR_LOG.md and in the h3_recovery.py parse_session comment.
+        chart: recovery.timeLeft
+        numbers:
+          - "Attempted by time left: ≤ 30 s 4/11 (7 left open); 31–90 s 11/16; 1.5–3 min 41/48; 3–5 min 58/74; 5–8 min 23/24"
+          - "Time-left OR per minute (within person): 1.26 [1.02, 1.56], p = .03 with all failures → 1.12 [0.94, 1.34], p = .20 with ≥ 31 s left"
+          - "First move: median 13.9 s (IQR 6.2–21.2), n = 137"
+          - "Suggest presses: 97 in all; 23 wrong refusals (14 people), 16 correct refusals"
+        atoms: [meth-time-left, meth-blind-erratum]
+    replies:
+      - {card: rec-blind-spot, text: "Reframed around your question, answered from the logs. After a wrong refusal, 9 of 17 abandoned vs 10 of 118 other attempted fixable failures (odds ×12). None of the 9 dragged a drone after the refusal, 3 just re-pressed Suggest, none were busy elsewhere, and 8 of 9 abandoned within 10 s. Everyone who did try by hand saved the mission. Correct refusals get the same quick abandonment, which suggests operators cannot tell the two apart. Caveat: looking is not logged. P19 is verified on video."}
+      - {card: rec-after-refusal, text: "Merged into the refusal finding. The 'rise' is raw only (80% → 89%) and comes from the general session-2 rise. Adjusted it is ×0.50 [0.09, 2.86], and only 5 people have failures on both sides: no evidence either way. The cost of a refusal stays in its own episode."}
+      - {card: rec-low-reliance-attempt, text: "Kept, with the per-person scatter. ρ = .47 on failures with ≥ 31 s left, .43 without the overlapping item, .34 (p = .07) without the three never-attempters, so it is carried by a few people."}
+      - {card: q-C19, text: "Attached to the refusal section. P19 (the verified wrong-refusal abandon) is one of the four who blame themselves."}
+      - {card: q-C20, text: "Attached to the refusal section. None of the three who blame the assistant (P03, P06, P18) abandoned after a wrong refusal."}
+      - {card: meth-time-left, text: "Kept as a method note inside this finding, with a chart of attempt rate by time left. Rebuild gives 7 of 9 open-at-buzzer failures starting with ≤ 12 s (card said 8 of 9)."}
+      - {card: meth-blind-erratum, text: "Kept as a method note here; all numbers use the corrected rebuild (23 presses / 14 people). The integrator may also list it under f-methods."}
+    open:
+      - "Is this main or lesser? The mechanism is concrete and verified, and the design point is strong: the assistant's 'can't' is taken at its word more readily than its 'here's a plan'. But it rests on 9 abandoned episodes from 8 people."
+      - "Was there visual checking in the few seconds before abandoning? Only the narration/recordings can show it. Worth clipping the 9 episodes (P19 is done)."
+      - "Wrong-refusal episodes may be a little harder than other fixable failures (the fix needs chaining a busy drone). The 8 hand-fixes show they were doable, but a like-for-like comparison group (fixable only by chaining, no Suggest pressed) has just 7 episodes, too few to use."
+      - "meth-time-left and meth-blind-erratum are written as method notes here; the integrator may move or copy them into f-methods."
+retire:
+  - {card: trust-drop, why: "Pruned by the researcher ('doesn't give us much'); its numbers survive only as context in f-tier-trust § where the gap comes from."}
+  - {card: rec-attempt, why: "Pruned by the researcher; its 'nothing tried → all abandoned' row is shown in f-recovery's abandonment chart."}
+  - {card: rec-never-attempt, why: "Pruned by the researcher (n = 3 too low); the three are flagged on the reliance scatter."}
+  - {card: q-C21, why: "Pruned by the researcher."}
