@@ -2,11 +2,417 @@
  "pass": 2,
  "cards": {
   "f-personal-style": {
-   "verdict": null,
-   "note": "",
+   "verdict": "core",
+   "note": "This is likely to be the primary finding. We should express it as: [explain the habits] (2) -> (4) -> (6) -> possibly (8) -> (9) -> (11) -> (12)\n\nSo basically: We first want to understand how people differ and why. The immediate surprise is that they have a personal style. Here is a set of habits that we grade them on; you can see that these strongly predict their next scenario (2); in fact, who the operator is dictates most of the prediction (4); Here is the extent to which these habits each hold - so not all of them do btw (6); [possibly something for (8) if it's more important than I realise]; Strategic and tactical don't really correlate though, so their use of the agent isn't a consistent part of their strategy as a whole (9); There are no archetypes to styles btw (11); in fact nothing about them demographically effects their style (12); So style is personal only.",
    "links": [],
    "tags": [],
-   "updated": null
+   "updated": "2026-10-13T11:15:01.600Z"
+  },
+  "f-personal-style#fingerprint": {
+   "verdict": null,
+   "note": "Nice. Probably can't use these graphs for the paper - keep them, but we'll likely use the numbers you've quoted",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:33:22.212Z"
+  },
+  "f-personal-style#fingerprint-ranks": {
+   "verdict": null,
+   "note": "This is nice I think. We'll need to explain how we build the habits analysis but this is better than part 1",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:36:16.622Z"
+  },
+  "f-personal-style#profiles": {
+   "verdict": null,
+   "note": "Keep this. Again probs not for paper but its nice.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:36:42.964Z"
+  },
+  "f-personal-style#who-vs-what": {
+   "verdict": null,
+   "note": "Excellent. This is a good finding",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:45:15.110Z"
+  },
+  "f-personal-style#habit-by-habit": {
+   "verdict": null,
+   "note": "Again nice but not likely to make it directly into the paper",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:49:35.582Z"
+  },
+  "f-personal-style#retest-summary": {
+   "verdict": null,
+   "note": "Nice, especially as it contextualises the habits",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:50:38.427Z"
+  },
+  "f-personal-style#preempt": {
+   "verdict": null,
+   "note": "I don't think pre-empting is a massively important thing to focus on. Keep this but it won't make it into the paper",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:53:36.216Z"
+  },
+  "f-personal-style#axis": {
+   "verdict": null,
+   "note": "I think this means \"the main habit along which people differ is 'takes the strategy card'\" - is that right? If so, I don't think it's a main paper finding but keep it.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T10:59:14.514Z"
+  },
+  "f-personal-style#axis-scatter": {
+   "verdict": null,
+   "note": "It sounds like there is no clear correlation (ns) between the use of the two agents. That's interesting. Keep this.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:01:07.817Z"
+  },
+  "f-personal-style#habit-grid": {
+   "verdict": null,
+   "note": "Peripheral finding. Not something we will use for the paper.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:01:57.539Z"
+  },
+  "f-personal-style#not-types": {
+   "verdict": null,
+   "note": "This is nice, and an important result, but the data isn't clear - probably becuase it's built on analysis which here is not given in detail. Try to rewrite this in a simpler way that self-explains.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:03:37.079Z"
+  },
+  "f-personal-style#not-disposition": {
+   "verdict": null,
+   "note": "Extremely important. I love this result alongside the previous stuff about participant style. I think this holm detail is telling me the 3 minor correlations are random chance - yes?",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:04:37.011Z"
+  },
+  "f-personal-style#trust": {
+   "verdict": null,
+   "note": "Sideline this. It's not super useful.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:05:13.762Z"
+  },
+  "f-personal-style#said": {
+   "verdict": null,
+   "note": "THis isn't that useful. I don't think \"a personal strategy\" says anything one way or the other in this data. Leave it.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:07:17.319Z"
+  },
+  "f-who-does-better": {
+   "verdict": "keep",
+   "note": "Keep this but I doubt it'll be a big part of the study. Sideline it for now as I just don't think it's all that interesting.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:29:36.192Z"
+  },
+  "f-who-does-better#between-within": {
+   "verdict": null,
+   "note": "Don't think this is main finding",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:25:05.525Z"
+  },
+  "f-who-does-better#estimates": {
+   "verdict": null,
+   "note": "I don't think this is super impactful",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:27:29.997Z"
+  },
+  "f-who-does-better#trust-parallel": {
+   "verdict": null,
+   "note": "Also pretty minor",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:28:25.180Z"
+  },
+  "f-who-does-better#said": {
+   "verdict": null,
+   "note": "Nice, but likely more as a later part in discussion",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:29:02.571Z"
+  },
+  "f-operator-wants": {
+   "verdict": "merge",
+   "note": "I think (1) will be part of discussion later on, and (2) is better covered by \"each operator has...\"",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:31:17.376Z"
+  },
+  "f-methods": {
+   "verdict": "prune",
+   "note": "Obviously keep this as we need to know, but it isn't really important in the directly sense at least as far as presenting our results.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:46:47.966Z"
+  },
+  "f-size-decides": {
+   "verdict": "core",
+   "note": "This is a nice set of results. The most important is that people automate big and manually do small. A little more understanding is required to say for certain. Definitely this is key, but it needs another pass first I think.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:21:26.097Z"
+  },
+  "f-size-decides#both": {
+   "verdict": null,
+   "note": "I like this graph, but bars would be better here than lines. lines suggest progress over time or something. Side by side bars (histogram) is better.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:50:26.603Z"
+  },
+  "f-size-decides#strategic": {
+   "verdict": null,
+   "note": "I don't think this helps us as much.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:50:53.318Z"
+  },
+  "f-size-decides#strategic-steps": {
+   "verdict": null,
+   "note": "This is very nice. We should work out why the jump from 3->5 is as it is. Otherwise this is evidently useful",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:52:54.796Z"
+  },
+  "f-size-decides#tactical": {
+   "verdict": null,
+   "note": "Thus is interesting. It suggests that automating at the strategic lends to also automating the tactical, and visa versa. But this collapses at the higher plan size - try to plot this with a few different x axes; I'm not totally confident about the plan size metric.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:55:55.104Z"
+  },
+  "f-size-decides#measures": {
+   "verdict": null,
+   "note": "Not really viable because the N for 2 is so low. Eliminate this graph entirely.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:56:42.653Z"
+  },
+  "f-size-decides#models": {
+   "verdict": null,
+   "note": "This is probably the statistically clearest demonstration that people automate bigger tasks more, and at both levels.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T11:58:18.556Z"
+  },
+  "f-size-decides#people": {
+   "verdict": null,
+   "note": "Nice, but probably eclipsed by the previous graph with statistical significance. This type of graph is better as bars with errors than this kind of line thing. plus only 2 things on x is not enough.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:00:27.033Z"
+  },
+  "f-size-decides#artefacts": {
+   "verdict": null,
+   "note": "Excellent. Very well done. I think this likely won't get in as a full graph (although 100% keep it), but having either a couple of these added to the previous one, or just some numbers, would be really good I think.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:01:52.176Z"
+  },
+  "f-size-decides#speed": {
+   "verdict": null,
+   "note": "This is really nice. I'll try to get it into the paper as it justifies the strategy. I don't see error bars on the one type manual - just check this, maybe it really is that consistent",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:03:52.688Z"
+  },
+  "f-size-decides#speed-model": {
+   "verdict": null,
+   "note": "I think this is just exploring if the speed difference is significant. I don't think we need this really, the previous graph speaks for itself. We can remember the results and maybe will quote just the number, but unlikely.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:06:01.487Z"
+  },
+  "f-size-decides#parallel": {
+   "verdict": null,
+   "note": "Something of a companion to the strategic one earlier. Although may want a check as it may undermine the tactical agent. Try altering this to show stacked bars with time before first action taken, time during planning, time to carry out plan. THis helps eliminate the time it's sitting there inactive, and shows seperately whether the plan takes longer to create and whether it takes longer to complete in each case.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:13:32.301Z"
+  },
+  "f-size-decides#parallel-specs": {
+   "verdict": null,
+   "note": "Not sure what this is actually telling me",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:14:10.562Z"
+  },
+  "f-size-decides#slow": {
+   "verdict": null,
+   "note": "This might be nice but it's too messy. Reproduce without all the little dots, showing only the averages and maybe error bars. Make it clearer what we find. Either way it sounds like it's not significant",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:15:49.424Z"
+  },
+  "f-practice": {
+   "verdict": "check",
+   "note": "Minor finding but will probably be worth a mention.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:21:44.896Z"
+  },
+  "f-practice#speed": {
+   "verdict": null,
+   "note": "Minor result. We may use this but it is likely not to make it in More likely we mention a speedup that happens over the session but does not carry over between sessions.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:18:32.212Z"
+  },
+  "f-practice#calibration": {
+   "verdict": null,
+   "note": "Eliminate this probably.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:19:00.925Z"
+  },
+  "f-practice#c22": {
+   "verdict": null,
+   "note": "This is interesting. Add the use of each agent to this - I wonder if got better means used agent more.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:19:57.426Z"
+  },
+  "f-manual-cards": {
+   "verdict": "core",
+   "note": "This is surprisingly good. I think we can look into this a little more with the open ended too. FOr now it's pretty good as is.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:30:12.755Z"
+  },
+  "f-manual-cards#dots": {
+   "verdict": null,
+   "note": "I think this is a better way to present the data than some of the others we have. ",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:23:11.787Z"
+  },
+  "f-manual-cards#anchor": {
+   "verdict": null,
+   "note": "I don't think this gives us very much",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:25:59.155Z"
+  },
+  "f-manual-cards#position": {
+   "verdict": null,
+   "note": "This is more interesting.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:29:07.633Z"
+  },
+  "f-workload": {
+   "verdict": "core",
+   "note": "I think this is a very nice null. It challenges a natural assumption. The very first part with the strat and tac graphs speaks for itself, and probably the rest of the stuff is likely to go around this as text-based assurances we looked into it. As always keep what we have, but this is mostly just part 1",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:46:25.350Z"
+  },
+  "f-workload#raw-vs-adjusted": {
+   "verdict": null,
+   "note": "I like this alot, specifically the raw + adjusted. And for both strat and tac it makes pretty clear that no, busyness does not effect use. Good finding.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:35:48.423Z"
+  },
+  "f-workload#robust": {
+   "verdict": null,
+   "note": "I think this is a passing sentence. I appreciate the analysis but the previous graph is extremely clear. Keep ofc, but for our purposes we can collapse this to \"we also conducted X and Y analyses and found no significant effect of queue size or workload rate on the use of either assistant\" or wtte",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:38:44.102Z"
+  },
+  "f-workload#said-did": {
+   "verdict": null,
+   "note": "As above, collapse this to a sentence. The (1) finding in this group is so clear in a single graph, these extra analyses just add robustness - we can dig out this graph if challenged.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:40:09.816Z"
+  },
+  "f-workload#spoken": {
+   "verdict": null,
+   "note": "I don't think this is super interesting. Keep it but I doubt we'll use it.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:41:12.759Z"
+  },
+  "f-workload#backlog-practice": {
+   "verdict": null,
+   "note": "I think this is a null that isn't massively needed. Sideline it.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:41:58.456Z"
+  },
+  "f-workload#deep": {
+   "verdict": null,
+   "note": "I think we can sideline this probably. I'm not really seeing much.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:43:54.604Z"
+  },
+  "f-workload#visible": {
+   "verdict": null,
+   "note": "I think people will trust us on this tbh. Keep it in case we put something elsewhere. ",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:45:04.588Z"
+  },
+  "f-triage": {
+   "verdict": "prune",
+   "note": "Most of this is a passing comment at best. Keep it, but it's not big enough to read much into.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:52:00.383Z"
+  },
+  "f-triage#games": {
+   "verdict": null,
+   "note": "I don't like this much - it muddies the message",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:46:51.533Z"
+  },
+  "f-triage#order": {
+   "verdict": null,
+   "note": "Nice enough but probably just a passing comment.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:47:44.344Z"
+  },
+  "f-triage#size": {
+   "verdict": null,
+   "note": "Nothing much to show here I think",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:48:12.203Z"
+  },
+  "f-triage#choice": {
+   "verdict": null,
+   "note": "I doubt we'll use this, but at the least we should have an indication of statistical significance here.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:49:24.590Z"
+  },
+  "f-triage#pace": {
+   "verdict": null,
+   "note": "Keep, but I don't think we get much. The effect size seems too small to me.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:51:06.744Z"
+  },
+  "f-triage#visible-t": {
+   "verdict": null,
+   "note": "As before, this isn't something we need to show",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-13T12:51:22.397Z"
   }
  }
 }
