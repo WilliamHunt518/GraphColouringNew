@@ -16,6 +16,7 @@ import functools
 import http.server
 import json
 import os
+import re
 import sys
 import threading
 import webbrowser
@@ -26,6 +27,13 @@ ROOT = BASE / 'Results'
 RESPONSES = BASE / 'docs' / 'analysis' / 'register' / 'responses.json'
 PORT = int(os.environ.get('REVIEW_PORT', 8766))
 LOCK = threading.Lock()
+CARDS = BASE / 'docs' / 'analysis' / 'register' / 'cards.yaml'
+
+
+def current_pass() -> int:
+    """The open pass (cards.yaml `pass:`), so a tab left open from an earlier pass can never overwrite this one's notes."""
+    m = re.search(r'^pass:\s*(\d+)', CARDS.read_text(encoding='utf-8'), re.M)
+    return int(m.group(1)) if m else 0
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -46,7 +54,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path.split('?')[0] == '/api/responses':
             if RESPONSES.exists():
                 return self._json(200, json.loads(RESPONSES.read_text(encoding='utf-8')))
-            return self._json(200, {'cards': {}})      # no notes yet; 200 so the page knows the server is here
+            return self._json(200, {'pass': current_pass(), 'cards': {}})      # no notes yet; 200 so the page knows the server is here
         return super().do_GET()
 
     def do_POST(self):
@@ -57,6 +65,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             assert isinstance(data.get('cards'), dict) and isinstance(data.get('pass'), int)
         except Exception as ex:                    # never overwrite good notes with a malformed body
             return self._json(400, {'error': 'bad body: %s' % ex})
+        if data['pass'] != current_pass():         # a stale tab from an earlier pass: refuse, keep the file
+            return self._json(409, {'error': 'notes are for pass %s but pass %s is open -- reload the page'
+                                             % (data['pass'], current_pass())})
         with LOCK:
             RESPONSES.parent.mkdir(parents=True, exist_ok=True)
             if RESPONSES.exists():

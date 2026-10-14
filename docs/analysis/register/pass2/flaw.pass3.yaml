@@ -1,0 +1,252 @@
+# Pass 3 changes for the `flaw` area (f-flaw-odd). Numbers from scripts/register/pass2/flaw.py,
+# section 8 ("Pass 3"), stored under p3 in pass2/flaw.json. Pass-2 numbers are unchanged (the new
+# views run on their own random stream).
+findings:
+  f-flaw-odd:
+    title: >-
+      The dip in strategy-card use belongs to the people who later said they noticed the illogical card,
+      early in the session; it shows up whether or not they had met that card yet
+    headline: >-
+      The Conservative card sometimes adds a drone type the mission does not use (22% of decisions, nearly all on
+      one-type missions); all 33 people met it, usually on their 1st or 2nd decision. The 15 who said they noticed it
+      take the cards less afterwards, and on the flawed one-type missions they learn to skip them (0 takes in 13 by
+      their 4th–6th such mission). But the <b>dip</b> in their use is not tied to the card. Counted simply by
+      decision number, noticers take the cards on 80% of their 1st session-1 decision and 46–50% of decisions 3–5,
+      then 83% at decision 6, while never-said people rise to 89–94% in the same stretch. People who played the
+      tactical-heavy game first had <i>not yet met</i> an illogical card in decisions 3–5 (95% of those decisions came
+      before it), and their noticers dip just as much (−21 points per person, against −32 for those who had met it;
+      game order makes no difference, p = .79). In that stretch noticers look at the cards and turn them down, on
+      three-type missions too. Pooled over everyone the dip disappears, because the two groups move in opposite
+      directions. Our best reading: "noticed" marks people who scrutinise the cards, and the dip is that scrutiny at
+      the first busy stretch of the study, not a reaction to the illogical card. What triggers it at that moment we
+      cannot say: mission mix, load, reserve shortage and game do not account for it. Suggestive (15 vs 18 people,
+      window read off the curve). This finding also holds, sidelined, the flaw-visibility comparison and the
+      recovery material merged in from two other findings.
+    reply: >-
+      Done both. (1) <b>All missions is now the default</b> on every chart that was three-type only (event study,
+      Nth-decision dots, per-person slopes, spoken bars), with buttons for three-type only and its complement
+      (one- and two-type missions). The sidelined dominated-card chart stays three-type, because that comparison
+      only means something where the card is not illogical. (2) <b>The dip, taken apart</b> (new sections
+      <i>What the dip is</i>, <i>Card use through the session</i> and <i>Card use by decision number</i>). In short:
+      it is an early-session drop in the noticers (session 1, decisions 3–5, roughly minutes 1–4). It appears just
+      as strongly in people who had not yet seen an illogical card, it comes from looking at the cards and declining
+      them, it is not explained by mission type, load, reserve or game, and it is invisible in the pooled curve
+      because non-noticers lean on the cards more at the same moment. The aligned event study's '1st–3rd after'
+      dip is really two moments mixed together: session-1 decisions 3–6 for strategic-heavy-first players, and the
+      start of session 2 for most tactical-heavy-first players (whose first illogical card came then). I could not
+      find what triggers it, and I have said so.
+    open:
+      - >-
+        Which grouping should be primary: C12 ∪ strict in-play (15, used here) or C12 alone (12, a weaker difference)?
+        Decide before writing, not after seeing which is stronger.
+      - >-
+        The dip window (decisions 3–5 of session 1) was read off the unaligned curve. The informative part is the
+        comparison between game orders (it does not depend on where the window sits), but the window's own p-values
+        are descriptive. A pre-registered look in a new cohort would settle it.
+      - >-
+        Reading "noticers are card-scrutinisers": is it worth checking the narration in the decisions 3–5 stretch
+        (what noticers say while declining the cards on three-type missions)? That is the one source that could
+        show why they decline them.
+      - >-
+        The one-type-mission trend (noticers stop taking cards there) is the strongest result, but the groups were
+        defined after the fact. Is it worth a confirmatory look in a fresh cohort, or reporting it as exploratory?
+      - >-
+        Is the merged recovery material main or lesser? It rests on 9 abandoned episodes from 8 people. Was there
+        visual checking before abandoning? Only the recordings can show it (P19 is done).
+    sections:
+      event:
+        title: The event study, aligned on the first illogical card (every step, pairs or threes)
+        chart: flaw.events2
+        text: >-
+          Each person's decisions are numbered <i>within</i> the kind of mission plotted: their 1st, 2nd, … decision
+          after the first illogical card. Buttons: <b>Missions</b> (all, the default; three-type only; one- and two-type
+          only), <b>Grouping</b> (every step; every pair, the default; groups of three) and <b>Show</b>. Every step is
+          what you asked for, but each point is then about 15 single decisions and its interval spans roughly 30
+          points either way. Pairs keep the shape at that resolution with intervals about a third narrower, so pairs
+          is the default. On <b>all missions</b>, noticers go from 76% before the card to 43–52% for their next ten
+          decisions, recovering to 67–68% only from the 11th on. Never-said people stay at 67–75% throughout.
+          Part of the noticers' low on all missions is the flawed one-type missions themselves, where they
+          increasingly refuse the card. On <b>three-type missions</b>, noticers go 74% → 43% (1st–2nd) → 59–63% → 75%:
+          a short dip and recovery. On one- and two-type missions almost nobody has a decision before the card,
+          because the card only ever appears there, so only the after-card trend can be read. <b>Read with the next
+          section:</b> the aligned dip is not where it seems.
+        numbers:
+          - "All missions, noticers (15): 76% before (n 53) → card 47% (n 15) → pairs +1–2 to +9–10: 43%, 47%, 43%, 46%, 52% → 67% (+11–12) → 68% (13th+, n 31)"
+          - "All missions, never said (18): 78% before (n 54) → 56% at the card → 67–75% for every later pair"
+          - "All missions, before → after, adjusted: noticers −14 points, p = .08; never said +9, p = .14; difference −14 [−30, +1], p = .06"
+          - "Three-type, noticers by pair: 74% before (n 51), 43% (n 30), 59% (n 29), 62% (n 24), 63% (n 19), 75% (n 12)"
+          - "Three-type numbers in the pass-2 text are unchanged (adjusted change −17.5 points, p = .06)"
+        reply: >-
+          Now has a <b>Grouping</b> toggle (every step / every pair / groups of three), with intervals on every point,
+          and the missions toggle defaults to all missions. Pairs is the default: every step is there, but its
+          intervals span about ±30 points per dot; groups of three give the same picture as before.
+      not-time-locked:
+        chart: flaw.people2
+        text: >-
+          Three checks stop us saying 'the card caused the dip', and the new sections below add a fourth, the
+          strongest. <b>(1) Timing.</b> The card arrives so early that 'after the card' almost means 'after the first
+          couple of decisions'. When each noticer's anchor is moved to a random but equally early point, their drop
+          is just as large: −13 vs −14 points, p = .92. <b>(2) Who.</b> Noticers are less card-reliant overall: 55% of
+          decisions against 73% (p = .03). Before the first card they took cards on three-type missions at the same
+          rate (68% vs 63%, p = .76). <b>(3) 'Said' is post hoc.</b> 17 of the 18 never-said people were narrating
+          during play, which makes their silence some evidence, but not proof. <b>(4) The dip comes without the
+          card.</b> Players who had the tactical-heavy game first met no illogical card in session-1 decisions 1–4.
+          Their noticers dip in the same stretch as everyone else's noticers (see <i>What the dip is</i>). The
+          per-person before/after slopes now have the missions toggle (all missions by default).
+        reply: >-
+          Did both. (a) <b>Use over session time, noticers vs never-said</b>: new section <i>Card use through the
+          session</i> (minute by minute, each session, with game-order and missions toggles and a tick wherever someone
+          met their first illogical card). (b) <b>All use by decision number, not aligned to the card</b>: new section
+          <i>Card use by decision number</i> (everyone by default, or split). The dip does show without aligning:
+          noticers fall at decisions 3–5 of session 1 and recover. It shows equally in people who had not yet met an
+          illogical card, and it vanishes when everyone is pooled. So you were right to keep digging. It is a real
+          pattern, but it is a pattern of the noticers early in the session, not an effect of the card.
+      nth:
+        chart: flaw.nth2
+        text: >-
+          One decision per person per position, now on any mission sample (all missions by default). The n falls only
+          as people run out of decisions. On all missions the card's own decision shows as 'card'. On all missions,
+          noticers sit at 40–53% from the card to +6, and never-said people at 56–89%. Each dot is at most about 15
+          single decisions, so its interval spans roughly 30 points either way. Individual dots cannot carry a claim;
+          the pairs view of the event study is the readable version.
+        reply: >-
+          Redone with a missions toggle, all missions by default (three-type and one/two-type also available). It is
+          the 'every step' view of the event study, with one decision per person per dot.
+      spoken:
+        chart: flaw.spokenBars
+        text: >-
+          You suggested anchoring on the moment someone said, during play, that a card was wrong. We did. Seven people
+          made a strict remark (a card sends types the mission does not need, or a specific card is wrong); five more
+          made broader 'too many drones' remarks. For four of the seven, an illogical card was on screen as they spoke.
+          P30's remark was about an illogical card that opened 5 s later, so it was moved onto that card. P29 spoke
+          28 s after taking the illogical card. P04's remark was about too many drones on a three-type card. The top
+          bars pool each group (before vs after the remark, intervals from resampling people). The lower bars show
+          each person's own before/after pair. Of the seven, five fell and two rose. Their card uptake on all missions
+          went from 80% to 49%, adjusted −21 points [−49, +7], p = .11, timing-matched placebo p = .51. Two of them
+          spoke within their first minute, so they have almost no 'before'. Seven people cannot settle it; the
+          direction matches the main result.
+        numbers:
+          - "Strict remarks (7 people), all missions: 80% (n 30) → 49% (n 75); adjusted −21 points [−49, +7], p = .11; 5 fell, 2 rose; placebo p = .51"
+          - "Strict, three-type: 79% (n 24) → 57% (n 49); one/two-type: 83% (n 6) → 35% (n 26)"
+          - "Any remark (12 people), all missions: 74% (n 74) → 55% (n 124); adjusted −4 points, p = .60"
+        reply: >-
+          Now bars: pooled before/after bars per remark group (strict 7, any 12) with person-resampled intervals,
+          and a before/after pair of bars per person with Wilson intervals (pale where fewer than 4 decisions).
+          Missions toggle included, all missions by default.
+    new_sections:
+      - id: dip
+        after: event
+        title: What the dip is, and why the card is not needed for it
+        tier: main
+        role: paper
+        chart: flaw.dip
+        text: >-
+          Counted by decision number within the session (no alignment), the noticers' dip is a stretch early in
+          session 1: <b>decisions 3–5</b>, about minutes 1–4. There they took a card on 48% of decisions, against 69%
+          on the rest of their session 1. Never-said people did the opposite: 87% against 62%. 10 of 15 noticers fell
+          and 1 rose; 12 of 18 never-said rose and none fell. The game order gives a natural test. Players with the
+          strategic-heavy game first met the illogical card on their 2nd decision. Most players with the
+          tactical-heavy game first did not meet it until decision 5 (7 people) or the start of session 2 (9 people),
+          so 95% of their noticers' decisions 3–5 came <b>before any illogical card</b>. Their noticers dip all the
+          same: −21 points per person using only decisions made before the card, against −32 for the
+          strategic-heavy-first noticers. Game order makes no difference to the dip (+4 points, p = .79). Once the
+          window is held fixed, having seen the card adds only −15 points (p = .39). <b>What they did instead</b>: they
+          looked at the cards and built the allocation by hand (40% manual after the cards loaded, against 17% in
+          decisions 1–2 and 12% later), on three-type missions too (53% took a card). <b>What it is not</b>: the
+          expected-value model already holds mission size, types, minute, queue, game and the person's own rate, and
+          the adjusted dip is just as large (−27 points). Adding the queue and the mission type changes nothing
+          (−24). The reserve first runs short of a needed type in exactly this stretch (50% of decisions, from 3%), but
+          equally for both groups, and a short reserve does not predict declining. It does not come back at the same
+          point of session 2 (difference −2 points, p = .85). In session 2, noticers are lower throughout (47–53% for
+          their first six decisions). On three-type missions their first two decisions of session 2 are the lowest
+          (43–44% in both game orders), whether they met the card in session 1 or at the start of session 2. So the
+          aligned '1st–3rd after the card' dip mixes two different moments: session-1 decisions 3–6 for
+          strategic-heavy-first players (57% on three-type, n 21) and the start of session 2 for most
+          tactical-heavy-first players (38%, n 24, 92% of it session 2). <b>Reading</b>: the dip is a behaviour of the
+          people who would later say they noticed. They scrutinise and turn down the cards at the first busy stretch,
+          card or no card. Scrutiny is plausibly what makes them notice, not the other way round. What triggers it at
+          that moment is not in the log.
+        how: >-
+          Rows: every strategic decision of session 1 (P09 excluded), numbered 1, 2, 3, … within the session across
+          all missions. The window (decisions 3–5) was read off the unaligned curve, so its p-values are descriptive;
+          the <b>Other windows</b> view shows 2–4, 3–4, 3–6, 4–6 and 2–6 as well. Per-person dip = a person's share of
+          card takes in decisions 3–5 minus their share in the rest of session 1, averaged over people. Intervals come
+          from resampling people; p is a one-sample t-test over people. For tactical-heavy-first players a stricter
+          version keeps only window decisions made before their first illogical card. Models (linear, people
+          clustered, game held fixed): took ~ window (+ after-card, + queue + three-type); the game-order test is
+          window × tactical-heavy-first within each group. Adjusted = observed − the expected value from the
+          adjustment model in the sidelined panel. Session 2 uses the same window and the window × noticed
+          interaction. 'Manual after the cards loaded' vs 'before' uses the log's manualBeforeCardsLoaded flag.
+        numbers:
+          - "Noticers (15), session 1: decisions 3–5 48% (n 42) vs rest 69% (n 80); per person −27 points [−42, −14], p = .003; 10 fell, 1 rose, 4 same"
+          - "Never said (18): 87% (n 54) vs 62% (n 109); +19 points [+11, +27], p < .001; 12 rose, 0 fell"
+          - "Strategic-heavy-first noticers (card at decision 2): −32 points [−55, −10] (7 people, p = .04); tactical-heavy-first noticers: −23 [−42, −6] (8 people, p = .05); using only decisions before any illogical card −21 [−40, −4], p = .06"
+          - "Window × tactical-heavy-first (noticers): +4 points [−28, +36], p = .79; the card term once the window is held fixed: −15 points [−52, +22], p = .39 (adjusted −9, p = .10)"
+          - "Same with queue and mission type held fixed: −24 points, p = .007; adjusted for the full expected-value model: −27, p = .004"
+          - "Noticers minus never-said in the window: session 1 −46 points [−65, −26]; session 2 −2 points [−28, +23], p = .85"
+          - "Other windows (difference): 2–4 −22 (p = .05), 3–4 −38, 3–6 −33, 4–6 −25 (p = .03), 2–6 −26 (p = .05)"
+          - "What noticers did in decisions 3–5: took 48%, manual after the cards loaded 40% (17% in decisions 1–2, 12% later), manual before they loaded 12%; three-type 53% (n 32)"
+          - "Reserve short of a needed type: 50% of noticers' and 46% of never-said decisions 3–5 (3% and 0% in decisions 1–2)"
+          - "Aligned '1st–3rd three-type after the card': strategic-heavy-first noticers 67% before (n 6) → 57% (n 21, all session 1); tactical-heavy-first noticers 76% (n 45) → 38% (n 24, 92% session 2)"
+        reply: >-
+          New section answering "understanding the dip we see is essential". It is an early-session drop in the
+          noticers that appears just as clearly where the card had not yet been shown.
+      - id: over-time
+        after: dip
+        title: Card use through the session, noticers and never-said
+        tier: main
+        role: extra
+        chart: flaw.overTime
+        text: >-
+          Share of decisions where a card was taken, minute by minute (by when the strategy panel opened). Buttons
+          choose the session, the missions, everyone or the two groups, the game order, and observed or adjusted.
+          Ticks on the axis mark when each person met their first illogical card. <b>Session 1</b>: noticers start at
+          86% in the first minute, drop to 50%, 50% and 38% over minutes 1–4, and come back to 73% in minute 4–5.
+          Never-said people rise over the same minutes, 65% → 88%. Because the two move in opposite directions,
+          everyone pooled stays between 61% and 77%. <b>Session 2</b>: noticers are lower throughout (52–53% in the
+          first three minutes, 38% in minutes 3–5, then 55–73%). Never-said people sit between 61% and 89%. Each
+          minute holds 10–30 decisions per group, so single minutes have wide bands. The shape, not any one point, is
+          the result.
+        how: >-
+          Rows: every strategic decision, binned by the minute of the session at which its panel opened (the last
+          bin, 7–8 min, is thin). Rate = share of decisions where a card was taken; 95% bands from resampling people.
+          Adjusted = the group's overall rate plus the mean of (observed − expected) from the adjustment model, i.e.
+          relative to each person's own habit given the mission in front of them. Game order: strategic-heavy-first
+          players met the illogical card at about 67 s of session 1; 7 tactical-heavy-first players at about 315 s,
+          the other 9 at the very start of session 2.
+        numbers:
+          - "Session 1, noticers by minute 0–1 to 4–5: 86% (n 21), 50% (n 16), 50% (n 14), 38% (n 16), 73% (n 11)"
+          - "Session 1, never said: 65% (n 31), 71%, 88%, 76%, 69%"
+          - "Session 2, noticers: 52% (n 29), 53%, 53%, 38% (n 13), 38% (n 21), 55%, 73%, 60%; never said 61–89%"
+        reply: >-
+          New, from your note on the not-time-locked section: use over session time for noticers and non-noticers,
+          per session, with error bands and n in every tooltip.
+      - id: by-index
+        after: over-time
+        title: Card use by decision number, everyone, not aligned to the card
+        tier: main
+        role: paper
+        chart: flaw.byIndex
+        text: >-
+          Each person's decisions numbered in the order they made them within the session (or counting only three-type,
+          or only one/two-type missions). It shows everyone by default, with a button to split the groups. The red
+          strip under the axis shows how many decisions at each position came after the person's first illogical
+          card. <b>Everyone, session 1</b>: 70%, 64%, 64%, 75%, 71%, 77% for decisions 1–6, so there is no dip in
+          the pooled curve. <b>Split</b>: noticers 80%, 67%, 47%, 50%, 46%, 83%; never said 61%, 61%, 78%, 94%,
+          89%, 72%. With game order set to tactical-heavy first, the strip is pale through decision 4 (no illogical
+          card yet), and the noticers still drop at decision 3 (88% → 50%) while never-said people are at 100%. In
+          <b>session 2</b> everyone rises slowly (55% → 67%); noticers stay at 47–53% for six decisions and fall to
+          30–38% at decisions 7–9, while never-said people stay at 61–92%.
+        how: >-
+          Rows: every strategic decision; position = its rank among that person's decisions of the chosen kind in that
+          session (positions past 10 pooled as 11+). Rate = share where a card was taken, 95% bands from resampling
+          people, n in each tooltip. 'After card' strip = share of the position's decisions made at or after the
+          person's first illogical card. Nothing here is aligned on the card.
+        numbers:
+          - "Everyone, session 1, decisions 1–6: 70%, 64%, 64%, 75%, 71%, 77% (n 33 → 30)"
+          - "Noticers: 80%, 67%, 47%, 50%, 46%, 83% (n 15 → 12); never said: 61%, 61%, 78%, 94%, 89%, 72% (n 18)"
+          - "Tactical-heavy first, session 1 (no illogical card yet through decision 4): noticers 88%, 75%, 50%, 71% (n 8 → 7); never said 88%, 75%, 100%, 100%"
+          - "Everyone, session 2: 55% → 67% over decisions 1–6; noticers 47–53%, never said 61–78%"
+        reply: >-
+          New, from your note on the not-time-locked section: card use by decision number for everyone, not after the
+          card. Pooled, the dip does not show; split, it does, in the noticers only, and it shows before the card too.

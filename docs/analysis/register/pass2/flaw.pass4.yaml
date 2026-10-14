@@ -1,0 +1,206 @@
+# Pass 4 changes for the `flaw` area (f-flaw-odd). New numbers from scripts/register/pass2/flaw.py, section 9
+# ("Pass 4"), stored under p4 in pass2/flaw.json (its own random stream, so every pass-2/3 number is unchanged).
+# Charts: flaw.events2 (new "Before the card" toggle, expected explained), flaw.overTime (each group + everyone,
+# default), flaw.byIndex (session 1 then session 2 on one axis), flaw.spokenBars (grouped bars only),
+# flaw.nth (the pass-2 chart, restored). Every flaw chart's y axis now says "card taken, % of decisions".
+findings:
+  f-flaw-odd:
+    headline: >-
+      The Conservative card sometimes adds a drone type the mission does not use (22% of decisions, nearly all on
+      one-type missions); all 33 people met it, usually on their 1st or 2nd decision. The 15 who said they noticed it
+      take the cards less afterwards, and on the flawed one-type missions they learn to skip them (0 takes in 13 by
+      their 4th–6th such mission). But the <b>dip</b> in their use is not tied to the card. Counted simply by
+      decision number, noticers take the cards on 80% of their 1st session-1 decision and 46–50% of decisions 3–5,
+      then 83% at decision 6, while never-said people rise to 89–94% in the same stretch. People who played the
+      tactical-heavy game first had <i>not yet met</i> an illogical card in decisions 3–5 (95% of those decisions came
+      before it), and their noticers dip just as much (−21 points per person, against −32 for those who had met it;
+      game order makes no difference, p = .79). In that stretch noticers look at the cards and turn them down, on
+      three-type missions too. Pooled over everyone the dip disappears, because the two groups move in opposite
+      directions. Noticers climb back later in session 1 (+24 points per person) and start session 2 lower again
+      (49%), but never-said people also start session 2 a little lower, so a weaker carry-over for noticers is not
+      something these data can show (difference at the break −6 points [−32, +20]). Our best reading: "noticed"
+      marks people who scrutinise the cards, and the dip is that scrutiny at the first busy stretch of the study,
+      not a reaction to the illogical card. What triggers it at that moment we cannot say: mission mix, load,
+      reserve shortage and game do not account for it. Suggestive (15 vs 18 people, window read off the curve).
+      This finding also holds, sidelined, the flaw-visibility comparison and the recovery material merged in from
+      two other findings.
+    reply: >-
+      Worked through. The charts are cleaned up: every y axis now names its quantity (“card taken, % of
+      decisions”), the event study gained the pre-card steps, card use over time shows each group plus everyone,
+      decision number runs session 1 into session 2 on one axis, the spoken chart is grouped bars only, and the
+      Nth-decision section is back on its pass-2 chart. One new check affects the story a little: your
+      “recover in session 1, less carry-over to session 2” reading is half supported (the recovery is there; a
+      group difference at the session break is not), and I added that as one sentence to the headline. Nothing
+      else changes.
+    sections:
+      event:
+        text: >-
+          Each person's decisions are numbered <i>within</i> the kind of mission plotted: their 1st, 2nd, … decision
+          after the first illogical card. Buttons: <b>Missions</b> (all, the default; three-type only; one- and
+          two-type only), <b>Grouping</b> (every step; every pair, the default; groups of three), <b>Before the
+          card</b> (one pooled point, the default; the last three steps −3, −2, −1; or those steps for only the
+          people who have three of them) and <b>Show</b>. Every step is what you asked for, but each point is then
+          about 15 single decisions and its interval spans roughly 30 points either way. Pairs keep the shape with
+          intervals about a third narrower, so pairs is the default. On <b>all missions</b>, noticers go from 76%
+          before the card to 43–52% for their next ten decisions, recovering to 67–68% only from the 11th on.
+          Never-said people stay at 67–75% throughout. Part of the noticers' low on all missions is the flawed
+          one-type missions themselves, where they increasingly refuse the card. On <b>three-type missions</b>,
+          noticers go 74% → 43% (1st–2nd) → 59–63% → 75%: a short dip and recovery. On one- and two-type missions
+          almost nobody has a decision before the card, because the card only ever appears there, so only the
+          after-card trend can be read. <b>The steps before the card</b> add little: most people have only one
+          decision before it, so −2 and −3 are 8 decisions each (±35 points). The last step before the card (−1) is
+          lower than −3/−2 in <i>both</i> groups (64% and 56%), so it is not a noticer warning sign. <b>Read with the
+          next section:</b> the aligned dip is not where it seems.
+        how: >-
+          Rows: strategic decisions of the 33 people, split into those who said they noticed (debrief or interview
+          code C12, or a strict in-play remark; 15 people) and those who never said so (18). 'Before' and 'after' are
+          relative to the first illogical card. That decision itself is excluded from both windows and shown as its
+          own point ('the card') in the all-missions view. Change = the 'after' coefficient in a linear model of card
+          uptake, with practice (decision number) held fixed and people clustered for the uncertainty. Raw version:
+          uptake ~ after + practice + game. Adjusted version: (observed − expected) ~ after + practice. The
+          interaction asks whether the after-step differs between the groups. Label shuffle: the said/never-said
+          labels were shuffled across people 5,000 times, to see how often a random split of the same people shows
+          as large a difference in their own after-minus-before. Each person counts once in that test, so it is
+          exact. Steps before the card: −1 is each person's last decision before it, −2 the one before that, and
+          '≤ −4' pools everything earlier; the matched view keeps only the 16 people (8 per group) with at least
+          three such decisions. Mission-only expected: the same model's prediction with each person's own-rate term
+          set to everyone's average.
+        numbers:
+          - 'All missions, noticers (15): 76% before (n 53) → card 47% (n 15) → pairs +1–2 to +9–10: 43%, 47%, 43%, 46%, 52% → 67% (+11–12) → 68% (13th+, n 31)'
+          - 'All missions, never said (18): 78% before (n 54) → 56% at the card → 67–75% for every later pair'
+          - 'All missions, before → after, adjusted: noticers −14 points, p = .08; never said +9, p = .14; difference −14 [−30, +1], p = .06'
+          - 'Three-type, noticers by pair: 74% before (n 51), 43% (n 30), 59% (n 29), 62% (n 24), 63% (n 19), 75% (n 12)'
+          - 'Why expected is lower for noticers: their own-rate term (take rate on all their other decisions) is 56% vs 70%; 79% of a noticer''s decisions come at or after the card, where they took 50% per person vs 72% (p = .007); before the card the groups were alike (68% vs 63%, p = .71)'
+          - 'Mission-only expected (own-rate term set to the average): after the card 68% noticers vs 69% never-said; before 80% vs 81%'
+          - 'Steps before the card, all missions: noticers ≤−4 87% (n 23), −3 88% (n 8), −2 50% (n 8), −1 64% (n 14); never-said 82%, 100%, 88%, 56% (n 22, 8, 8, 16)'
+          - '−1 against −3/−2, the 16 people with three steps (all tactical-heavy-first): adjusted −13 points [−40, +13], p = .29'
+          - 'Matched view (8 noticers with 3+ steps, 6 of whom met the card at the start of session 2): 87%, 88%, 50%, 63% before → 38% at the card → 31–44% for the next ten decisions'
+        reply: >-
+          <b>Yes, your guess is right.</b> “Expected” leans mostly on each person's own take rate on all their
+          <i>other</i> decisions (that is why the model ranks takes so well). Noticers' own rate is 56% against 70%,
+          and it is low because about 80% of a noticer's decisions come at or after the card, where they took cards
+          50% of the time against 72% (p = .007). Before the card the two groups were alike (68% vs 63%, p = .71).
+          Set the own-rate term to everyone's average and the two groups' expected values are the same (after the
+          card 68% vs 69%): the missions in front of them do not differ. One consequence worth knowing: because the
+          own rate already contains the after-card drop, the <i>adjusted</i> change (−14) understates the raw one
+          (−23: 75% → 52%), so the adjusted numbers are the cautious version. <b>Pre-card steps:</b> added as the <i>Before the
+          card</i> toggle (plus a matched version). Honestly it is close to useless: only 8 people per group have
+          three decisions before the card (all tactical-heavy-first players), so −2 and −3 are 8 decisions each with
+          intervals of about ±35 points. The one thing it shows is that the step just before the card (−1) is lower
+          in <i>both</i> groups (64% and 56%; −13 points [−40, +13] against −3/−2), so it is not something only
+          noticers do. The matched view shows the 8 noticers dropping from ~85% to ~40% and staying there, but 6 of
+          those 8 met the card at the start of session 2, so it mixes the card with the session-2 low (section 3).
+          The default stays all missions, pairs, observed, with one pooled 'before' point.
+      over-time:
+        text: >-
+          <b>What is plotted.</b> Every strategic decision is placed in the minute of the session when its strategy
+          panel opened (0–1 is the first minute). Each point is the share of the decisions in that minute where the
+          person took one of the two strategy cards instead of allocating by hand, with a 95% band. Nothing is lined
+          up on the illogical card; the small ticks on the axis show when each person first met it. By default it
+          shows <b>each group and everyone pooled</b> (dashed line). <b>Session 1</b>: noticers start at 86% in the
+          first minute, fall to 50%, 50% and 38% over minutes 1–4, and come back to 73% in minute 4–5. Never-said
+          people rise over the same minutes, 65% → 88%. Everyone pooled sits between the two and stays at 61–77%:
+          the two groups move in opposite directions, so lumping them together hides the dip. That is the point of
+          this chart. <b>Session 2</b>: noticers are lower throughout (52–53% in the first three minutes, 38% in
+          minutes 3–5, then 55–73%); never-said people sit between 61% and 89%. Each minute holds 10–30 decisions per
+          group, so single minutes have wide bands: the shape, not any one point, is the result. Buttons: session,
+          which lines (each group + everyone, the two groups, everyone only), missions, game order, and observed or
+          adjusted.
+        reply: >-
+          Rewritten to say plainly what each point is (the share of decisions in that minute where a card was taken),
+          and the option you asked for is now the default: noticers, never-said and everyone pooled as a dashed line
+          on one chart. It shows the difference well: the pooled line stays flat precisely because the two groups
+          move in opposite directions in minutes 1–4 of session 1.
+      by-index:
+        title: Card use by decision number, session 1 then session 2, not aligned to the card
+        text: >-
+          Each person's decisions are numbered in the order they made them within each session (or counting only
+          three-type, or only one/two-type missions). By default <b>session 1 and session 2 sit on one axis</b>,
+          separated by a dashed line, with the two sessions' lines deliberately not joined (session 2 is a different
+          game, after a break and a survey). The red strip under the axis shows how many decisions at each position
+          came after the person's first illogical card. <b>Session 1</b>: noticers 80%, 67%, 47%, 50%, 46%, then
+          83%, 64%, 78%, 83% for decisions 6–9; never-said 61%, 61%, 78%, 94%, 89%, 72%. So noticers dip at 3–5 and
+          climb back (+24 points per person from decisions 3–5 to the rest of session 1). <b>Session 2</b>: noticers
+          start at 47% and stay at 47–53% for six decisions (30–38% at 7–9), never-said people at 61–78%. Noticers
+          therefore start session 2 below where they ended session 1 (64% → 49%). But never-said people also start
+          session 2 a little lower (76% → 69%), and the difference between the groups at the break is small and
+          uncertain (−6 points [−32, +20]). Two things blur it: session 2 is the other game, and 6 of the 15
+          noticers met the illogical card for the first time right at the start of session 2. Allowing for the
+          mission mix, the noticers' drop at the break shrinks to −9 points [−30, +12]. Buttons: sessions, people
+          (the two groups by default; with or without everyone), missions, game order, every decision or pairs,
+          observed or adjusted.
+        how: >-
+          Rows: every strategic decision; position = its rank among that person's decisions of the chosen kind in
+          that session (positions past 10 pooled as 11+). Rate = share where a card was taken, 95% bands from
+          resampling people, n in each tooltip. 'After card' strip = share of the position's decisions made at or
+          after the person's first illogical card. Nothing here is aligned on the card. Carry-over checks, per
+          person then averaged (intervals from resampling people, p from a t-test over people): (a) recovery = the
+          rest of session 1 (decisions 6+) minus decisions 3–5; (b) break = the first three decisions of session 2
+          minus the last three of session 1; (c) start-to-start = the first three of session 2 minus the first
+          three of session 1. Group difference = the interaction in a linear model (took ~ period × noticed + game,
+          people clustered); adjusted versions use observed − expected.
+        numbers:
+          - 'Everyone, session 1, decisions 1–6: 70%, 64%, 64%, 75%, 71%, 77% (n 33 → 30)'
+          - 'Noticers, session 1: 80%, 67%, 47%, 50%, 46%, 83%, 64%, 78%, 83% (decisions 1–9, n 15 → 6); never said: 61%, 61%, 78%, 94%, 89%, 72% (n 18)'
+          - 'Recovery within session 1 (decisions 3–5 → 6+): noticers 48% (n 42) → 66% (n 50), +24 points per person [+5, +43], p = .04, 8 of 12 rose; never-said 87% → 63%, −15 [−29, −4]. The window was read off the curve, so these p-values are descriptive'
+          - 'At the session break (last 3 of session 1 → first 3 of session 2): noticers 64% → 49%, −16 points [−38, +4], p = .17; adjusted −9 [−30, +12]; never-said 76% → 69%, −7 [−24, +7]; difference −6 [−32, +20], p = .66'
+          - 'Start to start (first 3 of each session): noticers 64% → 49%, −16 [−38, +9]; never-said 67% → 69%, +2; difference −14 [−44, +16], p = .34'
+          - 'Tactical-heavy-first noticers (8; most met the card at the start of session 2): break −25 points raw but −2 adjusted, i.e. mostly the other game''s mission mix'
+          - 'Everyone, session 2: 55% → 67% over decisions 1–6; noticers 47–53%, never said 61–78%'
+        reply: >-
+          <b>Done</b>: session 1 then session 2 on one axis, a dashed line at the break, and the two sessions' lines
+          are not joined (it is now the default view). <b>Your reading is half right.</b> The session-1 recovery is
+          there: noticers climb from 48% in decisions 3–5 to 66% over the rest of session 1 (+24 points per person,
+          8 of 12 rose), while never-said people drift down. And noticers do start session 2 lower (49%) than they
+          ended session 1 (64%). But “less carrying over” needs that drop to be bigger for noticers than for
+          never-said people, who also start session 2 a little lower (76% → 69%); the difference at the break is −6
+          points [−32, +20], which cannot tell the two apart. Allowing for the mission mix (session 2 is the other
+          game) shrinks the noticers' own drop to −9 points, and 6 of the 15 noticers first met the illogical card
+          at the start of session 2, so their session-2 start is partly the card itself. One wording point: this is
+          card <i>use</i>; we do not measure trust at these moments, so I would write “use recovers” rather than
+          “trust recovers”.
+      spoken:
+        text: >-
+          You suggested anchoring on the moment someone said, during play, that a card was wrong. We did. Seven
+          people made a strict remark (a card sends types the mission does not need, or a specific card is wrong);
+          five more made broader 'too many drones' remarks. For four of the seven, an illogical card was on screen as
+          they spoke. P30's remark was about an illogical card that opened 5 s later, so it was moved onto that card.
+          P29 spoke 28 s after taking the illogical card. P04's remark was about too many drones on a three-type
+          card. The chart pools each set of people, before vs after the remark, with <b>all missions and one- and
+          two-type missions side by side</b> (buttons add three-type missions, and put the broader remarks next to
+          the strict ones). On all missions the seven went from 80% to 49% (adjusted −21 points [−49, +7], p = .11,
+          timing-matched placebo p = .51; five fell and two rose). On one- and two-type missions, the ones that carry
+          the illogical card, the drop is larger, 83% → 35%, but that 'before' bar is only 6 decisions from 4 people,
+          so it is a direction, not a measured size. Seven people cannot settle it; the direction matches the main
+          result.
+        numbers:
+          - 'Strict remarks (7 people), all missions: 80% (n 30) → 49% (n 75); adjusted −21 points [−49, +7], p = .11; 5 fell, 2 rose; placebo p = .51'
+          - 'Strict, one/two-type: 83% (n 6, 4 people) → 35% (n 26, 7 people); three-type: 79% (n 24) → 57% (n 49)'
+          - 'Any remark (12 people), all missions: 74% (n 74) → 55% (n 124), adjusted −4 points, p = .60; one/two-type 67% (n 21) → 40% (n 48)'
+        reply: >-
+          Done: grouped bars only (the per-person bars are gone), with all missions and one- and two-type missions
+          side by side in one chart. A button adds three-type missions as a third pair, and another puts the
+          broader remarks next to the strict ones. It does show how the mission kind matters: the drop is biggest
+          where the flaw lives (83% → 35%), with the caveat, printed on the chart, that its 'before' bar is only 6
+          decisions.
+      refusal:
+        reply: >-
+          <b>Yes, no effect is found</b>, but read it as “no effect found” rather than “shown to have no effect”.
+          After the first Suggest refusal, strategy-card use changes by +2 points [−6, +10] and tactical Suggest use
+          by −1 [−6, +5]. Those intervals are narrow enough to rule out a large knock-on: a drop of more than about
+          6 points in either is unlikely. After the first <i>wrong</i> refusal (14 people) the intervals are wider,
+          strategy cards −2.5 [−16, +11] and three-type −5 [−19, +9], so a moderate drop there cannot be excluded.
+          Tactical use after a wrong refusal is flat and tight (0 [−6, +6]).
+      nth:
+        chart: flaw.nth
+        text: >-
+          The pass-2 version of this chart: one point per position, counting only <b>three-type</b> missions, the
+          person's Nth three-type decision before (−) or after (+) their first illogical card, so everyone has a +1,
+          +2, … until their decisions run out. Each point is at most one decision per person (about 15), so its
+          interval spans roughly 30 points either way. Individual points cannot carry a claim; the pairs view of the
+          event study is the readable version.
+        how: >-
+          Rows: three-type decisions; k = the decision's rank among that person's three-type decisions after (or,
+          counting back, before) the first illogical card. Rate = the share who took a card at that k. Interval =
+          Wilson 95%.
+        reply: Done; the section is back on its pass-2 chart (three-type missions, one point per position).

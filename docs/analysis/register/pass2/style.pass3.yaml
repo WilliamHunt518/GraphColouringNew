@@ -1,0 +1,312 @@
+# Pass 3 content changes from the style / recovery / load analyst (areas style, recovery, load).
+# Covers f-personal-style, f-tier-trust and f-triage#choice. Numbers: scripts/register/pass2/{style,recovery,load}.py
+# -> docs/analysis/register/pass2/{style,recovery,load}.json (style.json -> pass3.*, recovery.json -> trust.byScenario and
+# checking.subset, load.json -> triage.choiceSig). Charts: scripts/register/pass2/{style,recovery,load}.charts.js.
+findings:
+
+  f-personal-style:
+    headline: >-
+      Operators differ a great deal in how they use the assistants, and the differences are personal. We describe each
+      session by ten habits (how often a strategy card is taken, how often Suggest is pressed, how long a decision takes,
+      and so on). From those habits alone, a person's second session resembles their own first (median profile r = .48)
+      and essentially nobody else's (r = −.01): their own session is in the closest three of 33 four times as often as
+      chance (41% vs 9%), although the second session is a different scenario, and who the operator is explains about six
+      times more of card-taking than the mission does. Six of the ten habits carry over clearly; one (topping up drones on
+      single-type missions) does not at all. Between people, use of the two assistants is only loosely linked (ρ ≈ .35),
+      so leaning on one is not a fixed part of one overall "delegate" strategy (though within a person the two do rise and
+      fall together from session to session). The styles do not fall into types, and nothing measured beforehand
+      (attitude to AI, views on human authority, experience) predicts them. Strong evidence for a stable personal style;
+      good evidence against types; "no evidence" (not "evidence of no effect") for disposition.
+    reply: >-
+      Agreed, and the page now follows your order: <b>the habits</b> (new first section, what each is and how it is
+      counted, with its spread over the 66 sessions) → <b>(2)</b> where each person's own session ranks → <b>(4)</b> who
+      vs what → <b>(6)</b> how far each habit holds → <b>(8)</b> the axis, as numbers for one sentence (it is the bridge
+      that says the biggest single difference between people is "leans on the assistants", seen most clearly in the
+      card; I would keep it as text, not a figure) → <b>(9)</b> the two tiers → <b>(11)</b> no types (rewritten) →
+      <b>(12)</b> nothing beforehand predicts it. One correction to the story at (9), from a new check: between people the
+      two tiers are <i>weakly</i> linked (ρ = .37, p = .033; .33, p = .058 once game is adjusted), not unrelated; and
+      within a person they move <i>together</i> from one session to the next (ρ = .51, p = .002: a session where someone
+      takes more cards is a session where they also press Suggest more). So the honest sentence is "how much someone
+      relies on one assistant tells you little about the other, so agent use is not one consistent trait across the
+      tiers; but there is a session-level 'leaning on the assistants today' that moves both". That does not weaken
+      "style is personal"; it adds that part of what varies from one session to the next is shared across the tiers.
+    open:
+      - "The fingerprint is exploratory and post hoc (the permutation test is clean). Is “we can recognise your style after one session” the wording you want in the paper, rather than “predict”?"
+      - "New at (9): the two tiers are weakly linked between people (ρ .33–.37) but move together within a person across sessions (ρ .51). Decide whether the paper says “not one consistent strategy” (between-person reading) and mentions the session-level co-movement as a qualifier, or treats the co-movement as its own point."
+      - "(8) the reliance axis is set to numbers only. If you want one figure for “what the main dimension is”, the loadings chart (style.axisLoadings) is ready."
+    new_sections:
+      - id: habits
+        after: null
+        tier: main
+        role: paper
+        title: The habits we grade them on
+        chart: style.habits
+        text: >-
+          To compare styles we describe every 8-minute session by ten habits, each something the logs record at every
+          decision. Seven concern the strategic tier (the strategy cards): how often a card is taken as offered; how often
+          cards are previewed before choosing; how long a decision takes; whether, when building by hand, the operator does
+          it before the cards have even appeared; whether a card is edited before committing; and how many drones are
+          committed compared with the cautious Conservative card, on single-type and on multi-type missions. Three concern
+          the tactical tier (Suggest): how often Suggest is pressed on a plan, whether a suggested plan is deployed unchanged,
+          and whether Suggest is pressed when recovering from a failure. The chart shows each habit's spread over all 66
+          sessions in its own units. Most habits vary enormously between sessions (card uptake runs from 0% to 100% of a
+          session's decisions); two are nearly universal (most sessions keep every suggested plan unchanged, and most never
+          edit a card). The right-hand column previews the next results: how strongly each habit carries over from a person's
+          first session to their second.
+        how: >-
+          Rows: 66 sessions (33 people × 2; P09 excluded). Each habit is a share or an average over that session's decisions
+          (hover a habit name for its exact definition and denominator, or open "What each habit is"). A habit with nothing
+          to count in a session is undefined there: going manual before the cards (no hand-made decisions) in 15 sessions,
+          drones on single-type missions (no single-type mission opened) in 19, Suggest in recovery (no failures) in 4,
+          keeping the Suggest plan (Suggest never pressed) in 2. For the profiles these are filled with the median of that
+          game. Decision time is analysed as log(1 + seconds) and shown in seconds. For the comparisons that follow, each
+          habit is turned into a z-score among the sessions of the same game (each of the four fixed games), so a profile
+          says how a person compares with others who faced the same missions. The ten habits were fixed in round 1 (H1)
+          before any grouping was tried; outcomes (score, trust, questionnaires) are never among them. ρ = Spearman
+          correlation between a person's session-1 and session-2 values, game-adjusted (see "How far each habit holds").
+        numbers:
+          - "Card taken as offered: median 67% of a session's strategic decisions (middle half 47–91%, range 0–100%)"
+          - "Suggest pressed: median 86% of tactical plans (55–100%); suggested plan kept unchanged: median 100% (middle half 100–100%)"
+          - "Decision time beyond the card wait: median 6.5 s (5.4–10.3 s, range 1.6–43 s)"
+          - "Card edited before committing: median 0% (most sessions never); going manual before the cards appear: median 50% of hand-made decisions (0–75%)"
+          - "Drones vs the Conservative card: single-type −0.5 (−1.25 to 0); multi-type +0.6 (−0.1 to +1.3)"
+        reply: >-
+          New first section, as you asked: what each of the ten habits counts, how, and its spread across the 66 sessions,
+          with how strongly it carries over shown alongside. It takes over the explaining role of the sidelined matrix
+          section.
+    sections:
+      fingerprint-ranks:
+        text: >-
+          Each person's ten-habit profile from session 1 is compared with all 33 session-2 profiles, and the 33 are ranked
+          from most to least alike (and the same the other way round, session 2 among the session 1s). If habits were not
+          personal, a person's own other session would be equally likely to land anywhere in that ranking (dashed line).
+          Instead it is the single closest match 12 times out of 66 (2 expected by chance) and in the closest three 27 times
+          (6 expected), even though the second session is a different scenario. Use the toggle to see that it still holds
+          with the reliance axis taken out, so a style is more than how much someone leans on the assistants.
+        how: >-
+          Rows: 66 sessions (33 people × 2). Each session is the ten habits of the first section, each turned into a z-score
+          among the sessions of the same game, so a profile says how this person compares with others who played that game.
+          "Alike" = straight-line (Euclidean) distance between two ten-habit profiles. 66 look-ups (33 people, both
+          directions); under chance every rank 1–33 is equally likely, so the dashed line is 66 × (ranks in the bin) / 33.
+          The p-value shuffles who-is-who among the session-2 profiles 10 000 times. "Reliance axis removed" subtracts each
+          profile's score on the first principal component (see the axis numbers) before comparing.
+        numbers:
+          - "Own session ranked 1st: 12 of 66 look-ups vs 2 expected; in the closest three: 27 vs 6 (41% vs 9%); permutation p < .001"
+          - "Average rank of own session 8.2 of 33 (chance 17.0); with the reliance axis removed 10.1 (p < .001)"
+          - "Profile correlation with own other session: median r = .48; with other people's: median r = −.01; own closer for 29 of 33"
+        reply: >-
+          Thanks. The habits it is built on are now explained in the new first section (what each one counts, its
+          denominator, its spread, how undefined values are handled), and this section's text and "how" are rewritten to
+          stand on their own now that the matrix section is sidelined. Numbers unchanged.
+      who-vs-what:
+        reply: Thanks — unchanged.
+      retest-summary:
+        title: How far each habit holds from one session to the next
+        text: >-
+          One line per habit: how strongly a person's place on that habit in session 1 predicts their place in session 2
+          (ρ; 0 = no carry-over, 1 = same order of people). Six of the ten carry over clearly and survive correction for
+          testing ten (coloured). Editing cards, going manual before the cards load and topping up drones on multi-type
+          missions carry over weakly, and topping up drones on single-type missions does not carry over at all (ρ −.09).
+          "Keeps the Suggest plan" is high partly because 24 of 33 people kept every Suggest plan in both sessions.
+        how: >-
+          33 people. For each habit, Spearman ρ between session-1 and session-2 values, each first z-scored within the game
+          played; 95% intervals from resampling people 2000 times; Holm correction across the ten. The same ρ values are the
+          right-hand column of the habits chart in the first section.
+        reply: >-
+          Thanks — numbers unchanged. The title and text now say plainly what it shows ("how far each habit holds"), and the
+          same ρ values appear next to each habit's definition in the new first section, so the two read together.
+      axis:
+        numbers:
+          - "Axis captures 31% of the between-person spread (eigenvalue 3.1 of 10); three dimensions pass Kaiser (31%, 19%, 17%)"
+          - "Loadings: takes card +.92, previews +.88, Suggest on plans +.62, drones on single-type +.50, Suggest in recovery +.46, keeps Suggest plan +.42, decision time −.48, manual before cards −.34"
+          - "The axis score correlates r = .92 with card uptake alone, i.e. card uptake by itself accounts for 85% of the variation in the score"
+          - "Second dimension (19%): commits more drones than the Conservative card (+.73 multi-type, +.66 single-type) and uses Suggest less (−.56). Third (17%): edits cards (+.88), rarely goes manual before the cards load (−.58)"
+          - "Session 1 vs 2 on the axis: ρ = .65 [.38, .82]"
+        reply: >-
+          <b>Mostly yes, with one qualification.</b> The axis is anchored on taking the strategy card: a person's axis score
+          correlates .92 with their card uptake, so card uptake alone accounts for 85% of it (previewing cards, +.88, is
+          largely the same act). But it also carries pressing Suggest (+.62), Suggest in recovery (+.46) and deciding faster
+          (−.48), so the fair label is "leans on the assistants and moves quickly", with card-taking its clearest sign. And it
+          is only 31% of the differences between people: a second dimension (19%) is how many drones someone commits beyond
+          the cautious card, and a third (17%) is editing cards rather than taking or replacing them. Agreed it is not a main
+          finding; kept as numbers.
+      axis-scatter:
+        title: Strategic and tactical reliance go together only loosely between people
+        text: >-
+          Each dot is a person: x = share of strategy cards taken, y = share of tactical plans where Suggest was pressed.
+          Between people the two are only weakly linked (ρ = .37, and .33 once each is measured against others who played the
+          same game): plenty of people press Suggest on almost every plan while taking only half the cards, so knowing how
+          much someone relies on one assistant tells you little about the other. Part of the reason is a ceiling: Suggest is
+          pressed on a median 86% of plans. The second view asks a different question: when the <i>same</i> person takes more
+          cards in one session than the other, do they also press Suggest more? Yes (ρ = .51). So use of the assistants is
+          not one fixed trait spanning both tiers, but within a person there is a session-level "leaning on the assistants
+          today" that moves both together.
+        how: >-
+          Between people: one value per person, both sessions pooled (n = 33), Spearman ρ with a Fisher interval; the
+          game-adjusted version first subtracts the mean of everyone who played the same game from each session, then
+          averages the person's two sessions. Within a person: the session-2 minus session-1 change in card uptake against the
+          change in Suggest use, both game-adjusted (n = 33). Checked: the within-person link holds without game adjustment
+          (ρ = .56), and points the same way whichever scenario came first (ρ = .47, p = .058 with Strategic Heavy first, n = 17; ρ = .63, p = .010 with Tactical Heavy first, n = 16).
+        chart: style.axisScatter2
+        numbers:
+          - "Between people, card uptake vs Suggest use: ρ = .37 [.01, .65], p = .033 (raw); ρ = .33 [−.03, .62], p = .058 (game-adjusted)"
+          - "Within a person, change in card uptake vs change in Suggest use, session 1 → 2: ρ = .51 [.18, .74], p = .002"
+          - "Card uptake vs Suggest in recovery: ρ = .42, p = .014; vs keeping the Suggest plan unchanged: ρ = .20, p = .26"
+          - "Card taking and previewing: ρ = .79 (largely mechanical: choosing a card means clicking it)"
+        reply: >-
+          <b>Not quite.</b> It is weak, but not absent: ρ = .37 [.01, .65], p = .033, so nominally significant, with an
+          interval running from almost zero to moderate (game-adjusted, ρ = .33, p = .058). The fair wording is "only loosely
+          linked", not "no correlation". A new check adds a second view (toggle): within a person, the session where they took
+          more cards is the session where they pressed Suggest more (ρ = .51, p = .002). So "agent use isn't one consistent
+          strategy" holds between people, but the two tiers do share a session-to-session component.
+      not-types:
+        title: Individual, not types
+        text: >-
+          Distinct people, but not distinct kinds of people. If there were types (say "delegators" and "hand-builders"),
+          people would sit in clumps with gaps between them, and splitting them into groups would find clean, well-separated
+          groups. Three plain checks say they do not. <b>(1) The map:</b> placed by their two biggest habit dimensions, the 33
+          operators form one continuous cloud; it looks just like 33 simulated operators that have no types by construction,
+          and the best two-group split simply cuts the cloud in half. <b>(2) Separation:</b> however many groups we ask for
+          (2, 3 or 4), the real people separate no better than the no-types simulations do, and every value is below the
+          usual threshold for real group structure. <b>(3) Recurrence:</b> grouping each session separately, the same people
+          barely end up together twice, no more than in a smooth cloud where people keep their place. The archetype names
+          (Delegator, Deliberate builder, Fast tinkerer) are best kept as labels for the ends of the main dimensions.
+        how: >-
+          Rows: the 33 people, each described by the ten habits pooled over both sessions and standardised. Grouping =
+          k-means (the computer splits people into k groups so that each sits as close as possible to its group's centre;
+          best of 20 starts). Separation = silhouette: for each person, how much closer they are to their own group than to
+          the nearest other group, averaged (1 = tight clumps far apart; 0 = boundaries arbitrary; below .25 is
+          conventionally "no substantial structure", Kaufman &amp; Rousseeuw). Benchmark = 500 simulated samples of 33
+          operators drawn from one smooth cloud with the same distribution of each habit and the same correlations between
+          habits as the real people, so they have no types by construction. (We use these rather than simply shuffling each
+          habit, because shuffling also destroys the links between habits, and a cloud of linked habits separates slightly
+          better than shuffled data without having any types: shuffled data give about .14.) Recurrence: each session's
+          profiles (z-scored within game) are grouped separately and compared with the adjusted Rand index (1 = the same
+          groupings, 0 = chance), against (a) shuffled labels and (b) 500 simulated pairs of sessions with no types but the
+          same session-to-session stability of every habit as the real people. The map uses the first two principal
+          components (50% of the differences). Round 1's pre-registered test (mixture models compared by BIC) and the
+          archetype simulations (extras2) reach the same conclusion; their numbers are kept below.
+        chart: style.typesSimple
+        numbers:
+          - "Separation (silhouette), real vs no-types simulations: 2 groups .17 vs .20 [.14, .31]; 3 groups .18 vs .19 [.14, .27]; 4 groups .20 vs .19 [.13, .25]; a no-types sample separates at least as well 84%, 58% and 26% of the time"
+          - "Groups in session 1 vs session 2 (ARI): 2 groups .08, 3 groups .09; a stable no-types cloud gives .13 on average (95% of simulations −.03 to .47 for 2 groups, −.02 to .40 for 3), at least as high as the real value about 55% of the time; shuffled labels give up to .12–.13"
+          - "Round 1: two groups vs one, ΔBIC 1.9 (needed > 10; 42% of no-type simulations did at least as well)"
+          - "Archetypes (extras2): three explain 46% vs 43–59% in the no-types continuum (p = .83); same archetype both sessions 61% vs 30–79% (p = .32)"
+        reply: >-
+          Rewritten so it explains itself, with a new chart in three views: <b>the map</b> (the 33 real people next to 33
+          simulated people with no types: both one cloud), <b>do groups separate?</b> (real vs no-types, for 2, 3 and 4
+          groups) and <b>do groups come back?</b> (session 1 vs session 2 groupings). All three agree: no types. The
+          comparison is against simulated operators who keep the real habit links, not against plainly shuffled data, because
+          shuffling also removes the links between habits, and on that weaker benchmark the real data look slightly
+          "clumpier" without having any types. The how-text says this in plain words. The older round-1 numbers (ΔBIC,
+          archetypes) are kept as supporting numbers.
+      not-disposition:
+        chart: style.dispositionGrid2
+        numbers:
+          - "0 of 40 tests survive Holm; 3 nominal (verification × score ρ −.41; delegation × Suggest consulted −.38 and × plan kept −.40)"
+          - "Chance alone gives 2.0 nominal hits on average; 3 or more in 34% of 2000 shuffles of who-goes-with-whom; a p as small as the smallest one (.021) turns up somewhere in the grid in 51% of shuffles"
+          - "AIAS-4 × card uptake ρ −.15; “A human should make the final decision” × card uptake ρ −.08"
+          - "AIAS-4 odds ratio for card taking 0.80 per SD [0.50, 1.27]; detectable only at about ×2"
+          - "AIAS-4 mean 8.0 / 10 (SD 1.2); 32 of 33 from computing / engineering; detectable |ρ| ≥ .48"
+        reply: >-
+          <b>Yes, in the sense that matters:</b> they are what chance alone produces. With 40 tests at p &lt; .05 about two
+          "hits" are expected even if nothing is related; we got three. A new check makes this concrete (second chart):
+          shuffling which person's questionnaire goes with which person's behaviour, and redoing all 40 tests, gives three or
+          more hits 34% of the time, and a correlation as strong as the strongest one somewhere in the grid 51% of the time.
+          Holm is the formal version of the same point. What it does <i>not</i> say is that those three links are exactly
+          zero: it says this study cannot tell them apart from chance, so they should not be reported as findings.
+
+  f-tier-trust:
+    sections:
+      where:
+        title: 'Where the gap comes from: the second session and the Strategic Heavy scenario'
+        text: >-
+          The gap is small after the first session (+0.37, CI crosses zero) and large after the second (+1.28). By scenario
+          it is +1.13 in Strategic Heavy sessions and +0.52 in Tactical Heavy sessions (CI just reaches zero). Both matter
+          when taken together: holding session order fixed, Strategic Heavy adds about +0.6 to the gap and being the second
+          session about +0.9. Tactical trust hardly moves (5.36 → 5.51 across sessions); it is <b>strategic</b> trust that
+          falls, and it is lowest in Strategic Heavy sessions. So "trusted more" largely means "the strategic one loses trust
+          as people play more, especially in the scenario where its cards are used most". Four people said their trust
+          <i>grew</i> with experience (C16).
+        how: >-
+          The tactical-minus-strategic difference for each session (66 sessions). By session: averaged over the 33 first and
+          the 33 second sessions. By scenario: both games of each scenario pooled (33 sessions each). Every person played one
+          session of each scenario, so the scenario comparison is also done within person (paired t and Wilcoxon on each
+          person's two gaps). Session order and scenario are partly tangled (about half played Strategic Heavy first), so a
+          model with both (GEE, gap ~ Strategic Heavy + second session, clustered by person) separates them. Means have
+          t-based 95% CIs.
+        chart: recovery.trustSplits2
+        numbers:
+          - "Session 1 gap +0.37 [−0.15, +0.88]; session 2 +1.28 [+0.69, +1.87] (n = 33 each)"
+          - "Strategic Heavy sessions +1.13 [+0.53, +1.73]; Tactical Heavy sessions +0.52 [−0.01, +1.05] (n = 33 each)"
+          - "Same people, Strategic Heavy minus Tactical Heavy: +0.61 [−0.01, +1.23], paired t p = .054, Wilcoxon p = .038; strategic trust −0.46 (p = .087), tactical +0.15 (p = .25)"
+          - "Both in one model: Strategic Heavy +0.64 [+0.11, +1.17], p = .019; second session +0.93 [+0.40, +1.47], p < .001"
+          - "Strategic trust 5.00 → 4.23 from session 1 to 2; tactical 5.36 → 5.51"
+        reply: >-
+          Done: the game-1/game-2 rows are merged into Strategic Heavy vs Tactical Heavy (new chart with the same three views:
+          item, scenario, session). Strategic Heavy +1.13 vs Tactical Heavy +0.52. Because everyone played one of each, I also
+          tested it within person: the difference is borderline on its own (p = .054 paired t, .038 Wilcoxon), but holding
+          session order fixed both effects stand (Strategic Heavy +0.64, p = .019; second session +0.93, p &lt; .001).
+      checking:
+        chart: recovery.checkCost2
+        numbers:
+          - "Kept unmodified rises with plan size: OR 1.76 per SD [1.25, 2.47], p = .001 (all 630 plans); 1.82 [1.24, 2.68], p = .003 on the well-filled sizes only (518 plans)"
+          - "Consulted rises: OR 2.52 [1.87, 3.38] (2.71 [1.89, 3.87] well-filled); kept | consulted FALLS: OR 0.68 [0.50, 0.94] (0.62 [0.43, 0.89])"
+          - "8+ drones vs 3 drones: consulted 86% vs 62%, OR 4.33 [2.17, 8.64]; kept 80% vs 62%, OR 3.04 [1.62, 5.70], p < .001"
+          - "Net checking time barely moves: +0.60 s per SD [−0.15, +1.35], p = .12 (+0.44 s, p = .32 well-filled); per drone −0.25 s [−0.40, −0.10]"
+          - "468 of 486 consulted plans deployed unmodified (96%)"
+          - "Person-median check: tactical 2.85 s vs strategy card 8.80 s (n = 33, Wilcoxon p < .0001)"
+          - "H2 primary p = .019 uncorrected, .065 after Holm correction across round 1"
+        reply: >-
+          Done, as a toggle on the same chart: <b>Well-filled sizes only (3, 6–7, 8+ drones)</b>, now the default, and
+          <b>All sizes</b>. The well-filled view keeps 518 of 630 plans (the 112 plans of 1–2, 4 or 5 drones are dropped) and
+          shows n under every size. The story is the same and a little cleaner: consulting rises from 62% to 86% and keeping
+          from 62% to 80% between 3-drone and 8+-drone plans, while checking time stays near 3 s. I refitted the models on
+          the subset; they barely change (kept OR 1.82 per SD, consulted 2.71, checking time +0.44 s, ns). The caption says
+          which plans are shown.
+      stated-revealed:
+        reply: >-
+          <b>No, not for that number.</b> ρ = .47 [.10, .73], p = .006 is a moderate, clearly positive correlation: the
+          people who rate the Tactical Assistant above the Strategic one are, more often than not, the people who lean on it
+          more. So between people, stated and revealed preference agree in <i>direction and order</i>. Where they agree poorly
+          is everywhere else, and that is the interesting part: (1) <b>size</b>: stated trust favours tactical strongly (26 of
+          33) but use only by +8 points (CI includes 0), and 9 people rate tactical higher while using the cards more; (2)
+          <b>change</b>: when a person's trust goes up or down between sessions, their use does not follow (ρ = .16 strategic,
+          .13 tactical); (3) <b>lead</b>: session-1 trust does not predict how use changes next (ρ = .07). Tactical trust
+          against keeping the plan, on its own, is also weak (ρ = .31, p = .08). So the paper can say "stated and revealed
+          preference agree on who prefers which, but stated trust does not track or forecast changes in use", which is the
+          low-correlation picture you saw in the strip below (most of those rows are the change and lead ones).
+
+  f-triage:
+    sections:
+      choice:
+        text: >-
+          Putting it together in one model of the choice among what was waiting: being the oldest roughly triples a
+          mission's chance of being opened, larger missions are mildly preferred, and being the newest arrival helps a
+          little. These pulls are statistically clear where marked, and none of them changes significantly between short
+          (1–3 others waiting) and long (4+) queues: the "long ÷ short" rows all have intervals spanning 1. Under pressure,
+          priorities do not visibly change, though with 95 long-queue decisions only a large change could have been
+          detected.
+        how: >-
+          Conditional logit: each decision is a choice among the missions waiting at that moment; the model estimates how
+          much each feature (oldest, newest, size relative to the set in units of 3 drones, residual) multiplies a mission's
+          odds of being the one opened. Fitted separately for short (1–3 others) and long (4+) queues, in the Strategic Heavy
+          games only (like with like) and in all four. Intervals and p-values: people resampled 1000 times (the short- and
+          long-queue fits on the same resampled people), so they allow for each person making many decisions; p = twice the
+          share of resamples on the far side of "no pull". The "long ÷ short" rows are the ratio of the two odds ratios with
+          their own interval and p, i.e. a direct test of whether the pull changes with the queue. A model-based (Wald) p is
+          in the tooltips as a cross-check.
+        chart: load.choiceSig
+        numbers:
+          - "Strategic Heavy games, short queues (178 decisions): oldest ×3.80 [2.29, 6.99], p < .001; newest ×1.33 [0.69, 2.41], p = .41; +3 drones ×1.36 [1.07, 1.82], p = .014; residual ×1.06, p = .89"
+          - "Strategic Heavy games, long queues (95 decisions): oldest ×2.84 [1.53, 6.06], p = .004; newest ×1.93 [0.94, 3.58], p = .076; +3 drones ×1.50 [1.05, 2.35], p = .026; residual ×1.77, p = .12"
+          - "Long ÷ short, Strategic Heavy games: oldest ×0.75 [0.35, 1.60], p = .48; newest ×1.45, p = .41; size ×1.10, p = .60; residual ×1.67, p = .52 (none differs)"
+          - "All four games: oldest ×2.72 (short) and ×2.92 (long), both p ≤ .004; newest ×1.60, p = .010 and ×1.96, p = .040; size ×1.13, p = .25 and ×1.56, p = .020; long ÷ short for size ×1.38 [0.97, 1.95], p = .076, all others p ≥ .38"
+        reply: >-
+          Done: the chart now has a p-value on every estimate (right-hand column, coloured when below .10) and a third block
+          that tests directly whether each pull changes between short and long queues. Intervals and p-values come from
+          resampling whole people 1000 times. The oldest-first pull is clearly significant at both queue lengths (p ≤ .004),
+          and the preference for larger missions is significant in the Strategic Heavy games (p = .014 short, .026 long). No
+          pull differs significantly between short and long queues (all p ≥ .41 in the Strategic Heavy games; size comes
+          closest across all four games, p = .076). So "priorities don't change under pressure" now has a test behind it,
+          with the caveat that 95 long-queue decisions could only have detected a large change.

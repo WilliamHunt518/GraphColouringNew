@@ -621,12 +621,313 @@ def qual(L, ax, fp_pc):
 
 
 # ════════════════════════════════════════════════════════════════════════════════════════════
+# 9 · pass 3 additions (own seeded RNGs, so nothing above changes)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+HABIT_DEF = {
+    'took': ('Share of strategic decisions where one of the two strategy cards (Aggressive or Conservative) '
+             'was committed as offered, rather than an allocation built or edited by hand.', 'pct',
+             'strategic decisions'),
+    'preempt': ('Of the decisions made by hand, the share committed before the strategy cards had even appeared '
+                '(undefined in a session with no hand-made decisions).', 'pct', 'hand-made decisions'),
+    'edit': ('Share of strategic decisions where a card was opened as the starting point but its drone counts '
+             'were changed before committing.', 'pct', 'strategic decisions'),
+    'consult': ('Share of tactical plans where the operator pressed Suggest at least once to see the Tactical '
+                'Assistant\'s drone-to-task plan.', 'pct', 'tactical plans'),
+    'keep': ('Of the plans where Suggest was pressed, the share deployed exactly as suggested, with no change.',
+             'pct', 'plans with Suggest'),
+    'recSug': ('Share of recovery episodes (after a drone failure or lockout) where Suggest was pressed '
+               '(undefined in a session with no recovery).', 'pct', 'recovery episodes'),
+    'netSecs': ('Median time per strategic decision, from the strategic window opening to the choice, minus the '
+                'forced wait while the cards load (analysed on a log scale).', 'secs', 'strategic decisions'),
+    'dSmall': ('On missions that need a single drone type: average drones committed minus the Conservative '
+               'card\'s total (+1 = one drone more than the cautious card).', 'drones', 'single-type decisions'),
+    'dLarge': ('The same on missions that need two or three drone types.', 'drones', 'multi-type decisions'),
+    'previews': ('Average number of times per strategic decision a card was highlighted (previewed) before '
+                 'choosing.', 'count', 'strategic decisions'),
+}
+
+
+def habits_table(L, fp):
+    """Raw per-session values of the ten habits (before any z-scoring), with their spread and how well
+    each carries over -- the self-explaining intro to the habits."""
+    hdr('9a · The ten habits: definition, raw spread across the 66 sessions')
+    h1, cols = L['h1'], L['h1'].FEATURES
+    F = h1.features(L['S'], L['T'], L['R'], ['pid', 'run'])
+    F[['pid', 'run']] = pd.DataFrame(F.key.tolist(), index=F.index)
+    F = F[F.pid.isin(fp['pids'])]
+    S = L['S'][L['S'].residual == 0]
+    den = dict(
+        took=F.nS, edit=F.nS, previews=F.nS, netSecs=F.nS, preempt=F.nMan, consult=F.nT, recSug=F.nR,
+        keep=pd.Series([int(((L['T'].pid == p) & (L['T'].run == q) & (L['T'].used == True)).sum())  # noqa: E712
+                        for p, q in zip(F.pid, F.run)], index=F.index),
+        dSmall=pd.Series([int(((S.pid == p) & (S.run == q) & (S.ncol == 1)).sum()) for p, q in zip(F.pid, F.run)], index=F.index),
+        dLarge=pd.Series([int(((S.pid == p) & (S.run == q) & (S.ncol >= 2)).sum()) for p, q in zip(F.pid, F.run)], index=F.index))
+    rt = {x['k']: x for x in fp['retest']}
+    out = []
+    for c in cols:
+        v = F[c].astype(float)
+        disp = np.expm1(v) if c == 'netSecs' else v          # show seconds, not log seconds
+        ok = disp.dropna()
+        row = dict(k=c, label=LABEL[c], short=SHORT[c], tier=TIER[c], what=HABIT_DEF[c][0], unit=HABIT_DEF[c][1],
+                   per=HABIT_DEF[c][2], median=r(ok.median()), q1=r(ok.quantile(.25)), q3=r(ok.quantile(.75)),
+                   lo=r(ok.min()), hi=r(ok.max()), missing=int(v.isna().sum()),
+                   rho=rt[c]['rho'], rhoLo=rt[c]['lo'], rhoHi=rt[c]['hi'], pHolm=rt[c]['pHolm'],
+                   pts=[[p, int(q), r(x), int(d)] for p, q, x, d in zip(F.pid, F.run, disp, den[c])])
+        out.append(row)
+        print('  %-38s median %s  IQR %s–%s  range %s–%s  undefined in %d of %d sessions  retest rho %.2f'
+              % (LABEL[c], row['median'], row['q1'], row['q3'], row['lo'], row['hi'], row['missing'], len(F), row['rho']))
+    return dict(habits=out, nSessions=int(len(F)), nPeople=int(F.pid.nunique()))
+
+
+def axis_more(L, ax):
+    """The other two dimensions, and how card-taking and Suggest relate inside a person."""
+    hdr('9b · Reliance axis: the other dimensions; cards vs Suggest within a person')
+    h1, cols = L['h1'], L['h1'].FEATURES
+    F = h1.features(L['S'], L['T'], L['R'], 'pid')
+    F['pid'] = F.key
+    pids = sorted(L['S'].pid.unique())
+    F = F.set_index('pid').loc[pids].reset_index()
+    Zdf, _ = quiet(h1.impute_z, F)
+    Zx = Zdf[cols].to_numpy()
+    comps, evr, ev = pca_np(Zx)
+    if comps[0][cols.index('took')] < 0:
+        comps[0] *= -1
+    sc1 = Zx @ comps[0]
+    pcs = []
+    for k in range(3):
+        load = comps[k] * np.sqrt(ev[k])
+        if load[np.argmax(np.abs(load))] < 0:
+            load = -load
+        pcs.append(dict(share=r(evr[k]), eigen=r(ev[k]), loadings={c: r(v) for c, v in zip(cols, load)}))
+        print('  PC%d %.0f%%: ' % (k + 1, 100 * evr[k]) + ', '.join('%s %+.2f' % (SHORT[c], v) for c, v in
+                                                                  sorted(zip(cols, load), key=lambda t: -abs(t[1]))[:5]))
+    # how much of the axis is card-taking alone
+    r_took = float(np.corrcoef(sc1, Zdf['took'])[0, 1])
+    print('  axis score vs card uptake (z): r = %.2f -> card uptake alone carries %.0f%% of the axis score' % (r_took, 100 * r_took ** 2))
+    # cards vs Suggest: between people (game-centred person means) and within a person (s2 - s1 change)
+    WS = L['WS']
+    bw = between_within(WS, 'took', 'consult')
+    rec = spear(F.took, F.recSug)
+    keep = spear(F.took, F.keep)
+    print('  cards vs Suggest, game-centred: between %s | within (change s1->s2) %s' % (bw['between'], bw['within']))
+    print('  cards vs Suggest in recovery (person, raw): %s; cards vs keeping the Suggest plan: %s' % (rec, keep))
+    # robustness of the within-person link: no game adjustment; and separately by which scenario came first
+    w = WS.pivot(index='pid', columns='run', values=['took', 'consult', 'scenario'])
+    dx, dy = (w['took'][2] - w['took'][1]).astype(float), (w['consult'][2] - w['consult'][1]).astype(float)
+    rawW = spear(dx, dy)
+    byOrder = {sc: spear(dx[w['scenario'][1] == sc], dy[w['scenario'][1] == sc]) for sc in ('strategic', 'tactical')}
+    print('  within, no game adjustment: %s; Strategic Heavy first: %s; Tactical Heavy first: %s'
+          % (rawW, byOrder['strategic'], byOrder['tactical']))
+    return dict(pcs=pcs, rTookAxis=r(r_took), tookShare=r(r_took ** 2),
+                cardsSuggest=dict(raw=ax['tookConsult'], between=bw['between'], within=bw['within'],
+                                  withinRaw=rawW, withinByOrder=byOrder,
+                                  ptsW=bw['ptsW'], recSug=rec, keep=keep))
+
+
+def _copula_sample(emp, Lc, rng):
+    """One no-types sample: a single Gaussian cloud with the observed rank correlations, pushed through
+    each habit's own observed distribution (so skew, ceilings and ties are kept, but there are no groups)."""
+    n, p = emp.shape
+    G = rng.standard_normal((n, p)) @ Lc.T
+    U = stats.norm.cdf(G)
+    Xs = np.column_stack([np.quantile(emp[:, j], U[:, j], method='inverted_cdf') for j in range(p)])
+    sd = Xs.std(0)
+    return (Xs - Xs.mean(0)) / np.where(sd > 0, sd, 1)
+
+
+def no_types(L, fp_Z):
+    """Plain re-run of 'are there types?': k-means splits of the 33 people, how cleanly they separate
+    (silhouette), against simulated no-types samples; and whether session-1 groups recur in session 2."""
+    hdr('9c · No types: does splitting people into groups find real clumps?')
+    from sklearn.metrics import adjusted_rand_score
+    h1, cols = L['h1'], L['h1'].FEATURES
+
+    class KMeans:
+        """Plain k-means (k-means++ starts, Lloyd iterations, best of n_init by within-group spread).
+        A numpy stand-in for sklearn's, which is far too slow for hundreds of tiny fits on Windows."""
+        def __init__(self, n_clusters, n_init=20, random_state=0):
+            self.k, self.n_init, self.rs = n_clusters, n_init, np.random.default_rng(random_state)
+
+        def fit(self, X):
+            best = (np.inf, None)
+            for _ in range(self.n_init):
+                C = X[[self.rs.integers(len(X))]]
+                while len(C) < self.k:
+                    d2 = ((X[:, None, :] - C[None]) ** 2).sum(-1).min(1)
+                    C = np.vstack([C, X[self.rs.choice(len(X), p=d2 / d2.sum())]])
+                for _ in range(100):
+                    lab = ((X[:, None, :] - C[None]) ** 2).sum(-1).argmin(1)
+                    Cn = np.array([X[lab == j].mean(0) if (lab == j).any() else C[j] for j in range(self.k)])
+                    if np.allclose(Cn, C):
+                        break
+                    C = Cn
+                sse = ((X - C[lab]) ** 2).sum()
+                if sse < best[0] and len(set(lab)) == self.k:
+                    best = (sse, lab)
+            self.labels_ = best[1]
+            return self
+
+    def silhouette_score(X, lab):
+        D = np.sqrt(((X[:, None, :] - X[None]) ** 2).sum(-1))
+        s = np.zeros(len(X))
+        for i in range(len(X)):
+            own = lab == lab[i]
+            if own.sum() <= 1:
+                continue
+            a = D[i, own].sum() / (own.sum() - 1)
+            b_ = min(D[i, lab == j].mean() for j in set(lab) if j != lab[i])
+            s[i] = (b_ - a) / max(a, b_)
+        return s.mean()
+    rng = np.random.default_rng(SEED + 9)
+    F = h1.features(L['S'], L['T'], L['R'], 'pid')
+    F['pid'] = F.key
+    pids = sorted(L['S'].pid.unique())
+    F = F.set_index('pid').loc[pids].reset_index()
+    Zdf, _ = quiet(h1.impute_z, F)
+    Z = Zdf[cols].to_numpy()
+    KS = (2, 3, 4)
+
+    def best_sil(X, k, seed):
+        km = KMeans(n_clusters=k, n_init=20, random_state=seed).fit(X)
+        return float(silhouette_score(X, km.labels_)), km.labels_
+
+    obs = {}
+    labels = {}
+    for k in KS:
+        obs[k], labels[k] = best_sil(Z, k, SEED)
+    rk = h1.rank_normal(Zdf)[cols].to_numpy()
+    Lc = np.linalg.cholesky(np.corrcoef(rk.T) + 1e-9 * np.eye(len(cols)))
+    NS = 500
+    null = {k: [] for k in KS}
+    shuf = {k: [] for k in KS}
+    samples = []
+    for i in range(NS):
+        Xs = _copula_sample(Z, Lc, rng)
+        samples.append(Xs)
+        for k in KS:
+            null[k].append(best_sil(Xs, k, SEED + i)[0])
+        if i < 200:      # fully shuffled habits (no correlations either): a weaker, cruder benchmark
+            Xh = np.column_stack([rng.permutation(Z[:, j]) for j in range(Z.shape[1])])
+            for k in KS:
+                shuf[k].append(best_sil(Xh, k, SEED + i)[0])
+    sil = []
+    for k in KS:
+        nv = np.array(null[k])
+        sv = np.array(shuf[k])
+        p_ = (1 + (nv >= obs[k]).sum()) / (1 + len(nv))
+        sizes = sorted(np.bincount(labels[k]).tolist(), reverse=True)
+        sil.append(dict(k=k, obs=r(obs[k]), nullMean=r(nv.mean()), nullLo=r(np.percentile(nv, 2.5)),
+                        nullHi=r(np.percentile(nv, 97.5)), p=r(p_, 4), shufMean=r(sv.mean()),
+                        shufLo=r(np.percentile(sv, 2.5)), shufHi=r(np.percentile(sv, 97.5)), sizes=sizes,
+                        hist=np.histogram(nv, bins=20, range=(0, .5))[0].tolist()))
+        print('  k=%d: silhouette observed %.3f | no-types sims mean %.3f, 95%% %.3f–%.3f, share >= observed %.3f | '
+              'shuffled habits mean %.3f | group sizes %s' % (k, obs[k], nv.mean(), np.percentile(nv, 2.5),
+                                                               np.percentile(nv, 97.5), p_, sv.mean(), sizes))
+    # map of the people: PC1 x PC2 (the reliance axis and the next one), coloured by the 2-group split
+    comps, evr, ev = pca_np(Z)
+    if comps[0][cols.index('took')] < 0:
+        comps[0] *= -1
+    P = Z @ comps[:2].T
+    # one simulated sample whose 2-group silhouette is the median of the simulations, projected the same way
+    med = int(np.argsort(null[2])[len(null[2]) // 2])
+    Xm = samples[med]
+    cm, _, _ = pca_np(Xm)
+    Pm = Xm @ cm[:2].T
+    lab_m = KMeans(n_clusters=2, n_init=20, random_state=SEED).fit(Xm).labels_
+    # do the groups recur? sessions clustered separately (game-adjusted profiles), same people together?
+    run = fp_Z.run.to_numpy()
+    A, B = fp_Z[fp_Z.run == 1][cols].to_numpy(), fp_Z[fp_Z.run == 2][cols].to_numpy()
+    # 'stable continuum' null: 33 simulated people x 2 sessions, drawn from one smooth cloud with the
+    # observed habit-to-habit links AND the observed session-1-to-session-2 stability of every habit, but no
+    # groups. People keep their place in such a cloud, so their arbitrary group labels agree a little too.
+    AB = np.hstack([A, B])
+    rkAB = np.column_stack([stats.norm.ppf((stats.rankdata(AB[:, j]) - .5) / len(AB)) for j in range(AB.shape[1])])
+    Cm = np.corrcoef(rkAB.T)
+    ev_, V_ = np.linalg.eigh(Cm)
+    Cm = V_ @ np.diag(np.clip(ev_, 1e-6, None)) @ V_.T
+    dg = np.sqrt(np.diag(Cm))
+    Cm = Cm / np.outer(dg, dg)
+    Lab = np.linalg.cholesky(Cm + 1e-9 * np.eye(len(Cm)))
+    p_ = A.shape[1]
+    NSA = 500
+    sims_ab = [_copula_sample(AB, Lab, rng) for _ in range(NSA)]
+    ari = []
+    for k in (2, 3):
+        la = KMeans(n_clusters=k, n_init=20, random_state=SEED).fit(A).labels_
+        lb = KMeans(n_clusters=k, n_init=20, random_state=SEED).fit(B).labels_
+        o = adjusted_rand_score(la, lb)
+        nl = np.array([adjusted_rand_score(la, rng.permutation(lb)) for _ in range(5000)])
+        ns = np.array([adjusted_rand_score(KMeans(k, 10, SEED + i).fit(X_[:, :p_]).labels_,
+                                           KMeans(k, 10, SEED + i).fit(X_[:, p_:]).labels_)
+                       for i, X_ in enumerate(sims_ab)])
+        ari.append(dict(k=k, obs=r(o), nullLo=r(np.percentile(nl, 2.5)), nullHi=r(np.percentile(nl, 97.5)),
+                        p=r((1 + (nl >= o).sum()) / 5001, 4),
+                        stableMean=r(ns.mean()), stableLo=r(np.percentile(ns, 2.5)), stableHi=r(np.percentile(ns, 97.5)),
+                        pStable=r((1 + (ns >= o).sum()) / (1 + NSA), 4), n=int(len(la))))
+        print('  sessions clustered separately, k=%d: ARI %.3f | shuffled labels 95%% %.3f–%.3f, p %.3f | stable no-types '
+              'continuum mean %.3f, 95%% %.3f–%.3f, share >= observed %.3f'
+              % (k, o, np.percentile(nl, 2.5), np.percentile(nl, 97.5), ari[-1]['p'], ns.mean(),
+                 np.percentile(ns, 2.5), np.percentile(ns, 97.5), ari[-1]['pStable']))
+    rt_sim = np.median([np.mean([stats.spearmanr(X_[:, j], X_[:, p_ + j])[0] for j in range(p_)]) for X_ in sims_ab[:100]])
+    rt_obs = np.mean([stats.spearmanr(A[:, j], B[:, j])[0] for j in range(p_)])
+    print('  check: mean habit retest rho, observed %.2f vs simulated stable continuum %.2f' % (rt_obs, rt_sim))
+    return dict(sil=sil, nSims=NS, nShuf=200, ari=ari, nSimsAri=NSA, retestCheck=[r(rt_obs, 2), r(rt_sim, 2)],
+                map=dict(pc=[r(evr[0]), r(evr[1])],
+                         pts=[dict(pid=p_, x=r(P[i, 0]), y=r(P[i, 1]), g=int(labels[2][i])) for i, p_ in enumerate(pids)],
+                         sim=[dict(x=r(Pm[i, 0]), y=r(Pm[i, 1]), g=int(lab_m[i])) for i in range(len(Pm))],
+                         simSil=r(null[2][med])))
+
+
+def disposition_perm(L):
+    """How many 'nominal' hits would 40 tests give by chance, with THESE correlated measures? Shuffle which
+    person's questionnaire goes with which person's behaviour (keeps every correlation among the
+    questionnaire scores and among the behaviours), redo all 40 tests, count p < .05."""
+    hdr('9d · Disposition grid: how many nominal hits does chance give? (person-label permutation)')
+    b = L['b']
+    sess, people = L['sess'], L['people']
+    ids = sorted(people)
+    behs = [k for k, _ in b.BEHAVIOURS]
+    per = b.per_person(sess, behs)
+    preds = ['aias', 'verification', 'delegation', 'delegTrustSuggestOverDecide', 'delegHumanFinalSay',
+             'errorDetectability', 'experienceMean', 'autonomyExperience']
+    X = np.array([[people[p].get(k) if people[p].get(k) is not None else np.nan for k in preds] for p in ids], float)
+    Y = np.array([[per.get(p, {}).get(k) if per.get(p, {}).get(k) is not None else np.nan for k in behs] for p in ids], float)
+
+    def grid(Xm):
+        ps = []
+        for i in range(Xm.shape[1]):
+            for j in range(Y.shape[1]):
+                ok = ~(np.isnan(Xm[:, i]) | np.isnan(Y[:, j]))
+                ps.append(stats.spearmanr(Xm[ok, i], Y[ok, j])[1] if ok.sum() > 3 else 1.0)
+        return np.array(ps)
+    p_obs = grid(X)
+    k_obs, min_obs = int((p_obs < .05).sum()), float(np.nanmin(p_obs))
+    rng = np.random.default_rng(SEED + 11)
+    NP = 2000
+    ks, mins = np.empty(NP), np.empty(NP)
+    for i in range(NP):
+        pp = grid(X[rng.permutation(len(ids))])
+        ks[i], mins[i] = (pp < .05).sum(), np.nanmin(pp)
+    binom = 1 - stats.binom.cdf(k_obs - 1, len(p_obs), .05)
+    out = dict(nTests=int(len(p_obs)), nominal=k_obs, expected=r(.05 * len(p_obs), 1),
+               pAtLeast=r(((ks >= k_obs).sum() + 1) / (NP + 1), 4), meanHits=r(ks.mean(), 2),
+               hitsDist=[int((ks == v).sum()) for v in range(int(ks.max()) + 1)],
+               minP=r(min_obs, 4), pMin=r(((mins <= min_obs).sum() + 1) / (NP + 1), 4),
+               pAtLeastBinom=r(binom, 4), nPerm=NP)
+    print('  observed nominal hits %d of %d (expected by chance %.1f); permutation: mean hits %.2f, P(>= %d) = %.3f '
+          '(independent-tests binomial %.3f); smallest p %.4f, P(chance gives a p this small somewhere) = %.3f'
+          % (k_obs, len(p_obs), .05 * len(p_obs), ks.mean(), k_obs, out['pAtLeast'], binom, min_obs, out['pMin']))
+    return out
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
 
 def main():
     rng = np.random.default_rng(SEED)
     L = load()
     print('people %d, strategic decisions %d (P09 excluded)' % (L['dec'].pid.nunique(), len(L['dec'])))
-    fp, _ = fingerprint(L, rng)
+    fp, fpZ = fingerprint(L, rng)
     pre = preempt(L)
     ax, pc_person, FSpc = axis(L)
     wvw = who_vs_what(L)
@@ -647,8 +948,10 @@ def main():
              for g, v in e2['personExtra']['gameMeans'].items()}
     hdr('Methods · game load (tasks completed per session, from extras2)')
     print(games, '| max/min tasks %.2f' % (max(v['tasks'] for v in games.values()) / min(v['tasks'] for v in games.values())))
-    out = dict(generated='2026-10-12', fingerprint=fp, preempt=pre, axis=ax, whoVsWhat=wvw, disposition=disp,
-               trust=tr, payoff=pay, qual=q, types=types_, games=games)
+    p3 = dict(habits=habits_table(L, fp), axis=axis_more(L, ax), types=no_types(L, fpZ),
+              dispPerm=disposition_perm(L))
+    out = dict(generated='2026-10-13', fingerprint=fp, preempt=pre, axis=ax, whoVsWhat=wvw, disposition=disp,
+               trust=tr, payoff=pay, qual=q, types=types_, games=games, pass3=p3)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(',', ':')), encoding='utf-8')
     print('\nwrote', OUT.relative_to(BASE), '(%.0f kB)' % (OUT.stat().st_size / 1024))

@@ -56,7 +56,7 @@
   /* odds-ratio forest on a log axis; rows {label, est, lo, hi, p, n, people, sub} */
   function orForest(host, rows, o = {}) {
     const rowH = 26, padL = o.padL || 250, padR = 96, padT = 20;
-    const H = padT + rows.length * rowH + 40;
+    const H = padT + rows.length * rowH + 40 + (o.xTitle ? 18 : 0);
     const s = svgRoot(host, W, H);
     const lim = Math.log(o.lim || 3);
     const x = v => padL + (W - padL - padR) * ((Math.log(v) + lim) / (2 * lim));
@@ -68,6 +68,7 @@
     txt(s, x(1), padT - 8, o.zero || 'no change', { 'text-anchor': 'middle' });
     txt(s, padL, base + 30, o.left || '← less likely', {});
     txt(s, W - padR, base + 30, o.right || 'more likely →', { 'text-anchor': 'end' });
+    if (o.xTitle) txt(s, (padL + W - padR) / 2, base + 48, o.xTitle, { 'text-anchor': 'middle', fill: css('--ink-2'), 'font-family': 'inherit', 'font-size': 11.5 });
     const clip = v => Math.min(Math.exp(lim), Math.max(Math.exp(-lim), v));
     rows.forEach((r_, i) => {
       const yy = padT + i * rowH + rowH / 2;
@@ -151,19 +152,26 @@
       let tier = 'strategic', mode = 'adj';
       const box = h('div', {}, host);
       const draw = () => {
-        const B = D.null[tier].bins, [cv, lab] = TIER[tier], col = css(cv);
-        const raw = { label: 'Raw rate', color: col, faint: mode === 'adj', hollow: mode === 'adj', pts: B.map(b => ({ x: b.label, y: b.raw, lo: b.rawLo, hi: b.rawHi, n: b.n, tip: `${b.people} people · missions avg ${num(b.ndrones, 1)} drones · minute ${num(b.minute, 1)} · their own usual rate ${pct(b.person, 0)}` })) };
-        const exp = { label: 'Expected from mission, minute, game, person', color: css('--ink-3'), dash: true, pts: B.map(b => ({ x: b.label, y: b.exp, n: b.n })) };
-        const adj = { label: 'Adjusted', color: col, pts: B.map(b => ({ x: b.label, y: b.adj, lo: b.adjLo, hi: b.adjHi, n: b.n, tip: 'overall rate + (observed − expected) in this bin' })) };
-        const ser = mode === 'raw' ? [raw] : mode === 'exp' ? [raw, exp] : [raw, adj];
+        const YL = { strategic: '% of strategic decisions where a card was taken', tactical: '% of tactical plans where Suggest was pressed', both: '% of decisions using the assistant' };
+        const seriesFor = (tr, both) => {
+          const B = D.null[tr].bins, [cv, lab] = TIER[tr], col = css(cv), pre = both ? lab + ' — ' : '';
+          const raw = { label: pre + 'Raw rate', color: col, faint: mode === 'adj' && !both, hollow: mode === 'adj' && !both, pts: B.map(b => ({ x: b.label, y: b.raw, lo: b.rawLo, hi: b.rawHi, n: b.n, tip: `${b.people} people · missions avg ${num(b.ndrones, 1)} drones · minute ${num(b.minute, 1)} · their own usual rate ${pct(b.person, 0)}` })) };
+          const exp = { label: pre + 'Expected from mission, minute, game, person', color: both ? col : css('--ink-3'), dash: true, pts: B.map(b => ({ x: b.label, y: b.exp, n: b.n })) };
+          const adj = { label: pre + 'Adjusted', color: col, pts: B.map(b => ({ x: b.label, y: b.adj, lo: b.adjLo, hi: b.adjHi, n: b.n, tip: 'overall rate + (observed − expected) in this bin' })) };
+          if (both) return mode === 'raw' ? [raw] : mode === 'exp' ? [raw, exp] : [adj];
+          return mode === 'raw' ? [raw] : mode === 'exp' ? [raw, exp] : [raw, adj];
+        };
+        const ser = tier === 'both' ? seriesFor('strategic', true).concat(seriesFor('tactical', true)) : seriesFor(tier, false);
+        const B = D.null[tier === 'both' ? 'strategic' : tier].bins;
         box.innerHTML = '';
-        ciChart(box, QX, ser, { lo: 0.3, hi: 1, ticks: [.3, .4, .5, .6, .7, .8, .9, 1], xName: 'waiting', xLabel: 'other missions waiting for a strategic decision at that moment',
-          yLabel: lab.split(': ')[1], vline: VL, vlabel: VLAB, ref: { y: D.null[tier].overall, label: 'overall ' + pct(D.null[tier].overall, 0) } });
+        ciChart(box, QX, ser, { lo: 0.3, hi: 1, ticks: [.3, .4, .5, .6, .7, .8, .9, 1], xName: 'waiting', xLabel: 'number of OTHER missions waiting for a strategic decision at that moment',
+          yLabel: YL[tier], vline: VL, vlabel: VLAB, ref: tier === 'both' ? null : { y: D.null[tier].overall, label: 'overall ' + pct(D.null[tier].overall, 0) } });
         legend(box, ser.map(se => ({ label: se.label + (se.pts[0] && se.pts[0].lo != null ? ' (95% CI, people resampled)' : ''), color: se.color })));
+        if (tier === 'both') { say(box, `Both assistants on one axis (${mode === 'adj' ? 'both adjusted' : mode === 'raw' ? 'both raw' : 'both raw, each with its expected line dashed'}). Blue = strategic decisions (card taken), orange = tactical plans (Suggest pressed). Hover a point for its n.`); return; }
         tableFor(box, ['Waiting', 'n', 'People', 'Raw', 'Raw 95% CI', 'Expected', 'Adjusted', 'Adj. 95% CI', 'Mission drones', 'Their usual rate', 'In Strategic Heavy games'],
           B.map(b => [b.label, b.n, b.people, pct(b.raw, 0), `${pct(b.rawLo, 0)}–${pct(b.rawHi, 0)}`, pct(b.exp, 0), pct(b.adj, 0), `${pct(b.adjLo, 0)}–${pct(b.adjHi, 0)}`, num(b.ndrones, 1), pct(b.person, 0), pct(b.stratGame, 0)]));
       };
-      host.insertBefore(btnBar(host, 'Assistant', [['strategic', 'Strategic'], ['tactical', 'Tactical']], tier, k => { tier = k; draw(); }), box);
+      host.insertBefore(btnBar(host, 'Assistant', [['strategic', 'Strategic'], ['tactical', 'Tactical'], ['both', 'Both together']], tier, k => { tier = k; draw(); }), box);
       host.insertBefore(btnBar(host, 'View', [['raw', 'Raw'], ['exp', 'Raw + expected'], ['adj', 'Adjusted']], mode, k => { mode = k; draw(); }), box);
       draw();
     },
@@ -290,8 +298,8 @@
         const lab = k === 'oldest' ? 'Opened the OLDEST waiting mission' : k === 'top3' ? 'Opened one of the top 3 in the list' : 'Opened the SMALLEST waiting mission';
         ciChart(box, xs, [{ label: lab, color: css('--s-strat'), pts: B.map(b => ({ x: b.label, y: b[k], lo: b[k + 'Lo'], hi: b[k + 'Hi'], n: b.n, tip: `${b.people} people` })) },
           { label: 'If they picked at random from what was waiting', color: css('--ink-3'), dash: true, pts: B.map(b => ({ x: b.label, y: b[ch] })) }],
-          { lo: 0, hi: 1, xName: 'others waiting', xLabel: 'other missions waiting when the operator opened one (decisions with a choice to make)', yLabel: 'share of decisions', vline: vAt(2.5, 1), vlabel: VLAB });
-        legend(box, [{ label: lab + ' (95% CI)', color: css('--s-strat') }, { label: 'chance', color: css('--ink-3') }]);
+          { lo: 0, hi: 1, xName: 'others waiting', xLabel: 'number of OTHER missions waiting when the operator opened one (decisions with a choice to make)', yLabel: '% of decisions that opened this mission', vline: vAt(2.5, 1), vlabel: VLAB });
+        legend(box, [{ label: lab + ' (95% CI)', color: css('--s-strat') }, { label: 'chance: picking at random from what was waiting', color: css('--ink-3') }]);
       };
       host.insertBefore(btnBar(host, 'Picked', [['oldest', 'Oldest'], ['top3', 'Top 3 of list'], ['smallest', 'Smallest']], k, v => { k = v; draw(); }), box);
       draw();
@@ -330,6 +338,36 @@
           Object.entries(c.terms).forEach(([f, v]) => rows.push({ label: NAMES[f], est: v.est, lo: v.lo, hi: v.hi, color: col, right: '×' + num(v.est, 2), sub: '95% CI from resampling people' }));
         });
         orForest(box, rows, { lim: 8, ticks: [0.25, 0.5, 1, 2, 4, 8], padL: 250, left: '← less likely to be opened', right: 'more likely →', zero: 'no pull' });
+      };
+      host.insertBefore(btnBar(host, 'Games', [['strategicGames', 'Strategic Heavy games only'], ['all', 'All four games']], scope, k => { scope = k; draw(); }), box);
+      draw();
+    },
+
+    /* pass 3 — the choice model with p-values, and a direct test of short vs long queues */
+    'load.choiceSig': host => {
+      const C = D && D.triage && D.triage.choiceSig;
+      if (!ok(host, C, 'the choice model significance (rerun load.py)')) return;
+      let scope = 'strategicGames';
+      const box = h('div', {}, host);
+      const NAMES = { oldest: 'It is the oldest waiting', newest: 'It is the newest arrival', size: 'Per 3 more drones than the others', resid: 'It is a left-over (residual) mission' };
+      const draw = () => {
+        box.innerHTML = '';
+        const c = C[scope];
+        if (!c) { say(box, 'No data for this scope.'); return; }
+        const rows = [];
+        [['short', '1–3 others waiting', css('--mark-soft')], ['long', '4+ others waiting', css('--s-strat')]].forEach(([k, lab, col]) => {
+          const q = c[k];
+          rows.push({ head: true, label: `${lab} (${q.decisions} decisions, ${q.people} people)` });
+          Object.entries(q.terms).forEach(([f, v]) => rows.push({ label: NAMES[f], est: v.est, lo: v.lo, hi: v.hi, p: v.p, color: col,
+            sub: `bootstrap ${pval(v.p)} (people resampled ${C.nBoot}×); model-based Wald ${pval(v.pWald)}` }));
+        });
+        rows.push({ head: true, label: 'Does the pull change when the queue is long? (long ÷ short)' });
+        Object.entries(c.ratio).forEach(([f, v]) => rows.push({ label: NAMES[f], est: v.est, lo: v.lo, hi: v.hi, p: v.p, color: css('--mark'),
+          sub: 'ratio of the two odds ratios; 1 = the same pull at both queue lengths' }));
+        orForest(box, rows, { lim: 8, ticks: [0.25, 0.5, 1, 2, 4, 8], padL: 250, left: '← less likely', right: 'more likely →', zero: 'no pull (×1)', xTitle: 'odds ratio of being opened, log scale (bottom block: long ÷ short)' });
+        const sig = Object.entries(c.ratio).filter(([, v]) => v.p < .05).map(([f]) => NAMES[f].toLowerCase());
+        say(box, `Right-hand column: p-value for each estimate (bootstrap over people; coloured when below .10). Short vs long: ${sig.length ? 'differs for ' + sig.join(', ') : 'no feature’s pull differs significantly between short and long queues'}. `
+          + 'Intervals and p-values come from resampling whole people, so they allow for each person making many decisions.');
       };
       host.insertBefore(btnBar(host, 'Games', [['strategicGames', 'Strategic Heavy games only'], ['all', 'All four games']], scope, k => { scope = k; draw(); }), box);
       draw();

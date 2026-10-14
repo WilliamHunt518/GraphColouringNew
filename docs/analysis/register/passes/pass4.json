@@ -1,0 +1,700 @@
+{
+ "pass": 4,
+ "cards": {
+  "f-personal-style#habits": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:10:25.644Z",
+   "role": "numbers"
+  },
+  "f-personal-style#fingerprint-ranks": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#who-vs-what": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#retest-summary": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#axis-scatter": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:11:01.818Z",
+   "role": "numbers"
+  },
+  "f-personal-style#not-types": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#not-disposition": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#axis": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#fingerprint": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#profiles": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habit-by-habit": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#preempt": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habit-grid": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#trust": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style": {
+   "verdict": "core",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:11:12.145Z"
+  },
+  "f-size-decides#both": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#models": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#tactical": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#parallel": {
+   "verdict": null,
+   "note": "I think if we provide the caveat that 10+ manual has very low n, we can argue there is actually negligible difference. People often say the agent is faster but I'm not sure that's really supported. These bars are pretty close. We can point out that both plan quality and speed to create are very slightly agent-favoured if at al, and that the use of each seems logical. We have a retired finding I think about operators who rely more not being better - a single number or two from there might help.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:18:52.219Z"
+  },
+  "f-size-decides#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#strategic-steps": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#five": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#artefacts": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#people": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#speed-model": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#slow": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#parallel-specs": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#strategic": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#measures": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides": {
+   "verdict": "core",
+   "note": "Excellent. Pretty much there. Couple of things I mention about framing but mostly useful",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:19:21.831Z"
+  },
+  "f-manual-cards#dots": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards#position": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards#anchor": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards": {
+   "verdict": "keep",
+   "note": "This whole thing is marginal. Probably a brief mention but it isn't a core finding.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:19:54.898Z"
+  },
+  "f-practice#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-practice#c22": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-practice#calibration": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-practice": {
+   "verdict": "keep",
+   "note": "This also is just a quick mention - we can talk about learning effect etc. ",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:20:16.759Z"
+  },
+  "f-workload#raw-vs-adjusted": {
+   "verdict": null,
+   "note": "Great",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:23:05.550Z"
+  },
+  "f-workload#robust": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#said-did": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#spoken": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#backlog-practice": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#deep": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#visible": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload": {
+   "verdict": "core",
+   "note": "A nice, simple, clear null",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:23:17.638Z"
+  },
+  "f-flaw-odd#event": {
+   "verdict": null,
+   "note": "Good. I actually prefer wihtout the previous ones i asked for now, but keep the options there. ",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:24:43.238Z"
+  },
+  "f-flaw-odd#over-time": {
+   "verdict": null,
+   "note": "Very nice",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:25:29.688Z"
+  },
+  "f-flaw-odd#by-index": {
+   "verdict": null,
+   "note": "Really nice. I'm not sure why the last points cross over. Also the last points for scenario 1 do something werid. I wonder if we have enough n? Generally though this is really interesting - Bit more digging on those last values please so we can udnerstand if the lines are misleading.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:29:10.062Z"
+  },
+  "f-flaw-odd#spoken": {
+   "verdict": null,
+   "note": "Nice",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:30:06.649Z"
+  },
+  "f-flaw-odd#refusal": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#h8": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#dip": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#not-time-locked": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#nth": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#visibility": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#card": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#odd-missions": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#adjustment": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#robustness": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#old-chart": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#dominated": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#rates": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#checking-after": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#reliance": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#later": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#method": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd": {
+   "verdict": "core",
+   "note": "I want to understand that one graph I mentioned a little better, but I think we have a very nice point to make around the failure thing.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:30:45.855Z"
+  },
+  "f-tier-trust#gap": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#where": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#checking": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#stated-revealed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#trust-lead-strip": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#attention": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#own-failures": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#stated": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust": {
+   "verdict": "keep",
+   "note": "Nice minor point to make",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:31:49.960Z"
+  },
+  "f-operator-wants#wants": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:31:55.020Z"
+  },
+  "f-triage#order": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#choice": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#games": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#size": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#pace": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#visible-t": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:32:00.753Z"
+  },
+  "f-methods#games": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-methods#half-weights": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-methods#qual-coder": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-methods": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:32:02.875Z"
+  },
+  "f-who-does-better#between-within": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-who-does-better#estimates": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-who-does-better#trust-parallel": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-who-does-better#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-who-does-better": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T11:32:06.551Z"
+  }
+ }
+}

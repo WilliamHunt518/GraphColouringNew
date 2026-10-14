@@ -1,0 +1,210 @@
+# Pass 4 · AREA handover — content changes answering the pass-3 notes (docs/analysis/register/passes/pass3.json).
+# Numbers: scripts/register/pass2/handover.py, block H, written to handover.json under `p4` (earlier keys unchanged).
+# Charts: scripts/register/pass2/handover.charts.js — new keys handover.speedPhases and handover.phases2; the old
+# handover.speedSizeBars and handover.phases are kept. Axis titles were fixed across the area's charts (see report).
+findings:
+  f-size-decides:
+    headline: >-
+      The bigger the job, the more likely an operator hands it to an assistant, on both tiers. Measured the same way on
+      both (drones the mission needs), the strategy card is taken on 56% of the smallest missions vs 75% of the largest,
+      and Suggest is pressed on 54% vs 91%. Comparing each person only with themselves, every doubling of the mission
+      multiplies the odds of handing over by about 1.6 (strategic) and 2.9 (tactical); 22 of 33 people hand over more on
+      their biggest missions than their smallest on each tier. It survives every check we tried, including dropping the
+      illogical Conservative cards and allowing for everyone having played the same missions. Three qualifications: on
+      the strategic tier most of the effect is operators deciding small missions before the cards load; the strategic
+      curve is lumpy (a dip at 5 drones, missions that mostly arrived in bursts in the Strategic Heavy games), so the
+      dependable strategic contrast is one-type vs three-type missions; and handing over on one tier goes with handing
+      over on the other (a mission allocated from a card gets Suggest at about twice the odds). The rule is sensible: the
+      card is much quicker than building by hand on three-type missions and no quicker on one-type ones, and a Suggest
+      plan is not slower: compared on missions of the same size it finishes about 15 s sooner, mostly because it is
+      carried out faster.
+    reply: >-
+      Thanks. The four section notes are answered in their sections: the 5-drone dip checked against the arrival
+      times, the qualitative evidence for the strategic-to-tactical link found (P10 says it plainly, P05 and P30 in
+      passing), the speed section rebuilt as stacked bars with the idle time split out, and the parallel-work chart
+      rebuilt as one chart with every size group. The "manual faster overall but slower in every size group" puzzle is a
+      mix effect: hand-built plans are mostly small missions.
+    sections:
+      both:
+        text: >-
+          For every mission, the share of decisions where the operator handed over (took a strategy card as offered,
+          blue, or pressed Suggest in the tactical planner, orange) by how many drones the mission needs. Both rise. The
+          tactical tier rises more steeply and keeps rising, from 54% to 91%. The strategic tier climbs from about half on
+          small missions to about three quarters, with a dip at 5 drones. That dip is seven particular all-Fast missions,
+          all in the two Strategic Heavy games, and six of them arrived in bursts: in one game two of them arrived 11 s
+          apart in a run of seven missions inside one minute (minutes 1.6 to 2.6), in the other four of them arrived within
+          80 s (minutes 3.7 to 5.0) alongside three other missions. So by the time operators reached them 3–4 other missions
+          were waiting, and they decided fast and often before the cards loaded. Busy arrival is likely part of it, but not
+          all: missions of other sizes in the same bursts got the card more often (a 3-drone and a 6-drone mission in those
+          bursts got it 67% and 64% of the time), and holding the queue fixed barely changes the 5-vs-3 comparison (see
+          "Why the 5-drone missions dip").
+        numbers:
+          - 'Strategic, per doubling of drones needed: odds ×1.62 [1.23, 2.15], p < .001 (606 decisions, 33 people)'
+          - 'Tactical, per doubling of drones needed: odds ×2.91 [2.03, 4.17], p < .001 (627 plans)'
+          - 'Both tiers, one shared slope: ×2.07 [1.64, 2.61], p < .001 (1,233 decisions); the tactical slope is steeper than the strategic one by ×1.38 [0.99, 1.91], p = .056 — suggestive, not shown'
+          - 'Raw rates, smallest to largest bin: strategic 56% → 75%, tactical 54% → 91%'
+          - 'Arrival bursts (Strategic Heavy games, fixed per game): the seven 5-drone missions had on average 4.4 other missions arrive within 60 s of them, against 3.6 for the 3- and 6-drone one-type missions and 3.1 for every other mission; 6 of 7 arrived inside or straight after a burst; the seventh arrived 10 s into a game and got the card 69% of the time'
+        reply: >-
+          Yes, mostly. Six of the seven 5-drone missions arrived in bursts in the Strategic Heavy games (two 11 s apart
+          in a run of seven missions in one minute in one game; four within 80 s in the other), so they were decided with
+          3–4 others waiting, quickly and often before the cards loaded. Strictly it is the 5-drone bar that is low,
+          rather than the first bar being high. Bursts are likely only part of the story: a 3-drone and a 6-drone mission
+          in the same bursts got the card 67% and 64% of the time, and holding the queue fixed barely moves the 5-vs-3
+          comparison. Written into the text with the numbers.
+      tactical:
+        text: >-
+          In the tactical planner the dose-response is smooth whichever way size is measured: drones the mission needs,
+          drones committed, tasks, drone types or plan size (the toggle). The two bar colours split plans by how the
+          mission was allocated strategically. A mission allocated from a strategy card gets Suggest more often than one
+          allocated by hand, at every size and on every measure: <b>handing over at one tier goes with handing over at the
+          other</b>. Comparing the same person's missions of the same size, a card-allocated mission gets Suggest at about
+          twice the odds (×2.10). The gap is wide on small missions (70% vs 35% at ≤3 drones) and small on the biggest
+          (93% vs 88%), but that narrowing is both rates approaching 100%; tested properly, the gap does not reliably shrink
+          with size. Operators say this too: one participant (P10) described, while playing and again afterwards, that
+          once they had taken the Aggressive card "anything but Suggest" made no sense, because a generous allocation
+          leaves only one sensible way to assign the drones; two others (P05, P30) talked through taking a card and then
+          pressing Suggest on the same mission. P10's reason, that it is the generous card that makes Suggest the obvious
+          next step, does not show up across everyone: Suggest follows the Aggressive and the Conservative card at the
+          same rate. The link is card vs hand, not which card. We use drones needed as the main measure: it is fixed by the
+          mission, the same for every operator and what the task badges show. Plan size and team size also contain the
+          operator's own strategic choice: for the same mission, a card commits about 11% more drones than a hand
+          allocation, so part of the strategic route is built into those x axes.
+        numbers:
+          - 'Within person, per doubling of drones needed: odds ×2.91 [2.03, 4.17]; per extra task ×2.04 [1.59, 2.62]; per extra drone type ×1.73 [1.30, 2.31]; per doubling of drones committed ×2.51 [1.83, 3.45]; per doubling of plan size ×2.08 [1.67, 2.59] (all p < .001)'
+          - 'Allocated from a card vs by hand, same person, size held: ×2.10 [1.30, 3.40], p = .003 (drones needed); ×1.78 to ×2.12 on the other four measures, all p < .05'
+          - 'Aggressive card vs Conservative card, same person, drones needed held: ×0.88 [0.45, 1.75], p = .72 (400 plans); raw Suggest rate after Aggressive 81% (200), after Conservative 89% (203), after a hand allocation 63% (227)'
+          - 'Does the gap shrink with size? Route × size: ×0.76 [0.30, 1.92], p = .56 (drones needed); p = .28 to .98 on the other measures: no reliable narrowing'
+          - 'Suggest pressed, card-allocated vs hand-allocated: ≤3 drones 70% vs 35%; 7–9 drones 85% vs 71%; 15–18 drones 93% vs 88%'
+          - 'Same mission, card vs hand: ×1.11 more drones committed and ×1.12 larger plan (both p < .001); drones needed, tasks and types identical by construction'
+          - 'Person level: people who take more cards also press Suggest more (Spearman ρ = .37, p = .033, 33 people)'
+          - 'P10 in the log: Suggest on 8 of 9 Aggressive-allocated missions (never took the Conservative card) vs 6 of 9 hand-allocated'
+        reply: >-
+          Yes, found. P10 says it most clearly: in the think-aloud (session 1, about 5½ and 13 minutes into the recording)
+          they say that after taking the Aggressive card, anything but Suggest makes no sense, because there is only one
+          sensible assignment; in the debrief (about 0:27:50) they agree when you sum it up as "the aggressive strategic
+          agent prompts you to use Suggest". That last line was the interviewer's wording, so the think-aloud is the
+          stronger evidence. P05 and P30 also narrate "card, then Suggest" on the same mission, more in passing. No
+          existing code fits (closest: C05, which carries P10's neighbouring line about pressing Suggest and moving on), so
+          I added none; a new code, "one tier's hand-over carries to the next", would hold P10, P05 and P30. The behavioural
+          number (×2.10) is now in the text. One check of P10's reasoning: across everyone, Suggest is no more likely after
+          the Aggressive card than after the Conservative one (×0.88, p = .72), so it is card vs hand, not which card.
+      speed:
+        title: 'Why the rule makes sense: the card pays only on big strategic jobs; Suggest is not slower'
+        chart: handover.speedPhases
+        text: >-
+          Each decision's time split into the time before the operator's first action and the time after it, by mission
+          size, as stacked bars (toggle: tier). <b>First action</b> = the first click on that decision: highlighting a card
+          or changing a manual count (strategic; taking a card always needs a highlight first), pressing Suggest or
+          dragging a drone (tactical). Before it, the strategic panel has two parts: the cards still loading (a forced wait
+          of about 4.7 s; deciding by hand early can cut it short) and <b>idle time</b> with the cards on screen. The
+          "Time counted" toggle drops the idle time, or everything before the first click. Strategic: counting everything,
+          a card is much quicker than a manual build on three-type missions (−27%) and no quicker on one-type ones (+22%,
+          not reliable). Card-takers sit idle about as long as manual builders (7 s vs 9–11 s on average), so dropping idle
+          time makes the card look better everywhere; on one-type missions it then ties with a manual build (−8%), and on
+          three-type missions the card is 44% quicker. Deciding before the cards load (7 s) beats the card when everything is counted and is level with it once idle time is dropped, on
+          one-type missions. Tactical, on all 627 plans: by hand and with Suggest take about the same
+          planner time (29 vs 27 s on average), and the same with the idle time removed (15 vs 17 s); held to the same
+          person and size the difference is under 1 s. On large missions hand-building takes longer (32 vs 22 s without idle
+          time), but the size × Suggest term is not reliable. So the speed story is clear on the strategic tier, and on the
+          tactical tier Suggest saves no planner time. Its time saving is in carrying out (next section).
+        how: >-
+          <b>Rows</b>: strategic, the 606 card decisions (the last panel opening before the choice, as everywhere in this
+          finding); tactical, the 627 non-recovery plans with a known mission size (kept Suggest plans vs hand-built; the
+          18 edited Suggest plans are in the table only). <b>Segments</b>, from the event log: strategic, panel opened →
+          first click (split at the moment the cards appeared: before = "cards still loading", after = "idle, cards on
+          screen") and first click → choice; tactical, planner opened → first Suggest press or drag ("idle"), → plan ready
+          (last drag, or the end of the one-entry-per-second Suggest fill), → confirmed. These are the same phases as the
+          next section, which adds carrying out. Bars are means (means add up, medians do not), whiskers 95% intervals
+          of the bar's total from resampling people. Sizes: strategic, one-type missions (3–6 drones) and three-type
+          missions of 6–9 and 10–18 drones; tactical, drones needed ≤ 6, 7–9, 10+. <b>Models</b>: strategic, Gaussian GEE
+          on log seconds, card × three-type, all manual decisions pooled as the comparison, the person's own card rate,
+          drones, game, session and minute held fixed, run once per way of counting; tactical, GEE on seconds, Suggest
+          split within/between person, drones needed, game and session fixed. <b>Caveat</b>: idle time mixes reading the
+          cards or plan with being busy elsewhere, and the log cannot tell them apart. For tactical plans idle for more
+          than 10 s, 54% had another mission's strategic panel opened in that time, so long idle time is often attention
+          elsewhere.
+        numbers:
+          - 'Strategic, card vs manual, same person, % change in time: everything: one-type +22% [−3, +55], p = .09; three-type −27% [−35, −17], p < .001'
+          - 'Without idle time: one-type −8% [−19, +4], p = .17; three-type −44% [−49, −38], p < .001. From the first click only: one-type −40%, three-type −76% (both p < .001)'
+          - 'Strategic means (s), loading + idle + acting: one-type card 4.7 + 6.5 + 2.2 = 13.3; by hand after cards 4.7 + 8.6 + 5.0 = 18.2; before cards 3.7 + 0.7 + 3.0 = 7.4. Three-type 10–18 drones: card 4.6 + 7.3 + 2.1 = 14.0; by hand 4.6 + 10.1 + 9.7 = 24.4'
+          - 'Tactical means (s), idle + building + ready → confirmed: all plans by hand 14.2 + 13.3 + 1.6 = 29.1 (144) vs Suggest 10.6 + 10.9 + 5.8 = 27.2 (465); large missions 17.9 + 30.0 + 1.9 = 49.8 (22) vs 10.0 + 15.3 + 6.2 = 31.5 (159)'
+          - 'Tactical, Suggest minus by hand, same person, drones needed held: everything −2.8 s [−9.0, +3.5], p = .39; without idle time +0.2 s [−2.7, +3.0], p = .92; Suggest × size (without idle) −1.3 s per doubling, p = .47'
+          - 'Tactical plans idle for more than 10 s: 54% had another mission''s strategic panel opened before the first action (176 plans); all plans 22%'
+        reply: >-
+          Rebuilt as stacked bars by size, with the time before the first action split out and a toggle to leave it out
+          ("everything", "without idle time", "from the first click only"). First action = the first click on that decision
+          (card highlighted or manual count changed; Suggest pressed or drone dragged). It shifts the story a little.
+          Without idle time the strategic card is never slower (it ties with a manual build on one-type missions and is
+          44% quicker on three-type ones). The tactical planner time is the same with or without Suggest once idle time
+          is out, so on that tier the saving is in carrying out (section 5). The same phase definition is used in section 5,
+          so the two charts agree.
+      parallel:
+        chart: handover.phases2
+        text: >-
+          Each tactical plan split into four phases: before the first action (idle, or busy elsewhere), building the
+          plan (drags, or the one-entry-per-second Suggest fill), plan ready → confirmed, and carrying out (confirm →
+          mission complete), for every size group side by side; the toggle leaves out the time before the first action.
+          Within every size group a Suggest plan is quicker overall than a hand-built one, yet in the raw "all missions"
+          bars it looks slower (100 vs 90 s). That is a mix effect, not a contradiction: 78% of the finished hand-built
+          plans are small missions, against 42% of Suggest plans, and small missions are quick whichever way. Given the
+          same mix of sizes (the "size-standardised" bars), hand-built plans take 109 s and Suggest plans 96 s.
+          Comparing each person's Suggest plans only with their own hand-built plans on missions of the same size, a
+          Suggest plan is built about 3 s faster, waits about 3 s longer between being ready and being confirmed, and is
+          <b>carried out about 11 s faster</b>, so the whole thing is about 15 s quicker (11 s without the time before
+          the first action). The ready → confirmed gap is when operators turn to other missions: 45% of Suggest plans had
+          another mission's strategic panel opened while the planner was open, against 19% of hand-built ones. This does
+          not undermine the Tactical Assistant. Its plans finish sooner, and the scheduler's own projection agrees: a
+          hand-built plan, once confirmed, is projected to finish a median 10 s later than the assistant's plan would
+          have; a kept Suggest plan, 1.6 s. Part of why the planner seconds cost little: the drones set off when the
+          mission is allocated, so planning overlaps their flight.
+        how: >-
+          <b>Rows</b>: confirmed non-recovery tactical plans. <b>Phases</b> from the event log, the same as in section 4:
+          planner opened (<i>tactical_opened</i>); first action = first Suggest press or first drag; plan ready = last
+          drag, or for a Suggest plan the end of its fill (last press + 1 s per drone-task entry), whichever is later;
+          confirmed (<i>tactical_confirmed</i>); mission complete (<i>mission_completed</i>). <b>Carrying out</b> can only
+          be measured when the mission finished in full with no drone failure: 315 of 630 plans; the chart shows those
+          (81 hand-built, 231 kept Suggest; edited Suggest plans left out, 3 survive). Size groups by drones needed: small
+          ≤ 6, mid 7–9, large 10+. Bars are means, whiskers 95% intervals of the bar's total from resampling people.
+          <b>Size-standardised</b>: each route's mean in each size group, weighted by the share of all finished plans in
+          that group (small 51%, mid 23%, large 26%), so both routes get the same mix; this answers "how long would each
+          route take on the same missions?". Only 6 large hand-built plans finished cleanly (5 people), so that bar and
+          the standardised hand-built bar are the least certain. <b>Model</b>: Gaussian GEE of seconds in each phase on
+          "Suggest pressed" (split within/between person), log drones needed, game and session. Seconds add up, so the
+          phase differences sum to roughly the whole. The bottom row drops drones needed from the model: still within
+          person, but with size not held the difference vanishes (−0.1 s), which shows the raw reversal comes from size,
+          not from who uses which route. <b>Projected completion</b> and <b>interleaving</b> as before.
+        numbers:
+          - 'Suggest minus hand-built, same person, drones needed held (315 finished plans): before the first action −4.0 s [−12.5, +4.6], p = .37; building −2.6 s [−5.0, −0.1], p = .038; ready → confirmed +3.3 s [+1.5, +5.0], p < .001; carrying out −11.5 s [−19.6, −3.4], p = .006; whole −14.8 s [−22.4, −7.3], p < .001'
+          - 'Whole thing without the time before the first action: −11.3 s [−20.5, −2.1], p = .017; whole thing with size not held: −0.1 s [−10.8, +10.6], p = .99'
+          - 'Means (s), hand vs kept Suggest: small 78.5 vs 74.8 (63 vs 97 plans); mid 113.6 vs 102.0 (12 vs 59); large 166.6 vs 131.6 (6 vs 75); all, raw 90.2 vs 100.2; all, size-standardised 109.3 [102.7, 119.4] vs 95.7 [91.9, 99.1]'
+          - 'Size mix of finished plans: hand-built 78% small, 15% mid, 7% large (mean 5.7 drones needed); Suggest 42%, 26%, 32% (mean 8.8)'
+          - 'All 627 plans, first three phases: before −2.9 s, p = .29; building −3.2 s [−6.2, −0.1], p = .04; ready → confirmed +3.3 s [+2.0, +4.6], p < .001'
+          - 'Carrying out, including missions with a drone failure (378): −8.1 s [−17.1, +0.9], p = .08: same direction, less certain'
+          - 'Projected completion vs the assistant''s own plan at open, median: hand-built +10.3 s [3.7, 28.3] (144 plans), kept Suggest +1.6 s [0.8, 4.0] (468), edited Suggest +38.7 s (18)'
+          - 'Interleaving, round-1 specification re-run: odds ×4.83 [2.24, 10.40], p < .001 (630 plans, 33 people); raw 45% vs 19%; 28% vs 11% actually allocated another mission'
+        reply: >-
+          Done: one chart with small, mid, large, all missions (raw) and all missions (size-standardised) side by side,
+          hand vs Suggest in each, and a toggle that leaves out the time before the first action. Your check was right
+          to make, and the answer is a mix effect (Simpson's paradox). Hand-built plans are mostly small missions (78%,
+          against 42% of Suggest plans), and small missions are quick either way, so the hand-built average is pulled down.
+          Given the same mix of sizes, hand-built plans take 109 s and Suggest plans 96 s. The same-person comparison with
+          size held gives Suggest −15 s; drop size from that model and the gap vanishes (−0.1 s), which pins the reversal
+          on size. Caveat: only 6 large hand-built plans finished cleanly. Phases now share one definition with section 4.
+  f-practice:
+    sections:
+      speed:
+        reply: >-
+          Yes on the strategic tier, not quite on the tactical one. Strategic: a clear within-session speed-up (−39% by the
+          end of session 1, p < .001) that is mostly gone at the start of session 2 (+31% slower than the end of session
+          1, p = .053). That is the warm-up. What is kept is about a fifth (session 2 start −20% vs session 1 start, p =
+          .07; averaged over the whole session, session 2 is −19% [−30, −6]). So the learning effect is real but smaller,
+          not absent. Tactical: the reverse shape. The speed-up within session 1 is weaker and uncertain (−24%, p = .09),
+          but it carries over (session 2 starts where session 1 ended, +2%, p = .92) and session 2 is −24% [−36, −9]
+          overall, which looks more like learning than warm-up. One caution for both: the start of a session is also the
+          start of a game (first missions, short queue), though the speed-up survives holding the queue fixed.
+  f-manual-cards:
+    sections:
+      dots:
+        reply: Agreed, a mention. The y-axis now says what it measures (drones committed by hand minus drones on the Conservative card).
+      position:
+        reply: Fine. Added a caption saying each bar is 100% of that kind of manual allocation and what each segment counts.

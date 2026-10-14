@@ -20,9 +20,30 @@ remains is the curated set of findings and the links between them — the web th
   combined (`pass2/BRIEF.md` was the analysts' brief). The area scripts need pandas + statsmodels; on this machine
   that is `C:/Users/Work/anaconda3/python.exe`. **Pass 2 is open**: the page now reviews findings (one verdict per
   finding, plus an optional note per section).
-- **Next step for Claude:** when the researcher says pass 2 is done, archive `responses.json` to `passes/pass2.json`
-  and act on the notes, editing `findings.yaml` directly; the per-area fragments are now history. Rerun an area's
-  `.py` when its numbers need to change.
+- **2026-10-13** — **pass 2 closed** (notes on all 13 findings and nearly every section; frozen in `passes/pass2.json`).
+  The researcher's direction: distil. Between passes: sections they called "not a focus" got `tier: side` (a collapsed
+  *Sidelined* panel at the bottom of each finding); `f-flaw-visibility` and `f-recovery` were merged into `f-flaw-odd`;
+  `f-operator-wants` became the *For the discussion* finding; `f-who-does-better`, `f-triage`, `f-methods` are
+  sidelined whole; `f-personal-style` was reordered into the researcher's narrative. New on the page: a per-section
+  **paper role** (Paper / Numbers only / Extra / Archive — Claude's suggestion shown dashed until picked, stored as
+  `role` in responses), and each section shows the previous pass's note with Claude's `reply`. Analysis changes were
+  done per area to `pass2/<area>.pass3.yaml` (brief: `pass2/BRIEF_PASS3.md`) and merged by
+  `scripts/register/apply_updates.py pass3`. **Pass 3 is open.**
+- **2026-10-14** — **pass 3 closed** (98 notes, frozen in `passes/pass3.json`). Five findings are Core (personal
+  style, size decides, workload, flaw, tier trust). Between passes: the researcher's role picks are written into
+  `findings.yaml` as `role` + `role_set: true` (shown solid on the page); sections picked *Archive* moved to the
+  sidelined panel; `f-who-does-better` is `status: retired` (a *Retired* group at the foot of the list); old replies
+  were cleared so `reply` only answers the previous pass. Analysis per area went to `pass2/<name>.pass4.yaml`
+  (brief: `pass2/BRIEF_PASS4.md`, which adds a general axis-label audit) and was merged by
+  `scripts/register/apply_updates.py pass4`. **Pass 4 is open.**
+- **2026-10-14** — **pass 4 closed** (frozen in `passes/pass4.json`): mostly approved; notes on two graphs
+  (size#parallel reframed as "close, small edge to Suggest in execution"; flaw#by-index end points dug into,
+  `pass2/flaw.pass5.yaml`). `f-tier-trust` is now Keep; `f-who-does-better` marked Keep, so un-retired to sidelined.
+  From now on **each finding's verdict carries over**: the new `responses.json` is seeded with last pass's finding
+  verdicts (`updated: null`), so the researcher only changes what moved. **Pass 5 is open.**
+- **Next step for Claude:** when the researcher says pass 5 is done, archive `responses.json` to `passes/pass5.json`,
+  bump `pass:` in `cards.yaml`, seed the next `responses.json` with the finding verdicts, carry new role picks into
+  `findings.yaml` (`role` + `role_set`), and act on the notes. Sections with `role: paper` are the figure list.
 - **(pass 1, historical)** when the researcher said pass 1 was done, `responses.json` will be in this folder
   (committed from the other machine, or handed over as an exported `review_pass1_*.json` — if so, save it
   here as `responses.json`). Then follow *Between passes* below. Do not edit cards before reading the

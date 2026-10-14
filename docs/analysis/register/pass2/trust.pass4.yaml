@@ -1,0 +1,180 @@
+# Pass 4 content changes from the trust / style / load analyst (areas recovery, style, load).
+# Covers f-tier-trust (#where, #checking, new #attention), f-personal-style (#not-disposition), f-workload
+# (#raw-vs-adjusted), f-triage (#order, #choice). Numbers: scripts/register/pass2/recovery.py -> recovery.json
+# (checking.bins4, trust.attention). Charts: scripts/register/pass2/{recovery,style,load}.charts.js
+# (recovery.checkCost3, recovery.trustSplits3, recovery.attention, style.dispositionGrid3; load.nullBins gains a
+# "Both together" toggle). Every main-section chart in these findings had its axes audited (see the replies).
+findings:
+
+  f-tier-trust:
+    reply: >-
+      Polished as asked: the checking chart is rebinned with no gaps, the "where" chart leads with the two views you
+      liked, and your attention question is answered with a new check (sidelined section "Is the tactical plan given
+      less attention in Strategic Heavy sessions?"). Every axis in this finding now says what it measures.
+    sections:
+
+      where:
+        chart: recovery.trustSplits3
+        text: >-
+          The gap is larger in Strategic Heavy sessions (+1.13) than in Tactical Heavy ones (+0.52, CI just reaches zero).
+          It is also small after the first session (+0.37, CI crosses zero) and large after the second (+1.28). Both
+          matter when taken together: holding session order fixed, Strategic Heavy adds about +0.6 to the gap and being
+          the second session about +0.9. Tactical trust hardly moves (5.36 → 5.51 across sessions, and only +0.15
+          between scenarios); it is <b>strategic</b> trust that falls, and it is lowest in Strategic Heavy sessions. So
+          "trusted more, especially in Strategic Heavy" largely means "the strategic one loses trust, especially in the
+          scenario where its cards are used most". Four people said their trust <i>grew</i> with experience (C16). The
+          chart opens on the six questionnaire items (every one favours tactical); <b>Scenario played</b> shows the two
+          scenarios; <b>Also: first / second session</b> shows session order.
+        reply: >-
+          <b>Not clearly.</b> I read "the first two" as the first two views of the chart (questionnaire items, scenario);
+          those are now the main buttons, with session order kept as a third "Also" button. If you meant the first two
+          numbers (session and scenario), both are still one click away. On attention, two things. First, the extra gap
+          in Strategic Heavy is mostly <i>strategic</i> trust being lower there (−0.46), not tactical trust being higher
+          (+0.15, p = .25), so there is little tactical rise to explain. Second, I checked attention to the tactical plan
+          directly (new sidelined section). Raw, Strategic Heavy plans do get less: less Suggest, fewer edits, shorter
+          planner time. But those plans are much smaller (5.3 vs 8.1 drones). Compared like for like (same plan size and
+          session order), planner time is ×0.88 [0.72, 1.07] and checking time ×0.91 [0.70, 1.17], both slightly lower
+          but not distinguishable from no difference; editing is the same (×1.05). The one clear difference goes the other
+          way from "less attention": on same-size plans people press Suggest <i>more</i> in Strategic Heavy (odds ×1.50
+          [1.03, 2.18], p = .036). And people whose planner time drops more in Strategic Heavy do not clearly trust
+          tactical more there (ρ = −.24 [−.56, .12], p = .19, n = 31). So "less attention" may be a small part of it,
+          but the data do not show it; I would not put it in the paper as an explanation, at most as a speculation.
+
+      checking:
+        chart: recovery.checkCost3
+        text: >-
+          Bigger missions mean bigger tactical plans. As plans grow, operators press Suggest more often (63% of plans
+          with 3 or fewer drones → 93% with 10 or more) and keep the plan unmodified more often (63% → 86%). Once Deploy
+          unlocks, they spend a median of about <b>2–4 seconds</b> on the plan whatever its size. Per drone, checking
+          therefore falls steeply as plans grow (0.7 s → 0.2 s). A strategy card gets about 9 s. Almost every consulted
+          plan is deployed as it comes: 468 of 486. This is the speed-versus-accuracy trade-off the researcher expects to
+          come back to. The more there is to check, the less of it is checked proportionally, and the plan is taken.
+          Operators describe exactly this. Nine say they check when it is cheap and skip it under pressure (C17). Three
+          say the plan was too complex or too fast to check (C14). Five say they checked nearly everything, and they do
+          decide more slowly (C18). Only 3 of 33 ever mention noticing a tactical flaw (C13).<br><br><b>But</b> the
+          pre-registered mechanism test (H2) is fragile. All three predicted parts point the right way (p = .019
+          uncorrected), but it does not survive correction for the round's several tests (.065). Among consulted plans,
+          larger ones are actually modified a little <i>more</i>. Keeping goes up with size mainly because people
+          consult more on big plans, not because they check consulted plans more lightly. The logs also cannot tell "too
+          costly to check" apart from "nothing ever looked wrong". The tactical plan's flaws are hard to see, while the
+          cards' over-allocation is visible. That half of the explanation belongs to <i>tier-flaw-visibility</i> in
+          f-flaw-odd and is not repeated here.
+        how: >-
+          630 confirmed tactical plans from 33 people (h2_verification_cost.load). They are grouped by the number of
+          drones in the Tactical Assistant's plan into six bins with no gaps: ≤3, 4–5, 6, 7, 8–9 and 10+ drones. The
+          bins were chosen so every bin has enough plans for a stable rate: at least 72 plans and at least 62 with a
+          checking time in each (the smallest bins are 4–5 drones, 87 plans, and 10+, 72 plans). Every plan is used; none
+          is dropped. "Consulted" means Suggest was pressed at least once. "Kept unmodified" means consulted and deployed
+          with no change. "Checking time" runs from the last Suggest press to Deploy, minus the forced reveal: the planner
+          adds one drone→task pair per second and Deploy is locked until it finishes, so that wait is not checking.
+          Effects per SD of plan size (drones × tasks) come from GEE models on all 630 plans, clustered by person,
+          adjusted for scenario and session; they do not depend on the bins. An odds ratio of 1.76 means each step up in
+          plan size multiplies the odds of keeping the plan by 1.76. The two ends (10+ vs ≤3 drones) are also compared
+          directly. The card comparison takes each person's median net decision time on strategic decisions:
+          strategic_choice latency minus the card reveal, over all strategic decisions, manual ones included. The H2
+          numbers are from docs/analysis/round1/h2_verification_cost.md.
+        numbers:
+          - "Kept unmodified rises with plan size: OR 1.76 per SD [1.25, 2.47], p = .001 (all 630 plans)"
+          - "Consulted rises: OR 2.52 [1.87, 3.38]; kept once consulted FALLS: OR 0.68 [0.50, 0.94], p = .017"
+          - "By bin (≤3, 4–5, 6, 7, 8–9, 10+ drones; n = 141, 87, 135, 81, 114, 72 plans): Suggest pressed 63%, 71%, 81%, 83%, 81%, 93%; kept unmodified 63%, 67%, 80%, 80%, 75%, 86%"
+          - "10+ drones vs ≤3: Suggest pressed 93% vs 63%, OR 10.8 [3.2, 36.0]; kept 86% vs 63%, OR 5.2 [2.1, 12.7], both p < .001"
+          - "Median checking time by bin: 2.0, 3.1, 2.6, 4.2, 2.9, 3.0 s; per SD +0.60 s [−0.15, +1.35], p = .12; per drone 0.68 s at ≤3 drones → 0.23 s at 10+"
+          - "468 of 486 consulted plans deployed unmodified (96%)"
+          - "Person-median check: tactical 2.85 s vs strategy card 8.80 s (n = 33, Wilcoxon p < .0001)"
+          - "H2 primary p = .019 uncorrected, .065 after Holm correction across round 1"
+        reply: >-
+          Done. The "well-filled sizes" toggle is gone; the chart now uses six contiguous bins (≤3, 4–5, 6, 7, 8–9, 10+
+          drones) with no gaps and every plan included. Each bin has at least 72 plans (at least 62 with a checking time),
+          which keeps the 95% intervals on each rate to roughly ±10 points. Your "6–8" would have overlapped with "4–6",
+          and 6 and 7 drones each have plenty of plans on their own (135 and 81), so they get a bin each. The story is
+          unchanged: Suggest and keeping rise from 63% to 93% and 86%, and checking time stays at about 2–4 s at every
+          size. The per-SD models were always on all 630 plans, so those numbers do not change. Both panels now have y-axis
+          titles (% of tactical plans; seconds checking after the reveal).
+
+    new_sections:
+      - id: attention
+        after: where
+        title: "Is the tactical plan given less attention in Strategic Heavy sessions?"
+        tier: side
+        role: extra
+        chart: recovery.attention
+        text: >-
+          A check of the idea that tactical trust is higher in Strategic Heavy sessions because the tactical plan gets
+          less attention there. Raw, it does: in Strategic Heavy sessions people press Suggest less, edit less and spend
+          less time in the planner. But Strategic Heavy plans are much smaller (5.3 vs 8.1 drones). Compared at the same
+          plan size and session order, the planner is open about 12% less long and the checking is about 9% shorter, but
+          neither is distinguishable from no difference, and editing is the same. The one clear difference is the other
+          way round: on same-size plans people press Suggest <i>more</i> in Strategic Heavy (odds ×1.5). People whose
+          planner time drops more do not clearly trust the Tactical Assistant more (ρ = −.24, p = .19). And tactical trust
+          itself barely differs between the scenarios (+0.15, p = .25); the gap comes from strategic trust. So the
+          attention account is not supported, though a small effect cannot be ruled out.
+        how: >-
+          630 tactical plans, 33 people (P09 excluded): 381 in Strategic Heavy sessions, 249 in Tactical Heavy. Five
+          measures per plan. <b>Planner time</b>: from the planner opening to Deploy, minus the forced one-second-per-pair
+          reveal, on plans where Suggest was pressed (486), so it is time spent with the assistant's plan. <b>Checking
+          time</b>: last Suggest press to Deploy, minus the reveal (the "checking" measure of the section above).
+          <b>Suggest pressed</b>, <b>kept unmodified</b> and <b>edited at all</b> on every plan. Each is compared
+          Strategic Heavy vs Tactical Heavy with a GEE model clustered by person: times on the log scale (so the result is
+          a ratio of typical seconds), yes/no measures as odds ratios. <b>Raw</b> has scenario only; <b>adjusted</b> adds
+          plan size (drones × tasks) and session order, so it compares like-for-like plans. The trust link: each person's
+          average size-and-session-adjusted log planner time in each scenario, the Strategic Heavy minus Tactical Heavy
+          difference, against their difference in tactical trust; Spearman ρ with a bootstrap 95% CI (31 people with
+          Suggest plans in both scenarios).
+        numbers:
+          - "Planner time (Suggest plans): median 11.5 s Strategic Heavy vs 12.8 s Tactical Heavy; adjusted ×0.88 [0.72, 1.07], p = .21"
+          - "Checking time after the reveal: median 2.5 s vs 3.0 s; adjusted ×0.91 [0.70, 1.17], p = .45"
+          - "Suggest pressed: 73% vs 84% raw (OR 0.56, p = .005); same-size plans OR 1.50 [1.03, 2.18], p = .036"
+          - "Kept unmodified: 71% vs 79% raw (OR 0.67, p = .046); adjusted OR 1.26 [0.88, 1.80], p = .22"
+          - "Edited at all: 2% vs 6% raw (OR 0.44, p = .033); adjusted OR 1.05 [0.32, 3.47], p = .94"
+          - "Attention drop vs tactical-trust rise, person by person: ρ = −.24 [−.56, .12], p = .19, n = 31"
+
+  f-personal-style:
+    sections:
+      not-disposition:
+        chart: style.dispositionGrid3
+        text: >-
+          Attitude to AI (AIAS-4), verification propensity, views on human authority over AI (delegation scale and its
+          single items, including "a human should make the final decision"), and prior experience: 40 tests against five
+          behaviours. Three reach p < .05 before correction, and <b>none survives Holm correction</b> for the 40 tests.
+          Three nominal hits is what chance alone produces: shuffling which person's questionnaire goes with which
+          person's behaviour gives 2.0 such hits on average, and 3 or more in a third of shuffles. This is "no evidence",
+          not proof of no link: the sample could only have detected fairly strong correlations (|ρ| ≥ .48), and it is
+          almost uniformly AI-positive (AIAS-4 averages 8.0 / 10) and from computing or engineering (32 of 33). Within
+          this sample, the large differences in style are not explained by what people say they think about AI.
+        reply: >-
+          Done. The chart is now the grid alone (with a key saying what a cell and its colour mean). The shuffle
+          histogram is gone; its result is two sentences in the text and the caption: 3 of 40 tests nominal, 0 survive
+          Holm, and 3 or more nominal hits happen in 34% of shuffles with no link at all (2.0 on average). The numbers
+          below carry the exact figures if you want them in the paper.
+
+  f-workload:
+    reply: >-
+      Agreed. The chart is unchanged by default; the one addition is the "Both together" toggle you asked for.
+    sections:
+      raw-vs-adjusted:
+        text: >-
+          Each point is the share of decisions where the operator took a strategy card (or pressed Suggest), grouped by
+          how many OTHER missions were waiting for a strategic decision at that moment. Whiskers are 95% intervals.
+          Switch the view: <b>Raw</b> shows the dip at 3–4 waiting that made the raw graph look like an effect; <b>Raw +
+          expected</b> shows that the dip is where it was expected anyway (dashed line); <b>Adjusted</b> removes it —
+          every adjusted point sits inside 59–74% with overlapping intervals and no trend. <b>Assistant</b> switches
+          between strategic and tactical; <b>Both together</b> puts the two on one chart, both in whichever view is
+          picked (both raw, both raw with their expected lines, or both adjusted). The dotted vertical line marks where
+          the queue list runs out of room (about 3.5 cards visible at rest, counting the one being opened): beyond it,
+          waiting missions are only on the strategic map. Nothing changes at that line either.
+        reply: >-
+          Done: a third "Assistant" button, <b>Both together</b>, overlays strategic (blue) and tactical (orange) on one
+          axis, both in the view picked below it (Raw, Raw + expected, or Adjusted). The default is still strategic,
+          adjusted. The y-axis now names what is counted (% of strategic decisions where a card was taken / % of tactical
+          plans where Suggest was pressed).
+
+  f-triage:
+    sections:
+      order:
+        reply: >-
+          Kept. Axis check: the y-axis now reads "% of decisions that opened this mission", the x-axis "number of OTHER
+          missions waiting", and the dashed line's legend says it is a random pick from what was waiting.
+      choice:
+        reply: >-
+          Kept as numbers. Axis check on its chart: the x-axis is now titled "odds ratio of being opened, log scale
+          (bottom block: long ÷ short)", and the end labels no longer overlap.

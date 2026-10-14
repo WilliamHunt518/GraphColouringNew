@@ -151,7 +151,7 @@
           hoverable(r_, `<b>Own other session ranked ${lab}</b><br>${obs[i]} of ${N} look-ups (33 people × 2 directions)<br>chance would give ${num(exp[i], 1)}`);
         });
         txt(s, padL + (W - padL) / 2, H - 8, 'Where a person’s own other session ranks among all 33, by closeness of habits', { anchor: 'middle', size: 11 });
-        txt(s, 12, padT + (H - padB - padT) / 2, 'look-ups', { anchor: 'middle', rot: -90, size: 11 });
+        txt(s, 12, padT + (H - padB - padT) / 2, 'number of look-ups (of 66)', { anchor: 'middle', rot: -90, size: 11 });
         cap(box, `Bars: observed (66 look-ups: each person’s session 1 searching the 33 session-2 profiles, and the reverse). Dashed line: what chance gives (every rank equally likely). `
           + `Top-3 share ${pct(R.top3, 0)} vs ${pct(3 / n, 0)} by chance; own session nearest ${R.hitsAB} + ${R.hitsBA} times vs 2 expected (permutation ${pval(R.pHit)}).`);
       };
@@ -290,7 +290,7 @@
           tip: `<b>${p.pid}</b><br>strategy cards taken ${pct(p.took, 0)} of ${p.n} decisions<br>Suggest pressed on ${pct(p.consult, 0)} of ${p.nT} tactical plans<br>reliance-axis score ${sgn(p.pc1, 2)} SD`
             + (ring.has(p.pid) ? `<br><i>coded ${mark}</i>` : '') }));
         scatterPanel(s, { x: 90, y: 20, w: 420, h: 270 }, pts, { xmin: 0, xmax: 1.02, ymin: 0, ymax: 1.02, xticks: [0, .25, .5, .75, 1], yticks: [0, .25, .5, .75, 1],
-          fx: v => pct(v, 0), fy: v => pct(v, 0), xlab: 'Strategic: share of strategy cards taken', ylab: 'Tactical: share of plans where Suggest was pressed' });
+          fx: v => pct(v, 0), fy: v => pct(v, 0), xlab: 'Strategic: % of strategic decisions where a card was taken', ylab: 'Tactical: % of plans with Suggest' });
         [['--lad-1', '≥ +0.8 SD'], ['--lad-2', '0 to +0.8'], ['--lad-3', '−0.8 to 0'], ['--lad-4', '< −0.8 SD']].forEach(([c, l], q) => {
           el('circle', { cx: 540, cy: 50 + q * 22, r: 6, fill: css(c), stroke: css('--line') }, s);
           txt(s, 552, 54 + q * 22, l, { size: 11 });
@@ -315,7 +315,8 @@
     /* 9 · how much of card-taking is the person vs the mission */
     'style.whoVsWhat': safe(host => {
       const Wv = D.whoVsWhat;
-      barsH(host, [{ label: 'Mission, scenario, run, timing', value: Wv.mission, color: css('--mark-soft'), sub: 'drone types, drones, scenario, session, decision number' },
+      h('p', { class: 'cap', html: '<b>Bar length</b> = McFadden pseudo-R², as a % (how much of whether a card is taken each model explains; 0% = no better than the overall rate).' }, host);
+      barsH(h('div', {}, host), [{ label: 'Mission, scenario, run, timing', value: Wv.mission, color: css('--mark-soft'), sub: 'drone types, drones, scenario, session, decision number' },
         { label: 'Who the operator is', value: Wv.person, color: css('--s-strat'), sub: 'one term per person' },
         { label: 'Both together', value: Wv.both, color: css('--mark'), sub: `${Wv.n} decisions, ${Wv.people} people` }],
         { max: .4, fmt: v => pct(v, 0), padL: 220 });
@@ -374,6 +375,8 @@
           hoverable(rc, `<b>${c.predLabel}</b> × ${c.behLabel}<br>Spearman ρ = ${num(c.rho, 2)}, ${pval(c.p)} uncorrected, Holm ${pval(c.holm)}<br>n = ${c.n}`);
         });
       });
+      txt(s, 8, 14, 'Each cell: Spearman ρ across people, questionnaire score (row) × behaviour (column, mean of both sessions)', { size: 10.5, ink: '--ink-3' });
+      txt(s, 8, 28, 'Colour: blue = positive ρ, amber = negative; stronger colour = larger |ρ|', { size: 10.5, ink: '--ink-3' });
       txt(s, 8, H - 10, `Outlined = p < .05 before correction (${DP.nNominal} of ${DP.nTests}); after Holm: ${DP.nHolm}. Detectable at 80% power: |ρ| ≥ ${num(DP.detectable, 2)}.`, { size: 11, ink: '--ink-2' });
     }),
 
@@ -446,13 +449,216 @@
 
     /* 15 · what operators want (counts, unprompted share) */
     'style.wantsBars': safe(host => {
+      h('p', { class: 'cap', html: '<b>Bar length</b> = number of the 33 operators who said this in the debrief or interview.' }, host);
       const Q = D.qual, rows = [['C25', 'A human should keep the final say'], ['C27', 'Wants failure data / analytics'], ['C08', 'Wants more options / a middle ground'],
         ['C26', 'Wants the assistant’s reasoning'], ['C28', 'Wants more automation'], ['C23', 'Says the assistant improved results'], ['C24', 'Says they did better by hand']]
         .filter(([c]) => Q[c]);
-      barsH(host, rows.map(([c, l]) => ({ label: `${l} (${c})`, value: Q[c].n, color: css(c === 'C23' || c === 'C24' ? '--mark-soft' : '--mark'),
+      barsH(h('div', {}, host), rows.map(([c, l]) => ({ label: `${l} (${c})`, value: Q[c].n, color: css(c === 'C23' || c === 'C24' ? '--mark-soft' : '--mark'),
         sub: `${Q[c].unprompted} unprompted · ${Q[c].who.join(', ') || 'nobody'}<br>cards ${Q[c].took.inMean == null ? '—' : pct(Q[c].took.inMean, 0)} vs ${pct(Q[c].took.restMean, 0)} for everyone else · Suggest ${Q[c].consult.inMean == null ? '—' : pct(Q[c].consult.inMean, 0)} vs ${pct(Q[c].consult.restMean, 0)}` })),
         { max: 12, fmt: v => `${num(v, 0)} of 33`, padL: 300 });
       cap(host, 'People coded from the debrief / interview (one AI coder; see Methods). A person can be in several bars. Hover for who and how the group used the assistants (descriptive only).');
+    }),
+
+    /* ───────────── pass 3 ───────────── */
+
+    /* P3 · the ten habits: what each is, and its spread over the 66 sessions (raw units) */
+    'style.habits': safe(host => {
+      const HB = D.pass3.habits, rows = HB.habits;
+      const ONE = { took: 'card taken as offered, % of strategic decisions', preempt: 'made before the cards appeared, % of hand-made decisions',
+        edit: 'card edited then committed, % of strategic decisions', previews: 'card previews per strategic decision',
+        netSecs: 'seconds per strategic decision, beyond the card wait', dSmall: 'drones vs the Conservative card, single-type missions',
+        dLarge: 'drones vs the Conservative card, multi-type missions', consult: 'Suggest pressed, % of tactical plans',
+        keep: 'deployed unchanged, % of plans where Suggest was pressed', recSug: 'Suggest pressed, % of recovery episodes' };
+      const ORDER = [['Strategic tier (the strategy cards)', ['took', 'previews', 'netSecs', 'preempt', 'edit', 'dLarge', 'dSmall']],
+        ['Tactical tier (Suggest)', ['consult', 'keep', 'recSug']]];
+      const by = Object.fromEntries(rows.map(r_ => [r_.k, r_]));
+      const scale = r_ => {
+        if (r_.unit === 'pct') return { min: 0, max: 1, ticks: [0, .5, 1], f: v => pct(v, 0), x: v => v };
+        if (r_.unit === 'secs') return { min: 1, max: 50, ticks: [2, 5, 10, 20, 40], f: v => num(v, 0) + ' s', log: true };
+        if (r_.unit === 'drones') return { min: -3.5, max: 4.5, ticks: [-3, 0, 3], f: v => sgn(v, 0), zero: true };
+        return { min: 0, max: Math.max(1.6, r_.hi || 1), ticks: [0, .5, 1, 1.5], f: v => num(v, 1) };
+      };
+      const fmtV = (r_, v) => v == null ? '—' : r_.unit === 'pct' ? pct(v, 0) : r_.unit === 'secs' ? num(v, 1) + ' s' : r_.unit === 'drones' ? sgn(v, 1) + ' drones' : num(v, 2);
+      const W = 700, rowH = 46, headH = 24, x0 = 300, x1 = 560, nRows = ORDER.reduce((a, g) => a + g[1].length, 0);
+      const H = 22 + ORDER.length * headH + nRows * rowH + 20, s = svgRoot(host, W, H);
+      txt(s, x0 + (x1 - x0) / 2, 13, 'Each dot = one session (66: 33 people × 2)', { anchor: 'middle', size: 10.5, ink: '--ink-3' });
+      txt(s, W - 4, 13, 'carry-over ρ (s1 vs s2)', { anchor: 'end', size: 10.5, ink: '--ink-3' });
+      let y = 22;
+      ORDER.forEach(([head, keys]) => {
+        txt(s, 4, y + 16, head, { ink: '--ink', weight: 600, size: 12 });
+        y += headH;
+        keys.forEach(k => {
+          const r_ = by[k];
+          if (!r_) return;
+          const sc = scale(r_), tr = sc.log ? Math.log : (v => v);
+          const X = v => x0 + (x1 - x0) * (tr(Math.max(sc.min, Math.min(sc.max, v))) - tr(sc.min)) / (tr(sc.max) - tr(sc.min));
+          const cy = y + 17, col = css(r_.tier === 'tactical' ? '--s-tac' : '--s-strat');
+          txt(s, 4, cy - 2, r_.label, { ink: '--ink', size: 12, weight: 600 });
+          txt(s, 4, cy + 13, ONE[k] || '', { size: 10.5, ink: '--ink-3' });
+          el('line', { x1: x0, x2: x1, y1: cy, y2: cy, stroke: css('--grid'), 'stroke-width': 1 }, s);
+          if (sc.zero) el('line', { x1: X(0), x2: X(0), y1: cy - 12, y2: cy + 12, stroke: css('--ink-3'), 'stroke-dasharray': '2 2' }, s);
+          sc.ticks.forEach(t => txt(s, X(t), cy + 24, sc.f(t), { anchor: 'middle', size: 9, ink: '--ink-3', mono: true }));
+          if (r_.q1 != null) el('rect', { x: X(r_.q1), y: cy - 10, width: Math.max(2, X(r_.q3) - X(r_.q1)), height: 20, rx: 3, fill: col, 'fill-opacity': .12 }, s);
+          r_.pts.forEach((p, i) => {
+            if (p[2] == null) return;
+            const jit = ((i * 37) % 11 - 5) * 1.5;
+            const c = el('circle', { cx: X(p[2]), cy: cy + jit, r: 2.6, fill: col, 'fill-opacity': .55 }, s);
+            hoverable(c, `<b>${p[0]} · session ${p[1]}</b><br>${r_.label}: ${fmtV(r_, p[2])}<br>from ${p[3]} ${r_.per}`);
+          });
+          if (r_.median != null) el('line', { x1: X(r_.median), x2: X(r_.median), y1: cy - 12, y2: cy + 12, stroke: css('--ink'), 'stroke-width': 2.5 }, s);
+          const hit = el('rect', { x: 0, y, width: x0 - 6, height: rowH, fill: 'transparent' }, s);
+          hoverable(hit, `<b>${r_.label}</b><br>${r_.what}<br>median ${fmtV(r_, r_.median)}, middle half ${fmtV(r_, r_.q1)} to ${fmtV(r_, r_.q3)}`
+            + (r_.missing ? `<br>undefined in ${r_.missing} of ${HB.nSessions} sessions (nothing to count)` : '')
+            + `<br>same person, session 1 vs 2: ρ ${num(r_.rho, 2)} [${num(r_.rhoLo, 2)}, ${num(r_.rhoHi, 2)}], Holm ${pval(r_.pHolm)}`);
+          const strong = r_.pHolm < .05;
+          txt(s, W - 4, cy + 4, `ρ ${num(r_.rho, 2)}${strong ? '' : ' ns'}`, { anchor: 'end', size: 11, mono: true, ink: strong ? '--ink' : '--ink-3', weight: strong ? 600 : null });
+          y += rowH;
+        });
+      });
+      cap(host, `Dots: every session’s value of the habit in its own units (hover for who and how many decisions it rests on); black tick = median; shaded band = the middle half of sessions. `
+        + `Right: how strongly the habit carries over from a person’s first session to their second (Spearman ρ, game-adjusted; “ns” = not significant after correcting for ten tests). `
+        + `For the fingerprint every habit is then turned into a z-score within the game played, so the profiles compare people, not games.`);
+      tableFor(host, ['Habit', 'What is counted', 'Median', 'Middle half', 'Undefined', 'ρ s1→s2'],
+        rows.map(r_ => [r_.label, r_.what, fmtV(r_, r_.median), `${fmtV(r_, r_.q1)} to ${fmtV(r_, r_.q3)}`, `${r_.missing} of ${HB.nSessions}`, num(r_.rho, 2)]), 'What each habit is (definitions)');
+    }),
+
+    /* P3 · no types, self-explaining: map, separation vs no-types simulations, recurrence */
+    'style.typesSimple': safe(host => {
+      const T = D.pass3.types, box = h('div', {}, host);
+      const views = {
+        map: () => {
+          const s = svgRoot(box, 700, 330), M = T.map, gcol = g => css(g ? '--s-tac' : '--s-strat');
+          const lim = Math.max(...M.pts.concat(M.sim).map(p => Math.max(Math.abs(p.x), Math.abs(p.y)))) * 1.08;
+          const tk = [-Math.floor(lim), 0, Math.floor(lim)];
+          scatterPanel(s, { x: 60, y: 34, w: 250, h: 240 }, M.pts.map(p => ({ x: p.x, y: p.y, r: 5.5, fill: gcol(p.g),
+            tip: `<b>${p.pid}</b><br>reliance axis ${sgn(p.x, 2)}, second dimension ${sgn(p.y, 2)}<br>put in group ${p.g ? 'B' : 'A'} by the best two-group split` })),
+            { xmin: -lim, xmax: lim, ymin: -lim, ymax: lim, xticks: tk, yticks: tk, fx: v => String(v), fy: v => String(v), zeroLines: true,
+              title: 'The 33 real operators', xlab: 'Reliance axis: 1st dimension (PCA score)', ylab: '2nd dimension (PCA score)' });
+          scatterPanel(s, { x: 420, y: 34, w: 250, h: 240 }, M.sim.map((p, i) => ({ x: p.x, y: p.y, r: 5.5, fill: gcol(p.g), op: .6,
+            tip: `Simulated operator ${i + 1} (no types by construction)<br>group ${p.g ? 'B' : 'A'} of the best two-group split` })),
+            { xmin: -lim, xmax: lim, ymin: -lim, ymax: lim, xticks: tk, yticks: tk, fx: v => String(v), fy: v => String(v), zeroLines: true,
+              title: '33 simulated, no types', xlab: '1st dimension (PCA score)', ylab: '2nd dimension (PCA score)' });
+          cap(box, `Each dot is one operator, placed by the two biggest dimensions of their ten habits (together ${pct(M.pc[0] + M.pc[1], 0)} of the differences). Colour = the best split into two groups. `
+            + `Left, the real people; right, 33 simulated operators made to have the same habits and the same links between habits, but drawn from one smooth cloud, so they have no types at all (this sample is the typical one, separation ${num(M.simSil, 2)}). `
+            + `Both are one continuous cloud: the split just cuts it in half, it does not find two clumps with a gap between them.`);
+        },
+        sep: () => {
+          const S = T.sil, s = svgRoot(box, 700, 280), padL = 60, padB = 50, padT = 22, Hh = 280, top = .45;
+          const y = v => Hh - padB - (Hh - padB - padT) * v / top, gw = (700 - padL - 20) / S.length;
+          [0, .1, .2, .3, .4].forEach(v => { el('line', { x1: padL, x2: 690, y1: y(v), y2: y(v), stroke: css('--grid') }, s);
+            txt(s, padL - 6, y(v) + 4, num(v, 1), { anchor: 'end', size: 10, mono: true, ink: '--ink-3' }); });
+          el('line', { x1: padL, x2: 690, y1: y(.25), y2: y(.25), stroke: css('--ink-3'), 'stroke-dasharray': '5 3' }, s);
+          txt(s, 688, y(.25) - 5, 'below .25: no real group structure', { anchor: 'end', size: 10, ink: '--ink-3' });
+          S.forEach((q, i) => {
+            const cx = padL + gw * (i + .5), bw = 46;
+            const b1 = el('rect', { x: cx - bw - 4, y: y(q.obs), width: bw, height: y(0) - y(q.obs), rx: 4, fill: css('--s-strat') }, s);
+            const b2 = el('rect', { x: cx + 4, y: y(q.nullMean), width: bw, height: y(0) - y(q.nullMean), rx: 4, fill: css('--mark-soft') }, s);
+            el('line', { x1: cx + 4 + bw / 2, x2: cx + 4 + bw / 2, y1: y(q.nullLo), y2: y(q.nullHi), stroke: css('--ink-2'), 'stroke-width': 1.5 }, s);
+            [q.nullLo, q.nullHi].forEach(v => el('line', { x1: cx + bw / 2 - 2, x2: cx + bw / 2 + 10, y1: y(v), y2: y(v), stroke: css('--ink-2'), 'stroke-width': 1.5 }, s));
+            txt(s, cx - bw / 2 - 4, y(q.obs) - 5, num(q.obs, 2), { anchor: 'middle', size: 10.5, mono: true });
+            txt(s, cx, Hh - padB + 16, `split into ${q.k} groups`, { anchor: 'middle', size: 11.5, ink: '--ink' });
+            txt(s, cx, Hh - padB + 30, `real ≥ simulated in ${pct(1 - q.p, 0)} of draws`, { anchor: 'middle', size: 10, ink: '--ink-3' });
+            hoverable(b1, `<b>Real operators, ${q.k} groups</b><br>separation (silhouette) ${num(q.obs, 3)}<br>group sizes ${q.sizes.join(', ')} of 33`);
+            hoverable(b2, `<b>No-types simulations, ${q.k} groups</b><br>mean ${num(q.nullMean, 3)}, 95% of ${T.nSims} samples ${num(q.nullLo, 3)}–${num(q.nullHi, 3)}<br>share at least as separated as the real data: ${pct(q.p, 0)}<br>(habits shuffled independently: mean ${num(q.shufMean, 3)})`);
+          });
+          txt(s, 14, padT + (Hh - padB - padT) / 2, 'separation (silhouette, 0–1)', { anchor: 'middle', size: 11, rot: -90 });
+          legend(box, [{ label: 'the 33 real operators', color: css('--s-strat') }, { label: `simulated operators with no types (mean, whisker = 95% of ${T.nSims})`, color: css('--mark-soft') }]);
+          cap(box, `Separation (silhouette): for each person, how much closer they sit to their own group than to the nearest other group, averaged; 1 = tight clumps far apart, 0 = the boundaries are arbitrary. `
+            + `However the people are split, the real data separate no better than samples that have no types by construction, and all values sit below .25.`);
+        },
+        recur: () => {
+          const A = T.ari, s = svgRoot(box, 700, 250), padL = 60, padB = 40, padT = 22, Hh = 250;
+          const top = Math.max(.3, ...A.map(a => a.stableHi)) * 1.1, bot = -.1;
+          const y = v => Hh - padB - (Hh - padB - padT) * (v - bot) / (top - bot), gw = (700 - padL - 20) / A.length;
+          [-.1, 0, .1, .2, .3].filter(v => v <= top).forEach(v => { el('line', { x1: padL, x2: 690, y1: y(v), y2: y(v), stroke: css(v === 0 ? '--ink-3' : '--grid') }, s);
+            txt(s, padL - 6, y(v) + 4, num(v, 1), { anchor: 'end', size: 10, mono: true, ink: '--ink-3' }); });
+          A.forEach((a, i) => {
+            const cx = padL + gw * (i + .5), bw = 46;
+            const b1 = el('rect', { x: cx - bw - 4, y: Math.min(y(a.obs), y(0)), width: bw, height: Math.abs(y(0) - y(a.obs)), rx: 4, fill: css('--s-strat') }, s);
+            const b2 = el('rect', { x: cx + 4, y: Math.min(y(a.stableMean), y(0)), width: bw, height: Math.abs(y(0) - y(a.stableMean)), rx: 4, fill: css('--mark-soft') }, s);
+            el('line', { x1: cx + 4 + bw / 2, x2: cx + 4 + bw / 2, y1: y(a.stableLo), y2: y(a.stableHi), stroke: css('--ink-2'), 'stroke-width': 1.5 }, s);
+            txt(s, cx - bw / 2 - 4, y(a.obs) - 5, num(a.obs, 2), { anchor: 'middle', size: 10.5, mono: true });
+            txt(s, cx, Hh - padB + 16, `${a.k} groups`, { anchor: 'middle', size: 11.5, ink: '--ink' });
+            hoverable(b1, `<b>Real: session-1 groups vs session-2 groups, ${a.k} groups</b><br>agreement (ARI) ${num(a.obs, 3)}; 1 = the same people grouped together, 0 = chance<br>shuffled labels: 95% ${num(a.nullLo, 3)} to ${num(a.nullHi, 3)} (${pval(a.p)})<br>n = ${a.n} people`);
+            hoverable(b2, `<b>Stable no-types simulations</b><br>same habit links and the same session-to-session stability, no types<br>mean ${num(a.stableMean, 3)}, 95% ${num(a.stableLo, 3)} to ${num(a.stableHi, 3)}<br>share at least as high as the real data: ${pct(a.pStable, 0)}`);
+          });
+          txt(s, 14, padT + (Hh - padB - padT) / 2, 'agreement (ARI; 0 = chance)', { anchor: 'middle', size: 11, rot: -90 });
+          legend(box, [{ label: 'real: groups found in session 1 vs session 2', color: css('--s-strat') }, { label: 'no types, but people as stable as the real ones (95% whisker)', color: css('--mark-soft') }]);
+          cap(box, `Each session is split into groups on its own, and we ask whether the same people end up together both times (adjusted Rand index: 1 = identical groupings, 0 = what chance gives). `
+            + `Agreement is close to zero. It is a shade above pure chance, but no more than a smooth cloud gives when people simply keep their place in it from one session to the next.`);
+        }
+      };
+      host.insertBefore(btnBar(host, 'Show', [['map', 'The people, mapped'], ['sep', 'Do groups separate?'], ['recur', 'Do groups come back?']], 'map', k => views[k]()), box);
+      views.map();
+    }),
+
+    /* P3 · cards vs Suggest: between people (as before) or within a person (session-to-session change) */
+    'style.axisScatter2': safe(host => {
+      const A = D.axis, CS = D.pass3.axis.cardsSuggest, box = h('div', {}, host);
+      const bin = v => v >= .8 ? '--lad-1' : v >= 0 ? '--lad-2' : v >= -.8 ? '--lad-3' : '--lad-4';
+      const views = {
+        between: () => {
+          const s = svgRoot(box, 700, 340);
+          scatterPanel(s, { x: 90, y: 20, w: 420, h: 270 }, A.people.map(p => ({ x: p.took, y: p.consult, r: 6, fill: css(bin(p.pc1)), op: .95,
+            tip: `<b>${p.pid}</b><br>strategy cards taken ${pct(p.took, 0)} of ${p.n} decisions<br>Suggest pressed on ${pct(p.consult, 0)} of ${p.nT} tactical plans<br>reliance-axis score ${sgn(p.pc1, 2)} SD` })),
+            { xmin: 0, xmax: 1.02, ymin: 0, ymax: 1.02, xticks: [0, .25, .5, .75, 1], yticks: [0, .25, .5, .75, 1], fx: v => pct(v, 0), fy: v => pct(v, 0),
+              xlab: 'Strategic: % of strategic decisions where a card was taken', ylab: 'Tactical: % of plans with Suggest' });
+          [['--lad-1', '≥ +0.8 SD'], ['--lad-2', '0 to +0.8'], ['--lad-3', '−0.8 to 0'], ['--lad-4', '< −0.8 SD']].forEach(([c, l], q) => {
+            el('circle', { cx: 540, cy: 50 + q * 22, r: 6, fill: css(c), stroke: css('--line') }, s);
+            txt(s, 552, 54 + q * 22, l, { size: 11 });
+          });
+          txt(s, 532, 30, 'Reliance-axis score', { size: 11, weight: 600, ink: '--ink' });
+          txt(s, 532, 150, 'Cards vs Suggest:', { size: 10.5, ink: '--ink-3' });
+          txt(s, 532, 166, `ρ = ${num(CS.raw.rho, 2)} [${num(CS.raw.lo, 2)}, ${num(CS.raw.hi, 2)}]`, { size: 10, mono: true });
+          txt(s, 532, 181, `${pval(CS.raw.p)}, n = ${CS.raw.n}`, { size: 10, mono: true });
+          txt(s, 532, 200, `game-adjusted: ρ = ${num(CS.between.rho, 2)}, ${pval(CS.between.p)}`, { size: 10, mono: true, ink: '--ink-3' });
+          cap(box, `Each dot is a person, both sessions pooled. Between people the two go together only weakly: ${rho(CS.raw)}. Many people press Suggest on almost every plan (median 86% of plans) whatever their card uptake, which caps how strong the link can be.`);
+        },
+        within: () => {
+          const s = svgRoot(box, 700, 340), P = CS.ptsW;
+          const lim = Math.max(.3, ...P.map(p => Math.max(Math.abs(p.x), Math.abs(p.y)))) * 1.08;
+          scatterPanel(s, { x: 90, y: 20, w: 420, h: 270 }, P.map(p => ({ x: p.x, y: p.y, r: 6, fill: css('--mark'), op: .8,
+            tip: `<b>${p.pid}</b> (session 2 minus session 1, each game-adjusted)<br>card uptake ${sgn(100 * p.x, 0)} points<br>Suggest use ${sgn(100 * p.y, 0)} points` })),
+            { xmin: -lim, xmax: lim, ymin: -lim, ymax: lim, xticks: [-.4, -.2, 0, .2, .4].filter(v => Math.abs(v) < lim), yticks: [-.4, -.2, 0, .2, .4].filter(v => Math.abs(v) < lim),
+              fx: v => v === 0 ? '0' : sgn(100 * v, 0), fy: v => v === 0 ? '0' : sgn(100 * v, 0), zeroLines: true, fit: true,
+              xlab: 'Change in % of decisions taking a card, session 1 → 2 (percentage points)', ylab: 'Change in % of plans with Suggest (pp)' });
+          txt(s, 532, 40, 'Within a person:', { size: 11, weight: 600, ink: '--ink' });
+          txt(s, 532, 58, `ρ = ${num(CS.within.rho, 2)} [${num(CS.within.lo, 2)}, ${num(CS.within.hi, 2)}]`, { size: 10, mono: true });
+          txt(s, 532, 73, `${pval(CS.within.p)}, n = ${CS.within.n}`, { size: 10, mono: true });
+          cap(box, `Each dot is a person: how much their card uptake (x) and their Suggest use (y) changed from their first session to their second, each measured against everyone who played the same game. `
+            + `People who leaned more on the cards in one session also leaned more on Suggest in that session: ${rho(CS.within)}. The line is a least-squares guide.`);
+        }
+      };
+      host.insertBefore(btnBar(host, 'Compare', [['between', 'Between people'], ['within', 'Within a person, session to session']], 'between', k => views[k]()), box);
+      views.between();
+    }),
+
+    /* P3 · disposition grid plus how many nominal hits chance gives */
+    'style.dispositionGrid2': safe(host => {
+      CH['style.dispositionGrid'](h('div', {}, host));
+      const P = D.pass3.dispPerm, hd = P.hitsDist, N = hd.reduce((a, b) => a + b, 0);
+      const box = h('div', {}, host);
+      h('p', { class: 'cap', html: `<b>Is three nominal hits out of 40 more than chance?</b> We shuffled which person’s questionnaire goes with which person’s behaviour ${P.nPerm} times and redid all 40 tests each time.` }, box);
+      const s = svgRoot(h('div', {}, box), 700, 200), padL = 60, padB = 40, padT = 14, Hh = 200, mx = Math.max(...hd) / N * 1.15;
+      const gw = (700 - padL - 20) / hd.length, y = v => Hh - padB - (Hh - padB - padT) * v / mx;
+      [0, .1, .2, .3].filter(v => v < mx).forEach(v => { el('line', { x1: padL, x2: 690, y1: y(v), y2: y(v), stroke: css('--grid') }, s);
+        txt(s, padL - 6, y(v) + 4, pct(v, 0), { anchor: 'end', size: 10, mono: true, ink: '--ink-3' }); });
+      hd.forEach((c, k) => {
+        const cx = padL + gw * (k + .5), on = k === P.nominal, more = k >= P.nominal;
+        const b = el('rect', { x: cx - gw * .35, y: y(c / N), width: gw * .7, height: y(0) - y(c / N), rx: 3, fill: css(on ? '--s-strat' : more ? '--mark' : '--mark-soft'), 'fill-opacity': on ? 1 : .8 }, s);
+        txt(s, cx, Hh - padB + 15, String(k), { anchor: 'middle', size: 10.5, mono: true });
+        hoverable(b, `<b>${k} of 40 tests at p < .05</b><br>in ${c} of ${N} shuffles (${pct(c / N, 1)})` + (on ? '<br><i>what the real data gave</i>' : ''));
+      });
+      txt(s, padL + (700 - padL) / 2, Hh - 8, 'number of the 40 tests reaching p < .05 when the pairing of people is random', { anchor: 'middle', size: 11 });
+      cap(box, `Blue = the real result (${P.nominal}); dark bars = as many or more. With no link at all, chance alone gives ${P.nominal} or more such “hits” in <b>${pct(P.pAtLeast, 0)}</b> of shuffles (average ${num(P.meanHits, 1)}). `
+        + `And a correlation as strong as the real strongest one (p = ${num(P.minP, 3)}) turns up somewhere in the grid in ${pct(P.pMin, 0)} of shuffles.`);
+    }),
+    /* P4 · the grid alone; the Holm result and the shuffle check go into one caption */
+    'style.dispositionGrid3': safe(host => {
+      CH['style.dispositionGrid'](h('div', {}, host));
+      const DP = D.disposition, P = (D.pass3 || {}).dispPerm;
+      cap(host, `<b>Correcting for 40 tests:</b> ${DP.nNominal} of ${DP.nTests} correlations reach p < .05 before correction and ${DP.nHolm} survive Holm correction. `
+        + (P ? `Chance alone gives ${num(P.meanHits, 1)} such nominal hits on average (${P.nominal} or more in ${pct(P.pAtLeast, 0)} of ${P.nPerm} shuffles of which person’s questionnaire goes with which behaviour), so the three outlined cells are about what no link at all would produce.` : ''));
     }),
   });
 })();

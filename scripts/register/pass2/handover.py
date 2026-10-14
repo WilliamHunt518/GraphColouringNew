@@ -25,6 +25,11 @@ D · C06 "the assistant is slow": who said it, and their numbers against everyon
 E · LEARNING. Speed by minute and session; whether the size rule sharpens (it does not); C22 vs logs.
 F · MANUAL AROUND THE CARDS. Manual drones minus Conservative card drones per decision, by size; the
     pre-emptive manuals (made before the cards existed) are the natural control for "anchoring".
+G · PASS 3 (written under `p3`; earlier keys unchanged). The researcher's pass-2 notes: why 5-drone missions
+    dip; mission-shared intervals (person + mission clusters); the tactical tier under five size measures x the
+    strategic route; person-level bars; spread of the quick pre-emptive decisions; a tactical plan split into
+    phases (before first action / building / ready -> confirm / carrying out); C06 group means with intervals;
+    whether the within-session speed-up carries over; C22's change in assistant use.
 """
 from __future__ import annotations
 
@@ -81,11 +86,15 @@ def r(x, d=4):
 # data
 # ════════════════════════════════════════════════════════════════════════════════════════════
 
+MISSION = {}   # (pid, run, missionId) -> task composition, arrival, completion (filled by raw_pass)
+
+
 def raw_pass():
     """Per strategic choice: the cards shown at the last open (true asset counts per colour, whether a
     card was an ε-corrupted one), the operator's chosen counts, the mission's per-colour need.
     Per tactical planner: Suggest press times and strategic-panel opens for OTHER missions while open."""
     strat, tac = {}, {}
+    MISSION.clear()
     for path in sorted(glob.glob(str(PARTS / 'P*.json'))):
         pid = Path(path).stem
         if pid in EXCLUDE:
@@ -96,7 +105,7 @@ def raw_pass():
             continue
         primary = starts[0]['taskPrimary']
         for run, evs in enumerate(log['sessions'], start=1):
-            need, last_open, open_tac = {}, {}, {}
+            need, last_open, open_tac, sacts = {}, {}, {}, {}
             for e in evs:
                 t, m, ts = e['type'], e.get('missionId'), e.get('timestamp')
                 if t == 'mission_arrived':
@@ -105,13 +114,23 @@ def raw_pass():
                         for c, n in primary[str(task['type'])].items():
                             tot[c] += n
                     need[m] = tot
+                    MISSION[(pid, run, m)] = dict(
+                        comp='+'.join(sorted('T%s' % task['type'] for task in e.get('tasks', []))),
+                        arrived=ts, done=None, outcome=None, failures=None, nd=sum(tot.values()),
+                        nc=sum(1 for v in tot.values() if v > 0), residual=bool(e.get('isResidual') or str(m).endswith('-R')))
+                elif t == 'mission_completed' and (pid, run, m) in MISSION:
+                    MISSION[(pid, run, m)].update(done=ts, outcome=e.get('outcome'),
+                                                  failures=e.get('droneFailureCount'))
                 elif t == 'strategic_modal_opened':
                     for om, rec in open_tac.items():
                         if om != m:
                             rec['opens'].append(ts)
                     cards = {c['name']: c for c in e.get('strategiesPresented', [])}
+                    sacts[m] = []
                     if len(cards) >= 2:
                         last_open[m] = cards
+                elif t in ('strategic_card_previewed', 'manual_allocation_edited') and m in sacts:
+                    sacts[m].append(ts)
                 if t == 'strategic_choice':
                     for om, rec in open_tac.items():
                         if om != m:
@@ -123,11 +142,13 @@ def raw_pass():
                         aggr={k: int(v) for k, v in cards['Aggressive']['trueAssets'].items()},
                         bad=int(any(c.get('isBadSuggestion') for c in cards.values())),
                         chosen={k: int(v) for k, v in (e.get('assetsChosen') or {}).items()},
-                        need=need.get(m, {}))
+                        need=need.get(m, {}), acts=list(sacts.get(m, [])))
                 elif t == 'tactical_opened':
-                    open_tac[m] = dict(open=ts, sugg=[], opens=[], choices=[])
+                    open_tac[m] = dict(open=ts, sugg=[], opens=[], choices=[], drags=[])
                 elif t == 'tactical_suggest_used' and not e.get('recoveryMode') and m in open_tac:
                     open_tac[m]['sugg'].append(ts)
+                elif t == 'tactical_assignment_changed' and not e.get('recoveryMode') and m in open_tac:
+                    open_tac[m]['drags'].append(ts)
                 elif t == 'tactical_confirmed' and m in open_tac:
                     rec = open_tac.pop(m)
                     tac[(pid, run, m, ts)] = rec
@@ -968,6 +989,679 @@ def section_manual(S, who):
 
 
 # ════════════════════════════════════════════════════════════════════════════════════════════
+# G · pass 3 — the researcher's pass-2 notes (docs/analysis/register/passes/pass2.json)
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+def wilson(k, n, z=1.96):
+    if not n:
+        return None, None
+    p = k / n
+    den = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / den
+    hw = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
+    return r(c - hw), r(c + hw)
+
+
+def gee_terms(d, formula, names, binomial=True):
+    """Fit a person-clustered GEE and return the named terms (odds ratios if binomial)."""
+    try:
+        m = gee_fit(formula, d, binomial)
+    except Exception as ex:
+        print('   fit failed: %s (%s)' % (formula, ex))
+        return {k: None for k in names}
+    return {k: dict(term(m, k, binomial), n=int(len(d)), k=int(d.pid.nunique())) for k in names}
+
+
+def boot_mean_people(vals, B=B_BOOT):
+    """Mean of per-person values (each person counts once), 95% interval from resampling people."""
+    v = np.array([x for x in vals if x is not None and np.isfinite(x)], dtype=float)
+    if len(v) < 2:
+        return dict(mean=r(v.mean()) if len(v) else None, lo=None, hi=None, k=int(len(v)))
+    draw = RNG.integers(0, len(v), (B, len(v)))
+    bs = v[draw].mean(1)
+    return dict(mean=r(v.mean()), lo=r(np.percentile(bs, 2.5)), hi=r(np.percentile(bs, 97.5)), k=int(len(v)))
+
+
+def boot_seg_means(d, cols, B=B_BOOT):
+    """Mean of each column over rows, 95% interval from resampling PEOPLE (rows travel with their person)."""
+    people = sorted(d.pid.unique())
+    groups = [d[d.pid == p_] for p_ in people]
+    sums = np.array([[g[c].sum() for c in cols] for g in groups])
+    ns = np.array([len(g) for g in groups])
+    draw = RNG.integers(0, len(people), (B, len(people)))
+    bs = sums[draw].sum(1) / ns[draw].sum(1)[:, None]
+    return {c: dict(mean=r(d[c].mean(), 2), lo=r(np.percentile(bs[:, j], 2.5), 2), hi=r(np.percentile(bs[:, j], 97.5), 2))
+            for j, c in enumerate(cols)}
+
+
+STORE = {}   # pass-3 frames handed on to pass 4
+TEAMBIN = [(1, 3, '1–3'), (4, 5, '4–5'), (6, 7, '6–7'), (8, 9, '8–9'), (10, 99, '10+')]
+PEOPLEBAND = [(0, 5, '≤5'), (6, 6, '6'), (7, 9, '7–9'), (10, 18, '10–18')]
+
+
+def section_pass3(S, T, P, PT, who):
+    from scipy import stats
+    hdr('G · PASS 3: the pass-2 notes')
+    out = {}
+    S = S.copy()
+    T = T.copy()
+    S['comp'] = [MISSION.get((a, b_, c), {}).get('comp') for a, b_, c in zip(S.pid, S.run, S.missionId)]
+    S['mkey'] = S.game + '|' + S.missionId
+    T['mkey'] = T.game + '|' + T.missionId
+    T['card'] = (T.strategy != 'Manual').astype(int)
+    T['cbin'] = T.ndrones.map(lambda v: binof(v, CBIN))
+    T['pbin'] = T.plan.map(lambda v: binof(v, PBIN))
+    T['tbin'] = T.pool.map(lambda v: binof(v, TEAMBIN))
+    T['l2pool'] = np.log2(T.pool.clip(lower=1))
+
+    # ── G1 · why the 5-drone missions dip (f-size-decides#strategic-steps) ──────────────────────
+    print('\nG1 one-type missions of 3, 5 and 6 drones: what differs')
+    o = S[(S.ncolours == 1) & S.ndrones.isin([3, 5, 6])].copy()
+    o['minute'] = o.emin
+    per = []
+    for (nd, comp, game, mid), g in o.groupby(['ndrones', 'comp', 'game', 'missionId']):
+        kt, ke, n = int(g.took.sum()), int(g.early.sum()), len(g)
+        lo, hi = wilson(kt, n)
+        elo, ehi = wilson(ke, n)
+        per.append(dict(nd=int(nd), comp=comp, game=game, mission=mid, n=n, k=int(g.pid.nunique()),
+                        took=r(kt / n), lo=lo, hi=hi, early=r(ke / n), elo=elo, ehi=ehi,
+                        minute=r(g.minute.mean(), 2), queue=r(g.q.mean(), 2), secs=r(g.secs.median(), 1),
+                        resid=int(g.residual.max())))
+    per.sort(key=lambda x: (x['nd'], x['minute']))
+    for x in per:
+        print('   %2d %-12s %-12s %-7s n=%2d card %.2f [%.2f,%.2f] early %.2f  minute %.1f  waiting %.1f  %.1f s'
+              % (x['nd'], x['comp'], x['game'], x['mission'], x['n'], x['took'], x['lo'], x['hi'], x['early'],
+                 x['minute'], x['queue'], x['secs']))
+    grp = []
+    for nd, g in o.groupby('ndrones'):
+        cons_b = np.mean([gg['cons'].get('Blue', 0) for gg in g._g])
+        aggr_b = np.mean([gg['aggr'].get('Blue', 0) for gg in g._g])
+        grp.append(dict(nd=int(nd), n=int(len(g)), missions=int(g.mkey.nunique()), comps=sorted(g.comp.dropna().unique().tolist()),
+                        games=g.game.value_counts().to_dict(), took=r(g.took.mean()), early=r(g.early.mean()),
+                        minute=r(g.minute.mean(), 2), queue=r(g.q.mean(), 2), busy=r((g.q >= 3).mean()),
+                        secs=r(g.secs.median(), 1), consBlue=r(cons_b, 2), aggrBlue=r(aggr_b, 2), odd=r(g.odd.mean())))
+        print('   %d drones: %s' % (nd, grp[-1]))
+    o['five'] = (o.ndrones == 5).astype(float)
+    o['six'] = (o.ndrones == 6).astype(float)
+    for v in ('five', 'six'):
+        o = centre(o, v)
+    o['busy'] = (o.q >= 3).astype(int)
+    fm = {}
+    fm['took'] = gee_terms(o, 'took ~ five_w + six_w + five_pm + six_pm + C(game) + C(run)', ['five_w', 'six_w'])
+    fm['tookQ'] = gee_terms(o, 'took ~ five_w + six_w + five_pm + six_pm + q + emin + C(game) + C(run)', ['five_w', 'six_w', 'q'])
+    fm['early'] = gee_terms(o, 'early ~ five_w + six_w + five_pm + six_pm + C(game) + C(run)', ['five_w', 'six_w'])
+    fm['earlyQ'] = gee_terms(o, 'early ~ five_w + six_w + five_pm + six_pm + q + emin + C(game) + C(run)', ['five_w', 'six_w', 'q'])
+    for k, v in fm.items():
+        for kk, t in v.items():
+            say('   %s: %s (vs 3-drone, within person, game + session fixed)' % (k, kk), t)
+    # 5-drone missions split by how busy the operator was
+    f5 = o[o.ndrones == 5]
+    busy = {}
+    for b_, lab in ((0, 'calm'), (1, 'busy')):
+        g = f5[f5.busy == b_]
+        busy[lab] = dict(n=int(len(g)), took=r(g.took.mean()), early=r(g.early.mean()), k=int(g.pid.nunique()))
+    allb = {}
+    for b_, lab in ((0, 'calm'), (1, 'busy')):
+        g = S[(S.q >= 3) == bool(b_)]
+        allb[lab] = dict(n=int(len(g)), took=r(g.took.mean()), early=r(g.early.mean()))
+    print('   5-drone missions, <3 vs >=3 waiting:', busy, ' all decisions:', allb)
+    out['five'] = dict(per=per, groups=grp, models=fm, busy5=busy, busyAll=allb,
+                       nMissionsByBin={str(k): int(v) for k, v in S.groupby('ndrones').mkey.nunique().items()})
+
+    # ── G2 · mission-level checks for the models chart (f-size-decides#models + #artefacts) ──────
+    print('\nG2 shared missions: the within-person model with intervals clustered on person AND mission')
+    # Everyone played the same fixed missions, so decisions on one mission are not independent across people.
+    # Same within/between split as the main model; logistic fit, standard errors clustered two ways
+    # (person and mission), so neither a heavy user nor an odd mission can make the interval look tight.
+
+    def twoway(d, y, x):
+        d = centre(d.dropna(subset=[y, x]).copy(), x)
+        f = '%s ~ %s_w + %s_pm + C(game) + C(run)' % (y, x, x)
+        try:
+            m = smf.glm(f, d, family=sm.families.Binomial()).fit(
+                cov_type='cluster', cov_kwds={'groups': np.column_stack([pd.factorize(d.pid)[0], pd.factorize(d.mkey)[0]])})
+            return dict(term(m, x + '_w'), n=int(len(d)), k=int(d.pid.nunique()), missions=int(d.mkey.nunique()))
+        except Exception as ex:
+            print('   two-way fit failed', f, ex)
+            return None
+    mc = {}
+    mc['s'] = twoway(S, 'took', 'l2d'); say('strategic, per doubling of drones, person + mission clusters', mc['s'])
+    mc['t'] = twoway(T[T.ndrones > 0], 'consulted', 'l2d'); say('tactical, per doubling of drones needed, person + mission clusters', mc['t'])
+    mc['tPlan'] = twoway(T, 'consulted', 'l2plan'); say('tactical, per doubling of plan, person + mission clusters', mc['tPlan'])
+    # mission-level: one row per mission (game x mission), the share handed over
+    ml = {}
+    for lab, d, y in (('s', S, 'took'), ('t', T[T.ndrones > 0], 'consulted')):
+        g = d.groupby('mkey').agg(rate=(y, 'mean'), n=(y, 'size'), l2d=('l2d', 'first'), game=('game', 'first')).reset_index()
+        g = g[g.n >= 5]
+        rho, pv = stats.spearmanr(g.l2d, g.rate)
+        ml[lab] = dict(missions=int(len(g)), rho=r(rho), p=r(pv, 5), decisions=int(g.n.sum()))
+        print('   %s: %d missions with >=5 decisions, Spearman rho(size, hand-over share) = %.2f, p = %.4f' % (lab, len(g), rho, pv))
+    out['missionChecks'] = dict(fe=mc, missionLevel=ml)
+
+    # ── G3 · tactical tier under five size measures, split by strategic route (f-size-decides#tactical) ──
+    print('\nG3 tactical: Suggest by size measure x strategic route')
+    meas = [('needed', T[T.ndrones > 0], 'cbin', [b[2] for b in CBIN], 'l2d', 'per doubling of drones the mission needs'),
+            ('team', T, 'tbin', [b[2] for b in TEAMBIN], 'l2pool', 'per doubling of drones committed (team)'),
+            ('tasks', T[T.residual == 0], 'ntasks', [2, 3, 4, 5, 6], 'ntasks', 'per extra task'),
+            ('types', T[T.ncolours > 0], 'ncolours', [1, 2, 3], 'ntypes', 'per extra drone type'),
+            ('plan', T, 'pbin', [b[2] for b in PBIN], 'l2plan', 'per doubling of plan size (team x tasks)')]
+    tm = {}
+    for key, d, binc, order, x, unit in meas:
+        rec = dict(unit=unit, bins=[str(b_) for b_ in order])
+        for lab, g in (('all', d), ('card', d[d.card == 1]), ('manual', d[d.card == 0])):
+            rows = boot_rate(g, 'consulted', binc, order)
+            for z in rows:
+                z['bin'] = str(z['bin'])
+            rec[lab] = rows
+        dd = centre(centre(d, 'card'), x)
+        rec['size'] = within_or(d, 'consulted', x)
+        tt = gee_terms(dd, 'consulted ~ card_w + card_pm + %s_w + %s_pm + C(game) + C(run)' % (x, x), ['card_w', '%s_w' % x])
+        rec['route'] = tt['card_w']
+        rec['sizeHeldRoute'] = tt['%s_w' % x]
+        ti = gee_terms(dd, 'consulted ~ card_w * %s_w + card_pm + %s_pm + C(game) + C(run)' % (x, x), ['card_w:%s_w' % x])
+        rec['inter'] = ti['card_w:%s_w' % x]
+        # how far the measure itself depends on the strategic route (same mission, card vs manual)
+        mm = d.groupby('card')[x].mean()
+        rec['meanByRoute'] = dict(card=r(mm.get(1)), manual=r(mm.get(0)))
+        try:
+            om = smf.ols('%s ~ card + C(mkey)' % x, d).fit(cov_type='cluster', cov_kwds={'groups': pd.factorize(d.pid)[0]})
+            rec['sameMissionDiff'] = dict(b=r(om.params['card']), lo=r(om.conf_int().loc['card', 0]),
+                                          hi=r(om.conf_int().loc['card', 1]), p=r(om.pvalues['card'], 5))
+        except Exception:
+            rec['sameMissionDiff'] = None
+        tm[key] = rec
+        say('   %s: size %s' % (key, unit), rec['size'])
+        say('   %s: card-allocated vs hand-allocated (size held)' % key, rec['route'])
+        say('   %s: route x size (ratio of ORs; <1 = gap narrows with size)' % key, rec['inter'])
+        print('      measure by route: card %s, manual %s; same mission, card minus manual: %s'
+              % (rec['meanByRoute']['card'], rec['meanByRoute']['manual'], rec['sameMissionDiff']))
+        for lab in ('card', 'manual'):
+            print('      %-6s' % lab, [(z['bin'], z['n'], z['rate']) for z in rec[lab]])
+    pr = pd.DataFrame(dict(took=S.groupby('pid').took.mean(), sug=T.groupby('pid').consulted.mean())).dropna()
+    rho, pv = stats.spearmanr(pr.took, pr.sug)
+    tm['personLink'] = dict(rho=r(rho), p=r(pv, 5), k=int(len(pr)))
+    print('   person level: card-taking rate vs Suggest rate, Spearman rho = %.2f (p = %.4f, %d people)' % (rho, pv, len(pr)))
+    out['tacMeasures'] = tm
+
+    # ── G4 · person by person, as bars (f-size-decides#people) ─────────────────────────────────────
+    print('\nG4 per person, by drones-needed band (each person counts once per band)')
+    pb = {}
+    for lab, d, y in (('strat', S, 'took'), ('tac', T[T.ndrones > 0], 'consulted')):
+        d = d.copy()
+        d['band'] = d.ndrones.map(lambda v: binof(v, PEOPLEBAND))
+        own = d.groupby('pid')[y].mean()
+        grand = d[y].mean()
+        rows = []
+        per_person = {}
+        for b_ in [x[2] for x in PEOPLEBAND]:
+            g = d[d.band == b_]
+            cnt = g.groupby('pid')[y].agg(['mean', 'size'])
+            cnt = cnt[cnt['size'] >= 2]
+            raw = boot_mean_people(cnt['mean'].values)
+            rel = boot_mean_people((cnt['mean'] - own.reindex(cnt.index)).values + grand)
+            rows.append(dict(bin=b_, raw=raw, rel=rel, k=int(len(cnt)), n=int(cnt['size'].sum())))
+            for pid_, v in cnt['mean'].items():
+                per_person.setdefault(pid_, {})[b_] = v
+            print('   %s %-6s people %2d (decisions %3d): plain mean %.2f [%.2f, %.2f]; own average removed %.2f [%.2f, %.2f]'
+                  % (lab, b_, len(cnt), cnt['size'].sum(), raw['mean'], raw['lo'], raw['hi'], rel['mean'], rel['lo'], rel['hi']))
+        # people whose rate on their biggest band beats their smallest band (both with >= 2 decisions)
+        up = down = same = 0
+        for pid_, bb in per_person.items():
+            ks = [x[2] for x in PEOPLEBAND if x[2] in bb]
+            if len(ks) < 2:
+                continue
+            a_, z_ = bb[ks[0]], bb[ks[-1]]
+            up += z_ > a_ + 1e-9
+            down += z_ < a_ - 1e-9
+            same += abs(z_ - a_) <= 1e-9
+        sp = stats.binomtest(int(up), int(up + down)).pvalue if up + down else None
+        pb[lab] = dict(rows=rows, up=int(up), down=int(down), same=int(same), p=r(sp, 5), grand=r(grand))
+        print('   %s: biggest band above smallest for %d people, below %d, equal %d (sign test p = %.4f)' % (lab, up, down, same, sp))
+    out['peopleBars'] = pb
+
+    # ── G5 · the "one type, manual" error bars (f-size-decides#speed) ─────────────────────────────
+    print('\nG5 spread of strategic decision time, one-type missions, by route')
+    S['route3'] = np.where(S.took == 1, 'card', np.where(S.early == 1, 'pre-emptive manual', 'manual after cards'))
+    sp_ = {}
+    for rt in ('card', 'manual after cards', 'pre-emptive manual'):
+        g = S[(S.route3 == rt) & (S.ncolours == 1)]
+        pm = g.groupby('pid').secs.median()
+        sp_[rt] = dict(n=int(len(g)), k=int(g.pid.nunique()), med=r(g.secs.median(), 2), q1=r(g.secs.quantile(.25), 2),
+                       q3=r(g.secs.quantile(.75), 2), p10=r(g.secs.quantile(.10), 2), p90=r(g.secs.quantile(.90), 2),
+                       personMedQ1=r(pm.quantile(.25), 2), personMedQ3=r(pm.quantile(.75), 2))
+        print('   %-20s n=%d (%d people): median %.1f s, middle half %.1f-%.1f s, 10th-90th %.1f-%.1f s; person medians, middle half %.1f-%.1f s'
+              % (rt, len(g), g.pid.nunique(), g.secs.median(), g.secs.quantile(.25), g.secs.quantile(.75),
+                 g.secs.quantile(.10), g.secs.quantile(.90), pm.quantile(.25), pm.quantile(.75)))
+    out['speedSpread'] = sp_
+
+    # ── G6 · where the tactical time goes (f-size-decides#parallel) ─────────────────────────────
+    print('\nG6 tactical plan, phase by phase: before first action / building / plan ready -> confirm / carrying out')
+    ph = []
+    for x, raw in zip(T.itertuples(), T['_raw']):
+        if raw is None:
+            continue
+        o_, c_ = raw['open'], x.confirm_ts
+        acts = sorted(raw['sugg'] + raw['drags'])
+        first = min(acts[0], c_) if acts else c_
+        if raw['sugg']:
+            ready = max([raw['sugg'][-1] + x.entries * 1000.0] + raw['drags'])
+        else:
+            ready = max(raw['drags']) if raw['drags'] else first
+        ready = min(max(ready, first), c_)
+        M_ = MISSION.get((x.pid, x.run, x.missionId), {})
+        done = M_.get('done')
+        clean_ = done is not None and M_.get('outcome') == 'all_completed' and not M_.get('failures')
+        anydone = done is not None and M_.get('outcome') == 'all_completed'
+        nopen = sum(1 for t_ in raw['opens'] if ready <= t_ <= c_)
+        ph.append(dict(pid=x.pid, run=x.run, game=x.game, route=x.route, consulted=x.consulted, l2d=x.l2d, ndrones=x.ndrones,
+                       pre=(first - o_) / 1000.0, build=(ready - first) / 1000.0, hold=(c_ - ready) / 1000.0,
+                       carry=(done - c_) / 1000.0 if clean_ else np.nan, clean=int(clean_), holdOther=int(nopen > 0),
+                       preOther=int(any(o_ <= t_ <= first for t_ in raw['opens'] + raw['choices'])),
+                       carryAny=(done - c_) / 1000.0 if anydone else np.nan, failures=M_.get('failures'),
+                       agentProj=x.agentProj, finalProj=x.finalProj))
+    PH = pd.DataFrame(ph)
+    PH['band'] = np.where(PH.ndrones <= 6, 'small', np.where(PH.ndrones <= 9, 'mid', 'large'))
+    PH['total'] = PH[['pre', 'build', 'hold', 'carry']].sum(1, min_count=4)
+    print('   plans %d; mission completed in full with no drone failure (carry-out measurable): %d' % (len(PH), PH.clean.sum()))
+    seg = ['pre', 'build', 'hold', 'carry']
+    phases = {}
+    for band in ('all', 'small', 'mid', 'large'):
+        g0 = PH[PH.clean == 1] if band == 'all' else PH[(PH.clean == 1) & (PH.band == band)]
+        rec = {}
+        for rt in ('hand', 'suggest-kept', 'suggest-edited'):
+            g = g0[g0.route == rt]
+            if len(g) < 3:
+                continue
+            rec[rt] = dict(boot_seg_means(g, seg + ['total']), n=int(len(g)), k=int(g.pid.nunique()),
+                           holdOther=r(g.holdOther.mean()))
+        phases[band] = rec
+        for rt, v in rec.items():
+            print('   %-5s %-15s n=%3d  before %5.1f  building %5.1f  ready->confirm %5.1f  carrying out %5.1f  total %5.1f'
+                  % (band, rt, v['n'], v['pre']['mean'], v['build']['mean'], v['hold']['mean'], v['carry']['mean'], v['total']['mean']))
+    # within person, drones needed held: seconds added on each phase by a Suggest plan (kept or edited) vs hand
+    d = PH[(PH.clean == 1) & (PH.ndrones > 0)].copy()
+    d = centre(d, 'consulted')
+    pm_ = {}
+    for sgm in seg + ['total']:
+        t_ = gee_terms(d, '%s ~ consulted_w + consulted_pm + l2d + C(game) + C(run)' % sgm, ['consulted_w'], binomial=False)['consulted_w']
+        pm_[sgm] = t_
+        if t_:
+            print('   %-6s Suggest vs hand, same person, size held: %+.1f s [%+.1f, %+.1f] p=%.4f' % (sgm, t_['est'], t_['lo'], t_['hi'], t_['p']))
+    # robustness: the first three phases on ALL plans (no completion needed); carrying out on every mission
+    # completed in full, drone failures included
+    dA = centre(PH[PH.ndrones > 0].copy(), 'consulted')
+    rob = {}
+    for sgm in ('pre', 'build', 'hold'):
+        rob[sgm] = gee_terms(dA, '%s ~ consulted_w + consulted_pm + l2d + C(game) + C(run)' % sgm, ['consulted_w'], binomial=False)['consulted_w']
+        say('   ALL plans, %s: Suggest vs hand, s' % sgm, rob[sgm], unit='s')
+    dC = centre(PH[(PH.ndrones > 0) & PH.carryAny.notna()].copy(), 'consulted')
+    rob['carryAny'] = gee_terms(dC, 'carryAny ~ consulted_w + consulted_pm + l2d + C(game) + C(run)', ['consulted_w'], binomial=False)['consulted_w']
+    say('   carrying out, completed missions incl. drone failures', rob['carryAny'], unit='s')
+    excl = PH[PH.clean == 0]
+    why = dict(notCompleted=int(excl.carryAny.isna().sum()), droneFailure=int((excl.carryAny.notna()).sum()),
+               byRoute={rt: dict(n=int((PH.route == rt).sum()), clean=int(PH[PH.route == rt].clean.sum())) for rt in ('hand', 'suggest-kept', 'suggest-edited')})
+    print('   excluded from the stacked view:', why)
+    # projected completion: the plan as confirmed vs the agent's plan at open (same scheduler, seconds)
+    PH['projGap'] = PH.finalProj - PH.agentProj
+    pj = {}
+    for rt in ('hand', 'suggest-kept', 'suggest-edited'):
+        g = PH[(PH.route == rt) & PH.projGap.notna()]
+        bm = boot_median(g.assign(one=1), 'projGap', 'one', [1], B=1000)
+        pj[rt] = dict(n=int(len(g)), mean=r(g.projGap.mean(), 2), med=r(g.projGap.median(), 2),
+                      lo=bm[0]['lo'] if bm else None, hi=bm[0]['hi'] if bm else None,
+                      later=r((g.projGap > 1).mean()))
+        print('   projected completion, confirmed plan minus the agent plan at open, %-15s n=%d mean %+.1f s median %+.1f s; >1 s later in %.0f%%'
+              % (rt, len(g), g.projGap.mean(), g.projGap.median(), 100 * (g.projGap > 1).mean()))
+    out['phases'] = dict(phases=phases, models=pm_, robust=rob, excluded=why, proj=pj, nPlans=int(len(PH)), nClean=int(PH.clean.sum()),
+                         bandDef='small ≤ 6 drones needed, mid 7–9, large 10+')
+    STORE.update(PH=PH, S=S, T=T)
+
+    # ── G7 · C06 profile as means with intervals (f-size-decides#slow) ────────────────────────────
+    print('\nG7 C06 vs others, group means with 95% intervals (people resampled within group)')
+    grp6 = who['C06']
+    c6 = []
+    for k_, lab, unit in PROFILE:
+        v = PT[k_].dropna()
+        a_ = boot_mean_people(v[v.index.isin(grp6)].values)
+        b2 = boot_mean_people(v[~v.index.isin(grp6)].values)
+        c6.append(dict(key=k_, inMean=a_['mean'], inLo=a_['lo'], inHi=a_['hi'], nIn=a_['k'],
+                       restMean=b2['mean'], restLo=b2['lo'], restHi=b2['hi'], nRest=b2['k']))
+        print('   %-45s C06 %s [%s, %s]  others %s [%s, %s]' % (lab, a_['mean'], a_['lo'], a_['hi'], b2['mean'], b2['lo'], b2['hi']))
+    out['c06ci'] = c6
+
+    # ── G8 · within-session speed-up: does it carry over? (f-practice#speed) ────────────────────────
+    print('\nG8 speed-up within a session vs carry-over to the next')
+    S['minute'] = np.minimum(np.floor(S.elapsed_open / 60).astype(int) + 1, 8)
+    T['minute'] = np.minimum(np.floor(T.elapsed_open / 60).astype(int) + 1, 8)
+    carry = {}
+    for lab, d, ctrl in (('strat', S, 'took + threetype + l2d'), ('tac', T, 'consulted + np.log(plan)')):
+        d = d.copy()
+        d['part'] = np.where(d.minute <= 2, 'start', np.where(d.minute >= 7, 'end', 'middle'))
+        bars = []
+        for run in (1, 2):
+            for part in ('start', 'end'):
+                g = d[(d.run == run) & (d.part == part)]
+                bm = boot_median(g.assign(one=1), 'net', 'one', [1], B=1000)
+                if bm:
+                    bars.append(dict(run=run, part=part, med=bm[0]['med'], lo=bm[0]['lo'], hi=bm[0]['hi'], n=bm[0]['n'], k=bm[0]['k']))
+        m = gee_fit('lnet ~ emin * run2 + %s + C(game)' % ctrl, d, binomial=False)
+        b_ = m.params
+        cov = m.cov_params()
+
+        def pct_of(vec):
+            est = float(np.dot(vec.values, b_[list(vec.index)].values))
+            se = float(np.sqrt(vec.values @ cov.loc[vec.index, vec.index].values @ vec.values))
+            return dict(pct=r(np.exp(est) - 1), lo=r(np.exp(est - 1.96 * se) - 1), hi=r(np.exp(est + 1.96 * se) - 1),
+                        p=r(2 * stats.norm.sf(abs(est / se)), 5))
+        # predicted time relative to session 1 at its start (minute 0.5)
+        e0, e1 = 0.5, 7.5
+        v = lambda names, vals: pd.Series(vals, index=names, dtype=float)
+        pr_ = dict(
+            s1end=pct_of(v(['emin'], [e1 - e0])),
+            s2start=pct_of(v(['run2', 'emin:run2'], [1.0, e0])),
+            s2end=pct_of(v(['emin', 'run2', 'emin:run2'], [e1 - e0, 1.0, e1])),
+            s2start_vs_s1end=pct_of(v(['emin', 'run2', 'emin:run2'], [-(e1 - e0), 1.0, e0])),
+            slopeS1=pct_of(v(['emin'], [1.0])),
+            slopeS2=pct_of(v(['emin', 'emin:run2'], [1.0, 1.0])),
+            slopeDiff=pct_of(v(['emin:run2'], [1.0])))
+        # does the within-session slope survive holding the queue fixed?
+        mq = gee_fit('lnet ~ emin + run2 + q + %s + C(game)' % ctrl, d, binomial=False)
+        tq = term(mq, 'emin', binomial=False)
+        pr_['slopeQueueHeld'] = dict(pct=r(np.exp(tq['b']) - 1), lo=r(np.exp(tq['b'] - 1.96 * tq['se']) - 1),
+                                     hi=r(np.exp(tq['b'] + 1.96 * tq['se']) - 1), p=tq['p'])
+        carry[lab] = dict(bars=bars, model=pr_, n=int(len(d)), k=int(d.pid.nunique()))
+        print('   %s: medians %s' % (lab, [(z['run'], z['part'], z['med'], z['n']) for z in bars]))
+        for k_, t_ in pr_.items():
+            print('      %-18s %+.0f%% [%+.0f, %+.0f] p=%.4f' % (k_, 100 * t_['pct'], 100 * t_['lo'], 100 * t_['hi'], t_['p']))
+    out['carry'] = carry
+
+    # ── G9 · C22: did "got better" mean "used the assistants more"? (f-practice#c22) ──────────────
+    print("\nG9 C22: change in assistant use, session 1 -> 2 (each session's rate minus that game's average)")
+    cols = []
+    for lab, d, y in (('took', S, 'took'), ('sug', T, 'consulted')):
+        g = d.groupby(['pid', 'run', 'game'])[y].mean().reset_index()
+        g['adj'] = g[y] - g.groupby('game')[y].transform('mean')
+        w_ = g.pivot_table(index='pid', columns='run', values='adj')
+        raw_ = d.groupby(['pid', 'run'])[y].mean().unstack()
+        cols += [(w_[2] - w_[1]).rename(lab), (raw_[2] - raw_[1]).rename(lab + 'Raw')]
+    U = pd.concat(cols, axis=1)
+    c22 = {}
+    for k_ in ('took', 'sug', 'tookRaw', 'sugRaw'):
+        t_ = perm_diff(U[k_], who['C22'])
+        c22[k_] = t_
+        print('   %-8s C22 %s  others %s  p=%s' % (k_, t_['inMean'], t_['restMean'], t_['p']))
+    # across everyone: does a bigger score gain go with a bigger change in use?
+    dz = pd.Series(score_change(S, P))
+    for k_ in ('took', 'sug'):
+        j = pd.concat([dz.rename('dZ'), U[k_]], axis=1).dropna()
+        rho, pv = stats.spearmanr(j.dZ, j[k_])
+        c22['rho_' + k_] = dict(rho=r(rho), p=r(pv, 5), k=int(len(j)))
+        print('   everyone: score change vs change in %s, Spearman rho = %.2f (p = %.4f, %d people)' % (k_, rho, pv, len(j)))
+    c22['people'] = {pid_: dict(dTook=r(U.loc[pid_, 'took']), dSug=r(U.loc[pid_, 'sug'])) for pid_ in U.index}
+    inC = U.index.isin(who['C22'])
+    c22['upTook'] = dict(c22=int((U.loc[inC, 'took'] > 0).sum()), others=int((U.loc[~inC, 'took'] > 0).sum()),
+                         nC22=int(U.loc[inC, 'took'].notna().sum()), nOthers=int(U.loc[~inC, 'took'].notna().sum()))
+    c22['upSug'] = dict(c22=int((U.loc[inC, 'sug'] > 0).sum()), others=int((U.loc[~inC, 'sug'] > 0).sum()),
+                        nC22=int(U.loc[inC, 'sug'].notna().sum()), nOthers=int(U.loc[~inC, 'sug'].notna().sum()))
+    print('   used more in session 2 (game-adjusted): cards C22 %d, others %d; Suggest C22 %d, others %d'
+          % (c22['upTook']['c22'], c22['upTook']['others'], c22['upSug']['c22'], c22['upSug']['others']))
+    out['c22use'] = c22
+    return out
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# H · PASS 4 (written under `p4`; earlier keys unchanged). The researcher's pass-3 notes
+# (docs/analysis/register/passes/pass3.json).
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+SPEED_BANDS = ['one type', 'three types, 6–9 drones', 'three types, 10–18 drones']
+TAC_BANDS = ['small', 'mid', 'large']
+
+
+def boot_std_means(d, cols, band_col, bands, weights, B=B_BOOT):
+    """Size-standardised mean of each column: sum over bands of weight x the band's mean, with the SAME
+    band weights for every route. 95% interval from resampling people (draws where a band is empty skipped)."""
+    people = sorted(d.pid.unique())
+    pi = {p_: i for i, p_ in enumerate(people)}
+    S_ = np.zeros((len(bands), len(people), len(cols)))
+    N_ = np.zeros((len(bands), len(people)))
+    for j, b_ in enumerate(bands):
+        g = d[d[band_col] == b_]
+        for p_, gg in g.groupby('pid'):
+            S_[j, pi[p_]] = gg[cols].sum().values
+            N_[j, pi[p_]] = len(gg)
+    w = np.array([weights[b_] for b_ in bands])
+
+    def stat(idx):
+        s_ = S_[:, idx].sum(1)
+        n_ = N_[:, idx].sum(1)
+        if (n_ == 0).any():
+            return None
+        return (w[:, None] * s_ / n_[:, None]).sum(0)
+    est = stat(np.arange(len(people)))
+    bs, skipped = [], 0
+    for _ in range(B):
+        v = stat(RNG.integers(0, len(people), len(people)))
+        if v is None:
+            skipped += 1
+        else:
+            bs.append(v)
+    bs = np.array(bs)
+    out = {c: dict(mean=r(est[k], 2), lo=r(np.percentile(bs[:, k], 2.5), 2), hi=r(np.percentile(bs[:, k], 97.5), 2))
+           for k, c in enumerate(cols)}
+    out['skipped'] = skipped
+    return out
+
+
+def section_pass4(who):
+    from scipy import stats
+    hdr('H · PASS 4: the pass-3 notes')
+    out = {}
+    S, T, PH = STORE['S'].copy(), STORE['T'].copy(), STORE['PH'].copy()
+
+    # ── H1 · do the 5-drone missions arrive in a burst? (f-size-decides#both) ──────────────────
+    print('\nH1 Strategic Heavy games: mission arrivals (fixed per game; residual missions left out)')
+    gmap = S.drop_duplicates(['pid', 'run']).set_index(['pid', 'run']).game.to_dict()
+    arr = {}
+    for (pid, run, m), rec in MISSION.items():
+        g = gmap.get((pid, run))
+        if g is None or rec['residual']:
+            continue
+        arr.setdefault(g, {}).setdefault(m, []).append(rec['arrived'] / 1000.0)
+    burst = {}
+    for g in sorted(arr):
+        if not g.startswith('strategic'):
+            continue
+        ms = []
+        for m, ts in arr[g].items():
+            spread = max(ts) - min(ts)
+            rec = next(v for (p_, r_, mm), v in MISSION.items() if mm == m and gmap.get((p_, r_)) == g)
+            ms.append(dict(mission=m, t=r(np.median(ts), 1), spread=r(spread, 2), nd=rec['nd'], nc=rec['nc'], comp=rec['comp']))
+        ms.sort(key=lambda x: x['t'])
+        for x in ms:
+            x['near60'] = int(sum(1 for y in ms if y is not x and abs(y['t'] - x['t']) <= 60))
+            x['before90'] = int(sum(1 for y in ms if y is not x and 0 <= x['t'] - y['t'] <= 90))
+        burst[g] = ms
+        print('   %s: %d missions' % (g, len(ms)))
+        for x in ms:
+            print('      %-6s t=%6.1f s (min %.1f)  %2d drones, %d type(s) %-14s  others within 60 s: %d; arrived in the 90 s before: %d%s'
+                  % (x['mission'], x['t'], x['t'] / 60, x['nd'], x['nc'], x['comp'], x['near60'], x['before90'],
+                     '   (arrival differs across people by %.1f s)' % x['spread'] if x['spread'] > 1 else ''))
+    allm = [x for ms in burst.values() for x in ms]
+    summ = {}
+    for lab, sel in (('five', lambda x: x['nc'] == 1 and x['nd'] == 5), ('threeSix', lambda x: x['nc'] == 1 and x['nd'] in (3, 6)),
+                     ('other', lambda x: not (x['nc'] == 1 and x['nd'] in (3, 5, 6)))):
+        g = [x for x in allm if sel(x)]
+        summ[lab] = dict(n=len(g), near60=r(np.mean([x['near60'] for x in g]), 2) if g else None,
+                         before90=r(np.mean([x['before90'] for x in g]), 2) if g else None,
+                         minute=r(np.mean([x['t'] / 60 for x in g]), 2) if g else None)
+    print('   mean other arrivals within 60 s, Strategic Heavy games:', summ)
+    out['burst'] = dict(games=burst, summary=summ)
+
+    # ── H2 · the strategic choice and Suggest (f-size-decides#tactical) ──────────────────────────
+    print('\nH2 Suggest by strategic route: Aggressive card vs Conservative card vs by hand')
+    T['aggr'] = (T.strategy == 'Aggressive').astype(int)
+    rates = {}
+    for st in ('Aggressive', 'Conservative', 'Manual'):
+        g = T[T.strategy == st]
+        rates[st] = dict(n=int(len(g)), rate=r(g.consulted.mean()), k=int(g.pid.nunique()))
+    c = T[(T.strategy != 'Manual') & (T.ndrones > 0)].copy()
+    c = centre(centre(c, 'aggr'), 'l2d')
+    ag = gee_terms(c, 'consulted ~ aggr_w + aggr_pm + l2d_w + l2d_pm + C(game) + C(run)', ['aggr_w'])['aggr_w']
+    say('   Aggressive vs Conservative card, same person, drones needed held', ag)
+    print('   rates:', rates)
+    ppl = {}
+    for pid in ('P05', 'P10', 'P30'):
+        g = T[T.pid == pid]
+        ppl[pid] = {st: dict(n=int((g.strategy == st).sum()), rate=r(g[g.strategy == st].consulted.mean()))
+                    for st in ('Aggressive', 'Conservative', 'Manual')}
+        print('   %s:' % pid, ppl[pid])
+    out['route'] = dict(rates=rates, aggrVsCons=ag, people=ppl)
+
+    # ── H3 · strategic decision time, phase by phase (f-size-decides#speed) ──────────────────────
+    print('\nH3 strategic decision split: before the first action (cards loading / cards on screen) and first action -> choice')
+    S['size'] = np.where(S.ncolours == 1, 'one type', np.where(S.ncolours == 3, np.where(S.ndrones <= 9, SPEED_BANDS[1], SPEED_BANDS[2]), None))
+    S['route'] = np.where(S.took == 1, 'card', np.where(S.early == 1, 'pre-emptive manual', 'manual after cards'))
+    first = []
+    for g_, o_, c_ in zip(S._g, S.open_ts, S.choice_ts):
+        acts = [a for a in (g_ or {}).get('acts', []) if o_ <= a <= c_]
+        first.append(min(acts) if acts else c_)
+    S['first'] = first
+    rv = S.open_ts + S.reveal * 1000.0
+    S['load'] = (np.minimum(S['first'], rv) - S.open_ts) / 1000.0
+    S['idle'] = np.maximum(0.0, S['first'] - rv) / 1000.0
+    S['act'] = (S.choice_ts - S['first']) / 1000.0
+    S['tot'] = S[['load', 'idle', 'act']].sum(1)
+    S['noidle'] = S.load + S.act
+    print('   no first action recorded before the choice: %d of %d' % (int((S['first'] == S.choice_ts).sum()), len(S)))
+    print('   check: segments add to the logged seconds: max abs diff %.3f s' % (S.tot - S.secs).abs().max())
+    seg = ['load', 'idle', 'act', 'tot', 'noidle']
+    sph = {}
+    for band in SPEED_BANDS:
+        rec = {}
+        for rt in ('card', 'manual after cards', 'pre-emptive manual'):
+            g = S[(S['size'] == band) & (S.route == rt)]
+            if len(g) < 3:
+                continue
+            rec[rt] = dict(boot_seg_means(g, seg), n=int(len(g)), k=int(g.pid.nunique()))
+            v = rec[rt]
+            print('   %-27s %-19s n=%3d  loading %4.1f  on screen, no action %4.1f  acting %4.1f  = %4.1f s  (no idle %4.1f)'
+                  % (band, rt, v['n'], v['load']['mean'], v['idle']['mean'], v['act']['mean'], v['tot']['mean'], v['noidle']['mean']))
+        sph[band] = rec
+    # within person: card vs all manual, log seconds, by one-type / three-type (as section B), three definitions
+    d = S[S.ncolours.isin([1, 3])].copy()
+    d['three'] = (d.ncolours == 3).astype(int)
+    d = centre(d, 'took')
+    smod = {}
+    for y, lab in (('tot', 'all'), ('noidle', 'noIdle'), ('act', 'active')):
+        d['ly'] = np.log(d[y].clip(lower=0.5))
+        m = gee_fit('ly ~ took * three + took_pm + l2d + C(game) + C(run) + emin', d, binomial=False)
+        cov = m.cov_params()
+        b1, b3 = m.params['took'], m.params['took:three']
+        se1 = np.sqrt(cov.loc['took', 'took'])
+        se13 = np.sqrt(cov.loc['took', 'took'] + cov.loc['took:three', 'took:three'] + 2 * cov.loc['took', 'took:three'])
+        pc = lambda b, s_: dict(est=r(np.exp(b) - 1), lo=r(np.exp(b - 1.96 * s_) - 1), hi=r(np.exp(b + 1.96 * s_) - 1),
+                                p=r(2 * stats.norm.sf(abs(b / s_)), 5))
+        smod[lab] = dict(one=pc(b1, se1), three=pc(b1 + b3, se13), inter=term(m, 'took:three', binomial=False), n=int(len(d)), k=int(d.pid.nunique()))
+        print('   %-7s card vs manual, same person: one-type %+.0f%% [%+.0f, %+.0f] p=%.4f; three-type %+.0f%% [%+.0f, %+.0f] p=%.4g; difference p=%.4g'
+              % (lab, 100 * smod[lab]['one']['est'], 100 * smod[lab]['one']['lo'], 100 * smod[lab]['one']['hi'], smod[lab]['one']['p'],
+                 100 * smod[lab]['three']['est'], 100 * smod[lab]['three']['lo'], 100 * smod[lab]['three']['hi'], smod[lab]['three']['p'],
+                 smod[lab]['inter']['p']))
+    hang = dict(card=r(S[S.route == 'card'].idle.median(), 2), manualAfter=r(S[S.route == 'manual after cards'].idle.median(), 2),
+                share10=r((S.idle > 10).mean()))
+    print('   idle with cards on screen, median: card %.1f s, manual after cards %.1f s; > 10 s in %.0f%% of decisions'
+          % (hang['card'], hang['manualAfter'], 100 * hang['share10']))
+    out['stratPhases'] = dict(phases=sph, models=smod, idle=hang, n=int(len(S)))
+
+    # ── H4 · tactical planner time, phase by phase, all plans (f-size-decides#speed) ─────────────
+    print('\nH4 tactical planner split (all plans with a known size): before first action / building / ready -> confirmed')
+    A = PH[PH.ndrones > 0].copy()
+    A['plan'] = A[['build', 'hold']].sum(1)
+    A['tot'] = A[['pre', 'build', 'hold']].sum(1)
+    tph = {}
+    for band in ['all'] + TAC_BANDS:
+        g0 = A if band == 'all' else A[A.band == band]
+        rec = {}
+        for rt in ('hand', 'suggest-kept', 'suggest-edited'):
+            g = g0[g0.route == rt]
+            if len(g) < 3:
+                continue
+            rec[rt] = dict(boot_seg_means(g, ['pre', 'build', 'hold', 'plan', 'tot']), n=int(len(g)), k=int(g.pid.nunique()))
+            v = rec[rt]
+            print('   %-5s %-15s n=%3d  before %5.1f  building %5.1f  ready->confirm %4.1f  = %5.1f s (without before: %5.1f)'
+                  % (band, rt, v['n'], v['pre']['mean'], v['build']['mean'], v['hold']['mean'], v['tot']['mean'], v['plan']['mean']))
+        tph[band] = rec
+    dA = centre(A.copy(), 'consulted')
+    tmod = {}
+    for y in ('plan', 'tot'):
+        tmod[y] = gee_terms(dA, '%s ~ consulted_w + consulted_pm + l2d + C(game) + C(run)' % y, ['consulted_w'], binomial=False)['consulted_w']
+        say('   %s: Suggest vs hand, same person, size held (s)' % y, tmod[y], unit='s')
+    tmod['planInter'] = gee_terms(centre(dA, 'l2d'), 'plan ~ consulted_w * l2d_w + consulted_pm + l2d_pm + C(game) + C(run)',
+                                  ['consulted_w:l2d_w'], binomial=False)['consulted_w:l2d_w']
+    say('   without "before": Suggest x doubling of size (s)', tmod['planInter'], unit='s')
+    po = {rt: dict(n=int((A.route == rt).sum()), share=r(A[A.route == rt].preOther.mean()),
+                   shareLong=r(A[(A.route == rt) & (A.pre > 10)].preOther.mean()), nLong=int(((A.route == rt) & (A.pre > 10)).sum()))
+          for rt in ('hand', 'suggest-kept')}
+    po['all'] = dict(n=int(len(A)), share=r(A.preOther.mean()), shareLong=r(A[A.pre > 10].preOther.mean()), nLong=int((A.pre > 10).sum()),
+                     medPre=r(A.pre.median(), 2))
+    print('   before the first action, operator opened or allocated another mission in the meantime:', po)
+    out['tacPhases'] = dict(phases=tph, models=tmod, n=int(len(A)), preOther=po)
+
+    # ── H5 · the whole tactical timeline: size mix and the all-missions reversal (f-size-decides#parallel) ──
+    print('\nH5 finished plans: why "all" reverses the per-size ordering (size mix), and size-standardised means')
+    C_ = PH[(PH.clean == 1) & PH.route.isin(['hand', 'suggest-kept'])].copy()
+    C_['noPre'] = C_[['build', 'hold', 'carry']].sum(1)
+    mix = {}
+    for rt in ('hand', 'suggest-kept'):
+        g = C_[C_.route == rt]
+        mix[rt] = {b_: dict(n=int((g.band == b_).sum()), share=r((g.band == b_).mean())) for b_ in TAC_BANDS}
+        mix[rt]['nd'] = r(g.ndrones.mean(), 2)
+        print('   %-13s size mix: %s; mean drones needed %.1f' % (rt, {b_: (v['n'], v['share']) for b_, v in mix[rt].items() if b_ != 'nd'}, mix[rt]['nd']))
+    wts = {b_: float((C_.band == b_).mean()) for b_ in TAC_BANDS}
+    print('   weights (both routes pooled):', {k: round(v, 3) for k, v in wts.items()})
+    std = {}
+    cols = ['pre', 'build', 'hold', 'carry', 'total', 'noPre']
+    for rt in ('hand', 'suggest-kept'):
+        std[rt] = dict(boot_std_means(C_[C_.route == rt], cols, 'band', TAC_BANDS, wts), n=int((C_.route == rt).sum()),
+                       k=int(C_[C_.route == rt].pid.nunique()))
+        v = std[rt]
+        print('   standardised %-13s before %5.1f  building %5.1f  ready->confirm %4.1f  carrying out %5.1f  total %5.1f [%5.1f, %5.1f] (skipped draws %d)'
+              % (rt, v['pre']['mean'], v['build']['mean'], v['hold']['mean'], v['carry']['mean'], v['total']['mean'],
+                 v['total']['lo'], v['total']['hi'], v['skipped']))
+    raw = {rt: dict(boot_seg_means(C_[C_.route == rt], cols), n=int((C_.route == rt).sum())) for rt in ('hand', 'suggest-kept')}
+    # per-size raw means of 'without before'
+    bandNoPre = {}
+    for b_ in TAC_BANDS:
+        bandNoPre[b_] = {}
+        for rt in ('hand', 'suggest-kept'):
+            g = C_[(C_.route == rt) & (C_.band == b_)]
+            if len(g) >= 3:
+                bandNoPre[b_][rt] = dict(boot_seg_means(g, ['noPre']), n=int(len(g)), k=int(g.pid.nunique()))['noPre'] | dict(n=int(len(g)), k=int(g.pid.nunique()))
+    # within person, size held: the whole thing without the time before the first action
+    dC = centre(C_[C_.ndrones > 0].copy(), 'consulted')
+    noPreM = gee_terms(dC, 'noPre ~ consulted_w + consulted_pm + l2d + C(game) + C(run)', ['consulted_w'], binomial=False)['consulted_w']
+    say('   whole thing without "before the first action": Suggest vs hand, same person, size held (s)', noPreM, unit='s')
+    # the same raw comparison with person held but size NOT held, to show which of the two creates the reversal
+    noSize = gee_terms(dC, 'total ~ consulted_w + consulted_pm + C(game) + C(run)', ['consulted_w'], binomial=False)['consulted_w']
+    say('   whole thing, same person, size NOT held (s)', noSize, unit='s')
+    hl = C_[C_.route == 'hand']
+    largeHand = dict(n=int((hl.band == 'large').sum()), k=int(hl[hl.band == 'large'].pid.nunique()))
+    print('   large hand-built finished plans: %d from %d people' % (largeHand['n'], largeHand['k']))
+    out['simpson'] = dict(mix=mix, weights={k: r(v) for k, v in wts.items()}, std=std, raw=raw, noPre=noPreM, noSize=noSize,
+                          bandNoPre=bandNoPre, largeHand=largeHand)
+    return out
+
+
+def score_change(S, P):
+    """Per person: within-game score, session 2 minus session 1 (same definition as section_learning)."""
+    res = {}
+    for pid in sorted(S.pid.unique()):
+        p = P[P.pid == pid].set_index('run')
+        if {1, 2} <= set(S[S.pid == pid].run):
+            res[pid] = p.zgame.get(2, np.nan) - p.zgame.get(1, np.nan)
+    return res
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
 
 def clean(o):
     """NaN/inf -> null everywhere, numpy scalars -> Python."""
@@ -993,6 +1687,8 @@ def main():
     out['c06'] = section_c06(PT, who)
     out['learn'] = section_learning(S, T, PT, P, who)
     out['manual'] = section_manual(S, who)
+    out['p3'] = section_pass3(S, T, P, PT, who)
+    out['p4'] = section_pass4(who)
     out['who'] = {c: who[c] for c in ('C03', 'C04', 'C05', 'C06', 'C07', 'C08', 'C09', 'C10', 'C22')}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(clean(out), ensure_ascii=False, allow_nan=False, separators=(',', ':'), default=lambda o: o.item()

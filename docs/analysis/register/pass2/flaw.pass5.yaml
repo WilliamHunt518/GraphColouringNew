@@ -1,0 +1,86 @@
+# Pass 5 changes for the `flaw` area (f-flaw-odd, section by-index only). New numbers from
+# scripts/register/pass2/flaw.py, section 10 ("Pass 5"), stored under p5 in pass2/flaw.json (its own random stream,
+# so every pass-2/3/4 number is unchanged). Chart: flaw.byIndex now reads p5.index: points from fewer than 8 people
+# in a group are hidden by default ("Thin points" shows them faded and dotted), dot size and a row of numbers under
+# the axis give the people behind each point, a "Who is counted" toggle gives a fixed panel (only people present
+# through decision K), and a "No illogical card on the mission" sample was added. Headline unchanged.
+findings:
+  f-flaw-odd:
+    sections:
+      by-index:
+        text: >-
+          Each person's decisions are numbered in the order they made them within each session (or counting only
+          three-type, one/two-type, or missions with no illogical card). <b>Session 1 and session 2 sit on one
+          axis</b>, separated by a dashed line, with the two sessions' lines deliberately not joined (session 2 is a
+          different game, after a break and a survey). <b>Later numbers are different people</b>: only those who
+          made that many decisions reach them, and they are mostly players of the strategic-heavy game, which has
+          more missions. So a point is drawn only if at least 8 people of its group reach it; dot size and the
+          numbers under the axis show how many people each point rests on. <b>Session 1</b>: noticers 80%, 67%, 47%,
+          50%, 46%, then 83%, 64%, 78% for decisions 6–8; never-said 61%, 61%, 78%, 94%, 89%, 72%. Noticers dip at
+          3–5 and climb back (+24 points per person). The same shape holds in a fixed panel of the 9 noticers and 12
+          never-said people who made at least 8 decisions (noticers 44% at decisions 4–5, 78–89% at 6 and 8), so it
+          is not a change of who is counted. <b>Session 2</b>: noticers 47–53% for six decisions, then 30–38% at
+          7–9; never-said people 61–92%. The late low is the mission mix: around decisions 7–8 of the strategic-heavy
+          game half the missions show the illogical card, and noticers took it on 17% of those against 62% of the
+          rest. Leaving those missions out, noticers and never-said people meet at decisions 7–8 (71% against
+          70–73%). Noticers start session 2 below where they ended session 1 (64% → 49%), but never-said people also
+          start a little lower (76% → 69%); the difference at the break is small and uncertain (−6 points [−32,
+          +20]), and −9 [−30, +12] for noticers after allowing for the mission mix. The very last numbers of each
+          session (session 1 decisions 9–11+, session 2 decision 10 and 11+ for noticers) rest on 2–6 noticers and
+          are hidden; the <i>Thin points</i> button shows them. Buttons: sessions, people, who is counted (everyone
+          who reached each number, or the fixed panel), thin points, missions, game order, every decision or pairs,
+          observed or adjusted.
+        how: >-
+          Rows: every strategic decision; position = its rank among that person's decisions of the chosen kind in
+          that session (positions past 10 pooled as 11+). Rate = share where a card was taken, 95% bands from
+          resampling people, n decisions and people in each tooltip, with the point's share of three-type missions,
+          illogical-card missions, strategic-heavy-game decisions and last-90-s decisions. <b>Minimum</b>: a point is
+          drawn by default only if at least 8 people of its group (both game orders together) reach that number,
+          about half of the smaller group. <b>Fixed panel</b>: per session and mission kind, K = the largest number
+          that at least 8 people in each group reach; only people with at least K decisions, decisions 1–K (all
+          missions: session 1 K = 8, 9 noticers and 12 never-said; session 2 K = 9, 8 and 10). 'No illogical card'
+          drops the decisions on missions whose Conservative card showed an unused drone type, then renumbers.
+          'After card' strip = share of the position's decisions made at or after the person's first illogical card.
+          Carry-over checks, per person then averaged (intervals from resampling people, p from a t-test over
+          people): (a) recovery = the rest of session 1 (decisions 6+) minus decisions 3–5; (b) break = the first
+          three decisions of session 2 minus the last three of session 1; (c) start-to-start. Group differences =
+          the interaction in a linear model with people clustered; adjusted versions use observed − expected.
+        numbers:
+          - 'Everyone, session 1, decisions 1–6: 70%, 64%, 64%, 75%, 71%, 77% (n 33 → 30)'
+          - 'Noticers, session 1: 80%, 67%, 47%, 50%, 46%, 83%, 64%, 78% (decisions 1–8, 15 → 9 people); never said:
+            61%, 61%, 78%, 94%, 89%, 72%, 46%, 75%, 73% (decisions 1–9, 18 → 11 people)'
+          - 'Session 1 fixed panel (9 noticers, 12 never-said, decisions 1–8): noticers 78, 67, 56, 44, 44, 89, 56,
+            78%; never said 50, 42, 67, 92, 83, 67, 50, 75%'
+          - 'Session 1 tail (hidden): decision 9, 6 noticers 83%; decision 10, 5 noticers 1 of 5 took (20% [4, 62]),
+            7 never-said 43% [16, 75]; 11+, 2 noticers 3 of 7 (one took 3 of 4, the other 0 of 3), 5 never-said 7 of
+            12. All strategic-heavy-game players; 57–67% of the 11+ decisions in the last 90 s'
+          - 'Session 2 tail (hidden for noticers): decision 10, 5 noticers 60%; 11+, 4 noticers (all tactical-heavy
+            first, so playing the strategic-heavy game) 12 of 13 = 92% [67, 99], against 8 never-said 20 of 28 = 71%.
+            These 4 took cards on 42% of their decisions 1–6, below their group''s 51%: not keen takers surviving'
+          - 'Strategic-heavy game: share of decisions with an illogical card at decisions 7, 8, 9, 10, 11+: 48%, 55%,
+            30%, 4%, 5%. At decisions 7+, noticers took 17% of illogical-card missions (n 18, 9 people) and 62% of
+            the rest (n 53); never-said 68% and 69%'
+          - 'Session 2, no illogical card: noticers 71% at decisions 7 and 8 (7 people) against never-said 73% and
+            70%; earlier the gap is there (decisions 2–3: 33–47% against 67–89%)'
+          - 'Session 2 fixed panel (8 noticers, 10 never-said, decisions 1–9): gap over the last 3 decisions −47
+            points [−81, −12] against −19 [−50, +12] before; on missions with no illogical card (panel to decision
+            6) −17 [−45, +12] against −30 [−61, +1]'
+          - 'At the session break (last 3 of session 1 → first 3 of session 2): noticers 64% → 49%, −16 points [−38,
+            +4], p = .17; adjusted −9 [−30, +12]; never-said 76% → 69%, −7 [−24, +7]; difference −6 [−32, +20], p =
+            .66'
+          - 'Recovery within session 1 (decisions 3–5 → 6+): noticers 48% (n 42) → 66% (n 50), +24 points per
+            person [+5, +43], p = .04 (window read off the curve, so descriptive)'
+        reply: >-
+          <b>Yes, the last points were misleading; the rest holds up.</b> Later decision numbers only include people
+          who made that many decisions, and those are almost all players of the strategic-heavy game. The odd
+          session-1 tail was 5 noticers making one decision each at number 10 (1 of 5 took a card) and just 2
+          noticers at 11+, most of it in the last 90 seconds; never-said people dipped at 10 as well (43%). That is
+          noise on a handful of people, not a pattern. The session-2 cross-over is 4 noticers (13 decisions, 92%).
+          They are not keen card-takers (42% on their first six decisions). What changes is the missions: in the
+          strategic-heavy game about half of decisions 7–8 show the illogical card, which noticers refuse (17%
+          taken against 62% otherwise). By decision 10 those missions have stopped (4–5%), so noticers take cards
+          again. Leave out the illogical-card missions and the two groups meet at decisions 7–8 (71% against 70–73%),
+          with no cross-over. On n: no, not at the tail, so the chart now hides any point that fewer than 8 people in a group
+          reach (a button shows them, faded). Dot size and a row of numbers under the axis give the people per
+          point, and a fixed-panel view keeps the same people throughout. In that panel the session-1 dip and
+          recovery are unchanged, so the main reading is not a change of who is counted.

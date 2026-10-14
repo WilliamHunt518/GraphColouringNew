@@ -125,6 +125,26 @@ textarea.secnote:focus { border-style: solid; }
 .openq li { margin: 5px 0; font-size: 14.5px; }
 .backbar { margin-bottom: 10px; }
 .backbar button { font: 500 12px var(--mono); padding: 4px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+/* pass 3+: paper role per section, previous-pass note + reply, sidelined panel */
+.roles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 2px; font: 500 11px var(--mono); color: var(--ink-3); }
+.roles button { font: 500 12.5px var(--sans); padding: 4px 10px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg);
+  color: var(--ink-2); cursor: pointer; }
+.roles button.sug { border-style: dashed; border-color: var(--ink-3); }
+.roles button.on { color: #fff; }
+.roles .hint { font: 11px var(--mono); color: var(--ink-3); }
+.prev { border: 1px solid var(--line); border-radius: 8px; margin: 10px 0; max-width: 80ch; background: var(--surface); font-size: 13.5px; }
+.prev .q { padding: 7px 12px; color: var(--ink-2); }
+.prev .q b { font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-right: 6px; }
+.prev .a { padding: 7px 12px; background: var(--hi); border-radius: 0 0 8px 8px; }
+.prev .a b { font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-right: 6px; }
+details.sidepanel { margin-top: 34px; border: 1px dashed var(--line); border-radius: 10px; padding: 6px 18px 14px; background: var(--surface-2); }
+details.sidepanel > summary { font: 600 15px var(--sans); cursor: pointer; padding: 8px 0; color: var(--ink-2); }
+details.sidepanel > summary span { font: 400 13px var(--sans); color: var(--ink-3); margin-left: 8px; }
+details.sidepanel .fsec:first-of-type { margin-top: 8px; }
+.toc a.side { border-style: dashed; color: var(--ink-3); }
+details.p1hist { margin-top: 28px; }
+details.p1hist > summary { font: 600 15px var(--sans); cursor: pointer; color: var(--ink-2); }
+.sidechip { background: var(--ink-3) !important; }
 aside.list a .cnt { margin-left: auto; font: 11px var(--mono); color: var(--ink-3); }
 @media (max-width: 1150px) {
   #app { height: auto; }
@@ -157,6 +177,7 @@ const REG = /*__REGISTER__*/null;
 /* ═══════════════════════════ state ═══════════════════════════ */
 const ATOMS = REG.cards.filter(c => !c.status || c.status === 'active');
 const FINDINGS = (REG.findings || []).map(f => Object.assign({ group: f.area, claim: f.headline }, f, {
+  group: f.status === 'retired' ? 'Retired' : f.tier === 'side' ? 'Sidelined — kept, not a focus' : f.area,
   // suggested links = the finding's own `links` plus every finding a section is shared with (both ways, added below)
   links: [...(f.links || []), ...[...new Set((f.sections || []).flatMap(s => s.sharedWith || []))].map(to => ({ to, why: 'shares a section' }))] }));
 FINDINGS.forEach(f => f.links.forEach(l => { const o = FINDINGS.find(x => x.id === l.to);
@@ -175,6 +196,15 @@ const VERDICTS = [
   ['merge', 'Merge', '--r-cons'], ['prune', 'Prune', '--bad'], ['check', 'Needs a check', '--warn'],
 ];
 const VCOL = Object.fromEntries(VERDICTS.map(([k, , c]) => [k, c]));
+// pass 3+: what each section is for, set per section (Claude's suggestion is shown dashed until you pick)
+const ROLES = [
+  ['paper', 'Paper', '--good', 'Likely to go in the paper, with its graph'],
+  ['numbers', 'Numbers only', '--s-strat', 'Mention the values in the paper, but no graph'],
+  ['extra', 'Extra', '--r-aggr', 'Definitely keep — supplement, talk or blog post material'],
+  ['archive', 'Archive', '--ink-3', 'Don’t forget it, but unlikely ever to be used'],
+];
+// the newest earlier-pass note on a key (a moved section is looked up under where it was)
+const prevNote = key => ((REG.history || {})[key] || []).filter(x => x.pass === PASS - 1).slice(-1)[0];
 const LSKEY = 'findings-review-v1';
 const X = DATA.extras, X2 = DATA.extras2, R1 = DATA.round1, QL = DATA.qual;
 
@@ -199,7 +229,8 @@ function save(id) {
   saveTimer = setTimeout(() => {
     if (!SERVER) return;
     fetch('/api/responses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(RESP) })
-      .then(r => { if (!r.ok) throw new Error(r.status); setSaved('saved to disk ✓ ' + new Date().toLocaleTimeString(), 'disk'); })
+      .then(r => { if (r.status === 409) { SERVER = false; setSaved('out of date: another pass is open — reload the page', 'local'); return; }
+        if (!r.ok) throw new Error(r.status); setSaved('saved to disk ✓ ' + new Date().toLocaleTimeString(), 'disk'); })
       .catch(() => setSaved('disk save failed — saved in browser', 'local'));
   }, 500);
   drawProgress();
@@ -511,54 +542,79 @@ function renderCard(host, c) {
   h('div', { class: 'meta2', html: `Lineage: ${(c.lineage || []).join(', ') || '—'}<br>Sources: ${(c.sources || []).join(' · ') || '—'}` }, host);
 }
 
-/* A finding: headline, then one block per section -- text, chart, numbers, how it was worked out, quotes, the atoms
-   it stands for, a note box -- then your pass-1 notes on its atoms with what was done about each, then open questions. */
+/* A finding: headline (+ your last-pass note and what was done), then the main sections, then the sidelined ones in a
+   collapsed panel. Each section: text, chart, numbers, how it was worked out, quotes, the atoms it stands for, your
+   last-pass note with Claude's reply, a paper-role picker and a note box. Pass-1 notes on the atoms come last, collapsed. */
+function prevBox(host, key, reply) {
+  const pn = prevNote(key);
+  if (!(pn && (pn.note || pn.verdict)) && !reply) return;
+  const b = h('div', { class: 'prev' }, host);
+  if (pn && (pn.note || pn.verdict)) { const q = h('div', { class: 'q' }, b); h('b', { text: `Your pass ${pn.pass} note${pn.verdict ? ' · ' + pn.verdict : ''}` }, q);
+    q.append(pn.note || ''); }
+  if (reply) { const a = h('div', { class: 'a' }, b); h('b', { text: 'What was done' }, a); a.insertAdjacentHTML('beforeend', reply); }
+}
+function rolePicker(host, key, suggested, before, set) {
+  const r = resp(key), d = h('div', { class: 'roles', text: 'Paper role: ' });
+  host.insertBefore(d, before || null);
+  ROLES.forEach(([k, l, col, tip]) => {
+    const b = h('button', { text: l, title: tip + (k === suggested && !r.role ? ' — Claude’s suggestion, click to confirm' : '') }, d);
+    if (r.role === k || (!r.role && set && k === suggested)) { b.classList.add('on'); b.style.background = `var(${col})`; b.style.borderColor = `var(${col})`; }
+    else if (!r.role && k === suggested) b.classList.add('sug');
+    b.onclick = () => { r.role = r.role === k ? null : k; save(key); rolePicker(host, key, suggested, d, set); d.remove(); };
+  });
+  if (!r.role && suggested) h('span', { class: 'hint', text: set ? `(your pass ${PASS - 1} pick — click another to change)` : '(dashed = Claude’s suggestion)' }, d);
+}
+function renderSection(host, f, s, label) {
+  const d = h('div', { class: 'fsec', id: 'sec-' + s.id }, host), t = h('h3', { text: `${label}. ${s.title}` }, d);
+  if ((s.sharedWith || []).length) { const sh = h('span', { class: 'shared', text: 'shared · also in ' }, t);
+    s.sharedWith.forEach((o, j) => { if (j) sh.append(', '); h('a', { text: (BYID[o] || { title: o }).title }, sh).onclick = () => go(o); }); }
+  if (s.was) h('span', { class: 'shared', text: 'moved in from ' + s.was.split('#')[0] }, t);
+  if (s.text) h('p', { class: 'stext', html: s.text }, d);
+  if (s.chart) {
+    const ch = h('div', { class: 'chart' }, h('div', { class: 'box chartbox' }, d));
+    if (!CH[s.chart]) ch.textContent = 'No chart function for ' + s.chart;
+    else try { CH[s.chart](ch, s); } catch (e) { ch.textContent = 'Chart could not be drawn: ' + e.message; console.error(s.chart, e); }
+  }
+  if ((s.numbers || []).length) { const ul = h('ul', { class: 'nums' }, d); s.numbers.forEach(n => h('li', { html: n }, ul)); }
+  if (s.how) { const hw = h('details', { class: 'how', open: '' }, d); h('summary', { text: 'How this was worked out' }, hw); h('div', { html: s.how }, hw); }
+  const codes = s.codes || [], ev = codes.length && QL ? QL.evidence.filter(e => codes.includes(e.code)) : [];
+  if (ev.length) { const dd = h('details', { class: 'box' }, d); h('summary', { text: `What they said — ${ev.length} excerpts (${codes.join(', ')})` }, dd);
+    ev.forEach(e => { const q = h('div', { class: 'evid' + (e.led ? ' led' : '') }, dd);
+      h('div', { class: 'who', text: `${e.pid} · ${e.source}${e.at ? ' · ' + e.at : ''}${e.led ? ' · after a leading question' : ''}` }, q);
+      h('div', { text: e.text }, q); }); }
+  if ((s.atoms || []).length) { const at = h('div', { class: 'atoms', text: 'pass-1 cards: ' }, d);
+    s.atoms.forEach(a => { if (BYID[a]) h('a', { text: BYID[a].title, title: 'open the pass-1 card' }, at).onclick = () => go(a); }); }
+  const key = f.id + '#' + s.id;
+  prevBox(d, s.was && !prevNote(key) ? s.was : key, s.reply);
+  rolePicker(d, key, s.role, null, s.role_set);
+  const ta = h('textarea', { class: 'secnote', placeholder: 'Note on this section (optional)…' }, d);
+  ta.value = (RESP.cards[key] || {}).note || '';
+  ta.oninput = () => { resp(key).note = ta.value; save(key); };
+}
 function renderFinding(host, f) {
   h('div', { class: 'kick', text: `${f.area} · ${f.id}` }, host);
   h('h2', { text: f.title }, host);
   const chips = h('div', {}, host);
   h('span', { class: 'chip k-finding', text: 'finding' }, chips);
+  if (f.status === 'retired') h('span', { class: 'chip sidechip', text: 'retired' }, chips);
+  else if (f.tier === 'side') h('span', { class: 'chip sidechip', text: 'sidelined' }, chips);
   if (f.confidence) h('span', { class: `chip c-${f.confidence === 'mixed' ? 'moderate' : f.confidence}`, text: f.confidence }, chips);
   h('p', { class: 'headline', html: f.headline || '' }, host);
-  const secs = f.sections || [];
+  prevBox(host, f.id, f.reply);
+  const secs = f.sections || [], main = secs.filter(s => s.tier !== 'side'), side = secs.filter(s => s.tier === 'side');
+  const jump = id => { const n = host.querySelector('#sec-' + id); const p = n && n.closest('details.sidepanel'); if (p) p.open = true;
+    if (n) n.scrollIntoView({ behavior: 'smooth' }); };
   if (secs.length > 1) { const t = h('div', { class: 'toc' }, host);
-    secs.forEach((s, i) => { h('a', { text: `${i + 1}. ${s.title}` }, t).onclick = () => host.querySelector('#sec-' + s.id).scrollIntoView({ behavior: 'smooth' }); });
-    if ((f.replies || []).length) h('a', { text: 'Your pass-1 notes' }, t).onclick = () => host.querySelector('#sec-replies').scrollIntoView({ behavior: 'smooth' }); }
-  secs.forEach((s, i) => {
-    const d = h('div', { class: 'fsec', id: 'sec-' + s.id }, host), t = h('h3', { text: `${i + 1}. ${s.title}` }, d);
-    if ((s.sharedWith || []).length) { const sh = h('span', { class: 'shared', text: 'shared · also in ' }, t);
-      s.sharedWith.forEach((o, j) => { if (j) sh.append(', '); h('a', { text: (BYID[o] || { title: o }).title }, sh).onclick = () => go(o); }); }
-    if (s.text) h('p', { class: 'stext', html: s.text }, d);
-    if (s.chart) {
-      const ch = h('div', { class: 'chart' }, h('div', { class: 'box chartbox' }, d));
-      if (!CH[s.chart]) ch.textContent = 'No chart function for ' + s.chart;
-      else try { CH[s.chart](ch, s); } catch (e) { ch.textContent = 'Chart could not be drawn: ' + e.message; console.error(s.chart, e); }
-    }
-    if ((s.numbers || []).length) { const ul = h('ul', { class: 'nums' }, d); s.numbers.forEach(n => h('li', { html: n }, ul)); }
-    if (s.how) { const hw = h('details', { class: 'how', open: '' }, d); h('summary', { text: 'How this was worked out' }, hw); h('div', { html: s.how }, hw); }
-    const codes = s.codes || [], ev = codes.length && QL ? QL.evidence.filter(e => codes.includes(e.code)) : [];
-    if (ev.length) { const dd = h('details', { class: 'box' }, d); h('summary', { text: `What they said — ${ev.length} excerpts (${codes.join(', ')})` }, dd);
-      ev.forEach(e => { const q = h('div', { class: 'evid' + (e.led ? ' led' : '') }, dd);
-        h('div', { class: 'who', text: `${e.pid} · ${e.source}${e.at ? ' · ' + e.at : ''}${e.led ? ' · after a leading question' : ''}` }, q);
-        h('div', { text: e.text }, q); }); }
-    if ((s.atoms || []).length) { const at = h('div', { class: 'atoms', text: 'pass-1 cards: ' }, d);
-      s.atoms.forEach(a => { if (BYID[a]) h('a', { text: BYID[a].title, title: 'open the pass-1 card' }, at).onclick = () => go(a); }); }
-    const key = f.id + '#' + s.id, ta = h('textarea', { class: 'secnote', placeholder: 'Note on this section (optional)…' }, d);
-    ta.value = (RESP.cards[key] || {}).note || '';
-    ta.oninput = () => { resp(key).note = ta.value; save(key); };
-  });
-  const reps = f.replies || [];
-  if (reps.length) {
-    const d = h('div', { class: 'fsec', id: 'sec-replies' }, host);
-    h('h3', { text: 'Your pass-1 notes, and what was done' }, d);
-    reps.forEach(rp => { const T = BYID[rp.card] || { title: rp.card }, hs = ((REG.history || {})[rp.card] || []).slice(-1)[0] || {};
-      const b = h('div', { class: 'p1' }, d), q = h('div', { class: 'q' }, b);
-      h('a', { text: T.title, style: 'cursor:pointer;font-weight:600' }, q).onclick = () => go(rp.card);
-      q.append(` · ${hs.verdict || 'no verdict'}`);
-      if (hs.note) h('div', { text: hs.note, style: 'margin-top:4px;color:var(--ink-2)' }, q);
-      h('div', { class: 'a', html: rp.text }, b); });
+    main.forEach((s, i) => { h('a', { text: `${i + 1}. ${s.title}` }, t).onclick = () => jump(s.id); });
+    side.forEach((s, i) => { h('a', { class: 'side', text: `S${i + 1}. ${s.title}` }, t).onclick = () => jump(s.id); });
+    if ((f.open || []).length) h('a', { text: 'Open questions' }, t).onclick = () => jump('open'); }
+  main.forEach((s, i) => renderSection(host, f, s, i + 1));
+  if (side.length) {
+    const p = h('details', { class: 'sidepanel' }, host), sm = h('summary', { text: `Sidelined — kept, not a focus (${side.length})` }, p);
+    h('span', { text: 'click to open · roles and notes work in here too' }, sm);
+    side.forEach((s, i) => renderSection(p, f, s, 'S' + (i + 1)));
   }
-  if ((f.open || []).length) { const d = h('div', { class: 'fsec' }, host); h('h3', { text: 'Open — for you to decide' }, d);
+  if ((f.open || []).length) { const d = h('div', { class: 'fsec', id: 'sec-open' }, host); h('h3', { text: 'Open — for you to decide' }, d);
     const ul = h('ul', { class: 'openq' }, d); f.open.forEach(o => h('li', { html: o }, ul)); }
   if (f.links.length) { const d = h('div', { class: 'box links' }, host); h('h4', { text: 'Related findings' }, d);
     const mine = resp(f.id).links.map(l => l.to);
@@ -566,6 +622,17 @@ function renderFinding(host, f) {
       h('a', { class: 'lk', text: T.title }, row).onclick = () => go(l.to); h('span', { class: 'why', text: l.why }, row);
       if (!mine.includes(l.to)) h('button', { class: 'adopt', text: '+ mine', title: 'Add to your links' }, row).onclick = () => {
         resp(f.id).links.push({ to: l.to, note: l.why }); save(f.id); render(); }; }); }
+  const reps = f.replies || [];
+  if (reps.length) {
+    const d = h('details', { class: 'p1hist' }, host);
+    h('summary', { text: `Pass-1 history: your notes on the ${reps.length} cards this carries, and what was done` }, d);
+    reps.forEach(rp => { const T = BYID[rp.card] || { title: rp.card }, hs = ((REG.history || {})[rp.card] || []).filter(x => x.pass === 1).slice(-1)[0] || {};
+      const b = h('div', { class: 'p1' }, d), q = h('div', { class: 'q' }, b);
+      h('a', { text: T.title, style: 'cursor:pointer;font-weight:600' }, q).onclick = () => go(rp.card);
+      q.append(` · ${hs.verdict || 'no verdict'}`);
+      if (hs.note) h('div', { text: hs.note, style: 'margin-top:4px;color:var(--ink-2)' }, q);
+      h('div', { class: 'a', html: rp.text }, b); });
+  }
   const all = [...new Set([...(f.absorbs || []), ...secs.flatMap(s => s.atoms || [])])];
   h('div', { class: 'meta2', text: `Carries ${all.length} pass-1 cards: ${all.join(', ')}` }, host);
 }
@@ -724,6 +791,8 @@ $('imp').onchange = e => {
 };
 setSaved('saved in this browser — export to share', 'local');
 fetch('/api/responses').then(r => r.ok ? r.json() : Promise.reject()).then(J => {
+  if (J && J.pass != null && J.pass !== PASS) {   // this page is from another pass: never push its notes to disk
+    setSaved(`out of date: the server is on pass ${J.pass} — rebuild/reload the page`, 'local'); return; }
   SERVER = true;
   if (J && J.cards && J.pass === PASS && stamp(J) > stamp(RESP)) RESP = J;
   setSaved('connected — saving to disk', 'disk');

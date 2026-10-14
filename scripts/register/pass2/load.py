@@ -698,6 +698,82 @@ def triage_choice(S, rng):
     return out
 
 
+def triage_choice_sig(S):
+    """Pass 3: significance for the choice model. Same conditional logit as triage_choice, but the people
+    are resampled JOINTLY for the short- and long-queue fits (1000 draws, own seeded RNG), so each term
+    gets a bootstrap p-value (how often the resampled odds ratio lands on the other side of 1, doubled)
+    and the short-vs-long DIFFERENCE gets its own interval and p-value. A model-based Wald p (which
+    ignores that decisions are clustered within people) is given alongside as a cross-check."""
+    from statsmodels.discrete.conditional_models import ConditionalLogit
+    rng = np.random.default_rng(SEED + 303)
+    NB = 1000
+    rows = []
+    for di, rr in enumerate(S.itertuples()):
+        w = rr.waiting
+        ids = [m for _, m, _, _ in w]
+        if rr.missionId not in ids or len(w) < 2:
+            continue
+        nd = np.array([x[2] for x in w], float)
+        for j, (_, m, d_, nt) in enumerate(w):
+            rows.append(dict(dec=di, pid=rr.pid, game=rr.game, long=int(rr.st_queued > VISIBLE),
+                             y=int(m == rr.missionId), oldest=int(j == 0), newest=int(j == len(w) - 1),
+                             size=(d_ - nd.mean()) / 3.0, resid=int(m.endswith('-R'))))
+    C = pd.DataFrame(rows)
+    feats = ['oldest', 'newest', 'size', 'resid']
+
+    def fit(Cx, wald=False):
+        m = ConditionalLogit(Cx.y.to_numpy(), Cx[feats].to_numpy(float), groups=Cx.dec.to_numpy()).fit(disp=0)
+        est = dict(zip(feats, np.asarray(m.params)))
+        return (est, dict(zip(feats, np.asarray(m.pvalues)))) if wald else est
+
+    def bp(v):
+        v = np.asarray([x for x in v if np.isfinite(x)])
+        return min(1.0, 2 * min((v <= 0).mean(), (v >= 0).mean())) if len(v) else None
+    out = {}
+    for scope, keep in (('all', C.game.notna()), ('strategicGames', C.game.str.startswith('strategic'))):
+        Cs = C[keep]
+        parts = {lab: Cs[Cs.long == lv] for lab, lv in (('short', 0), ('long', 1))}
+        est = {lab: fit(Cx, wald=True) for lab, Cx in parts.items()}
+        boots = {lab: {f: [] for f in feats} for lab in parts}
+        diff = {f: [] for f in feats}
+        decs = {lab: {p: g for p, g in Cx.groupby('pid')} for lab, Cx in parts.items()}
+        pids = np.array(sorted(Cs.pid.unique()))
+        for b in range(NB):
+            pick = rng.choice(pids, len(pids), replace=True)
+            e = {}
+            for lab in parts:
+                Cb = pd.concat([decs[lab][p].assign(dec=decs[lab][p].dec.astype(str) + f'#{i}')
+                                for i, p in enumerate(pick) if p in decs[lab]])
+                Cb['dec'] = pd.factorize(Cb.dec)[0]
+                try:
+                    e[lab] = fit(Cb)
+                except Exception:
+                    e[lab] = None
+            for lab in parts:
+                for f in feats:
+                    boots[lab][f].append(e[lab][f] if e[lab] else np.nan)
+            for f in feats:
+                diff[f].append(e['long'][f] - e['short'][f] if e['short'] and e['long'] else np.nan)
+        res = {}
+        for lab, Cx in parts.items():
+            res[lab] = dict(decisions=int(Cx.dec.nunique()), people=int(Cx.pid.nunique()), terms={
+                f: dict(est=r(np.exp(est[lab][0][f]), 3), lo=r(np.exp(np.nanpercentile(boots[lab][f], 2.5)), 3),
+                        hi=r(np.exp(np.nanpercentile(boots[lab][f], 97.5)), 3), p=r(bp(boots[lab][f]), 4),
+                        pWald=r(est[lab][1][f], 4)) for f in feats})
+        res['ratio'] = {f: dict(est=r(np.exp(est['long'][0][f] - est['short'][0][f]), 3),
+                                lo=r(np.exp(np.nanpercentile(diff[f], 2.5)), 3),
+                                hi=r(np.exp(np.nanpercentile(diff[f], 97.5)), 3), p=r(bp(diff[f]), 4)) for f in feats}
+        out[scope] = res
+        for lab in ('short', 'long'):
+            print('   choice sig %-15s %-5s (%d decisions): ' % (scope, lab, res[lab]['decisions'])
+                  + '  '.join('%s x%.2f [%.2f, %.2f] p=%.3f (Wald %.3f)' % (f, v['est'], v['lo'], v['hi'], v['p'], v['pWald'])
+                              for f, v in res[lab]['terms'].items()))
+        print('   choice sig %-15s long/short ratio: ' % scope
+              + '  '.join('%s x%.2f [%.2f, %.2f] p=%.3f' % (f, v['est'], v['lo'], v['hi'], v['p']) for f, v in res['ratio'].items()))
+    out['nBoot'] = NB
+    return out
+
+
 def pace(S, T, logs):
     """How fast: strategic decision time (total and beyond the forced card reveal), deciding before the
     cards load, tactical plan time, and strategic decisions per minute -- each against the queue,
@@ -831,6 +907,7 @@ def main():
     tri, _ = triage(S, logs, rng)
     tri['choice'] = triage_choice(S, rng)
     pc = pace(S, T, logs)
+    tri['choiceSig'] = triage_choice_sig(S)
 
     res = dict(generated=pd.Timestamp.now().strftime('%Y-%m-%d %H:%M'), visible=VISIBLE, games=games, heavy=heavy,
                said=sorted(said), nPeople=int(S.pid.nunique()),

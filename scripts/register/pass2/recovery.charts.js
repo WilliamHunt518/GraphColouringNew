@@ -90,7 +90,7 @@
     /* ───────────── f-tier-trust ───────────── */
     'recovery.trustPairs': safe('trust per person', host => {
       const P = D.trust.people.slice().sort((a, b) => (a.t - a.s) - (b.t - b.s)), G = D.trust.gap;
-      const H = 330, padL = 46, padR = 150, padT = 16, padB = 40, s = svgRoot(host, W, H);
+      const H = 330, padL = 52, padR = 150, padT = 16, padB = 40, s = svgRoot(host, W, H);
       const step = (W - padL - padR) / P.length, Y = v => H - padB - (H - padB - padT) * ((v - 1) / 6);
       [1, 2, 3, 4, 5, 6, 7].forEach(v => { el('line', { x1: padL, x2: W - 20, y1: Y(v), y2: Y(v), stroke: css('--grid') }, s);
         T(s, padL - 8, Y(v) + 4, v, { 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10.5, 'font-family': mono() }); });
@@ -102,6 +102,8 @@
         const hit = el('rect', { x: cx - step / 2, y: padT, width: step, height: H - padT - padB, fill: 'transparent' }, s);
         hoverable(hit, `<b>${p.pid}</b><br>Strategic ${num(p.s, 2)} · Tactical ${num(p.t, 2)}<br>gap ${sgn(p.t - p.s, 2)} (mean of their 2 sessions)`);
       });
+      const yt = T(s, 12, padT + (H - padT - padB) / 2, 'trust in the assistant (1–7)', { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 });
+      yt.setAttribute('transform', `rotate(-90 12 ${padT + (H - padT - padB) / 2})`);
       T(s, padL + (W - padL - padR) / 2, H - 10, `${P.length} operators, sorted by their gap (tactical − strategic)`, { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11.5 });
       // group means with CI on the right
       const mx = W - padR + 50;
@@ -124,6 +126,174 @@
       host.insertBefore(btnBar(host, 'Split by', [['items', 'Questionnaire item'], ['game', 'Game played'], ['run', 'First / second session']], 'items', k => views[k]()), box);
       views.items();
     }),
+    /* pass 3: the four games merged into the two scenarios */
+    'recovery.trustSplits2': safe('trust splits by scenario', host => {
+      const box = h('div', {}, host), TR = D.trust, BS = TR.byScenario;
+      const SCN = { strategic: 'Strategic Heavy sessions', tactical: 'Tactical Heavy sessions' };
+      const views = {
+        items: () => ciRows(box, TR.items.map(i => ({ label: i.label, est: i.diff, lo: i.lo, hi: i.hi, n: i.n, sub: `Strategic ${num(i.s, 2)} · Tactical ${num(i.t, 2)} · ${pval(i.p)}` }))),
+        scenario: () => {
+          ciRows(box, BS.rows.map(g => ({ label: SCN[g.scen], est: g.gapmean, lo: g.gaplo, hi: g.gaphi, n: g.gapn,
+            sub: `Strategic ${num(g.s.mean, 2)} [${num(g.s.lo, 2)}, ${num(g.s.hi, 2)}] · Tactical ${num(g.t.mean, 2)} [${num(g.t.lo, 2)}, ${num(g.t.hi, 2)}]<br>both games of this scenario pooled; n = sessions, one per person` })), { lo: -0.5, hi: 2.5 });
+          const P = BS.paired, M = BS.model;
+          h('p', { class: 'cap', html: `Every person played one session of each scenario, so the two rows are the same ${P.n} people. Their gap is larger in Strategic Heavy by ${sgn(P.gapDiff.mean, 2)} points [${sgn(P.gapDiff.lo, 2)}, ${sgn(P.gapDiff.hi, 2)}] (paired t ${pval(P.gapP)}, Wilcoxon ${pval(P.gapWil)}), `
+            + `mostly because strategic trust is lower there (${sgn(P.sDiff.mean, 2)}, ${pval(P.sP)}) rather than tactical trust higher (${sgn(P.tDiff.mean, 2)}, ${pval(P.tP)}). `
+            + `With scenario and session in one model: Strategic Heavy ${sgn(M.sh.est, 2)} [${sgn(M.sh.lo, 2)}, ${sgn(M.sh.hi, 2)}] (${pval(M.sh.p)}), second session ${sgn(M.run2.est, 2)} [${sgn(M.run2.lo, 2)}, ${sgn(M.run2.hi, 2)}] (${pval(M.run2.p)}).` }, box);
+        },
+        run: () => ciRows(box, TR.byRun.map(g => ({ label: 'Session ' + g.run, est: g.gapmean, lo: g.gaplo, hi: g.gaphi, n: g.gapn, sub: `Strategic ${num(g.s, 2)} · Tactical ${num(g.t, 2)}` })), { lo: -0.5, hi: 2.5 }),
+      };
+      host.insertBefore(btnBar(host, 'Split by', [['items', 'Questionnaire item'], ['scenario', 'Scenario played'], ['run', 'First / second session']], 'items', k => views[k]()), box);
+      views.items();
+    }),
+
+    /* pass 3: checking cost, with a toggle to keep only the well-filled plan sizes */
+    'recovery.checkCost2': safe('checking cost', host => {
+      const C = D.checking, SUB = C.subset, WELL = ['3', '6–7', '8+'], box = h('div', {}, host);
+      const draw = which => {
+        box.innerHTML = '';
+        const B = which === 'well' ? C.bins.filter(b => WELL.includes(b.label)) : C.bins;
+        const H = 300, padT = 18, padB = 52, gap = 50, pw = (W - 60 - gap - 20) / 2, s = svgRoot(h('div', {}, box), W, H);
+        const xL = 60, xR = 60 + pw + gap, n = B.length, bx = (x0, i) => x0 + pw * (i + .5) / n;
+        const yR = v => H - padB - (H - padB - padT) * v, maxS = Math.max(10, ...B.map(b => b.netQ3 || 0)), yS = v => H - padB - (H - padB - padT) * (v / maxS);
+        [0, .25, .5, .75, 1].forEach(v => { el('line', { x1: xL, x2: xL + pw, y1: yR(v), y2: yR(v), stroke: css('--grid') }, s);
+          T(s, xL - 6, yR(v) + 4, pct(v, 0), { 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10.5, 'font-family': mono() }); });
+        for (let v = 0; v <= maxS; v += 2) { el('line', { x1: xR, x2: xR + pw, y1: yS(v), y2: yS(v), stroke: css('--grid') }, s);
+          T(s, xR - 6, yS(v) + 4, v + ' s', { 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10.5, 'font-family': mono() }); }
+        T(s, xL + pw / 2, 12, 'Share of plans', { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600 });
+        T(s, xR + pw / 2, 12, 'Checking time after the reveal (consulted plans)', { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600 });
+        [['consulted', 'cLo', 'cHi', css('--mark-soft'), -7], ['kept', 'kLo', 'kHi', css('--s-tac'), 7]].forEach(([k, l, u, c, dx]) => {
+          const pts = B.map((b, i) => [bx(xL, i) + dx, yR(b[k])]);
+          el('polyline', { points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: c, 'stroke-width': 1.5, opacity: .6 }, s);
+          B.forEach((b, i) => { const cx = bx(xL, i) + dx;
+            el('line', { x1: cx, x2: cx, y1: yR(b[l]), y2: yR(b[u]), stroke: c, 'stroke-width': 1.5 }, s);
+            const d = el('circle', { cx, cy: yR(b[k]), r: 5, fill: c, stroke: css('--surface'), 'stroke-width': 1.5 }, s);
+            hoverable(d, `<b>${b.label} drones</b><br>${k === 'kept' ? 'kept unmodified' : 'pressed Suggest'} ${pct(b[k], 0)} [${pct(b[l], 0)}, ${pct(b[u], 0)}]<br>n = ${b.n} plans, ${b.people} people`); });
+        });
+        B.forEach((b, i) => { const cx = bx(xR, i);
+          el('rect', { x: cx - 10, y: yS(b.netQ3), width: 20, height: Math.max(1, yS(b.netQ1) - yS(b.netQ3)), rx: 4, fill: css('--s-tac'), 'fill-opacity': .25 }, s);
+          el('line', { x1: cx - 10, x2: cx + 10, y1: yS(b.netMed), y2: yS(b.netMed), stroke: css('--s-tac'), 'stroke-width': 3 }, s);
+          const hit = el('rect', { x: cx - 18, y: padT, width: 36, height: H - padT - padB, fill: 'transparent' }, s);
+          hoverable(hit, `<b>${b.label} drones</b><br>median ${fmtS(b.netMed)} (IQR ${fmtS(b.netQ1)}–${fmtS(b.netQ3)})<br>≈ ${fmtS(b.perDrone)} per drone · forced reveal ≈ ${fmtS(b.reveal)} (excluded)<br>n = ${b.nCons} consulted plans`); });
+        [[xL], [xR]].forEach(([x0]) => B.forEach((b, i) => {
+          T(s, bx(x0, i), H - padB + 15, b.label, { 'text-anchor': 'middle', fill: css('--ink-2'), 'font-size': 10.5, 'font-family': mono() });
+          T(s, bx(x0, i), H - padB + 28, `n=${x0 === xL ? b.n : b.nCons}`, { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 9.5, 'font-family': mono() });
+        }));
+        T(s, xL + pw / 2, H - 6, 'drones in the plan', { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 });
+        T(s, xR + pw / 2, H - 6, 'drones in the plan', { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 });
+        legend(box, [{ label: 'Pressed Suggest (consulted)', color: css('--mark-soft') }, { label: 'Kept the plan unmodified', color: css('--s-tac') }, { label: 'Checking time: median (bar) and middle half (box)', color: css('--s-tac') }]);
+        tableFor(box, ['Drones', 'Plans', 'People', 'Consulted', 'Kept unmodified', 'Kept | consulted', 'Median check (s)', 'Per drone (s)'],
+          B.map(b => [b.label, b.n, b.people, pct(b.consulted, 0), pct(b.kept, 0), b.keptGivenCons == null ? '—' : pct(b.keptGivenCons, 0), num(b.netMed, 1), num(b.perDrone, 2)]));
+        const M = which === 'well' && SUB ? SUB : C, nP = which === 'well' && SUB ? SUB.nPlans : C.nPlans;
+        const or = t => `OR ${num(t.est, 2)} [${num(t.lo, 2)}, ${num(t.hi, 2)}], ${pval(t.p)}`;
+        h('p', { class: 'cap', html: (which === 'well' ? `Only the plan sizes with plenty of plans (3, 6–7 and 8+ drones: ${nP} of ${C.nPlans} plans; the ${SUB ? SUB.dropped : '—'} plans of 1–2, 4 or 5 drones are left out). ` : `All ${C.nPlans} confirmed tactical plans. `)
+          + `Whiskers are 95% CIs; n under each size. Per SD of plan size, on these plans: kept unmodified ${or(M.keepOR)}; consulted ${or(M.consultOR)}; kept once consulted ${or(M.keepGivenConsOR)}; checking time ${sgn(M.netB.est, 2)} s [${sgn(M.netB.lo, 2)}, ${sgn(M.netB.hi, 2)}], ${pval(M.netB.p)}.`
+          + (which === 'well' && SUB ? ` 8+ drones vs 3 drones directly: consulted ${or(SUB.consulted3v8)}, kept ${or(SUB.keep3v8)}.` : '')
+          + ` Person medians: ${num(C.tacMedian, 1)} s on a tactical plan vs ${num(C.stratMedian, 1)} s on a strategy card.` }, box);
+      };
+      host.insertBefore(btnBar(host, 'Plan sizes', [['well', 'Well-filled sizes only (3, 6–7, 8+)'], ['all', 'All sizes']], 'well', draw), box);
+      draw('well');
+    }),
+
+    /* pass 4: the two views the researcher kept (questionnaire item, scenario); session order stays behind a third button */
+    'recovery.trustSplits3': safe('trust splits', host => {
+      const box = h('div', {}, host), TR = D.trust, BS = TR.byScenario;
+      const SCN = { strategic: 'Strategic Heavy sessions', tactical: 'Tactical Heavy sessions' };
+      const XL = 'trust gap: tactical minus strategic (points on the 1–7 scale)';
+      const views = {
+        items: () => { box.innerHTML = '';
+          ciRows(box, TR.items.map(i => ({ label: i.label, est: i.diff, lo: i.lo, hi: i.hi, n: i.n, sub: `Strategic ${num(i.s, 2)} · Tactical ${num(i.t, 2)} · ${pval(i.p)}<br>n = people (each person's two sessions averaged)` })), { xLabel: XL });
+          h('p', { class: 'cap', text: 'One row per questionnaire item: each person’s tactical answer minus their strategic answer, averaged over their two sessions; 95% CI. Orange = CI clear of zero.' }, box); },
+        scenario: () => { box.innerHTML = '';
+          ciRows(box, BS.rows.map(g => ({ label: SCN[g.scen], est: g.gapmean, lo: g.gaplo, hi: g.gaphi, n: g.gapn,
+            sub: `Strategic ${num(g.s.mean, 2)} [${num(g.s.lo, 2)}, ${num(g.s.hi, 2)}] · Tactical ${num(g.t.mean, 2)} [${num(g.t.lo, 2)}, ${num(g.t.hi, 2)}]<br>both games of this scenario pooled; n = sessions, one per person` })), { lo: -0.5, hi: 2.5, xLabel: XL });
+          const P = BS.paired, M = BS.model;
+          h('p', { class: 'cap', html: `Every person played one session of each scenario, so the two rows are the same ${P.n} people. Their gap is larger in Strategic Heavy by ${sgn(P.gapDiff.mean, 2)} points [${sgn(P.gapDiff.lo, 2)}, ${sgn(P.gapDiff.hi, 2)}] (paired t ${pval(P.gapP)}, Wilcoxon ${pval(P.gapWil)}), `
+            + `mostly because strategic trust is lower there (${sgn(P.sDiff.mean, 2)}, ${pval(P.sP)}) rather than tactical trust higher (${sgn(P.tDiff.mean, 2)}, ${pval(P.tP)}). `
+            + `With scenario and session in one model: Strategic Heavy ${sgn(M.sh.est, 2)} [${sgn(M.sh.lo, 2)}, ${sgn(M.sh.hi, 2)}] (${pval(M.sh.p)}), second session ${sgn(M.run2.est, 2)} [${sgn(M.run2.lo, 2)}, ${sgn(M.run2.hi, 2)}] (${pval(M.run2.p)}).` }, box); },
+        run: () => { box.innerHTML = '';
+          ciRows(box, TR.byRun.map(g => ({ label: 'Session ' + g.run, est: g.gapmean, lo: g.gaplo, hi: g.gaphi, n: g.gapn, sub: `Strategic ${num(g.s, 2)} · Tactical ${num(g.t, 2)}` })), { lo: -0.5, hi: 2.5, xLabel: XL }); },
+      };
+      host.insertBefore(btnBar(host, 'Split by', [['items', 'Questionnaire item'], ['scenario', 'Scenario played'], ['run', 'Also: first / second session']], 'items', k => views[k]()), box);
+      views.items();
+    }),
+
+    /* pass 4: is the tactical plan given less attention in Strategic Heavy sessions? */
+    'recovery.attention': safe('attention to the tactical plan', host => {
+      const A = D.trust && D.trust.attention;
+      if (!A) return missing(host, 'attention (rerun recovery.py)');
+      const box = h('div', {}, host);
+      const draw = which => {
+        box.innerHTML = '';
+        const rows = A.rows, rowH = 42, padL = 330, padR = 110, padT = 26, padB = 42, H = padT + rows.length * rowH + padB, s = svgRoot(box, W, H);
+        const lim = Math.log(3), X = v => padL + (W - padL - padR) * ((Math.log(Math.min(3, Math.max(1 / 3, v))) + lim) / (2 * lim));
+        [[1 / 3, '⅓'], [.5, '½'], [1, '1'], [2, '2'], [3, '3']].forEach(([v, lab]) => { el('line', { x1: X(v), x2: X(v), y1: padT - 6, y2: H - padB, stroke: v === 1 ? css('--ink-3') : css('--grid'), 'stroke-width': v === 1 ? 1.5 : 1 }, s);
+          T(s, X(v), H - padB + 14, '×' + lab, { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 10.5, 'font-family': mono() }); });
+        T(s, X(1), padT - 10, 'same in both scenarios', { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 10.5 });
+        T(s, (padL + W - padR) / 2, H - 4, 'Strategic Heavy ÷ Tactical Heavy (time ratio or odds ratio, log scale)', { 'text-anchor': 'middle', fill: css('--ink-2'), 'font-size': 11 });
+        rows.forEach((r_, i) => {
+          const cy = padT + i * rowH + rowH / 2 - 4, m = r_[which], f = v => r_.kind === 'time' ? num(v, 1) + ' s' : pct(v, 0);
+          T(s, padL - 10, cy, r_.label, { 'text-anchor': 'end', 'font-size': 11.5 });
+          T(s, padL - 10, cy + 14, `${r_.kind === 'time' ? 'median' : 'rate'}: Strategic Heavy ${f(r_.sh)} · Tactical Heavy ${f(r_.th)}`, { 'text-anchor': 'end', 'font-size': 10, fill: css('--ink-3'), 'font-family': mono() });
+          const col = m.p < .05 ? css('--s-tac') : css('--mark-soft');
+          el('line', { x1: X(m.lo), x2: X(m.hi), y1: cy + 4, y2: cy + 4, stroke: col, 'stroke-width': 2.5, 'stroke-linecap': 'round' }, s);
+          el('circle', { cx: X(m.est), cy: cy + 4, r: 5.5, fill: col, stroke: css('--surface'), 'stroke-width': 2 }, s);
+          T(s, W - padR + 8, cy + 8, `×${num(m.est, 2)} ${pval(m.p)}`, { 'font-size': 11, 'font-family': mono() });
+          const hit = el('rect', { x: 0, y: cy - rowH / 2 + 4, width: W, height: rowH, fill: 'transparent' }, s);
+          hoverable(hit, `<b>${r_.label}</b><br>${r_.kind === 'time' ? 'ratio of typical (geometric-mean) times' : 'odds ratio'}, Strategic Heavy vs Tactical Heavy: ×${num(m.est, 2)} [${num(m.lo, 2)}, ${num(m.hi, 2)}], ${pval(m.p)}<br>${which === 'adj' ? 'same plan size and session order' : 'raw, no adjustment'}<br>n = ${r_.nSH} plans in Strategic Heavy, ${r_.nTH} in Tactical Heavy`);
+        });
+        const R = A.attnVsTrust;
+        h('p', { class: 'cap', html: `${A.nPlans} tactical plans (${A.nSH} in Strategic Heavy sessions, averaging ${num(A.drSH, 1)} drones; ${A.nTH} in Tactical Heavy, ${num(A.drTH, 1)} drones). Times are compared as ratios of typical (geometric-mean) seconds, rates as odds ratios; GEE clustered by person, 95% CIs; orange = CI clear of ×1. `
+          + (which === 'adj' ? 'Adjusted = compared at the same plan size (drones × tasks) and session order. ' : 'Raw = no adjustment, and Strategic Heavy plans are much smaller. ')
+          + `Does less attention go with more trust? Person by person, the change in size-adjusted planner time (Strategic Heavy minus Tactical Heavy) against the change in tactical trust: ρ = ${num(R.rho, 2)} [${num(R.lo, 2)}, ${num(R.hi, 2)}], ${pval(R.p)}, n = ${R.n}.` }, box);
+      };
+      host.insertBefore(btnBar(host, 'Compare', [['adj', 'Like-for-like plans (size and session adjusted)'], ['raw', 'Raw']], 'adj', draw), box);
+      draw('adj');
+    }),
+
+    /* pass 4: checking cost with contiguous plan-size bins, each with enough plans (no toggle) */
+    'recovery.checkCost3': safe('checking cost', host => {
+      const C = D.checking, B4 = C.bins4;
+      if (!B4) return missing(host, 'checking bins (rerun recovery.py)');
+      const B = B4.bins, H = 320, padT = 24, padB = 58, gap = 76, xL = 70, pw = (W - xL - gap - 16) / 2, xR = xL + pw + gap;
+      const s = svgRoot(h('div', {}, host), W, H), n = B.length, bx = (x0, i) => x0 + pw * (i + .5) / n;
+      const yR = v => H - padB - (H - padB - padT) * v, maxS = 12, yS = v => H - padB - (H - padB - padT) * (Math.min(v, maxS) / maxS);
+      [0, .25, .5, .75, 1].forEach(v => { el('line', { x1: xL, x2: xL + pw, y1: yR(v), y2: yR(v), stroke: css('--grid') }, s);
+        T(s, xL - 6, yR(v) + 4, pct(v, 0), { 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10.5, 'font-family': mono() }); });
+      for (let v = 0; v <= maxS; v += 3) { el('line', { x1: xR, x2: xR + pw, y1: yS(v), y2: yS(v), stroke: css('--grid') }, s);
+        T(s, xR - 6, yS(v) + 4, v + ' s', { 'text-anchor': 'end', fill: css('--ink-3'), 'font-size': 10.5, 'font-family': mono() }); }
+      const yt = (x, lab) => { const t = T(s, x, padT + (H - padT - padB) / 2, lab, { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 }); t.setAttribute('transform', `rotate(-90 ${x} ${padT + (H - padT - padB) / 2})`); };
+      yt(18, '% of tactical plans');
+      yt(xR - 44, 'seconds checking after the reveal');
+      T(s, xL + pw / 2, 13, 'Suggest pressed / plan kept unmodified', { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600 });
+      T(s, xR + pw / 2, 13, 'Checking time (plans where Suggest was pressed)', { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600 });
+      [['consulted', 'cLo', 'cHi', css('--mark-soft'), -7], ['kept', 'kLo', 'kHi', css('--s-tac'), 7]].forEach(([k, l, u, c, dx]) => {
+        el('polyline', { points: B.map((b, i) => [bx(xL, i) + dx, yR(b[k])].join(',')).join(' '), fill: 'none', stroke: c, 'stroke-width': 1.5, opacity: .6 }, s);
+        B.forEach((b, i) => { const cx = bx(xL, i) + dx;
+          el('line', { x1: cx, x2: cx, y1: yR(b[l]), y2: yR(b[u]), stroke: c, 'stroke-width': 1.5 }, s);
+          const d = el('circle', { cx, cy: yR(b[k]), r: 5, fill: c, stroke: css('--surface'), 'stroke-width': 1.5 }, s);
+          hoverable(d, `<b>${b.label} drones</b><br>${k === 'kept' ? 'kept unmodified' : 'pressed Suggest'} ${pct(b[k], 0)} [${pct(b[l], 0)}, ${pct(b[u], 0)}] 95% CI<br>n = ${b.n} plans, ${b.people} people (${b.nSH} in Strategic Heavy)`); });
+      });
+      B.forEach((b, i) => { const cx = bx(xR, i);
+        el('rect', { x: cx - 10, y: yS(b.netQ3), width: 20, height: Math.max(1, yS(b.netQ1) - yS(b.netQ3)), rx: 4, fill: css('--s-tac'), 'fill-opacity': .25 }, s);
+        el('line', { x1: cx - 10, x2: cx + 10, y1: yS(b.netMed), y2: yS(b.netMed), stroke: css('--s-tac'), 'stroke-width': 3 }, s);
+        const hit = el('rect', { x: cx - 18, y: padT, width: 36, height: H - padT - padB, fill: 'transparent' }, s);
+        hoverable(hit, `<b>${b.label} drones</b><br>median ${fmtS(b.netMed)} (middle half ${fmtS(b.netQ1)}–${fmtS(b.netQ3)})<br>≈ ${fmtS(b.perDrone)} per drone · forced reveal ≈ ${fmtS(b.reveal)} (excluded)<br>n = ${b.nCons} plans with Suggest pressed`); });
+      [xL, xR].forEach(x0 => B.forEach((b, i) => {
+        T(s, bx(x0, i), H - padB + 15, b.label, { 'text-anchor': 'middle', fill: css('--ink-2'), 'font-size': 10.5, 'font-family': mono() });
+        T(s, bx(x0, i), H - padB + 28, `n=${x0 === xL ? b.n : b.nCons}`, { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 9.5, 'font-family': mono() });
+      }));
+      T(s, xL + pw / 2, H - 6, 'drones in the Tactical Assistant’s plan', { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 });
+      T(s, xR + pw / 2, H - 6, 'drones in the Tactical Assistant’s plan', { 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11 });
+      legend(host, [{ label: 'Pressed Suggest (95% CI)', color: css('--mark-soft') }, { label: 'Kept the plan unmodified (95% CI)', color: css('--s-tac') }, { label: 'Checking time: median (bar) and middle half of plans (box)', color: css('--s-tac') }]);
+      tableFor(host, ['Drones', 'Plans', 'People', 'In Strategic Heavy', 'Suggest pressed', 'Kept unmodified', 'Kept | Suggest', 'Median check (s)', 'Per drone (s)'],
+        B.map(b => [b.label, b.n, b.people, b.nSH, pct(b.consulted, 0), pct(b.kept, 0), b.keptGivenCons == null ? '—' : pct(b.keptGivenCons, 0), num(b.netMed, 1), num(b.perDrone, 2)]));
+      const or = t => `OR ${num(t.est, 2)} [${num(t.lo, 2)}, ${num(t.hi, 2)}], ${pval(t.p)}`;
+      h('p', { class: 'cap', html: `All ${C.nPlans} confirmed tactical plans, in six contiguous size bins chosen so every bin has at least ${B4.minPlans} plans (and at least ${B4.minCons} with a checking time). Whiskers are 95% CIs; n under each bin. `
+        + `Per SD of plan size (all plans, adjusted for scenario and session): kept unmodified ${or(C.keepOR)}; Suggest pressed ${or(C.consultOR)}; kept once Suggest was pressed ${or(C.keepGivenConsOR)}; checking time ${sgn(C.netB.est, 2)} s [${sgn(C.netB.lo, 2)}, ${sgn(C.netB.hi, 2)}], ${pval(C.netB.p)}. `
+        + `10+ drones vs ≤3: Suggest pressed ${or(B4.ends.consulted)}, kept ${or(B4.ends.keep)}. Person medians: ${num(C.tacMedian, 1)} s on a tactical plan vs ${num(C.stratMedian, 1)} s on a strategy card.` }, host);
+    }),
+
+
     'recovery.prefGap': safe('stated preference', host => {
       const G = D.preference.groups.slice().sort((a, b) => ['tactical', 'strategic', 'conditional', 'both', 'none'].indexOf(a.pref) - ['tactical', 'strategic', 'conditional', 'both', 'none'].indexOf(b.pref));
       const rowH = 44, padL = 170, padR = 120, padT = 10, padB = 36, H = padT + G.length * rowH + padB, s = svgRoot(host, W, H);
@@ -186,7 +356,7 @@
           tip: `<b>${p.pid}</b>${p.pref ? ' · said ' + p.pref : ''}<br>Trust: strategic ${num(p.ts, 2)}, tactical ${num(p.tt, 2)} (gap ${sgn(p.tgap, 2)})<br>Took a card ${pct(p.took, 0)} · consulted plan ${pct(p.consult, 0)} · kept it ${pct(p.accept, 0)}` })),
           { xr: [-3, 4], yr: [-1, 1], xt: [-3, -2, -1, 0, 1, 2, 3, 4], yt: [-1, -.5, 0, .5, 1], zero: true, xf: v => sgn(v, 0), yf: v => sgn(100 * v, 0) + ' pt',
             xLabel: 'STATED: trust gap, tactical − strategic (questionnaire, 1–7)',
-            yLabel: k === 'ugapA' ? 'REVEALED: kept tactical plan − took a card' : 'REVEALED: consulted tactical − took a card',
+            yLabel: k === 'ugapA' ? 'REVEALED: % plans kept − % cards taken (pp)' : 'REVEALED: % plans with Suggest − % cards taken (pp)',
             notes: [{ x: 3.9, y: .92, anchor: 'end', text: `trust & use favour tactical: ${q.tt}` }, { x: -2.9, y: -.92, anchor: 'start', text: `both favour strategic: ${q.ss}` },
                     { x: 3.9, y: -.92, anchor: 'end', text: `trust tactical, use strategic: ${q.ts}` }, { x: -2.9, y: .92, anchor: 'start', text: `trust strategic, use tactical: ${q.st}` }] });
         h('p', { class: 'cap', text: `Each dot is one operator (both sessions pooled). Spearman ρ = ${num(R.rho, 2)} [${num(R.lo, 2)}, ${num(R.hi, 2)}], ${pval(R.p)}, n = ${R.n}. Colour = what they said in the debrief.` }, box);

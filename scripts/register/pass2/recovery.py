@@ -612,6 +612,172 @@ def first_move(eps):
                 leftOpenSecs=sorted(r(x, 1) for x in late_open))
 
 
+def trust_by_scenario(S):
+    """Pass 3: the four games merged into the two scenarios (Strategic Heavy vs Tactical Heavy). Every
+    person played one session of each, so the scenario comparison is within person."""
+    hdr('P3-A · Trust gap by scenario (games merged), and scenario vs session order together')
+    ok = S.dropna(subset=['trust_s', 'trust_t']).copy()
+    ok['scen'] = ok.game.str.split('|').str[0]
+    ok['gap'] = ok.trust_t - ok.trust_s
+    rows = []
+    for sc in ('strategic', 'tactical'):
+        g = ok[ok.scen == sc]
+        mc = mean_ci(g.gap.values)
+        rows.append(dict(scen=sc, s=mean_ci(g.trust_s.values), t=mean_ci(g.trust_t.values),
+                         **{'gap' + k: v for k, v in mc.items()}))
+        print('  %-9s heavy: n=%d sessions  strategic %.2f  tactical %.2f  gap %+.2f [%.2f, %.2f]'
+              % (sc, mc['n'], g.trust_s.mean(), g.trust_t.mean(), mc['mean'], mc['lo'], mc['hi']))
+    w = ok.pivot_table(index='pid', columns='scen', values=['gap', 'trust_s', 'trust_t']).dropna()
+    dg = (w['gap']['strategic'] - w['gap']['tactical']).values
+    ds = (w['trust_s']['strategic'] - w['trust_s']['tactical']).values
+    dt = (w['trust_t']['strategic'] - w['trust_t']['tactical']).values
+    pair = dict(n=int(len(dg)), gapDiff=mean_ci(dg), gapP=r(stats.ttest_1samp(dg, 0).pvalue, 4),
+                gapWil=r(stats.wilcoxon(dg).pvalue, 4), sDiff=mean_ci(ds), sP=r(stats.ttest_1samp(ds, 0).pvalue, 4),
+                tDiff=mean_ci(dt), tP=r(stats.ttest_1samp(dt, 0).pvalue, 4))
+    print('  within person, Strategic Heavy minus Tactical Heavy (n=%d): gap %+.2f [%s, %s] p=%.4f (Wilcoxon %.4f); '
+          'strategic trust %+.2f p=%.4f; tactical trust %+.2f p=%.4f'
+          % (pair['n'], pair['gapDiff']['mean'], pair['gapDiff']['lo'], pair['gapDiff']['hi'], pair['gapP'], pair['gapWil'],
+             pair['sDiff']['mean'], pair['sP'], pair['tDiff']['mean'], pair['tP']))
+    # scenario and session together (they are partly tangled by the order people played them in)
+    ok['sh'] = (ok.scen == 'strategic').astype(int)
+    ok['run2'] = (ok.run == 2).astype(int)
+    m = gee('gap ~ sh + run2', ok, binomial=False)
+    both = dict(sh=term(m, 'sh', odds=False), run2=term(m, 'run2', odds=False), n=int(m.nobs))
+    print('  gap ~ Strategic Heavy + second session (GEE by person): SH %s; session 2 %s' % (both['sh'], both['run2']))
+    cells = []
+    for sc in ('strategic', 'tactical'):
+        for ru in (1, 2):
+            g = ok[(ok.scen == sc) & (ok.run == ru)]
+            mc = mean_ci(g.gap.values)
+            cells.append(dict(scen=sc, run=ru, **{'gap' + k: v for k, v in mc.items()}))
+            print('    %-9s heavy, session %d: gap %+.2f [%s, %s] n=%d' % (sc, ru, mc['mean'], mc['lo'], mc['hi'], mc['n']))
+    return dict(rows=rows, paired=pair, model=both, cells=cells)
+
+
+def checking_subset():
+    """Pass 3: the checking chart restricted to the well-filled plan sizes (3, 6-7, 8+ drones), with the
+    same models refitted on that subset."""
+    hdr('P3-B · Checking cost on the well-filled plan sizes only (3, 6-7, 8+ drones)')
+    import h2_verification_cost as h2
+    tac, _, _ = quiet(h2.load)
+    tac = tac[~tac.pid.isin(EXCLUDE)].copy()
+    tac = tac[tac.drones > 0].copy()
+    sub = tac[(tac.drones == 3) | (tac.drones >= 6)].copy()
+    sub['zs'] = (sub['size'] - tac['size'].mean()) / tac['size'].std(ddof=0)   # same SD units as the full model
+    cc = sub[sub.consulted == 1].dropna(subset=['net']).copy()
+    out = dict(nPlans=int(len(sub)), nPeople=int(sub.pid.nunique()), dropped=int(len(tac) - len(sub)),
+               keepOR=term(gee('keep ~ zs + C(scenario) + C(run)', sub), 'zs'),
+               consultOR=term(gee('consulted ~ zs + C(scenario) + C(run)', sub), 'zs'),
+               keepGivenConsOR=term(gee('keep ~ zs + C(scenario) + C(run)', cc), 'zs'),
+               netB=term(gee('net ~ zs + C(scenario) + C(run)', cc, binomial=False), 'zs', odds=False))
+    # the two ends compared directly: 3 drones vs 8+ drones
+    a, b_ = sub[sub.drones == 3], sub[sub.drones >= 8]
+    for k in ('consulted', 'keep'):
+        t = pd.DataFrame(dict(y=list(a[k]) + list(b_[k]), big=[0] * len(a) + [1] * len(b_), pid=list(a.pid) + list(b_.pid)))
+        out[k + '3v8'] = term(gee('y ~ big', t), 'big')
+    print('  %d plans (%d dropped), %d people' % (out['nPlans'], out['dropped'], out['nPeople']))
+    print('  per SD of plan size: keep OR %s; consulted OR %s; keep | consulted OR %s; net check s %s'
+          % (out['keepOR'], out['consultOR'], out['keepGivenConsOR'], out['netB']))
+    print('  8+ vs 3 drones: consulted OR %s; kept OR %s' % (out['consulted3v8'], out['keep3v8']))
+    return out
+
+
+SIZE_BINS4 = [(0, 3, '≤3'), (4, 5, '4–5'), (6, 6, '6'), (7, 7, '7'), (8, 9, '8–9'), (10, 99, '10+')]
+
+
+def checking_bins4():
+    """Pass 4: the checking chart rebinned so that every bin has enough plans (no gaps, no dropped sizes).
+    Bins are contiguous and chosen so each has >= 70 plans and >= 60 consulted plans with a checking time."""
+    hdr('P4-B · Checking cost, rebinned: <=3, 4-5, 6, 7, 8-9, 10+ drones (every bin >= 70 plans)')
+    import h2_verification_cost as h2
+    tac, _, _ = quiet(h2.load)
+    tac = tac[~tac.pid.isin(EXCLUDE)].copy()
+    tac = tac[tac.drones > 0].copy()
+    rows = []
+    for lo, hi, lab in SIZE_BINS4:
+        g = tac[(tac.drones >= lo) & (tac.drones <= hi)]
+        c = g[g.consulted == 1]
+        n, k1, k2 = len(g), int(g.consulted.sum()), int(g.keep.sum())
+        net = c.net.dropna()
+        rows.append(dict(label=lab, n=n, people=int(g.pid.nunique()), nSH=int((g.scenario == 'strategic').sum()),
+                         consulted=r(k1 / n), cLo=wilson(k1, n)[0], cHi=wilson(k1, n)[1],
+                         kept=r(k2 / n), kLo=wilson(k2, n)[0], kHi=wilson(k2, n)[1],
+                         nCons=int(len(net)), keptGivenCons=r(c.keep.mean()) if len(c) else None,
+                         netMed=r(net.median(), 2), netQ1=r(net.quantile(.25), 2), netQ3=r(net.quantile(.75), 2),
+                         perDrone=r((net / c.drones.loc[net.index]).median(), 2), reveal=r((c.entries * h2.REVEAL_S).median(), 1)))
+        x = rows[-1]
+        print('  drones %-4s n=%3d (%d people, %d SH) consulted %.2f kept %.2f kept|cons %s  n checked %d  median %.1f s (IQR %.1f-%.1f) per drone %.2f'
+              % (lab, n, x['people'], x['nSH'], x['consulted'], x['kept'], x['keptGivenCons'], x['nCons'], x['netMed'], x['netQ1'], x['netQ3'], x['perDrone']))
+    # the two ends compared directly: <=3 vs 10+ drones (GEE by person)
+    a, b_ = tac[tac.drones <= 3], tac[tac.drones >= 10]
+    ends = {}
+    for k in ('consulted', 'keep'):
+        t = pd.DataFrame(dict(y=list(a[k]) + list(b_[k]), big=[0] * len(a) + [1] * len(b_), pid=list(a.pid) + list(b_.pid)))
+        ends[k] = term(gee('y ~ big', t), 'big')
+    print('  10+ vs <=3 drones: consulted OR %s; kept OR %s' % (ends['consulted'], ends['keep']))
+    return dict(bins=rows, ends=ends, minPlans=min(x['n'] for x in rows), minCons=min(x['nCons'] for x in rows))
+
+
+def tactical_attention(S):
+    """Pass 4: is the Tactical Assistant's plan given less attention in Strategic Heavy sessions (the
+    researcher's hypothesis for why the trust gap is larger there)? Per tactical plan: time the planner
+    was open, checking time after the reveal, Suggest pressed, kept unmodified, edited at all. Strategic
+    Heavy vs Tactical Heavy, raw and adjusted for plan size and session order (GEE by person); then
+    whether a person's drop in attention goes with a rise in their tactical trust."""
+    hdr('P4-A · Attention to the tactical plan: Strategic Heavy vs Tactical Heavy sessions')
+    import h2_verification_cost as h2
+    tac, _, _ = quiet(h2.load)
+    tac = tac[~tac.pid.isin(EXCLUDE)].copy()
+    tac = tac[tac.drones > 0].copy()
+    tac['sh'] = (tac.scenario == 'strategic').astype(int)
+    tac['run2'] = (tac.run == 2).astype(int)
+    tac['zs'] = (tac['size'] - tac['size'].mean()) / tac['size'].std(ddof=0)
+    tac['edited'] = (tac.nedits > 0).astype(int)
+    # planner time net of the forced reveal for consulted plans (the reveal is not attention)
+    tac['open'] = tac.open_to_confirm - np.where(tac.consulted == 1, tac.entries * h2.REVEAL_S, 0)
+    tac['open'] = tac.open.clip(lower=0.1)
+    tac['lopen'] = np.log(tac.open)
+    out = dict(nPlans=int(len(tac)), nSH=int(tac.sh.sum()), nTH=int((1 - tac.sh).sum()),
+               drSH=r(tac[tac.sh == 1].drones.mean(), 2), drTH=r(tac[tac.sh == 0].drones.mean(), 2), rows=[])
+    cc = tac[tac.consulted == 1].dropna(subset=['net']).copy()
+    cc['lnet'] = np.log(cc.net.clip(lower=0.1))
+    co = tac[tac.consulted == 1].copy()     # plans built from Suggest: time spent with the assistant's plan
+    spec = [('open', 'Seconds the planner was open (Suggest plans, reveal excluded)', co, 'lopen', 'time'),
+            ('net', 'Seconds checking after the reveal (consulted plans)', cc, 'lnet', 'time'),
+            ('consulted', 'Pressed Suggest', tac, 'consulted', 'rate'),
+            ('keep', 'Kept the plan unmodified', tac, 'keep', 'rate'),
+            ('edited', 'Edited the plan at all', tac, 'edited', 'rate')]
+    for key, lab, d, y, kind in spec:
+        sh, th = d[d.sh == 1], d[d.sh == 0]
+        raw_col = 'open' if key == 'open' else key
+        if kind == 'time':
+            vs, vt = sh[raw_col].median(), th[raw_col].median()
+            m0 = term(gee(f'{y} ~ sh', d, binomial=False), 'sh', odds=True)          # ratio of geometric means
+            m1 = term(gee(f'{y} ~ sh + zs + run2', d, binomial=False), 'sh', odds=True)
+        else:
+            vs, vt = sh[raw_col].mean(), th[raw_col].mean()
+            m0 = term(gee(f'{y} ~ sh', d), 'sh')
+            m1 = term(gee(f'{y} ~ sh + zs + run2', d), 'sh')
+        out['rows'].append(dict(key=key, label=lab, kind=kind, sh=r(vs, 3), th=r(vt, 3), nSH=int(len(sh)), nTH=int(len(th)), raw=m0, adj=m1))
+        print('  %-52s SH %s  TH %s  (n %d / %d)  raw %s  adjusted for size+session %s'
+              % (lab, r(vs, 2), r(vt, 2), len(sh), len(th), m0, m1))
+    # does a person's attention drop go with a tactical-trust rise? residual log planner time (size+session removed)
+    m = smf.ols('lopen ~ zs + run2', co).fit()
+    co['res'] = m.resid
+    A = co.groupby(['pid', 'scenario']).res.mean().unstack().dropna()
+    ok = S.dropna(subset=['trust_t']).copy()
+    ok['scen'] = ok.game.str.split('|').str[0]
+    Tt = ok.pivot_table(index='pid', columns='scen', values='trust_t').dropna()
+    both = A.index.intersection(Tt.index)
+    dA = (A.loc[both, 'strategic'] - A.loc[both, 'tactical'])
+    dT = (Tt.loc[both, 'strategic'] - Tt.loc[both, 'tactical'])
+    out['attnVsTrust'] = spear(dA.values, dT.values)
+    out['attnVsTrust']['lessAttnSH'] = int((dA < 0).sum())
+    print('  within person: SH - TH change in size-adjusted planner time vs change in tactical trust: %s; %d of %d spend less (adjusted) time in SH'
+          % (out['attnVsTrust'], int((dA < 0).sum()), len(both)))
+    return out
+
+
 def main():
     S, items = load_sessions()
     trust, P = trust_gap(S, items)
@@ -627,6 +793,10 @@ def main():
     after, rel, tleft, pcinfo = after_refusal()
     fm = first_move(eps)
     tleft.update(fm)
+    trust['byScenario'] = trust_by_scenario(S)
+    chk['subset'] = checking_subset()
+    chk['bins4'] = checking_bins4()
+    trust['attention'] = tactical_attention(S)
 
     res = dict(generated=pd.Timestamp.now().strftime('%Y-%m-%d %H:%M'),
                trust=trust, preference={k: v for k, v in pref.items() if k != 'pref'}, checking=chk,

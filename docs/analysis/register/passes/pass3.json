@@ -1,0 +1,736 @@
+{
+ "pass": 3,
+ "cards": {
+  "f-personal-style#habits": {
+   "verdict": null,
+   "note": "May use a graph in the paper, but I think the text you've written is sufficient to frame this analysis",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:19:44.244Z",
+   "role": "numbers"
+  },
+  "f-personal-style#fingerprint-ranks": {
+   "verdict": null,
+   "note": "This will likely make it in, as it's a good indication",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:20:05.447Z",
+   "role": "paper"
+  },
+  "f-personal-style#who-vs-what": {
+   "verdict": null,
+   "note": "Also a wonderful way to show this.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:21:03.638Z",
+   "role": "paper"
+  },
+  "f-personal-style#retest-summary": {
+   "verdict": null,
+   "note": "I think this is more interesting than the first graph - and gives us something. It's marginal but will probably make it in.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:21:44.882Z",
+   "role": "paper"
+  },
+  "f-personal-style#axis": {
+   "verdict": null,
+   "note": "I think the previous graph is just better than this.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:22:22.676Z",
+   "role": "archive"
+  },
+  "f-personal-style#axis-scatter": {
+   "verdict": null,
+   "note": "I think this is nice, whether reliable or not. I suspect this spearman value suggests it's significant but weak in strength - with the latter point being the interesting bit",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:24:24.890Z",
+   "role": "paper"
+  },
+  "f-personal-style#not-types": {
+   "verdict": null,
+   "note": "We might grab this to justify no archetypes, but for the most part this is just something we'll say \"we couldn't find x\". only a sentence or two",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:25:28.579Z",
+   "role": "numbers"
+  },
+  "f-personal-style#not-disposition": {
+   "verdict": null,
+   "note": "The first graph makes it in, and then we'll say a sentence or two regarding the Holm part as it's an important part of the analysis, but I don't think that graph is needed.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:26:37.367Z",
+   "role": "paper"
+  },
+  "f-personal-style#fingerprint": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#profiles": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habit-by-habit": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#preempt": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habit-grid": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#trust": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style": {
+   "verdict": "core",
+   "note": "This is now pretty much ready as a first salvo, making the point that there is a personal style.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:27:09.525Z"
+  },
+  "f-size-decides#both": {
+   "verdict": null,
+   "note": "Good finding. We can also mention we suspect the higher first bar is due to a point in the strat-heavy scenario where several come in.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:29:34.657Z",
+   "role": "paper"
+  },
+  "f-size-decides#models": {
+   "verdict": null,
+   "note": "Keep this. It's abundantly clear and simply knocks out of the park any doubts on this finding.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:31:38.048Z",
+   "role": "paper"
+  },
+  "f-size-decides#strategic-steps": {
+   "verdict": null,
+   "note": "I think the previous graph is clearer.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:32:44.098Z",
+   "role": "archive"
+  },
+  "f-size-decides#five": {
+   "verdict": null,
+   "note": "This is linked to the the previous one",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:33:17.115Z",
+   "role": "archive"
+  },
+  "f-size-decides#tactical": {
+   "verdict": null,
+   "note": "I like this one. It reinforces the earlier core finding of small jobs themselves, but also hints at a continuity between the two. Check the qualitative as I'm sure at least one person said something about this - that using the strat agent meant they wanted to use the tac on that same problem.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:35:03.184Z",
+   "role": "paper"
+  },
+  "f-size-decides#speed": {
+   "verdict": null,
+   "note": "At the moment this isn't enough. Maybe with a stacked bar and an appreciation of hanging time (time before first doing something shouldn't count as they may not have been attending to this plan) it might be better",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:36:58.820Z",
+   "role": "extra"
+  },
+  "f-size-decides#parallel": {
+   "verdict": null,
+   "note": "This is a much more interesting graph. Can I have these stacked bars as a full bar chart together, also allow me to turn off the waiting time if I want, so we only show the rest of the stack. Also just check - for all missions manual is faster overall, but it's slower for each of the small/medium/large selections which doesn't make sense to me. With a revision this could be great.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:39:52.880Z",
+   "role": "paper"
+  },
+  "f-size-decides#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:40:03.032Z",
+   "role": "paper"
+  },
+  "f-size-decides#artefacts": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#people": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#speed-model": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#slow": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#parallel-specs": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#strategic": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#measures": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides": {
+   "verdict": "core",
+   "note": "Also a nice finding. A few tweaks needed as discussed in the comments.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:40:38.811Z"
+  },
+  "f-manual-cards#dots": {
+   "verdict": null,
+   "note": "it's marginal in how interesting it is but probably should be mentioned",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:42:00.185Z",
+   "role": "paper"
+  },
+  "f-manual-cards#position": {
+   "verdict": null,
+   "note": "For now I'm popping this in paper, it might not make it but is interesting",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:42:53.789Z",
+   "role": "paper"
+  },
+  "f-manual-cards#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards#anchor": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards": {
+   "verdict": "keep",
+   "note": "Probably a marginal finding but we may include it",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:43:08.233Z"
+  },
+  "f-practice#speed": {
+   "verdict": null,
+   "note": "So this says there is a significant 'warming-up' effect but only a small learning effect. basically.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:45:00.600Z",
+   "role": "numbers"
+  },
+  "f-practice#c22": {
+   "verdict": null,
+   "note": "Nice thing to nod to wrt learning, but in brief.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:45:29.459Z",
+   "role": "numbers"
+  },
+  "f-practice#calibration": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-practice": {
+   "verdict": "keep",
+   "note": "This is also a marginal finding that will be mentioned but only briefly",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:45:49.276Z"
+  },
+  "f-workload#raw-vs-adjusted": {
+   "verdict": null,
+   "note": "One of the best findings we have. I don't think it needs changing at all. Give the option for showing strat and tac together (either both raw or both adjusted)",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:48:12.361Z",
+   "role": "paper"
+  },
+  "f-workload#robust": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#said-did": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#spoken": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#backlog-practice": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#deep": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#visible": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload": {
+   "verdict": "core",
+   "note": "Very important finding",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:48:24.037Z"
+  },
+  "f-flaw-odd#event": {
+   "verdict": null,
+   "note": "Excellent finding. A few questions: Why is the expected lower for noticers? Is it because noticers tend to have lower useage over the rest of the data? Also is there an option to show the -1, -2, -3 before the card or is it basically useless? \n\nRegardless, the current all mission, every pair, observed graph is great.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:51:25.497Z",
+   "role": "paper"
+  },
+  "f-flaw-odd#dip": {
+   "verdict": null,
+   "note": "I think the standard we've set so far with the statistical strength of our findings is too high for this to be useful.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T09:53:46.285Z",
+   "role": "archive"
+  },
+  "f-flaw-odd#over-time": {
+   "verdict": null,
+   "note": "I'll let this one in but I'm not quite sure what I'm looking at. Graphing each group, plus everyone together might be a nice way to show the difference. Explain and give that option, and we'll see",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:00:38.638Z",
+   "role": "paper"
+  },
+  "f-flaw-odd#by-index": {
+   "verdict": null,
+   "note": "Could be really nice. can I have first + second on the same graph. So we see that the first session they recover trust, and then have less carrying over to session 2. Concatenate the data and put a line showing the gap between first an second (without those two data points being linked as they are techincally separate series)",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:02:36.189Z",
+   "role": "paper"
+  },
+  "f-flaw-odd#not-time-locked": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:02:51.822Z",
+   "role": "archive"
+  },
+  "f-flaw-odd#nth": {
+   "verdict": null,
+   "note": "I think the earlier versions of this graph are simply better",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:03:19.016Z",
+   "role": "archive"
+  },
+  "f-flaw-odd#spoken": {
+   "verdict": null,
+   "note": "This is quite nice. Make this two versions, only grouping - not per person. And show the \"all\" and \"one- and two-types\" on the same graph if possible. It's better to show them side by side to show how this matters",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:04:56.647Z",
+   "role": "paper"
+  },
+  "f-flaw-odd#refusal": {
+   "verdict": null,
+   "note": "So now looking at the tac fault, these numbers say clearly no effect is found.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:06:00.564Z",
+   "role": "numbers"
+  },
+  "f-flaw-odd#h8": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#visibility": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#card": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#odd-missions": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#adjustment": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#robustness": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#old-chart": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#dominated": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#rates": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#checking-after": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#reliance": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#later": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#method": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd": {
+   "verdict": "core",
+   "note": "A few of these need looking at and the graph cleaning up, but I do like alot of these findings. I think this might be the most interesting.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:06:35.921Z"
+  },
+  "f-tier-trust#gap": {
+   "verdict": null,
+   "note": "We may use numbers only but for now lets include the graph",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:07:10.869Z",
+   "role": "paper"
+  },
+  "f-tier-trust#where": {
+   "verdict": null,
+   "note": "I think the first two of these are nice. We can say tactical is more trusted, especially in the strategic heavy session  - maybe this is because less attention is paid to it?",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:09:12.199Z",
+   "role": "paper"
+  },
+  "f-tier-trust#checking": {
+   "verdict": null,
+   "note": "This needs a fix. I don't want \"well filled sizes only\", I want bins such that the n's are enough. This graph has gaps in it. Go for <=3, 4-6, 6-8, etc (or whatever fits nicely)",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:10:45.512Z",
+   "role": "paper"
+  },
+  "f-tier-trust#stated-revealed": {
+   "verdict": null,
+   "note": "Yes we can state this but the graph isn't that useful.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:11:28.989Z",
+   "role": "numbers"
+  },
+  "f-tier-trust#trust-lead-strip": {
+   "verdict": null,
+   "note": "Marginal. Keep for now but probably jsut the one significant number",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:12:23.437Z",
+   "role": "numbers"
+  },
+  "f-tier-trust#own-failures": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#stated": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust": {
+   "verdict": "core",
+   "note": "A good set of results. Needs some polishing but mostly getting there",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:12:46.728Z"
+  },
+  "f-operator-wants#wants": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:14:13.240Z",
+   "role": "numbers"
+  },
+  "f-operator-wants": {
+   "verdict": "keep",
+   "note": "The discussion is probably something we'll get to later and will be a little more involved. Keep this around for now",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:14:33.808Z"
+  },
+  "f-who-does-better#between-within": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:14:48.323Z",
+   "role": "archive"
+  },
+  "f-who-does-better#estimates": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:14:57.694Z",
+   "role": "archive"
+  },
+  "f-who-does-better#trust-parallel": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:14:59.526Z",
+   "role": "archive"
+  },
+  "f-who-does-better#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:15:03.961Z",
+   "role": "archive"
+  },
+  "f-who-does-better": {
+   "verdict": "prune",
+   "note": "This section can be retired",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:15:12.631Z"
+  },
+  "f-triage#games": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:15:36.941Z",
+   "role": "archive"
+  },
+  "f-triage#order": {
+   "verdict": null,
+   "note": "Keep this around",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:15:58.277Z",
+   "role": "paper"
+  },
+  "f-triage#size": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:16:04.879Z",
+   "role": "archive"
+  },
+  "f-triage#choice": {
+   "verdict": null,
+   "note": "There are some numbers here we may like",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:16:19.537Z",
+   "role": "numbers"
+  },
+  "f-triage#pace": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:16:31.322Z",
+   "role": "archive"
+  },
+  "f-triage#visible-t": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:16:35.745Z",
+   "role": "archive"
+  },
+  "f-triage": {
+   "verdict": "keep",
+   "note": "This is very much a sideline finding, keep the one or two bits I've asked to keep, and it'll stick around",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:17:11.481Z"
+  },
+  "f-methods#games": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-methods#half-weights": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-methods#qual-coder": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-methods": {
+   "verdict": "keep",
+   "note": "Again not something I'm actively looking at",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-14T10:17:26.203Z"
+  }
+ }
+}

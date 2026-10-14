@@ -798,6 +798,7 @@ def spoken(Sx, G, rng):
                          t_['raw']['est'], t_['raw']['lo'], t_['raw']['hi'], t_['raw']['p'],
                          t_['adj']['est'], t_['adj']['lo'], t_['adj']['hi'], t_['adj']['p'], t_['lower'], t_['higher'],
                          out[setk][sk]['placebo']['p']))
+    out['_D'] = D          # handed to pass3_views (removed before writing the JSON)
     return out
 
 
@@ -930,6 +931,557 @@ def visibility(Sx, eps, G):
     return out
 
 
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 8 · pass 3: all-missions views, step binning, use over time / by decision number, the dip
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+SAMPLES = {'all': lambda d: pd.Series(True, index=d.index), 'three': lambda d: d.three == 1, 'few': lambda d: d.three == 0}
+SAMPLE_LABEL = {'all': 'all missions', 'three': 'three-type missions', 'few': 'one- and two-type missions'}
+ORDERS = {'all': None, 'SH': 'SH-first', 'TH': 'TH-first'}
+COMPACT = ('bin', 'n', 'people', 'raw', 'rawLo', 'rawHi', 'exp', 'adj', 'adjLo', 'adjHi')
+P3_FIELDS = ['bin', 'n', 'people', 'raw', 'rawLo', 'rawHi', 'adj', 'adjLo', 'adjHi', 'aft', 'three']
+EV_KEEP = ('bin', 'n', 'people', 'raw', 'rawLo', 'rawHi', 'exp', 'adj', 'adjLo', 'adjHi', 'ndrones', 'ntasks', 'queue', 'minute', 'session2')
+
+
+def step_bins(w, cap):
+    labs = []
+    for a in range(1, cap + 1, w):
+        b = min(a + w - 1, cap)
+        labs.append(str(a) if a == b else f'{a}–{b}')
+    return labs + [f'{cap + 1}+']
+
+
+def step_label(k, w, cap):
+    if k > cap:
+        return f'{cap + 1}+'
+    a = ((k - 1) // w) * w + 1
+    b = min(a + w - 1, cap)
+    return str(a) if a == b else f'{a}–{b}'
+
+
+def compact_bins(X, rng, bins):
+    """boot_bins, trimmed to the fields the charts read and written as arrays in the order of
+    P3_FIELDS (to keep the page small). `aft` = share of the bin's decisions made at or after the
+    person's first illogical card, so a reader can see whether a dip comes before or after it;
+    `three` = share of the bin's decisions on three-type missions (the mission mix)."""
+    bb = boot_bins(X, 'took', rng, bins=bins)
+    out = []
+    for b in bb['bins']:
+        g = X[X.bin == b['bin']]
+        row = [b['bin'], b['n'], b['people']] + [r(b[k], 3) for k in ('raw', 'rawLo', 'rawHi', 'adj', 'adjLo', 'adjHi')]
+        out.append(row + [r((g.side >= 0).mean(), 2), r(g.three.mean(), 2)])
+    return out
+
+
+def t1(v):
+    from scipy.stats import ttest_1samp
+    v = np.asarray(v, dtype=float)
+    return r(ttest_1samp(v, 0).pvalue, 4) if len(v) > 2 and np.std(v) > 0 else None
+
+
+def boot_mean(v, rng, B=2000):
+    v = np.asarray(v, dtype=float)
+    v = v[np.isfinite(v)]
+    if len(v) < 2:
+        return [None, None]
+    m = v[rng.integers(0, len(v), size=(B, len(v)))].mean(axis=1)
+    return [r(np.percentile(m, 2.5)), r(np.percentile(m, 97.5))]
+
+
+def pass3_views(Sx, G, D, Dsp, rng):
+    hdr('8 · Pass 3: all-missions toggles, step binning, use over time and by decision number, the dip')
+    said = G['said'] & set(D.pid)
+    notsaid = set(D.pid) - said
+    GROUPS = {'everyone': set(D.pid), 'said': said, 'notSaid': notsaid}
+    D = D.copy()
+    D['ws'] = D.groupby(['pid', 'run']).cumcount() + 1
+    out = dict(fields=P3_FIELDS, anchors=[dict(pid=p, run=int(ru), t=r(t, 1), order=o, said=int(p in said))
+                        for p, ru, t, o in zip(D[D.side == 0].pid, D[D.side == 0].run, D[D.side == 0].t, D[D.side == 0].order)],
+               orderPeople={k: {g: int(len([p for p in gs if (v is None or D[D.pid == p].order.iloc[0] == v)]))
+                                for g, gs in GROUPS.items()} for k, v in ORDERS.items()})
+
+    # ---- (1) the event study with every-step / pairs / threes, on all three samples ------------------
+    ev = {}
+    for sk in ('three', 'all', 'few'):
+        X0 = number(D, SAMPLES[sk](D))
+        ev[sk] = {}
+        for gk in ('said', 'notSaid'):
+            Xg = X0[X0.pid.isin(GROUPS[gk])].copy()
+            ev[sk][gk] = dict(test=prepost(Xg, 'took'), k=kseries(Xg, 'took'))
+            for w, cap in ((1, 12), (2, 12), (3, 9)):
+                Xg['bin'] = ['before' if k < 0 else 'card' if k == 0 else step_label(k, w, cap) for k in Xg.k]
+                bb = boot_bins(Xg, 'took', rng, bins=['before', 'card'] + step_bins(w, cap))
+                ev[sk][gk][str(w)] = dict(bins=[{k: (r(b[k], 3) if isinstance(b[k], float) else b[k]) for k in EV_KEEP} for b in bb['bins']],
+                                          persons=[dict(pid=pp['pid'], raw={k: r(v, 2) for k, v in pp['raw'].items()}, n=pp['n'])
+                                                   for pp in bb['persons']])
+            t_ = ev[sk][gk]['test']
+            if t_ and t_.get('adj'):
+                print('%-5s %-8s before %.2f (n %d) -> after %.2f (n %d); adj %+.3f p %.3f; %d people both sides'
+                      % (sk, gk, t_['before'], t_['nBefore'], t_['after'], t_['nAfter'], t_['adj']['est'], t_['adj']['p'], t_['peopleBoth']))
+            else:
+                print('%-5s %-8s before/after not estimable (%s people with decisions both sides)'
+                      % (sk, gk, t_['peopleBoth'] if t_ else 0))
+            for w in ('1', '2', '3'):
+                print('      w=%s' % w, [(b['bin'], b['n'], b['raw']) for b in ev[sk][gk][w]['bins']])
+        ev[sk]['interaction'] = interaction(X0, 'took', said)
+    out['events'] = ev
+
+    # ---- (2) use over session time, not aligned to anything ------------------------------------------
+    tv = {}
+    for sk in ('all', 'three', 'few'):
+        tv[sk] = {}
+        for sess in ('1', '2', 'both'):
+            tv[sk][sess] = {}
+            for ok, ov in ORDERS.items():
+                tv[sk][sess][ok] = {}
+                base = D[SAMPLES[sk](D) & ((D.run == int(sess)) if sess != 'both' else True) & ((D.order == ov) if ov else True)].copy()
+                base['bin'] = (base.t // 60).clip(upper=7).astype(int).astype(str)
+                for gk, gs in GROUPS.items():
+                    X = base[base.pid.isin(gs)]
+                    tv[sk][sess][ok][gk] = compact_bins(X, rng, [str(m) for m in range(8)]) if len(X) else []
+    out['time'] = tv
+    for sess in ('1', '2'):
+        print('over time, session %s, all missions (minute, n, said / n, not said):' % sess,
+              [(a[0], a[1], a[3], b[1], b[3]) for a, b in zip(tv['all'][sess]['all']['said'], tv['all'][sess]['all']['notSaid'])])
+
+    # ---- (3) use by decision number (within the sample), not aligned to the card ---------------------
+    iv = {}
+    for sk in ('all', 'three', 'few'):
+        iv[sk] = {}
+        for kind in ('s1', 's2'):
+            iv[sk][kind] = {}
+            base = D[SAMPLES[sk](D) & ((D.run == int(kind[1])) if kind != 'study' else True)].copy()
+            base['k'] = base.groupby(['pid'] + (['run'] if kind != 'study' else [])).cumcount() + 1
+            for ok, ov in ORDERS.items():
+                iv[sk][kind][ok] = {}
+                b0 = base[(base.order == ov)] if ov else base
+                for gk, gs in GROUPS.items():
+                    X = b0[b0.pid.isin(gs)].copy()
+                    iv[sk][kind][ok][gk] = {}
+                    for w in (1, 2):
+                        cap = 10
+                        X['bin'] = [step_label(k, w, cap) for k in X.k]
+                        iv[sk][kind][ok][gk][str(w)] = compact_bins(X, rng, step_bins(w, cap)) if len(X) else []
+    out['index'] = iv
+    for kind in ('s1', 's2'):
+        for gk in ('everyone', 'said', 'notSaid'):
+            print('by decision number, %s, all missions, %-8s:' % (kind, gk), [(b[0], b[1], b[3], b[9]) for b in iv['all'][kind]['all'][gk]['1']])
+
+    # ---- (4) the dip: what it is, when, who, and whether the card is needed for it ------------------
+    out['dip'] = dip_anatomy(D, said, rng)
+
+    # ---- (5) spoken anchor, as bars ---------------------------------------------------------------
+    sp = dict(people=[], pooled={})
+    for p, (ru, t, strict, gist) in sorted(x1.SPOKEN_STRAT.items()):
+        d = Dsp[Dsp.pid == p]
+        if not len(d):
+            continue
+        row = dict(pid=p, run=int(ru), t=r(t, 1), strict=bool(strict))
+        for sk in ('all', 'three', 'few'):
+            m = SAMPLES[sk](d)
+            for side, lab in ((-1, 'before'), (1, 'after')):
+                g = d[m & (d.side == side)]
+                k_, n_ = int(g.took.sum()), int(len(g))
+                lo_, hi_ = wilson(k_, n_)
+                row[f'{lab}_{sk}'] = dict(k=k_, n=n_, rate=r(k_ / n_) if n_ else None, lo=lo_, hi=hi_)
+        sp['people'].append(row)
+    for setk, ps in (('strict', G['strict']), ('broad', G['broad'])):
+        sp['pooled'][setk] = {}
+        for sk in ('all', 'three', 'few'):
+            X = number(Dsp[Dsp.pid.isin(ps)], SAMPLES[sk](Dsp)[Dsp.pid.isin(ps)])
+            X['bin'] = np.where(X.k < 0, 'before', np.where(X.k > 0, 'after', 'card'))
+            bb = boot_bins(X, 'took', rng, bins=['before', 'after'])
+            sp['pooled'][setk][sk] = dict(bins=[{k: b[k] for k in COMPACT} for b in bb['bins']], test=prepost(X, 'took'))
+    out['spoken'] = sp
+    for setk in ('strict', 'broad'):
+        for sk in ('all', 'three', 'few'):
+            print('spoken %-6s %-5s' % (setk, sk), [(b['bin'], b['n'], b['people'], b['raw'], b['rawLo'], b['rawHi']) for b in sp['pooled'][setk][sk]['bins']])
+    return out
+
+
+def dip_anatomy(D, said, rng):
+    """The noticers' dip, taken apart without the card as an anchor. `ws` = the decision's number within
+    its session (all missions). The window, decisions 3–5 of a session, was read off the unaligned
+    curve, so its p-values are descriptive; the informative comparison is BETWEEN game orders, which
+    put the first illogical card at decision 2 (strategic-heavy first) or at decision 5+ / in session
+    2 (tactical-heavy first)."""
+    hdr('8b · The dip: decisions 3–5 of session 1, by game order, with and without the card')
+    D = D.copy()
+    D['said'] = D.pid.isin(said).astype(int)
+    D['th'] = (D.order == 'TH-first').astype(int)
+    D['after'] = (D.side >= 0).astype(int)
+    out = {}
+
+    def win(a, b):
+        return D.ws.between(a, b).astype(int)
+
+    D['win'] = win(3, 5)
+    s1 = D[D.run == 1].copy()
+    # where the first illogical card falls, per order (session 1 decision number; session 2 = later)
+    anc = D[D.side == 0]
+    out['anchorWs'] = {o: dict(people=int((anc.order == o).sum()), inS1=int(((anc.order == o) & (anc.run == 1)).sum()),
+                               medianWsS1=r(anc[(anc.order == o) & (anc.run == 1)].ws.median(), 1),
+                               medianTS1=r(anc[(anc.order == o) & (anc.run == 1)].t.median(), 1))
+                       for o in ('SH-first', 'TH-first')}
+    print('first illogical card:', out['anchorWs'])
+    # how much of the window comes before the card, per group x order
+    out['windowBeforeCard'] = {f'{g}_{o}': r((s1[(s1.win == 1) & (s1.said == gi) & (s1.order == o)].side < 0).mean(), 3)
+                               for g, gi in (('said', 1), ('notSaid', 0)) for o in ('SH-first', 'TH-first')}
+    print('share of window decisions made BEFORE the first illogical card:', out['windowBeforeCard'])
+
+    # models within each group, session 1
+    mods = {}
+    for gk, gi in (('said', 1), ('notSaid', 0)):
+        d = s1[s1.said == gi]
+        m = {}
+        m['win'] = ols_cl('took ~ win + C(game)', d, 'win')
+        m['winGivenAfter'] = ols_cl('took ~ win + after + C(game)', d, 'win')
+        m['after'] = ols_cl('took ~ win + after + C(game)', d, 'after')
+        m['winAdj'] = ols_cl('res ~ win + after', d, 'win')
+        m['afterAdj'] = ols_cl('res ~ win + after', d, 'after')
+        m['winByOrder'] = ols_cl('took ~ win * th + C(game)', d, 'win:th')
+        m['winCovars'] = ols_cl('took ~ win + after + st_queued + three + C(game)', d, 'win')
+        mods[gk] = m
+        print('  %-8s window %+.3f [%+.3f, %+.3f] p %.4f | given after-card %+.3f p %.4f (after-card itself %+.3f p %.3f) | adjusted %+.3f p %.4f | window x TH-first %+.3f p %.3f | + queue, three-type %+.3f p %.4f'
+              % (gk, m['win']['est'], m['win']['lo'], m['win']['hi'], m['win']['p'], m['winGivenAfter']['est'], m['winGivenAfter']['p'],
+                 m['after']['est'], m['after']['p'], m['winAdj']['est'], m['winAdj']['p'], m['winByOrder']['est'], m['winByOrder']['p'],
+                 m['winCovars']['est'], m['winCovars']['p']))
+    out['models'] = mods
+    out['diffS1'] = dict(raw=ols_cl('took ~ win * said + C(game)', s1, 'win:said'), adj=ols_cl('res ~ win * said', s1, 'win:said'))
+    s2 = D[D.run == 2]
+    out['diffS2'] = dict(raw=ols_cl('took ~ win * said + C(game)', s2, 'win:said'), adj=ols_cl('res ~ win * said', s2, 'win:said'))
+    print('  noticers minus non-noticers, window effect: session 1 %s | session 2 %s' % (out['diffS1']['raw'], out['diffS2']['raw']))
+
+    # window variants (the window was read off the curve; show what other windows give)
+    var = []
+    for a, b in ((2, 4), (3, 5), (3, 6), (2, 6), (4, 6), (3, 4)):
+        d = s1.assign(win=s1.ws.between(a, b).astype(int))
+        row = dict(window=f'{a}–{b}', said=ols_cl('took ~ win + C(game)', d[d.said == 1], 'win'),
+                   notSaid=ols_cl('took ~ win + C(game)', d[d.said == 0], 'win'), diff=ols_cl('took ~ win * said + C(game)', d, 'win:said'))
+        var.append(row)
+        print('  window %s: noticers %+.3f p %.3f | non-noticers %+.3f p %.3f | difference %+.3f p %.4f'
+              % (row['window'], row['said']['est'], row['said']['p'], row['notSaid']['est'], row['notSaid']['p'], row['diff']['est'], row['diff']['p']))
+    out['windows'] = var
+
+    # per person: window minus the rest of their session 1, by group x order; and the TH-first version that
+    # keeps only window decisions made before any illogical card
+    pp_rows, forest = [], []
+    for gk, gi in (('said', 1), ('notSaid', 0)):
+        for o in ('SH-first', 'TH-first', None):
+            d = s1[(s1.said == gi) & ((s1.order == o) if o else True)]
+            pp = d.groupby(['pid', 'win']).took.mean().unstack()
+            dd = (pp.get(1) - pp.get(0)).dropna() if 1 in pp and 0 in pp else pd.Series(dtype=float)
+            rec = dict(group=gk, order=o or 'both', people=int(len(dd)), mean=r(dd.mean()), ci=boot_mean(dd.values, rng), p=t1(dd.values),
+                       fell=int((dd < 0).sum()), rose=int((dd > 0).sum()), same=int((dd == 0).sum()),
+                       inWin=r(d[d.win == 1].took.mean()), outWin=r(d[d.win == 0].took.mean()),
+                       nIn=int((d.win == 1).sum()), nOut=int((d.win == 0).sum()))
+            pp_rows.append(rec)
+            if o == 'TH-first':
+                db = d[(d.win == 0) | (d.side < 0)]
+                pb = db.groupby(['pid', 'win']).took.mean().unstack()
+                ddb = (pb.get(1) - pb.get(0)).dropna() if 1 in pb and 0 in pb else pd.Series(dtype=float)
+                pp_rows.append(dict(group=gk, order='TH-first, window before any illogical card', people=int(len(ddb)), mean=r(ddb.mean()),
+                                    ci=boot_mean(ddb.values, rng), p=t1(ddb.values), fell=int((ddb < 0).sum()), rose=int((ddb > 0).sum()),
+                                    same=int((ddb == 0).sum()), inWin=r(db[db.win == 1].took.mean()), outWin=r(db[db.win == 0].took.mean()),
+                                    nIn=int((db.win == 1).sum()), nOut=int((db.win == 0).sum())))
+    out['perPerson'] = pp_rows
+    for x in pp_rows:
+        print('  %-8s %-45s %2d people: window %.2f (n %d) vs rest of session 1 %.2f (n %d); per-person mean %+.3f %s p %s; %d fell, %d rose, %d same'
+              % (x['group'], x['order'], x['people'], x['inWin'] or np.nan, x['nIn'], x['outWin'] or np.nan, x['nOut'], x['mean'] or np.nan, x['ci'], x['p'],
+                 x['fell'], x['rose'], x['same']))
+
+    # what they did, by window of session 1
+    s1['wband'] = np.where(s1.ws <= 2, '1–2', np.where(s1.ws <= 5, '3–5', '6+'))
+    s1['short'] = (s1.colslack < 0).astype(int)
+    did = []
+    for gk, gi in (('said', 1), ('notSaid', 0)):
+        for wb in ('1–2', '3–5', '6+'):
+            h_ = s1[(s1.said == gi) & (s1.wband == wb)]
+            did.append(dict(group=gk, band=wb, n=int(len(h_)), people=int(h_.pid.nunique()),
+                            took=r(h_.took.mean()), tookCI=boot_rate(h_, 'took', rng), manSeen=r(h_.manSeen.mean()),
+                            manSeenCI=boot_rate(h_, 'manSeen', rng), manEarly=r(h_.manEarly.mean()), manEarlyCI=boot_rate(h_, 'manEarly', rng),
+                            three=r(h_.three.mean(), 3), odd=r(h_.odd.mean(), 3), queue=r(h_.st_queued.mean(), 2), short=r(h_.short.mean(), 3),
+                            dom=r(h_.dom.mean(), 3), before=r((h_.side < 0).mean(), 3), minute=r(h_.t.mean() / 60, 2),
+                            previews=r(h_.previews.mean(), 2), took3=r(h_[h_.three == 1].took.mean()), n3=int((h_.three == 1).sum()),
+                            tookFew=r(h_[h_.three == 0].took.mean()), nFew=int((h_.three == 0).sum())))
+    out['did'] = did
+    for x in did:
+        print('  %-8s %-4s n %3d took %.2f (three-type %.2f n %d; one/two-type %s n %d) | manual after seeing cards %.2f | pre-emptive %.2f | queue %.1f | reserve short %.2f | minute %.1f | before card %.2f'
+              % (x['group'], x['band'], x['n'], x['took'], x['took3'], x['n3'], x['tookFew'], x['nFew'], x['manSeen'], x['manEarly'],
+                 x['queue'], x['short'], x['minute'], x['before']))
+
+    # the event study's 1st-3rd bin, split by order (is the aligned dip the same decisions as this?)
+    X = number(D, D.three == 1)
+    X['bin'] = X.k.map(kbin)
+    evo = {}
+    for gk, gi in (('said', 1), ('notSaid', 0)):
+        for o in ('SH-first', 'TH-first'):
+            h_ = X[(X.said == gi) & (X.order == o)]
+            evo[f'{gk}_{o}'] = {b: dict(n=int((h_.bin == b).sum()), raw=r(h_[h_.bin == b].took.mean()),
+                                        s1=r((h_[h_.bin == b].run == 1).mean(), 3)) for b in ('before', '1–3', '4–6', '7–9', '10+')}
+    out['eventByOrder'] = evo
+    print('  event-study bins by order (three-type):')
+    for k_, v in evo.items():
+        print('    %-17s' % k_, {b: (z['n'], z['raw'], z['s1']) for b, z in v.items()})
+    return out
+
+
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# 9 · pass 4: why 'expected' is lower for noticers, the pre-card steps, carry-over between sessions
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+PRE_KEYS = ['-4', '-3', '-2', '-1']          # '-4' pools the 4th decision before the card and earlier
+
+
+def pre_label(k):
+    return str(max(int(k), -4))
+
+
+def pass4_views(Sx, G, D, mS, rng):
+    hdr('9 · Pass 4: expected for noticers, steps before the card, carry-over into session 2')
+    from scipy.stats import mannwhitneyu
+    said = G['said'] & set(D.pid)
+    GROUPS = {'said': said, 'notSaid': set(D.pid) - said}
+    D = D.copy()
+    D['said'] = D.pid.isin(said).astype(int)
+    D['ws'] = D.groupby(['pid', 'run']).cumcount() + 1
+    D['personRate'] = 1 / (1 + np.exp(-D.base))
+    # the model's expectation with the PERSON term set to everyone's average: what the mission, time,
+    # queue and game alone would predict. If the two groups' 'expected' differ only through the person
+    # term, this mission-only value is the same for both.
+    Dm = D.copy()
+    Dm['base'] = D.base.mean()
+    D['expMission'] = np.asarray(mS.predict(Dm))
+    out = dict()
+
+    # ---- (1) decomposing 'expected' ----------------------------------------------------------------
+    ex = {}
+    for sk in ('all', 'three'):
+        X = number(D, SAMPLES[sk](D))
+        ex[sk] = {}
+        for gk, gs in GROUPS.items():
+            ex[sk][gk] = {}
+            for lab, m in (('before', X.k < 0), ('card', X.k == 0), ('after', X.k > 0), ('all', X.k > -999)):
+                g = X[m & X.pid.isin(gs)]
+                if not len(g):
+                    continue
+                ex[sk][gk][lab] = dict(n=int(len(g)), people=int(g.pid.nunique()), took=r(g.took.mean(), 3), exp=r(g.exp.mean(), 3),
+                                       expMission=r(g.expMission.mean(), 3), personRate=r(g.personRate.mean(), 3),
+                                       atOrAfter=r((g.side >= 0).mean(), 3))
+            print('%-5s %-8s' % (sk, gk), {k: (v['n'], v['took'], v['exp'], v['expMission'], v['personRate']) for k, v in ex[sk][gk].items()})
+    pp = D.groupby('pid').agg(said=('said', 'first'), took=('took', 'mean'), aft=('side', lambda v: (v >= 0).mean()))
+    pb = D[D.side < 0].groupby('pid').took.mean()
+    pa = D[D.side >= 0].groupby('pid').took.mean()
+    ex['perPerson'] = {gk: dict(people=int((pp.said == gi).sum()), took=r(pp[pp.said == gi].took.mean(), 3),
+                                shareAtOrAfter=r(pp[pp.said == gi].aft.mean(), 3),
+                                tookBefore=r(pb[pb.index.isin(pp.index[pp.said == gi])].mean(), 3),
+                                nBefore=int(pb.index.isin(pp.index[pp.said == gi]).sum()),
+                                tookAfter=r(pa[pa.index.isin(pp.index[pp.said == gi])].mean(), 3))
+                       for gk, gi in (('said', 1), ('notSaid', 0))}
+    ex['perPerson']['pBefore'] = r(mannwhitneyu(pb[pb.index.isin(said)], pb[~pb.index.isin(said)]).pvalue, 4)
+    ex['perPerson']['pAfter'] = r(mannwhitneyu(pa[pa.index.isin(said)], pa[~pa.index.isin(said)]).pvalue, 4)
+    print('per person:', ex['perPerson'])
+    out['expected'] = ex
+
+    # ---- (2) the steps before the card ---------------------------------------------------------------
+    pre = {}
+    for sk in ('all', 'three'):
+        X0 = number(D, SAMPLES[sk](D))
+        nb = X0[X0.k < 0].groupby('pid').size()
+        pre[sk] = {}
+        for gk, gs in GROUPS.items():
+            Xg = X0[X0.pid.isin(gs)].copy()
+            Xb = Xg[Xg.k < 0].copy()
+            Xb['bin'] = [pre_label(k) for k in Xb.k]
+            bb = boot_bins(Xb, 'took', rng, bins=PRE_KEYS)
+            rec = dict(bins=[{k: (r(b[k], 3) if isinstance(b[k], float) else b[k]) for k in EV_KEEP} for b in bb['bins']],
+                       peopleWith={str(i): int((nb[nb.index.isin(gs)] >= i).sum()) for i in (1, 2, 3, 4)})
+            # matched: only the people with at least three decisions before the card, so −3, −2 and −1
+            # are the same people; their after-card positions too (pairs)
+            mp = set(nb[(nb >= 3) & nb.index.isin(gs)].index)
+            Xm = Xg[Xg.pid.isin(mp)].copy()
+            Xm['bin'] = [pre_label(k) if k < 0 else 'card' if k == 0 else step_label(k, 2, 12) for k in Xm.k]
+            bm = boot_bins(Xm, 'took', rng, bins=PRE_KEYS + ['card'] + step_bins(2, 12)) if len(Xm) else dict(bins=[])
+            rec['matched'] = dict(people=sorted(mp), bins=[{k: (r(b[k], 3) if isinstance(b[k], float) else b[k]) for k in EV_KEEP} for b in bm['bins']])
+            pre[sk][gk] = rec
+            print('%-5s %-8s pre-card steps' % (sk, gk), [(b['bin'], b['n'], b['people'], b['raw'], b['rawLo'], b['rawHi']) for b in rec['bins']],
+                  '| people with >=1..4 before:', rec['peopleWith'])
+            print('      matched (%d people with >=3 before):' % len(mp), [(b['bin'], b['n'], b['raw']) for b in rec['matched']['bins']])
+        Xm = X0[X0.pid.isin(set(nb[nb >= 3].index)) & X0.k.between(-3, -1)].copy()
+        Xm['last'] = (Xm.k == -1).astype(int)
+        pre[sk]['lastStep'] = dict(raw=ols_cl('took ~ last + C(game)', Xm, 'last'), adj=ols_cl('res ~ last', Xm, 'last'),
+                                   n=int(len(Xm)), people=int(Xm.pid.nunique()),
+                                   thFirst=r((Xm.groupby('pid').order.first() == 'TH-first').mean(), 3))
+        print('  %s: −1 vs −3/−2 among people with >=3 before (both groups):' % sk, pre[sk]['lastStep'])
+    out['pre'] = pre
+
+    # ---- (3) carry-over: the end of session 1 against the start of session 2 ------------------------
+    D['nInRun'] = D.groupby(['pid', 'run']).ws.transform('max')
+    D['last3'] = ((D.run == 1) & (D.ws > D.nInRun - 3)).astype(int)
+    D['first3'] = (D.ws <= 3).astype(int)
+    car = {}
+    comps = {'endToStart': ('last 3 decisions of session 1', (D.run == 1) & (D.last3 == 1), 'first 3 decisions of session 2', (D.run == 2) & (D.first3 == 1)),
+             'startToStart': ('first 3 decisions of session 1', (D.run == 1) & (D.first3 == 1), 'first 3 decisions of session 2', (D.run == 2) & (D.first3 == 1)),
+             'recovery': ('decisions 3–5 of session 1', (D.run == 1) & D.ws.between(3, 5), 'decisions 6+ of session 1', (D.run == 1) & (D.ws >= 6))}
+    for ck, (la, ma, lb, mb) in comps.items():
+        d = pd.concat([D[ma].assign(post=0), D[mb].assign(post=1)])
+        car[ck] = dict(a=la, b=lb)
+        for gk, gi in (('said', 1), ('notSaid', 0)):
+            for o in (None, 'SH-first', 'TH-first'):
+                h_ = d[(d.said == gi) & ((d.order == o) if o else True)]
+                pm = h_.groupby(['pid', 'post']).took.mean().unstack()
+                rm = h_.groupby(['pid', 'post']).res.mean().unstack()
+                dd = (pm[1] - pm[0]).dropna() if 0 in pm and 1 in pm else pd.Series(dtype=float)
+                da = (rm[1] - rm[0]).dropna() if 0 in rm and 1 in rm else pd.Series(dtype=float)
+                key = gk + ('' if o is None else '_' + o.split('-')[0])
+                car[ck][key] = dict(people=int(len(dd)), a=r(h_[h_.post == 0].took.mean(), 3), b=r(h_[h_.post == 1].took.mean(), 3),
+                                    nA=int((h_.post == 0).sum()), nB=int((h_.post == 1).sum()),
+                                    diff=r(dd.mean()), ci=boot_mean(dd.values, rng), p=t1(dd.values),
+                                    adj=r(da.mean()), adjCi=boot_mean(da.values, rng), adjP=t1(da.values),
+                                    fell=int((dd < 0).sum()), rose=int((dd > 0).sum()))
+        car[ck]['groupDiff'] = dict(raw=ols_cl('took ~ post * said + C(game)', d, 'post:said'), adj=ols_cl('res ~ post * said', d, 'post:said'))
+        print('carry %-12s %s -> %s' % (ck, la, lb))
+        for k_, v in car[ck].items():
+            if isinstance(v, dict) and 'people' in v:
+                print('    %-14s %2d people %.2f (n %d) -> %.2f (n %d): per person %+.3f %s p %s | adjusted %+.3f %s p %s | %d fell %d rose'
+                      % (k_, v['people'], v['a'] if v['a'] is not None else np.nan, v['nA'], v['b'] if v['b'] is not None else np.nan, v['nB'],
+                         v['diff'] if v['diff'] is not None else np.nan, v['ci'], v['p'],
+                         v['adj'] if v['adj'] is not None else np.nan, v['adjCi'], v['adjP'], v['fell'], v['rose']))
+        print('    noticers minus never-said:', car[ck]['groupDiff'])
+    out['carry'] = car
+    return out
+
+
+P5_FIELDS = P3_FIELDS + ['odd', 'sg', 'end']
+MIN_PEOPLE = 8      # a by-decision-number point is drawn only if at least this many people in its group reach it
+
+
+def compact5(X, rng, bins):
+    """compact_bins plus `odd` (share of the bin's decisions whose mission showed an illogical card), `sg` (share
+    made in the strategic-heavy game) and `end` (share made in the last 90 s of the session)."""
+    rows = compact_bins(X, rng, bins)
+    for row in rows:
+        g = X[X.bin == row[0]]
+        row += [r(g.odd.mean(), 2), r(g.game.str.startswith('strategic').mean(), 2), r(g.final90.mean(), 2)]
+    return rows
+
+
+def pass5_views(D, G, rng):
+    """Pass 5: the end points of the by-decision-number chart. Later numbers only hold the people who made that
+    many decisions in the session, so the tail is a different (smaller) set of people, mostly in the
+    strategic-heavy game. Adds a fixed-panel version (only people present through decision K), a 'clean
+    missions' sample (no illogical card on the mission) and per-tail diagnostics."""
+    hdr('10 · Pass 5: what drives the last points of card use by decision number')
+    said = G['said'] & set(D.pid)
+    GROUPS = {'everyone': set(D.pid), 'said': said, 'notSaid': set(D.pid) - said}
+    D = D.copy()
+    D['said'] = D.pid.isin(said).astype(int)
+    D['sg'] = D.game.str.startswith('strategic').astype(int)
+    D['ws'] = D.groupby(['pid', 'run']).cumcount() + 1
+    samples = dict(SAMPLES, clean=lambda d: d.odd == 0)
+    out = dict(fields=P5_FIELDS, minPeople=MIN_PEOPLE, index={}, panel={}, tails={})
+    for sk in ('all', 'three', 'few', 'clean'):
+        out['index'][sk], out['panel'][sk] = {}, {}
+        for kind in ('s1', 's2'):
+            base = D[samples[sk](D) & (D.run == int(kind[1]))].copy()
+            base['k'] = base.groupby('pid').cumcount() + 1
+            nk = base.groupby('pid').k.max()
+            # the panel: the largest K such that both groups still have >= MIN_PEOPLE people with >= K decisions
+            K = 3
+            for k in range(3, 20):
+                if all((nk[nk.index.isin(gs)] >= k).sum() >= MIN_PEOPLE for gs in (said, GROUPS['notSaid'])):
+                    K = k
+            pan = set(nk[nk >= K].index)
+            out['panel'][sk][kind] = dict(K=K, people={g: sorted(pan & gs) for g, gs in GROUPS.items() if g != 'everyone'})
+            out['index'][sk][kind] = {}
+            for ok, ov in ORDERS.items():
+                b0 = base[(base.order == ov)] if ov else base
+                out['index'][sk][kind][ok] = {}
+                for pk in ('all', 'panel'):
+                    b1 = b0[b0.pid.isin(pan) & (b0.k <= K)] if pk == 'panel' else b0
+                    out['index'][sk][kind][ok][pk] = {}
+                    for gk, gs in GROUPS.items():
+                        X = b1[b1.pid.isin(gs)].copy()
+                        out['index'][sk][kind][ok][pk][gk] = {}
+                        for w in (1, 2):
+                            X['bin'] = [step_label(k, w, 10) for k in X.k]
+                            out['index'][sk][kind][ok][pk][gk][str(w)] = compact5(X, rng, step_bins(w, 10)) if len(X) else []
+            pl = out['panel'][sk][kind]
+            print('%-5s %s panel: K = %d; %d noticers, %d never-said present through decision %d'
+                  % (sk, kind, K, len(pl['people']['said']), len(pl['people']['notSaid']), K))
+
+    # ---- tail diagnostics (all missions, both orders) --------------------------------------------------
+    F = P5_FIELDS
+    for kind in ('s1', 's2'):
+        X = D[D.run == int(kind[1])].copy()
+        X['k'] = X.groupby('pid').cumcount() + 1
+        X['pos'] = X.k.clip(upper=11)
+        tl = []
+        for pos in range(6, 12):
+            for gk, gi in (('said', 1), ('notSaid', 0)):
+                Y = X[X.said == gi]
+                g = Y[Y.pos == pos]
+                surv = set(g.pid)
+                tl.append(dict(pos=pos, group=gk, n=int(len(g)), people=int(len(surv)), took=r(g.took.mean(), 3),
+                               lo=None, hi=None, sg=r(g.sg.mean(), 2), odd=r(g.odd.mean(), 2), three=r(g.three.mean(), 2),
+                               end=r(g.final90.mean(), 2), minute=r(g.t.mean() / 60, 1), short=r((g.colslack < 0).mean(), 2),
+                               survEarly=r(Y[Y.pid.isin(surv) & (Y.k <= 6)].took.mean(), 3), groupEarly=r(Y[Y.k <= 6].took.mean(), 3),
+                               tookClean=r(g[g.odd == 0].took.mean(), 3), nClean=int((g.odd == 0).sum()),
+                               perPerson={p: [int(v.took.sum()), int(len(v))] for p, v in g.groupby('pid')} if pos >= 10 else None))
+        for t_ in tl:
+            lo_, hi_ = wilson(int(round(t_['took'] * t_['n'])), t_['n']) if t_['n'] else (None, None)
+            t_['lo'], t_['hi'] = lo_, hi_
+        out['tails'][kind] = tl
+        print('tail of', kind)
+        for t_ in tl:
+            print('  pos %2d %-8s n %2d people %2d took %.2f [%s, %s] | strategic game %.2f, illogical card %.2f, three-type %.2f, last 90 s %.2f, minute %.1f'
+                  ' | these people on dec 1-6 %.2f vs whole group %.2f | clean missions %s (n %d)%s'
+                  % (t_['pos'], t_['group'], t_['n'], t_['people'], t_['took'], t_['lo'], t_['hi'], t_['sg'], t_['odd'], t_['three'], t_['end'],
+                     t_['minute'], t_['survEarly'], t_['groupEarly'], t_['tookClean'], t_['nClean'], ('  ' + str(t_['perPerson'])) if t_['perPerson'] else ''))
+    # the strategic-heavy game, decisions 7+: noticers' card use on illogical-card vs clean missions
+    Y = D[(D.sg == 1) & (D.ws >= 7)]
+    sgl = {}
+    for gk, gi in (('said', 1), ('notSaid', 0)):
+        for o in (1, 0):
+            g = Y[(Y.said == gi) & (Y.odd == o)]
+            sgl[f'{gk}_{"odd" if o else "clean"}'] = dict(n=int(len(g)), people=int(g.pid.nunique()), took=r(g.took.mean(), 3))
+    pos_odd = D[D.sg == 1].groupby(D.ws.clip(upper=11)).odd.mean()
+    sgl['oddByPos'] = {str(int(k)): r(v, 2) for k, v in pos_odd.items()}
+    out['sgLate'] = sgl
+    print('strategic-heavy game, decisions 7+:', {k: v for k, v in sgl.items() if k != 'oddByPos'})
+    print('  share of decisions with an illogical card by decision number (strategic-heavy game):', sgl['oddByPos'])
+    # the cross-over: noticers minus never-said at the last drawable points vs earlier, all / clean / panel
+    cx = {}
+    for kind in ('s1', 's2'):
+        for sk in ('all', 'clean'):
+            for pk in ('all', 'panel'):
+                V = out['index'][sk][kind]['all'][pk]
+                a = {row[0]: dict(zip(F, row)) for row in V['said']['1']}
+                b = {row[0]: dict(zip(F, row)) for row in V['notSaid']['1']}
+                cx[f'{kind}_{sk}_{pk}'] = [(k, a[k]['n'], a[k]['people'], a[k]['raw'], a[k]['rawLo'], a[k]['rawHi'],
+                                            b[k]['n'], b[k]['people'], b[k]['raw'], b[k]['rawLo'], b[k]['rawHi'])
+                                           for k in step_bins(1, 10) if k in a and k in b]
+                print('%s %-5s %-5s (bin, said n/people/raw [lo, hi], never-said n/people/raw [lo, hi]):' % (kind, sk, pk))
+                for row in cx[f'{kind}_{sk}_{pk}']:
+                    print('    %-3s said %2d/%2d %.2f [%.2f, %.2f] | never %2d/%2d %.2f [%.2f, %.2f]' % row)
+    # late-session gap, panel: noticers minus never-said over the panel's decisions 1..K split into first and second half
+    gap = {}
+    for kind in ('s1', 's2'):
+        for sk in ('all', 'clean'):
+            K = out['panel'][sk][kind]['K']
+            pp = set(sum(out['panel'][sk][kind]['people'].values(), []))
+            X = D[samples[sk](D) & (D.run == int(kind[1])) & D.pid.isin(pp)].copy()
+            X['k'] = X.groupby('pid').cumcount() + 1
+            X = X[X.k <= K]
+            X['late'] = (X.k > K - 3).astype(int)
+            gap[f'{kind}_{sk}'] = dict(K=K, late=ols_cl('took ~ late * said', X, 'late:said'),
+                                       lateDiff=ols_cl('took ~ said', X[X.late == 1], 'said'), earlyDiff=ols_cl('took ~ said', X[X.late == 0], 'said'))
+            print('panel %s %-5s K=%d: noticers minus never-said, last 3 decisions %s; before %s; change %s'
+                  % (kind, sk, K, gap[f'{kind}_{sk}']['lateDiff'], gap[f'{kind}_{sk}']['earlyDiff'], gap[f'{kind}_{sk}']['late']))
+    out['gap'] = gap
+    return out
+
+
 def main():
     rng = np.random.default_rng(SEED)
     Sx, Tx, eps, logs, mS, mT = load_all()
@@ -945,10 +1497,16 @@ def main():
     res['oldDots'] = old_dots(Sx, G, D)
     res['profile'] = people_profile(Sx, Tx, G, D)
     res['spoken'] = spoken(Sx, G, rng)
+    Dsp = res['spoken'].pop('_D')
     res['refusal'] = refusal_anchors(Sx, Tx, eps, logs, rng)
     res['dominated'] = dominated(Sx, rng)
     res['manualSingle'] = manual_single(Sx, G, D)
     res['visibility'] = visibility(Sx, eps, G)
+    # pass 3: new views on their own RNG stream, so every pass-2 number above is unchanged
+    res['p3'] = pass3_views(Sx, G, D, Dsp, np.random.default_rng(SEED + 3))
+    # pass 4: likewise on its own stream
+    res['p4'] = pass4_views(Sx, G, D, mS, np.random.default_rng(SEED + 4))
+    res['p5'] = pass5_views(D, G, np.random.default_rng(SEED + 5))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(res, separators=(',', ':'), default=lambda o: o.item() if hasattr(o, 'item') else str(o)),
                    encoding='utf-8')
