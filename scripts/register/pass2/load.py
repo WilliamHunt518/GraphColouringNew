@@ -25,6 +25,9 @@ C · SAID vs DID. (1) the 9 people coded C11 ("hands over when overloaded") vs t
 D · BACKLOG vs PRACTICE (tactical Suggest vs strategic backlog at the first planner action, with and
     without minute of session).
 E · DEEP QUEUES (4+ waiting): within-person vs between-person.
+G · WAITING TIME (pass 5): raw vs adjusted rate by how long the mission had been left waiting --
+    strategic: arrival -> first opened; tactical: planner open -> first action -- and the within-person
+    odds ratio per doubling of the wait.
 F · TRIAGE: which mission gets picked (oldest? top 3 of the list? small vs what is waiting?), pace
     (decision time, decisions per minute, deciding before the cards load), all against chance or
     within person.
@@ -145,13 +148,13 @@ def game_load(S, logs):
 # A + B · the null, raw vs adjusted, robustness strip
 # ════════════════════════════════════════════════════════════════════════════════════════════
 
-def bin_table(D, y, qcol):
+def bin_table(D, y, qcol, bins=QB):
     D = D.copy()
-    D['qb'] = D[qcol].map(qbin)
+    D['qb'] = D[qcol].map(lambda v: qbin(v, bins))
     E = x2.add_expected(D, y)
     allrate = E[y].mean()
     out = {}
-    for _, _, lab in QB:
+    for _, _, lab in bins:
         g = E[E.qb == lab]
         if len(g):
             out[lab] = dict(n=int(len(g)), people=int(g.pid.nunique()), raw=g[y].mean(),
@@ -162,12 +165,12 @@ def bin_table(D, y, qcol):
     return out, E
 
 
-def null_bins(D, y, qcol, name, rng):
-    base, E = bin_table(D, y, qcol)
+def null_bins(D, y, qcol, name, rng, bins=QB):
+    base, E = bin_table(D, y, qcol, bins)
     boots = {lab: dict(raw=[], adj=[], exp=[]) for lab in base}
     for Db in boot_people(D, rng, B_BOOT):
         try:
-            bt, _ = bin_table(Db, y, qcol)
+            bt, _ = bin_table(Db, y, qcol, bins)
         except Exception:
             continue
         for lab in base:
@@ -175,7 +178,7 @@ def null_bins(D, y, qcol, name, rng):
                 for k in ('raw', 'adj', 'exp'):
                     boots[lab][k].append(bt[lab][k])
     rows = []
-    for _, _, lab in QB:
+    for _, _, lab in bins:
         if lab not in base:
             continue
         b = base[lab]
@@ -844,6 +847,36 @@ def pace(S, T, logs):
 
 # ════════════════════════════════════════════════════════════════════════════════════════════
 
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# G · how long the mission had been left waiting (pass 5 note: "do they automate when they realise
+#     they've left a card hanging?")
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+WAIT_S = [(0, 10, '0–10 s'), (10.000001, 30, '10–30 s'), (30.000001, 60, '30–60 s'), (60.000001, 120, '1–2 min'),
+          (120.000001, 1e9, '2 min +')]
+WAIT_T = [(0, 5, '0–5 s'), (5.000001, 10, '5–10 s'), (10.000001, 20, '10–20 s'), (20.000001, 40, '20–40 s'),
+          (40.000001, 1e9, '40 s +')]
+
+
+def waited(D, y, wcol, bins, name, rng, extra=''):
+    """Raw vs adjusted rate by how long the mission had waited, plus the within-person odds ratio per
+    doubling of the wait (log2(wait + 5 s), person-centred; same controls as the queue model)."""
+    D = D.dropna(subset=[wcol]).copy()
+    D[wcol] = D[wcol].clip(lower=0)
+    rows, _ = null_bins(D, y, wcol, name + ' wait', rng, bins)
+    D['lw'] = np.log2(D[wcol] + 5)
+    D = centre(D, 'lw')
+    D = centre(D, 'st_queued')
+    ctrl = 'ndrones + ntasks + ncolours + emin + C(game)'
+    models = {}
+    for lab, f in (('main', f'{y} ~ lw_w + lw_pm + {ctrl}'),
+                   ('plus queue', f'{y} ~ lw_w + lw_pm + st_queued_w + st_queued_pm + {ctrl}')):
+        models[lab] = orow(gee(f, D), 'lw_w')
+    print('%s: OR per doubling of the wait (within person): %s' % (name, models))
+    return dict(bins=rows, models=models, n=int(len(D)), people=int(D.pid.nunique()), overall=r(D[y].mean()),
+                median=r(D[wcol].median(), 1))
+
+
 def main():
     rng = np.random.default_rng(SEED)
     S, T, logs, said, M = load()
@@ -909,6 +942,10 @@ def main():
     pc = pace(S, T, logs)
     tri['choiceSig'] = triage_choice_sig(S)
 
+    hdr('G · How long the mission had been waiting')
+    waits = dict(strategic=waited(Ss, 'took', 'firstWait', WAIT_S, 'strategic (arrival -> first opened)', rng),
+                 tactical=waited(T, 'consulted', 'idleBefore', WAIT_T, 'tactical (planner open -> first action)', rng))
+
     res = dict(generated=pd.Timestamp.now().strftime('%Y-%m-%d %H:%M'), visible=VISIBLE, games=games, heavy=heavy,
                said=sorted(said), nPeople=int(S.pid.nunique()),
                null=dict(strategic=dict(bins=sBins, robust=sRob, detect=sDet, n=int(len(Ss)), overall=r(Ss.took.mean())),
@@ -917,7 +954,7 @@ def main():
                saidDid=dict(slopes=dict(strategic=sSlopes, tactical=tSlopes),
                             interaction=dict(strategic=sInt, tactical=tInt),
                             busier=dict(strategic=sBusy, tactical=tBusy), narration=narr),
-               backlog=bp, deep=dict(strategic=sDeep, tactical=tDeep), triage=tri, pace=pc)
+               backlog=bp, waits=waits, deep=dict(strategic=sDeep, tactical=tDeep), triage=tri, pace=pc)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(res, separators=(',', ':'), default=lambda o: o.item() if hasattr(o, 'item') else str(o)),
                    encoding='utf-8')

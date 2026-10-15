@@ -41,9 +41,27 @@ remains is the curated set of findings and the links between them — the web th
   `pass2/flaw.pass5.yaml`). `f-tier-trust` is now Keep; `f-who-does-better` marked Keep, so un-retired to sidelined.
   From now on **each finding's verdict carries over**: the new `responses.json` is seeded with last pass's finding
   verdicts (`updated: null`), so the researcher only changes what moved. **Pass 5 is open.**
+- **2026-10-14** — **quote pass (during pass 5)**: at the researcher's request every main section now shows *what people
+  said*: a summary, 3–4 quote cards and "more quotes", from three quote analysts (`qual/BRIEF_QUAL.md`; their files
+  `qual/qa|qb|qc.yaml` hold 306 verbatim-checked quotes from debriefs, interviews and the in-play think-aloud, ids
+  namespaced `qa:q-…`; `ev<N>` = row N of `docs/analysis/qual/evidence.csv`). `scripts/register/apply_quotes.py`
+  writes each section's `qual: {summary, featured, more}`; `build_review.py` embeds the quotes. `f-operator-wants`
+  became the discussion finding with ten themed mini sections. The quote files hold participant speech, like
+  evidence.csv: never circulate. **Highlighting is now the researcher's**: every quote starts under "More quotes"
+  (the analysts' featured ones tagged "Claude's pick"); clicking Highlight stores the id in `responses.json` as
+  `cards["<finding>#<section>"].quotes` (ordered), and a filter bar narrows the list.
+- **2026-10-15 — mid pass 5**: the researcher highlights quotes themselves (above). Each section again shows every
+  earlier pass's note with what Claude did (`passes/replies.yaml` keeps the replies of closed passes; `reply` in
+  `findings.yaml` answers the last pass). Notes made *this* pass that Claude has already acted on are answered in a
+  `done` field (shown as "Your note this pass" / "What Claude did"), merged from `pass2/notes5.pass5b.yaml`: the
+  waiting-time graph (`f-workload#waited`, `load.waits`), the parallel-work quotes moved to `f-size-decides#parallel-said`,
+  P21's continuity quote, and flaw sections 4 and 5 retitled as different events.
 - **Next step for Claude:** when the researcher says pass 5 is done, archive `responses.json` to `passes/pass5.json`,
   bump `pass:` in `cards.yaml`, seed the next `responses.json` with the finding verdicts, carry new role picks into
-  `findings.yaml` (`role` + `role_set`), and act on the notes. Sections with `role: paper` are the figure list.
+  `findings.yaml` (`role` + `role_set`), carry highlighted quotes over (seed each section's `quotes` in the new
+  `responses.json`, so they stay highlighted), copy every `reply` into `passes/replies.yaml` under the
+  pass it answered (4), turn each `done` into that section's `reply`, and act on the notes. Sections with `role: paper`
+  are the figure list.
 - **(pass 1, historical)** when the researcher said pass 1 was done, `responses.json` will be in this folder
   (committed from the other machine, or handed over as an exported `review_pass1_*.json` — if so, save it
   here as `responses.json`). Then follow *Between passes* below. Do not edit cards before reading the

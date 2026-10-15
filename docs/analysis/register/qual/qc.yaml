@@ -1,0 +1,1303 @@
+# Quote analyst "qc": the discussion finding f-operator-wants (everything said that fits no other main section).
+# Sources read in full: all 26 debrief.txt, all 17 interview .docx, every quotes.json, and the in-play think-aloud
+# (session1, session2, survey1, between1, survey2 segments) for all 30 people with recordings. P09 excluded, PIL03 not used.
+# Time stamps: debrief/think-aloud = video time into <PID>.mp4; "s1"/"s2" = game session 1/2, "survey1"/"survey2"/"between1"
+# = the survey or break that followed. Interview "para N" = 0-based non-empty paragraph (as in evidence.csv).
+quotes:
+  # ---- real-world use, human final say, accountability --------------------------------------------------------
+  - id: qc-P22-01
+    pid: P22
+    source: debrief
+    at: "0:31:52"
+    led: 0
+    paraphrase: false
+    text: "it's better to save the five sub-optimally than it is to save no one, essentially. […] you always feel uncomfortable taking it out of the hands of a person and saying who is then responsible for this"
+    codes: [C25]
+    context: "Answering the closing 'five years from now, real search and rescue' question."
+  - id: qc-P31-01
+    pid: P31
+    source: debrief
+    at: "0:28:17"
+    led: 0
+    paraphrase: false
+    text: "under a completely human system, you'd have some sort of like, […] Accountability […] whereas if it's an AI system, even if it performs on average better than a human, that accountability just isn't there."
+    codes: []
+    context: "The researcher supplied the word 'accountability' when P31 searched for it. Coded 0 for C25: P31 also says the human need not be making the decisions."
+  - id: qc-P31-02
+    pid: P31
+    source: debrief
+    at: "0:34:06"
+    led: 0
+    paraphrase: false
+    text: "doing more research in this field will inevitably lead to it being used in military."
+    codes: []
+    context: "The one thing they wanted to add at the end, unprompted."
+  - id: qc-P24-01
+    pid: P24
+    source: debrief
+    at: "0:31:19"
+    led: 1
+    paraphrase: false
+    text: "even though human cannot check it, like really, I think it's fine, maybe. Yes. But it should have a human stand here."
+    codes: [C25]
+    context: "Researcher had asked: 'Do you worry that a human might not be able to check it because it's so much work?'"
+  - id: qc-P03-01
+    pid: P03
+    source: interview
+    at: "para 11"
+    led: 0
+    paraphrase: false
+    text: "If you understand the best way to do it, the failure modes, and the stakes are low, then AI should do it"
+    codes: []
+  - id: qc-P05-01
+    pid: P05
+    source: interview
+    at: "para 13"
+    led: 0
+    paraphrase: true
+    text: "Automate the levels you can understand, otherwise you are at the mercy of it when it fails"
+    codes: [C25]
+  - id: qc-P36-01
+    pid: P36
+    source: think-aloud
+    at: "s2 0:19:03"
+    led: 0
+    paraphrase: false
+    text: "somebody is checking my thinking and has the option to challenge me so with AI it should always be open to challenge but also trust in the fact it's done the maths behind it"
+    codes: [C25]
+    context: "Consulted expert (serving officer), comparing the assistants with a military planning staff."
+  - id: qc-P36-02
+    pid: P36
+    source: debrief
+    at: "0:37:08"
+    led: 0
+    paraphrase: false
+    text: "one of the risks with AI presents an ill-considered or the wrong answer with a level of confidence and you look at it and you go yeah that looks right but there's a massive hole in that plan"
+    codes: [C26]
+  - id: qc-P36-03
+    pid: P36
+    source: debrief
+    at: "0:37:08"
+    led: 0
+    paraphrase: false
+    text: "then you get a really good plan quickly or a really bad plan quickly and that will scale at pace"
+    codes: []
+  - id: qc-P24-02
+    pid: P24
+    source: debrief
+    at: "0:29:06"
+    led: 0
+    paraphrase: false
+    text: "sometimes even though people are smart to some extent, but we cannot multitask and make decisions really fast, especially in a very emergency situation. So I think we should use AI to help us."
+    codes: []
+  - id: qc-P29-01
+    pid: P29
+    source: debrief
+    at: "0:27:36"
+    led: 0
+    paraphrase: false
+    text: "it's best to just get something like going, even if it's not like the most perfect plan."
+    codes: []
+  - id: qc-P32-01
+    pid: P32
+    source: debrief
+    at: "0:26:33"
+    led: 0
+    paraphrase: false
+    text: "if you've got loads of spare humans, I'd want to see if the AI was actually better. But assuming that you've got less humans than you ideally would have, it feels like a good accelerator."
+    codes: []
+  - id: qc-P34-01
+    pid: P34
+    source: interview
+    at: "para 6"
+    led: 0
+    paraphrase: false
+    text: "It’s important to have a lot of AI in search and rescue"
+    codes: []
+  - id: qc-P20-01
+    pid: P20
+    source: debrief
+    at: "0:32:15"
+    led: 0
+    paraphrase: false
+    text: "If it's well regulated, I don't see any problem with it in principle."
+    codes: []
+  - id: qc-P30-01
+    pid: P30
+    source: debrief
+    at: "0:25:08"
+    led: 0
+    paraphrase: false
+    text: "having something like this that could essentially respond to a situation very quickly very easily i think that'll be that'll be good"
+    codes: []
+    context: "Thinking of wildfires."
+  - id: qc-P15-01
+    pid: P15
+    source: interview
+    at: "para 6"
+    led: 0
+    paraphrase: true
+    text: "Good application for AI, but it’s not good enough"
+    codes: []
+
+  # ---- wanting reasoning / to know how it works -----------------------------------------------------------------
+  - id: qc-P13-01
+    pid: P13
+    source: debrief
+    at: "0:29:32"
+    led: 0
+    paraphrase: false
+    text: "The aggressive, I don't know what the, I couldn't make out what the reasoning is behind that."
+    codes: [C26]
+  - id: qc-P13-02
+    pid: P13
+    source: think-aloud
+    at: "s1 0:06:39"
+    led: 0
+    paraphrase: false
+    text: "Why does it have a buffer of five fast drones? Do fast drones have a higher chance of failing?"
+    codes: [C26, C12]
+    context: "Looking at a strategy card. Researcher: 'I can't comment on exactly how the agent comes to its decisions at this stage.'"
+  - id: qc-P01-01
+    pid: P01
+    source: think-aloud
+    at: "survey1 0:14:24"
+    led: 0
+    paraphrase: false
+    text: "just being more information makes me both simultaneously, like, have to rely more on the AI while also kind of trusting it less because I don't know what's going on as much."
+    codes: [C26]
+    context: "Rating the Tactical Assistant after session 1."
+  - id: qc-P25-01
+    pid: P25
+    source: think-aloud
+    at: "s1 0:07:21"
+    led: 0
+    paraphrase: false
+    text: "So my question is, what kind of different algorithm behind this to the aggressive and the..."
+    codes: [C26]
+    context: "Mid-session; the researcher declined to explain until the end."
+  - id: qc-P05-02
+    pid: P05
+    source: interview
+    at: "para 3"
+    led: 0
+    paraphrase: true
+    text: "It was better because it was easier to check (strat was harder to understand)"
+    codes: []
+    context: "About the Tactical Assistant: the strategic cards were the harder one to understand."
+  - id: qc-P06-01
+    pid: P06
+    source: interview
+    at: "para 1"
+    led: 0
+    paraphrase: true
+    text: "Maybe less transparent, although as time went on, it became clear how it was working."
+    codes: []
+    context: "About the Strategic Assistant. Not coded C26 (hedged, then qualified)."
+  - id: qc-P19-01
+    pid: P19
+    source: think-aloud
+    at: "survey1 0:17:59"
+    led: 0
+    paraphrase: false
+    text: "I noticed it because the display is straightforward and it's clear enough that you can as a human spot. Discrepancies if they arise."
+    codes: [C12]
+    context: "Dissent: the strategic card needed no explanation; its error was visible on the card."
+  - id: qc-P22-05
+    pid: P22
+    source: think-aloud
+    at: "survey1 0:15:56"
+    led: 0
+    paraphrase: false
+    text: "I wonder if it's one of those things that these are based on the fact that I actually can't perceive the difference between its performance and the optimal."
+    codes: [C14]
+    context: "Explaining why they rated the Tactical Assistant highly."
+
+  # ---- failure risk, analytics, feedback ------------------------------------------------------------------------
+  - id: qc-P11-01
+    pid: P11
+    source: think-aloud
+    at: "survey1 0:12:38"
+    led: 0
+    paraphrase: false
+    text: "I don't know very well how often they fail and things, so how much I should care that it's unreliable or doesn't have much reserve."
+    codes: [C27]
+  - id: qc-P11-02
+    pid: P11
+    source: think-aloud
+    at: "s2 0:20:23"
+    led: 0
+    paraphrase: false
+    text: "I guess a useful, maybe a useful thing for the agent to tell me, it's like, if it could rate how likely things are to fail."
+    codes: [C27]
+  - id: qc-P13-03
+    pid: P13
+    source: think-aloud
+    at: "s2 0:18:18"
+    led: 0
+    paraphrase: false
+    text: "I'm just making blind decisions at this point without necessary data."
+    codes: [C27]
+    context: "After asking the researcher what the probability of drone failure is."
+  - id: qc-P13-04
+    pid: P13
+    source: debrief
+    at: "0:23:50"
+    led: 0
+    paraphrase: false
+    text: "with enough data points, you can make calculated decisions."
+    codes: [C27]
+  - id: qc-P25-02
+    pid: P25
+    source: think-aloud
+    at: "survey2 0:21:53"
+    led: 0
+    paraphrase: false
+    text: "I also want to read and do we have any explanation when a task will failed?"
+    codes: [C27, C26]
+  - id: qc-P19-02
+    pid: P19
+    source: debrief
+    at: "0:29:21"
+    led: 0
+    paraphrase: false
+    text: "probably is fair to say that different tasks seem to have different failure rates."
+    codes: []
+    context: "A misreading: drone failure was a flat random rate, not tied to task or place."
+  - id: qc-P01-02
+    pid: P01
+    source: think-aloud
+    at: "s2 0:23:06"
+    led: 0
+    paraphrase: false
+    text: "Is the drone failure rate just like cranked up to a max here? It feels like every other mission all of the fast drones keep failing."
+    codes: []
+    context: "The failure rate did not change between sessions."
+  - id: qc-P36-04
+    pid: P36
+    source: debrief
+    at: "0:32:24"
+    led: 0
+    paraphrase: false
+    text: "we look at the failure 40% failure chance […] no chance it's like okay but if you put a person into that scenario and it was all people doing it your failure chance would be this as well"
+    codes: [C27]
+    context: "Failure data would need context, or operators will refuse any risk."
+  - id: qc-P36-05
+    pid: P36
+    source: debrief
+    at: "0:32:50"
+    led: 0
+    paraphrase: false
+    text: "the failure rate of doing nothing is 100% so you've got to do something"
+    codes: []
+  - id: qc-P10-01
+    pid: P10
+    source: think-aloud
+    at: "s1 0:06:30"
+    led: 0
+    paraphrase: false
+    text: "So I'm looking at the score right now. And I have no bloody clue. Is minus 150, is that good? Is that bad? What does that mean?"
+    codes: []
+  - id: qc-P29-02
+    pid: P29
+    source: think-aloud
+    at: "survey1 0:12:13"
+    led: 0
+    paraphrase: false
+    text: "I feel like it's hard to tell, like, how well I've done."
+    codes: []
+  - id: qc-P32-02
+    pid: P32
+    source: think-aloud
+    at: "s2 0:20:16"
+    led: 0
+    paraphrase: false
+    text: "Is that a good score? It's hard to judge."
+    codes: []
+
+  # ---- more automation, new jobs for an assistant ---------------------------------------------------------------
+  - id: qc-P32-03
+    pid: P32
+    source: think-aloud
+    at: "s1 0:07:26"
+    led: 0
+    paraphrase: false
+    text: "Actually, it would be helpful if it just picked the next mission for me. A suggestion of what to do next would be handy."
+    codes: [C28]
+    context: "Same ask as P27's queue ordering: neither assistant helps choose which mission to open."
+  - id: qc-P32-04
+    pid: P32
+    source: think-aloud
+    at: "s2 0:18:27"
+    led: 0
+    paraphrase: false
+    text: "I think if I was doing all of that manually. And there wasn't a suggest button, I would be of the opinion that it was a sort of thing a computer should be doing."
+    codes: [C28]
+  - id: qc-P11-03
+    pid: P11
+    source: think-aloud
+    at: "s2 0:20:23"
+    led: 0
+    paraphrase: false
+    text: "if I let the agent think for five seconds, it could have said, oh, dummy, you're missing a camera there, you misclicked. But, like, that's different from letting it take over completely, I suppose."
+    codes: []
+    context: "Wants the assistant to check their manual plan rather than make one."
+  - id: qc-P27-01
+    pid: P27
+    source: debrief
+    at: "0:29:36"
+    led: 0
+    paraphrase: false
+    text: "I think, hey, I can just click the blue button to that mission. But the agent hasn't done that. So, could we do it together with a hybrid mode?"
+    codes: [C06]
+    context: "Wants to keep working on the tactical plan while Suggest fills in."
+  - id: qc-P21-01
+    pid: P21
+    source: think-aloud
+    at: "s2 0:23:58"
+    led: 0
+    paraphrase: false
+    text: "So in case of failure, it doesn't redirect those drones to the other one, which is something I'd like to do."
+    codes: [C13]
+    context: "Wants the tactical plan to build in back-up routes."
+  - id: qc-P30-02
+    pid: P30
+    source: debrief
+    at: "0:25:08"
+    led: 0
+    paraphrase: false
+    text: "if this was just more advanced it'd have a bit more anticipation of what's going to come up further i think that'll be good"
+    codes: []
+  - id: qc-P13-05
+    pid: P13
+    source: debrief
+    at: "0:28:58"
+    led: 0
+    paraphrase: false
+    text: "If your allocation algorithm could handle it a bit better, the end users could be anyone."
+    codes: [C28]
+  - id: qc-P36-06
+    pid: P36
+    source: think-aloud
+    at: "s2 0:22:29"
+    led: 0
+    paraphrase: false
+    text: "if I did all of that manually I would know all of that because I've built the plan I've got it in my head if I just said go nuts when something goes wrong I've got to play catch up"
+    codes: []
+    context: "Dissent: the cost of handing over is losing the plan in your head."
+  - id: qc-P11-04
+    pid: P11
+    source: debrief
+    at: "0:26:55"
+    led: 0
+    paraphrase: false
+    text: "it would be a dreadful task without any of the tools, especially on the tactical side."
+    codes: []
+
+  # ---- what they thought the assistants were ----------------------------------------------------------------------
+  - id: qc-P31-03
+    pid: P31
+    source: debrief
+    at: "0:26:11"
+    led: 0
+    paraphrase: false
+    text: "the fact that it's like quote-unquote AI, it very easily could have been just like a dozen lines of code that do a little bit of manual rules-based allocation"
+    codes: []
+  - id: qc-P19-03
+    pid: P19
+    source: think-aloud
+    at: "s2 0:24:17"
+    led: 0
+    paraphrase: false
+    text: "It doesn't even really feel like you're using an AI tool, […] It feels simply like, well, like some sort of... Just almost like a matching algorithm, trying to get your resources in the right place."
+    codes: []
+  - id: qc-P15-02
+    pid: P15
+    source: debrief
+    at: "0:29:13"
+    led: 0
+    paraphrase: false
+    text: "I think these applications is very good but the AI is a little bit stupid"
+    codes: []
+  - id: qc-P15-03
+    pid: P15
+    source: interview
+    at: "para 7"
+    led: 0
+    paraphrase: true
+    text: "AI felt like old computing, not modern AI"
+    codes: []
+  - id: qc-P32-05
+    pid: P32
+    source: think-aloud
+    at: "s2 0:18:43"
+    led: 0
+    paraphrase: false
+    text: "I am interested in whether it's like provably optimal, or if it's like a dodgy machine learning algorithm that's just sort of vibe allocating them. […] Like if there is a linear optimizer, I'm happy."
+    codes: [C26]
+  - id: qc-P04-01
+    pid: P04
+    source: debrief
+    at: "0:25:16"
+    led: 0
+    paraphrase: false
+    text: "I trust that they will get a solution that works. I don't really trust that it will be mathematically optimal."
+    codes: []
+  - id: qc-P04-02
+    pid: P04
+    source: interview
+    at: "para 8"
+    led: 0
+    paraphrase: true
+    text: "Algorithms should be deterministic wherever possible. Machine learning etc is more likely to make mistakes."
+    codes: []
+  - id: qc-P24-03
+    pid: P24
+    source: debrief
+    at: "0:26:31"
+    led: 0
+    paraphrase: false
+    text: "So when AI gives some suggestions of the numbers of the joints, did it consider the multi-task? Or just considered this one task? […] So actually, I need to consider myself."
+    codes: [C07]
+    context: "'joints' = drones (transcription). Asked after both sessions; the researcher confirmed the cards see only the one mission."
+  - id: qc-P03-02
+    pid: P03
+    source: interview
+    at: "para 8"
+    led: 0
+    paraphrase: true
+    text: "Was hoping the AI would learn from what he is picking. It didn’t so as time went on they picked it less"
+    codes: []
+  - id: qc-P27-02
+    pid: P27
+    source: think-aloud
+    at: "s2 0:21:06"
+    led: 0
+    paraphrase: false
+    text: "Seems that the agent has some feature of prediction, right?"
+    codes: []
+    context: "Trying to explain why a card added drone types the mission did not need."
+  - id: qc-P21-02
+    pid: P21
+    source: think-aloud
+    at: "between1 0:20:45"
+    led: 0
+    paraphrase: false
+    text: "when it tries to make the drone allocation, it follows certain patterns, which patterns could then be adopted by the tactical agent afterwards."
+    codes: []
+    context: "Plans to use the strategic card in session 2 because they assume the two tiers share a plan."
+  - id: qc-P30-03
+    pid: P30
+    source: think-aloud
+    at: "s2 0:12:13"
+    led: 0
+    paraphrase: false
+    text: "i think this a lot of the ai suggestions on here it's just for um that specific sort of scenario rather than optimizing it for future"
+    codes: [C07]
+  - id: qc-P17-01
+    pid: P17
+    source: think-aloud
+    at: "s1 0:07:58"
+    led: 0
+    paraphrase: false
+    text: "Was that supposed to be a failure of AI?"
+    codes: [C12]
+    context: "On a card that added green and red drones to a mission that needed none."
+  - id: qc-P27-03
+    pid: P27
+    source: think-aloud
+    at: "s2 0:19:09"
+    led: 0
+    paraphrase: false
+    text: "So, I'm not sure the reason is I didn't notice it or it's just maybe some bugs."
+    codes: [C12]
+
+  # ---- how the two tiers fit together ---------------------------------------------------------------------------
+  - id: qc-P03-03
+    pid: P03
+    source: debrief
+    at: "0:24:55"
+    led: 0
+    paraphrase: false
+    text: "the routine of the strategies is what tactical is kind of like doing because if you have a good strategy then it's likely less to fail because you've already constrained everything"
+    codes: []
+  - id: qc-P19-05
+    pid: P19
+    source: think-aloud
+    at: "survey1 0:19:20"
+    led: 0
+    paraphrase: false
+    text: "And the only way to remedy drone failures is to have had sent enough drones at the beginning, which I think is the strategic assistant's prerogative."
+    codes: []
+  - id: qc-P36-07
+    pid: P36
+    source: think-aloud
+    at: "between1 0:14:39"
+    led: 0
+    paraphrase: false
+    text: "if you […] up the allocation at the start of it then you're screwed going into the tactical"
+    codes: []
+  - id: qc-P36-08
+    pid: P36
+    source: debrief
+    at: "0:29:43"
+    led: 0
+    paraphrase: false
+    text: "if you've not got the resources available to you at the low level then or you've over allocated resources at the high level then you're running out of resources cascade down"
+    codes: []
+  - id: qc-P30-04
+    pid: P30
+    source: debrief
+    at: "0:25:40"
+    led: 0
+    paraphrase: false
+    text: "i think it's it's much easier to then give it resources um and then allow it to then optimize it rather than choose its resources and then it optimizes"
+    codes: [C25]
+  - id: qc-P32-06
+    pid: P32
+    source: debrief
+    at: "0:26:49"
+    led: 0
+    paraphrase: false
+    text: "if I were being really strategic, I'd be saying, okay, people are going to do the strategic stuff, and we're just going to trust it for the tactical."
+    codes: []
+  - id: qc-P21-03
+    pid: P21
+    source: think-aloud
+    at: "s1 0:14:38"
+    led: 0
+    paraphrase: false
+    text: "When I make the selection for the drones, I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that."
+    codes: [C01]
+    context: "Why they build the tactical plan themself after a manual strategic allocation."
+  - id: qc-P10-02
+    pid: P10
+    source: think-aloud
+    at: "s1 0:05:34"
+    led: 0
+    paraphrase: false
+    text: "For the aggressive approach, anything but suggestion doesn't really make sense, I think. Because it's a perfect fit between what I need and what I have."
+    codes: []
+  - id: qc-P36-09
+    pid: P36
+    source: debrief
+    at: "0:30:56"
+    led: 0
+    paraphrase: false
+    text: "I would say is human in the loop because you have to okay everything I'm still okaying the tasks that are out there"
+    codes: [C25]
+  - id: qc-P36-10
+    pid: P36
+    source: debrief
+    at: "0:44:20"
+    led: 0
+    paraphrase: false
+    text: "that's not your job your job is to do this thing over here and then there's other agents to do this thing over here"
+    codes: []
+    context: "On whether each assistant should see the wider context: no, each tier should stay in its lane."
+  - id: qc-P12-01
+    pid: P12
+    source: interview
+    at: "para 7"
+    led: 0
+    paraphrase: false
+    text: "Intuitively, the strategic agent is probably more reliable as it’s a more trivial calculation whereas the tactical task is more complex"
+    codes: []
+  - id: qc-P33-02
+    pid: P33
+    source: debrief
+    at: "0:28:46"
+    led: 1
+    paraphrase: false
+    text: "So, do you think generally AI in the lower level of the tactical level makes more sense than the strategic? Yeah."
+    codes: [C25]
+
+  # ---- me or the assistant: who does better ---------------------------------------------------------------------
+  - id: qc-P33-01
+    pid: P33
+    source: think-aloud
+    at: "between1 0:16:40"
+    led: 0
+    paraphrase: false
+    text: "They did it better than me. Absolutely. […] They're very fast. I can't figure it out in a very short time."
+    codes: [C23, C04]
+  - id: qc-P35-01
+    pid: P35
+    source: think-aloud
+    at: "between1 0:16:58"
+    led: 0
+    paraphrase: false
+    text: "I think sometimes I think the AI assistant is much more smarter than me."
+    codes: []
+  - id: qc-P35-02
+    pid: P35
+    source: debrief
+    at: "0:28:19"
+    led: 0
+    paraphrase: false
+    text: "if I have enough strong swarm, I can do enough and I have enough time, I can do better than AI assistant."
+    codes: []
+    context: "Conditional, so coded 0 for C24."
+  - id: qc-P04-03
+    pid: P04
+    source: think-aloud
+    at: "s2 0:18:27"
+    led: 0
+    paraphrase: false
+    text: "For the most part, I don't trust the AI to be better than if I calculated it properly, […] but it's quicker, which is slightly easier."
+    codes: [C04]
+  - id: qc-P29-03
+    pid: P29
+    source: think-aloud
+    at: "s1 0:10:34"
+    led: 0
+    paraphrase: false
+    text: "I did, um, do some of them myself, and they didn't turn out as well, so I think, yeah, it probably does know a bit better than me."
+    codes: [C23, C10]
+  - id: qc-P22-02
+    pid: P22
+    source: think-aloud
+    at: "s1 0:10:43"
+    led: 0
+    paraphrase: false
+    text: "I feel that they are similar. Um, I think that's generally faster when they're simpler, but they're generally less accurate when they're more complicated."
+    codes: [C03]
+    context: "Asked whether their own tactical plans were better, worse or the same as the assistant's."
+  - id: qc-P06-02
+    pid: P06
+    source: think-aloud
+    at: "s2 0:18:51"
+    led: 0
+    paraphrase: false
+    text: "I don't think mine was better than the AI. To be honest, at this time."
+    codes: []
+  - id: qc-P01-03
+    pid: P01
+    source: think-aloud
+    at: "survey2 0:25:48"
+    led: 0
+    paraphrase: false
+    text: "But you know. I don't... I don't trust myself anymore."
+    codes: []
+    context: "After a session of repeated single-drone failures."
+  - id: qc-P17-02
+    pid: P17
+    source: debrief
+    at: "0:24:07"
+    led: 0
+    paraphrase: false
+    text: "if I make a manual decision, I can make it better. The time that I spend on doing that is that shorter or longer than the inefficiency."
+    codes: [C04]
+  - id: qc-P11-05
+    pid: P11
+    source: debrief
+    at: "0:27:52"
+    led: 0
+    paraphrase: false
+    text: "And you do pride when it just does it better than me or quicker than me."
+    codes: [C02]
+  - id: qc-P12-02
+    pid: P12
+    source: interview
+    at: "para 3"
+    led: 0
+    paraphrase: true
+    text: "Possibly could have been quicker than agent, but not certain"
+    codes: []
+
+  # ---- interface and display -------------------------------------------------------------------------------------
+  - id: qc-P10-03
+    pid: P10
+    source: think-aloud
+    at: "s2 0:12:46"
+    led: 0
+    paraphrase: false
+    text: "There would be a sum here that would help me count them faster, how many I need of each color. That would be amazing."
+    codes: []
+    context: "Strategic panel: a mission's total drone requirement by type."
+  - id: qc-P10-04
+    pid: P10
+    source: think-aloud
+    at: "s2 0:15:07"
+    led: 0
+    paraphrase: false
+    text: "What would be amazing in the interface is if there would be a little red triangle or whatever popping up if this screen wants my attention."
+    codes: []
+    context: "A cue on one screen when the other (e.g. a failure) needs attention."
+  - id: qc-P13-06
+    pid: P13
+    source: think-aloud
+    at: "s1 0:03:50"
+    led: 0
+    paraphrase: false
+    text: "Now, when I come to this screen, it doesn't show how many rows are being used in total right now."
+    codes: []
+    context: "'rows' = drones (transcription)."
+  - id: qc-P13-07
+    pid: P13
+    source: think-aloud
+    at: "s2 0:20:44"
+    led: 0
+    paraphrase: false
+    text: "Say if I'm trying to change the task of any ongoing drones which are doing a specific task, I think it would be better if you ask it twice."
+    codes: []
+  - id: qc-P27-04
+    pid: P27
+    source: debrief
+    at: "0:26:26"
+    led: 0
+    paraphrase: false
+    text: "Then I think maybe I also want another feature like how many drones is in the hub."
+    codes: []
+    context: "He also asked for a queue sorted by criticality; that sort exists, and they had not found it."
+  - id: qc-P19-06
+    pid: P19
+    source: think-aloud
+    at: "s2 0:28:00"
+    led: 0
+    paraphrase: false
+    text: "I wish I could filter these by racking penalty, huh? That would be quite nice, I think."
+    codes: []
+  - id: qc-P36-11
+    pid: P36
+    source: think-aloud
+    at: "s1 0:03:49"
+    led: 0
+    paraphrase: false
+    text: "What's interesting is that having the red and the blue icons here, but not having the green does throw you a little bit."
+    codes: []
+  - id: qc-P01-04
+    pid: P01
+    source: think-aloud
+    at: "s1 0:04:36"
+    led: 0
+    paraphrase: false
+    text: "It might be helpful to try and preserve that in case I click off by accident."
+    codes: []
+    context: "A Suggest plan is lost when the planner is clicked away from."
+  - id: qc-P06-03
+    pid: P06
+    source: think-aloud
+    at: "s1 0:10:20"
+    led: 0
+    paraphrase: false
+    text: "it's going to be difficult if I do it in one monitor, like, the task is a lot"
+    codes: []
+    context: "Relevant to any single-screen online version."
+  - id: qc-P31-04
+    pid: P31
+    source: debrief
+    at: "0:30:50"
+    led: 0
+    paraphrase: false
+    text: "because I was so preoccupied with the other two tasks, I wasn't spending much time, like, awaiting the arrival of the drones, basically."
+    codes: []
+    context: "The strategic map in the middle went largely unwatched."
+  - id: qc-P14-01
+    pid: P14
+    source: interview
+    at: "para 4"
+    led: 0
+    paraphrase: false
+    text: "The interface was very friendly. Doing it the first time, it was very easy to navigate the interface"
+    codes: []
+  - id: qc-P10-05
+    pid: P10
+    source: debrief
+    at: "0:24:26"
+    led: 0
+    paraphrase: false
+    text: "Interface worked really smooth. It was intuitive, yeah."
+    codes: []
+  - id: qc-P25-04
+    pid: P25
+    source: think-aloud
+    at: "s2 0:13:56"
+    led: 0
+    paraphrase: false
+    text: "The UI is really nice. I like the UI. It's really cool."
+    codes: []
+  - id: qc-P14-02
+    pid: P14
+    source: think-aloud
+    at: "survey1 0:12:19"
+    led: 0
+    paraphrase: false
+    text: "The slider confuses me, to be honest with you."
+    codes: []
+    context: "The reversed NASA-TLX performance slider; P13 said the same ('this one's confusing')."
+  - id: qc-P13-08
+    pid: P13
+    source: think-aloud
+    at: "survey1 0:10:54"
+    led: 0
+    paraphrase: false
+    text: "Yeah, this one's confusing, because good is here and bad is there."
+    codes: []
+    context: "The reversed NASA-TLX performance slider."
+
+  - id: qc-P07-02
+    pid: P07
+    source: interview
+    at: "para 10"
+    led: 0
+    paraphrase: true
+    text: "Easy to use"
+    codes: []
+
+  # ---- it's a game: real stakes, pace, training ------------------------------------------------------------------
+  - id: qc-P01-05
+    pid: P01
+    source: think-aloud
+    at: "s1 0:09:46"
+    led: 0
+    paraphrase: false
+    text: "If there were real drones behind this, you know, it's... Like, it's too much of an abstraction, like... If there were lives behind this, it..."
+    codes: []
+  - id: qc-P01-06
+    pid: P01
+    source: debrief
+    at: "0:30:08"
+    led: 0
+    paraphrase: false
+    text: "if it was a real task, I feel like I'd behave the same. That might not be a good thing if you're actually controlling real drones."
+    codes: []
+  - id: qc-P11-06
+    pid: P11
+    source: think-aloud
+    at: "survey2 0:23:33"
+    led: 0
+    paraphrase: false
+    text: "if there were lives on the line, I'd be a lot more stressed."
+    codes: []
+  - id: qc-P34-02
+    pid: P34
+    source: interview
+    at: "para 5"
+    led: 0
+    paraphrase: false
+    text: "It helped that there were no consequences for my actions other than the negative points and in real life that would be different"
+    codes: []
+  - id: qc-P36-12
+    pid: P36
+    source: debrief
+    at: "0:33:43"
+    led: 0
+    paraphrase: false
+    text: "because I know it's a simulation there isn't someone's life online at the end of it"
+    codes: []
+  - id: qc-P36-13
+    pid: P36
+    source: debrief
+    at: "0:34:57"
+    led: 0
+    paraphrase: false
+    text: "so I imagine you're going to see me less decisive if someone's gonna die"
+    codes: []
+  - id: qc-P36-14
+    pid: P36
+    source: debrief
+    at: "0:26:31"
+    led: 0
+    paraphrase: false
+    text: "so in terms of delivery absolutely in terms of the pace probably not so much too fast"
+    codes: []
+    context: "Asked how relevant the set-up is to real operations."
+  - id: qc-P31-05
+    pid: P31
+    source: think-aloud
+    at: "s1 0:09:46"
+    led: 0
+    paraphrase: false
+    text: "if this is in a situation where real lives are at stake would we want the operators of that situation in so much of a like time and resource pressure as this?"
+    codes: []
+  - id: qc-P13-09
+    pid: P13
+    source: debrief
+    at: "0:23:14"
+    led: 0
+    paraphrase: false
+    text: "Real-world scenario, abandoning mission doesn't make sense, because you can always send out this thing"
+    codes: []
+  - id: qc-P28-01
+    pid: P28
+    source: debrief
+    at: "0:34:43"
+    led: 0
+    paraphrase: false
+    text: "someone sees a drone flying here and sends some signal, like saying, hey, I'm here, and the drone says, okay, I saw you, and then I leave, because we have no sufficient drones, yeah, it will make people very disappointed."
+    codes: []
+  - id: qc-P02-01
+    pid: P02
+    source: interview
+    at: "para 10"
+    led: 0
+    paraphrase: true
+    text: "Video game style AI is great, in reality the ‘laziness’ and abandoning would be much more impactful"
+    codes: []
+  - id: qc-P07-01
+    pid: P07
+    source: think-aloud
+    at: "s1 0:05:34"
+    led: 0
+    paraphrase: false
+    text: "Because I kind of think like under the real scenario, like in real life, if you feel like people are actually at risk, you kind of want to optimise efficiency."
+    codes: []
+    context: "Why they used the assistants."
+  - id: qc-P15-04
+    pid: P15
+    source: think-aloud
+    at: "survey1 0:13:31"
+    led: 0
+    paraphrase: false
+    text: "stress oh because I know it's a game"
+    codes: []
+  - id: qc-P35-03
+    pid: P35
+    source: debrief
+    at: "0:31:12"
+    led: 0
+    paraphrase: false
+    text: "But I think the operators need to be trained, such as me, I'm not trained, so I will trust on the AI."
+    codes: []
+  - id: qc-P36-15
+    pid: P36
+    source: think-aloud
+    at: "s2 0:22:29"
+    led: 0
+    paraphrase: false
+    text: "the key thing for me in all of this is not necessarily trusting the AI it is the skills that a human is going to need to be able to exploit all of this"
+    codes: []
+  - id: qc-P29-04
+    pid: P29
+    source: debrief
+    at: "0:27:05"
+    led: 0
+    paraphrase: false
+    text: "obviously it would be a bit different cause I guess the person like doing it would have a lot of knowledge and like strategy."
+    codes: []
+  - id: qc-P36-16
+    pid: P36
+    source: debrief
+    at: "0:40:56"
+    led: 0
+    paraphrase: false
+    text: "on this one i knew where every single task was i didn't have to go and do a recce screen to go and find somebody lost on the path somewhere"
+    codes: []
+  - id: qc-P28-02
+    pid: P28
+    source: debrief
+    at: "0:36:52"
+    led: 0
+    paraphrase: false
+    text: "in here, because the task has been appeared in that location, but in the real world, you may not know the person is there."
+    codes: []
+
+  # ---- feelings: fun, stress, self-doubt, talking to the assistant ----------------------------------------------
+  - id: qc-P01-07
+    pid: P01
+    source: think-aloud
+    at: "s1 0:05:44"
+    led: 0
+    paraphrase: false
+    text: "Fail again? Oh, my God. Oh, my God. We're done. I'm losing my job. I'm done."
+    codes: []
+  - id: qc-P01-08
+    pid: P01
+    source: think-aloud
+    at: "s1 0:05:59"
+    led: 0
+    paraphrase: false
+    text: "This is stressful. Just taking the AI suggestions and not even, like, considering it that much."
+    codes: [C11]
+  - id: qc-P19-07
+    pid: P19
+    source: think-aloud
+    at: "s2 0:21:52"
+    led: 0
+    paraphrase: false
+    text: "Hallucinating AI. Crazy. […] Hey, hey. I'm sorry. I didn't mean to doubt you. I did a little, but in this case, I was right."
+    codes: []
+    context: "Talking to the Strategic Assistant's card, which they first thought wrong, then accepted."
+  - id: qc-P22-03
+    pid: P22
+    source: think-aloud
+    at: "s2 0:23:41"
+    led: 0
+    paraphrase: false
+    text: "Come on, assistant. Come on, assistant. I know it's tricky. You think about it."
+    codes: [C06]
+    context: "Waiting for Suggest to fill in."
+  - id: qc-P32-07
+    pid: P32
+    source: think-aloud
+    at: "s1 0:10:25"
+    led: 0
+    paraphrase: false
+    text: "Come on, AI. We need to save people."
+    codes: []
+  - id: qc-P11-07
+    pid: P11
+    source: debrief
+    at: "0:27:26"
+    led: 0
+    paraphrase: false
+    text: "Or like personify the computer and feel some sort of grudge to hold it."
+    codes: [C02]
+  - id: qc-P29-05
+    pid: P29
+    source: think-aloud
+    at: "between1 0:13:37"
+    led: 0
+    paraphrase: false
+    text: "I feel like, maybe I'm not very good at this, but, I guess that doesn't really matter."
+    codes: []
+  - id: qc-P35-04
+    pid: P35
+    source: think-aloud
+    at: "s1 0:13:18"
+    led: 0
+    paraphrase: false
+    text: "And then I'm not very confident on myself too."
+    codes: []
+    context: "Then: 'I think maybe I will rely on the AI assistant more.'"
+  - id: qc-P27-05
+    pid: P27
+    source: think-aloud
+    at: "survey1 0:14:40"
+    led: 0
+    paraphrase: false
+    text: "the task is quite emergent. And so, that's the reason why I want to rely on the AI assistance because I don't like to make the decision in a quite short time."
+    codes: [C11]
+  - id: qc-P10-07
+    pid: P10
+    source: debrief
+    at: "0:22:05"
+    led: 0
+    paraphrase: false
+    text: "It was nice. It was actually fun."
+    codes: []
+  - id: qc-P31-06
+    pid: P31
+    source: debrief
+    at: "0:25:43"
+    led: 0
+    paraphrase: false
+    text: "as like a gamified simulation, it was quite fun."
+    codes: []
+  - id: qc-P36-17
+    pid: P36
+    source: debrief
+    at: "0:25:01"
+    led: 0
+    paraphrase: false
+    text: "it's fun I enjoyed that"
+    codes: []
+  - id: qc-P18-01
+    pid: P18
+    source: debrief
+    at: "0:25:43"
+    led: 0
+    paraphrase: false
+    text: "Well, this was kind of fun."
+    codes: []
+  - id: qc-P24-04
+    pid: P24
+    source: think-aloud
+    at: "between1 0:14:58"
+    led: 0
+    paraphrase: false
+    text: "I really want to win this game."
+    codes: []
+  - id: qc-P11-08
+    pid: P11
+    source: think-aloud
+    at: "survey2 0:23:33"
+    led: 0
+    paraphrase: false
+    text: "I did a lot of it myself. I was having fun, to be honest."
+    codes: []
+  - id: qc-P22-04
+    pid: P22
+    source: think-aloud
+    at: "s2 0:18:57"
+    led: 0
+    paraphrase: false
+    text: "We've got nothing. Everyone is going to die. Okay."
+    codes: []
+    context: "Out of drones with several mass-casualty missions waiting."
+
+sections:
+  "f-operator-wants#wants":
+    summary: "Across the coded material, 9 of 33 said a human should keep the final say (8 unprompted), 6 wanted failure
+      probabilities or performance data, 6 wanted options between the two cards, 5 wanted the assistant's reasoning and
+      4 wanted more automation. Reading everything (including the in-play talk) raises the information asks: about 11
+      asked or wondered how the assistants decided, and 8 asked for failure or performance numbers. The dissent is
+      small but sharp: P11 does not want to be 'reduced to pressing allocate, suggest, deploy', and P36 warns that what
+      you hand over you no longer have in your head when it fails. The mini sections below take each strand in turn."
+    featured: [ev184, ev157, ev254, ev68]
+    more: [ev13, ev22, ev142, ev152, ev155, ev168, ev205, ev246, ev247, ev6, ev61, ev88, ev156, ev158, ev252, ev253,
+      ev43, ev44, ev62, ev66, ev67, ev214, ev226, ev227, ev69, ev70, ev171, ev172, ev206, ev207, ev215, ev216, ev30,
+      ev86, ev91, ev137, ev178, ev179, ev249, ev250, ev47, qc-P36-06]
+    codes: [C25, C26, C27, C28, C08]
+
+new_sections:
+  - id: real-world
+    title: "Real search and rescue: welcome, with a human deciding"
+    text: "What people said when asked how they would feel about systems like this in real search and rescue. 16 of 33 are quoted here (25
+      answered the question); nobody rejected it, and the common condition was a human who keeps the final decision."
+    summary: "Asked the closing 'five years from now' question, at least 14 welcomed the idea, nearly always for speed
+      ('a bad approximation is better than no response at all'), and 9 said a human must keep the final decision (8
+      unprompted). Conditions came with it: well regulated (P20), only where the job is understood and stakes low (P03,
+      P05), only if better than today's AI (P15). Four raised a deeper worry: who is accountable when an AI fails to save
+      someone (P31, P22), a confident plan with a hole in it, repeated at scale (P36), and military use of the research
+      (P31). When pressed on whether a busy human could really check, P24 conceded they could not and still wanted one
+      there."
+    featured: [ev184, qc-P22-01, qc-P31-01, qc-P32-01]
+    more: [ev13, ev22, ev142, ev152, ev155, ev168, ev205, ev246, ev247, qc-P24-01, qc-P03-01, qc-P05-01, qc-P36-01,
+      qc-P36-02, qc-P36-03, qc-P31-02, qc-P24-02, qc-P29-01, qc-P34-01, qc-P20-01, qc-P30-01, qc-P15-01]
+    codes: [C25]
+    tier: main
+    role: extra
+  - id: reasoning
+    title: "Wanting to know how the assistants decide"
+    text: "Requests for the assistants' reasoning, and moments where people could not work out why a card or plan looked
+      the way it did. 12 of 33 said something on this."
+    summary: "5 of 33 asked outright for explanation, auditability or understandable tools (P02, P12, P16, P25, P36); 6
+      more asked mid-play why a card looked as it did or said they could not tell (P01, P05, P06, P13, P25 in play, P32).
+      P01 named the bind: more information to handle means relying more and trusting less. The requests point both ways:
+      P05 found the strategic cards the hard ones to understand, while P19 found the card simple enough that its error
+      was visible, and P22 said they trusted the tactical plan partly because they could not see how far from optimal it
+      was. Nobody asked for an explanation of a single plan step; the asks were about how the assistant works in general."
+    featured: [ev157, ev88, qc-P13-01, qc-P01-01]
+    more: [ev6, ev61, ev156, ev158, ev252, ev253, qc-P13-02, qc-P25-01, qc-P05-02, qc-P06-01, qc-P19-01, qc-P22-05,
+      qc-P32-05]
+    codes: [C26]
+    tier: main
+    role: extra
+  - id: failure-data
+    title: "Failure risk and feedback: wanting the numbers"
+    text: "Asks for drone-failure probabilities and for feedback on how well they (or the assistants) were doing, and
+      misreadings of the random failures. 11 of 33 said something on this."
+    summary: "8 of 33 asked for failure probabilities or performance data (P10, P11, P12, P13, P25, P31, P32, P36); P10,
+      P11 and P13 independently wanted the risk tied to place, terrain or drone type and fed into the allocation. Without
+      it, 2 read patterns into failures that were in fact flat and random (P19: some tasks fail more; P01: the rate was
+      'cranked up'). 4 could not tell from the score how well they were doing (P10, P29, P31, P32). P36 adds the caution:
+      a raw failure percentage needs context, or operators will refuse any risk, though 'the failure rate of doing
+      nothing is 100%'."
+    featured: [ev254, ev66, qc-P11-02, ev214]
+    more: [ev43, ev44, ev62, ev67, ev226, ev227, qc-P11-01, qc-P13-03, qc-P13-04, qc-P25-02, qc-P19-02, qc-P01-02,
+      qc-P36-04, qc-P36-05, qc-P10-01, qc-P29-02, qc-P32-02]
+    codes: [C27]
+    tier: main
+    role: extra
+  - id: more-automation
+    title: "More automation, and new jobs for an assistant"
+    text: "Wishes for the assistants to do more, or to do a job neither of them does now, and the few voices against.
+      8 of 33 said something on this."
+    summary: "4 of 33 asked in general for more automation (P13, P27, P30, P31) and 4 more proposed a specific new job:
+      choose which mission to open next (P32, and P27's feasibility-then-criticality ordering), check the operator's own
+      plan for slips (P11), red-team the assistants' outputs (P36), build back-up routes into the tactical plan (P21),
+      re-route spares after a failure (P30) and look ahead to missions not yet arrived (P30). The common thread is help
+      with what neither assistant touches: choosing what to work on, and failures. Against: P11 does not want to be
+      reduced to clicking, and P36 warns that handing over the plan means playing catch-up when it fails."
+    featured: [ev68, qc-P32-03, qc-P11-03, qc-P36-06]
+    more: [ev69, ev70, ev171, ev172, ev206, ev207, ev215, ev216, ev253, ev249, qc-P32-04, qc-P27-01, qc-P21-01, qc-P30-02,
+      qc-P13-05, qc-P11-04, ev47]
+    codes: [C28]
+    tier: main
+    role: extra
+  - id: mental-models
+    title: "What they thought the assistants were"
+    text: "How people pictured the assistants: simple rules or 'AI', whether they learn, predict or see beyond one mission.
+      13 of 33 said something on this."
+    summary: "Two pictures sit side by side. 6 saw through to simple rules and judged them on that: 'a dozen lines of code'
+      (P31), 'a matching algorithm' (P19), 'a little bit stupid', 'old computing' (P15), works but not optimal (P04);
+      P32 and P04 said they would trust a provable optimiser over machine learning. Others credited the assistants with
+      more than they had: P03 hoped it would learn from their choices, P27 thought it predicted, P13 wondered if it knew
+      fast drones fail more, P21 assumed the two tiers share a plan. 2 noticed the cards look at one mission only (P24
+      had to ask, P30). 2 more took the illogical card for a bug or a planted error (P17, P27)."
+    featured: [qc-P31-03, qc-P19-03, qc-P32-05, qc-P24-03]
+    more: [qc-P15-02, qc-P15-03, qc-P04-01, qc-P04-02, ev6, qc-P03-02, qc-P27-02, qc-P13-02, qc-P21-02, qc-P30-03,
+      qc-P17-01, qc-P27-03]
+    codes: [C26]
+    tier: main
+    role: extra
+  - id: tiers-together
+    title: "How the two tiers fit together"
+    text: "Remarks on the hierarchy itself: which level a human should hold, and how a strategic choice carries into the
+      tactical one. 10 of 33 said something on this."
+    summary: "The shared view is that the strategic choice sets up everything below it: a good allocation makes the
+      tactical stage hard to fail, and drone failures can only be absorbed by drones sent at the start (P03, P19, P36).
+      Several said the human belongs at the strategic level and the assistant at the tactical one, 'give it resources and
+      allow it to optimise' (P05, P30, P32, P33 when asked, P12 reasoning that the strategic sum is the easier one), and
+      P10 found an Aggressive card leaves only one sensible tactical plan. The cross-current: P21 builds the tactical plan
+      themself because their strategic choice already carries a plan in their head, and P36 frames it as human-in-the-loop
+      now, with on-the-loop needing far more trust."
+    featured: [qc-P03-03, qc-P36-08, qc-P30-04, qc-P32-06]
+    more: [ev12, ev22, qc-P19-05, qc-P36-07, qc-P21-03, qc-P10-02, qc-P36-09, qc-P36-10, qc-P12-01, qc-P33-02]
+    codes: [C25, C20]
+    tier: main
+    role: extra
+  - id: me-vs-assistant
+    title: "Me or the assistant: who does it better?"
+    text: "Brought back from the sidelined 'who does better' finding: what people said about whether the assistant or
+      they themselves got better results. 13 of 33 said something on this."
+    summary: "Coded strictly, 3 of 33 said the assistant improved their results and none said they did better by hand.
+      Read more widely, about 7 rated the assistant as good as or better than themselves (P06, P11, P24, P29, P31, P33,
+      P35), nearly always because it was faster rather than wiser. 4 said they could do better given time or care (P04,
+      P12, P17, P35) and P22 judged them about equal; P31 and P21 said they simply could not tell. Self-doubt shows
+      through (P01 'I don't trust myself anymore', P35). This fits the data: the gain sits between people, not in what the
+      assistant did for any one of them."
+    featured: [qc-P33-01, qc-P29-03, qc-P04-03, qc-P22-02]
+    more: [ev59, ev196, ev197, ev213, ev214, ev148, qc-P35-01, qc-P35-02, qc-P06-02, qc-P01-03, qc-P17-02, qc-P11-05,
+      qc-P12-02, ev131]
+    codes: [C23, C24]
+    tier: main
+    role: extra
+  - id: interface
+    title: "Interface and display asks"
+    text: "Concrete requests about the screens, plus the praise. 11 of 33 said something on this."
+    summary: "8 of 33 asked for something on screen: a total drone requirement per mission (P10, P13), a cue on one
+      screen when the other needs attention (P10), drones-in-hub and feasibility in the queue (P27; the criticality sort
+      exists but they had not found it), filtering by penalty (P19), confirmation before cancelling a task (P13), the
+      missing green icon (P36), and keeping a Suggest plan when clicked away (P01). P06 said the task needs two monitors
+      and P31 that the central map went unwatched. Praise came from 4 (P10, P14, P25, P07: easy, intuitive). Two people
+      (P13, P14) were confused by the reversed NASA-TLX performance slider, which matters for that item's data."
+    featured: [qc-P10-03, qc-P27-04, qc-P13-07, qc-P14-01]
+    more: [qc-P10-04, qc-P13-06, qc-P19-06, qc-P36-11, qc-P01-04, qc-P06-03, qc-P31-04, qc-P10-05, qc-P25-04, qc-P14-02,
+      qc-P13-08, ev171, qc-P07-02]
+    codes: []
+    tier: main
+    role: extra
+  - id: real-stakes
+    title: "It's a game: what real stakes, pace and training would change"
+    text: "How people saw the realism of the task: no lives at stake, the pace, what the simulation leaves out, and the
+      training a real operator would need. 12 of 33 said something on this."
+    summary: "9 of 33 said real lives would change how they played: more stress (P01, P11, P15, P34), less decisiveness
+      (P36), more care about efficiency (P07), while P01 expected to behave the same and saw that as the problem. Some
+      rules read as unrealistic: abandoning a mission (P02, P13), partial rescue (P28: a drone that finds someone and
+      leaves), task locations known in advance (P28, P36), the pace (P31, P36). 4 said real operators would need
+      training or new skills (P29, P35, P36, P13), P36 putting the skill, not the trust, first."
+    featured: [qc-P01-06, qc-P34-02, qc-P36-13, qc-P28-01]
+    more: [qc-P01-05, qc-P11-06, qc-P36-12, qc-P36-14, qc-P31-05, qc-P13-09, qc-P02-01, qc-P07-01, qc-P15-04, qc-P35-03,
+      qc-P36-15, qc-P29-04, qc-P36-16, qc-P28-02, qc-P13-05]
+    codes: []
+    tier: main
+    role: extra
+  - id: feelings
+    title: "Feelings: fun, stress, self-doubt, and talking to the assistant"
+    text: "The emotional side of the sessions: enjoyment, stress, doubts about their own ability, and treating the
+      assistant like a person. 14 of 33 said something on this."
+    summary: "7 said it was fun or wanted to win (P01, P10, P11, P18, P24, P31, P36). Stress and drama ran alongside it,
+      mostly around failures and empty reserves (P01 'I'm losing my job', P22 'everyone is going to die'). 5 voiced
+      doubts about themselves (P01, P29, P33, P35, P27 not liking to decide fast), and for P27 and P35 it was a stated
+      reason to rely more on the assistant. 4 talked to or personified the assistants: P19 scolded and apologised to the
+      Strategic Assistant, P22 and P32 urged it on, P11 felt the pull to 'personify the computer and feel some sort of
+      grudge', alongside pride when doing it themself."
+    featured: [qc-P01-07, qc-P19-07, qc-P11-07, qc-P29-05]
+    more: [qc-P01-08, qc-P22-03, qc-P32-07, qc-P35-04, qc-P27-05, qc-P10-07, qc-P31-06, qc-P36-17, qc-P18-01, qc-P24-04,
+      qc-P11-08, qc-P22-04, ev114, ev48, ev49, qc-P01-03, qc-P33-01]
+    codes: [C02]
+    tier: main
+    role: extra

@@ -1,0 +1,1027 @@
+# Quote analyst "qa" — sections of f-personal-style, f-size-decides, f-manual-cards, f-practice (tier: main).
+# New quotes below; coded excerpts are referenced as ev<N> (row of docs/analysis/qual/evidence.csv).
+# Identifiable material: do not copy elsewhere.
+quotes:
+  # ---------------- personal style ----------------
+  - id: qa-P13-01
+    pid: P13
+    source: think-aloud
+    at: "s1 0:10:13"
+    led: 0
+    paraphrase: false
+    text: "For me, I always let the agent do it first."
+    codes: [C01]
+    context: "Asked why they switched from starting a plan by hand to the assistant."
+  - id: qa-P21-01
+    pid: P21
+    source: think-aloud
+    at: "s1 0:14:38"
+    led: 0
+    paraphrase: false
+    text: "When I make the selection for the drones, I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that."
+    codes: [C01, C02]
+    context: "Explaining why they build both tiers by hand rather than using Suggest."
+  - id: qa-P21-09
+    pid: P21
+    source: think-aloud
+    at: "s1 0:14:38"
+    led: 1
+    paraphrase: false
+    text: "I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that. [Researcher: …there's some continuity between the strategic and signing with a plan in mind.] Yeah, exactly."
+    codes: [C01, C02]
+    context: "The continuity between tiers, in the researcher's word, which P21 agrees to: the plan made at the strategic step carries into building the tactical plan by hand. 'signing' is the transcript's rendering of 'assigning'."
+  - id: qa-P21-02
+    pid: P21
+    source: think-aloud
+    at: "s1 0:13:45"
+    led: 0
+    paraphrase: false
+    text: "To be honest, I can't wait to see the recommendation over here. I just feel like, oh, there's pressure and I have to do it faster."
+    codes: [C06]
+    context: "Going manual before the strategy cards appear (pre-empting)."
+  - id: qa-P21-03
+    pid: P21
+    source: think-aloud
+    at: "s2 0:21:24"
+    led: 0
+    paraphrase: false
+    text: "Oh, only blue ones. I mean, that one that's going to be easy. So let's just send three and just everything in parallel."
+    codes: [C03]
+    context: "First mission of session 2: same hand-built, parallel style as session 1."
+  - id: qa-P32-01
+    pid: P32
+    source: think-aloud
+    at: "s2 0:15:14"
+    led: 0
+    paraphrase: false
+    text: "I think I'm naturally conservative in my drone allocation."
+    codes: [C01, C07]
+  - id: qa-P26-01
+    pid: P26
+    source: think-aloud
+    at: "s1 0:12:35"
+    led: 0
+    paraphrase: false
+    text: "Not sure. I'm more conservative. […] I think I will give more space, more choice to a task."
+    codes: [C07]
+    context: "Asked whether they build strategic allocations by hand because it is quicker or because their decisions are better."
+  - id: qa-P14-01
+    pid: P14
+    source: interview
+    at: "para 2"
+    led: 0
+    paraphrase: false
+    text: "I did not trust the agents entirely – I was checking the plans, but I did use them for almost every allocation"
+    codes: [C18]
+  - id: qa-P16-01
+    pid: P16
+    source: interview
+    at: "para 1"
+    led: 0
+    paraphrase: true
+    text: "Slow and options weren't that good. Sometimes the same, and often too extreme (far too aggressive and far too conservative). Manually overrode most of the time"
+    codes: [C06, C08]
+  - id: qa-P16-02
+    pid: P16
+    source: interview
+    at: "para 5"
+    led: 0
+    paraphrase: false
+    text: "More or less fully relied on it"
+    codes: []
+    context: "About the Tactical Assistant — the same person who overrode the strategy cards most of the time."
+  - id: qa-P06-01
+    pid: P06
+    source: think-aloud
+    at: "s2 0:17:03"
+    led: 0
+    paraphrase: false
+    text: "I think I kind of like change my style to just let the AI do stuff, and then come back."
+    codes: [C11]
+  - id: qa-P06-02
+    pid: P06
+    source: think-aloud
+    at: "s2 0:19:21"
+    led: 0
+    paraphrase: false
+    text: "I think the more I play this game, I start to rely more and more..."
+    codes: []
+    context: "The researcher completes the sentence ('On the AI') and P06 agrees."
+  - id: qa-P35-01
+    pid: P35
+    source: think-aloud
+    at: "s2 0:25:27"
+    led: 0
+    paraphrase: false
+    text: "I found this task, and the AI always give me the wrong answer. I don't know. […] So I think I will choose by myself more than last time."
+    codes: [C12]
+  - id: qa-P29-01
+    pid: P29
+    source: think-aloud
+    at: "s1 0:03:23"
+    led: 0
+    paraphrase: false
+    text: "I'll start conservative so that I'll be a bit more resistant."
+    codes: []
+    context: "First mission of session 1; compare qa-P29-02, the first mission of session 2."
+  - id: qa-P29-02
+    pid: P29
+    source: think-aloud
+    at: "s2 0:14:07"
+    led: 0
+    paraphrase: false
+    text: "Oh, this one's got many of the same. Um, I guess I'll start off conservative"
+    codes: []
+  - id: qa-P29-03
+    pid: P29
+    source: think-aloud
+    at: "s1 0:04:39"
+    led: 0
+    paraphrase: false
+    text: "Now, I'm going to try aggressive on this one because I was conservative on the other one. So maybe I think it's better to have some variety."
+    codes: []
+  - id: qa-P11-01
+    pid: P11
+    source: think-aloud
+    at: "s1 0:08:09"
+    led: 0
+    paraphrase: false
+    text: "Yeah, because I saw they were just all blue. So, I can probably do it quite quick."
+    codes: [C03]
+    context: "Session 1; compare qa-P11-02 in session 2."
+  - id: qa-P11-02
+    pid: P11
+    source: think-aloud
+    at: "s2 0:22:09"
+    led: 0
+    paraphrase: false
+    text: "I figured when I saw that it's just blue, I know that I can make a strategic allocation much quicker than the agent."
+    codes: [C03]
+  - id: qa-P11-03
+    pid: P11
+    source: debrief
+    at: "0:28:25"
+    led: 0
+    paraphrase: false
+    text: "I would like to have both. I would, but when I'm actually using it in running missions, I'd probably use the Chujic one more."
+    codes: []
+    context: "'Chujic' is the transcriber's rendering of 'strategic'. In the logs P11 takes cards at a typical rate but rarely presses Suggest."
+  - id: qa-P07-01
+    pid: P07
+    source: think-aloud
+    at: "s2 0:20:36"
+    led: 0
+    paraphrase: false
+    text: "I think I'll pretty much be like only use aggressive for sort of important task. […] And then like for routine checking, just use conservative."
+    codes: [C01]
+  - id: qa-P28-01
+    pid: P28
+    source: think-aloud
+    at: "s1 0:12:57"
+    led: 1
+    paraphrase: false
+    text: "you're still using the tactical automation quite a lot is there a reason for that yes so I find that for such a strategy level it is much more easier to analyze well how to do this resource management"
+    codes: []
+  - id: qa-P30-01
+    pid: P30
+    source: debrief
+    at: "0:25:40"
+    led: 0
+    paraphrase: false
+    text: "it's much easier to then give it resources um and then allow it to then optimize it rather than choose its resources"
+    codes: [C25]
+  - id: qa-P32-02
+    pid: P32
+    source: debrief
+    at: "0:26:49"
+    led: 0
+    paraphrase: false
+    text: "if I were being really strategic, I'd be saying, okay, people are going to do the strategic stuff, and we're just going to trust it for the tactical."
+    codes: []
+  - id: qa-P32-03
+    pid: P32
+    source: think-aloud
+    at: "s2 0:20:36"
+    led: 1
+    paraphrase: false
+    text: "So it feels like you've arrived at a policy of mostly automating the tactical. Yes. But on the strategic, I would say it looks about 50-50 what you're doing. […] I just think some of the strategic suggestions are wrong."
+    codes: [C12]
+  - id: qa-P04-01
+    pid: P04
+    source: think-aloud
+    at: "s2 0:18:27"
+    led: 0
+    paraphrase: false
+    text: "For the most part, I don't trust the AI to be better than if I calculated it properly, but it's quicker, which is slightly easier."
+    codes: [C04]
+  - id: qa-P24-01
+    pid: P24
+    source: debrief
+    at: "0:30:12"
+    led: 0
+    paraphrase: false
+    text: "I really trust AI, which is bad actually, but I still think there has to be like a human to make the final decision"
+    codes: [C25]
+  - id: qa-P35-02
+    pid: P35
+    source: debrief
+    at: "0:31:12"
+    led: 0
+    paraphrase: false
+    text: "But I think the operators need to be trained, such as me, I'm not trained, so I will trust on the AI."
+    codes: []
+  - id: qa-P15-01
+    pid: P15
+    source: debrief
+    at: "0:29:13"
+    led: 0
+    paraphrase: false
+    text: "I think these applications is very good but the AI is a little bit stupid"
+    codes: []
+  - id: qa-P03-01
+    pid: P03
+    source: interview
+    at: "para 11"
+    led: 0
+    paraphrase: false
+    text: "If you understand the best way to do it, the failure modes, and the stakes are low, then AI should do it"
+    codes: []
+  - id: qa-P14-02
+    pid: P14
+    source: think-aloud
+    at: "s1 0:09:06"
+    led: 0
+    paraphrase: false
+    text: "I'm just sort of verifying whether the plan that agent has selected, it's sort of a closer to what I would have done if I would, I was doing manually."
+    codes: [C10]
+  - id: qa-P31-01
+    pid: P31
+    source: think-aloud
+    at: "s1 0:08:50"
+    led: 0
+    paraphrase: false
+    text: "I'm going for AI suggestions to get me like the majority of the way there, and then I'll look over it and see, okay, are they doing anything that I would not have picked myself"
+    codes: [C09]
+  - id: qa-P17-01
+    pid: P17
+    source: debrief
+    at: "0:24:51"
+    led: 0
+    paraphrase: false
+    text: "I didn't. I just checked if everything was done."
+    codes: [C18]
+    context: "Asked whether they did much manual allocation."
+  # ---------------- size decides ----------------
+  - id: qa-P29-04
+    pid: P29
+    source: think-aloud
+    at: "s2 0:17:33"
+    led: 0
+    paraphrase: false
+    text: "I think if it's just one colour, I'm gonna do it, like, assign it myself, but if it's multiple colours, I think I'm gonna let, um, the AI choose for me, for the, the strategic side."
+    codes: [C03]
+  - id: qa-P29-05
+    pid: P29
+    source: think-aloud
+    at: "s1 0:09:26"
+    led: 0
+    paraphrase: false
+    text: "I thought if it was easy, I'd want to do it, but, and then I'd use the, the ones, the ones where there's more going on, I'd use the AI, but I've decided, I've just made the opposite decision"
+    codes: []
+  - id: qa-P29-06
+    pid: P29
+    source: think-aloud
+    at: "s1 0:09:53"
+    led: 0
+    paraphrase: false
+    text: "But, like, I feel like if it's easy, then it's hard for it to do it wrong."
+    codes: []
+  - id: qa-P29-07
+    pid: P29
+    source: think-aloud
+    at: "s2 0:20:32"
+    led: 0
+    paraphrase: false
+    text: "They're really building up. I need to speed up. Which means I'm gonna use the AI more."
+    codes: [C11]
+  - id: qa-P30-02
+    pid: P30
+    source: think-aloud
+    at: "s1 0:03:46"
+    led: 0
+    paraphrase: false
+    text: "Depends, if, like, maybe even not, because I think if it's a simpler task, AI should be able to do it even easier."
+    codes: []
+    context: "Answering 'is it the simple tasks you're more likely to want to automate?'"
+  - id: qa-P20-01
+    pid: P20
+    source: think-aloud
+    at: "s2 0:22:21"
+    led: 0
+    paraphrase: false
+    text: "I wanted to manually control where each drone was going. […] It seemed like a more delicate sort of ordering […] And that the AI might be a bit more prone to errors in a more complex sort of schedule."
+    codes: [C02]
+  - id: qa-P20-02
+    pid: P20
+    source: think-aloud
+    at: "s1 0:06:24"
+    led: 0
+    paraphrase: false
+    text: "Um, since this is giving me a lot of tasks, let me get a suggestion."
+    codes: [C03]
+  - id: qa-P20-03
+    pid: P20
+    source: think-aloud
+    at: "s2 0:21:53"
+    led: 0
+    paraphrase: false
+    text: "This one is smaller, so I think I can just do this one manually."
+    codes: [C03]
+  - id: qa-P04-02
+    pid: P04
+    source: think-aloud
+    at: "s1 0:05:02"
+    led: 0
+    paraphrase: false
+    text: "There's so few that it's probably quicker to just assign it myself."
+    codes: [C03, C04]
+  - id: qa-P06-03
+    pid: P06
+    source: think-aloud
+    at: "s1 0:08:40"
+    led: 0
+    paraphrase: false
+    text: "Because, like, the task looks easy. It's only, like, I only need one type of robot."
+    codes: [C03]
+  - id: qa-P12-01
+    pid: P12
+    source: think-aloud
+    at: "s1 0:05:08"
+    led: 0
+    paraphrase: false
+    text: "That one manually, because they were all the same type of germs. […] They required no thinking, so I thought I'd probably be quicker."
+    codes: [C03]
+    context: "'germs' is a mistranscription of 'drones'."
+  - id: qa-P18-01
+    pid: P18
+    source: think-aloud
+    at: "s1 0:10:12"
+    led: 0
+    paraphrase: false
+    text: "I'm trying to use it, at least, when I feel like there's a lot that would take me a while to figure out which way is the fastest."
+    codes: [C03]
+    context: "About the Tactical Assistant."
+  - id: qa-P29-08
+    pid: P29
+    source: think-aloud
+    at: "s1 0:03:50"
+    led: 0
+    paraphrase: false
+    text: "There was quite a lot of dreams, so I think I'm going to use the AI to help me with this one. Because I think it will be quite a slow thing to do myself."
+    codes: [C03, C04]
+    context: "'dreams' = drones."
+  - id: qa-P26-02
+    pid: P26
+    source: think-aloud
+    at: "s1 0:11:54"
+    led: 0
+    paraphrase: false
+    text: "It looks like there are more combinations. And I think it may take more time to decide."
+    codes: [C03]
+    context: "Why they started pressing Suggest more."
+  - id: qa-P10-01
+    pid: P10
+    source: think-aloud
+    at: "s2 0:13:43"
+    led: 0
+    paraphrase: false
+    text: "Dragging 14 drones is going to take way more time than hitting the assign and waiting for eight seconds."
+    codes: [C03, C04]
+  - id: qa-P10-02
+    pid: P10
+    source: think-aloud
+    at: "s1 0:08:32"
+    led: 0
+    paraphrase: false
+    text: "So for these trivial ones where there's really only one option, I think the AI is the way to go instead of me dragging and dropping."
+    codes: []
+    context: "Tactical tier: for P10 the trivial plans are the ones to hand to Suggest — the reverse of the small-myself rule."
+  - id: qa-P36-01
+    pid: P36
+    source: think-aloud
+    at: "s1 0:09:32"
+    led: 0
+    paraphrase: false
+    text: "the simple task you probably want to do yourself if you're going to get the solution quicker and the more complex tasks you're going to want somebody to give you that solution"
+    codes: [C03]
+  - id: qa-P11-04
+    pid: P11
+    source: debrief
+    at: "0:29:41"
+    led: 0
+    paraphrase: false
+    text: "If I look at a mission with 15 drones and I need to move two or three chains, that's just going to take me about a minute, and it's just no point. It's just a computation problem."
+    codes: [C03, C04]
+  - id: qa-P32-04
+    pid: P32
+    source: think-aloud
+    at: "s1 0:03:09"
+    led: 0
+    paraphrase: false
+    text: "So, it just seems quicker to just send some myself than wait for the recommendation. I might just be impatient."
+    codes: [C06]
+  - id: qa-P32-05
+    pid: P32
+    source: debrief
+    at: "0:25:22"
+    led: 0
+    paraphrase: false
+    text: "Because in a sense, I suppose aside from the number of drones you've got for the mission, I wasn't really looking at how hard they were going to be."
+    codes: [C11]
+    context: "Follows their agreement ('Very much about workload') that their use was driven by workload rather than how easy or hard a mission was."
+  - id: qa-P22-01
+    pid: P22
+    source: think-aloud
+    at: "s1 0:04:52"
+    led: 0
+    paraphrase: false
+    text: "it's a very straightforward problem. It's all blue type drones. It's very easy to just drag and drop them to where they're going to go instead of having to think about it."
+    codes: [C03]
+  - id: qa-P22-02
+    pid: P22
+    source: think-aloud
+    at: "s1 0:10:43"
+    led: 0
+    paraphrase: false
+    text: "I feel that they are similar. Um, I think that's generally faster when they're simpler, but they're generally less accurate when they're more complicated."
+    codes: [C03]
+    context: "Asked whether their manual tactical plans are better or worse than the assistant's."
+  - id: qa-P22-03
+    pid: P22
+    source: think-aloud
+    at: "s1 0:07:11"
+    led: 0
+    paraphrase: false
+    text: "I think I was definitely a bit slower than the, than the algorithm there."
+    codes: [C04]
+  - id: qa-P03-02
+    pid: P03
+    source: debrief
+    at: "0:23:42"
+    led: 0
+    paraphrase: false
+    text: "I think I would trust it for simple tasks like reconnaissance, routine tasks. I think it's able to get that right"
+    codes: []
+    context: "The reverse of the size rule (codebook rule 2: not coded C03)."
+  - id: qa-P10-03
+    pid: P10
+    source: think-aloud
+    at: "s2 0:13:08"
+    led: 0
+    paraphrase: false
+    text: "Now I'm using the suggestion because I took the aggressive approach which means I know that I have enough drones."
+    codes: []
+  - id: qa-P10-04
+    pid: P10
+    source: think-aloud
+    at: "s1 0:05:34"
+    led: 0
+    paraphrase: false
+    text: "For the aggressive approach, anything but suggestion doesn't really make sense, I think. Because it's a perfect fit between what I need and what I have. So there's only really one way of dealing with it anyway."
+    codes: []
+  - id: qa-P10-05
+    pid: P10
+    source: interview
+    at: "para 5"
+    led: 0
+    paraphrase: true
+    text: "Better to use tac agent when using the aggressive strat agent"
+    codes: []
+  - id: qa-P05-01
+    pid: P05
+    source: think-aloud
+    at: "s1 0:09:10"
+    led: 0
+    paraphrase: false
+    text: "as the performance has been good so far, I'm now going to trust the AI more, and as I only have one task, I will then use the aggressive and use to suggest"
+    codes: [C16]
+  - id: qa-P05-02
+    pid: P05
+    source: think-aloud
+    at: "s1 0:09:36"
+    led: 0
+    paraphrase: false
+    text: "I'll use the suggest, because there's a lot of drones here, so because there's a lot of drones to allocate, the AI is going to provide me a nice map"
+    codes: [C03]
+  - id: qa-P30-03
+    pid: P30
+    source: think-aloud
+    at: "s1 0:02:26"
+    led: 0
+    paraphrase: false
+    text: "you actually might as well go aggressive, because you still have spare in case you need. […] If I suggest here, and do as it's supposed to do, I think it's fine, yeah."
+    codes: []
+  - id: qa-P18-02
+    pid: P18
+    source: think-aloud
+    at: "s1 0:04:01"
+    led: 0
+    paraphrase: false
+    text: "It tells me whether it's being conservative or aggressive, so I can have more spares for later. […] But it being routine, the task is fairly easy to annotate, so I'll do that manually."
+    codes: [C03, C07]
+    context: "Took a strategy card, then built the tactical plan by hand on a routine mission."
+  - id: qa-P06-04
+    pid: P06
+    source: think-aloud
+    at: "s1 0:10:52"
+    led: 0
+    paraphrase: false
+    text: "Yeah, I think in, for this, what is the name, the tactical one, I think I would prefer to use AI suggestion more because it takes a lot of time to drag and drop things, yeah."
+    codes: [C04]
+  - id: qa-P17-02
+    pid: P17
+    source: think-aloud
+    at: "s1 0:07:07"
+    led: 0
+    paraphrase: false
+    text: "the point is, it takes me so much time to untangle that, that maybe it probably will not be faster if I do it myself manually. So as long as the AI makes sure that everything is covered once."
+    codes: [C04]
+  - id: qa-P11-05
+    pid: P11
+    source: think-aloud
+    at: "s1 0:08:24"
+    led: 0
+    paraphrase: false
+    text: "I guess I could spend an extra 30 seconds finding a more optimal solution. Yeah. But then I'm not going to save 30 seconds of time."
+    codes: [C04]
+  - id: qa-P11-06
+    pid: P11
+    source: think-aloud
+    at: "s2 0:17:24"
+    led: 0
+    paraphrase: false
+    text: "here I am, I'm just dragging. I mean, the suggestion thing is quite slow. I don't know if that's just, I would have expected it to be fast because it's not very difficult calculation."
+    codes: [C06]
+  - id: qa-P18-03
+    pid: P18
+    source: think-aloud
+    at: "s1 0:05:34"
+    led: 1
+    paraphrase: false
+    text: "So why manual there for the strategic? Because it was taking a while."
+    codes: [C06]
+  - id: qa-P21-04
+    pid: P21
+    source: think-aloud
+    at: "s1 0:09:32"
+    led: 0
+    paraphrase: false
+    text: "Manually can't wait for the processing, to be honest."
+    codes: [C06]
+  - id: qa-P21-05
+    pid: P21
+    source: think-aloud
+    at: "s2 0:24:10"
+    led: 0
+    paraphrase: false
+    text: "if I'm not restricted by the amount of uses I can have, for example, and it wasn't taking that long, it could be something I'm going to be using more often manual select takes long."
+    codes: [C06]
+  - id: qa-P20-04
+    pid: P20
+    source: debrief
+    at: "0:27:53"
+    led: 0
+    paraphrase: false
+    text: "Thinking back now, there was like a loading stage when it was doing the strategic part. So maybe that's not right, actually. But that's how I felt when I was doing it."
+    codes: [C04]
+    context: "Having said the strategic assistant saved them more time than the tactical one."
+  - id: qa-P31-02
+    pid: P31
+    source: think-aloud
+    at: "s1 0:04:58"
+    led: 0
+    paraphrase: false
+    text: "So when I'm like manually selecting them, I'm sure the AI is still slightly faster. Yeah. But it does take a period of time."
+    codes: [C04, C06]
+  - id: qa-P36-02
+    pid: P36
+    source: think-aloud
+    at: "s1 0:06:37"
+    led: 0
+    paraphrase: false
+    text: "even if I'm going to start that one over there I can be doing something over here whilst it's the AI is doing something over there come back give it a quick glance over"
+    codes: [C05]
+  - id: qa-P36-03
+    pid: P36
+    source: think-aloud
+    at: "s2 0:22:29"
+    led: 0
+    paraphrase: false
+    text: "whereas if I did all of that manually I would know all of that because I've built the plan […] if I just said go nuts when something goes wrong I've got to play catch up"
+    codes: []
+  - id: qa-P32-06
+    pid: P32
+    source: think-aloud
+    at: "s1 0:05:22"
+    led: 0
+    paraphrase: false
+    text: "We'll do the tactical while I wait. Oh, that's what I need to do while I wait for the AI. I need to be on the other screen."
+    codes: [C05]
+  - id: qa-P19-01
+    pid: P19
+    source: think-aloud
+    at: "s1 0:06:43"
+    led: 0
+    paraphrase: false
+    text: "Okay, suggest, whilst that's working, we'll take a look down here."
+    codes: [C05]
+  - id: qa-P31-03
+    pid: P31
+    source: think-aloud
+    at: "s2 0:21:22"
+    led: 0
+    paraphrase: false
+    text: "I also feel like the longer that this session has gone on, the less oversight that I've been giving it, and the more I've been focusing on the strategic layer and the incoming missions."
+    codes: [C05]
+  - id: qa-P21-06
+    pid: P21
+    source: think-aloud
+    at: "s2 0:23:46"
+    led: 0
+    paraphrase: false
+    text: "Let's see a suggestion. I don't think it's going to add the redundancy I'd like. […] Yeah, it doesn't. So in case of failure, it doesn't redirect those drones to the other one"
+    codes: [C13]
+  - id: qa-P31-04
+    pid: P31
+    source: think-aloud
+    at: "s1 0:07:27"
+    led: 0
+    paraphrase: false
+    text: "Watching the process of how it suggests. I don't know if it's necessarily picking things optimally, like I thought it might. So I'm going to slightly adjust the AI plan here."
+    codes: [C13]
+  - id: qa-P32-07
+    pid: P32
+    source: think-aloud
+    at: "s1 0:10:07"
+    led: 0
+    paraphrase: false
+    text: "You know, it's quicker to get a suggestion, but it is less clicking, and it seems to do what I would do."
+    codes: [C04]
+  # ---------------- manual vs cards ----------------
+  - id: qa-P20-05
+    pid: P20
+    source: think-aloud
+    at: "s2 0:15:21"
+    led: 0
+    paraphrase: false
+    text: "That's exactly the aggressive strategy. So I will, I will not go with that because, um, that won't leave me enough reserve drones. So I'll do maybe one less than each of those manually."
+    codes: [C07]
+  - id: qa-P19-02
+    pid: P19
+    source: think-aloud
+    at: "s2 0:27:11"
+    led: 0
+    paraphrase: false
+    text: "That only need one type of drone, and it was trying to send one of the other drones, which would have done absolutely nothing. So there were a couple of cases where I assigned them manually"
+    codes: [C12]
+  - id: qa-P29-09
+    pid: P29
+    source: think-aloud
+    at: "s2 0:17:01"
+    led: 0
+    paraphrase: false
+    text: "Oh, this one just needs blues. I can definitely set that one manually, because I think some time, last time I, when it was just one colour, it sent some other colours by accident"
+    codes: [C03, C12]
+  - id: qa-P21-07
+    pid: P21
+    source: think-aloud
+    at: "s2 0:22:41"
+    led: 0
+    paraphrase: false
+    text: "But why, for example, here, the conservative one wants to send a camera where none of the tasks require a camera. So that's one more reason to not for me not to trust the selection."
+    codes: [C12]
+  - id: qa-P10-06
+    pid: P10
+    source: think-aloud
+    at: "s1 0:07:46"
+    led: 0
+    paraphrase: false
+    text: "Three reds. One blue. Two green. It sends one extra blue. I don't want that."
+    codes: [C12]
+  - id: qa-P10-07
+    pid: P10
+    source: think-aloud
+    at: "s1 0:04:51"
+    led: 0
+    paraphrase: false
+    text: "Because right now I'm very conservative and building a lot of buffer into every single mission. […] Which depletes my drone reserve."
+    codes: [C07]
+    context: "Building their own allocations by hand early in session 1, one spare per colour."
+  - id: qa-P10-08
+    pid: P10
+    source: think-aloud
+    at: "s2 0:17:11"
+    led: 0
+    paraphrase: false
+    text: "I want four blue. I want one more red. So now I edited that suggestion."
+    codes: [C09]
+  - id: qa-P24-02
+    pid: P24
+    source: think-aloud
+    at: "s1 0:04:35"
+    led: 0
+    paraphrase: false
+    text: "Because I think she suggested two proofs, but I think one is enough."
+    codes: [C07, C09]
+    context: "Asked why she edited a card ('she' = the assistant; 'proofs' is a mistranscription)."
+  - id: qa-P28-02
+    pid: P28
+    source: think-aloud
+    at: "s1 0:07:00"
+    led: 0
+    paraphrase: false
+    text: "I think three drones to complete all missions together will cost too many souls in here. So I think two drones is sufficient for that."
+    codes: [C07]
+  - id: qa-P13-02
+    pid: P13
+    source: think-aloud
+    at: "s1 0:05:23"
+    led: 0
+    paraphrase: false
+    text: "If it was a significant trade-off, I wouldn't mind, but why would I... It has the same ETA. Why would I spend more resources on something I can do it conservatively?"
+    codes: [C07, C12]
+  - id: qa-P30-04
+    pid: P30
+    source: think-aloud
+    at: "s1 0:08:57"
+    led: 0
+    paraphrase: false
+    text: "in this case i would i would use an aggressive one so two four but not seven i think seven's too much"
+    codes: [C08]
+  - id: qa-P31-05
+    pid: P31
+    source: think-aloud
+    at: "s2 0:16:23"
+    led: 0
+    paraphrase: false
+    text: "Six, two, two. Actually, let's edit that. I don't think we'll need […] Yeah, let's keep six of the FOST drones, and then one each of the other two drones."
+    codes: [C09]
+  - id: qa-P14-03
+    pid: P14
+    source: think-aloud
+    at: "s2 0:17:10"
+    led: 0
+    paraphrase: false
+    text: "I wanted a more of an aggressive plan, but since I was out of reserve when I was, when I started the allocation, so I sort of tweak the suggestion, the conservative suggestion that the agent has provided me"
+    codes: [C08, C09]
+  - id: qa-P17-03
+    pid: P17
+    source: think-aloud
+    at: "s1 0:09:14"
+    led: 0
+    paraphrase: false
+    text: "So here, the same game, I'm trying to stay between... […] And as long as I have enough reserves, it's fine"
+    codes: [C08]
+    context: "The researcher completes 'between the two suggested cards'; P17 had said the same unprompted at 0:06:03."
+  - id: qa-P32-08
+    pid: P32
+    source: think-aloud
+    at: "s1 0:06:57"
+    led: 0
+    paraphrase: false
+    text: "I'd have sent three, I guess, anyway. […] They look almost identical. […] Why am I not going to send three? So I don't need to wait for the suggestion."
+    codes: [C06]
+    context: "The cards matched what they would have chosen, so they stopped waiting for them."
+  - id: qa-P29-10
+    pid: P29
+    source: debrief
+    at: "0:28:40"
+    led: 0
+    paraphrase: false
+    text: "I think sometimes it was, it would send more than I would have, but then, but then you kind of saw that that was a good thing because when I sent it myself, it would sometimes have to abort."
+    codes: [C12, C19]
+  - id: qa-P29-11
+    pid: P29
+    source: think-aloud
+    at: "s1 0:10:34"
+    led: 0
+    paraphrase: false
+    text: "I did, um, do some of them myself, and they didn't turn out as well, so I think, yeah, it probably does know a bit better than me."
+    codes: [C10, C23]
+  - id: qa-P21-08
+    pid: P21
+    source: think-aloud
+    at: "s2 0:27:01"
+    led: 0
+    paraphrase: false
+    text: "Well, I'm just going to get the tactical AI, the tactical assistant to allocate them. And after it does that, I'm going to optimize their plan."
+    codes: [C09]
+  - id: qa-P10-09
+    pid: P10
+    source: think-aloud
+    at: "s2 0:17:46"
+    led: 0
+    paraphrase: false
+    text: "All right. Let's just send everything I have. […] Edit. Give me five red ones. Five green ones. Hit it."
+    codes: [C09]
+    context: "Big mission, reserve short: the manual build goes above the cards' bundle as far as the reserve allows."
+  # ---------------- practice ----------------
+  - id: qa-P28-03
+    pid: P28
+    source: think-aloud
+    at: "s1 0:06:07"
+    led: 0
+    paraphrase: false
+    text: "start with the AI suggestions will at least make the decision more make sense, actually, for fresh people. When I become more familiar with everything, […] perhaps a bit later I will try to adjust some more details for that."
+    codes: []
+  - id: qa-P31-06
+    pid: P31
+    source: think-aloud
+    at: "s2 0:20:58"
+    led: 1
+    paraphrase: false
+    text: "Am I correct in saying you should be using the agents a little bit more often now? Yes, […] I think, as opposed to at the beginning where I wanted to get more of a feel of the manual mode"
+    codes: [C04]
+  - id: qa-P31-07
+    pid: P31
+    source: think-aloud
+    at: "s2 0:20:01"
+    led: 0
+    paraphrase: false
+    text: "So when optimizing this, I think I need to pick exactly one mission, then go and immediately deploy them, rather than just having them sitting in like a proverbial hangar."
+    codes: [C22]
+  - id: qa-P22-04
+    pid: P22
+    source: think-aloud
+    at: "s2 0:17:11"
+    led: 0
+    paraphrase: false
+    text: "Right. So now we also know from the last one, don't send everything straight away. Cause otherwise we end up, we're waiting for drones."
+    codes: [C22, C07]
+  - id: qa-P06-05
+    pid: P06
+    source: think-aloud
+    at: "s2 0:15:11"
+    led: 0
+    paraphrase: false
+    text: "Yep. It's... Like, learning from the previous one, I think, like, the task will get a lot pretty quickly."
+    codes: [C22]
+    context: "Asked why they pressed Suggest on both of their first two plans in session 2."
+  - id: qa-P07-02
+    pid: P07
+    source: think-aloud
+    at: "s2 0:14:06"
+    led: 0
+    paraphrase: false
+    text: "Ah, now I realise actually I can use conservative choice for like less important tasks, and for more important tasks I should just go aggressive probably."
+    codes: [C22]
+  - id: qa-P29-12
+    pid: P29
+    source: think-aloud
+    at: "s2 0:19:03"
+    led: 0
+    paraphrase: false
+    text: "Speed up. They're really building up. Oh, but when they're all the same colour, I really wanted to do it myself. Okay, I can get faster at this."
+    codes: [C03]
+  - id: qa-P35-03
+    pid: P35
+    source: think-aloud
+    at: "s2 0:24:47"
+    led: 0
+    paraphrase: false
+    text: "It's easier. Easier? Yeah, because it's not, I don't know. Maybe I'm just getting familiar with this than before."
+    codes: [C22]
+  - id: qa-P30-05
+    pid: P30
+    source: debrief
+    at: "0:23:52"
+    led: 0
+    paraphrase: false
+    text: "i think the second scenario i used more personalized um and why i think it was easier because i had to i sort of got into the rhythm of having to anticipate other problems"
+    codes: [C22]
+  - id: qa-P18-04
+    pid: P18
+    source: debrief
+    at: "0:25:45"
+    led: 0
+    paraphrase: false
+    text: "The second one, I think, I sort of knew what to expect to be better, even though it seemed a little bit... It seemed more stressful"
+    codes: []
+  - id: qa-P05-03
+    pid: P05
+    source: think-aloud
+    at: "s1 0:11:14"
+    led: 0
+    paraphrase: false
+    text: "I think with having some experience, yeah, I was able to quickly understand this"
+    codes: []
+    context: "Asked whether they could quickly understand the plan they had to amend after a drone failure, late in session 1."
+  - id: qa-P11-07
+    pid: P11
+    source: debrief
+    at: "0:26:32"
+    led: 0
+    paraphrase: false
+    text: "It was interesting. It was, you get the hang of it quite quickly, I think."
+    codes: []
+sections:
+  # ======================= f-personal-style =======================
+  "f-personal-style#habits":
+    summary: "Asked to describe their approach, 15 of 33 named a consistent strategy of their own (C01). In their own words it is mostly about the habits graded here: whether they wait for the cards or go manual before they load (P21, P32), whether they trim or edit a card, whether they start from Suggest and touch it up (P31, P21), and how they check (P14, P17). Few described a rule for when to press Suggest. Most said they pressed it on nearly everything."
+    featured: [qa-P13-01, qa-P21-02, qa-P31-01, qa-P14-02]
+    more: [ev31, ev45, ev19, ev7, ev198, ev248, qa-P32-04, qa-P21-08, qa-P24-02, qa-P17-01, qa-P07-01, ev3]
+    codes: [C01, C06, C09, C10, C18]
+  "f-personal-style#fingerprint-ranks":
+    summary: "Nobody was asked to compare their two sessions directly. In the think-aloud, though, several people open session 2 with the same move and say the same thing as in session 1: P29 'start conservative' and does single-colour missions by hand, P11 builds all-blue missions themself, P21 hand-builds in parallel. That fits a recognisable personal style. The people who said they changed are in the retest section."
+    featured: [qa-P29-02, qa-P11-02, qa-P21-03, qa-P10-03]
+    more: [qa-P29-01, qa-P11-01, qa-P21-01, qa-P10-04]
+    codes: [C01]
+  "f-personal-style#who-vs-what":
+    summary: "People often described their use of the assistants as part of who they are: 'naturally conservative' (P32), 'I'm more conservative' (P26), 'I always let the agent do it first' (P13). At the extremes, P14 used the assistants 'for almost every allocation' and P16 'manually overrode most of the time'. Against this, several gave the situation as the reason: workload (P32, 9 of 33 coded C11), being resource-constrained (P22), mission size (C03). P32 calls themself 'naturally conservative' and also says their use was 'very much about workload', so a person's style and the situation are both in play."
+    featured: [qa-P32-01, qa-P14-01, qa-P16-01, qa-P13-01]
+    more: [qa-P26-01, qa-P32-05, ev222, ev47, ev19, ev248, qa-P21-01]
+    codes: [C01, C02, C11]
+  "f-personal-style#retest-summary":
+    summary: "Some people say they kept their approach and some say they changed it. P18 'sort of changed from the first one' (led) and P30 'used more personalized' in session 2. Four people describe a real shift in the think-aloud: P06 and P31 came to rely on the assistants more and check less, while P35 and P15 went back to deciding for themselves after the strategy cards made errors. That fits habits that carry over clearly but not completely."
+    featured: [qa-P06-01, qa-P35-01, qa-P31-03, qa-P30-05]
+    more: [ev101, qa-P06-02, qa-P31-06, qa-P28-03, ev84]
+    codes: [C01, C15, C16, C22]
+  "f-personal-style#axis-scatter":
+    summary: "Many describe relying on the two assistants differently, which fits the loose link between people. The most common split is to keep the strategic decision and hand over the tactical one: P22, P28, P30 and P32 say so, and P14 checked the tactical tier harder. A few did the reverse: P11 said they would use the strategic one more and built small plans themself, and P16 overrode the cards but 'more or less fully relied' on Suggest. P10 describes the two moving together: taking the Aggressive card makes Suggest the obvious next step."
+    featured: [ev133, qa-P30-01, qa-P16-02, qa-P10-03]
+    more: [qa-P28-01, qa-P32-02, qa-P32-03, qa-P11-03, qa-P16-01, qa-P10-05, ev217]
+    codes: [C01, C12]
+  "f-personal-style#not-types":
+    summary: "Nobody described themselves or others as a 'type' of operator. People talked about their own rules, and several, such as P29, were still unsure of them partway through a session ('I haven't actually decided ... which ones are best to handle myself')."
+    featured: []
+    more: [qa-P29-05, qa-P29-03]
+    codes: []
+  "f-personal-style#not-disposition":
+    summary: "When people talked about AI in general, it did not line up neatly with what they did. P04 does not trust the AI to be better than them but uses it because it is quicker. P24 says they really trust AI yet trims the cards to save drones. P15 calls the AI 'a little bit stupid' but hands it complex plans. P35 relies on it because they are 'not trained'. Most people explained their use by time pressure and job size rather than by a view about AI, which fits the null."
+    featured: [qa-P04-01, qa-P24-01, qa-P15-01, qa-P35-02]
+    more: [qa-P03-01, ev16, ev23]
+    codes: [C04, C25]
+  # ======================= f-size-decides =======================
+  "f-size-decides#both":
+    summary: "10 of 33 state the size rule in debrief or interview (C03). The think-aloud adds at least six more who give the same reason while playing: P04, P06, P12, P20, P32 and P36. They do single-colour or few-drone missions themselves and hand over large, multi-colour, many-chain ones, usually because it is quicker. There is dissent. P30 thinks simple tasks are the ones the AI 'should be able to do even easier'. P29 switched direction mid-session ('if it's easy, then it's hard for it to do it wrong'). P20 kept complex orderings for themself, and P10 hands trivial one-option plans to Suggest."
+    featured: [qa-P29-04, ev50, qa-P36-01, qa-P30-02]
+    more: [ev186, ev187, ev134, ev75, ev76, ev237, ev1, ev2, ev240, qa-P04-02, qa-P06-03, qa-P12-01, qa-P20-02, qa-P20-03, qa-P18-01, qa-P29-08, qa-P26-02, qa-P22-01, qa-P11-04, qa-P05-02, qa-P29-05, qa-P29-06, qa-P20-01, qa-P10-02, qa-P03-02, ev119]
+    codes: [C03, C04]
+  "f-size-decides#models":
+    summary: "No one spoke to the model checks themselves. One check bears on what people said, though. Several said part of their hand-building on one-type missions was to avoid the Conservative card's spare drones of unneeded types (P19, P29, P21, P13). The finding's check that drops those illogical cards is the right control for that stated reason."
+    featured: [qa-P19-02, qa-P29-09, qa-P21-07]
+    more: [qa-P10-06, ev138]
+    codes: [C12]
+  "f-size-decides#tactical":
+    summary: "Three people tie the two tiers together the way the logs do (card-allocated missions get Suggest more). P10 says repeatedly that once they have taken the Aggressive card there is 'only really one way' to assign, so Suggest is the obvious next step. P05 and P30 take a card and then press Suggest on the same mission. The same continuity runs the other way for P21, who lays out a plan in their head while building the allocation by hand and says it would 'disrupt my thought process' to switch to Suggest for the tactical step; P30 likewise finds it easier to give the assistant resources and let it optimise. The opposite pairing is said too. P18 takes a card and then plans a routine mission by hand, and P26 and P28 build strategic allocations by hand but press Suggest. On size, the reasons given are drag-and-drop effort and the number of combinations or chains."
+    featured: [qa-P10-04, qa-P05-01, qa-P30-03, qa-P18-02, qa-P21-09]
+    more: [qa-P10-03, qa-P10-05, qa-P11-04, qa-P06-04, qa-P26-02, qa-P28-01, qa-P10-01, qa-P10-02, qa-P30-01]
+    codes: [C03, C04]
+  "f-size-decides#speed":
+    summary: "Speed is the most common reason given for using the assistants: 15 of 33 coded C04. Many add that the plan is not better, just faster (P04, P17, P11). The card's loading wait is the main complaint. Six were coded C06, and in the think-aloud P18, P21, P29 and P32 go manual because they 'can't wait' for the cards, mostly on small missions. That matches the finding that the card pays off only on big strategic jobs. P20 first said the strategic assistant saved them more time, then corrected themself on remembering its loading stage."
+    featured: [ev176, qa-P17-02, ev185, qa-P21-04]
+    more: [ev52, ev163, ev29, ev208, ev238, qa-P04-01, qa-P11-05, qa-P22-03, qa-P32-07, qa-P31-02, qa-P18-03, qa-P21-05, qa-P11-06, qa-P20-04, ev79, ev164, ev169, ev25, qa-P32-04]
+    codes: [C04, C06]
+  "f-size-decides#said":
+    summary: "10 of 33 state the size rule unprompted (C03), 15 value the assistant for speed rather than accuracy (C04) and 8 work in parallel (C05). The clearest statements tie all three together: small jobs are quicker by hand, big ones are a 'computation problem', and the wait frees attention for the next mission. Dissent from P30, P20 and P29 is in the first section. P32 said their use followed workload, not how hard a mission looked."
+    featured: [ev51, ev186, ev163, ev201]
+    more: [qa-P11-04, ev134, ev135, ev75, ev240, ev52, qa-P32-05, qa-P36-01, qa-P29-04]
+    codes: [C03, C04, C05]
+  # ======================= f-manual-cards =======================
+  "f-manual-cards#dots":
+    summary: "The think-aloud shows what was happening on the cards. People trimming small missions mostly said they were removing the card's drones of types the mission did not need (P10, P19, P21, P29, P13). Others cut one or two drones to protect the reserve (P24, P28). P20 shows the anchoring directly: they take the Aggressive card's numbers and does 'one less than each of those'. On big missions short of drones, P10 'send[s] everything I have', above the cards. One dissent: P29 found their own leaner builds sometimes had to be aborted."
+    featured: [qa-P20-05, qa-P19-02, qa-P24-02, qa-P29-10]
+    more: [qa-P10-06, qa-P21-07, qa-P29-09, qa-P13-02, qa-P28-02, qa-P10-07, qa-P10-09, ev177, ev147]
+    codes: [C07, C12]
+  "f-manual-cards#position":
+    summary: "6 of 33 wanted something between the two cards (C08), and P17 says in play that they aim 'between' them. Most of what people say describes trimming a card or matching it, which fits 'below or equal'. 'Equal to a card' was often their own count arrived at first: P30 and P03 work out a number while the cards load and see whether a card matches, and P32 stopped waiting once the cards matched their count."
+    featured: [ev91, ev137, qa-P30-04, qa-P32-08]
+    more: [qa-P17-03, qa-P14-03, ev86, ev30, ev178, ev250, ev198, ev8]
+    codes: [C08, C10]
+  "f-manual-cards#said":
+    summary: "The four accounts are all present in people's own words. They hold drones back (C07, 6), want a middle ground (C08, 6), treat a card as a draft (C09, 4: 'you can fix bad, you can't fix nothing') and test themselves against the assistant (C10, 5). The think-aloud shows the draft habit more widely than coded: P10, P14 and P31 edit cards, and P21 and P31 use Suggest as a first draft on the tactical tier. The one person who tested themself said it ended in favour of the assistant (P29)."
+    featured: [ev110, ev177, ev209, qa-P29-11]
+    more: [ev111, ev3, ev147, ev148, ev136, ev202, ev34, ev137, ev91, ev189, ev190, ev219, ev35, qa-P10-08, qa-P31-05, qa-P14-03, qa-P21-08, qa-P31-01]
+    codes: [C07, C08, C09, C10]
+  # ======================= f-practice =======================
+  "f-practice#speed":
+    summary: "People describe getting faster and finding their rhythm: P10 'find your stride', P30 'got into the rhythm', P35 'getting familiar', P11 'get the hang of it quite quickly'. Several state a lesson from session 1 at the start of session 2: P22 'don't send everything straight away', P06 'the task will get a lot pretty quickly'. P18 is a partial dissent: the second session felt better prepared but more stressful."
+    featured: [ev41, qa-P30-05, qa-P22-04, qa-P35-03]
+    more: [qa-P06-05, qa-P31-07, qa-P29-12, qa-P11-07, qa-P05-03, qa-P18-04, ev40]
+    codes: [C22]
+  "f-practice#c22":
+    summary: "6 of 33 say they got better (C22). Their reasons are understanding the task (P32), experience (P11, P15) and optimising how they worked with the assistants (P21), not leaning on the assistants more. Others outside C22 describe practice changing how much they use the assistants, in both directions. P06 and P31 relied more and checked less, P28 expected to rely less once familiar, and P35 used the cards less after spotting errors. That mixed picture fits the logs: no overall rise in use with practice."
+    featured: [ev58, ev131, qa-P06-02, qa-P28-03]
+    more: [ev40, ev42, ev84, ev204, ev225, qa-P31-06, qa-P35-01, qa-P07-02, ev15]
+    codes: [C22, C16, C15]
+new_sections:
+  - finding: f-size-decides
+    id: parallel-said
+    title: "In their words: working in parallel while the assistant plans"
+    text: "To close the finding: what people said about pressing Suggest and turning to other work while it fills in. It sits here rather than under the time-phase chart because it is about how people used the assistant, not about the chart's numbers."
+    tier: main
+    role: extra
+    summary: "8 of 33 describe starting Suggest and working elsewhere while it fills in (C05). The think-aloud shows more of it (P19, P32, P36). Nobody said a Suggest plan finishes the mission sooner. Two people said the opposite about plan quality: P31 adjusted a Suggest plan they thought visited tasks in a poor order, and P21 found it lacked the cross-task redundancy they built themself. P36 names a cost of handing over: if you did not build the plan, you are playing catch-up when something fails."
+    featured: [ev33, ev201, qa-P36-02, qa-P31-04]
+    more: [qa-P36-03, ev32, ev54, ev55, ev77, ev104, ev105, ev125, ev239, qa-P32-06, qa-P19-01, qa-P31-03, qa-P21-06]
+    codes: [C05]

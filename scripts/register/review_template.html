@@ -61,6 +61,32 @@ ul.nums li { margin: 4px 0; font-size: 14.5px; }
 .links .row { margin: 4px 0; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
 .links button.adopt { font: 500 10.5px var(--mono); border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink-3); cursor: pointer; padding: 1px 6px; }
 .meta2 { font: 12px var(--mono); color: var(--ink-3); margin-top: 18px; line-height: 1.6; }
+/* quote cards */
+.qbox { margin: 12px 0; max-width: 100%; }
+.qhead { font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-bottom: 4px; }
+.qsum { font-size: 14px; color: var(--ink-2); margin: 2px 0 8px; max-width: 80ch; }
+.qcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 6px 0; }
+.qcard { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--quote, var(--s-strat)); border-radius: 8px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.qcard .qtext { font: 15px/1.45 var(--serif, Georgia, serif); color: var(--ink); }
+.qcard.para .qtext { font-style: italic; color: var(--ink-2); }
+.qcard.led { opacity: .75; border-left-style: dashed; }
+.qcard .qctx { font-size: 12px; color: var(--ink-3); }
+.qcard .qwho { margin-top: auto; font: 11px var(--mono); color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.qcard .qwho b { color: var(--ink-2); }
+.qcard .qcode, .qcard .qtag { font: 10.5px var(--sans); padding: 1px 6px; border-radius: 9px; background: var(--surface-2); color: var(--ink-2); }
+.qcard .qtag { background: var(--hi); }
+.qmore > summary { cursor: pointer; font-size: 13px; color: var(--ink-2); margin: 6px 0; }
+.qcard .qact { align-self: flex-end; font: 500 11px var(--sans); border: 1px solid var(--line); border-radius: 5px; background: var(--surface-2);
+  color: var(--ink-2); cursor: pointer; padding: 2px 9px; }
+.qcard .qact:hover { border-color: var(--ink-3); color: var(--ink); }
+.qcard.picked { border-color: var(--ink-3); }
+.qcard .qtag.sug { background: none; border: 1px dashed var(--line); color: var(--ink-3); }
+.qempty { font-size: 13px; color: var(--ink-3); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; margin: 6px 0; }
+.qfilter { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 4px 0 6px; font-size: 12.5px; color: var(--ink-3); }
+.qfilter input { font: 12.5px var(--sans); padding: 3px 7px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); width: 16em; }
+.qfilter button { font: 11.5px var(--sans); border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink-2); cursor: pointer; padding: 1px 8px; }
+.qfilter button.on { background: var(--ink-2); color: var(--surface); border-color: var(--ink-2); }
 .evid { font-size: 13.5px; margin: 8px 0; padding-left: 10px; border-left: 3px solid var(--line); }
 .evid .who { font: 500 11px var(--mono); color: var(--ink-3); }
 .evid.led { opacity: .7; }
@@ -133,6 +159,7 @@ textarea.secnote:focus { border-style: solid; }
 .roles button.on { color: #fff; }
 .roles .hint { font: 11px var(--mono); color: var(--ink-3); }
 .prev { border: 1px solid var(--line); border-radius: 8px; margin: 10px 0; max-width: 80ch; background: var(--surface); font-size: 13.5px; }
+.prevmore > summary { cursor: pointer; font-size: 12.5px; color: var(--ink-3); margin: -4px 0 8px; }
 .prev .q { padding: 7px 12px; color: var(--ink-2); }
 .prev .q b { font: 500 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-right: 6px; }
 .prev .a { padding: 7px 12px; background: var(--hi); border-radius: 0 0 8px 8px; }
@@ -204,7 +231,6 @@ const ROLES = [
   ['archive', 'Archive', '--ink-3', 'Don’t forget it, but unlikely ever to be used'],
 ];
 // the newest earlier-pass note on a key (a moved section is looked up under where it was)
-const prevNote = key => ((REG.history || {})[key] || []).filter(x => x.pass === PASS - 1).slice(-1)[0];
 const LSKEY = 'findings-review-v1';
 const X = DATA.extras, X2 = DATA.extras2, R1 = DATA.round1, QL = DATA.qual;
 
@@ -545,13 +571,23 @@ function renderCard(host, c) {
 /* A finding: headline (+ your last-pass note and what was done), then the main sections, then the sidelined ones in a
    collapsed panel. Each section: text, chart, numbers, how it was worked out, quotes, the atoms it stands for, your
    last-pass note with Claude's reply, a paper-role picker and a note box. Pass-1 notes on the atoms come last, collapsed. */
-function prevBox(host, key, reply) {
-  const pn = prevNote(key);
-  if (!(pn && (pn.note || pn.verdict)) && !reply) return;
-  const b = h('div', { class: 'prev' }, host);
-  if (pn && (pn.note || pn.verdict)) { const q = h('div', { class: 'q' }, b); h('b', { text: `Your pass ${pn.pass} note${pn.verdict ? ' · ' + pn.verdict : ''}` }, q);
-    q.append(pn.note || ''); }
-  if (reply) { const a = h('div', { class: 'a' }, b); h('b', { text: 'What was done' }, a); a.insertAdjacentHTML('beforeend', reply); }
+function prevBox(host, keys) {      // every earlier pass (from 2, when findings began): your note, then what Claude did
+  keys = keys.filter(Boolean);
+  const rows = [];
+  for (let p = PASS; p >= 2; p--) {    // this pass too, once Claude has acted on a note made in it
+    const pn = p === PASS ? keys.map(k => RESP.cards[k]).find(x => x && (x.note || '').trim())
+      : keys.map(k => ((REG.history || {})[k] || []).filter(x => x.pass === p && (x.note || x.verdict)).slice(-1)[0]).find(Boolean);
+    const reply = keys.map(k => ((REG.replies || {})[k] || {})[p]).find(Boolean);
+    if (p === PASS ? reply : (pn || reply)) rows.push({ p, pn: p === PASS && pn ? { note: pn.note } : pn, reply });
+  }
+  if (!rows.length) return;
+  const one = (host, { p, pn, reply }) => { const b = h('div', { class: 'prev' }, host);
+    const q = h('div', { class: 'q' }, b); h('b', { text: p === PASS ? 'Your note this pass' : `Your pass ${p} note${pn && pn.verdict ? ' · ' + pn.verdict : ''}` }, q);
+    q.append(pn && pn.note ? pn.note : '(no note on this part)');
+    if (reply) { const a = h('div', { class: 'a' }, b); h('b', { text: 'What Claude did' }, a); a.insertAdjacentHTML('beforeend', reply); } };
+  one(host, rows[0]);
+  if (rows.length > 1) { const d = h('details', { class: 'prevmore' }, host);
+    h('summary', { text: `Earlier passes (${rows.slice(1).map(r => r.p).join(', ')})` }, d); rows.slice(1).forEach(r => one(d, r)); }
 }
 function rolePicker(host, key, suggested, before, set) {
   const r = resp(key), d = h('div', { class: 'roles', text: 'Paper role: ' });
@@ -562,7 +598,80 @@ function rolePicker(host, key, suggested, before, set) {
     else if (!r.role && k === suggested) b.classList.add('sug');
     b.onclick = () => { r.role = r.role === k ? null : k; save(key); rolePicker(host, key, suggested, d, set); d.remove(); };
   });
-  if (!r.role && suggested) h('span', { class: 'hint', text: set ? `(your pass ${PASS - 1} pick — click another to change)` : '(dashed = Claude’s suggestion)' }, d);
+  if (!r.role && suggested) h('span', { class: 'hint', text: set ? '(your earlier pick — click another to change)' : '(dashed = Claude’s suggestion)' }, d);
+}
+/* What people said: a short summary, 3–4 quote cards, then "more quotes" and every coded excerpt behind the
+   section's codes. Quotes come from the quote analysts (s.qual, ids into REG.quotes) or, where a section has only
+   codes, the clearest unled coded excerpts are picked automatically. */
+const quoteById = id => { const m = /^ev(\d+)$/.exec(id);
+  if (m) { const e = QL && QL.evidence[+m[1]]; return e && Object.assign({ id, codes: [e.code] }, e); }
+  const q = (REG.quotes || {})[id]; return q && Object.assign({ id }, q); };
+function quoteCard(host, q, act) {
+  const c = h('div', { class: 'qcard' + (q.led ? ' led' : '') + (q.paraphrase ? ' para' : '') + (act && act.picked ? ' picked' : '') }, host);
+  h('div', { class: 'qtext', text: (q.paraphrase ? '' : '“') + q.text + (q.paraphrase ? '' : '”') }, c);
+  if (q.context) h('div', { class: 'qctx', text: q.context }, c);
+  const w = h('div', { class: 'qwho' }, c);
+  h('b', { text: q.pid }, w);
+  w.append(` · ${q.source || ''}${q.at ? ' · ' + q.at : ''}`);
+  if (q.led) h('span', { class: 'qtag', text: 'after a leading question' }, w);
+  if (q.paraphrase) h('span', { class: 'qtag', text: 'researcher’s note' }, w);
+  (q.codes || []).forEach(k => { const L = (REG.codeLabels || {})[k];
+    h('span', { class: 'qcode', text: L ? L.name : k, title: L ? `${k}: ${L.def}` : k }, w); });
+  if (act && act.sug) h('span', { class: 'qtag sug', text: 'Claude’s pick', title: 'one of the 3–4 the quote analysts suggested highlighting' }, w);
+  if (act) h('button', { class: 'qact', text: act.label, title: act.tip }, c).onclick = act.fn;
+}
+function autoPick(ev) {          // the clearest unled excerpts, one per person, middling length first
+  const seen = new Set(), score = e => (e.led ? 100 : 0) + Math.abs(e.text.split(/\s+/).length - 22);
+  return ev.slice().sort((a, b) => score(a) - score(b)).filter(e => !seen.has(e.pid) && seen.add(e.pid)).slice(0, 4);
+}
+/* The highlighted cards are the researcher's own picks (resp(key).quotes, in the order picked); everything starts
+   under "More quotes", with the analysts' suggestions marked "Claude's pick". Highlight / Remove move a card between
+   the two, and the filter bar narrows the unpicked quotes by words, person, source or leading questions. */
+const QSOURCES = ['think-aloud', 'debrief', 'interview'];
+function quoteBlock(host, s, key) {
+  const codes = s.codes || [], Q = s.qual || {};
+  const ev = codes.length && QL ? QL.evidence.map((e, i) => Object.assign({ id: 'ev' + i, codes: [e.code] }, e)).filter(e => codes.includes(e.code)) : [];
+  const sugg = s.qual ? (Q.featured || []).map(quoteById).filter(Boolean) : autoPick(ev);
+  const more = [...sugg, ...(Q.more || []).map(quoteById).filter(Boolean)];
+  const inMore = new Set(more.map(q => q.id)), rest = ev.filter(e => !inMore.has(e.id));
+  if (!more.length && !rest.length && !Q.summary) return;
+  const all = new Map([...more, ...rest].map(q => [q.id, q])), sugIds = new Set(sugg.map(q => q.id));
+  const F = { text: '', src: null, unled: false }, open = {};
+  const box = h('div', { class: 'qbox' }, host);
+  const searchable = q => [q.text, q.pid, q.context, ...(q.codes || []).map(k => ((REG.codeLabels || {})[k] || {}).name || k)].join(' ').toLowerCase();
+  const passes = q => (!F.text || F.text.split(/\s+/).every(w => searchable(q).includes(w)))
+    && (!F.src || (q.source || '').toLowerCase().includes(F.src)) && (!F.unled || (!q.led && !q.paraphrase));
+  function draw() {
+    box.querySelectorAll('details.qmore').forEach(d => { open[d.dataset.k] = d.open; });
+    const focus = document.activeElement && document.activeElement.classList.contains('qsearch');
+    box.innerHTML = '';
+    const r = resp(key), picks = (r.quotes || []).filter(id => all.has(id)), picked = new Set(picks);
+    const pick = id => () => { r.quotes = [...picks, id]; save(key); draw(); };
+    const drop = id => () => { r.quotes = picks.filter(x => x !== id); save(key); draw(); };
+    h('div', { class: 'qhead', text: `What people said · highlighted (${picks.length})` }, box);
+    if (Q.summary) h('p', { class: 'qsum', html: Q.summary }, box);
+    if (picks.length) { const g = h('div', { class: 'qcards' }, box);
+      picks.forEach(id => quoteCard(g, all.get(id), { picked: true, sug: sugIds.has(id), label: 'Remove', tip: 'send it back to More quotes', fn: drop(id) })); }
+    else h('div', { class: 'qempty', text: 'No quotes highlighted yet. Open “More quotes on this” below and click Highlight on the ones that show what people thought.' }, box);
+    const fb = h('div', { class: 'qfilter', text: 'Filter: ' }, box);
+    const inp = h('input', { class: 'qsearch', type: 'search', placeholder: 'words, person (P12), theme…', value: F.text }, fb);
+    inp.oninput = () => { F.text = inp.value.trim().toLowerCase(); draw(); };
+    QSOURCES.forEach(src => h('button', { text: src, class: F.src === src ? 'on' : '' }, fb).onclick = () => { F.src = F.src === src ? null : src; draw(); });
+    h('button', { text: 'hide leading / notes', class: F.unled ? 'on' : '', title: 'hide quotes that answer a leading question, and researcher’s notes' }, fb).onclick = () => { F.unled = !F.unled; draw(); };
+    if (focus) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    const list = (k, title, items, dflt) => {
+      const all2 = items.filter(q => !picked.has(q.id)), vis = all2.filter(passes);
+      if (!all2.length) return;
+      const dd = h('details', { class: 'qmore' }, box); dd.dataset.k = k;
+      if (open[k] ?? dflt) dd.open = true;
+      h('summary', { text: `${title} (${vis.length === all2.length ? all2.length : vis.length + ' of ' + all2.length})` }, dd);
+      const g = h('div', { class: 'qcards' }, dd);
+      vis.forEach(q => quoteCard(g, q, { sug: sugIds.has(q.id), label: 'Highlight', tip: 'move it up to the highlighted quotes', fn: pick(q.id) }));
+    };
+    list('more', 'More quotes on this', more, !picks.length);
+    list('ev', `Every other coded excerpt for ${codes.map(k => ((REG.codeLabels || {})[k] || {}).name || k).join(', ')}`, rest, false);
+  }
+  draw();
 }
 function renderSection(host, f, s, label) {
   const d = h('div', { class: 'fsec', id: 'sec-' + s.id }, host), t = h('h3', { text: `${label}. ${s.title}` }, d);
@@ -577,15 +686,11 @@ function renderSection(host, f, s, label) {
   }
   if ((s.numbers || []).length) { const ul = h('ul', { class: 'nums' }, d); s.numbers.forEach(n => h('li', { html: n }, ul)); }
   if (s.how) { const hw = h('details', { class: 'how', open: '' }, d); h('summary', { text: 'How this was worked out' }, hw); h('div', { html: s.how }, hw); }
-  const codes = s.codes || [], ev = codes.length && QL ? QL.evidence.filter(e => codes.includes(e.code)) : [];
-  if (ev.length) { const dd = h('details', { class: 'box' }, d); h('summary', { text: `What they said — ${ev.length} excerpts (${codes.join(', ')})` }, dd);
-    ev.forEach(e => { const q = h('div', { class: 'evid' + (e.led ? ' led' : '') }, dd);
-      h('div', { class: 'who', text: `${e.pid} · ${e.source}${e.at ? ' · ' + e.at : ''}${e.led ? ' · after a leading question' : ''}` }, q);
-      h('div', { text: e.text }, q); }); }
+  quoteBlock(d, s, f.id + '#' + s.id);
   if ((s.atoms || []).length) { const at = h('div', { class: 'atoms', text: 'pass-1 cards: ' }, d);
     s.atoms.forEach(a => { if (BYID[a]) h('a', { text: BYID[a].title, title: 'open the pass-1 card' }, at).onclick = () => go(a); }); }
   const key = f.id + '#' + s.id;
-  prevBox(d, s.was && !prevNote(key) ? s.was : key, s.reply);
+  prevBox(d, [key, s.was]);
   rolePicker(d, key, s.role, null, s.role_set);
   const ta = h('textarea', { class: 'secnote', placeholder: 'Note on this section (optional)…' }, d);
   ta.value = (RESP.cards[key] || {}).note || '';
@@ -600,7 +705,7 @@ function renderFinding(host, f) {
   else if (f.tier === 'side') h('span', { class: 'chip sidechip', text: 'sidelined' }, chips);
   if (f.confidence) h('span', { class: `chip c-${f.confidence === 'mixed' ? 'moderate' : f.confidence}`, text: f.confidence }, chips);
   h('p', { class: 'headline', html: f.headline || '' }, host);
-  prevBox(host, f.id, f.reply);
+  prevBox(host, [f.id]);
   const secs = f.sections || [], main = secs.filter(s => s.tier !== 'side'), side = secs.filter(s => s.tier === 'side');
   const jump = id => { const n = host.querySelector('#sec-' + id); const p = n && n.closest('details.sidepanel'); if (p) p.open = true;
     if (n) n.scrollIntoView({ behavior: 'smooth' }); };

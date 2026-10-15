@@ -10,10 +10,10 @@
   },
   "f-size-decides": {
    "verdict": "core",
-   "note": "",
+   "note": "I think the parallel work quotes will go at the end after the graphs - not exactly about the graphs but in conclusion of this part. For that purpose please move those quotes to a mini bit at the end of this finding section",
    "links": [],
    "tags": [],
-   "updated": null
+   "updated": "2026-10-15T09:49:58.626Z"
   },
   "f-manual-cards": {
    "verdict": "keep",
@@ -31,17 +31,17 @@
   },
   "f-workload": {
    "verdict": "core",
-   "note": "",
+   "note": "Add another graph that looks at the correlation between how long a task has been waiting and how likely they are to automate it. I wonder if they automate when they realise they've  left a card hanging",
    "links": [],
    "tags": [],
-   "updated": null
+   "updated": "2026-10-15T09:42:12.760Z"
   },
   "f-flaw-odd": {
    "verdict": "core",
-   "note": "",
+   "note": "4 and 5 say somewhat different things. This might be read as a discrepancy. Can wee work out how they can both be true? 4 suggests that there's a big drop in useage after noticing but 5 says nothing is significant. Are these different windows of time or something?",
    "links": [],
    "tags": [],
-   "updated": null
+   "updated": "2026-10-15T10:23:16.340Z"
   },
   "f-tier-trust": {
    "verdict": "keep",
@@ -73,6 +73,688 @@
   },
   "f-who-does-better": {
    "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#wants": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#real-world": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#reasoning": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#failure-data": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#more-automation": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#mental-models": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#tiers-together": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#me-vs-assistant": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#interface": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#real-stakes": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-operator-wants#feelings": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habits": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#fingerprint-ranks": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#who-vs-what": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#retest-summary": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#axis-scatter": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#not-types": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#not-disposition": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#axis": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#fingerprint": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#profiles": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habit-by-habit": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#preempt": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#habit-grid": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#trust": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-personal-style#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#both": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T09:22:59.480Z",
+   "quotes": [
+    "qa:qa-P29-04",
+    "ev50",
+    "qa:qa-P36-01",
+    "ev186",
+    "ev187",
+    "ev76",
+    "ev237",
+    "qa:qa-P11-04",
+    "qa:qa-P05-02"
+   ]
+  },
+  "f-size-decides#models": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T09:24:10.741Z",
+   "quotes": []
+  },
+  "f-size-decides#tactical": {
+   "verdict": null,
+   "note": "Dig a little deeper for the quote about maintaining a continuity between the two - If I used strat here then I'll want to use tac after",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T09:26:28.364Z",
+   "quotes": [
+    "qa:qa-P10-03",
+    "qa:qa-P10-05",
+    "qa:qa-P11-04",
+    "qa:qa-P10-01"
+   ]
+  },
+  "f-size-decides#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T09:29:47.555Z",
+   "quotes": [
+    "ev176",
+    "qa:qa-P17-02",
+    "qa:qa-P21-04",
+    "ev52",
+    "ev163",
+    "ev29",
+    "ev208",
+    "ev238",
+    "qa:qa-P22-03",
+    "qa:qa-P32-07",
+    "qa:qa-P32-04",
+    "ev169",
+    "ev164"
+   ]
+  },
+  "f-size-decides#parallel": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#strategic-steps": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#five": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#artefacts": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#people": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#speed-model": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#slow": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#parallel-specs": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#strategic": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#measures": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#raw-vs-adjusted": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:05:55.108Z",
+   "quotes": [
+    "ev20",
+    "ev119",
+    "ev106",
+    "qb:qb-P05-02",
+    "ev242",
+    "ev229"
+   ]
+  },
+  "f-workload#robust": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#said-did": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#spoken": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#backlog-practice": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#deep": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#visible": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards#dots": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T09:53:10.218Z",
+   "quotes": [
+    "qa:qa-P10-09",
+    "ev177"
+   ]
+  },
+  "f-manual-cards#position": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T09:57:53.099Z",
+   "quotes": [
+    "ev91",
+    "ev137",
+    "ev86"
+   ]
+  },
+  "f-manual-cards#said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-manual-cards#anchor": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-practice#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:02:56.823Z",
+   "quotes": [
+    "ev41",
+    "qa:qa-P30-05",
+    "qa:qa-P22-04",
+    "ev40",
+    "qa:qa-P05-03",
+    "qa:qa-P11-07"
+   ]
+  },
+  "f-practice#c22": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-practice#calibration": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#event": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:07:18.673Z",
+   "quotes": [
+    "qb:qb-P19-01",
+    "qb:qb-P17-01",
+    "ev122",
+    "qb:qb-P04-01",
+    "qb:qb-P30-01",
+    "qb:qb-P35-01",
+    "ev121",
+    "ev127",
+    "ev64",
+    "qb:qb-P20-01"
+   ]
+  },
+  "f-flaw-odd#over-time": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:07:59.423Z",
+   "quotes": [
+    "ev174"
+   ]
+  },
+  "f-flaw-odd#by-index": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:09:08.921Z",
+   "quotes": [
+    "ev82"
+   ]
+  },
+  "f-flaw-odd#spoken": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#refusal": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#h8": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#dip": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#not-time-locked": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#nth": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#visibility": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#card": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#odd-missions": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#adjustment": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#robustness": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#old-chart": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#dominated": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#rates": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#checking-after": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#reliance": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#later": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#speed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-flaw-odd#method": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#gap": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:26:56.850Z",
+   "quotes": [
+    "qb:qb-P33-01",
+    "ev12",
+    "ev223",
+    "qb:qb-P13-03"
+   ]
+  },
+  "f-tier-trust#where": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#checking": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-15T10:36:29.624Z",
+   "quotes": [
+    "ev140",
+    "qb:qb-P27-02",
+    "qb:qb-P27-03"
+   ]
+  },
+  "f-tier-trust#stated-revealed": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#trust-lead-strip": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#attention": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#own-failures": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-tier-trust#stated": {
+   "verdict": null,
    "note": "",
    "links": [],
    "tags": [],

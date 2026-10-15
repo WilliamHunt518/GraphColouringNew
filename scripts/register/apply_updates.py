@@ -19,8 +19,8 @@ import yaml
 BASE = Path(__file__).resolve().parents[2]
 REG = BASE / 'docs' / 'analysis' / 'register'
 FINDINGS = REG / 'findings.yaml'
-FIELDS = {'title', 'headline', 'reply', 'open', 'confidence', 'links'}
-SFIELDS = {'title', 'text', 'how', 'numbers', 'chart', 'reply', 'role', 'tier', 'codes', 'atoms', 'sharedWith'}
+FIELDS = {'title', 'headline', 'reply', 'done', 'open', 'confidence', 'links'}
+SFIELDS = {'title', 'text', 'how', 'numbers', 'chart', 'reply', 'done', 'role', 'tier', 'codes', 'atoms', 'sharedWith'}
 
 
 def main() -> None:

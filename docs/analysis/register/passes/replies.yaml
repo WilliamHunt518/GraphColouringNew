@@ -1,0 +1,520 @@
+# Claude's replies to the researcher's notes, by the pass whose note they answer -- kept so the review page can show
+# every earlier pass's note with what was done (the live `reply` fields in findings.yaml only answer the last pass).
+# At each pass close, append findings.yaml's current replies here under the pass just answered.
+f-flaw-odd:
+  2: 'Done both. (1) <b>All missions is now the default</b> on every chart that was three-type only (event study,
+    Nth-decision dots, per-person slopes, spoken bars), with buttons for three-type only and its complement (one-
+    and two-type missions). The sidelined dominated-card chart stays three-type, because that comparison only means
+    something where the card is not illogical. (2) <b>The dip, taken apart</b> (new sections <i>What the dip is</i>,
+    <i>Card use through the session</i> and <i>Card use by decision number</i>). In short: it is an early-session
+    drop in the noticers (session 1, decisions 3–5, roughly minutes 1–4). It appears just as strongly in people
+    who had not yet seen an illogical card, it comes from looking at the cards and declining them, it is not explained
+    by mission type, load, reserve or game, and it is invisible in the pooled curve because non-noticers lean on
+    the cards more at the same moment. The aligned event study''s ''1st–3rd after'' dip is really two moments mixed
+    together: session-1 decisions 3–6 for strategic-heavy-first players, and the start of session 2 for most tactical-heavy-first
+    players (whose first illogical card came then). I could not find what triggers it, and I have said so.'
+  3: 'Worked through. The charts are cleaned up: every y axis now names its quantity (“card taken, % of decisions”),
+    the event study gained the pre-card steps, card use over time shows each group plus everyone, decision number
+    runs session 1 into session 2 on one axis, the spoken chart is grouped bars only, and the Nth-decision section
+    is back on its pass-2 chart. One new check affects the story a little: your “recover in session 1, less carry-over
+    to session 2” reading is half supported (the recovery is there; a group difference at the session break is not),
+    and I added that as one sentence to the headline. Nothing else changes.'
+f-flaw-odd#adjustment:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus. In the paper this is one sentence on how the
+    adjustment was made.
+f-flaw-odd#by-index:
+  2: 'New, from your note on the not-time-locked section: card use by decision number for everyone, not after the
+    card. Pooled, the dip does not show; split, it does, in the noticers only, and it shows before the card too.'
+  3: '<b>Done</b>: session 1 then session 2 on one axis, a dashed line at the break, and the two sessions'' lines
+    are not joined (it is now the default view). <b>Your reading is half right.</b> The session-1 recovery is there:
+    noticers climb from 48% in decisions 3–5 to 66% over the rest of session 1 (+24 points per person, 8 of 12 rose),
+    while never-said people drift down. And noticers do start session 2 lower (49%) than they ended session 1 (64%).
+    But “less carrying over” needs that drop to be bigger for noticers than for never-said people, who also start
+    session 2 a little lower (76% → 69%); the difference at the break is −6 points [−32, +20], which cannot tell
+    the two apart. Allowing for the mission mix (session 2 is the other game) shrinks the noticers'' own drop to
+    −9 points, and 6 of the 15 noticers first met the illogical card at the start of session 2, so their session-2
+    start is partly the card itself. One wording point: this is card <i>use</i>; we do not measure trust at these
+    moments, so I would write “use recovers” rather than “trust recovers”.'
+f-flaw-odd#card:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-flaw-odd#checking-after:
+  2: Merged in from the recovery finding. Moved to the sidelined panel, as you asked — kept, not a focus.
+f-flaw-odd#dip:
+  2: New section answering "understanding the dip we see is essential". It is an early-session drop in the noticers
+    that appears just as clearly where the card had not yet been shown.
+  3: Agreed, and moved to the sidelined panel. The window was read off the curve, so its p-values were only descriptive
+    anyway.
+f-flaw-odd#dominated:
+  2: Merged in from <i>Only flaws people can see…</i>. Moved to the sidelined panel, as you asked — kept, not a
+    focus.
+f-flaw-odd#event:
+  2: 'Now has a <b>Grouping</b> toggle (every step / every pair / groups of three), with intervals on every point,
+    and the missions toggle defaults to all missions. Pairs is the default: every step is there, but its intervals
+    span about ±30 points per dot; groups of three give the same picture as before.'
+  3: '<b>Yes, your guess is right.</b> “Expected” leans mostly on each person''s own take rate on all their <i>other</i>
+    decisions (that is why the model ranks takes so well). Noticers'' own rate is 56% against 70%, and it is low
+    because about 80% of a noticer''s decisions come at or after the card, where they took cards 50% of the time
+    against 72% (p = .007). Before the card the two groups were alike (68% vs 63%, p = .71). Set the own-rate term
+    to everyone''s average and the two groups'' expected values are the same (after the card 68% vs 69%): the missions
+    in front of them do not differ. One consequence worth knowing: because the own rate already contains the after-card
+    drop, the <i>adjusted</i> change (−14) understates the raw one (−23: 75% → 52%), so the adjusted numbers are
+    the cautious version. <b>Pre-card steps:</b> added as the <i>Before the card</i> toggle (plus a matched version).
+    Honestly it is close to useless: only 8 people per group have three decisions before the card (all tactical-heavy-first
+    players), so −2 and −3 are 8 decisions each with intervals of about ±35 points. The one thing it shows is that
+    the step just before the card (−1) is lower in <i>both</i> groups (64% and 56%; −13 points [−40, +13] against
+    −3/−2), so it is not something only noticers do. The matched view shows the 8 noticers dropping from ~85% to
+    ~40% and staying there, but 6 of those 8 met the card at the start of session 2, so it mixes the card with the
+    session-2 low (section 3). The default stays all missions, pairs, observed, with one pooled ''before'' point.'
+f-flaw-odd#later:
+  2: Merged in from the recovery finding. Moved to the sidelined panel, as you asked — kept, not a focus.
+f-flaw-odd#method:
+  2: Merged in from the recovery finding (method notes). Moved to the sidelined panel, as you asked — kept, not
+    a focus.
+f-flaw-odd#not-time-locked:
+  2: 'Did both. (a) <b>Use over session time, noticers vs never-said</b>: new section <i>Card use through the session</i>
+    (minute by minute, each session, with game-order and missions toggles and a tick wherever someone met their
+    first illogical card). (b) <b>All use by decision number, not aligned to the card</b>: new section <i>Card use
+    by decision number</i> (everyone by default, or split). The dip does show without aligning: noticers fall at
+    decisions 3–5 of session 1 and recover. It shows equally in people who had not yet met an illogical card, and
+    it vanishes when everyone is pooled. So you were right to keep digging. It is a real pattern, but it is a pattern
+    of the noticers early in the session, not an effect of the card.'
+  3: Moved to the sidelined panel (your Archive pick).
+f-flaw-odd#nth:
+  2: Redone with a missions toggle, all missions by default (three-type and one/two-type also available). It is
+    the 'every step' view of the event study, with one decision per person per dot.
+  3: Done; the section is back on its pass-2 chart (three-type missions, one point per position).
+f-flaw-odd#odd-missions:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-flaw-odd#old-chart:
+  2: 'Moved to the sidelined panel, as you asked — kept, not a focus. You are not missing anything: it is superseded
+    by the rebuilt event study and is kept only as a record of why the earlier numbers moved.'
+f-flaw-odd#over-time:
+  2: 'New, from your note on the not-time-locked section: use over session time for noticers and non-noticers, per
+    session, with error bands and n in every tooltip.'
+  3: 'Rewritten to say plainly what each point is (the share of decisions in that minute where a card was taken),
+    and the option you asked for is now the default: noticers, never-said and everyone pooled as a dashed line on
+    one chart. It shows the difference well: the pooled line stays flat precisely because the two groups move in
+    opposite directions in minutes 1–4 of session 1.'
+f-flaw-odd#rates:
+  2: 'Merged in from the recovery finding, which you marked Merge. It is the one recovery result with a number worth
+    quoting (how often a wrong "No workable plan" ends in abandoning), so it is marked numbers-only. On your note
+    that bits of recovery might link to the dip in strategic card use: checked — a recovery was open for only about
+    5% of the decisions inside the dip window, so recovery does not explain it.'
+f-flaw-odd#refusal:
+  2: Merged in from <i>Only flaws people can see change what they do</i>. Kept in the main list since you said you
+    would consider using it.
+  3: '<b>Yes, no effect is found</b>, but read it as “no effect found” rather than “shown to have no effect”. After
+    the first Suggest refusal, strategy-card use changes by +2 points [−6, +10] and tactical Suggest use by −1 [−6,
+    +5]. Those intervals are narrow enough to rule out a large knock-on: a drop of more than about 6 points in either
+    is unlikely. After the first <i>wrong</i> refusal (14 people) the intervals are wider, strategy cards −2.5 [−16,
+    +11] and three-type −5 [−19, +9], so a moderate drop there cannot be excluded. Tactical use after a wrong refusal
+    is flat and tight (0 [−6, +6]).'
+f-flaw-odd#reliance:
+  2: Merged in from the recovery finding (no note on it). Moved to the sidelined panel, as you asked — kept, not
+    a focus.
+f-flaw-odd#robustness:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-flaw-odd#speed:
+  2: Merged in from the recovery finding. Moved to the sidelined panel, as you asked — kept, not a focus.
+f-flaw-odd#spoken:
+  2: 'Now bars: pooled before/after bars per remark group (strict 7, any 12) with person-resampled intervals, and
+    a before/after pair of bars per person with Wilson intervals (pale where fewer than 4 decisions). Missions toggle
+    included, all missions by default.'
+  3: 'Done: grouped bars only (the per-person bars are gone), with all missions and one- and two-type missions side
+    by side in one chart. A button adds three-type missions as a third pair, and another puts the broader remarks
+    next to the strict ones. It does show how the mission kind matters: the drop is biggest where the flaw lives
+    (83% → 35%), with the caveat, printed on the chart, that its ''before'' bar is only 6 decisions.'
+f-flaw-odd#visibility:
+  2: 'Merged in from <i>Only flaws people can see change what they do</i>, as you asked — the lead-in to how the
+    cards operate. Sidelined with "numbers only": something to say in a sentence, not to show.'
+f-manual-cards:
+  2: 'Looked at the open-ended answers behind the four codes (C07–C10), plus the complaints about the cards (C12).
+    They fit the anchoring story but cannot prove it. Nobody describes building an allocation from scratch while
+    ignoring the cards. Everyone who talks about manual allocation talks about it relative to the cards. C09 (4
+    people) treat a card as a first draft or "starting place" to tweak; C08 (6) talk of a figure "between" the two
+    cards or a toned-down version of one; and one C10 person describes reading the drones needed, then what the
+    card deploys, and "working from that". That is the adjust-from-the-card behaviour the logs show (+0.4 to +0.5
+    manual drones per card drone, and only for people who saw the cards). Two cautions. Some accounts run the other
+    way: P03 worked the number out first, then checked it against the card. And anchoring is by nature not something
+    people notice in themselves, so self-report supports "cards as reference points" rather than anchoring itself.
+    The trimming direction has its own clear explanation in the words: many people (C12, 12 people) say the cards
+    send too many drones or add types the mission does not need, which is the spare the dot chart shows being dropped.
+    No new coding was needed; if you want this in the paper, it would be one sentence linking C08/C09 to the anchoring
+    test.'
+  3: 'Agreed: a marginal finding, kept for a brief mention. The only changes are clearer axis titles and captions.'
+f-manual-cards#anchor:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-manual-cards#dots:
+  3: Agreed, a mention. The y-axis now says what it measures (drones committed by hand minus drones on the Conservative
+    card).
+f-manual-cards#position:
+  3: Fine. Added a caption saying each bar is 100% of that kind of manual allocation and what each segment counts.
+f-methods:
+  2: 'Kept for reference and moved out of the results: these are methods notes, not findings. The recovery finding''s
+    method notes are in the sidelined panel of the illogical-card finding.'
+  3: Left untouched.
+f-operator-wants:
+  2: 'Done as you said: "Wanting something is not using the assistants differently" was the same result as <i>Nothing
+    measured beforehand predicts the style</i> in the personal-style finding, so it now lives only there. What they
+    asked for stays here, in a new <b>For the discussion</b> group, as material for the discussion rather than a
+    result.'
+  3: Kept as is until we come to the discussion.
+f-operator-wants#wants:
+  3: Kept as is for the discussion.
+f-personal-style:
+  2: 'Agreed, and the page now follows your order: <b>the habits</b> (new first section, what each is and how it
+    is counted, with its spread over the 66 sessions) → <b>(2)</b> where each person''s own session ranks → <b>(4)</b>
+    who vs what → <b>(6)</b> how far each habit holds → <b>(8)</b> the axis, as numbers for one sentence (it is
+    the bridge that says the biggest single difference between people is "leans on the assistants", seen most clearly
+    in the card; I would keep it as text, not a figure) → <b>(9)</b> the two tiers → <b>(11)</b> no types (rewritten)
+    → <b>(12)</b> nothing beforehand predicts it. One correction to the story at (9), from a new check: between
+    people the two tiers are <i>weakly</i> linked (ρ = .37, p = .033; .33, p = .058 once game is adjusted), not
+    unrelated; and within a person they move <i>together</i> from one session to the next (ρ = .51, p = .002: a
+    session where someone takes more cards is a session where they also press Suggest more). So the honest sentence
+    is "how much someone relies on one assistant tells you little about the other, so agent use is not one consistent
+    trait across the tiers; but there is a session-level ''leaning on the assistants today'' that moves both". That
+    does not weaken "style is personal"; it adds that part of what varies from one session to the next is shared
+    across the tiers.'
+  3: Agreed — no changes to the story. Your role picks are now shown as set; the Archive one (the axis loadings)
+    has moved to the sidelined panel.
+f-personal-style#axis:
+  2: '<b>Mostly yes, with one qualification.</b> The axis is anchored on taking the strategy card: a person''s axis
+    score correlates .92 with their card uptake, so card uptake alone accounts for 85% of it (previewing cards,
+    +.88, is largely the same act). But it also carries pressing Suggest (+.62), Suggest in recovery (+.46) and
+    deciding faster (−.48), so the fair label is "leans on the assistants and moves quickly", with card-taking its
+    clearest sign. And it is only 31% of the differences between people: a second dimension (19%) is how many drones
+    someone commits beyond the cautious card, and a third (17%) is editing cards rather than taking or replacing
+    them. Agreed it is not a main finding; kept as numbers.'
+  3: Moved to the sidelined panel (your Archive pick). The scatter that follows carries the point.
+f-personal-style#axis-scatter:
+  2: '<b>Not quite.</b> It is weak, but not absent: ρ = .37 [.01, .65], p = .033, so nominally significant, with
+    an interval running from almost zero to moderate (game-adjusted, ρ = .33, p = .058). The fair wording is "only
+    loosely linked", not "no correlation". A new check adds a second view (toggle): within a person, the session
+    where they took more cards is the session where they pressed Suggest more (ρ = .51, p = .002). So "agent use
+    isn''t one consistent strategy" holds between people, but the two tiers do share a session-to-session component.'
+  3: '<b>Yes, that is the right reading.</b> ρ = .37 is weak to moderate, and p = .033 only says it is unlikely
+    to be exactly zero. The interval [.01, .65] is wide, so the honest wording is: the two tiers go together <i>somewhat</i>,
+    far from one trait. The within-person version (ρ = .51, p = .002) is the firmer number: a person who leans on
+    one assistant in a session tends to lean on the other in that session.'
+f-personal-style#fingerprint:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus. The numbers it quotes (own session nearest
+    for 7 of 33, in the closest three for 41% vs 9% by chance, average rank 8th of 33) are what the paper would
+    cite.
+f-personal-style#fingerprint-ranks:
+  2: Thanks. The habits it is built on are now explained in the new first section (what each one counts, its denominator,
+    its spread, how undefined values are handled), and this section's text and "how" are rewritten to stand on their
+    own now that the matrix section is sidelined. Numbers unchanged.
+  3: Thanks — unchanged apart from a clearer y-axis title (number of look-ups, of 66).
+f-personal-style#habit-by-habit:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-personal-style#habit-grid:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-personal-style#habits:
+  2: 'New first section, as you asked: what each of the ten habits counts, how, and its spread across the 66 sessions,
+    with how strongly it carries over shown alongside. It takes over the explaining role of the sidelined matrix
+    section.'
+  3: 'Agreed: numbers only, with the text carrying it. The chart stays on the page in case you want it after all.'
+f-personal-style#not-disposition:
+  2: '<b>Yes, in the sense that matters:</b> they are what chance alone produces. With 40 tests at p &lt; .05 about
+    two "hits" are expected even if nothing is related; we got three. A new check makes this concrete (second chart):
+    shuffling which person''s questionnaire goes with which person''s behaviour, and redoing all 40 tests, gives
+    three or more hits 34% of the time, and a correlation as strong as the strongest one somewhere in the grid 51%
+    of the time. Holm is the formal version of the same point. What it does <i>not</i> say is that those three links
+    are exactly zero: it says this study cannot tell them apart from chance, so they should not be reported as findings.'
+  3: 'Done. The chart is now the grid alone (with a key saying what a cell and its colour mean). The shuffle histogram
+    is gone; its result is two sentences in the text and the caption: 3 of 40 tests nominal, 0 survive Holm, and
+    3 or more nominal hits happen in 34% of shuffles with no link at all (2.0 on average). The numbers below carry
+    the exact figures if you want them in the paper.'
+f-personal-style#not-types:
+  2: 'Rewritten so it explains itself, with a new chart in three views: <b>the map</b> (the 33 real people next
+    to 33 simulated people with no types: both one cloud), <b>do groups separate?</b> (real vs no-types, for 2,
+    3 and 4 groups) and <b>do groups come back?</b> (session 1 vs session 2 groupings). All three agree: no types.
+    The comparison is against simulated operators who keep the real habit links, not against plainly shuffled data,
+    because shuffling also removes the links between habits, and on that weaker benchmark the real data look slightly
+    "clumpier" without having any types. The how-text says this in plain words. The older round-1 numbers (ΔBIC,
+    archetypes) are kept as supporting numbers.'
+  3: 'Agreed: a sentence or two ("no clusters: silhouette no better than in 500 no-type simulations, and groups
+    did not recur across sessions, ARI ≈ .08"). Kept the chart here as backing for that sentence.'
+f-personal-style#preempt:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-personal-style#profiles:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-personal-style#retest-summary:
+  2: Thanks — numbers unchanged. The title and text now say plainly what it shows ("how far each habit holds"),
+    and the same ρ values appear next to each habit's definition in the new first section, so the two read together.
+  3: 'Agreed, and kept as is. It is the more informative of the two: it shows how far each habit holds, not just
+    that some do.'
+f-personal-style#said:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-personal-style#trust:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-personal-style#who-vs-what:
+  2: Thanks — unchanged.
+  3: Thanks — unchanged apart from a line saying what bar length means.
+f-practice:
+  2: 'Kept as a minor finding worth a mention. Two checks added: whether the speed-up carries over between sessions
+    (on the strategic tier mostly not) and whether "got better" meant "used the assistants more" (no).'
+  3: 'Agreed: brief mention. Your reading of the speed section is answered there (yes for the strategic tier, with
+    a little kept).'
+f-practice#c22:
+  2: 'Added both assistants'' use (two new rows in the chart). No, "got better" does not mean "used the assistant
+    more": the six changed their card-taking and Suggest use no differently from everyone else (p = .80 and .67);
+    only 3 of the 6 used each assistant more in session 2. Across all 33 people a bigger score gain does not go
+    with more use either (ρ = −.07 and −.18).'
+  3: 'Agreed: a brief nod, numbers only.'
+f-practice#calibration:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-practice#speed:
+  2: 'Checked, and partly yes. On the strategic tier the speed-up mostly does not carry over: raw medians go 11.6
+    → 6.9 s in session 1, then start again at 10.6 s in session 2. The model keeps about half the gain, but the
+    start of session 2 is slower than the end of session 1 (+31%, p = .053). On the tactical tier there is no clear
+    reset: session 2 starts where session 1 ended (+2%, p = .92) and speeds up again. So "a speed-up within the
+    session that does not carry over" is fair for the strategic tier. For the tactical tier say "both sessions speed
+    up, and session 2 ends fastest". The bar chart shows this; the minute-by-minute chart is kept under its key.'
+  3: 'Yes on the strategic tier, not quite on the tactical one. Strategic: a clear within-session speed-up (−39%
+    by the end of session 1, p < .001) that is mostly gone at the start of session 2 (+31% slower than the end of
+    session 1, p = .053). That is the warm-up. What is kept is about a fifth (session 2 start −20% vs session 1
+    start, p = .07; averaged over the whole session, session 2 is −19% [−30, −6]). So the learning effect is real
+    but smaller, not absent. Tactical: the reverse shape. The speed-up within session 1 is weaker and uncertain
+    (−24%, p = .09), but it carries over (session 2 starts where session 1 ended, +2%, p = .92) and session 2 is
+    −24% [−36, −9] overall, which looks more like learning than warm-up. One caution for both: the start of a session
+    is also the start of a game (first missions, short queue), though the speed-up survives holding the queue fixed.'
+f-size-decides:
+  2: 'Agreed it needed another pass. What changed: (1) the dip at 5 drones on the strategic tier is seven particular
+    missions and their timing, not a size effect (new section "Why the 5-drone missions dip"); (2) the tactical
+    tier now uses <b>drones needed</b> as its main measure, because plan size partly contains the operator''s own
+    strategic choice; (3) the strategic and tactical hand-overs are linked (a card-allocated mission gets Suggest
+    at about twice the odds), and the "collapse" at big sizes is both rates reaching the ceiling, not a reliable
+    change in the link; (4) the checks you liked are now two rows in the models chart, including a new one for every
+    operator having played the same missions; (5) splitting a tactical plan into phases shows Suggest does not cost
+    time. The core claim is unchanged and a little firmer.'
+  3: 'Thanks. The four section notes are answered in their sections: the 5-drone dip checked against the arrival
+    times, the qualitative evidence for the strategic-to-tactical link found (P10 says it plainly, P05 and P30 in
+    passing), the speed section rebuilt as stacked bars with the idle time split out, and the parallel-work chart
+    rebuilt as one chart with every size group. The "manual faster overall but slower in every size group" puzzle
+    is a mix effect: hand-built plans are mostly small missions.'
+f-size-decides#artefacts:
+  2: 'Kept here in full. Two of its checks now sit in the models chart and its numbers: illogical card excluded
+    (×1.46) plus a new shared-missions check (×1.60 strategic, ×2.89 tactical). The conditional-logit row stays
+    here.'
+f-size-decides#both:
+  2: Redrawn as side-by-side bars with 95% interval whiskers; hover any bar for n. Same numbers as before.
+  3: 'Yes, mostly. Six of the seven 5-drone missions arrived in bursts in the Strategic Heavy games (two 11 s apart
+    in a run of seven missions in one minute in one game; four within 80 s in the other), so they were decided with
+    3–4 others waiting, quickly and often before the cards loaded. Strictly it is the 5-drone bar that is low, rather
+    than the first bar being high. Bursts are likely only part of the story: a 3-drone and a 6-drone mission in
+    the same bursts got the card 67% and 64% of the time, and holding the queue fixed barely moves the 5-vs-3 comparison.
+    Written into the text with the numbers.'
+f-size-decides#five:
+  2: New section for your question on the 3 to 5 jump.
+  3: Moved to the sidelined panel next to its parent. Its point is now a sentence in section 1 (the high first bar
+    is a run of Strategic Heavy missions).
+f-size-decides#measures:
+  2: Graph removed, as you asked — with only a handful of missions of some sizes it cannot carry weight. The section
+    text stays here so the numbers are not lost.
+f-size-decides#models:
+  2: 'Kept as the main statistical picture. As you suggested from the checks section, two checks are now rows at
+    the bottom: illogical cards removed, and a new one allowing for everyone having played the same missions. Neither
+    moves the estimate or brings the interval near 1.'
+  3: Thanks — unchanged.
+f-size-decides#parallel:
+  2: 'Done as stacked bars per route, with a toggle by mission size, plus a strip of the within-person difference
+    per phase. "Before the first action" is its own segment, so idle time can be set aside. It shows a plan is not
+    slower to make with Suggest: about 3 s quicker to build, though it sits about 3 s longer before confirmation,
+    which is where the other missions get started. Suggest plans are also not slower to complete: about 11 s faster
+    to carry out (p = .006), about 15 s faster overall. So no, it does not undermine the Tactical Assistant; if
+    anything the reverse. The scheduler''s own projections, available for every plan, say the same (hand-built plans
+    projected +10 s vs the assistant''s). Caveat: "carrying out" exists only for the 315 missions that finished
+    cleanly, and operators chose the route. The old time-matched chart is kept under its key.'
+  3: 'Done: one chart with small, mid, large, all missions (raw) and all missions (size-standardised) side by side,
+    hand vs Suggest in each, and a toggle that leaves out the time before the first action. Your check was right
+    to make, and the answer is a mix effect (Simpson''s paradox). Hand-built plans are mostly small missions (78%,
+    against 42% of Suggest plans), and small missions are quick either way, so the hand-built average is pulled
+    down. Given the same mix of sizes, hand-built plans take 109 s and Suggest plans 96 s. The same-person comparison
+    with size held gives Suggest −15 s; drop size from that model and the gap vanishes (−0.1 s), which pins the
+    reversal on size. Caveat: only 6 large hand-built plans finished cleanly. Phases now share one definition with
+    section 4.'
+f-size-decides#parallel-specs:
+  2: 'Fair: it is a robustness strip for the 4.8× in the section above, not a new result. Each row asks the same
+    question: for the same person, is a Suggest plan more likely than a hand-built one to have another mission''s
+    strategic panel opened while it is being planned? Each row changes one modelling choice (what is held fixed,
+    which plans count, what counts as "other work"). Every row sits right of the line (×2.4 to ×6.4), so the parallel-work
+    result does not hang on any one choice. That is all it says; it is sidelined as an archive.'
+f-size-decides#people:
+  2: 'Redrawn as bars with 95% whiskers, with four size bands instead of two. One toggle shows each person against
+    their own average (default), the other a plain average of people. It agrees with the model: 22 of 33 rise on
+    each tier, 4 and 2 fall.'
+f-size-decides#slow:
+  2: 'Redrawn with no dots: two bars per measure (C06 vs everyone else), each with a 95% whisker. You read it right:
+    nothing here is significant. The lowest p is .055 (deciding before the cards load), none survives allowing for
+    ten comparisons, and every pair of whiskers overlaps. The text now says plainly that it is a direction in six
+    people, not a finding.'
+f-size-decides#speed:
+  2: 'Checked: the whisker exists, it really is that consistent. Deciding a one-type mission by hand before the
+    cards load takes a median 6.4 s, with a 95% interval of 5.7–7.0 s. On the old chart that interval was about
+    as tall as the dot. The middle half of those 50 decisions fall between 5.0 and 7.6 s. They come from only 15
+    people, the ones who habitually do this, which is part of why it is tight. Redrawn as bars so the whiskers show
+    clearly.'
+  3: Rebuilt as stacked bars by size, with the time before the first action split out and a toggle to leave it out
+    ("everything", "without idle time", "from the first click only"). First action = the first click on that decision
+    (card highlighted or manual count changed; Suggest pressed or drone dragged). It shifts the story a little.
+    Without idle time the strategic card is never slower (it ties with a manual build on one-type missions and is
+    44% quicker on three-type ones). The tactical planner time is the same with or without Suggest once idle time
+    is out, so on that tier the saving is in carrying out (section 5). The same phase definition is used in section
+    5, so the two charts agree.
+f-size-decides#speed-model:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus. The estimates stay here so the number can be
+    quoted if needed.
+f-size-decides#strategic:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-size-decides#strategic-steps:
+  2: Redrawn as bars, and the 3 to 5 step is explained in a new section just below. In short, it is not size. Every
+    all-Fast (one-type) mission of a given size is the same kind of job, and the 5-drone bar is seven specific missions,
+    six of which arrived mid-session with 3 to 4 others waiting. The one that arrived at the start got the card
+    69% of the time, more than any 3-drone mission. Comparing each person with themselves, with game and session
+    fixed, 5-drone missions are not distinguishable from 3-drone ones (odds ×0.78, p = .38).
+  3: Moved to the sidelined panel (your Archive pick); the first chart carries it.
+f-size-decides#tactical:
+  2: 'Yes, the link is real: on every size measure, a mission allocated from a card gets Suggest at about twice
+    the odds of one the same person allocated by hand, and people who take more cards press Suggest more. The "collapse"
+    at high size is mostly a ceiling effect: both routes approach 100%, and the narrowing is not distinguishable
+    from a constant gap on any measure (p = .28 to .98). The toggle gives five x axes. Your doubt about plan size
+    was right. It multiplies the team by tasks, and the team is the operator''s own strategic choice (a card commits
+    ~11% more drones for the same mission), so it partly builds the strategic route into the x axis. <b>Drones needed</b>
+    is the most defensible measure (fixed by the mission, what the badges show, and the steepest: ×2.9 per doubling).
+    Tasks is a good second.'
+  3: 'Yes, found. P10 says it most clearly: in the think-aloud (session 1, about 5½ and 13 minutes into the recording)
+    they say that after taking the Aggressive card, anything but Suggest makes no sense, because there is only one
+    sensible assignment; in the debrief (about 0:27:50) they agree when you sum it up as "the aggressive strategic
+    agent prompts you to use Suggest". That last line was the interviewer''s wording, so the think-aloud is the
+    stronger evidence. P05 and P30 also narrate "card, then Suggest" on the same mission, more in passing. No existing
+    code fits (closest: C05, which carries P10''s neighbouring line about pressing Suggest and moving on), so I
+    added none; a new code, "one tier''s hand-over carries to the next", would hold P10, P05 and P30. The behavioural
+    number (×2.10) is now in the text. One check of P10''s reasoning: across everyone, Suggest is no more likely
+    after the Aggressive card than after the Conservative one (×0.88, p = .72), so it is card vs hand, not which
+    card.'
+f-tier-trust:
+  2: Kept as a later, fairly significant finding. Own-failures and stated are sidelined as one-line mentions; the
+    three requested changes (game split, high-n checking view, stated-vs-revealed answer) are in their sections.
+  3: 'Polished as asked: the checking chart is rebinned with no gaps, the "where" chart leads with the two views
+    you liked, and your attention question is answered with a new check (sidelined section "Is the tactical plan
+    given less attention in Strategic Heavy sessions?"). Every axis in this finding now says what it measures.'
+f-tier-trust#checking:
+  2: 'Done, as a toggle on the same chart: <b>Well-filled sizes only (3, 6–7, 8+ drones)</b>, now the default, and
+    <b>All sizes</b>. The well-filled view keeps 518 of 630 plans (the 112 plans of 1–2, 4 or 5 drones are dropped)
+    and shows n under every size. The story is the same and a little cleaner: consulting rises from 62% to 86% and
+    keeping from 62% to 80% between 3-drone and 8+-drone plans, while checking time stays near 3 s. I refitted the
+    models on the subset; they barely change (kept OR 1.82 per SD, consulted 2.71, checking time +0.44 s, ns). The
+    caption says which plans are shown.'
+  3: 'Done. The "well-filled sizes" toggle is gone; the chart now uses six contiguous bins (≤3, 4–5, 6, 7, 8–9,
+    10+ drones) with no gaps and every plan included. Each bin has at least 72 plans (at least 62 with a checking
+    time), which keeps the 95% intervals on each rate to roughly ±10 points. Your "6–8" would have overlapped with
+    "4–6", and 6 and 7 drones each have plenty of plans on their own (135 and 81), so they get a bin each. The story
+    is unchanged: Suggest and keeping rise from 63% to 93% and 86%, and checking time stays at about 2–4 s at every
+    size. The per-SD models were always on all 630 plans, so those numbers do not change. Both panels now have y-axis
+    titles (% of tactical plans; seconds checking after the reveal).'
+f-tier-trust#gap:
+  3: Kept with its graph for now; the numbers are in the bullet list if you later go numbers-only.
+f-tier-trust#own-failures:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus. A nod in the text.
+f-tier-trust#stated:
+  2: 'Moved to the sidelined panel, as you asked — kept, not a focus. One line in the text: what they wrote matched
+    what they rated.'
+f-tier-trust#stated-revealed:
+  2: '<b>No, not for that number.</b> ρ = .47 [.10, .73], p = .006 is a moderate, clearly positive correlation:
+    the people who rate the Tactical Assistant above the Strategic one are, more often than not, the people who
+    lean on it more. So between people, stated and revealed preference agree in <i>direction and order</i>. Where
+    they agree poorly is everywhere else, and that is the interesting part: (1) <b>size</b>: stated trust favours
+    tactical strongly (26 of 33) but use only by +8 points (CI includes 0), and 9 people rate tactical higher while
+    using the cards more; (2) <b>change</b>: when a person''s trust goes up or down between sessions, their use
+    does not follow (ρ = .16 strategic, .13 tactical); (3) <b>lead</b>: session-1 trust does not predict how use
+    changes next (ρ = .07). Tactical trust against keeping the plan, on its own, is also weak (ρ = .31, p = .08).
+    So the paper can say "stated and revealed preference agree on who prefers which, but stated trust does not track
+    or forecast changes in use", which is the low-correlation picture you saw in the strip below (most of those
+    rows are the change and lead ones).'
+  3: 'Agreed: numbers only (ρ = .47, p = .006, but poor agreement in size and in change).'
+f-tier-trust#trust-lead-strip:
+  3: Kept. If it goes in, the one number is the significant one in the list below.
+f-tier-trust#where:
+  2: 'Done: the game-1/game-2 rows are merged into Strategic Heavy vs Tactical Heavy (new chart with the same three
+    views: item, scenario, session). Strategic Heavy +1.13 vs Tactical Heavy +0.52. Because everyone played one
+    of each, I also tested it within person: the difference is borderline on its own (p = .054 paired t, .038 Wilcoxon),
+    but holding session order fixed both effects stand (Strategic Heavy +0.64, p = .019; second session +0.93, p
+    &lt; .001).'
+  3: '<b>Not clearly.</b> I read "the first two" as the first two views of the chart (questionnaire items, scenario);
+    those are now the main buttons, with session order kept as a third "Also" button. If you meant the first two
+    numbers (session and scenario), both are still one click away. On attention, two things. First, the extra gap
+    in Strategic Heavy is mostly <i>strategic</i> trust being lower there (−0.46), not tactical trust being higher
+    (+0.15, p = .25), so there is little tactical rise to explain. Second, I checked attention to the tactical plan
+    directly (new sidelined section). Raw, Strategic Heavy plans do get less: less Suggest, fewer edits, shorter
+    planner time. But those plans are much smaller (5.3 vs 8.1 drones). Compared like for like (same plan size and
+    session order), planner time is ×0.88 [0.72, 1.07] and checking time ×0.91 [0.70, 1.17], both slightly lower
+    but not distinguishable from no difference; editing is the same (×1.05). The one clear difference goes the other
+    way from "less attention": on same-size plans people press Suggest <i>more</i> in Strategic Heavy (odds ×1.50
+    [1.03, 2.18], p = .036). And people whose planner time drops more in Strategic Heavy do not clearly trust tactical
+    more there (ρ = −.24 [−.56, .12], p = .19, n = 31). So "less attention" may be a small part of it, but the data
+    do not show it; I would not put it in the paper as an explanation, at most as a speculation.'
+f-triage:
+  2: 'Sidelined as a whole (your verdict was Prune, "keep it, but not big enough to read much into"). '
+  3: Kept as a sideline finding. The two sections you picked (order, choice) are its main sections; the rest are
+    in its sidelined panel.
+f-triage#choice:
+  2: 'Done: the chart now has a p-value on every estimate (right-hand column, coloured when below .10) and a third
+    block that tests directly whether each pull changes between short and long queues. Intervals and p-values come
+    from resampling whole people 1000 times. The oldest-first pull is clearly significant at both queue lengths
+    (p ≤ .004), and the preference for larger missions is significant in the Strategic Heavy games (p = .014 short,
+    .026 long). No pull differs significantly between short and long queues (all p ≥ .41 in the Strategic Heavy
+    games; size comes closest across all four games, p = .076). So "priorities don''t change under pressure" now
+    has a test behind it, with the caveat that 95 long-queue decisions could only have detected a large change.'
+  3: 'Kept as numbers. Axis check on its chart: the x-axis is now titled "odds ratio of being opened, log scale
+    (bottom block: long ÷ short)", and the end labels no longer overlap.'
+f-triage#games:
+  2: Agreed; archived — it muddied the message.
+f-triage#order:
+  2: Agreed; a passing comment (numbers only).
+  3: 'Kept. Axis check: the y-axis now reads "% of decisions that opened this mission", the x-axis "number of OTHER
+    missions waiting", and the dashed line''s legend says it is a random pick from what was waiting.'
+f-triage#pace:
+  2: Agreed; archived; the effect is small.
+f-triage#size:
+  2: Agreed; archived.
+f-triage#visible-t:
+  2: Agreed; archived.
+f-who-does-better:
+  2: 'Sidelined as a whole, as you asked: kept, but not part of the main story for now. Its last section (what they
+    said) is also flagged for the discussion.'
+  3: Retired as you asked. It stays in the register (at the very bottom of the list, under <i>Retired</i>) so links
+    and history still work, but it is out of the review.
+f-who-does-better#between-within:
+  2: Not a main finding — agreed.
+f-who-does-better#estimates:
+  2: Agreed; archived.
+f-who-does-better#said:
+  2: Also shown in <i>For the discussion</i>.
+f-who-does-better#trust-parallel:
+  2: Agreed; archived.
+f-workload:
+  2: 'Done as you said: the raw + adjusted graph is now the whole of the main finding. Robustness, said-vs-did,
+    spoken, backlog, deep queues and visibility are in the sidelined panel; robust and said-did are marked numbers-only,
+    each with a suggested one-sentence version for the paper.'
+  3: Agreed. The chart is unchanged by default; the one addition is the "Both together" toggle you asked for.
+f-workload#backlog-practice:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-workload#deep:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-workload#raw-vs-adjusted:
+  3: 'Done: a third "Assistant" button, <b>Both together</b>, overlays strategic (blue) and tactical (orange) on
+    one axis, both in the view picked below it (Raw, Raw + expected, or Adjusted). The default is still strategic,
+    adjusted. The y-axis now names what is counted (% of strategic decisions where a card was taken / % of tactical
+    plans where Suggest was pressed).'
+f-workload#robust:
+  2: 'Moved to the sidelined panel, as you asked — kept, not a focus. Suggested paper sentence: "Neither queue length
+    nor the rate of new missions predicted use of either assistant under any of the N specifications we tried (see
+    supplement)."'
+f-workload#said-did:
+  2: 'Moved to the sidelined panel, as you asked — kept, not a focus. Collapses to one sentence: the people who
+    said they hand over when busy did not do so in their logs.'
+f-workload#spoken:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.
+f-workload#visible:
+  2: Moved to the sidelined panel, as you asked — kept, not a focus.

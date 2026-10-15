@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -100,8 +101,19 @@ def main() -> None:
     for v in history.values():
         for x in v:
             x['pass'] = x.pop('pass_')
-    blob = dict(pass_=cur, cards=cards, findings=findings, responses=responses, history=history,
-                built=datetime.now().strftime('%Y-%m-%d %H:%M'))
+    # Claude's replies by the pass whose note they answer: closed passes from passes/replies.yaml, the last pass live
+    replies = {k: {int(p): r for p, r in v.items()} for k, v in
+               (yaml.safe_load((PASSES / 'replies.yaml').read_text(encoding='utf-8')) or {}).items()}         if (PASSES / 'replies.yaml').exists() else {}
+    for f in findings:
+        for k, x in [(f['id'], f)] + [(f['id'] + '#' + s['id'], s) for s in f['sections']]:
+            if x.get('reply'):
+                replies.setdefault(k, {})[cur - 1] = x['reply']
+            if x.get('done'):          # answers a note made in the open pass (becomes `reply` when the pass closes)
+                replies.setdefault(k, {})[cur] = x['done']
+    sys.path.insert(0, str(Path(__file__).parent))
+    from apply_quotes import bank, code_labels      # the quote analysts' quotes (verbatim speech) + codebook labels
+    blob = dict(pass_=cur, cards=cards, findings=findings, responses=responses, history=history, replies=replies,
+                quotes=bank(), codeLabels=code_labels(), built=datetime.now().strftime('%Y-%m-%d %H:%M'))
     blob['pass'] = blob.pop('pass_')
     enc = lambda o: json.dumps(o, separators=(',', ':'), ensure_ascii=True, default=str).replace('</', '<\\/')
     data = payload()

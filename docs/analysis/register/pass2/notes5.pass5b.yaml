@@ -1,0 +1,74 @@
+# Mid-pass-5 changes asked for in the researcher's pass-5 notes (2026-10-15). `done` = what Claude did about a note
+# made THIS pass; the page shows it under that note, and it becomes `reply` when pass 5 closes.
+findings:
+  f-workload:
+    done: "Added the graph you asked for (section 2): how long a mission had been left waiting against how likely it is
+      handed over, on both tiers. <b>No sign of it.</b> On the strategic tier, missions left in the queue for two minutes
+      or more get the card about as often as ones opened at once (adjusted 67% vs 63%; per doubling of the wait odds
+      ×1.10, p = .17). On the tactical tier, a plan left open before the first action is, if anything, slightly
+      <i>less</i> often handed to Suggest (80% at 0–5 s to 70% at 40 s+; odds ×0.80 per doubling, p = .12). So
+      noticing they had left a card hanging does not seem to push people to the assistant; it fits the rest of this
+      finding."
+    new_sections:
+      - id: waited
+        after: raw-vs-adjusted
+        title: "A mission left waiting is not handed over more often"
+        chart: load.waits
+        tier: main
+        role: numbers
+        text: "You wondered whether people automate when they realise they have left a card hanging. Here each decision is
+          grouped by how long its mission had been waiting: on the strategic tier, from the mission's arrival to the first
+          time the operator opened it; on the tactical tier, from the planner opening to the operator's first action on it
+          (the plan the operator left sitting while they did something else). <b>The lines are flat.</b> Strategic card
+          use is 63–68% (adjusted) whether the mission waited 10 seconds or more than two minutes. Tactical Suggest use, if
+          anything, drifts down when a plan was left open longer (80% → 70%), the opposite of the idea, but not reliably.
+          The buttons switch tier and show the raw rates and what the mission, minute, game and person alone would
+          predict."
+        how: "Rows: every strategic decision on a real (not re-queued) mission, 564 from 33 people, and every tactical plan,
+          630. Wait: strategic, mission arrival to the first time its strategy panel was opened; tactical, planner open to
+          the first drag or Suggest. 'Adjusted' is the overall rate plus the average of (observed − expected) in that bin,
+          where the expected value comes from mission size and drone types, minute of the session, the game and the
+          person's own rate on their other decisions (the same model as section 1). Intervals resample people. The odds
+          ratio compares each person with themselves: log2 of the wait (+5 s), centred within person, in a model with the
+          same controls, people clustered; a second version also holds the queue depth fixed, since long waits come at
+          busy moments."
+        numbers:
+          - "Strategic (mission left in the queue): adjusted 63% at 0–10 s, 66% 10–30 s, 68% 30–60 s, 63% 1–2 min, 67% at
+            2 min+ (n 173, 117, 100, 91, 83). Within person, odds ×1.10 per doubling of the wait [0.96, 1.28], p = .17;
+            holding the queue fixed ×1.10, p = .19."
+          - "Tactical (plan left open): adjusted 80% at 0–5 s, 76% 5–10 s, 76% 10–20 s, 73% 20–40 s, 70% at 40 s+ (n 270,
+            182, 93, 41, 44). Within person, odds ×0.80 per doubling [0.60, 1.06], p = .12; holding the queue fixed ×0.76,
+            p = .10."
+  f-size-decides:
+    done: "Moved the parallel-work quotes out of the time-phase section into a short closing section, 'In their words:
+      working in parallel while the assistant plans', the last one in this finding. The time-phase section keeps its
+      chart and numbers but no longer shows quotes."
+    sections:
+      parallel:
+        codes: []
+      tactical:
+        done: "Found it: P21 in play, session 1 at 14:38. They say they lay out a plan in their mind while making the
+          allocation by hand and that switching to Suggest would 'disrupt my thought process'; the researcher put it back
+          to them as 'some continuity between the strategic and [assigning] with a plan in mind', and P21 said 'Yeah,
+          exactly.' It is added to this section's quotes (marked as answering a leading question, since 'continuity' is
+          the researcher's word). The same link the other way, card then Suggest, is P10 ('Now I'm using the suggestion
+          because I took the aggressive approach'), P05 and P30, all already in the list. Searching every transcript and
+          interview for continuity, consistency or 'since I used…' remarks turned up nothing else like it."
+  f-flaw-odd:
+    done: "Both can be true because they are lined up on <b>different events</b>, and neither is a firm result on its own.
+      Section 4 lines each person up on the moment they <i>said</i> a strategy card was wrong (7 people): card use falls
+      from 80% to 49%, but adjusted that is −21 points with a wide interval [−49, +7], p = .11, so it is a direction, not a
+      significant drop. Section 5 is a different moment: the first time the <i>Tactical</i> Assistant's Suggest said 'No
+      workable plan' during a drone-failure recovery (18 people). That has nothing to do with noticing the illogical card,
+      and after it card use does not change (+2 points). The time windows are the same kind in both (each person's
+      decisions before vs after their own moment, over both sessions). So the reading is: noticing the strategic card's
+      flaw goes with less card use, while a refusal from the other assistant does not spill over. I have retitled both
+      sections and added a line to each so they cannot be read as the same test."
+    sections:
+      spoken:
+        title: "Lined up on the moment they said a strategy card was wrong: card use falls (7 people, a direction only)"
+        done: "Retitled, and the text now says how this differs from section 5 (see the note on the whole finding)."
+      refusal:
+        title: "A different event: after the Tactical Assistant's first 'No workable plan', nothing changes on either tier"
+        done: "Retitled, and the text opens by saying this is not the noticing moment of section 4 (see the note on the
+          whole finding)."

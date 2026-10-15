@@ -1,0 +1,653 @@
+# Quote analyst qb — f-flaw-odd, f-tier-trust, f-workload, f-triage (main sections only).
+# New quotes are verbatim (checked by scratch script against debrief.txt / interview paragraphs /
+# in-play transcript.raw.json). In-play "at" = session + game-clock time (session count from the
+# session segments in order, as load.py does); video time is in the context.
+quotes:
+  # ---- illogical card: first sight, in play ----
+  - id: qb-P19-01
+    pid: P19
+    source: think-aloud
+    at: "s2 0:36"
+    led: 0
+    paraphrase: false
+    text: "Oh, this just sends a bunch of extra of these even though it doesn't need it?"
+    codes: [C12]
+    context: "Video 0:21:33. First seconds of session 2, reading a strategy card; a few seconds earlier: 'How am I supposed to accomplish the tasks if it's not sending...'."
+  - id: qb-P17-01
+    pid: P17
+    source: think-aloud
+    at: "s1 5:25"
+    led: 0
+    paraphrase: false
+    text: "Why is it that the green ones, there's no green or red, unless I'm missing something."
+    codes: [C12]
+    context: "Video 0:07:43. Looking at a card that adds Camera/Lifter drones to a mission with no task that uses them."
+  - id: qb-P30-01
+    pid: P30
+    source: think-aloud
+    at: "s1 1:01"
+    led: 0
+    paraphrase: false
+    text: "where we can go conservative, but we don't need any, in this one we don't need any lifter or cameras."
+    codes: [C12]
+    context: "Video 0:03:01. About the Conservative card on a Fast-only mission; the illogical card opened ~5 s later (the remark the spoken anchor was moved onto)."
+  - id: qb-P04-01
+    pid: P04
+    source: think-aloud
+    at: "s1 0:44"
+    led: 0
+    paraphrase: false
+    text: "That seems like more drones than perhaps it needed, but I've had drones that are literally not needed for that one, so we'll do the aggressive again."
+    codes: [C12]
+    context: "Video 0:04:08. Notices the excess and takes the card anyway."
+  - id: qb-P35-01
+    pid: P35
+    source: think-aloud
+    at: "s1 1:22"
+    led: 0
+    paraphrase: false
+    text: "But I find that the first task it allocated too much Lifter and Camera-1. So I think I'm less confident for it."
+    codes: [C12]
+    context: "Video 0:07:19. Answering 'any particular reason' for using the agent; in the first two minutes of session 1."
+  - id: qb-P03-01
+    pid: P03
+    source: think-aloud
+    at: "s2 1:03"
+    led: 0
+    paraphrase: false
+    text: "We don't need a leaf task at all. This guy is suggesting five."
+    codes: [C12]
+    context: "Video 0:14:59. 'leaf' is the transcript's rendering of 'lifter'."
+  - id: qb-P01-01
+    pid: P01
+    source: debrief
+    at: "0:29:14"
+    led: 1
+    paraphrase: false
+    text: "I felt like your trust maybe got degraded when you got given an example where it was three blue. Yeah. That did freak me out."
+    codes: [C12]
+    context: "Researcher's words up to 'three blue'; P01 assents."
+  # ---- illogical card: in-play remarks and what they did ----
+  - id: qb-P13-01
+    pid: P13
+    source: think-aloud
+    at: "s1 2:54"
+    led: 0
+    paraphrase: false
+    text: "If it was a significant trade-off, I wouldn't mind, but why would I... It has the same ETA. Why would I spend more resources on something I can do it conservatively?"
+    codes: [C12, C07]
+    context: "Video 0:05:23. Comparing the two cards' totals (333 vs 432) before setting it manually."
+  - id: qb-P13-02
+    pid: P13
+    source: think-aloud
+    at: "s1 4:10"
+    led: 0
+    paraphrase: false
+    text: "Why does it have a buffer of five fast drones? Do fast drones have a higher chance of failing?"
+    codes: [C12]
+    context: "Video 0:06:39. Seeks a reason for the excess rather than calling it an error."
+  - id: qb-P29-01
+    pid: P29
+    source: think-aloud
+    at: "s2 1:20"
+    led: 0
+    paraphrase: false
+    text: "Where did I send, I swear that one sent, like, some green and red ones for no reason. Maybe I shouldn't trust, like, AI as much."
+    codes: [C12]
+    context: "Video 0:15:24. Noticed only after taking the card (28 s after)."
+  - id: qb-P29-02
+    pid: P29
+    source: think-aloud
+    at: "s2 1:32"
+    led: 0
+    paraphrase: false
+    text: "Some red, some green. Um, maybe I'll, okay, I'm gonna try manually again and see if I'm any better at doing this"
+    codes: [C12, C10]
+    context: "Video 0:15:36. Straight after qb-P29-01: response is to go manual."
+  - id: qb-P32-01
+    pid: P32
+    source: think-aloud
+    at: "s2 5:38"
+    led: 0
+    paraphrase: false
+    text: "why would the conservative one send a green drone? There's no green to that. It's just wrong."
+    codes: [C12]
+    context: "Video 0:19:11. P32 has no C12 code and is not in the in-play anchor list, so is counted 'never said'."
+  - id: qb-P32-02
+    pid: P32
+    source: think-aloud
+    at: "s2 7:09"
+    led: 1
+    paraphrase: false
+    text: "But on the strategic, I would say it looks about 50-50 what you're doing. […] I just think some of the strategic suggestions are wrong."
+    codes: [C12]
+    context: "Video 0:20:42. First sentence is the researcher's."
+  - id: qb-P19-02
+    pid: P19
+    source: think-aloud
+    at: "s2 3:47"
+    led: 0
+    paraphrase: false
+    text: "You're way over-committing. You don't need all of that. Okay. Okay. Set manually instead."
+    codes: [C12]
+    context: "Video 0:24:43. Talking to the card, then pressing Set manually."
+  - id: qb-P19-03
+    pid: P19
+    source: think-aloud
+    at: "s2 6:18"
+    led: 0
+    paraphrase: false
+    text: "it was trying to send one of the other drones, which would have done absolutely nothing. So there were a couple of cases where I assigned them manually just to make sure I wasn't wasting resources"
+    codes: [C12]
+    context: "Video 0:27:15. Explaining afterwards why some missions were done by hand."
+  - id: qb-P10-01
+    pid: P10
+    source: think-aloud
+    at: "s1 5:43"
+    led: 0
+    paraphrase: false
+    text: "It sends one extra blue. I don't want that."
+    codes: [C12]
+    context: "Video 0:07:49. A 'broad' remark: an extra of a needed type, not an unneeded type."
+  - id: qb-P01-02
+    pid: P01
+    source: think-aloud
+    at: "s2 4:59"
+    led: 0
+    paraphrase: false
+    text: "I'm not sending four. I don't need three either. Two should be good enough."
+    codes: [C12]
+    context: "Video 0:20:16. Broad remark, after repeated failures on single-Fast sends."
+  - id: qb-P27-01
+    pid: P27
+    source: think-aloud
+    at: "s2 2:07"
+    led: 0
+    paraphrase: false
+    text: "So, there's only one extra blue. So, I'm not sure the reason is I didn't notice it or it's just maybe some bugs."
+    codes: []
+    context: "Video 0:19:17. Unsure whether it is a fault at all."
+  - id: qb-P35-02
+    pid: P35
+    source: think-aloud
+    at: "s2 7:21"
+    led: 0
+    paraphrase: false
+    text: "I found this task, and the AI always give me the wrong answer. I don't know. […] Wrong answers. […] I don't know why. So I think I will choose by myself more than last time."
+    codes: [C12]
+    context: "Video 0:25:27, last minute of session 2. Not in the in-play anchor list (too late in the session to anchor on)."
+  - id: qb-P21-01
+    pid: P21
+    source: think-aloud
+    at: "s2 6:53"
+    led: 0
+    paraphrase: false
+    text: "When it has so many tasks trying to use that, this one takes lots of time for no reason, recommends the wrong type of drones."
+    codes: [C12, C06]
+    context: "Video 0:28:14."
+  - id: qb-P20-01
+    pid: P20
+    source: think-aloud
+    at: "s1 3:41"
+    led: 0
+    paraphrase: false
+    text: "deploy a conservative strategy for that one doesn't make sense. I don't think because I don't need any red or blue chair drones."
+    codes: [C12]
+    context: "Video 0:07:13. 'blue chair' is the transcript's rendering; they mean Lifter/Camera."
+  - id: qb-P21-02
+    pid: P21
+    source: debrief
+    at: "0:36:58"
+    led: 0
+    paraphrase: false
+    text: "If it was kind of just a numbers thing, I wouldn't probably notice. But because it was a clear mistake for a person to see, it just made me automatically lose my trust into it."
+    codes: [C12]
+    context: "Session-2 trust questionnaire, talking about the Strategic Assistant."
+  - id: qb-P15-01
+    pid: P15
+    source: interview
+    at: "para 1"
+    led: 0
+    paraphrase: true
+    text: "Lost faith entirely after one mistake. For simple questions it should not be making mistakes"
+    codes: [C12]
+  - id: qb-P20-02
+    pid: P20
+    source: debrief
+    at: "0:31:06"
+    led: 0
+    paraphrase: false
+    text: "the second scenario, I didn't notice any issues with the strategic allocations like I did in the first run."
+    codes: []
+  # ---- Suggest refusal ----
+  - id: qb-P31-01
+    pid: P31
+    source: think-aloud
+    at: "s2 5:41"
+    led: 0
+    paraphrase: false
+    text: "Ah, here we have a reassignment. That should not be a problem. Oh, no workable plan. Ah, okay, abandon them."
+    codes: [C21]
+    context: "Video 0:20:33. A drone failure whose fix was genuinely impossible."
+  - id: qb-P32-03
+    pid: P32
+    source: think-aloud
+    at: "s2 3:37"
+    led: 0
+    paraphrase: false
+    text: "Give me a new suggestion. Oh no. There's no workable plan. Oh well. We'll have to abandon it then."
+    codes: [C21]
+    context: "Video 0:17:10. Seconds later they take Aggressive and Suggest on the next mission."
+  - id: qb-P19-04
+    pid: P19
+    source: think-aloud
+    at: "s1 3:34"
+    led: 0
+    paraphrase: false
+    text: "Oh, are we cooked? Are we cooked? It's just no workable plan. Okay. It looks like we have to abandon."
+    codes: [C21]
+    context: "Video 0:09:49."
+  - id: qb-P11-01
+    pid: P11
+    source: think-aloud
+    at: "s1 3:06"
+    led: 0
+    paraphrase: false
+    text: "No workable plan. Oh, well then, never mind if it was failing."
+    codes: []
+    context: "Video 0:05:54."
+  - id: qb-P28-01
+    pid: P28
+    source: think-aloud
+    at: "s1 4:21"
+    led: 0
+    paraphrase: false
+    text: "the AI suggestions say, OK, we have no available drones. It is working for the next task, so it cannot show me the suggestion. So I should manually setting the green drones"
+    codes: []
+    context: "Video 0:09:47. Explaining, when asked, why Suggest refused: the only Camera is chained to another task."
+  - id: qb-P05-01
+    pid: P05
+    source: interview
+    at: "para 4"
+    led: 0
+    paraphrase: false
+    text: "Although if it said it couldn't assign it, I would want to check that myself"
+    codes: [C18]
+    context: "Under the Tactical heading, after 'Trusted more.'"
+  # ---- tier trust ----
+  - id: qb-P16-01
+    pid: P16
+    source: interview
+    at: "para 5"
+    led: 0
+    paraphrase: false
+    text: "More or less fully relied on it"
+    codes: []
+    context: "About the Tactical Assistant; strategic options 'too extreme', overrode most (ev86)."
+  - id: qb-P16-02
+    pid: P16
+    source: interview
+    at: "para 6"
+    led: 0
+    paraphrase: true
+    text: "Tactical requires more thinking. Easier to figure it out – so I trust the AI"
+    codes: [C14]
+  - id: qb-P13-03
+    pid: P13
+    source: debrief
+    at: "0:23:08"
+    led: 0
+    paraphrase: false
+    text: "But tactical was pretty good."
+    codes: []
+    context: "Straight after saying the strategic cards use too many resources (ev63)."
+  - id: qb-P33-01
+    pid: P33
+    source: debrief
+    at: "0:28:24"
+    led: 0
+    paraphrase: false
+    text: "But I think in the low level, the... Tactical level. Tactical level, it works very well."
+    codes: []
+    context: "The first 'Tactical level' may be the researcher supplying the word."
+  - id: qb-P31-02
+    pid: P31
+    source: debrief
+    at: "0:29:45"
+    led: 0
+    paraphrase: false
+    text: "Equally, I'm not so sure. I think the tactical layer required a little bit more human intervention than the strategic layer."
+    codes: [C13]
+    context: "Dissent: asked whether both assistants helped equally."
+  - id: qb-P12-01
+    pid: P12
+    source: interview
+    at: "para 7"
+    led: 0
+    paraphrase: false
+    text: "Intuitively, the strategic agent is probably more reliable as it’s a more trivial calculation whereas the tactical task is more complex"
+    codes: []
+  - id: qb-P20-03
+    pid: P20
+    source: debrief
+    at: "0:27:00"
+    led: 0
+    paraphrase: false
+    text: "The strategic one maybe seemed a bit more useful. Because I think that one actually saved me a little more time."
+    codes: [C04]
+    context: "Same person who lost trust in the strategic cards after an unneeded-colour card (ev121, ev122)."
+  - id: qb-P11-02
+    pid: P11
+    source: debrief
+    at: "0:28:06"
+    led: 0
+    paraphrase: false
+    text: "I would probably miss both equally. […] I would like to have both. I would, but when I'm actually using it in running missions, I'd probably use the Chujic one more."
+    codes: []
+    context: "'Chujic' is the transcript's rendering of 'strategic'."
+  - id: qb-P14-01
+    pid: P14
+    source: interview
+    at: "para 0"
+    led: 0
+    paraphrase: false
+    text: "The way strategic plans were presented, based on quantifiable stats, I could make a decision in one glance"
+    codes: [C18]
+    context: "Note opens 'Checked a lot more' (the tactical plans)."
+  - id: qb-P04-02
+    pid: P04
+    source: think-aloud
+    at: "s1 6:36"
+    led: 1
+    paraphrase: false
+    text: "So this one is fast, but also you trust this one more than this one, do you think? It's not so much trust, it's just like it will take longer to check."
+    codes: [C17]
+    context: "Video 0:10:00. First sentence is the researcher's, about using the tactical Suggest more than the cards."
+  - id: qb-P04-03
+    pid: P04
+    source: think-aloud
+    at: "s2 4:05"
+    led: 0
+    paraphrase: false
+    text: "For the most part, I don't trust the AI to be better than if I calculated it properly, but it's quicker […] I guess both, but I use it more for the tactical because it would take longer."
+    codes: [C04]
+    context: "Video 0:18:27–0:21:05; between the two parts the researcher asks 'For both AIs, or just for the tactical?'."
+  - id: qb-P06-01
+    pid: P06
+    source: think-aloud
+    at: "s2 5:20"
+    led: 0
+    paraphrase: false
+    text: "I think the more I play this game, I start to rely more and more... […] And I think I'm not checking it, like, really checking it anymore. As long as it shows that it can cover all the mission"
+    codes: [C14, C16]
+    context: "Video 0:19:21."
+  - id: qb-P07-01
+    pid: P07
+    source: think-aloud
+    at: "s1 5:57"
+    led: 0
+    paraphrase: false
+    text: "the first few times, I was like, oh, I don't really trust it […] But then, like, after I double-check it, like, several times, I feel like, oh, it's actually doing quite well, […] I can just confidently trust it"
+    codes: [C16]
+    context: "Video 0:09:14. About the tactical feature; asked 'Do you feel quite confident with that?'."
+  - id: qb-P32-04
+    pid: P32
+    source: debrief
+    at: "0:23:45"
+    led: 0
+    paraphrase: false
+    text: "I think I developed a stronger opinion on how much to trust each of them."
+    codes: []
+  - id: qb-P29-03
+    pid: P29
+    source: think-aloud
+    at: "s1 7:15"
+    led: 0
+    paraphrase: false
+    text: "I mean, I kind of went into it trusting it, and then, but I, I was going to check it, or, like, if, if it didn't work, then I might stop using it."
+    codes: []
+    context: "Video 0:10:38. Asked 'Would you say you were developing trust in it over time?'."
+  # ---- workload ----
+  - id: qb-P27-02
+    pid: P27
+    source: think-aloud
+    at: "s1 3:33"
+    led: 0
+    paraphrase: false
+    text: "Quite extensively. […] Yeah, because it's an emergent scenario, so I don't have enough time to just check the details. So I think the AI suggestions is quite useful."
+    codes: [C14, C17]
+    context: "Video 0:08:20. Asked how much they are using the agents."
+  - id: qb-P27-03
+    pid: P27
+    source: think-aloud
+    at: "s1 0:56"
+    led: 0
+    paraphrase: false
+    text: "My reason is there are so many drones, so I don't have enough energy and attention to just the check zone."
+    codes: [C14]
+    context: "Video 0:05:42. Researcher: 'you seem confident using the tactical assistant'."
+  - id: qb-P29-04
+    pid: P29
+    source: think-aloud
+    at: "s1 5:40"
+    led: 0
+    paraphrase: false
+    text: "I feel like I'm kind of concerned with the speed a lot more. Um, and, yeah, maybe if I, it wasn't as much time pressure, I'd do it myself. […] I'll do aggressive, because there's some stuff building up now."
+    codes: [C11]
+    context: "Video 0:09:03."
+  - id: qb-P18-01
+    pid: P18
+    source: think-aloud
+    at: "s2 3:35"
+    led: 1
+    paraphrase: false
+    text: "This one's more stressful. […] Does the fact that it's more stressful make you more or less likely to use the tools, do you think? I think less. […] I'm too focused to look at it, I think."
+    codes: []
+    context: "Video 0:18:45. The question is the researcher's. Dissent: the same person said in the debrief they used the assistant when overwhelmed (ev106, ev107)."
+  - id: qb-P21-03
+    pid: P21
+    source: think-aloud
+    at: "s1 6:26"
+    led: 0
+    paraphrase: false
+    text: "To be honest, I can't wait to see the recommendation over here. I just feel like, oh, there's pressure and I have to do it faster."
+    codes: [C06]
+    context: "Video 0:13:45. Pressure pushes them past the strategy card (waiting for it costs time)."
+  - id: qb-P05-02
+    pid: P05
+    source: think-aloud
+    at: "s1 7:31"
+    led: 0
+    paraphrase: false
+    text: "there was no more active missions coming in, so therefore I could take more time and ensure that it was correct. But perhaps if I was more time pressured, then I'd ask it to suggest."
+    codes: [C11, C17]
+    context: "Video 0:11:27. Fixed a failure by hand because nothing was waiting."
+  - id: qb-P29-05
+    pid: P29
+    source: think-aloud
+    at: "s1 0:49"
+    led: 0
+    paraphrase: false
+    text: "Yeah, because there's quite a lot of missions piling up. I'd like to handle them first, I think."
+    codes: []
+    context: "Video 0:04:12. Just used the assistant on a big mission; researcher had asked if it was about speed."
+  - id: qb-P32-05
+    pid: P32
+    source: think-aloud
+    at: "s2 3:04"
+    led: 0
+    paraphrase: false
+    text: "that's why I don't know if that's getting a suggestion because I had a lot of spare missions waiting last time. So if we can get through them quicker, that must be good."
+    codes: [C11]
+    context: "Video 0:16:37. Asked whether they are using the tactical assistant more this session; reason is last session's backlog."
+  - id: qb-P20-04
+    pid: P20
+    source: think-aloud
+    at: "s2 4:37"
+    led: 0
+    paraphrase: false
+    text: "I'll deal with the higher priority ones first. Um, because there's a lot of higher priority ones, I think I will just go with the conservative recommendation for both the critical ones."
+    codes: [C11]
+    context: "Video 0:19:43."
+  # ---- triage ----
+  - id: qb-P27-04
+    pid: P27
+    source: debrief
+    at: "0:25:34"
+    led: 0
+    paraphrase: false
+    text: "So, when I'm trying to complete this task, maybe I need to check which one is more critical. Mm-hmm. And how many drones is reserved. And in the hub. And how many drones is required."
+    codes: []
+    context: "Asked how they sorted the missions in the sidebar. The researcher then mentions an order-by-criticality button that almost nobody found."
+  - id: qb-P27-05
+    pid: P27
+    source: debrief
+    at: "0:27:14"
+    led: 0
+    paraphrase: false
+    text: "The first one is which task can be completed. And if all the tasks can be completed, then I'd prefer to order them with the critical."
+    codes: [C28]
+  - id: qb-P31-03
+    pid: P31
+    source: think-aloud
+    at: "s1 4:30"
+    led: 0
+    paraphrase: false
+    text: "I'll go with the most critical first."
+    codes: []
+    context: "Video 0:08:11."
+  - id: qb-P22-01
+    pid: P22
+    source: think-aloud
+    at: "s1 5:55"
+    led: 0
+    paraphrase: false
+    text: "Let's get the critical ones in progress and then the rest of them are routine."
+    codes: []
+    context: "Video 0:09:22."
+  - id: qb-P22-02
+    pid: P22
+    source: think-aloud
+    at: "s1 0:56"
+    led: 0
+    paraphrase: false
+    text: "So sometimes in these ones, I guess making a decision earlier is beneficial because at some point the other ones are going to pop up."
+    codes: []
+    context: "Video 0:04:23."
+  - id: qb-P20-05
+    pid: P20
+    source: think-aloud
+    at: "s1 6:23"
+    led: 0
+    paraphrase: false
+    text: "Looking at the remaining, uh, missions here, there's one that's critical, so I'll start allocating that."
+    codes: []
+    context: "Video 0:09:55."
+  - id: qb-P19-05
+    pid: P19
+    source: think-aloud
+    at: "s2 4:53"
+    led: 0
+    paraphrase: false
+    text: "Because I've been given a lot of very low priority tasks up front, and then I got a much more higher priority task just there."
+    codes: []
+    context: "Video 0:25:49. Jumping to a newly arrived higher-criticality mission."
+  - id: qb-P19-06
+    pid: P19
+    source: think-aloud
+    at: "s2 7:06"
+    led: 0
+    paraphrase: false
+    text: "I wish I could filter these by racking penalty, huh?"
+    codes: []
+    context: "Video 0:28:02. A sort-by-criticality control existed but was rarely found."
+  - id: qb-P30-02
+    pid: P30
+    source: think-aloud
+    at: "s2 5:41"
+    led: 0
+    paraphrase: false
+    text: "might be easier to allocate this one first actually just because i'm i have lots of fast ones right now"
+    codes: []
+    context: "Video 0:17:54. Choosing by what the reserve can cover."
+  - id: qb-P17-02
+    pid: P17
+    source: debrief
+    at: "0:26:04"
+    led: 0
+    paraphrase: false
+    text: "Oh, I only have two. I needed three to have one back. So I stopped, go into the next one, did that and then go went back to once I had"
+    codes: [C07]
+    context: "Skipping a mission the reserve could not yet cover with a spare."
+
+sections:
+  "f-flaw-odd#event":
+    summary: "12 of 33 said in the debrief or interview that the strategy cards over-allocated or sent unneeded types (C12), and 12 commented on it during play (7 strictly about a card sending an unneeded type). The first sight is often puzzlement rather than a verdict ('unless I'm missing something', 'do fast drones have a higher chance of failing?'), and some took the card anyway (P04) or noticed only after taking it (P20, P29). Dissent: P10 decided the redundancy was sensible; P27 was not sure it was a fault."
+    featured: [qb-P19-01, qb-P17-01, ev122, qb-P04-01]
+    more: [qb-P30-01, qb-P35-01, qb-P03-01, qb-P13-02, ev121, ev127, ev64, qb-P20-01, qb-P01-01, qb-P27-01]
+    codes: [C12]
+  "f-flaw-odd#over-time":
+    summary: "Nobody describes a dip-and-recover in their own words, but the pieces are there: several noticed early in session 1 (P35 in the first two minutes, P13 at minute 3, P20 at minute 4) and went manual for a while, and those who say why they kept using the cards give speed — it is less reliable 'but at least it saves time' (P28). P20, asked if their trust was destroyed: 'No. Definitely not… most of the time it seemed accurate'."
+    featured: [qb-P35-01, qb-P13-01, ev174, ev122]
+    more: [qb-P20-01, ev175, qb-P10-01, ev17, ev94]
+    codes: [C12, C04]
+  "f-flaw-odd#by-index":
+    summary: "4 of 33 said they caught the assistant's mistakes more, or were more careful, in the second session (C15: P15, P17, P19, P33), and P15 and P33 add that in the first session there was no time to check. One said the opposite: P20 saw no strategic issues in the second run. No one connects it to which game they played."
+    featured: [ev82, ev114, ev233, qb-P20-02]
+    more: [ev83, ev97, ev96, ev234, qb-P35-02]
+    codes: [C15, C12]
+  "f-flaw-odd#spoken":
+    summary: "The in-play remarks are short and pointed ('It's just wrong', 'You don't need all of that') and are usually followed by going manual (P19, P29, P35, P13), sometimes by taking the card anyway (P04). Four people make further in-play remarks that the anchor list leaves out, late in session 2: P19, P21, P35, and P32. P32 has no C12 code, so they are counted as never having said it, yet they said 'It's just wrong' about an unneeded Camera on a card (s2 5:45)."
+    featured: [qb-P29-01, qb-P32-01, qb-P19-02, qb-P13-01]
+    more: [qb-P29-02, qb-P19-03, qb-P35-02, qb-P21-01, qb-P32-02, qb-P10-01, qb-P01-02, qb-P27-01, qb-P13-02, qb-P30-01, qb-P17-01, qb-P20-01, qb-P03-01, qb-P04-01]
+    codes: [C12]
+  "f-flaw-odd#refusal":
+    summary: "Five people reacted aloud to Suggest's 'No workable plan', and every one took it at face value and moved on to abandoning ('Oh well. We'll have to abandon it then') or doing it by hand. Nobody said a refusal made them doubt either assistant. That fits the null. The only counter-voice is P05's note that they would want to check a refusal themself, and P27 asked for the abort button to be highlighted when no plan exists."
+    featured: [qb-P32-03, qb-P31-01, qb-P19-04, qb-P05-01]
+    more: [qb-P11-01, qb-P28-01, ev172]
+    codes: [C21]
+  "f-flaw-odd#h8":
+    summary: "The move the H8 marker counts — going manual and leaving out the unneeded type — is described by several (P19, P13, P16, P17, P29). But noticing and going manual are not the same event. Some saw the excess and still took the card (P04, P28 'I still use its suggestion'). Others went manual only to trim an extra of a needed type (P10, P01). So a first manual 'fix' is a poor stand-in for the moment someone realised."
+    featured: [qb-P19-03, ev94, qb-P04-01, ev174]
+    more: [ev86, qb-P29-02, qb-P10-01, qb-P01-02, qb-P13-01]
+    codes: [C12, C08]
+  "f-tier-trust#gap":
+    summary: "In the round-2 preference coding, 17 of 33 favour the Tactical Assistant, 7 the Strategic, 3 both, 4 'it depends' and 2 no view. The usual reason is that the strategic cards visibly waste drones while the tactical plans 'seemed to be doing what I was doing'. Dissent comes from P10, P06 and P07 (trusted strategic more), P31 ('the tactical layer required a little bit more human intervention'), P12 (strategic is the 'more trivial calculation') and P21/P31, who saw tactical flaws (no backup drone, illogical task order)."
+    featured: [ev223, qb-P16-01, qb-P31-02, qb-P12-01]
+    more: [qb-P13-03, qb-P33-01, ev130, ev38, ev27, ev28, qb-P21-02, ev129, ev210, ev211, ev12, qb-P16-02]
+    codes: [C12, C13, C16]
+  "f-tier-trust#where":
+    summary: "Those who name a session say it was the strategic tier that slipped in the second session: P19 ('you dropped the ball a little'), P33, P15 and P17. Tactical trust was steady or up (P19, P26). Against the pattern, P06 says strategic trust went up over time and P20 saw strategic issues only in the first run. Nobody tied the change to the Strategic Heavy scenario as such."
+    featured: [ev114, ev233, ev82, ev27]
+    more: [ev115, ev97, ev166, qb-P20-02, ev83, qb-P21-02]
+    codes: [C15, C16, C12]
+  "f-tier-trust#checking":
+    summary: "Speaking to this point: 3 of 33 say the tactical plan was too complex or fast to check (C14), 9 that checking depended on time (C17), and 5 that they always checked (C18). The reasons match the finding: the plan is hard to check, so it is taken on trust ('I just took the AI's word for it'). Several say it is not more trust but the time to check (P04). P14 is the clear dissent: they checked tactical plans more, drone by drone, because cards can be read 'in one glance'."
+    featured: [ev140, qb-P04-02, qb-P27-02, ev72]
+    more: [ev139, ev141, ev150, ev151, ev170, qb-P27-03, qb-P06-01, qb-P14-01, ev212, ev244, ev245, ev100, ev181, ev19, ev52, ev32, qb-P16-02, qb-P04-03]
+    codes: [C13, C14, C17, C18]
+  "f-tier-trust#stated-revealed":
+    summary: "Several people say outright that how much they used an assistant was not the same thing as how much they trusted it. They took cards they rated lower because cards save time ('less reliable… but I still use its suggestion', P28). P20 lost trust in the strategic tier yet found it 'a bit more useful', and P11 would 'miss both equally' but use the strategic one more. This matches the gap between trust and use found in the data."
+    featured: [ev174, qb-P20-03, ev73, qb-P04-03]
+    more: [qb-P11-02, ev175, ev197, ev122]
+    codes: [C04]
+  "f-tier-trust#trust-lead-strip":
+    summary: "4 of 33 say their trust grew with experience or success (C16: P06, P10, P26, P32), and a few more describe a checking-then-trusting arc in play (P07, P06, P29). These accounts are all retrospective and smooth, while the data show no within-person link from trust to later use. Nobody describes trust falling and use following it within a session."
+    featured: [qb-P07-01, ev165, qb-P32-04, qb-P29-03]
+    more: [ev37, ev27, qb-P06-01, ev166]
+    codes: [C16]
+  "f-workload#raw-vs-adjusted":
+    summary: "9 of 33 say they hand over more when busy (C11). Almost all of them mean the harder session or 'when workload gets higher', not the moment a queue builds. One clear voice goes against it in play: P18, asked during a stressful session, said 'I think less… I'm too focused to look at it'. P21 felt pressure pushed them past the strategy card rather than onto it. P29 and P05 describe pressure as the thing that tips them towards the assistant. That is the claim the adjusted data do not bear out."
+    featured: [ev56, ev222, qb-P29-04, qb-P18-01]
+    more: [ev20, ev26, ev57, ev106, ev107, ev119, ev120, ev153, ev221, ev229, ev242, qb-P05-02, qb-P27-02, qb-P29-05, qb-P32-05, qb-P20-04, qb-P21-03, ev175]
+    codes: [C11, C17]
+  "f-triage#order":
+    summary: "Nobody says they took missions oldest-first. Five say, in play or after, that criticality comes first ('I'll go with the most critical first'): P20, P22, P31, P19 and P27. P27 adds 'can it be completed' as the first filter. The order model has no criticality term, so this stated rule is untested. P19 wished for a sort control, and P27 for smart ordering, unaware that an order-by-criticality button existed."
+    featured: [qb-P31-03, qb-P27-04, qb-P22-01, qb-P19-06]
+    more: [qb-P20-05, qb-P20-04, qb-P27-05, qb-P19-05]
+    codes: []
+  "f-triage#choice":
+    summary: "Besides criticality, people describe choosing by feasibility: they skip what the reserve cannot cover yet and come back (P17, P27, P30). P19 jumped to a newly arrived higher-priority mission, which matches the small 'newest' pull. Nobody mentions preferring larger missions, and nobody says their way of choosing changed when the queue was long."
+    featured: [qb-P17-02, qb-P27-05, qb-P30-02, qb-P19-05]
+    more: [ev171, qb-P22-02, qb-P27-04]
+    codes: [C07]

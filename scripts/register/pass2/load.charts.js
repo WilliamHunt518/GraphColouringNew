@@ -176,6 +176,32 @@
       draw();
     },
 
+    /* G — how long the mission had been left waiting vs handing it over (pass 5: "do they automate a card left hanging?") */
+    'load.waits': host => {
+      if (!ok(host, D && D.waits, 'the waiting-time bins')) return;
+      let tier = 'strategic', mode = 'adj';
+      const box = h('div', {}, host);
+      const draw = () => {
+        const Wt = D.waits[tier], B = Wt.bins, [cv] = TIER[tier], col = css(cv), m = Wt.models.main;
+        const raw = { label: 'Raw rate', color: col, faint: mode === 'adj', hollow: mode === 'adj', pts: B.map(b => ({ x: b.label, y: b.raw, lo: b.rawLo, hi: b.rawHi, n: b.n, tip: `${b.people} people · missions avg ${num(b.ndrones, 1)} drones · minute ${num(b.minute, 1)} · their own usual rate ${pct(b.person, 0)}` })) };
+        const exp = { label: 'Expected from mission, minute, game, person', color: css('--ink-3'), dash: true, pts: B.map(b => ({ x: b.label, y: b.exp, n: b.n })) };
+        const adj = { label: 'Adjusted', color: col, pts: B.map(b => ({ x: b.label, y: b.adj, lo: b.adjLo, hi: b.adjHi, n: b.n, tip: 'overall rate + (observed − expected) in this bin' })) };
+        const ser = mode === 'raw' ? [raw] : mode === 'exp' ? [raw, exp] : [raw, adj];
+        box.innerHTML = '';
+        ciChart(box, B.map(b => b.label), ser, { lo: 0.3, hi: 1, ticks: [.3, .4, .5, .6, .7, .8, .9, 1], xName: 'waited',
+          xLabel: tier === 'strategic' ? 'how long the mission had been in the queue when the operator first opened it' : 'how long the tactical planner sat open before the operator’s first action on it',
+          yLabel: tier === 'strategic' ? '% of strategic decisions where a card was taken' : '% of tactical plans where Suggest was pressed',
+          ref: { y: Wt.overall, label: 'overall ' + pct(Wt.overall, 0) } });
+        legend(box, ser.map(se => ({ label: se.label + (se.pts[0] && se.pts[0].lo != null ? ' (95% CI, people resampled)' : ''), color: se.color })));
+        say(box, `${Wt.n} ${tier === 'strategic' ? 'decisions' : 'plans'} from ${Wt.people} people (median wait ${num(Wt.median, 0)} s). Comparing each person with themselves, every doubling of the wait multiplies the odds of ${tier === 'strategic' ? 'taking the card' : 'pressing Suggest'} by ${num(m.est, 2)} [${num(m.lo, 2)}, ${num(m.hi, 2)}], ${pval(m.p)}; also holding the queue fixed, ${num(Wt.models['plus queue'].est, 2)}, ${pval(Wt.models['plus queue'].p)}.`);
+        tableFor(box, ['Waited', 'n', 'People', 'Raw', 'Raw 95% CI', 'Expected', 'Adjusted', 'Adj. 95% CI', 'Mission drones', 'Minute', 'Their usual rate'],
+          B.map(b => [b.label, b.n, b.people, pct(b.raw, 0), `${pct(b.rawLo, 0)}–${pct(b.rawHi, 0)}`, pct(b.exp, 0), pct(b.adj, 0), `${pct(b.adjLo, 0)}–${pct(b.adjHi, 0)}`, num(b.ndrones, 1), num(b.minute, 1), pct(b.person, 0)]));
+      };
+      host.insertBefore(btnBar(host, 'Assistant', [['strategic', 'Strategic (mission left in the queue)'], ['tactical', 'Tactical (plan left open)']], tier, k => { tier = k; draw(); }), box);
+      host.insertBefore(btnBar(host, 'View', [['raw', 'Raw'], ['exp', 'Raw + expected'], ['adj', 'Adjusted']], mode, k => { mode = k; draw(); }), box);
+      draw();
+    },
+
     /* B — every specification of the within-person queue effect */
     'load.robust': host => {
       if (!ok(host, D && D.null, 'the robustness strip')) return;
