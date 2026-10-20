@@ -43,3 +43,25 @@ docs/reports/findings_synthesis.html
 # The name<->anon-ID key. The ONLY place real names live -- never commit or push it.
 docs/Participants.xlsx
 docs/~$*.xlsx
+
+# Demo clips cut from the session recordings for the findings review page (scripts/register/build_demos.py) —
+# same reason as Results/Recordings/: they show a participant's own session.
+Results/review_media/
+
+# Clips and stills cut from participants' own sessions for the presentation folder -- same reason as
+# Results/Recordings/: identifiable data, never commit it.
+presentation/04_study_recordings/
+
+# Paper drafts: LaTeX build files, and the zips (each duplicates its PaperDrafting/vN folder).
+PaperDrafting/**/*.aux
+PaperDrafting/**/*.bbl
+PaperDrafting/**/*.blg
+PaperDrafting/**/*.fdb_latexmk
+PaperDrafting/**/*.fls
+PaperDrafting/**/*.log
+PaperDrafting/**/*.out
+PaperDrafting/**/main*.zip
+PaperDrafting/ScopeOfAutonomy_v*.zip
+
+# The review server's automatic backup of responses.json (rewritten on every save)
+docs/analysis/register/responses.bak.json

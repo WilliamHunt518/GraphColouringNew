@@ -1,0 +1,764 @@
+\documentclass[10pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{morefloats}
+\usepackage{tikz}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{makecell}
+\usepackage{ragged2e}
+\usepackage{parskip}
+\usepackage{tabularx}
+\usepackage{pdflscape}
+\usetikzlibrary{shapes,arrows,positioning,calc}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+% ---------------------------------------------------------------------------------------------
+% Drafting aids. \regtext marks prose carried over from the analysis register (docs/analysis/register):
+% accurate, but written for the review page, not for the paper -- rewrite it. To typeset it as normal text,
+% change the colour below to black. \todo marks notes for the authors.
+\definecolor{regtext}{gray}{0.30}
+\newcommand{\regtext}[1]{{\color{regtext}#1}}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+% v3: the researcher's own pass verdict and notes (blue), and quotes not yet ticked as checked against the recording.
+\definecolor{usernote}{rgb}{0.05,0.30,0.70}
+\newcommand{\usernote}[1]{{\color{usernote}\small #1}}
+\newcommand{\passtag}[1]{{\color{usernote}\small\textsf{[Pass 5: #1]}}}
+\newcommand{\unchecked}{\textsuperscript{\dag}}
+% v4: each finding ends in an options block (blue): the graph views, quotes, numbers and register text the prose
+% does not use, with your pass-5 roles and notes. Show it with \includecomment{options}; hide every block at once by
+% changing that line to \excludecomment{options}.
+\usepackage{comment}
+\specialcomment{options}{\begingroup\par\medskip\color{usernote}\small\noindent\rule{\linewidth}{0.4pt}\par}{\par\noindent\rule{\linewidth}{0.4pt}\par\endgroup}
+\includecomment{options}
+\newcommand{\optshead}[1]{\noindent\textsf{\textbf{#1}}\par}
+\newcommand{\optsec}[1]{\par\smallskip\noindent\textsf{#1}}
+\newenvironment{quotelist}{\begin{itemize}[leftmargin=2em,itemsep=2pt,label={}]\small\itshape}{\end{itemize}}
+\captionsetup{font=small,labelfont=bf}
+\captionsetup[subfigure]{font=footnotesize}
+\setcounter{totalnumber}{6}
+\renewcommand{\floatpagefraction}{0.75}
+% ---------------------------------------------------------------------------------------------
+
+\title{Swarm Search and Rescue with Differing Scales of Autonomy}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\todo{To write. Draft facts for it: 33 operators, two 8-minute sessions each (Strategic Heavy and Tactical Heavy
+scenarios, counterbalanced), a heterogeneous 33-drone fleet, two optional assistants at two decision tiers. Headline
+results: reliance is a stable personal style; hand-over rises with mission size on both tiers; momentary load does not
+push operators onto the assistants; the Tactical Assistant is trusted more; a visible flaw on the strategic tier and an
+invisible one on the tactical tier.}
+\end{abstract}
+
+% -----------------------------------------------------------------
+\section{Introduction}\label{sec:intro}
+
+The deployment of large numbers of robots has advanced from speculation from practice in a short time frame. Present applications of drones and similar uncrewed vehicles are increasingly requiring either large numbers of well-organised operators~\cite{ramchurn2016disaster}, or else provide early demonstrations of semi-autonomous command-and-control software~\cite{anduril2023lattice}. There is significant appetite for the incorporation of autonomy for reasons including but not limited to the impracticalities of supporting one pilot for each asset, and a desire for a single operator to maintain a complete picture of the entire operation~\cite{mod2022ukairpower}. As swarms scale further, the one-to-one or many-to-one models of human control must give way to a one-to-many paradigm, and some degree of autonomy becomes not merely desirable but unavoidable.
+
+How that autonomy is best integrated, however, remains an open question. Autonomy is far from new; defence operations have long been organised around autonomy at different levels of a hierarchy. Auftragstaktik (mission command) requires strategic command to communicate high-level goals to subordinates and grants them latitude over low-level execution, and indeed further delegation. A similar logic can be applied to robot swarms: tactical decisions may be delegated to individual assets or sub-groups, while strategic decisions remain with a human commander. Yet it is not obvious that the best configuration places the tactical under full autonomy while leaving the strategic entirely manual. Lower-level interventions may benefit heavily from human oversight; robots still struggle with physical execution, while  autonomous planners are near-perfect at many allocation problems. Of course, higher-level decisions carry greater consequence and arguably warrant closer human control; it is natural to prefer an autonomy-at-tactical approach, however the best possible combination of autonomy levels may not be so simple. Each of these judgements also depends on operator workload and situational context. The need for interfaces and control paradigms which allow autonomy is therefore high~\cite{mod2022ukairpower}, but the question of \textit{where} in a command hierarchy that autonomy should sit, and whether this should be fixed or operator-configurable, has received little attention. Previous works have explored many forms of autonomy~\cite{nam_trust_2018}, but these have typically been treated at the level of a single decision layer.
+
+%The recent trend in agentic design patterns provides myriad approaches to assistive tools which are deferred to by a human operator, or else proactively make suggestions to them. Such tools may provide a promising direction in human-swarm interface design~\cite{zhang2023understanding}. An additional concern is when autonomy should be employed and at what level of a decision hierarchy. Operators should be given the choice to use these tools where preferred, but it would be beneficial to understand what their experiences are, both subjectively and objectively, as the accuracy of those tools varies. Factors such as task complexity likely have significant impact on the performance of a human-autonomy team, the workload and trust of the operator, and ultimately when and where autonomous assistance is appropriate.
+
+%Real-world deployments rarely involve a single tier of autonomous support. A drone operator managing a search-and-rescue response faces at least two interleaved decision problems: how to allocate resources to incoming missions, and how to prioritise effort within a given mission once resources are committed. Autonomous tools could assist at either level, and their reliability at each level may differ. Yet to our knowledge, no prior work has examined whether operators are more tolerant of imperfect autonomy at higher or lower levels of such a hierarchy, or how inaccuracy at one level propagates into trust at the other.
+
+
+
+This work represents a first step toward a longer-term vision: We aim to understand how autonomy effects both user and mission when deployed at each level of a multi-layered command hierarchy, and move towards a system where each level of concern from strategic down to tactical details, can be automated to varying degrees. Finally, we propose a ``co-pilot'' that, instead of attempting to fully automate the mission, identifies where the user is most needed, and suggest to them an autonomy profile which adapts on-the-fly.
+
+We develop a simulated search-and-rescue scenario using a heterogeneous drone swarm, in which a two-tier assistive system (a strategic tier and a tactical tier) is available to the operator throughout.
+
+
+\textcolor{red}{[Step 4 note (kept from the old draft): this is the natural place to make the \emph{ORCHID lineage} explicit --- name \texttt{jennings2014human} (human-agent collectives / flexible autonomy) and \texttt{ramchurn2021trustworthy} alongside the already-cited \texttt{ramchurn2016disaster}. See cluster C1 in the Related Work notes box. Not drafted.]}
+Neither assistant has errors injected: the manipulation is not the assistants' reliability but \emph{where the operational demand sits}. In a within-subjects design each participant plays two 8-minute sessions --- \textbf{Strategic Heavy} (frequent, small missions, placing demand on cross-mission allocation) and \textbf{Tactical Heavy} (fewer, larger missions, placing demand on within-mission planning) --- with the fleet and the assistants identical in both. Using either assistant is always optional, so the study observes when operators choose to hand a decision over, at which tier, and how that relates to the mission, the moment, the person and their trust.
+
+\textcolor{red}{[RQ block --- REVISED to match what the analysis found (the old block assumed a perfect-agent ``value of intervention'' RQ4 that the data cannot answer). Candidate framings, each mapped to a results section; merge or cut as you like:}
+\begin{itemize}
+  \item \textcolor{red}{\textbf{RQ1 (who).} How much of an operator's use of the assistants is a stable personal style, and is it predicted by attitudes measured beforehand? $\rightarrow$ Section~\ref{sec:res:personal-style}.}
+  \item \textcolor{red}{\textbf{RQ2 (when).} What makes an operator hand a decision over --- the mission (its size), the moment (load, the queue), or practice --- and does the answer differ between the strategic and tactical tiers? $\rightarrow$ Sections~\ref{sec:res:size-decides}--\ref{sec:res:triage}.}
+  \item \textcolor{red}{\textbf{RQ3 (flaws).} How do operators respond to an assistant's flaw that is visible (the illogical strategy card) versus one that is not (the tactical assistant's wrong refusal)? $\rightarrow$ Section~\ref{sec:res:flaw-odd}.}
+  \item \textcolor{red}{\textbf{RQ4 (trust by tier).} Is one tier's assistant trusted more, where does the difference come from, and does stated trust match use? $\rightarrow$ Section~\ref{sec:res:tier-trust}.}
+\end{itemize}
+\textcolor{red}{Note: ``failure'' in this study means hardware drone failure during execution, plus the two side effects of the assistants' rules (Section~\ref{sec:reliability}) --- not injected agent error. Operator-built deadlocks were auto-repaired and never surfaced.]}
+
+% -----------------------------------------------------------------
+% -----------------------------------------------------------------
+\section{Related Work}\label{sec:relatedwork}
+
+Essential to any autonomous system is the notion of trust. Trust in this context is defined by Lee and See as ``the attitude that an agent will help achieve an individual's goals in a situation characterized by uncertainty and vulnerability''~\cite{lee2004trust}. Such qualities are abundant in swarm contexts, where the positions, motions, and goals of the robots are rife with uncertainty, and there is a significant risk of failure stemming from the attritable nature of many such assets and the high levels of risk in their environment~\cite{soorati2024enabling}. It is an important consideration, as a system which is not trusted will likely not be used by the operator, and a system which is trusted too much will be relied on without appropriate checking and oversight. A system which balances under- and over-trust is said to be well calibrated~\cite{mcdermott2019practical}.
+
+It has been observed that once a user falls into the trap of under- or over-trust, they have a tendency to remain there unless actively coaxed back into a well-calibrated relationship~\cite{okamura_adaptive_2020}. The standard tool for this is explanations, however these are not always given due attention~\cite{naiseh_explainable_2021, wagner_explanation_2021}, and often-times users are biased in favour of action over inaction so accept suggestions readily~\cite{mosier_automation_1999}. In the domain of HSI the notion of neglect benevolence describes the observed advantage from leaving the swarm to resolve its own behaviour instead of intervening overly often~\cite{nagavalli2014neglect}, additionally supporting the notion of autonomy which manages itself under human supervision instead of constant interaction with the recommender. Equally important to explanations, then, may be a design pattern where users work in tandem with autonomous tools and can elect to deploy them selectively, with varying levels of autonomy on varying scales of a swarm or sub-swarm.
+
+Traditionally swarm robotic systems are characterised by autonomy, however with the importance of human oversight a question arises as to what level of autonomy should be given, and how the human's actions interface with some level of autonomy. Traditional scales such as Sheridan and Verplank's LOAs are a common metric~\cite{sheridan1978human}, as well as more swarm-focussed scales of a similar form~\cite{hocraffer_meta-analysis_2017}. An important note in more developed robotic systems is that the degree of autonomy can vary at different parts of the robot's role (for example information acquisition may be more autonomous than decision-making)~\cite{onnasch_taxonomy_2021}.
+
+An important note is that the terms ``automation'' and ``autonomy'' are often used interchangeably but are in fact different things, with the former describing well-defined processes of tasks deferred to an \textit{automated system}, and the latter describing \textit{autonomous systems} which can make ``decisions independent of human control''~\cite{lyons_humanautonomy_2021}. As we are referring to swarm robots in this work, the terms are somewhat more interchangeable, as to automate a swarm on a particular task requires the granting of some degree of autonomy (for example performing decentralised allocation, where an automated algorithm runs across robots who then autonomously resolve their tasks~\cite{delle2012methodology}). We tend to prefer the term autonomy as it is more relevant to classical swarm paradigms, but remind the reader that there can be some distinction dependent on use case.
+
+Similar to calibrating trust, it is important that any assistive autonomous system is sufficiently performant to merit use. Human performance in the presence of such an agent is highly sensitive to the reliability and performance of that agent~\cite{rovira_effects_2007}. Some degree of imperfection is an expectation (otherwise there would be no need for a human), and humans are typically willing to tolerate occasional failure if it represents an adequate time- and effort-save. In fact, the most trusted systems are often those which sit in between `too poor to trust' and `too reliable to bother checking'~\cite{kate2018trustworthiness}.
+
+Another important factor is the level of workload. Prior works have found that under high task load, more reliable automation increases operator performance, however under low task load, more reliable automation actually \textit{decreases} operator performance. This is likely due to the over-trust issue discussed above, and presents a difficult challenge to designers, as users may defer to the agent even when not overloaded~\cite{parasuraman_adaptive_2009}.
+
+The level of chosen autonomy will necessarily represent a trade-off between different desirable qualities as alluded to above, and no single solution is likely to best suit every scenario~\cite{miller_delegation_nodate}. This motivates a flexible approach where the level of autonomy is not fixed, rather it can be chosen by the operator. Such flexible approaches have been explored to the extent where agents can be granted autonomy where desirable~\cite{hardin_using_nodate}, or else autonomous agents can be overridden at any level while they attempt to perform autonomously~\cite{valero-gomez_impact_2011}. So-called mixed-initiative approaches to swarm control allow a human to switch the entire swarm between manual and autonomous modes~\cite{nam_trust_2018}. To our knowledge, however, no prior work has examined the behaviour of an operator when autonomous assistance is structured into a two-tier hierarchy and the operator is free to use it selectively. Such a design allows us to ask not only whether the assistive system improves performance, but \emph{when} operators choose to engage it and what advantage that engagement confers.
+
+We term the two structural dimensions of selective autonomy the \textbf{Depth} and \textbf{Breadth} of autonomy. \textbf{Depth} refers to how autonomous some agent is, pertaining directly to Sheridan and Verplank's LOAs~\cite{sheridan1978human}. \textbf{Breadth} refers to the scale of autonomy, whether that be an individual asset, a mission's worth of assets, or the entire reserve. The present work extends this framework by stacking two agents vertically in a hierarchy---one operating at the within-mission (tactical) level and one at the cross-mission (strategic) level---and asking how the operator engages with, and elects to intervene in, autonomy at each level.
+
+Metrics exist to assess the difficulty of tasks in the context of swarms, such as efficiency and effectiveness, and it has been suggested that autonomy should vary depending on these~\cite{hussein_characterization_2022}. As well as the complexity of the task, a more direct assessment of cognitive complexity via operator state metrics such as EEG has been employed~\cite{abbass_augmented_2014}, and such signals could in principle inform a meta-level recommendation system.
+
+\textcolor{red}{[Drafted gap paragraph --- my pass, for your check; rewrite freely. Intended as the closing paragraph of Related Work. Requires the supplement bib for the four keys.]}
+
+\textcolor{red}{Most recently, the one-operator, many-robot paradigm has moved from concept to field demonstration. Adams et al.\ showed that a single trained commander can supervise a swarm of one hundred heterogeneous ground and aerial robots across real urban field exercises, albeit with frequent workload peaks~\cite{adams2025supervise}, while the MOSAIC framework demonstrated a single operator coordinating a heterogeneous five-robot team in a lunar-analogue mission by shifting individual platforms between driver-, task-, and mission-level autonomy~\cite{oberacker2026mosaic}. In parallel, variable autonomy has consolidated into a recognised subfield in its own right, with dedicated venues~\cite{theodorou2024editorial} and emerging design guidelines and research agendas~\cite{reinmund2024variable}. Across this line of work, however, autonomy is treated as a single dial --- a \emph{level} to which a robot or team is set --- and the evidence base consists of demonstrations and design agendas rather than controlled operator studies. What remains unexamined is the setting in which assistance is available simultaneously at \emph{distinct decision tiers} --- cross-mission resource allocation and within-mission planning --- and the operator chooses, moment to moment, how far to engage each. The present study addresses exactly this gap: a controlled, within-subjects examination of how the locus of operational demand shifts operator engagement, workload, and trust across a two-tier assistive hierarchy.}
+
+
+\textcolor{red}{\rule{\linewidth}{0.6pt}}\\
+\textcolor{red}{\textbf{Step 4 --- Reference integration notes (proposals, not drafted text).} New keys live in \texttt{refs\_supplement\_new.bib} (add it via \texttt{\textbackslash bibliography\{refs,refs\_supplement\_new\}}). Each cluster gives \emph{where} to place it and \emph{what} it buys; the wording is yours. Key nuance for the whole trust literature below: our agent is now \textbf{perfect} --- cite the trust-in-\emph{imperfect}-autonomy work as calibration/per-tier-trust \emph{backdrop and motivation}, not as error-detection, since we inject no agent error.}
+\begin{itemize}\itemsep2pt
+  \item \textcolor{red}{\textbf{C1 --- ORCHID lineage} (Intro near \texttt{ramchurn2016disaster}, and/or opening Related Work). Keys: \texttt{jennings2014human} (HAC vision; ``flexible autonomy''/``agile teaming''), \texttt{ramchurn2021trustworthy} (successor framing --- its UAV disaster-response pipeline mirrors our two-tier setup and its ``errors enter at every pipeline stage'' point motivates the per-tier question), \texttt{soorati2022intelligent} (group agenda). \emph{Angle:} frame the study as building on the ORCHID human-agent-collectives programme; \texttt{ramchurn2016disaster} (already cited) is its flagship.}
+  \item \textcolor{red}{\textbf{C2 --- task-allocation substrate} (short new paragraph in Related Work, by the automation/autonomy discussion). Keys: \texttt{ramchurn2010cfstp} (CFSTP: heterogeneous agents, deadline/workload tasks --- the formal root of our strategic/tactical allocation), \texttt{capezzuto2020anytime} \& \texttt{capezzuto2021largescale}/\texttt{capezzuto2021anytime} (modern scalable extensions), \texttt{macarthur2011distributed} (already in bib, uncited), \texttt{ramchurn2010robocup}, \texttt{wu2015agile}, \texttt{baker2016planning} (UAV SAR planning). \emph{Angle:} one or two sentences establishing the agent's allocation task as a well-studied MAS problem; cite the lineage, don't dwell.}
+  \item \textcolor{red}{\textbf{C3 --- single-operator / heterogeneous-swarm HSI} (near the LOAs / one-to-many discussion). Keys: \texttt{soorati2021designing} (in-group HSI interface; HARIS precursor), \texttt{abioye2024adaptive} (your own group; workload-adaptive HSI $\to$ RQ2/RQ3), \texttt{adams2025supervise} (single operator, 100 heterogeneous robots; now also in the gap paragraph --- best used as an Intro feasibility anchor, an RQ2 workload-at-scale \emph{contrast} (their physiological multi-dimensional estimation vs.\ our NASA-TLX), and qualitative motivation for the tactical tier: operators were ``red-lined'' precisely when tactical allocation autonomy was unavailable. Not a design comparator --- no tiers, no trust, n=2 field observation), \texttt{chandarana2018determining} (multi-job-type swarm sizing). \emph{Angle:} situate the one-operator + heterogeneous-asset setup and the workload stakes.}
+  \item \textcolor{red}{\textbf{C4 --- variable/adjustable autonomy} (attach to the Depth/Breadth paragraph and the mixed-initiative cites). Keys: \texttt{methnani2024charge} (survey --- anchor), \texttt{theodorou2024editorial}, \texttt{ramesh2023experimental}, \texttt{verhagen2024meaningful} (firefighting; SAR-flavoured), \texttt{reinmund2024variable}, \texttt{oberacker2026mosaic} (MOSAIC; now also in the gap paragraph --- the depth axis operating in the field: one operator slides a heterogeneous five-robot team across driver/task/mission autonomy levels, but allocation is folded into mission-level autonomy with no separately-operable strategic tier; arXiv preprint, verify status at submission); \texttt{tecuci\_seven\_2007} (already in bib, mixed-initiative). \emph{Angle:} the RQ3 grounding (``where should autonomy sit across levels''); links Depth/Breadth to the variable-autonomy subfield.}
+  \item \textcolor{red}{\textbf{C5 --- trust across tiers} (extend the trust-calibration paragraph; motivates RQ3 per-tier trust and RQ4). Keys: \texttt{wischnewski2023measuring} (subsystem-failure $\to$ whole-system trust spillover --- the key precedent for measuring trust \emph{per tier}), \texttt{wildman2024trust} (multilevel trust in 3+-member HATs), \texttt{rittenberg2024trust} (between-subjects reliability manipulation), \texttt{naiseh2023explanation}, \texttt{centeiojorge2023exploring}; \texttt{parasuraman2010complacency} (already in bib). \emph{Angle:} frame as system-wide vs.\ component-specific trust; justify measuring trust separately for each tier. NB the closest analogue --- a multilevel ``agent reliability pairing'' study (Am.\ J.\ Psychology) --- I could not fully verify; see the supplement TODO before citing.}
+  \item \textcolor{red}{\textbf{C6 --- selective use / recommendation acceptance} (the ``elect to deploy them selectively'' sentence). Key: \texttt{fink\_let\_2024} (already in bib) --- giving users control over whether to accept a recommendation raises acceptance; direct support for the selective-deployment design and RQ2.}
+  \item \textcolor{red}{\textbf{Optional (thesis-level, not this paper):} the AtomicOrchid platform papers and Fischer's ``in-the-loop vs on-the-loop'' work sit better with your HARIS/platform chapter (RQ1) than here; omitted from the supplement to keep scope tight.}
+\end{itemize}
+\textcolor{red}{\rule{\linewidth}{0.6pt}}
+
+
+% =================================================================================================
+\section{Scenario and Task Design}\label{sec:task}
+
+\subsection{Operational Scenario}
+
+We built a simulated search-and-rescue operation in which a single operator directs a heterogeneous fleet of 33
+drones from one hub. Missions keep arriving at positions on a map; each consists of two to six tasks, and each task
+needs a fixed team of drone types. For every mission the operator makes two decisions in sequence:
+\begin{itemize}[noitemsep]
+  \item a \textbf{strategic} decision --- \emph{how many} drones of each type to commit to the mission, taken from
+        the shared reserve that every other mission also draws on; and
+  \item a \textbf{tactical} decision --- \emph{which} committed drone does \emph{which} task, and in what order.
+\end{itemize}
+An assistant is available for each decision (Section~\ref{sec:agents}); using either is always optional. Drones can
+fail mid-task, in which case the operator repairs the plan or abandons the mission. The score rewards completed tasks
+and penalises the time missions spend unfinished, so both getting it right and getting it done quickly matter.
+
+\subsection{Asset Types}\label{sec:assets}
+
+The fleet comprises 11 drones of each of three types (Table~\ref{tab:params}). The types are named to the operator by
+role rather than colour --- \textbf{Fast} (blue; 11\,u/s), \textbf{Lifter} (red; 10\,u/s) and \textbf{Camera}
+(green; 9\,u/s) --- and drones are labelled accordingly (e.g.\ \texttt{Fast-7}). Speeds are not shown to
+participants; the tutorial describes the types only as fastest, standard and slowest. Drones committed to a mission
+leave the reserve at once and return to it when their task chain is complete. The mission generator's archetype
+weights (below) were tuned in simulation so that aggregate demand, in drone-seconds, is approximately equal across
+the three types in both scenarios, so no single type is the systematic bottleneck.
+
+\subsection{Task Types}\label{sec:tasks}
+
+There are five task types of increasing complexity and value (Table~\ref{tab:tasks}). Each has a primary composition;
+three have a substitute composition with one fewer drone of the paired type, which takes about 2.5 times as long.
+The planner shows the substitute as an ``OR'' line on the task badge.
+
+\begin{table}[htbp]
+\centering
+\caption{Task types. Execution times are for the primary composition / the substitute.}
+\label{tab:tasks}
+\small
+\begin{tabular}{llllcr}
+\toprule
+\textbf{Type} & \textbf{Name} & \textbf{Primary} & \textbf{Substitute} & \textbf{Time (s)} & \textbf{Points} \\
+\midrule
+T1 & Recce                   & 1 Fast                       & ---                 & 10 / ---  & 20  \\
+T2 & Recon                   & 2 Fast                       & 1 Fast              & 15 / 38   & 40  \\
+T3 & Supply Drop             & 2 Lifter + 1 Camera          & 1 Lifter + 1 Camera & 25 / 62   & 60  \\
+T4 & Precision Supply Drop   & 1 Lifter + 2 Camera          & 1 Lifter + 1 Camera & 30 / 75   & 80  \\
+T5 & Search \& Service       & 1 Fast + 1 Lifter + 1 Camera & ---                 & 45 / ---  & 100 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Missions}\label{sec:missions}
+
+Missions arrive by a Poisson process. Each has a \textbf{category} that sets its number of tasks and how quickly its
+penalty grows --- A Routine (2 tasks), B Moderate (3), C Significant (4), D Critical (5), E Mass Casualty (6) --- and
+an \textbf{archetype} drawn at generation (Fast-, Lifter-, Camera-leaning or Mixed, weights 38/26/21/15) that sets
+which task types make up that count (Table~\ref{tab:categories}). A mission therefore needs one drone type (e.g.\ an
+all-Recce Fast mission), or all three; only 12 of 606 strategic decisions concerned a two-type mission. Mission zones
+are circles of radius 80 units at least 150 units from the hub and 200 units from any other active zone. Where the
+findings speak of \textbf{mission size} they mean the number of drones the mission needs: the sum of its tasks'
+primary requirements, which the task badges display and which is the same for every operator who met that mission.
+
+\begin{table}[htbp]
+\centering
+\caption{Task list for each mission (category $\times$ archetype), as generated. Task counts grow with category; the
+archetype fixes the mix.}
+\label{tab:categories}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{llllll}
+\toprule
+\textbf{Cat.} & \textbf{\#} & \textbf{Fast-lean} & \textbf{Lifter-lean} & \textbf{Camera-lean} & \textbf{Mixed} \\
+\midrule
+A & 2 & T1,\,T2                & T3,\,T5                & T4,\,T5                & T1,\,T3                \\
+B & 3 & T1,\,T2,\,T2           & T3,\,T3,\,T5           & T1,\,T4,\,T4           & T1,\,T3,\,T5           \\
+C & 4 & T1,\,T1,\,T2,\,T2      & T3,\,T3,\,T5,\,T5      & T1,\,T4,\,T4,\,T4      & T1,\,T2,\,T3,\,T5      \\
+D & 5 & T1,\,T1,\,T2,\,T2,\,T5 & T3,\,T3,\,T3,\,T5,\,T5 & T1,\,T4,\,T4,\,T4,\,T5 & T1,\,T2,\,T3,\,T3,\,T5 \\
+E & 6 & T1,\,T1,\,T2,\,T2,\,T2,\,T5 & T3,\,T3,\,T3,\,T5,\,T5,\,T5 & T4,\,T4,\,T4,\,T1,\,T5,\,T5 & T1,\,T2,\,T3,\,T3,\,T4,\,T5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Score}\label{sec:metric}
+
+The score $S$ is completion reward minus an accrued time penalty, floored at zero:
+\begin{equation}
+S = \max\!\left(0,\;
+    \sum_{m \in \mathcal{M}} \sum_{k \in \mathcal{T}_m} w_k \, \mathbf{1}[k\text{ completed}]
+    \;-\;
+    \sum_{m \in \mathcal{M}} \sum_{k \in \mathcal{T}_m}
+      r_m \, \frac{w_k}{\sum_{k' \in \mathcal{T}_m} w_{k'}}
+      \, \bigl(t^{\mathrm{end}}_k - t^a_m\bigr)
+  \right)
+\label{eq:score}
+\end{equation}
+where $w_k$ is the points value of task $k$ (Table~\ref{tab:tasks}), $r_m$ the penalty rate of the mission's category
+(0.05--0.40 points/s; Table~\ref{tab:params}), $t^a_m$ the mission's arrival time and $t^{\mathrm{end}}_k$ the task's
+completion time, or the current time while it is unfinished. The penalty is thus charged per task, weighted by the
+task's share of its mission's points, from the mission's arrival until that task completes; it is displayed in 15\,s
+steps. If a mission is abandoned, its parent's penalty clock stops and its unfinished tasks are re-queued as a new
+\emph{residual} mission (id suffix \texttt{-R}) that accrues from that moment, so abandoning transfers work rather
+than losing it. Because the four mission streams (Section~\ref{sec:design}) differ in how many points they offer, raw
+scores are compared only within a game.
+
+\subsection{Drone Failures}\label{sec:failures}
+
+Any deployed drone can fail. In the main build (\texttt{study-v1.4} onwards; Appendix~\ref{app:builds}) failures are a
+live hazard of $1/900$ per drone per second, rolled on a fixed one-second simulated grid, identical for every drone
+type and mission. A drone that fails after its part of a task is done (e.g.\ the Lifters of a Supply Drop after the
+drop) exits gracefully. Otherwise the task reverts to pending and the mission enters \textbf{recovery}: its card turns
+red and the tactical planner opens in recovery mode (Figure~\ref{fig:recovery}). The operator may reassign the drones
+still on that mission (never the hub reserve, which is what makes abandoning a real option), press Suggest for a
+repair, or abandon the mission. A mission with an open recovery takes no further failures until 30\,s after it is
+resolved (\texttt{v1.5} onwards). On average a session had about four drone failures (Table~\ref{tab:descriptives}).
+
+% =================================================================================================
+\section{The Two Assistants}\label{sec:agents}
+
+Both assistants are deliberately simple, transparent rules rather than learned models, and in every session analysed
+neither had errors injected (Section~\ref{sec:reliability}). In the interface they are called the \emph{Strategic
+Assistant} and the \emph{Tactical Assistant}; the words ``AI'' and ``agent'' are not used on screen.
+
+\subsection{Strategic Assistant: Strategy Cards}\label{sec:strategic}
+
+When the operator clicks \emph{Allocate} on a queued mission, a panel opens beneath its card and two strategy cards
+load, each after an independent delay of about 4--5\,s (Figure~\ref{fig:cards}). Each card shows the drones it would
+commit per type, the projected mission completion time (ETA), the reserve that would remain, and three bars: Speed
+(the best ETA of the two divided by this card's ETA), Reserve (share of the current reserve left behind) and
+Resilience (spare drones above the minimum needed).
+\begin{itemize}[noitemsep]
+  \item \textbf{Aggressive} --- enough drones of each type for every task to run at once (the parallel sum of the
+        primary compositions), with at least one spare of each type the mission uses; capped by the reserve.
+  \item \textbf{Conservative} --- the smallest team that completes every task in series (primary compositions, or
+        substitutes where the reserve cannot cover a primary), plus one spare of each type the mission uses, plus
+        15\% of the remaining reserve of \emph{every} type. Tasks run mostly in series.
+\end{itemize}
+The 15\% top-up is applied to every drone type, including types the mission does not use. On a one-type mission the
+Conservative card therefore often includes, say, a Camera drone on an all-Fast mission. We call this the
+\textbf{illogical card}: it was on screen for 132 of the 606 strategic decisions, almost all on one-type missions, and
+every participant met it. It was discovered during data collection and deliberately left unchanged so as not to split
+the cohort; Section~\ref{sec:res:flaw-odd} studies it.
+
+The operator can deploy a card as offered (\emph{Deploy Selected}), choose \emph{Edit this allocation} (a counter per
+type, pre-filled from the selected card), or choose \emph{Set manually instead} (the same counters, empty), which is
+possible before the cards have loaded (Figure~\ref{fig:manual}). On deployment the committed drones leave the reserve
+at once and fly to the mission zone, where they wait at its edge for the tactical plan.
+
+\subsection{Tactical Assistant: Suggest}\label{sec:tactical}
+
+Once a mission has its drones, it appears as pending in the tactical planner on the second screen
+(Figure~\ref{fig:tactical}). The planner opens \textbf{empty}: no plan is shown until the operator asks for one.
+The operator can build the plan by hand --- drag a drone onto a task; shift-drag chains a drone on to a further task
+after its first, and the sequence numbers update live --- or press \textbf{Suggest}. Suggest builds a plan with a
+virtual-timeline scheduler: tasks are taken most-constrained first (T5 before T1) and each is given the earliest-free
+drones of the required types from the committed team, chaining drones across tasks where that finishes sooner. The
+plan appears one drone$\rightarrow$task entry per second, and \emph{Deploy} unlocks when it is complete. The operator
+can edit any part of it before deploying. \emph{Deploy} is enabled only when every task has at least its substitute
+composition. The planner works in ``plan-all'' mode: the whole sequence is confirmed once.
+
+Because Suggest routes every drone in one global task order, its plans cannot deadlock. An operator-built plan can (a
+cycle of chained drones each waiting on the other's task); in every session analysed, such deadlocks were detected
+and silently re-routed onto one order by the system, so a participant could never encounter one.
+
+In recovery mode Suggest proposes a repair from the drones on the mission. It considers only drones that are not
+currently executing a task. When the only fix needs a busy drone --- chaining it on after its current task, which
+the operator could do by hand --- Suggest answers ``No workable plan''. We call this a \textbf{wrong refusal}.
+To the operator it is indistinguishable from a correct refusal. It was found after data collection and also left
+unchanged.
+
+\subsection{Assistant Reliability}\label{sec:reliability}
+
+The platform can inject errors into either assistant (a per-session error rate per tier). This was switched off
+($\varepsilon_S = \varepsilon_T = 0$) for every session analysed; the one participant who ran with errors switched on
+(P09) is excluded. Neither assistant was therefore ever deliberately wrong. The assistants' only flaws are the two
+side effects of their rules described above: the illogical card on the strategic tier, which is visible on the card
+face, and the wrong refusal on the tactical tier, which is not. \todo{The old draft's RQ4 (``value of intervention
+into a near-optimal agent'') and the per-tier error manipulation do not apply to these data; see the RQ note in the
+Introduction.}
+
+% =================================================================================================
+\section{Platform and Interface}\label{sec:interface}
+
+The platform is a browser application (React/TypeScript; no server) designed for two monitors side by side
+(Figure~\ref{fig:setup}). All randomness is seeded, so a seed and a configuration reproduce a session exactly, and
+every operator action and assistant output is logged with a millisecond timestamp.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figs/interface/setup_dual_cards.png}
+  \caption{The two screens side by side. \textbf{Left, strategic screen:} reserve (top left), the queue of missions
+  awaiting allocation (left column; the first is being allocated and shows its two strategy cards), and the strategic
+  map with each mission's zone and the hub. \textbf{Right, tactical screen:} the tactical planner, here with no
+  mission pending.}
+  \label{fig:setup}
+\end{figure}
+
+\paragraph{Strategic screen.} The strategic screen (Figure~\ref{fig:strategic}) holds the reserve count per drone
+type, the mission queue and the strategic map. Each mission card (Figure~\ref{fig:queue}) shows the mission's id and
+category, a badge per task with its required drones and points, a progress legend (done, en route, active, pending)
+and a red penalty bar that grows while the mission is unfinished. The queue can be sorted by arrival or by
+criticality. About three and a half cards are visible at once; further waiting missions appear only on the map. The
+map can show zones only or every drone's path.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{figs/interface/strategic_window.png}
+  \caption{Strategic screen mid-session: missions in progress, drones in flight between the hub and the mission
+  zones, and the penalty bars on the queued and active mission cards.}
+  \label{fig:strategic}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.38\linewidth}\centering
+    \includegraphics[width=\linewidth]{figs/interface/mission_queue.png}
+    \caption{Mission queue: three missions awaiting allocation. Each badge shows a task's required drones and its
+    points; the red bar is the accruing penalty.}\label{fig:queue}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.58\linewidth}\centering
+    \includegraphics[width=\linewidth]{figs/interface/strategy_cards.png}
+    \caption{The Strategic Assistant's two strategy cards for a Category C mission: drones per type, ETA, reserve
+    left (``Res''), and the Speed, Reserve and Resilience bars.}\label{fig:cards}
+    \par\medskip
+    \includegraphics[width=0.8\linewidth]{figs/interface/manual_allocator.png}
+    \caption{Manual allocation (\emph{Edit this allocation} or \emph{Set manually instead}): a counter per type,
+    how many of each could fail without stalling the mission, and the live ETA.}\label{fig:manual}
+  \end{subfigure}
+  \caption{The strategic decision.}
+  \label{fig:strategicdecision}
+\end{figure}
+
+\paragraph{Tactical screen.} The tactical screen lists missions awaiting a plan; selecting one opens the planner
+(Figure~\ref{fig:tactical}): the mission zone with each task as a waypoint labelled with its type and staffing
+(e.g.\ \texttt{1/2L 0/1C}, with its substitute below), the committed drones waiting at the zone edge, and a right-hand
+panel listing unassigned drones and the task schedule with each task's assigned drones and projected start and finish.
+Hovering a drone shows its full route.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{\linewidth}\centering
+    \includegraphics[width=0.66\linewidth]{figs/interface/tactical_empty.png}
+    \caption{The planner as it opens: every committed drone unassigned.}\label{fig:tacempty}
+  \end{subfigure}
+  \par\medskip
+  \begin{subfigure}{\linewidth}\centering
+    \includegraphics[width=0.66\linewidth]{figs/interface/tactical_suggest.png}
+    \caption{Suggest filling in the plan, one drone$\rightarrow$task entry per second; dashed lines and numbers show
+    each drone's assigned task and order. \emph{Deploy} stays locked until the fill completes.}\label{fig:tacsuggest}
+  \end{subfigure}
+  \par\medskip
+  \begin{subfigure}{\linewidth}\centering
+    \includegraphics[width=0.66\linewidth]{figs/interface/tactical_manual.png}
+    \caption{A plan being built by hand by dragging drones onto tasks.}\label{fig:tacmanual}
+  \end{subfigure}
+  \caption{The tactical decision in the tactical planner.}
+  \label{fig:tactical}
+\end{figure}
+
+\paragraph{Failures.} When a drone fails, the mission's card turns red with a banner naming the lost drone, and the
+mission is listed as \emph{reassign pending} on the tactical screen. The recovery planner (Figure~\ref{fig:recovery})
+marks executing and travelling tasks, shows the failed drone crossed out, and offers \emph{Suggest}, \emph{Reassign}
+(enabled once every pending task is covered) and \emph{Abandon Mission}.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.25\linewidth}\centering
+    \includegraphics[width=\linewidth]{figs/interface/failure_card.png}
+    \caption{Failure flagged in the queue.}\label{fig:failcard}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.72\linewidth}\centering
+    \includegraphics[width=\linewidth]{figs/interface/recovery_planner.png}
+    \caption{Recovery planner after Fast-1 failed: one Search \& Service task is unstaffed; the remaining mission
+    drones are listed as unassigned.}\label{fig:recplanner}
+  \end{subfigure}
+  \caption{Drone failure and recovery.}
+  \label{fig:recovery}
+\end{figure}
+
+\paragraph{Tutorial.} Before session 1 every participant completed a guided tutorial of 48 steps on a smaller fleet
+(6/6/6), with its own clock. It teaches the manual workflow first --- allocate, plan, chain, deploy, recover from a
+failure by hand, and abandon a mission that cannot be recovered (two scripted failures) --- and only then introduces
+the two assistants; the Suggest button is hidden until that lesson. The tutorial runs with error-free assistants.
+
+% =================================================================================================
+\section{Study Design}\label{sec:studydesign}
+
+\subsection{Design}\label{sec:design}
+
+The study used a within-subjects design with one factor, the \textbf{scenario}, i.e.\ where the operational demand
+sits. Each participant played one 8-minute (480\,s) session of each scenario, in counterbalanced order (17
+Strategic Heavy first, 16 Tactical Heavy first). The fleet, the assistants and every other parameter were the same in
+both.
+\begin{itemize}[noitemsep]
+  \item \textbf{Strategic Heavy} --- missions arrive often (mean inter-arrival 37\,s) and are mostly small (category
+        weights A--E 40/38/16/5/1): about 13.5 missions per session, loading the cross-mission allocation decision.
+  \item \textbf{Tactical Heavy} --- missions arrive less often (75\,s) and are mostly large (5/13/28/38/16): about
+        7.5 missions per session, loading the within-mission planning decision.
+\end{itemize}
+The two scenarios were tuned in simulation to comparable difficulty: a scripted near-optimal operator completes about
+83\% of tasks in both at the final failure rate.
+
+\paragraph{Four games, not two.} Every session used the same seed (42). A session's mission stream is seeded from the
+seed and a plan index, so there are exactly four fixed mission streams (``games''): Strategic Heavy 1 and 2 and
+Tactical Heavy 1 and 2. Up to P30 the plan index was the session number, so a participant's session-1 game was
+always the index-1 game of its scenario; from P31 (\texttt{study-v1.13}) the order was swapped, so later participants
+played the same games in the other position. The games differ in workload (tasks completed per session:
+SH1 25.1, SH2 28.9, TH1 21.5, TH2 32.8; Table~\ref{tab:games}), so every between-person comparison in the results
+holds the game fixed (z-scores within game, game means removed, or game as a fixed effect).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figs/results/f-methods__games__main.png}
+  \caption{\textbf{Four games, not two scenarios.} Workload per session in each of the four fixed mission streams
+  (Strategic Heavy 1 and 2, Tactical Heavy 1 and 2).}
+  \label{fig:games}
+\end{figure}
+
+\paragraph{Build versions.} The platform was updated during data collection (builds \texttt{study-v1.0} to
+\texttt{v1.13}); 24 of 33 participants played \texttt{v1.12} or \texttt{v1.13}. The changes that bear on the data are
+listed in Appendix~\ref{app:builds}; the main one is that P01 and P02 played with half the later task points, which
+we rescale wherever a raw score is used.
+
+\subsection{Participants}\label{sec:participants}
+
+Thirty-four people took part; 33 are analysed. P09 was run with assistant errors switched on (a pilot of the error
+manipulation) and did not follow the task, and is excluded throughout. The 33 were aged 21--44 (mean 28.7, SD 6.0);
+25 men and 8 women. 28 held a postgraduate degree (23 master's, 5 doctorate) and 5 an undergraduate degree; 32 of 33
+were from computing, AI, robotics or electronic engineering, and one from the armed forces. Self-reported experience
+was mostly moderate with simulations (20 moderate or extensive) and autonomous systems (24), and low with drones (21
+none) and command or emergency management (24 none). \todo{Recruitment route, ethics approval number, payment, and
+dates (sessions ran 2026-09).}
+
+\subsection{Procedure}\label{sec:procedure}
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Consent and pre-study questionnaire.} Background and experience; a short comprehension check; and,
+        from \texttt{study-v1.3}, three attitude scales: the AI Attitude Scale (AIAS-4, 10-point), a bespoke
+        verification-propensity scale and a bespoke delegation-boundary scale (both 7-point).
+  \item \textbf{Tutorial} (Section~\ref{sec:interface}).
+  \item \textbf{Session 1} (8 minutes; one scenario).
+  \item \textbf{Post-session questionnaires}: NASA-TLX and trust in each assistant (Section~\ref{sec:measures}).
+  \item \textbf{A 30-second break screen.}
+  \item \textbf{Session 2} (8 minutes; the other scenario), then the same questionnaires.
+  \item \textbf{Debrief interview}, audio-recorded, with the researcher's written notes.
+\end{enumerate}
+Participants were asked to think aloud while playing, and the researcher occasionally asked a short question during
+play; quotes that answer such a question are marked as following a leading question. Both screens, the cursor and
+the participant's voice were recorded throughout. \todo{Total duration per participant; setting (lab, monitors);
+the debrief question list.}
+
+\subsection{Measures}\label{sec:measures}
+
+\paragraph{Event log.} Every session's first event dumps the full parameter set, and every operator action and
+assistant output is logged as it happens (606 strategic decisions and 630 tactical plans in all). The main
+behavioural measures are defined as follows.
+\begin{itemize}[noitemsep]
+  \item \textbf{Chose a strategy card} (used the Strategic Assistant): a strategic decision deployed from a strategy
+        card as offered. A card that was edited before deploying counts as an allocation built by hand.
+  \item \textbf{Pre-emptive}: an allocation built by hand and committed before the strategy cards had loaded.
+  \item \textbf{Requested a tactical suggestion} (used the Tactical Assistant): the operator pressed the planner's
+        Suggest button at least once on that tactical plan (the planner starts empty, so this is always a deliberate
+        request). \textbf{Kept unmodified}: a suggested plan deployed with no change.
+  \item \textbf{Handed over}: either of the two.
+  \item \textbf{Decision time}: from opening the strategic panel (or the tactical planner) to the choice, minus the
+        forced wait (the card reveal; one second per Suggest entry), unless stated otherwise.
+  \item \textbf{Queue depth}: other missions that had arrived and had not yet received a strategic decision when the
+        panel opened, rebuilt from the log.
+  \item \textbf{Mission size}: drones needed (Section~\ref{sec:missions}); also tasks, drone types, drones committed.
+\end{itemize}
+
+\paragraph{Questionnaires.} After each session: \textbf{NASA-TLX}~\cite{hart1988nasa}, six sliders from 0 to 20,
+reported as the unweighted mean (performance runs from 0 = perfect to 20 = failure; from \texttt{v1.12} the slider
+carried a note that it runs the other way, after two participants were confused by it). \textbf{Trust} in each
+assistant separately: six statements rated 1--7 (``The [Strategic/Tactical] Assistant is reliable'', ``I trust the
+\dots\ Assistant's recommendations'', ``\dots\ performs well'', ``I feel confident using \dots'', ``\dots\ provides
+useful guidance'', ``I would follow \dots\ suggestions without hesitation''), averaged. \todo{These six items are
+bespoke (adapted in spirit from \cite{jian2000foundations}, but not that scale) --- describe and justify, or cite a
+source.} Technology-acceptance scales exist in the platform but are only given after a third session, so none were
+collected.
+
+\paragraph{Qualitative material.} Think-aloud and debrief audio was transcribed automatically (faster-whisper, word
+timestamps) and aligned to the event log by the on-screen session clock. Debriefs and the written interview notes
+were coded against a codebook of 28 codes written before coding (C01--C28; e.g.\ C03 ``small myself, big to the
+assistant'', C11 ``hands over when overloaded'', C12 ``noticed over-allocation or unneeded types''). Each code is
+present or absent per participant, with every supporting excerpt checked to occur verbatim in the source. Quotes in
+the results were selected from these sources and checked verbatim. \todo{Coding was done by a single coder, an AI
+model (Claude), with a second AI pass ($\kappa = .96$); the only independent check (stated preference, round 1) gave
+$\kappa = .27$. A human second coder is needed before the ``X of 33 said'' counts are reported as more than
+descriptive.}
+
+\subsection{Analysis}\label{sec:analysis}
+
+The analysis is exploratory, with a pre-specified core: ten hypotheses (H1--H10) were written and signed off before
+any test was run, each with one primary test, Holm-corrected together; everything else is reported as exploratory.
+The findings were then refined over five review passes in which every result was checked and re-specified.
+\todo{Describe the analysis process honestly here: the analyses were scripted with the help of AI coding agents and
+every result re-run and reviewed by the researcher (register: \texttt{docs/analysis/register}). Decide how much of
+this belongs in the paper.} Common elements:
+\begin{itemize}[noitemsep]
+  \item \textbf{Decisions within people.} Decision-level outcomes are modelled with generalised estimating equations
+        (GEE; logistic for yes/no, Gaussian for times on the log scale) clustered on participant, with small-sample
+        bias-reduced standard errors. Predictors of interest are split into a \emph{within-person} part (the
+        decision's value minus the person's own mean) and a \emph{between-person} part (the person's mean), so
+        ``within person'' estimates compare each operator only with themselves.
+  \item \textbf{Game held fixed}: game (one of the four) and session as fixed effects, or z-scores within game.
+  \item \textbf{Expected and adjusted rates.} Where a raw rate could reflect who reaches a situation rather than the
+        situation itself, a logistic model predicts each decision's chance of handing over from the mission (drones,
+        tasks, types), the minute of the session, the game and the person (their rate on all their \emph{other}
+        decisions, so a decision never predicts itself). \emph{Adjusted} = the overall rate plus the mean of
+        (observed $-$ expected) in a bin.
+  \item \textbf{Intervals}: 95\% intervals by resampling people (whole participants, with replacement; 400--2,000
+        draws), so one heavy user cannot make an interval look tight.
+  \item \textbf{Nulls} are reported with the effect size the data could have detected.
+\end{itemize}
+
+% =================================================================================================
+\section{Results}\label{sec:results}
+
+\todo{v4. The results below, Section~\ref{sec:qual} and Section~\ref{sec:practitioner} are draft prose
+(\texttt{scripts/paper/prose.yaml}, built by \texttt{scripts/paper/build\_prose.py} into \texttt{results.tex},
+\texttt{qual.tex} and \texttt{practitioner.tex}), modelled on your edit of the first finding, which is kept as you
+wrote it apart from typos and terms. Each finding is one block ending in a page break: a paragraph, then its figure
+with a statement as the caption, then the next paragraph. Quotes are woven in, one or two at a time, as you trimmed
+them. The blue \emph{options} block at the end of each finding holds everything the prose leaves out: the other
+graph views, the highlighted quotes not used, the key numbers, the register's text for sections not used, and your
+pass-5 roles and notes. Hide every options block at once by changing \texttt{\textbackslash includecomment\{options\}}
+to \texttt{\textbackslash excludecomment\{options\}} in the preamble. Terms are made consistent throughout,
+including the graph labels: a strategy card is \emph{chosen}, a tactical suggestion is \emph{requested}, an allocation
+is \emph{built by hand}. A \unchecked{} after a quote means it has not been ticked as checked against the recording.
+Sidelined analyses are in Appendix~\ref{app:supplement}.}
+
+\subsection{Overview}\label{sec:res:overview}
+
+Table~\ref{tab:descriptives} summarises each scenario, and Table~\ref{tab:games} each game. Strategic Heavy sessions
+had nearly twice as many missions and decisions as Tactical Heavy ones, but about the same number of tasks completed;
+Tactical Heavy offered more points and accrued more penalty. Operators chose a strategy card on 60\% of decisions in
+Strategic Heavy and 73\% in Tactical Heavy, and requested a tactical suggestion on 72\% and 79\% of plans. Workload (NASA-TLX) did not
+differ between the scenarios.
+
+\input{tables/tab_descriptives}
+
+\FloatBarrier
+\input{results}
+
+% =================================================================================================
+\section{In Their Own Words}\label{sec:qual}
+
+\todo{Generated (\texttt{qual.tex}): the qualitative findings built from long passages of the think-aloud, the
+questionnaire talk and the debriefs. Two findings you pruned this pass are left out (``Trust in the process, not the
+answer'' and ``What a real operation would need''; your note on the second: the limitations are implied and can be
+mentioned near the end). Participant P36 is quoted only in Section~\ref{sec:practitioner}.}
+
+\input{qual}
+
+% =================================================================================================
+\section{A Practitioner's Reading}\label{sec:practitioner}
+
+\todo{Generated (\texttt{practitioner.tex}). One participant with operational military experience, one point per
+passage you picked, each with its links back to the results above (agrees / qualifies / goes beyond) as
+cross-references; the last subsection gathers every link by kind. In the paper, describe them only as ``a participant
+with operational military experience''.}
+
+\input{practitioner}
+
+% =================================================================================================
+\section{Discussion}\label{sec:discussion}
+
+\todo{To write. Your pass-5 notes for it: the branching failure space of complex tasks as future work
+(Section~\ref{sec:qual:practitioner:pt-branching-paths}); a rule like ``never without a reserve'' and the consistency
+of habits, for training (Section~\ref{sec:qual:practitioner:pt-reserve}); the clash between one plan across the tiers
+and narrow context per tier (Sections~\ref{sec:qual:hierarchy:one-plan} and~\ref{sec:qual:practitioner:pt-silos}).
+Material for it: the f-operator-wants finding (Section~\ref{sec:res:operator-wants}), the
+open questions recorded in the register, and the old draft's Step-4 benchmarking note: compare against
+\texttt{adams2025supervise} (workload at scale), \texttt{wischnewski2023measuring}/\texttt{wildman2024trust}
+(across-tier and multilevel trust), the variable-autonomy cluster including \texttt{oberacker2026mosaic}, and
+\texttt{ramchurn2021trustworthy} for error propagation across a pipeline.}
+
+\subsection{Limitations}
+\todo{Your pass-5 note: the real-operations limitations (pace, stakes, unknown task locations) are implied and can be
+mentioned here rather than as a finding. Draft list from the register: one sample of 33, almost all computing/engineering and strongly AI-positive
+(AIAS-4 mean 8.0/10); a game, not real stakes; four fixed games played in an order that depended on when a person took
+part; build changes during collection (Appendix~\ref{app:builds}); single AI coder for the qualitative counts; the
+illogical card and the wrong refusal are side effects found after collection, not manipulations; trust measured only
+after each session, so a same-session trust--use link can run either way.}
+
+% =================================================================================================
+\section{Conclusion}\label{sec:conclusion}
+\todo{To write.}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+% =================================================================================================
+\appendix
+
+\section{Simulation Parameters}\label{app:params}
+
+\begin{table}[htbp]
+\centering
+\caption{Simulation parameters (scenario parameter set v2.1). Everything except the arrival rate and the category
+weights is identical in the two scenarios.}
+\label{tab:params}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{llr}
+\toprule
+\textbf{Parameter} & \textbf{Description} & \textbf{Value} \\
+\midrule
+\multicolumn{3}{l}{\textit{Fleet}} \\
+Fast (blue)    & count; speed & 11; 11.0\,u/s \\
+Lifter (red)   & count; speed & 11; 10.0\,u/s \\
+Camera (green) & count; speed & 11; 9.0\,u/s \\
+\midrule
+\multicolumn{3}{l}{\textit{Missions}} \\
+Category penalty rate & A / B / C / D / E & 0.05 / 0.10 / 0.15 / 0.25 / 0.40 pts/s \\
+Archetype weights & Fast / Lifter / Camera / Mixed & 38 / 26 / 21 / 15 \\
+Zone & radius; min.\ distance to hub; to other zones & 80; 150; 200 units \\
+\midrule
+\multicolumn{3}{l}{\textit{Scenario-specific}} \\
+Strategic Heavy & mean inter-arrival; category weights A--E & 37\,s; 40/38/16/5/1 \\
+Tactical Heavy  & mean inter-arrival; category weights A--E & 75\,s; 5/13/28/38/16 \\
+\midrule
+\multicolumn{3}{l}{\textit{Session, assistants, failures}} \\
+Session length & per session & 480\,s (8\,min) \\
+Seed & all sessions & 42 (four games; Section~\ref{sec:design}) \\
+Strategy card reveal & per card, independent & $\approx$4--5\,s \\
+Conservative card & spare per used type; top-up of remaining reserve & +1; 15\% of every type \\
+Suggest fill rate & tactical plan & 1 drone$\rightarrow$task entry per second \\
+Drone failure hazard & per deployed drone per second & $1/900$ (\texttt{v1.4}+) \\
+Post-failure grace & no further failure on that mission & 30\,s after recovery (\texttt{v1.5}+) \\
+Penalty display step & & 15\,s \\
+Assistant error rates & $\varepsilon_S$, $\varepsilon_T$ & 0, 0 (all analysed sessions) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Build Versions}\label{app:builds}
+
+\begin{table}[htbp]
+\centering
+\caption{Platform builds used during data collection, with the changes that bear on the data. The build is recorded in
+every session's log; the full history is in \texttt{docs/STUDY\_BUILD.md}.}
+\label{tab:builds}
+\small
+\begin{tabularx}{\linewidth}{lcX}
+\toprule
+\textbf{Build} & \textbf{Participants} & \textbf{Relevant to the data} \\
+\midrule
+\texttt{v1.0} & P01 & Task points half the later values (rescaled in analysis); failures from a per-mission schedule. \\
+\texttt{v1.2} & P02 & As above; abandoned work re-queued as a residual mission from here on. \\
+\texttt{v1.3}--\texttt{v1.4} & P03 & Points doubled; pre-study AI-attitude scales added; live failure hazard (1/900 per drone-second) on a fixed grid from \texttt{v1.4}; substitute compositions executable. \\
+\texttt{v1.5}--\texttt{v1.6} & P04 & Recovery Suggest produces plans; 30\,s post-failure grace; a half-built recovery plan survives a task completing. \\
+\texttt{v1.7}--\texttt{v1.9} & P05--P07 & Strategy-card score bars corrected (Speed = best ETA / ETA; Reserve = share of reserve left); allocating clears the tactical screen; deploying closes the planner. \\
+\texttt{v1.10}--\texttt{v1.11} & P10, P11 & Error-injection machinery added, switched off ($\varepsilon=0$). \\
+\texttt{v1.12} & P12--P30 & NASA-TLX performance slider carries a ``runs backwards'' note. \\
+\texttt{v1.13} & P31--P36 & Games swapped: the same four mission streams played in the other session position. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\todo{P09 (\texttt{v1.11}, errors on) excluded. Check the table against docs/STUDY\_BUILD.md before submission; the
+register's sensitivity analyses on the \texttt{v1.12}+ cohort are in the analysis scripts.}
+
+\input{tables/tab_games}
+
+\clearpage
+\section{Supplementary Results}\label{app:supplement}
+
+Sidelined analyses from the analysis register: robustness checks, alternative specifications and closer looks that
+support the main results but are not needed to follow them.
+
+\input{supplement}
+
+\clearpage
+\section{Literature Suggestions}\label{app:lit}
+
+\todo{Suggested additions keyed to the results, for the Related Work and Discussion. Not added to \texttt{refs.bib}:
+verify each reference before citing.}
+
+\begin{itemize}[itemsep=2pt]
+  \item \textbf{Stable individual differences in reliance} (personal style, Section~\ref{sec:res:personal-style}):
+    Merritt \& Ilgen (2008), ``Not all trust is created equal: dispositional and history-based trust in
+    human--automation interactions'', \emph{Human Factors} 50(2); Hoff \& Bashir (2015), ``Trust in automation:
+    integrating empirical evidence on factors that influence trust'', \emph{Human Factors} 57(3).
+  \item \textbf{Attitude scales not predicting behaviour}: Grassini (2023), ``Development and validation of the AI
+    Attitude Scale (AIAS-4)'', \emph{Frontiers in Psychology} 14 (the scale used); Schaefer et al.\ (2016), ``A
+    meta-analysis of factors influencing the development of trust in automation'', \emph{Human Factors} 58(3).
+  \item \textbf{Task complexity and delegation} (mission size, Section~\ref{sec:res:size-decides}): Lee \& Moray
+    (1994), ``Trust, self-confidence, and operators' adaptation to automation'', \emph{International Journal of
+    Human-Computer Studies} 40(1); Dzindolet et al.\ (2003), ``The role of trust in automation reliance'',
+    \emph{IJHCS} 58(6).
+  \item \textbf{Anchoring on advice} (manual builds track the cards, Section~\ref{sec:res:manual-cards}):
+    Tversky \& Kahneman (1974), ``Judgment under uncertainty: heuristics and biases'', \emph{Science} 185;
+    Furnham \& Boo (2011), ``A literature review of the anchoring effect'', \emph{Journal of Socio-Economics} 40(1).
+  \item \textbf{Workload and reliance} (the null, Section~\ref{sec:res:workload}): Parasuraman \& Manzey (2010)
+    (already in the bib); Bailey \& Scerbo (2007), ``Automation-induced complacency for monitoring highly reliable
+    systems'', \emph{Theoretical Issues in Ergonomics Science} 8(4).
+  \item \textbf{Visible errors and reliance} (illogical card, Section~\ref{sec:res:flaw-odd}): Dietvorst, Simmons
+    \& Massey (2015), ``Algorithm aversion: people erroneously avoid algorithms after seeing them err'',
+    \emph{Journal of Experimental Psychology: General} 144(1); Madhavan \& Wiegmann (2007), ``Similarities and
+    differences between human--human and human--automation trust'', \emph{Theoretical Issues in Ergonomics
+    Science} 8(4).
+  \item \textbf{Automation bias and the cost of checking} (wrong refusals; tactical plans kept unchecked,
+    Section~\ref{sec:res:tier-trust}): Bahner, H\"uper \& Manzey (2008), ``Misuse of automated decision aids:
+    complacency, automation bias and the impact of training experience'', \emph{IJHCS} 66(9); Goddard, Roudsari \&
+    Wyatt (2012), ``Automation bias: a systematic review of frequency, effect mediators, and mitigators'',
+    \emph{JAMIA} 19(1); Mosier \& Skitka (already in the bib).
+  \item \textbf{Measuring trust; stated vs revealed}: Kohn et al.\ (2021), ``Measurement of trust in automation: a
+    narrative review and reference guide'', \emph{Frontiers in Psychology} 12.
+  \item \textbf{Methods}: Liang \& Zeger (1986), GEE, \emph{Biometrika} 73(1); Mancl \& DeRouen (2001), bias-reduced
+    sandwich SEs, \emph{Biometrics} 57(1); Holm (1979), \emph{Scandinavian Journal of Statistics} 6(2); McFadden
+    (1979) on pseudo-$R^2$ (in Hensher \& Stopher, eds., \emph{Behavioural Travel Modelling}); Rousseeuw (1987),
+    silhouettes, \emph{Journal of Computational and Applied Mathematics} 20; Hubert \& Arabie (1985), adjusted Rand
+    index, \emph{Journal of Classification} 2; Ericsson \& Simon (1993), \emph{Protocol Analysis} (think-aloud).
+\end{itemize}
+
+\end{document}

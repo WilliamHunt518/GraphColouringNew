@@ -1,0 +1,23 @@
+# Long verbatim passages: P24 (skim group). Phrases only.
+pid: P24
+read:
+  date: 2026-10-20
+  scope: questionnaire talk, break and debrief read in full
+  verdict: English is a second language and the transcript mishears "drones" as "joints". Two useful debrief passages, on keeping reserve and on wanting a human to decide while admitting they cannot check.
+passages:
+  - id: p24-save-drones
+    title: Not better than the AI, just wanting to save drones
+    parts: [{seg: interview, from: "because I want to save some joints for the other task.", to: "So actually, I need to consider myself."}]
+    speaker: mixed
+    context: Debrief; "joints" is the transcript's rendering of "drones"; the researcher confirms the cards look at one mission only.
+    topics: [hierarchy, mental-model]
+    why: Overrides the card to keep reserve without claiming to be better than it, and learns the card sees only one mission.
+    links: [f-manual-cards]
+  - id: p24-human-anyway
+    title: "\"I really trust AI, which is bad actually\""
+    parts: [{seg: interview, from: "Okay, I think that is, I have to be honest.", to: "But it should have a human stand here."}]
+    speaker: mixed
+    context: Debrief, pressed on whether a human could really check.
+    topics: [loop, checking]
+    why: Wants a human to make the final decision even while conceding that a busy human cannot really check.
+    links: [f-operator-wants]

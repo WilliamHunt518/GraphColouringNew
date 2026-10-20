@@ -1,0 +1,415 @@
+# Paper prose (v4): LaTeX, in the researcher's style (flowing paragraphs, one figure after the paragraph it belongs to,
+# a statement as the figure's caption, one or two quotes woven in, no lists of participant IDs).
+# Read by scripts/paper/build_paper.py prose <paperDir>.
+#
+# Per finding: title, intro, points. Per point:
+#   sec      the register section it is built from (its label is placed here, so cross-references still work)
+#   text     the paragraph(s). \ref{@} is this point's figure; \ref{@:<view>} one of its panels
+#   fig      the views shown (scripts/paper/figviews.json suffixes; `main` = the chart as it first draws)
+#   caption  the figure caption (bold first sentence = the statement)
+#   after    a paragraph after the figure
+#   display  passages shown in full as display quotes, as the researcher trimmed them (practitioner and qualitative)
+#   heading  a run-in heading (used for the practitioner's points)
+#   also     further register sections this point covers (their other material goes to the options block)
+# Every included register section of the finding that is not used here, every view not shown, every highlighted
+# quote not woven in, the key numbers and the researcher's notes go to the finding's options block (\showoptions).
+# The f-personal-style opening is the researcher's own edit (2026-10-20), kept verbatim apart from typos and the
+# paper's terms.
+
+f-personal-style:
+  title: Each operator has a personal style
+  intro: |-
+    Operators differ a great deal in how they use each assistant, and the differences appear personal. We describe each session by ten habits (how often a strategy card is chosen, how often a tactical suggestion is requested, how long a decision takes, etc). From those habits alone, a participant's second session resembles their own first (median profile $r = .48$) and essentially nobody else's ($r = -.01$): their own session is in the closest three out of the 33 people far more often than chance (41\% vs 9\%), even though the second session is a different scenario. Who the operator is explains approximately six times more of strategy card choice than the mission does. The styles do not fall into types, and nothing measured beforehand (attitude to AI, views on human authority, experience) predicts them.
+  points:
+    - sec: habits
+      text: |-
+        To compare styles we describe every 8-minute session by ten habits. Figure~\ref{@} shows each habit's spread over all 66 sessions. Most habits vary enormously between sessions (strategy card choice runs from 0\% to 100\% of a session's decisions); two are nearly universal (most sessions keep every tactical suggestion unchanged, and most never edit a strategy card). The right-hand column shows the correlation (Spearman's rank) between each habit's session 1 and session 2; i.e.\ how much a person's habit in one run carries over to the next.
+      fig: [main]
+      caption: |-
+        \textbf{The habits describing each user and how they vary.} These ten habits accurately describe a user and many carry over to that user's following scenario.
+    - sec: fingerprint-ranks
+      text: |-
+        When asked to describe their approach, 15 of 33 named a consistent strategy of their own. In Figure~\ref{@:all}, each person's ten-habit profile from session 1 is compared with all 33 session-2 profiles, and the 33 are ranked from most to least alike (and the same the other way round, session 2 among the session 1s) by Euclidean distance over the 10 dimensions. If habits were not personal, a person's own other session would be equally likely to land anywhere in that ranking (dashed line). Instead it is the single closest match 12 times out of 66 (2 expected by chance) and in the closest three 27 times (6 expected), even though the second session is a different scenario ($p < .001$).
+      fig: [all]
+      caption: |-
+        \textbf{A person's own other session is usually among their closest matches.} Where each person's own session ranks among all 33 by ten-habit profile; dashed line: where it would fall if habits were not personal.
+    - sec: who-vs-what
+      text: |-
+        When inspecting every instance of a user choosing or not choosing a strategy card, knowing \textit{who} is deciding predicts whether a card is chosen about six times better than knowing everything about the mission and when it arrived. We built three logistic models with access to different priors about the decision. Knowing only \textit{who} made the choice, the model classified the right one 75\% of the time (a coin: 50\%; knowing only the mission: 63\%). A person's session-1 rate on its own still does it 71\% of the time for their session-2 decisions. Figure~\ref{@:r2} shows this as a set of $R^2$ values.
+      fig: [r2]
+      caption: |-
+        \textbf{Who decides explains far more of strategy card choice than what is being decided.} McFadden pseudo-$R^2$ of models predicting whether a strategy card is chosen from the mission and its timing, from the person, and from both.
+      after: |-
+        People often described their use of the assistants as part of who they are, and in a highly varied sense: `naturally conservative' (P32), `I'm more conservative' (P26), `I always let the agent do it first' (P13). At the extremes, P14 used the assistants `for almost every allocation' and P16 `manually overrode most of the time'. P32 calls themself `naturally conservative' and also says their use was `very much about workload', so a person's style and the situation are both in play.
+    - sec: axis-scatter
+      text: |-
+        Participants' strategic and tactical reliance correlated only slightly. Figure~\ref{@:between} shows each participant's proportional use of each assistant. The correlation between use of the two assistants is only $\rho = 0.37$.
+      fig: [between]
+      caption: |-
+        \textbf{Use of one assistant says little about use of the other.} Each dot is a person: the share of their strategic decisions where a strategy card was chosen, against the share of their tactical plans where a suggestion was requested.
+    - sec: not-types
+      text: |-
+        The styles are individual rather than types. Placed on their two largest habit dimensions, the 33 operators form one continuous cloud that looks like a set of simulated operators with no types by construction (Figure~\ref{@:map}). However many groups we ask for (two, three or four), the real people separate no better than the simulations do (silhouette .17--.20 against .19--.20), and groups found in one session barely come back in the other (adjusted Rand index .08--.09, against .13 for a smooth cloud in which people keep their place).
+      fig: [map]
+      caption: |-
+        \textbf{No types: the operators form one continuous cloud.} Each person placed on the first two principal components of the ten habits.
+    - sec: not-disposition
+      text: |-
+        Nothing measured before the study predicts a person's style. Of 40 tests of attitude to AI (AIAS-4), verification propensity, views on human authority and prior experience against five behaviours, three reach $p < .05$ and none survives Holm correction; chance alone gives two such hits on average, and three or more in a third of shuffles (Figure~\ref{@}). This is an absence of evidence rather than evidence of no link: with 33 people only correlations of $|\rho| \geq .48$ could be detected, and the sample is uniformly positive about AI (AIAS-4 mean 8.0 of 10). In their own words, people's general views on AI did not line up with what they did, and most explained their use by time pressure and job size rather than by a view about AI.
+      fig: [main]
+      caption: |-
+        \textbf{Nothing measured beforehand predicts style.} Correlations between the pre-study scales and five behaviours; none survives correction for the 40 tests.
+
+f-size-decides:
+  title: Small jobs by hand, big jobs to an assistant
+  intro: |-
+    The bigger the job, the more likely an operator was to hand it to an assistant, on both tiers. Measured the same way on both (the drones the mission needs), a strategy card was chosen on 56\% of the smallest missions and 75\% of the largest, and a tactical suggestion was requested on 54\% and 91\%. Comparing each person only with themselves, every doubling of mission size multiplied the odds of handing over by about 1.6 on the strategic tier ($\times 1.62$ [1.23, 2.15]) and 2.9 on the tactical tier ($\times 2.91$ [2.03, 4.17], both $p < .001$), and 22 of 33 people handed over more on their biggest missions than on their smallest on each tier. The rule is a sensible one: a strategy card is much quicker than building by hand on three-type missions and no quicker on one-type missions, and a tactical suggestion is not slower than a hand-built plan.
+  points:
+    - sec: both
+      text: |-
+        Figure~\ref{@} shows the share of decisions handed over, on each tier, by the number of drones the mission needs. Both rise; the tactical tier rises more steeply and keeps rising. The strategic tier dips at five drones: these are seven particular one-type missions in the two Strategic Heavy games, six of which arrived in bursts, so operators reached them with three or four other missions waiting and often decided before the cards had loaded. Participants described the rule in their own words, for example: ``I think if it's just one colour, I'm gonna do it, like, assign it myself, but if it's multiple colours, I think I'm gonna let, um, the AI choose for me, for the, the strategic side'' (P29), and ``When they only needed a single colour of drone I tended to do it manually'' (P34).
+      fig: [main]
+      caption: |-
+        \textbf{The bigger the mission, the more it is handed to an assistant, on both tiers.} Share of decisions where a strategy card was chosen (blue) or a tactical suggestion requested (orange), by the drones the mission needs; whiskers are 95\% intervals.
+    - sec: models
+      text: |-
+        The effect holds when each person is compared only with themselves, for every way of measuring size and on both tiers (Figure~\ref{@}). Dropping every illogical Conservative card leaves it in place (strategic $\times 1.46$ per doubling, $p = .006$), as does allowing for every operator having played the same fixed missions (strategic $\times 1.60$, tactical $\times 2.89$, both $p \leq .001$). With each mission as a single point, the share handed over still rises with its size ($\rho = .63$ on the strategic tier and $.69$ on the tactical, 41 missions each).
+      fig: [main]
+      caption: |-
+        \textbf{Bigger jobs are handed over more, for every size measure and on both tiers.} Each row is a within-person odds ratio per unit of size with its 95\% interval; the bottom block holds the checks for artefacts.
+    - sec: tactical
+      also: [route-people]
+      text: |-
+        The two tiers are also linked. A mission whose drones came from a strategy card was more likely to get a tactical suggestion than one allocated by hand, at every size (Figure~\ref{@:needed}): for the same person and mission size, about twice the odds ($\times 2.10$ [1.30, 3.40], $p = .003$). The gap is wide on small missions (70\% against 35\% at three drones or fewer) and narrow on the largest (93\% against 88\%), but that narrowing is both rates approaching 100\% rather than a reliable change. It is a general tendency rather than the habit of a few people: of the 26 who did both often enough to compare, 17 leaned this way and 8 the other, although the three largest gaps make up about half of the total. Participants described the same continuity: ``Now I'm using the suggestion because I took the aggressive approach which means I know that I have enough drones'' (P10). Size also mattered in plain practical terms: ``If I look at a mission with 15 drones and I need to move two or three chains, that's just going to take me about a minute, and it's just no point'' (P11).
+      fig: [needed]
+      caption: |-
+        \textbf{A mission allocated from a strategy card is more likely to get a tactical suggestion.} Share of tactical plans with a suggestion requested, by the drones the mission needs, split by how the mission was allocated.
+    - sec: speed
+      text: |-
+        The size rule also fits the time each route takes (Figure~\ref{@}). On the strategic tier, choosing a strategy card is much quicker than building by hand on three-type missions (27\% less time for the same person, $p < .001$) and no quicker on one-type missions ($+22\%$, $p = .09$); with the idle time before the first click removed, the card is 44\% quicker on three-type missions and level on one-type ones. On the tactical tier, hand-built plans and tactical suggestions take about the same planner time (29 against 27\,s on average), within a second of each other for the same person and mission size. Speed was the most common reason participants gave for using the assistants: ``The top advantage in this situation was the speed of response'' (P31).
+      fig: [strat-all, tac-all]
+      caption: |-
+        \textbf{A strategy card saves time only on big strategic jobs; a tactical suggestion saves no planner time.} Each decision's time split into the time before the operator's first action and after it, by mission size: (a) strategic tier, (b) tactical tier.
+    - sec: parallel
+      text: |-
+        Where a tactical suggestion does gain is in carrying the plan out (Figure~\ref{@:all}). Splitting each tactical plan into four phases, the operator's own time is the same either way: a suggestion saves about 3\,s in building the plan and gives it back between the plan being ready and being confirmed. The only reliable difference is that a suggested plan is carried out about 11\,s sooner ($p = .006$), roughly a tenth of a mission. The common feeling that the assistant is faster is therefore only weakly supported: it does not save the operator time, and its plans finish a little sooner. Nor does relying on the assistants more make an operator do better: within a person, missions allocated from a strategy card were completed in full no more often than their own hand-built ones (60\% against 62\%, $p = .27$).
+      fig: [all]
+      caption: |-
+        \textbf{Hand-built and suggested tactical plans take the operator about the same time; suggested plans are carried out a little sooner.} Mean time per tactical plan in four phases, by mission size.
+    - sec: said
+      also: [parallel-said]
+      text: |-
+        Ten of 33 participants stated the size rule without being asked, and 15 valued the assistants for speed rather than accuracy. Several also described using the wait: while a suggestion filled in, they turned to the next mission. The logs agree: 45\% of tactical plans with a suggestion requested had another mission's strategic panel opened while the planner was open, against 19\% of hand-built plans.
+
+f-manual-cards:
+  title: Hand-built allocations are anchored on the strategy cards
+  intro: |-
+    When operators allocated by hand after seeing the strategy cards, their numbers tracked the cards: one more drone on the Conservative card meant about half a drone more in the hand-built allocation, beyond what the mission needed. Operators who decided before the cards appeared showed no such link, which makes this anchoring rather than both following the mission. Hand-built allocations mostly sat at or below the cards (44\% below both, 33\% equal to one, 14\% between and 8\% above).
+  points:
+    - sec: dots
+      text: |-
+        Figure~\ref{@} shows every hand-built allocation (209) against the Conservative card. Counting all drone types, allocations on small one-type missions sit about one drone below the card; counting only the types the mission needs, they match it ($+0.05$ drones). The apparent trimming of small missions is almost entirely the card's spare drones of unneeded types being left off. On big three-type missions hand-built allocations sit about one drone above the card. When short of drones, some sent everything they had: ``All right. Let's just send everything I have. Edit, give me five red ones. Five green ones. Hit it.'' (P10).
+      fig: [all, needed]
+      caption: |-
+        \textbf{The trim on small missions is the card's unneeded spare.} Drones committed by hand minus drones on the Conservative card, by the drones the mission needs: (a) all drone types, (b) needed types only.
+    - sec: position
+      also: [said]
+      text: |-
+        Allocations built before the cards appeared landed exactly on a card total more often than those built after seeing them (39\% against 27\%, Figure~\ref{@:raw}), so matching a card is partly just the obvious allocation rather than copying; balanced for the mission, the difference is too small to tell apart (37\% against 29\%). Some wanted something the two cards did not offer: ``But whenever I clicked manual, it's either been for the cause of `they are sending too much', or I want it to be somewhere between those two levels'' (P17).
+      fig: [raw]
+      caption: |-
+        \textbf{Hand-built allocations mostly sit below both strategy cards or equal to one, rarely above.}
+
+f-practice:
+  title: Practice makes operators faster, not better at choosing when to hand over
+  intro: |-
+    Decisions sped up within each session, by about 6\% per minute on both tiers, and not because the queue grew. On the strategic tier most of that gain was gone by the start of the next session, so it reads as a warm-up within a session more than lasting learning; on the tactical tier the second session started about where the first ended. The size rule did not sharpen with practice.
+  points:
+    - sec: speed
+      text: |-
+        Figure~\ref{@} shows the median decision time through each session. Strategic decisions fell from 11.6\,s in the first two minutes of session 1 to 6.9\,s at its end, started session 2 nearly as slow again (10.6\,s) and fell once more (5.8\,s). Tactical plans fell from 18.0 to 12.9\,s in session 1 and from 15.5 to 8.0\,s in session 2. Holding the number of waiting missions fixed does not remove the speed-up. Participants described finding a rhythm: ``there was definitely an improvement further throughout session one, and in session two, you really find your stride'' (P10).
+      fig: [strat, tac]
+      caption: |-
+        \textbf{Faster within a session; on the strategic tier the gain mostly resets by the next.} Median time per decision by pair of minutes: (a) strategic tier, (b) tactical tier.
+    - sec: c22
+      text: |-
+        The six participants who said they got better did improve their scores (all six, against 10 of the other 27), but they did not come to use the assistants more, and across everyone a bigger score gain did not go with more use of either assistant ($\rho = -.07$ for strategy cards, $-.18$ for tactical suggestions).
+
+f-workload:
+  title: A busier moment does not push operators onto the assistants
+  intro: |-
+    Comparing each operator with themselves, having more missions waiting did not change how often they chose a strategy card or requested a tactical suggestion, once we account for what each decision was, when it came in the session, which game it was and who made it. The data rule out large effects (on the strategic tier, at most about 15 points more strategy card choice going from zero to five missions waiting). Nine of 33 participants said they handed over more when overloaded; their own behaviour moved with the queue no more than anyone else's.
+  points:
+    - sec: raw-vs-adjusted
+      text: |-
+        Figure~\ref{@} shows the share of decisions handed over by the number of other missions waiting. The raw strategic rate dips at three to four missions waiting, but that dip is where the decisions themselves predicted it (dashed lines): deep queues happened almost only in the Strategic Heavy games and late in a session. Adjusted for the mission, the minute, the game and the person, every point sits between 59\% and 74\% on the strategic tier and between 75\% and 82\% on the tactical tier, with no trend, including beyond the point where the queue list runs out of room. This runs against what participants said, for example: ``So I think if, at first glance, I felt really overwhelmed by the amount of drones to be assigned. I would use the assistant'' (P18).
+      fig: [both-exp, both-adj]
+      caption: |-
+        \textbf{A busier moment does not push operators onto the assistants.} Share of decisions handed over by the number of other missions waiting, both tiers together: (a) raw, with the rate the decisions themselves predict (dashed); (b) adjusted.
+    - sec: waited
+      text: |-
+        Nor were missions handed over more often after being left waiting: strategy card choice was 63--68\% (adjusted) whether a mission had waited ten seconds or more than two minutes, and tactical suggestions, if anything, became a little less likely the longer a plan had been left open.
+
+f-triage:
+  title: A long queue does not change what operators open
+  intro: |-
+    With a long queue, operators did not abandon order or pick smaller missions: compared with what was actually waiting, they kept the same priorities at any queue length.
+  points:
+    - sec: order
+      also: [choice]
+      text: |-
+        The share of decisions that opened the oldest waiting mission fell as the queue grew (59\% with one other waiting, about 30\% with five), but so did the chance of picking the oldest at random (50\% to 17\%); measured against chance, the pull towards the oldest stayed the same (Figure~\ref{@}). In a model of the choice among what was waiting, being the oldest roughly tripled a mission's chance of being opened, at short and long queues alike. Criticality pulls a little too: each category above the waiting missions' average raised the odds of being opened by about 1.45 (Section~\ref{sec:qual:new-jobs:queue-order}).
+      fig: [main]
+      caption: |-
+        \textbf{Operators open the oldest waiting mission well above chance at every queue length.}
+
+f-flaw-odd:
+  title: The illogical strategy card, and who stopped choosing the cards
+  intro: |-
+    The Conservative strategy card sometimes added a drone type the mission did not use (22\% of decisions, nearly all on one-type missions), and all 33 people met it, usually on their first or second decision. The 15 who later said they noticed it chose strategy cards less afterwards, and on the flawed one-type missions they learned to skip the card. But the dip in their use is not tied to the illogical card itself: it appears early in the first session whether or not they had met that card yet, and in the same stretch the people who never mentioned it chose the cards more. Our best reading is that ``noticed'' marks people who scrutinise the cards, and the dip is that scrutiny at the first busy stretch of the study. The evidence is suggestive (15 against 18 people).
+  points:
+    - sec: event
+      text: |-
+        Lined up on each person's first illogical card (Figure~\ref{@:pairs}), noticers went from choosing a strategy card on 76\% of decisions before it to 43--52\% for their next ten decisions, recovering to 67--68\% only from the eleventh on; people who never mentioned it stayed at 67--75\% throughout. On three-type missions, which never carry the flaw, noticers dipped for a short stretch and recovered (74\% before, 43\% for the next two decisions, then 59--63\% and 75\%). Many first met the card with puzzlement rather than a verdict: ``Oh, this just sends a bunch of extra of these even though it doesn't need it?'' (P19); ``But in conservative, you don't need camera or lifters, yet it adds it as reserve. Even for tasks it doesn't do. That doesn't make sense.'' (P13).
+      fig: [pairs]
+      caption: |-
+        \textbf{After the first illogical strategy card, those who later said they noticed it choose the cards less for about ten decisions.} Share of decisions where a strategy card was chosen, by decision number after the first illogical card, in pairs.
+    - sec: over-time
+      text: |-
+        Not lined up on the card but placed by the minute of the session (Figure~\ref{@}), the dip is still there. In session 1 noticers started at 86\% in the first minute, fell to 38--50\% over minutes one to four and came back to 73\%, while the others rose over the same minutes (65\% to 88\%). Pooled over everyone the line stays at 61--77\%, because the two groups move in opposite directions. Several kept using the cards anyway for the time they saved: ``I think it's less reliable than before, but I still use its suggestion, and that's the case. Yeah, because at least it saves time.'' (P28).
+      fig: [s1, s2]
+      caption: |-
+        \textbf{Early in the session the two groups move in opposite directions, so pooling them hides the dip.} Share of strategic decisions with a strategy card chosen, by minute of the session, for noticers, the others and everyone (dashed): (a) session 1, (b) session 2.
+    - sec: by-index
+      text: |-
+        Counted simply by decision number (Figure~\ref{@:groups}), noticers chose a strategy card on 80\% of their first decisions of session 1 and 46--50\% of decisions three to five, then 83\% at the sixth, while the others rose to 89--94\% in the same stretch. People who played the Tactical Heavy game first had not yet met an illogical card by decisions three to five (95\% of those decisions came before it), and their noticers dipped just as much ($-21$ points per person, against $-32$ for those who had met it; $p = .79$). Noticers recovered within session 1 ($+24$ points per person) and started session 2 lower again, but so did the others, so a weaker carry-over for noticers cannot be shown (difference at the break $-6$ points [$-32$, $+20$]).
+      fig: [groups]
+      caption: |-
+        \textbf{Counted by decision number, the noticers' dip comes before most of them have met an illogical card.} Share of decisions with a strategy card chosen, session 1 then session 2.
+    - sec: spoken
+      also: [refusal]
+      text: |-
+        Lining people up instead on the moment they said aloud that a card was wrong gives the same direction (Figure~\ref{@:strict}). Seven people made such a remark; they went from choosing a strategy card on 80\% of decisions before it to 49\% after (adjusted $-21$ points, $p = .11$), and on the one- and two-type missions that carry the flaw from 83\% to 35\%, although that `before' rests on only six decisions. Seven people cannot settle it, but the direction matches. A failure of the other assistant had no such effect: after the Tactical Assistant first answered `No workable plan' when asked for a recovery plan (18 people), neither strategy card choice ($+2$ points, $p = .62$) nor requests for tactical suggestions ($-1$ point) changed, and nobody said a refusal made them doubt either assistant.
+      fig: [strict]
+      caption: |-
+        \textbf{After saying aloud that a strategy card was wrong, card choice falls (seven people; a direction, not a measured size).} Share of strategic decisions with a strategy card chosen, before and after the remark: all missions, and one- and two-type missions.
+
+f-tier-trust:
+  title: The Tactical Assistant is trusted more
+  intro: |-
+    On the questionnaire after each session, operators trusted the Tactical Assistant more than the Strategic Assistant (5.44 against 4.61 on a 1--7 scale; 26 of 33 people higher for the tactical, $p = .001$). Most of the gap opened in the second session and in the Strategic Heavy games. Tactical plans got only a few seconds of checking, whatever their size.
+  points:
+    - sec: gap
+      text: |-
+        The gap is a medium-sized effect (mean $+0.83$ points, $d_z = .62$), and every one of the six questionnaire items points the same way (Figure~\ref{@}). The usual reason given is that the strategy cards visibly wasted drones while the tactical plans matched what the operator would have done: ``So the tactical one seemed to be doing what I was doing. So quite reliably. And obviously the strategic one wasn't.'' (P32). Another put it in terms of blame: ``You can't blame the tactical for drone failures but you can blame the strategic for not having redundancy'' (P03).
+      fig: [main]
+      caption: |-
+        \textbf{The Tactical Assistant is trusted more.} Each person's mean trust in each assistant over their two sessions (1--7).
+    - sec: where
+      text: |-
+        The gap was larger in Strategic Heavy sessions ($+1.13$) than in Tactical Heavy ones ($+0.52$), and small after the first session ($+0.37$) but large after the second ($+1.28$); with both in one model, Strategic Heavy adds about 0.6 to the gap and the second session about 0.9 (Figure~\ref{@}). Trust in the Tactical Assistant hardly moved (5.36 to 5.51 across sessions): it is trust in the Strategic Assistant that fell, and most in the scenario where its cards are used most.
+      fig: [items, scenario]
+      caption: |-
+        \textbf{Where the gap comes from.} Tactical minus strategic trust: (a) by questionnaire item, (b) by scenario played.
+    - sec: checking
+      also: [stated-revealed, trust-lead-strip]
+      text: |-
+        Checking a tactical plan was brief and did not grow with the plan (Figure~\ref{@}). As plans grew, operators requested a suggestion more often (63\% of plans with three drones or fewer, 93\% with ten or more) and kept the plan unmodified more often (63\% to 86\%), and once the plan could be deployed they spent a median of 2--4\,s on it whatever its size, against about 9\,s on a strategy card. Almost every suggested plan was deployed as it came: 468 of 486. Participants were candid about why: ``as soon as it got to any sort of non-linear, difficult, high dimensional problem, I just took the AI's word for it, essentially, probably because I couldn't assess in the time'' (P22). The test of this mechanism is fragile, though: it does not survive correction for the round's several tests ($p = .065$).
+      fig: [main]
+      caption: |-
+        \textbf{Checking a tactical plan takes a few seconds, whatever its size.} By plan size: the share of plans with a suggestion requested, the share kept unmodified, and the median checking time once Deploy unlocks.
+      after: |-
+        Trust and use line up when people are ranked against each other (the trust gap correlates $\rho = .47$ with the gap in use), but not in size and not over time: a change in a person's trust from one session to the next does not go with a change in their use ($\rho = .16$), and trust after the first session does not predict how their use changes in the second ($\rho = .07$).
+
+f-operator-wants:
+  title: What operators asked for
+  intro: |-
+    Asked about real search and rescue, nobody rejected assistants like these, and 9 of 33 said, mostly unprompted, that a human must keep the final decision. What they asked for was mostly information: how the assistants decide, and how likely drones were to fail.
+  points:
+    - sec: wants
+      also: [real-world, reasoning, failure-data, more-automation, mental-models, tiers-together, me-vs-assistant, interface, real-stakes, feelings]
+      text: |-
+        Figure~\ref{@} counts the requests. Beyond a human final say, the most common were failure probabilities or performance data (6), options between the two strategy cards (6) and the assistants' reasoning (5); only four wanted the assistants to do more. Several credited the assistants with more than they had, assuming they learned from the operator or that the two tiers shared one plan, while others saw through them to simple rules. These themes are taken up in Section~\ref{sec:qual}.
+      fig: [main]
+      caption: |-
+        \textbf{What operators asked for.} Number of participants raising each request (of 33).
+
+q-trust-unchecked:
+  title: You trust what you cannot check
+  intro: |-
+    The most articulate operators described trusting the Tactical Assistant \emph{because} they could not assess its plan, while a strategy card was simple enough to judge at a glance, and so was judged, often harshly. Under time pressure checking shrank to a glance, and the minority who did check earned their trust by comparing the assistant's plan with their own.
+  points:
+    - sec: cant-check
+      text: |-
+        A strategy card shows a few numbers per drone type beside the mission's requirements, so its oddities are visible; a tactical plan is a web of routes on a map. Participants drew the consequence themselves: they took the tactical plan on trust because they could not see how far it was from optimal, and suspected that was part of why it seemed so good. This is their own account of two of the quantitative results, the trust gap between the tiers (Section~\ref{sec:res:tier-trust}) and the visible and invisible flaws (Section~\ref{sec:res:flaw-odd}), and it suggests the gap is partly one of checkability rather than quality.
+      display: [ps:p22-cant-perceive-optimal, ps:p19-inadvertently-trusted, ps:p22-pinch-of-salt]
+    - sec: glance
+      text: |-
+        Nobody described careful checking under pressure. They described a quick look, and accepted the trade because penalty accrued while they checked; one participant set out the expected-value argument directly.
+      display: [ps:p31-less-oversight, ps:p11-dodgy-suggestion]
+    - sec: earned
+      text: |-
+        Where trust was earned, it was by comparison with what the operator would have done themselves.
+      display: [ps:p32-earned-trust, ps:p29-test-then-trust]
+
+q-who-decides:
+  title: Who decides, and who answers for it
+  intro: |-
+    Almost everyone wanted a human to keep the decision, and the reasons were moral as much as practical: accountability for a life not saved, a human connected to the operation, and the plan held in someone's head. People were candid that the human they wanted in the loop might not be able to check much.
+  points:
+    - sec: accountability
+      text: |-
+        The clearest statement of the moral reason is about accountability: even if an AI saves more lives on average, when it fails to save one there is no one to answer for it. Against it sits the plain value of speed in an emergency.
+      display: [ps:p31-accountability, ps:p29-speed-over-perfection]
+    - sec: loop
+      text: |-
+        Others wanted a human in the loop whatever that human could check, and one participant framed it organisationally: measure where people and assistants each add value, and assign the tiers accordingly.
+      display: [ps:p32-organisational]
+    - sec: ownership
+      text: |-
+        For some the reason to keep the work was not safety but connection to the task, and pride in their own solution.
+      display: [ps:p11-connected, ps:p11-ownership]
+
+q-failure:
+  title: Failure without feedback
+  intro: |-
+    Drone failures were random and uniform, and nothing on screen said so or said how likely they were. Operators felt the lack, built their own theories about where failures happened, and blamed themselves.
+  points:
+    - sec: blind
+      text: |-
+        Several wanted failure rates built into the allocation, so that the reserve could be sized to the risk rather than padded.
+      display: [ps:p10-failure-likelihood]
+
+q-hierarchy:
+  title: The hierarchy as one plan
+  intro: |-
+    Operators did not experience two independent assistants. They described one plan that starts at the strategic step: allocate too little at the top and the shortage cascades down; allocate generously and there is only one sensible way to assign the drones; build the allocation yourself and the tactical plan is already in your head.
+  points:
+    - sec: cascade
+      text: |-
+        Several placed the responsibility for failures with the strategic tier, since only drones sent at the start can absorb them; others weighed the same step from the other side, holding drones back for missions not yet arrived.
+      display: [ps:p19-tactical-results, ps:p28-defensive-reserve]
+    - sec: one-plan
+      text: |-
+        The link between the tiers in the logs (Section~\ref{sec:res:size-decides:tactical}) was described from both sides: a generous strategy card makes a tactical suggestion the obvious next step, while a hand-built allocation already lays out a plan the operator does not want disrupted. Whether one plan held across both tiers is the right ideal is a question the practitioner's account takes up, and answers differently (Section~\ref{sec:qual:practitioner:pt-silos}).
+      display: [ps:p10-only-one-way, ps:p21-plan-in-mind, ps:p21-shared-patterns]
+    - sec: cross-mission
+      text: |-
+        A strategy card considers one mission. Operators overrode the cards to act on what the cards could not see: keeping drones back for other missions, and weighing which missions could afford to wait.
+      display: [ps:p22-middle-ground, ps:p31-below-conservative]
+
+q-new-jobs:
+  title: An assistant for what to open next
+  intro: |-
+    Asked what the assistants should do, participants rarely asked for more automation of the same kind. Two asked for something neither assistant does: help deciding which waiting mission to open next.
+  points:
+    - sec: queue-order
+      text: |-
+        Neither assistant helps with the first decision of every allocation, which waiting mission to open. With two or more missions waiting (411 decisions), operators opened the oldest well above chance (49\%, against 34\% by chance) and leaned towards the more critical (odds $\times 1.45$ per category above the waiting missions' average, $p = .02$), but not towards the missions they could actually cover: whether the reserve could supply a mission's drones made no difference ($\times 1.04$, $p = .79$), and at 41\% of these decisions the oldest waiting mission could not be covered. An ordering of the kind one participant proposed (missions that can be done first, then by criticality) would have picked a different mission at 59\% of decisions.
+
+q-practitioner:
+  title: A practitioner's reading
+  intro: |-
+    One participant had operational military experience. Their play was typical of the cohort; they differed in who they are. Their sessions and debrief are the richest material in the study, and nearly every result above has a passage of theirs that agrees with it, qualifies it or goes beyond it. This is one person's expert commentary, not evidence about the cohort. Each point below gives the passage, as trimmed, and the results it bears on.
+  points:
+    - sec: own-play
+      heading: How typical they were
+      text: |-
+        Our practitioner was a good performer (0.7 SD above the game average, the 80th percentile) with a slightly higher work rate than most: quicker on the strategic step (9.6\,s per decision against a median of 11.4\,s) and more often deciding before the strategy cards had loaded (32\% of decisions against a median of 10\%). On every other habit the findings measure they were typical, sitting in the middle half of the cohort (Figure~\ref{@}). Where they differed was in who they are: the oldest participant (44; median 27), the only one with extensive command experience, and at the top of the attitude-to-AI scale.
+      fig: [main]
+      caption: |-
+        \textbf{Typical play, unusual background.} One row per measure, each on its own scale: grey dots are the 33 participants, the shaded band the middle half, the tick the median and the large dot our practitioner.
+    - sec: pt-whole-board
+      heading: For the whole board, not the mission
+      text: |-
+        The practitioner played for the whole board rather than the mission in front of them: the cross-mission view that other operators said the strategy cards lack (Section~\ref{sec:qual:hierarchy:cross-mission}).
+      display: [ps:p36-play-across-tasks]
+    - sec: pt-quicker-by-hand
+      heading: The card can be slower than doing it yourself
+      text: |-
+        Three minutes into the first session, after choosing a strategy card on a small mission, they decided it would have been quicker by hand: the speed result (Section~\ref{sec:res:size-decides:speed}) in miniature.
+      display: [ps:p36-quicker-by-hand]
+    - sec: pt-branching-paths
+      heading: Simple by hand, complex to the assistant, and why
+      text: |-
+        They gave the fullest statement of the size rule in the study, with both halves of the reason: on a simple mission they already know the answer by eye and build in redundancy, so a failure needs no re-plan; on a complex one the options branch, so they let the assistant start and step in when needed. This points to something the study did not measure: the more complex the mission, the more branching its space of possible failures, and the more a plan built in advance must change when one occurs. They also named the limit of the quick check that goes with handing over.
+      display: [ps:p36-branching-paths]
+    - sec: pt-resource-rich
+      heading: The rule bends when the reserve is full
+      text: |-
+        On a simple mission, with the reserve full and nothing else coming in, they requested a tactical suggestion anyway: the size rule is a default, and slack loosens it.
+      display: [ps:p36-resource-rich]
+    - sec: pt-reserve
+      heading: Never without a reserve
+      text: |-
+        They stated, and named, their own rule for hand-built allocations, ``never deploy without a reserve'', alongside opening the mission that has waited longest. A named rule of this kind is one way the consistency of individual styles (Section~\ref{sec:res:personal-style}) could be built through training.
+      display: [ps:p36-never-without-reserve]
+    - sec: pt-critical-first
+      heading: Critical tasks over score
+      text: |-
+        Out of Fast drones, they accepted a lower score to finish the critical tasks, framing it as what a real operation would demand. The cohort leans the same way when choosing what to open next (Section~\ref{sec:qual:new-jobs:queue-order}).
+      display: [ps:p36-critical-first]
+    - sec: pt-strategic-trust
+      heading: Easy to check is not the same as low stakes
+      text: |-
+        One of the few who trusted the Strategic Assistant more than the Tactical, they explained it by how easy a strategy card is to check, then reversed themselves mid-sentence: a bad allocation at the start leaves the tactical step with no way back.
+      display: [ps:p36-strategic-less-hesitant]
+    - sec: pt-physics-pace
+      heading: Physics sets the pace
+      text: |-
+        The pace of the game is not realistic: in a real operation physics bounds the pace, so decisions get faster but the operation does not, and the operator's load moves to waiting and contingency planning.
+      display: [ps:p36-physics-pace]
+    - sec: pt-tempo-echelon
+      heading: The pressure lands on the lower tier
+      text: |-
+        In a real hierarchy the time pressure falls on the lower tier: higher up, a new item is routine; lower down, everything arrives at once and has to be sequenced.
+      display: [ps:p36-tempo-echelon]
+    - sec: pt-staff-process
+      heading: Trust in the process, as with staff
+      text: |-
+        Above battlegroup level, which the participant mapped onto the study's strategic tier, a commander takes plans worked up by staff, and trusts them because they have done those jobs themselves and know how the answers are made. No operator has done the assistant's job, so that basis for trust is missing.
+      display: [ps:p36-staff-process]
+    - sec: pt-trust-but-verify
+      heading: Verify by socialising the plan
+      text: |-
+        Verification, for the practitioner, is a process around the plan, socialising it with those who will carry it out and keeping it open to challenge, together with trust that the machine has done the maths.
+      display: [ps:p36-trust-but-verify]
+    - sec: pt-play-catch-up
+      heading: Hand over the routine, keep the critical
+      text: |-
+        Handing over lets them work elsewhere, but it has a price: a plan they did not build is not in their head when it fails. For them the key is therefore not trusting the AI but the scarce skill of exploiting it.
+      display: [ps:p36-play-catch-up]
+    - sec: pt-failure-rate
+      heading: The failure rate of doing nothing is 100\%
+      text: |-
+        Failure rates should be shown with context, or people will refuse any risk: doing nothing fails every time.
+      display: [ps:p36-failure-rate]
+    - sec: pt-shared-risk
+      heading: Real stakes and shared risk
+      text: |-
+        Their own decisiveness came from experience and from knowing it was a simulation. With real lives at stake an inexperienced commander might be reckless or paralysed, and remote autonomy removes the shared risk that used to temper an order.
+      display: [ps:p36-shared-risk]
+    - sec: pt-resource-cascade
+      heading: The top allocation sets the risk below
+      text: |-
+        Allocate too little at the top and the lower tier carries the risk; allocate too much and it is wasted elsewhere.
+      display: [ps:p36-resource-cascade]
+    - sec: pt-silos
+      heading: Narrow context is normal
+      text: |-
+        Narrow context is normal in staff planning, and fine as long as each part has been through a sound analytical process. This sits directly against the operators who wanted one plan held across both tiers (Section~\ref{sec:qual:hierarchy:one-plan}).
+      display: [ps:p36-silos]
+    - sec: pt-one-up-two-down
+      heading: One up, two down
+      text: |-
+        Each level should be given the part of the level above that its task needs, and no more; an agent that reaches past its remit gives worse answers.
+      display: [ps:p36-one-up-two-down]
+    - sec: pt-red-team
+      heading: An assistant that red-teams the others
+      text: |-
+        An assistant whose only job is to check the data the others' answers rest on would catch a bad input before the answers built on it, without relying on the operator to notice (compare Section~\ref{sec:res:flaw-odd}).
+      display: [ps:p36-red-team-agent]
+    - sec: against-results
+      heading: Read against the results
+      text: |-
+        The links on the points above, gathered by how each passage bears on the results. This could close the paper.

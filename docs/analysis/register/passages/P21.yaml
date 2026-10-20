@@ -1,0 +1,82 @@
+# Long verbatim passages: P21. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P21
+read:
+  date: 2026-10-20
+  scope: everything (both sessions, surveys, break, end of session; about 5,400 words). The debrief is a few lines only; their reflections are in the questionnaires.
+  verdict: >-
+    The most deliberate planner in the study: builds contingency into every plan and explains why. Strongest on
+    continuity between the two decisions, on the tactical assistant lacking cross-task redundancy, on the system not
+    recognising contingency already built in, and on one visible mistake costing the strategic assistant their trust.
+    Influence note: in the break the researcher told P21 that "the two agents actually talk to each other", which is
+    not how the build works (the tactical planner uses only the committed team); P21's later view that the tiers share
+    a plan was formed after that.
+passages:
+  - id: p21-redundancy-for-free
+    title: Redundancy for free through chaining
+    parts: [{seg: session1, from: "Yes. So basically when I'm sending them over, because there are many tasks", to: "You can do something in parallel, so you can get redundancy free. Exactly."}]
+    prompt: {seg: session1, from: "So your philosophy so far seems to be about", to: "robust allocation manually, tactically."}
+    speaker: mixed
+    context: Session 1; the researcher summarises their approach, and supplies "redundancy free" at the end.
+    topics: [hierarchy, checking]
+    why: Their design principle — parallel branches whose drones chain through each other's tasks, so a failure costs time rather than the mission.
+
+  - id: p21-plan-in-mind
+    title: A plan laid out in my mind
+    parts: [{seg: session1, from: "I'm not sure about the performance of the suggestion.", to: "Yeah, exactly."}]
+    speaker: mixed
+    context: Session 1; the researcher offers the word "continuity", which P21 accepts.
+    topics: [hierarchy, loop]
+    why: The strategic and tactical decisions as one plan in the operator's head, which an assistant at either step would disrupt.
+    links: [f-size-decides]
+
+  - id: p21-not-worth-waiting
+    title: If I would check it anyway, why wait for it?
+    parts: [{seg: survey1, from: "The thing with a strategic assistant on the left is that I would double check the results.", to: "So that's the one I'm going to try and take most advantage of next."}]
+    speaker: mixed
+    context: Strategic trust questionnaire after session 1, having never waited for the cards.
+    topics: [checking]
+    why: A card you would double-check anyway only saves you the thinking you would do in parallel, so the wait is not worth it; the time-consuming tactical step is where to delegate.
+    links: [f-size-decides]
+
+  - id: p21-shared-patterns
+    title: Would the tactical assistant follow the strategic one's pattern?
+    parts: [{seg: between1, from: "Actually, they might work better if I use the AI agent for the selection", to: "match my thought process."}]
+    context: The break; the researcher then says the two agents "talk to each other" (not accurate for this build).
+    topics: [hierarchy, mental-model]
+    why: A mental model of the hierarchy in which the tiers share patterns, so mixing a hand-made plan at one tier with the assistant at the other could clash.
+    links: [f-size-decides]
+
+  - id: p21-no-backup-route
+    title: Suggest doesn't add the redundancy I'd like
+    parts: [{seg: session2, from: "So I'm not sure. Let's let's see a suggestion.", to: "manual select takes long."}]
+    speaker: mixed
+    context: Session 2, trying Suggest as planned.
+    topics: [flaws, agents]
+    why: The tactical plan's real limitation for this operator — no backup routes — and the conditions under which they would use it more.
+    links: [f-flaw-odd]
+
+  - id: p21-contingency-unrecognised
+    title: The system does not know I already planned for the failure
+    parts:
+      - {seg: survey2, from: "Basically, what I wanted is at the tactical side of things", to: "It didn't seem like it worked."}
+      - {seg: survey2, from: "So technically, with the way I've set up most of them", to: "So it kind of makes sense."}
+    speaker: mixed
+    context: Second questionnaire; the researcher explains that every failure stops for human approval, even when the plan already covers it.
+    topics: [loop, interface, agents]
+    why: A design point the logs cannot show — contingency built into the plan is not recognised, so the operator still has to step in and loses the time they invested up front.
+
+  - id: p21-clear-mistake
+    title: One clear mistake and the trust is gone
+    parts: [{seg: survey2, from: "I just if it wasn't the thing that was giving me the wrong type of drone.", to: "it just made me automatically lose my trust into it."}]
+    context: Strategic trust questionnaire after session 2.
+    topics: [flaws, explain]
+    why: A visible, humanly obvious mistake (the illogical card) costs more trust than a numerical error would, because it is the kind a person would never make.
+    links: [f-flaw-odd, f-tier-trust]
+
+  - id: p21-reliable-no-redundancy
+    title: Reliable, but it doesn't account for redundancy
+    parts: [{seg: survey2, from: "Yeah, technical system is reliable.", to: "Yes, with a grain of salt."}]
+    context: Tactical trust questionnaire after session 2.
+    topics: [flaws, checking]
+    why: Trust in the tactical plan with a named limitation.
+    links: [f-tier-trust]

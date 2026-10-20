@@ -1,0 +1,44 @@
+# Long verbatim passages: P10 (skim group). Phrases only.
+pid: P10
+read:
+  date: 2026-10-20
+  scope: questionnaire talk, break and debrief read in full
+  verdict: The longest debrief after P36. Gives the fullest account of how the Aggressive card leaves one sensible tactical plan, and concrete interface requests. Influence note, the per-area risk (cliff edge, wildfire) is offered by the researcher.
+passages:
+  - id: p10-learning-effect
+    title: You really find your stride
+    parts: [{seg: interview, from: "It's pretty nice. And I could definitely feel that there is absolutely a learning effect.", to: "in terms of a notification on the TV."}]
+    context: Debrief opening.
+    topics: [practice, interface]
+    why: The learning curve from tutorial to session 2 as experienced.
+    links: [f-practice]
+  - id: p10-redundancy-understood
+    title: What the Aggressive card's spare actually means
+    parts: [{seg: interview, from: "I mean, I think part of it was a little bit of experimenting", to: "You literally have it as per mission requirement, you have the redundancy."}]
+    speaker: mixed
+    context: Debrief, asked about their hybrid use of the two assistants.
+    topics: [mental-model, explain]
+    why: Working out the card's rule (a spare only where a type is needed once) changed their trust in it.
+    links: [f-manual-cards]
+  - id: p10-only-one-way
+    title: "\"There is really only one way of assigning them\""
+    parts: [{seg: interview, from: "Of course, you're paying with additional time, obviously", to: "at which point i again think the agent is very useful"}]
+    speaker: mixed
+    context: Debrief, continuing; the researcher summarises the card-then-Suggest pairing and P10 agrees.
+    topics: [hierarchy, checking]
+    why: The fullest account of the card to Suggest link; a generous strategic allocation leaves one logical tactical plan, so Suggest needs no oversight.
+    links: [f-size-decides]
+  - id: p10-failure-likelihood
+    title: Real operators would have failure numbers
+    parts: [{seg: interview, from: "that then happened to be the drone", to: "send 20 percent more more lifters than you need"}]
+    speaker: mixed
+    context: Debrief; the researcher confirms failures are chance and then raises area risks (cliff edge).
+    topics: [failure-data, realism]
+    why: Failure rates by drone type, from historic data, should change the redundancy rule.
+    links: [f-operator-wants]
+  - id: p10-interface-asks
+    title: Show me the total a mission needs
+    parts: [{seg: interview, from: "The notification on one screen to the other, yeah.", to: "Interface worked really smooth. It was intuitive, yeah."}]
+    context: Debrief.
+    topics: [interface]
+    why: A concrete request, show the total drones a mission needs.

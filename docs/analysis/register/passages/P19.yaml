@@ -1,0 +1,84 @@
+# Long verbatim passages: P19. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P19
+read:
+  date: 2026-10-20
+  scope: everything recorded (both sessions, both questionnaires, break; about 5,400 words). The recording ends at the start of the debrief, so there is no interview.
+  verdict: >-
+    Talkative and candid throughout, including talking to the assistants. Strongest on how the cards' labels and
+    contents can disagree, on admitting they did not check the tactical plan, and on reading patterns into random
+    drone failures and blaming themselves for them.
+passages:
+  - id: p19-criticality-wait
+    title: Who can afford to wait
+    parts: [{seg: session1, from: "And the problem is we don't know whether a extremely critical job is going to show up later.", to: "they then have an opportunity to wait."}]
+    context: Session 1, giving a distant low-criticality mission the Conservative card.
+    topics: [stakes, hierarchy]
+    why: Reads category as how long the people in trouble can wait, and holds drones back for missions not yet arrived.
+    links: [f-triage]
+
+  - id: p19-reverse-labels
+    title: The Conservative card sent more than the Aggressive one
+    parts: [{seg: survey1, from: "Reverse drone suggestion. What do you mean?", to: "label of the suggestion."}]
+    speaker: mixed
+    context: NASA-TLX frustration item after session 1; the researcher asks what they mean.
+    topics: [flaws, mental-model]
+    why: When a card's contents contradict its label, they trust their own reading over the label — a flaw no chart measures.
+    links: [f-flaw-odd]
+
+  - id: p19-inadvertently-trusted
+    title: "\"I definitely inadvertently trusted the tactical [assistant]\""
+    parts: [{seg: survey1, from: "this is a really good question because I will be honest with you", to: "as a human spot. Discrepancies if they arise."}]
+    context: Starting the trust questionnaires after session 1.
+    topics: [checking, explain]
+    why: Did not check the multi-drone tactical plans, so says rating that assistant would be disingenuous; the strategic card's display is simple enough to catch errors.
+    links: [f-tier-trust, f-flaw-odd]
+
+  - id: p19-tactical-results
+    title: The tactical assistant did everything; failures are the strategic tier's job
+    parts: [{seg: survey1, from: "Basically, it did everything. If failure rate of drones is unrelated to my assignment", to: "I think that the tactical assistant was very reliable."}]
+    context: Tactical trust questionnaire after session 1.
+    topics: [hierarchy, mental-model]
+    why: Judges the tactical assistant by results, and places the only remedy for failures — sending enough drones — with the strategic tier.
+    links: [f-tier-trust]
+
+  - id: p19-hallucinating
+    title: "\"Hallucinating AI\" — then an apology"
+    parts: [{seg: session2, from: "How am I supposed to accomplish the tasks if it's not sending", to: "I did a little, but in this case, I was right."}]
+    speaker: mixed
+    context: Session 2, first decision, meeting an illogical card; the researcher reminds them they can allocate by hand.
+    topics: [flaws, mental-model]
+    why: The illogical card read as an AI hallucination, and the assistant then addressed and apologised to as a person.
+    links: [f-flaw-odd]
+
+  - id: p19-matching-algorithm
+    title: Not really like using an AI tool
+    parts: [{seg: session2, from: "It doesn't even really feel like you're using an AI tool", to: "trying to get your resources in the right place."}]
+    context: Session 2, unprompted.
+    topics: [mental-model]
+    why: Sees the assistants as a matching algorithm rather than AI.
+
+  - id: p19-harsh-environment
+    title: Reading patterns into random failures
+    parts:
+      - {seg: survey2, from: "So something that I don't think I've considered as well here", to: "That's my lack of awareness."}
+      - {seg: survey2, from: "it seemed like the same tasks had failure rates that were similarly high", to: "In my mind, I think that would have been the sensible thing to do."}
+    context: After session 2, unprompted. Failures were in fact uniformly random across drones, tasks and places.
+    topics: [failure-data, mental-model]
+    why: Without failure data, a participant builds a theory (hostile places, "fires or something") and blames their own allocation.
+    links: [f-operator-wants]
+
+  - id: p19-fix-bad
+    title: "\"You can fix bad. You can't fix nothing.\""
+    parts: [{seg: survey2, from: "It's always good that it can summarize it a little bit.", to: "I think it gives you that seed."}]
+    context: Strategic trust questionnaire after session 2, on whether it provides useful guidance.
+    topics: [agents, mental-model]
+    why: The card as a first draft, compared with asking ChatGPT for a first paragraph.
+    links: [f-manual-cards]
+
+  - id: p19-my-failures
+    title: The failures were mine
+    parts: [{seg: survey2, from: "Tactical assistant. I paid a bit more attention to you this time", to: "Not assigning enough drones the next time around."}]
+    context: Tactical trust questionnaire after session 2.
+    topics: [failure-data, checking]
+    why: Credits the assistant and blames themself for (random) drone failures.
+    links: [f-tier-trust]

@@ -1,0 +1,99 @@
+# Third batch of pass-5 notes (2026-10-19). `done` = what Claude did about a note made THIS pass.
+findings:
+  f-personal-style:
+    sections:
+      who-vs-what:
+        text: "Card uptake runs from 8% to 100% across people (median 61%). Knowing <i>who</i> is deciding predicts whether a
+          card is taken about six times better than knowing everything about the mission and when it arrived. In plain terms:
+          shown two decisions, one where a card was taken and one where it was not, and told only who made each, you would
+          pick the right one 75% of the time (a coin: 50%; knowing only the mission: 63%). A person's session-1 rate on its
+          own still does it 71% of the time for their session-2 decisions."
+        how: "606 strategic decisions. Three logistic models of \"card taken\": (a) mission and timing only — drone types
+          needed, drones needed, scenario, session 1 or 2, decision number; (b) the person only (one term each); (c) both.
+          McFadden pseudo-R² = how much each improves on predicting the overall rate for everyone (0 = no better, 1 =
+          perfect). Descriptive, not a test: with ~18 decisions each, the person-only model flatters itself a little; refitted
+          200 times with the person labels shuffled it scores 4% on average, so about 20 of its 24 points are real.
+          Retest of raw card uptake session 1 vs 2: ρ = .57 (.62 once game-adjusted, next section). <b>In plain terms</b>
+          (the second view): AUC = the chance a model ranks a random card-taken decision above a random not-taken one. The
+          person enters as their rate on all their OTHER decisions (on the log-odds scale), so no decision predicts itself;
+          'session 2 from session 1' uses only each person's session-1 rate. Intervals: people resampled 1,000 times,
+          predictions held fixed."
+        numbers:
+          - 'Pseudo-R²: mission + timing 4%; person 24%; both 30%'
+          - Card uptake per person 8%–100%, median 61%; 6 people ≥ 90%, 3 people ≤ 25%
+          - "Telling a taken from a not-taken decision (AUC): mission and timing 63% [57%, 68%]; the person, from their
+            other decisions, 75% [64%, 81%]; both 80% [74%, 86%]; session-2 decisions from the session-1 rate alone 71%
+            [61%, 80%] (321 decisions)."
+          - "Right-or-wrong guessing: always 'card' 66%; mission 65%; person 70%; both 77%."
+          - "Person-only pseudo-R² with the person labels shuffled: 4% on average (95th percentile 6%), against 24% observed."
+        done: "You asked whether 30% means people are predictable, and how good that is. Pseudo-R² is hard to read on its
+          own, so the chart now has a second view, <b>In plain terms</b>. It asks each model to tell apart a decision where
+          a card was taken from one where it was not. A coin gets this right 50% of the time. Knowing only the mission and
+          its timing: 63%. Knowing only who is deciding, taken from their <i>other</i> decisions so nothing predicts itself:
+          75%. Both: 80%. The strictest test uses nothing but each person's session-1 rate to sort their session-2
+          decisions: 71% [61%, 80%]. <b>So yes, people are predictable</b>: who someone is predicts their card-taking well
+          above chance and well above the mission, and it carries from one session to the next. But it is far from certain.
+          Most people take cards at an in-between rate (median 61%), so even perfect knowledge of a person's rate leaves each
+          of their decisions partly a coin flip. That limit applies to any model, which is why no score here gets near
+          100%. Three notes on the 24%. (1) With the person labels shuffled at random, a one-term-per-person model still
+          scores 4% from nothing, so about 20 of the 24 points are real. (2) The three numbers are not shares of one total:
+          the person alone 24%, the mission alone 4%, both 30%. So the person adds 26 points over the mission, and the
+          mission adds 6 over the person. (3) As a yardstick, McFadden (who devised the measure) called 0.2–0.4 an
+          excellent fit; it runs much lower than an ordinary R². Plain right-or-wrong guessing barely moves (70% vs 66%),
+          because 66% of decisions took a card and 'always card' is already right that often. The ranking test is the one to
+          read."
+  f-manual-cards:
+    sections:
+      position:
+        text: "Mostly below both cards or equal to one of them, rarely above. Pre-emptive builds — made without seeing the
+          cards — land equal to a card total more often than builds made after seeing them (39% vs 27%), so 'equal to a
+          card' is partly just the obvious allocation, not copying. Part of that gap is the missions: pre-emptive builds
+          were on smaller, more often one-type missions. Balanced for the mission (second view), it is 37% vs 29%, too close
+          to tell apart."
+        how: "Each manual total compared with the two card totals (all types): below both, equal to either, strictly
+          between, above both. Counts per kind of manual decision. <b>Balanced view</b>: one logistic model per position
+          (below both / equal / between / above) on the kind of build + drones needed + number of drone types + the gap
+          between the two card totals + game + session + minute. Every one of the 209 builds is predicted as each kind in
+          turn and averaged, so the three kinds are compared on the same mix of missions; the four shares are rescaled to
+          100%. Intervals: people resampled 1,000 times, models refitted. The person is not held fixed (too few builds each)."
+        numbers:
+          - 'All 209: below both 44%, equal to a card 33%, strictly between 14%, above both 8%'
+          - 'Built after seeing (77): 57% below, 27% equal, 9% between, 6% above; pre-emptive (97): 38%, 39%, 16%, 6%'
+          - "Mission mix: pre-emptive builds needed 6.9 drones on average (after seeing 7.6, edited 9.3) and 52% were one
+            drone type (38%, 23%)."
+          - "Balanced: after seeing 54% below, 29% equal, 9% between, 7% above; pre-emptive 38%, 37%, 20%, 5%; edited a card
+            39%, 32%, 12%, 17%."
+          - "Pre-emptive minus after seeing, balanced: equal to a card +8 points [−10, +23] (raw +12); below both −16 [−33,
+            +4] (raw −19)."
+        done: "Done: the chart has a second view, <b>Balanced for mission size, types, game, timing</b>, with a table of
+          raw and balanced shares and each kind's mission mix. Builds made before seeing the cards were on smaller missions
+          (6.9 drones needed vs 7.6) and more often needed a single drone type (52% vs 38%), where matching a card's total is
+          easier. With all three kinds put on the same mix of missions, pre-emptive builds equal a card 37% of the time and
+          builds made after seeing them 29%. The gap shrinks from 12 to 8 points and its 95% interval now runs from −10 to
+          +23, so the data no longer separate the two. The same goes for 'below both' (54% vs 38%, interval −33 to +4).
+          The overall shape is unchanged: mostly below both or equal to a card, rarely above. So 'equal to a card is partly
+          just the obvious allocation' still fits, but the pre-emptive vs after-seeing difference is too weak to count as
+          evidence for it. The balancing does not hold the person fixed (too few builds each), so who tends to pre-empt is
+          still mixed in."
+  f-size-decides:
+    sections:
+      route-people:
+        numbers:
+          - 'People with ≥ 2 plans each way: 26. Gap (size held) positive 17, negative 8, none 1; sign test p = .11; mean gap +11 points.'
+          - Card vs hand odds ratio, everyone ×2.10; leaving out any one person ×1.90 (without P15) to ×2.40 (without P11), always p < .05.
+          - 'Without the largest gaps: top 1 (P13) ×1.97, p = .006; top 3 (P06, P13, P15) ×1.63 [1.05, 2.52], p = .03; top 5 ×1.46 [0.96, 2.22], p = .08;
+            top 8 ×1.23, p = .34.'
+          - 'The three largest gaps are 52% of the summed gap. Not comparable: 6 people almost only planned after a card, 1 almost only after a hand allocation.'
+          - "Also holding fixed whether the mission needs one drone type: ×2.13 [1.30, 3.49]; and the number of tasks too:
+            ×2.06 [1.24, 3.43], p = .005."
+        done: "Quotes from the people who do not fit are now under this section, with a summary above them. Five are marked
+          as Claude's picks; highlight the ones you want. In short: the people with the biggest card → Suggest gap (P13,
+          P15, P06, then P29) do not describe linking the two steps. They describe a rule for the whole mission: hand over
+          the complicated ones at both steps, do the simple ones yourself. The people who go the other way (P20, P03, P11,
+          P31) allocate by hand for other reasons, such as a shortage, checking the card, or wanting to own the plan, and then
+          use Suggest or not regardless. P13, the largest gap, says the opposite of what they did: 'I always let the agent do it first', but
+          none of their five plans after a hand allocation used Suggest. I tested the whole-mission idea against the data:
+          holding fixed whether the mission needs one drone type and how many tasks it has, as well as drones needed, leaves
+          the link at ×2.06 [1.24, 3.43] (×2.10 before). So the 'complicated' that people describe is not captured by the
+          mission's features. Either it is a judgement made in the moment, or the link is the carry-over that P21, P10 and
+          P30 describe (previous section)."

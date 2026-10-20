@@ -1676,7 +1676,184 @@ def clean(o):
     return o
 
 
+# ════════════════════════════════════════════════════════════════════════════════════════════
+# Pass 5 (mid-pass notes). Run after everything else so no earlier bootstrap draw moves.
+# ════════════════════════════════════════════════════════════════════════════════════════════
+
+def section_pass5(S, T):
+    from scipy import stats
+    out = {}
+    # ── P5a · card-then-Suggest: is the gap carried by a few people? (f-size-decides#tactical) ──────
+    print('\nP5a card-allocated vs hand-allocated Suggest rate, person by person')
+    d = T[T.ndrones > 0].copy()
+    d['card'] = (d.strategy != 'Manual').astype(int)
+    # expected Suggest use from size + game + session, NOT the route; a person's gap on this residual is size-held
+    dd = centre(d, 'l2d')
+    m = gee_fit('consulted ~ l2d_w + l2d_pm + C(game) + C(run)', dd)
+    d['res'] = d.consulted - m.predict(dd)
+    rows = []
+    for pid, g in d.groupby('pid'):
+        c, h_ = g[g.card == 1], g[g.card == 0]
+        row = dict(pid=pid, nCard=int(len(c)), nHand=int(len(h_)), card=r(c.consulted.mean()) if len(c) else None,
+                   hand=r(h_.consulted.mean()) if len(h_) else None, all=r(g.consulted.mean()))
+        if len(c) >= 2 and len(h_) >= 2:
+            row['gap'] = r(c.consulted.mean() - h_.consulted.mean())
+            row['gapAdj'] = r(c.res.mean() - h_.res.mean())
+        rows.append(row)
+    both = [x for x in rows if 'gap' in x]
+    up, down = sum(x['gapAdj'] > 0.005 for x in both), sum(x['gapAdj'] < -0.005 for x in both)
+    same = len(both) - up - down
+    sign_p = r(stats.binomtest(up, up + down).pvalue, 5) if up + down else None
+    # leave-one-person-out and drop-the-biggest: the route odds ratio each time
+    base = centre(centre(d, 'card'), 'l2d')
+    f = 'consulted ~ card_w + card_pm + l2d_w + l2d_pm + C(game) + C(run)'
+    main_ = gee_terms(base, f, ['card_w'])['card_w']
+    loo = []
+    for pid in sorted(x['pid'] for x in both):
+        dl = centre(centre(d[d.pid != pid], 'card'), 'l2d')
+        tt = gee_terms(dl, f, ['card_w'])['card_w']
+        if tt:
+            loo.append(dict(pid=pid, est=tt['est'], p=tt['p']))
+    order = sorted(both, key=lambda x: -x['gapAdj'])
+    drop = []
+    for k in (1, 3, 5, 8):
+        gone = {x['pid'] for x in order[:k]}
+        dl = centre(centre(d[~d.pid.isin(gone)], 'card'), 'l2d')
+        tt = gee_terms(dl, f, ['card_w'])['card_w']
+        drop.append(dict(k=k, people=sorted(gone), est=tt['est'], lo=tt['lo'], hi=tt['hi'], p=tt['p']))
+    gaps = np.array([x['gapAdj'] for x in both])
+    pos = np.sort(gaps[gaps > 0])[::-1]
+    share3 = r(pos[:3].sum() / gaps.sum()) if gaps.sum() > 0 else None
+    only = dict(cardOnly=sum(1 for x in rows if x['nHand'] < 2), handOnly=sum(1 for x in rows if x['nCard'] < 2))
+    out['routePeople'] = dict(rows=rows, nBoth=len(both), up=up, down=down, same=same, signP=sign_p, main=main_,
+                              loo=dict(min=min(loo, key=lambda x: x['est']), max=max(loo, key=lambda x: x['est']),
+                                       allSig=all(x['p'] < .05 for x in loo), n=len(loo)),
+                              drop=drop, shareTop3=share3, meanGapAdj=r(gaps.mean()), only=only)
+    print('   people with >=2 plans each way: %d; size-held gap up %d, down %d, same %d (sign p %s); mean gap %+.2f'
+          % (len(both), up, down, same, sign_p, gaps.mean()))
+    print('   route OR all: %s; leave-one-out range %s (%s) to %s (%s); every LOO p<.05: %s'
+          % (main_['est'], out['routePeople']['loo']['min']['est'], out['routePeople']['loo']['min']['pid'],
+             out['routePeople']['loo']['max']['est'], out['routePeople']['loo']['max']['pid'], out['routePeople']['loo']['allSig']))
+    for x in drop:
+        print('   drop top %d %s: OR %s [%s, %s] p %s' % (x['k'], x['people'], x['est'], x['lo'], x['hi'], x['p']))
+    print('   top 3 positive gaps = %s of the summed gap; only one route: %s' % (share3, only))
+
+    # ── P5b · speed through the session at finer grain (f-practice#speed) ─────────────────────────
+    print('\nP5b net decision time by minute / pair of minutes / third of the session')
+    fine = {}
+    for lab, d in (('strat', S), ('tac', T)):
+        d = d.copy()
+        mnt = np.minimum(np.floor(d.elapsed_open / 60).astype(int) + 1, 8)
+        groupings = dict(minute=(mnt.astype(str), [str(i) for i in range(1, 9)]),
+                         pair=(((mnt + 1) // 2).map({1: '1–2', 2: '3–4', 3: '5–6', 4: '7–8'}), ['1–2', '3–4', '5–6', '7–8']),
+                         third=(np.minimum(np.floor(d.elapsed_open / 160).astype(int), 2).map({0: 'first', 1: 'middle', 2: 'last'}),
+                                ['first', 'middle', 'last']))
+        rec = {}
+        for gk, (col, order_) in groupings.items():
+            d['g'] = col
+            rec[gk] = {}
+            for run in (1, 2):
+                rows_ = boot_median(d[d.run == run], 'net', 'g', order_, B=1000)
+                rec[gk][str(run)] = rows_
+                print('   %s %s s%d: %s' % (lab, gk, run, [(z['bin'], z['med'], z['n']) for z in rows_]))
+        fine[lab] = rec
+    out['fine'] = fine
+
+    # ── P5c · where manual builds sit, balanced for the mission (f-manual-cards#position) ─────────────
+    # Pre-emptive builds were on smaller, more often one-type missions than builds made after seeing the cards, and an
+    # 'equals a card' total is easier to hit when the cards are close together. Standardise: one logistic model per
+    # position (is it 'below both'? 'equals a card'? ...) on the kind of build + drones needed + number of drone types +
+    # the gap between the two card totals + game + session + minute; predict every one of the 209 builds as if it were
+    # each kind in turn and average, so all three kinds are compared on the same mix of missions. The four shares are
+    # rescaled to sum to 100%. 95% intervals: people resampled 1000 times, models refitted.
+    print('\nP5c manual totals vs the two cards, balanced for the mission')
+    rng = np.random.default_rng(SEED + 51)
+    M = S[S.manual == 1].copy()
+    M['kind'] = np.where(M.early == 1, 'pre-emptive', np.where(M.edited == 1, 'edited a card', 'built after seeing cards'))
+    lo_, hi_ = np.minimum(M.cons_total, M.aggr_total), np.maximum(M.cons_total, M.aggr_total)
+    M['pos'] = np.select([M.committed < lo_, M.committed > hi_, (M.committed == M.cons_total) | (M.committed == M.aggr_total)],
+                         ['below both', 'above both', 'equals a card'], 'strictly between')
+    M['spread'] = M.aggr_total - M.cons_total
+    M['minute'] = M.elapsed_open / 60
+    POS = ['below both', 'equals a card', 'strictly between', 'above both']
+    KINDS = ['built after seeing cards', 'edited a card', 'pre-emptive']
+    F = 'y ~ C(kind) + ndrones + C(ncolours) + spread + C(game) + C(run) + minute'
+
+    def std_shares(d):
+        tab = {}
+        for p in POS:
+            dd = d.assign(y=(d.pos == p).astype(int))
+            try:
+                m = quiet(smf.logit(F, dd).fit, disp=0, method='bfgs', maxiter=3000)
+            except Exception:
+                return None
+            tab[p] = [m.predict(dd.assign(kind=k)).mean() for k in KINDS]
+        a = np.array([tab[p] for p in POS]).T          # kinds x positions
+        return a / a.sum(1, keepdims=True)
+    est = std_shares(M)
+    pids = M.pid.unique()
+    byp = {p: M[M.pid == p] for p in pids}
+    bs = []
+    for _ in range(1000):
+        a = std_shares(pd.concat([byp[p] for p in rng.choice(pids, len(pids))], ignore_index=True))
+        if a is not None and np.isfinite(a).all():
+            bs.append(a)
+    bs = np.stack(bs)
+    raw = pd.crosstab(M.kind, M.pos).reindex(index=KINDS, columns=POS, fill_value=0)
+    mix = M.groupby('kind').agg(n=('pid', 'size'), people=('pid', 'nunique'), drones=('ndrones', 'mean'),
+                                oneType=('ncolours', lambda v: (v == 1).mean()), spread=('spread', 'mean'),
+                                session2=('run', lambda v: (v == 2).mean()), minute=('minute', 'mean'))
+    rows = []
+    for i, k in enumerate(KINDS):
+        n = int(raw.loc[k].sum())
+        rows.append(dict(kind=k, n=n, people=int(mix.loc[k, 'people']),
+                         mix=dict(drones=r(mix.loc[k, 'drones'], 2), oneType=r(mix.loc[k, 'oneType']), spread=r(mix.loc[k, 'spread'], 2),
+                                  session2=r(mix.loc[k, 'session2']), minute=r(mix.loc[k, 'minute'], 2)),
+                         raw={p: r(raw.loc[k, p] / n) for p in POS},
+                         adj={p: r(est[i, j]) for j, p in enumerate(POS)},
+                         lo={p: r(np.quantile(bs[:, i, j], .025)) for j, p in enumerate(POS)},
+                         hi={p: r(np.quantile(bs[:, i, j], .975)) for j, p in enumerate(POS)}))
+        print('   %-26s n %3d  raw %s  balanced %s' % (k, n, [round(raw.loc[k, p] / n, 3) for p in POS], [round(est[i, j], 3) for j in range(4)]))
+    # the comparison the section's text makes: pre-emptive vs after seeing, 'equals a card' and 'below both'
+    pe, se_ = KINDS.index('pre-emptive'), KINDS.index('built after seeing cards')
+    diffs = {}
+    for j, p in enumerate(POS[:2]):
+        dv = bs[:, pe, j] - bs[:, se_, j]
+        diffs[p] = dict(raw=r(raw.loc['pre-emptive', p] / raw.loc['pre-emptive'].sum() - raw.loc['built after seeing cards', p]
+                              / raw.loc['built after seeing cards'].sum()),
+                        adj=r(est[pe, j] - est[se_, j]), lo=r(np.quantile(dv, .025)), hi=r(np.quantile(dv, .975)))
+        print('   pre-emptive minus after seeing, %s: raw %+.3f, balanced %+.3f [%+.3f, %+.3f]'
+              % (p, diffs[p]['raw'], diffs[p]['adj'], diffs[p]['lo'], diffs[p]['hi']))
+    out['manualPosAdj'] = dict(rows=rows, diffs=diffs, boot=int(len(bs)), model=F.replace('y ~ ', ''))
+
+    # ── P5d · is the card → Suggest link the mission's complexity? (f-size-decides#route-people) ─────
+    # People who pair the tiers describe a whole-mission rule ('one colour I do myself, several I hand over'). The route
+    # model holds drones needed; add one-type-or-not and number of tasks (both within and between person).
+    print('\nP5d card -> Suggest, also holding drone types and tasks')
+    d = T[T.ndrones > 0].copy()
+    d['card'] = (d.strategy != 'Manual').astype(int)
+    d['one'] = (d.ncolours == 1).astype(int)
+    base = centre(centre(centre(centre(d, 'card'), 'l2d'), 'one'), 'ntasks')
+    rt = {}
+    for key, f in (('size', 'consulted ~ card_w + card_pm + l2d_w + l2d_pm + C(game) + C(run)'),
+                   ('types', 'consulted ~ card_w + card_pm + l2d_w + l2d_pm + one_w + one_pm + C(game) + C(run)'),
+                   ('typesTasks', 'consulted ~ card_w + card_pm + l2d_w + l2d_pm + one_w + one_pm + ntasks_w + ntasks_pm + C(game) + C(run)')):
+        rt[key] = gee_terms(base, f, ['card_w'])['card_w']
+        print('   %-10s card vs hand OR %s [%s, %s] p %s' % (key, rt[key]['est'], rt[key]['lo'], rt[key]['hi'], rt[key]['p']))
+    out['routeTypes'] = rt
+    return out
+
+
 def main():
+    if '--p5' in sys.argv:          # just the pass-5 block, patched into the existing handover.json
+        S, T, P, who = load()
+        prev = json.loads(OUT.read_text(encoding='utf-8'))
+        section_size(S, T, who)     # adds the derived columns the later blocks use
+        prev['p5'] = clean(section_pass5(S, T))
+        OUT.write_text(json.dumps(prev, ensure_ascii=False, allow_nan=False, separators=(',', ':'), default=lambda o: o.item()
+                                  if hasattr(o, 'item') else str(o)), encoding='utf-8')
+        print('wrote p5 into', OUT.relative_to(BASE))
+        return
     S, T, P, who = load()
     out = dict(meta=dict(seed=SEED, nPeople=int(S.pid.nunique()), nStrat=int(len(S)), nTac=int(len(T)),
                          boot=B_BOOT, script='scripts/register/pass2/handover.py'))
@@ -1689,6 +1866,7 @@ def main():
     out['manual'] = section_manual(S, who)
     out['p3'] = section_pass3(S, T, P, PT, who)
     out['p4'] = section_pass4(who)
+    out['p5'] = section_pass5(S, T)
     out['who'] = {c: who[c] for c in ('C03', 'C04', 'C05', 'C06', 'C07', 'C08', 'C09', 'C10', 'C22')}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(clean(out), ensure_ascii=False, allow_nan=False, separators=(',', ':'), default=lambda o: o.item()

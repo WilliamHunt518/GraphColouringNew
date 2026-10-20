@@ -1,0 +1,146 @@
+# Short clips from the session recordings that show what the findings' terms look like on screen.
+# scripts/register/build_demos.py cuts them (muted) into Results/review_media/ (gitignored, like the recordings:
+# the screens are a participant's own session). `from`/`to` are SESSION seconds from the event log; the script turns
+# them into video time with Results/Narration/<pid>_s1/segments.json (the screen runs ~2 s behind the log there, so the
+# `look` times below were read off the clip itself). `look`: [seconds into the clip, what happens].
+# `zoom`: a full-resolution close-up still, {at: seconds into the clip, crop: "w:h:x:y" in the 4480x1392 recording,
+# caption}. `sections`: the finding sections a clip explains (shown there, and in the page's "On screen" tab).
+demos:
+  - id: hand-then-hand
+    view: both
+    title: "Route 1: allocated by hand, then planned by hand"
+    pid: P22
+    session: 1
+    from: 66
+    to: 87
+    mission: M002
+    explains: "What 'allocated by hand' and 'built the plan by hand' mean, and what 'deciding before the cards
+      loaded' looks like: the operator chooses 'Set manually instead' while the cards are still loading, sets the
+      drone counts, then drags each drone onto a task instead of pressing Suggest. Plans like this are the orange bars
+      in the tactical-tier chart."
+    look:
+      - [4, "Left screen: the operator clicks Allocate on M002.", strat]
+      - [6, "The card slots are still loading; they click 'Set manually instead'.", strat]
+      - [8, "They set the counts with the +/− buttons (four Fast drones) and deploy.", strat]
+      - [12, "Right screen: the tactical planner opens with the four drones unassigned.", tac]
+      - [14, "They drag the drones onto the two Recce tasks themselves; no Suggest.", tac]
+      - [18, "Their own plan is complete and they deploy it.", tac]
+    zoom: {at: 8, crop: "520:600:0:450", caption: "The manual allocation panel: one row per drone type with − / + buttons."}
+    sections: [f-about#screens, f-about#decisions, f-size-decides#tactical, f-size-decides#route-people, f-size-decides#both, f-size-decides#models]
+
+  - id: card-then-suggest
+    view: both
+    title: "Route 2: a strategy card, then Suggest"
+    pid: P10
+    session: 1
+    from: 186
+    to: 213
+    mission: M009
+    explains: "What 'allocated from a strategy card' and 'pressed Suggest' mean. The operator opens a mission, waits
+      for the two strategy cards, takes Aggressive, and in the tactical planner (right screen) presses Suggest and
+      confirms the plan without changing it. Plans like this are the blue bars in the tactical-tier chart."
+    look:
+      - [3, "Left screen: the operator clicks Allocate on mission M009; the strategy panel opens under it, with two empty card slots while the cards load.", strat]
+      - [10, "The Aggressive and Conservative cards appear (each takes about 4 s).", strat]
+      - [13, "They take Aggressive and deploy it: the strategic decision is 'card taken'. M009 appears in the tactical list on the right.", strat]
+      - [15, "Right screen: the tactical planner opens for M009 and they press Suggest; the plan fills in one drone per second ('Suggesting…').", tac]
+      - [25, "They confirm the plan unchanged.", tac]
+    zoom: {at: 12, crop: "520:860:0:480", caption: "The two strategy cards as the operator saw them: drone counts by type, ETA and the speed / reserve / resilience bars."}
+    said: "P10, at this moment: 'For the aggressive approach, anything but suggestion doesn't really make sense, I think.'"
+    sections: [f-about#screens, f-about#decisions, f-size-decides#tactical, f-size-decides#route-people, f-size-decides#both, f-size-decides#speed]
+
+  - id: illogical-card
+    view: strat
+    title: "The illogical Conservative card"
+    pid: P21
+    session: 2
+    from: 77
+    to: 111
+    mission: M002
+    explains: "What the 'illogical card' is: this mission needs only Fast drones (its tasks are recce), but the
+      Conservative card adds a Camera drone that none of its tasks can use. This operator says so out loud and sets
+      the counts by hand instead of taking either card."
+    look:
+      - [6, "The strategy panel opens for M002; the cards are loading.", strat]
+      - [10, "Both cards appear. Aggressive: 5 Fast. Conservative: 3 Fast and 1 Camera ('Buffer: +1 Fast · +1 Camera').", strat]
+      - [21, "The operator chooses 'Set manually instead'.", strat]
+      - [31, "They deploy their own counts.", strat]
+    zoom: {at: 14, crop: "500:700:0:450", caption: "Close-up: the Conservative card's Camera drone (green) on a mission whose tasks need only Fast drones."}
+    said: "P21, at this moment: 'why, for example, here, the conservative one wants to send a camera where none of the
+      tasks require a camera. So that's one more reason to not for me not to trust the selection.'"
+    sections: [f-about#wrong, f-flaw-odd#event, f-flaw-odd#over-time, f-flaw-odd#by-index, f-flaw-odd#spoken, f-manual-cards#position]
+
+  - id: trimming-a-card
+    view: strat
+    title: "Starting from a card and editing it"
+    pid: P10
+    session: 2
+    from: 282
+    to: 304
+    mission: M008
+    explains: "What an 'edited' or 'anchored' manual allocation is: the operator looks at the cards, then edits the
+      counts and deploys their own version. In the log this counts as a manual allocation that started from the
+      Aggressive card, and its counts sit close to that card's."
+    look:
+      - [4, "The strategy panel opens for M008 and the cards load.", strat]
+      - [14, "The operator points at the Aggressive card (4 Fast, 2 Lifter, 2 Camera).", strat]
+      - [16, "They edit the counts ('I want four blue. I want one more red').", strat]
+      - [18, "They deploy the edited allocation; the tactical planner opens on the right.", both]
+    zoom: {at: 14, crop: "500:800:0:400", caption: "The cards the operator started from (Aggressive: 4 Fast, 2 Lifter, 2 Camera)."}
+    sections: [f-manual-cards#dots, f-manual-cards#position, f-manual-cards#said]
+
+  - id: parallel-suggest
+    view: both
+    title: "Working in parallel: Suggest fills in while the operator starts the next mission"
+    pid: P36
+    session: 1
+    from: 136
+    to: 168
+    mission: M004
+    explains: "What 'another mission's strategic panel was opened while the planner was open' means: the operator
+      presses Suggest on one mission and, while the plan fills in, turns to the left screen to allocate the next
+      mission, then comes back to confirm the first plan."
+    look:
+      - [4, "Right screen: the tactical planner opens for M004.", tac]
+      - [6, "Suggest is pressed; the plan starts filling in ('Suggesting…').", tac]
+      - [8, "Left screen: meanwhile the operator opens the next mission's strategy panel (M005).", strat]
+      - [12, "They allocate M005 by hand while M004's plan finishes on the right.", strat]
+      - [22, "M005 joins the tactical list on the right; M004's plan is ready and waiting to be confirmed.", tac]
+    sections: [f-size-decides#parallel, f-size-decides#parallel-said, f-size-decides#speed]
+
+  - id: refusal
+    view: tac
+    title: "A drone failure, then 'No workable plan'"
+    pid: P19
+    session: 1
+    from: 198
+    to: 228
+    mission: M003
+    explains: "What a 'refusal' is: a drone fails mid-mission, the recovery planner opens with a red 'Drone failed'
+      banner, the operator presses Suggest and the Tactical Assistant answers 'No workable plan with the drones left
+      on this mission.' This operator then abandons the mission. (A fix did exist here, using a drone busy on another
+      task, so this is a 'wrong' refusal.)"
+    look:
+      - [4, "Right screen: Camera-2 fails; the planner switches to recovery with the red 'Drone failed' banner.", tac]
+      - [21, "The operator presses Suggest: 'No workable plan with the drones left on this mission.'", tac]
+      - [25, "They abandon the mission; its unfinished tasks go back into the queue.", tac]
+    zoom: {at: 23, crop: "900:500:3580:100", caption: "The recovery planner after Suggest: the failed drone, the red banner and the refusal message."}
+    sections: [f-about#wrong, f-flaw-odd#refusal]
+
+  - id: queue
+    view: strat
+    title: "A busy moment: missions waiting in the queue"
+    pid: P04
+    session: 1
+    from: 344
+    to: 356
+    mission: M004
+    explains: "What 'missions waiting' (queue depth) means: the left-hand list of mission cards, each with an
+      Allocate button and a red penalty bar that grows while it waits. Only about three and a half cards fit on screen,
+      so here (seven waiting) the operator scrolls the list to choose one."
+    look:
+      - [0, "Left column: the waiting missions; each red bar is the penalty building up. The right screen says '7 queued'.", strat]
+      - [4, "The operator scrolls through the list.", strat]
+      - [8, "They open M004; the rest keep waiting.", strat]
+    zoom: {at: 2, crop: "520:1000:0:120", caption: "The queue list: each card is a waiting mission with its tasks, Allocate button and growing penalty bar."}
+    sections: [f-workload#raw-vs-adjusted, f-workload#waited, f-triage#order]

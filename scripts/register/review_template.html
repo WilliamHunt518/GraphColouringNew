@@ -82,6 +82,53 @@ ul.nums li { margin: 4px 0; font-size: 14.5px; }
 .qcard .qact:hover { border-color: var(--ink-3); color: var(--ink); }
 .qcard.picked { border-color: var(--ink-3); }
 .qcard .qtag.sug { background: none; border: 1px dashed var(--line); color: var(--ink-3); }
+/* long passages (passages/*.yaml): full width, a title, the researcher's question before them */
+.qcard.long { grid-column: 1 / -1; max-width: 92ch; }
+.qcard.long .qtitle { font: 600 14px var(--sans); color: var(--ink); }
+.qcard.long .qprompt { font: italic 13px/1.45 var(--sans); color: var(--ink-3); border-left: 2px solid var(--line); padding-left: 8px; }
+.qcard.long .qprompt b { font-style: normal; font-weight: 600; }
+.qcard.long .qtext { font-size: 15.5px; line-height: 1.6; }
+.qcard.long .qwhy { font-size: 12.5px; color: var(--ink-2); }
+.qcard .qtag.trim { background: none; border: 1px solid var(--line); color: var(--ink-3); align-self: flex-start; }
+.qcard .qtag.bad { background: var(--bad); color: #fff; align-self: flex-start; }
+.qcard .qtag.trimmed { background: none; border: 1px solid var(--line); color: var(--ink-3); align-self: flex-start; }
+.qcard .qtag.adjusted { background: none; border: 1px solid var(--s-strat); color: var(--s-strat); align-self: flex-start; }
+.qcard .qtag.edited { background: none; border: 1px solid var(--warn); color: var(--warn); font-weight: 600; align-self: flex-start; }
+/* the compare view (Original open): cut words struck out in the original; [added] and changed words marked in yours */
+.qcard .d-del { text-decoration: line-through; opacity: .55; }
+.qcard.cmp .d-br, .qkey .d-br { background: color-mix(in srgb, var(--s-strat) 22%, transparent); border-radius: 3px; }
+.qcard.cmp .d-ed, .qkey .d-ed { background: color-mix(in srgb, var(--warn) 30%, transparent); border-radius: 3px; text-decoration: underline wavy var(--warn); }
+.qcard.cmp .d-cut { color: var(--ink-3); font-weight: 600; }
+.qcard .qkey { display: flex; gap: 10px; font-size: 11.5px; margin: 4px 0; }
+.qcard details.qorig > div:last-child { line-height: 1.55; color: var(--ink-2); }
+.qcard details.qorig { font-size: 12.5px; color: var(--ink-3); }
+.qcard details.qorig summary { cursor: pointer; }
+.qcard .qtrim textarea { width: 100%; box-sizing: border-box; font: 14.5px/1.5 var(--serif, Georgia, serif); padding: 6px 8px;
+  border: 1px solid var(--ink-3); border-radius: 6px; background: var(--bg); color: var(--ink); }
+.qcard .qhint { font-size: 12px; color: var(--ink-3); margin: 3px 0; }
+.qcard .qhint.okk { color: var(--good); } .qcard .qhint.bad { color: var(--bad); }
+.qcard .qtrimrow { display: flex; gap: 6px; }
+.qcard .qtrimrow button { font: 500 12px var(--sans); border: 1px solid var(--line); border-radius: 5px; background: var(--surface-2); color: var(--ink-2); padding: 3px 9px; cursor: pointer; }
+.qcard .qact.qedit { margin-right: 6px; }
+.qcard .qlisten { font: 500 11.5px var(--sans); border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink-2); padding: 1px 8px; margin-left: 6px; cursor: pointer; }
+.qcard audio { width: 100%; height: 32px; }
+.qcard .qcheck { font: 12px var(--sans); color: var(--ink-3); display: flex; gap: 5px; align-items: center; cursor: pointer; align-self: flex-start; }
+.qcard .qcheck.on { color: var(--good); font-weight: 600; }
+.qcard .qcheck.stale { color: var(--warn); }
+.qcard .qnote { font: 13px var(--sans); width: 100%; box-sizing: border-box; border: 1px solid var(--grid); border-radius: 6px; padding: 6px 8px; background: var(--surface); color: var(--ink); resize: vertical; }
+.qcard.checked { box-shadow: inset 3px 0 0 var(--good); }
+.qcard .qrefs { border-top: 1px solid var(--line); padding-top: 6px; }
+.qcard .qrefs > summary { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); cursor: pointer; }
+.box.refs { max-width: 92ch; }
+.box.refs .refgrp { font: 600 12px var(--sans); color: var(--ink-2); margin: 10px 0 2px; text-transform: uppercase; letter-spacing: .05em; }
+.box.refs .refrow { padding: 6px 0; border-top: 1px solid var(--line); }
+.box.refs .refpt { font-size: 13.5px; line-height: 1.5; color: var(--ink-2); margin-top: 2px; }
+.box.refs .refps { color: var(--ink-3); font-style: italic; }
+.box.refs .refwhere { font-size: 12px; color: var(--ink-3); }
+.box.refs .refkind { font: 500 11px var(--sans); border: 1px solid var(--line); border-radius: 9px; padding: 0 7px; margin-left: 8px; color: var(--ink-3); }
+.box.refs .refkind.agrees { border-color: var(--good); color: var(--good); }
+.box.refs .refkind.qualifies { border-color: var(--warn); color: var(--warn); }
+.box.refs .refkind.beyond { border-color: var(--s-strat); color: var(--s-strat); }
 .qempty { font-size: 13px; color: var(--ink-3); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; margin: 6px 0; }
 .qfilter { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 4px 0 6px; font-size: 12.5px; color: var(--ink-3); }
 .qfilter input { font: 12.5px var(--sans); padding: 3px 7px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); width: 16em; }
@@ -133,6 +180,38 @@ table.reg td a { color: var(--ink); cursor: pointer; }
 .fsec h3 { font: 600 18px var(--sans); margin: 0 0 6px; }
 .fsec .stext { font-size: 15px; line-height: 1.55; max-width: 76ch; margin: 6px 0 10px; }
 .fsec .box.chartbox { max-width: 100%; }
+/* on-screen demos: clips from the recordings */
+details.demo { border: 1px solid var(--line); border-left: 4px solid var(--s-tac); border-radius: 8px; background: var(--surface);
+  margin: 10px 0; max-width: 100%; }
+details.demo > summary { cursor: pointer; padding: 8px 12px; font-size: 14px; color: var(--ink); }
+details.demo > summary b { font-weight: 600; }
+details.demo > summary .who { font: 11px var(--mono); color: var(--ink-3); margin-left: 6px; }
+.demo .dbody { padding: 0 12px 12px; }
+.demo .drow { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 14px; align-items: start; margin-top: 10px; }
+.demo .drow.nozoom { grid-template-columns: minmax(0, 1fr); }
+.demo video { width: 100%; border-radius: 6px; background: #000; display: block; }
+.demo .zoom { margin: 0; }
+.demo .zoom img { width: 100%; border-radius: 6px; border: 1px solid var(--line); cursor: zoom-in; display: block; }
+.demo .zoom figcaption, .demo .dnote { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+.demo .dexp { font-size: 14px; color: var(--ink-2); margin: 8px 0; max-width: 80ch; }
+.demo ol.look { margin: 6px 0; padding-left: 0; list-style: none; font-size: 13.5px; }
+.demo ol.look li { margin: 3px 0; display: flex; gap: 8px; align-items: baseline; }
+.demo .dviews { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink-3); margin: 0 0 6px; flex-wrap: wrap; }
+.demo .dviews button { font: 12px var(--sans); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink-2); cursor: pointer; padding: 2px 10px; }
+.demo .dviews button.on { background: var(--ink-2); color: var(--surface); border-color: var(--ink-2); }
+.demo ol.look button.scr { font: 10.5px var(--sans); border-radius: 9px; margin-right: 6px; background: none; }
+.demo ol.look button { font: 500 11px var(--mono); border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2); color: var(--ink-2);
+  cursor: pointer; padding: 1px 6px; flex: none; }
+.demo .dsaid { font: italic 14px/1.45 var(--serif, Georgia, serif); color: var(--ink-2); border-left: 3px solid var(--line); padding-left: 10px; margin: 8px 0; }
+.demo .dalso { font-size: 12.5px; color: var(--ink-3); }
+.demo .dalso a { color: var(--ink-2); cursor: pointer; text-decoration: underline; margin-right: 8px; }
+.onscreen { grid-column: 1 / -1; padding: 18px 26px 80px; max-width: 1180px; margin: 0 auto; overflow: auto; height: 100%; }
+.onscreen h2 { font: 600 20px var(--sans); margin: 0 0 6px; }
+.onscreen .intro { font-size: 14.5px; color: var(--ink-2); max-width: 85ch; margin: 0 0 14px; }
+@media (max-width: 700px) { .demo .drow { grid-template-columns: 1fr; } }
+table.mini { border-collapse: collapse; margin: 8px 0; font-size: 13.5px; }
+table.mini th, table.mini td { border-bottom: 1px solid var(--line); padding: 3px 12px 3px 0; text-align: left; }
+table.mini th { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
 details.how { background: var(--surface-2); border-radius: 8px; padding: 8px 14px; margin: 10px 0; max-width: 80ch; }
 details.how summary { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); cursor: pointer; }
 details.how div { font-size: 14px; line-height: 1.55; margin-top: 6px; white-space: pre-line; }
@@ -440,14 +519,15 @@ CUR = CUR && CARDS.some(c => c.id === CUR) ? CUR : CARDS[0].id;
 const remember = () => { try { localStorage.setItem(LSKEY + ':ui', JSON.stringify({ cur: CUR, view: VIEW })); } catch (e) { } };
 
 function drawProgress() {
-  const n = CARDS.length, done = CARDS.filter(c => reviewed(c.id)).length;
+  const CARDS_ = CARDS.filter(c => c.kind !== 'intro');     // the Start here card is not reviewed
+  const n = CARDS_.length, done = CARDS_.filter(c => reviewed(c.id)).length;
   const bar = $('progbar'); bar.innerHTML = '';
-  VERDICTS.forEach(([k, , col]) => { const m = CARDS.filter(c => (RESP.cards[c.id] || {}).verdict === k).length;
+  VERDICTS.forEach(([k, , col]) => { const m = CARDS_.filter(c => (RESP.cards[c.id] || {}).verdict === k).length;
     if (m) h('i', { style: `width:${100 * m / n}%;background:var(${col})`, title: `${m} ${k}` }, bar); });
-  const noted = CARDS.filter(c => reviewed(c.id) && !(RESP.cards[c.id] || {}).verdict).length;
+  const noted = CARDS_.filter(c => reviewed(c.id) && !(RESP.cards[c.id] || {}).verdict).length;
   if (noted) h('i', { style: `width:${100 * noted / n}%;background:var(--ink-3)`, title: `${noted} note only` }, bar);
   $('proglab').textContent = `Pass ${PASS} · ${done} of ${n} reviewed · ` + VERDICTS.map(([k, l]) =>
-    `${CARDS.filter(c => (RESP.cards[c.id] || {}).verdict === k).length} ${l.toLowerCase()}`).join(' · ');
+    `${CARDS_.filter(c => (RESP.cards[c.id] || {}).verdict === k).length} ${l.toLowerCase()}`).join(' · ');
 }
 
 function visibleCards() {
@@ -471,13 +551,14 @@ function step(d) {
 
 function render() {
   $('views').innerHTML = '';
-  [['review', 'Review'], ['table', FMODE ? 'All pass-1 cards' : 'All cards'], ['map', 'Link map']].forEach(([k, l]) => {
+  [['review', 'Review'], ['table', FMODE ? 'All pass-1 cards' : 'All cards'], ['map', 'Link map'], ['screen', 'On screen']].forEach(([k, l]) => {
     const b = h('button', { text: l, class: VIEW === k ? 'on' : '' }, $('views')); b.onclick = () => { VIEW = k; remember(); render(); };
   });
   drawProgress();
   const body = $('body'); body.innerHTML = '';
   if (VIEW === 'table') return renderTable(body);
   if (VIEW === 'map') return renderMap(body);
+  if (VIEW === 'screen') return renderOnScreen(body);
   renderList(h('aside', { class: 'list' }, body));
   const mid = h('section', { class: 'cardview' }, body);
   if (FMODE && ATOM) {
@@ -575,7 +656,7 @@ function prevBox(host, keys) {      // every earlier pass (from 2, when findings
   keys = keys.filter(Boolean);
   const rows = [];
   for (let p = PASS; p >= 2; p--) {    // this pass too, once Claude has acted on a note made in it
-    const pn = p === PASS ? keys.map(k => RESP.cards[k]).find(x => x && (x.note || '').trim())
+    const pn = p === PASS ? keys.map(k => ((REG.acted || {})[k] || []).slice(-1)[0] || (RESP.cards[k] && (RESP.cards[k].note || '').trim() && RESP.cards[k])).find(Boolean)
       : keys.map(k => ((REG.history || {})[k] || []).filter(x => x.pass === p && (x.note || x.verdict)).slice(-1)[0]).find(Boolean);
     const reply = keys.map(k => ((REG.replies || {})[k] || {})[p]).find(Boolean);
     if (p === PASS ? reply : (pn || reply)) rows.push({ p, pn: p === PASS && pn ? { note: pn.note } : pn, reply });
@@ -607,18 +688,113 @@ const quoteById = id => { const m = /^ev(\d+)$/.exec(id);
   if (m) { const e = QL && QL.evidence[+m[1]]; return e && Object.assign({ id, codes: [e.code] }, e); }
   const q = (REG.quotes || {})[id]; return q && Object.assign({ id }, q); };
 function quoteCard(host, q, act) {
-  const c = h('div', { class: 'qcard' + (q.led ? ' led' : '') + (q.paraphrase ? ' para' : '') + (act && act.picked ? ' picked' : '') }, host);
-  h('div', { class: 'qtext', text: (q.paraphrase ? '' : '“') + q.text + (q.paraphrase ? '' : '”') }, c);
+  const c = h('div', { class: 'qcard' + (q.long ? ' long' : '') + (q.led ? ' led' : '') + (q.paraphrase ? ' para' : '') + (act && act.picked ? ' picked' : '') }, host);
+  if (q.long && q.title) h('div', { class: 'qtitle', text: q.title }, c);
+  if (q.prompt) { const pr = h('div', { class: 'qprompt' }, c); h('b', { text: 'Researcher: ' }, pr); pr.append(q.prompt); }
+  const tr = act && act.trim, shown = tr && tr.text ? tr.text : q.text, cmp = tr && tr.text ? compareTrim(tr.text, q.text) : null;
+  const qt = h('div', { class: 'qtext' }, c), open_ = q.paraphrase ? '' : '“', close_ = q.paraphrase ? '' : '”';
+  if (cmp) { qt.append(open_); diffSpans(qt, cmp.T, t => ({ ed: 'd-ed', br: 'd-br', cut: 'd-cut' })[t.kind]); qt.append(close_); }
+  else qt.textContent = open_ + shown + close_;
+  if (cmp) {
+    h('span', { class: 'qtag ' + cmp.status, text: trimLabel(cmp), title: TRIMTAG[cmp.status][1] + ` (${cmp.cuts} cut${cmp.cuts === 1 ? '' : 's'})` }, c);
+    const od = h('details', { class: 'qorig' }, c); h('summary', { text: 'Original — compare' }, od);
+    od.ontoggle = () => c.classList.toggle('cmp', od.open);
+    h('div', { class: 'qkey', html: '<span class="d-del">cut</span> <span class="d-br">[added]</span> <span class="d-ed">changed</span>' }, od);
+    diffSpans(h('div', {}, od), cmp.O, o => o.cut ? 'd-del' : null);
+  }
+  if (act && act.chk) {         // your check against the recording, tied to the exact text shown (a later edit unticks it)
+    const st = act.chk.val, ok = st === shown, lab = h('label', { class: 'qcheck' + (ok ? ' on' : st ? ' stale' : '') }, c);
+    const cb = h('input', { type: 'checkbox' }, lab); cb.checked = ok;
+    lab.append(ok ? ' Checked against the recording' : st ? ' Checked an earlier version — tick again once re-checked' : ' Checked against the recording (and edited with [bits] where needed)');
+    cb.onchange = () => act.chk.set(cb.checked ? shown : null);
+    if (ok) c.classList.add('checked');
+  }
+  if (tr) {
+    const eb = h('button', { class: 'qact qedit', text: tr.text ? 'Edit trim' : 'Trim', title: 'cut words out of this quote; mark each cut with […]' }, c);
+    eb.onclick = () => {
+      const box = h('div', { class: 'qtrim' }); qt.replaceWith(box); eb.remove();
+      const ta = h('textarea', {}, box); ta.value = shown; ta.rows = Math.min(14, Math.max(3, Math.ceil(shown.length / 90)));
+      const hint = h('div', { class: 'qhint' }, box);
+      const row = h('div', { class: 'qtrimrow' }, box);
+      const check = () => { const k = compareTrim(ta.value.trim(), q.text);
+        hint.textContent = { trimmed: 'Trimmed: only cuts, every word kept is in the original. Mark cuts with […]; put implied words in [brackets].',
+          adjusted: `Adjusted: cuts plus ${k.br} [bracketed] addition${k.br > 1 ? 's' : ''}.`,
+          edited: `Edited: ${k.ed} word${k.ed > 1 ? 's are' : ' is'} not in the original and not in [brackets] (fine for a correction you have checked; it is flagged).` }[k.status];
+        hint.className = 'qhint ' + (k.status === 'edited' ? 'bad' : 'okk'); };
+      ta.oninput = check; check();
+      h('button', { text: 'Save trim' }, row).onclick = () => tr.save(ta.value.trim() === q.text.trim() ? null : ta.value.trim());
+      h('button', { text: 'Cancel' }, row).onclick = () => tr.save(tr.text || null);
+      if (tr.text) h('button', { text: 'Reset to original' }, row).onclick = () => tr.save(null);
+      ta.focus();
+    };
+  }
   if (q.context) h('div', { class: 'qctx', text: q.context }, c);
+  if (q.why) h('div', { class: 'qwhy', text: 'Why it matters: ' + q.why }, c);
+  if ((q.refs || []).length) { const d = h('details', { class: 'qrefs box refs' }, c); d.open = true;
+    h('summary', { text: `Links back to the results (${q.refs.length})` }, d); q.refs.forEach(r => refRow(d, r, true, null)); }
   const w = h('div', { class: 'qwho' }, c);
   h('b', { text: q.pid }, w);
-  w.append(` · ${q.source || ''}${q.at ? ' · ' + q.at : ''}`);
+  w.append(` · ${q.source || ''}${q.at ? ' · ' + q.at : ''}${q.words ? ' · ' + q.words + ' words' : ''}`);
+  const au = (REG.audio || {})[q.id];       // the recording of this quote (scripts/register/build_audio.py)
+  if (au) { const lb = h('button', { class: 'qlisten', text: '▶ Listen', title: `the recording, ${Math.round(au.end - au.start)} s (includes anything cut with […])` }, w);
+    lb.onclick = () => { const ex = c.querySelector('audio');
+      if (ex) { ex.paused ? ex.play() : ex.pause(); return; }
+      const a = h('audio', { controls: '', preload: 'auto', src: au.file });
+      a.onerror = () => a.replaceWith(h('div', { class: 'qhint', text: 'No clip on this machine: run python scripts/register/build_audio.py (needs Results/Narration/).' }));
+      a.onplay = () => { lb.textContent = '❚❚ Pause'; document.querySelectorAll('.qcard audio').forEach(o => o !== a && o.pause()); };
+      a.onpause = () => { lb.textContent = '▶ Listen'; };
+      w.after(a); a.play(); }; }
   if (q.led) h('span', { class: 'qtag', text: 'after a leading question' }, w);
+  if (q.mixed) h('span', { class: 'qtag', text: 'researcher’s words inside', title: 'the transcript has no speaker labels; part of this cut is the researcher speaking (see the context line)' }, w);
   if (q.paraphrase) h('span', { class: 'qtag', text: 'researcher’s note' }, w);
   (q.codes || []).forEach(k => { const L = (REG.codeLabels || {})[k];
     h('span', { class: 'qcode', text: L ? L.name : k, title: L ? `${k}: ${L.def}` : k }, w); });
   if (act && act.sug) h('span', { class: 'qtag sug', text: 'Claude’s pick', title: 'one of the 3–4 the quote analysts suggested highlighting' }, w);
+  if (act && act.cmt) {         // your comment on this quote (highlighted cards): resp(key).qnotes[id]
+    const ta = h('textarea', { class: 'qnote', placeholder: 'Your comment on this quote (optional)…' }, c);
+    ta.value = act.cmt.val; ta.rows = Math.max(2, Math.ceil(ta.value.length / 90));
+    ta.oninput = () => act.cmt.set(ta.value);
+  }
   if (act) h('button', { class: 'qact', text: act.label, title: act.tip }, c).onclick = act.fn;
+}
+/* Your version against the original, word by word (longest common subsequence; case, punctuation and quote marks
+   ignored). Your tokens: kept words, […] / … cut marks, [bracketed] additions, and other words (changed or added
+   without brackets). Status: 'trimmed' = only cuts; 'adjusted' = cuts plus [bracketed] words, the usual convention
+   for implied words; 'edited' = some unbracketed word is not in the original (a correction, or a slip). */
+const tokNorm = w => w.toLowerCase().replace(/[‘’]/g, "'").replace(/[^\p{L}\p{N}']+/gu, '').replace(/^'+|'+$/g, '');
+function compareTrim(trim, orig) {
+  const T = [];
+  for (const m of trim.matchAll(/\[[^\]]*\]\S*|\S+/g)) {
+    const w = m[0];
+    if (w.startsWith('[')) { const inner = w.slice(1, w.indexOf(']')).trim();
+      T.push({ w, kind: /^(…|\.\.\.|\.\.)$/.test(inner) || !inner ? 'cut' : 'br' }); continue; }
+    if (/^(…|\.\.\.)[.,;:!?]*$/.test(w)) { T.push({ w, kind: 'cut' }); continue; }
+    T.push({ w, kind: 'word', n: tokNorm(w) });
+  }
+  const O = orig.split(/\s+/).filter(Boolean).map(w => ({ w, n: tokNorm(w) }));
+  const a = T.filter(t => t.kind === 'word' && t.n), b = O.filter(o => o.n), A = a.length, B = b.length;
+  const L = Array.from({ length: A + 1 }, () => new Uint16Array(B + 1));
+  for (let i = A - 1; i >= 0; i--) for (let j = B - 1; j >= 0; j--)
+    L[i][j] = a[i].n === b[j].n ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  for (let i = 0, j = 0; i < A && j < B;) {
+    if (a[i].n === b[j].n) { a[i].keep = b[j].keep = true; i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++;
+  }
+  T.forEach(t => { if (t.kind === 'word' && t.n && !t.keep) t.kind = 'ed'; });
+  O.forEach(o => { o.cut = o.n && !o.keep; });
+  const cuts = O.reduce((k, o, i) => k + (o.cut && !(O[i - 1] && O[i - 1].cut) ? 1 : 0), 0);
+  const ed = T.filter(t => t.kind === 'ed').length, br = T.filter(t => t.kind === 'br').length;
+  return { T, O, cuts, ed, br, status: ed ? 'edited' : br ? 'adjusted' : 'trimmed' };
+}
+const TRIMTAG = {
+  trimmed: ['trimmed by you', 'only cuts: every word kept is in the original, in order'],
+  adjusted: ['adjusted', 'cuts plus words you added in [brackets]'],
+  edited: ['edited', 'some words are not in the original and not in [brackets] (a correction, or a slip): open Original to see them'],
+};
+const trimLabel = c => TRIMTAG[c.status][0] + (c.status === 'trimmed' ? '' :
+  ' · ' + [c.br && `${c.br} [added]`, c.ed && `${c.ed} word${c.ed > 1 ? 's' : ''} changed`].filter(Boolean).join(', '));
+function diffSpans(host, toks, cls) {        // tokens as text, each difference wrapped in a span for the compare view
+  toks.forEach((t, i) => { if (i) host.append(' ');
+    const k = cls(t); if (k) h('span', { class: k, text: t.w }, host); else host.append(t.w); });
 }
 function autoPick(ev) {          // the clearest unled excerpts, one per person, middling length first
   const seen = new Set(), score = e => (e.led ? 100 : 0) + Math.abs(e.text.split(/\s+/).length - 22);
@@ -627,7 +803,7 @@ function autoPick(ev) {          // the clearest unled excerpts, one per person,
 /* The highlighted cards are the researcher's own picks (resp(key).quotes, in the order picked); everything starts
    under "More quotes", with the analysts' suggestions marked "Claude's pick". Highlight / Remove move a card between
    the two, and the filter bar narrows the unpicked quotes by words, person, source or leading questions. */
-const QSOURCES = ['think-aloud', 'debrief', 'interview'];
+const QSOURCES = ['think-aloud', 'questionnaire talk', 'debrief', 'interview'];
 function quoteBlock(host, s, key) {
   const codes = s.codes || [], Q = s.qual || {};
   const ev = codes.length && QL ? QL.evidence.map((e, i) => Object.assign({ id: 'ev' + i, codes: [e.code] }, e)).filter(e => codes.includes(e.code)) : [];
@@ -638,7 +814,7 @@ function quoteBlock(host, s, key) {
   const all = new Map([...more, ...rest].map(q => [q.id, q])), sugIds = new Set(sugg.map(q => q.id));
   const F = { text: '', src: null, unled: false }, open = {};
   const box = h('div', { class: 'qbox' }, host);
-  const searchable = q => [q.text, q.pid, q.context, ...(q.codes || []).map(k => ((REG.codeLabels || {})[k] || {}).name || k)].join(' ').toLowerCase();
+  const searchable = q => [q.text, q.pid, q.context, q.title, q.why, q.prompt, ...(q.codes || []).map(k => ((REG.codeLabels || {})[k] || {}).name || k)].join(' ').toLowerCase();
   const passes = q => (!F.text || F.text.split(/\s+/).every(w => searchable(q).includes(w)))
     && (!F.src || (q.source || '').toLowerCase().includes(F.src)) && (!F.unled || (!q.led && !q.paraphrase));
   function draw() {
@@ -648,10 +824,19 @@ function quoteBlock(host, s, key) {
     const r = resp(key), picks = (r.quotes || []).filter(id => all.has(id)), picked = new Set(picks);
     const pick = id => () => { r.quotes = [...picks, id]; save(key); draw(); };
     const drop = id => () => { r.quotes = picks.filter(x => x !== id); save(key); draw(); };
+    // your trims of quotes in this section: resp(key).trims[id] = text (null/absent = the original)
+    const trim = id => ({ text: (r.trims || {})[id] || null,
+      save: v => { r.trims = Object.assign({}, r.trims); if (v) r.trims[id] = v; else delete r.trims[id]; save(key); draw(); } });
+    // checked against the recording: resp(key).checked[id] = the text that was checked (so a later trim shows as stale)
+    const chk = id => ({ val: (r.checked || {})[id] || null,
+      set: v => { r.checked = Object.assign({}, r.checked); if (v) r.checked[id] = v; else delete r.checked[id]; save(key); draw(); } });
+    // your comment on a highlighted quote: resp(key).qnotes[id] (saved as you type, no redraw so the box keeps focus)
+    const cmt = id => ({ val: (r.qnotes || {})[id] || '',
+      set: v => { r.qnotes = Object.assign({}, r.qnotes); if (v.trim()) r.qnotes[id] = v; else delete r.qnotes[id]; save(key); } });
     h('div', { class: 'qhead', text: `What people said · highlighted (${picks.length})` }, box);
     if (Q.summary) h('p', { class: 'qsum', html: Q.summary }, box);
     if (picks.length) { const g = h('div', { class: 'qcards' }, box);
-      picks.forEach(id => quoteCard(g, all.get(id), { picked: true, sug: sugIds.has(id), label: 'Remove', tip: 'send it back to More quotes', fn: drop(id) })); }
+      picks.forEach(id => quoteCard(g, all.get(id), { picked: true, sug: sugIds.has(id), label: 'Remove', tip: 'send it back to More quotes', fn: drop(id), trim: trim(id), chk: chk(id), cmt: cmt(id) })); }
     else h('div', { class: 'qempty', text: 'No quotes highlighted yet. Open “More quotes on this” below and click Highlight on the ones that show what people thought.' }, box);
     const fb = h('div', { class: 'qfilter', text: 'Filter: ' }, box);
     const inp = h('input', { class: 'qsearch', type: 'search', placeholder: 'words, person (P12), theme…', value: F.text }, fb);
@@ -666,12 +851,102 @@ function quoteBlock(host, s, key) {
       if (open[k] ?? dflt) dd.open = true;
       h('summary', { text: `${title} (${vis.length === all2.length ? all2.length : vis.length + ' of ' + all2.length})` }, dd);
       const g = h('div', { class: 'qcards' }, dd);
-      vis.forEach(q => quoteCard(g, q, { sug: sugIds.has(q.id), label: 'Highlight', tip: 'move it up to the highlighted quotes', fn: pick(q.id) }));
+      vis.forEach(q => quoteCard(g, q, { sug: sugIds.has(q.id), label: 'Highlight', tip: 'move it up to the highlighted quotes', fn: pick(q.id), trim: trim(q.id), chk: chk(q.id) }));
     };
     list('more', 'More quotes on this', more, !picks.length);
     list('ev', `Every other coded excerpt for ${codes.map(k => ((REG.codeLabels || {})[k] || {}).name || k).join(', ')}`, rest, false);
   }
   draw();
+}
+/* What a term looks like on screen: a muted clip from one session (Results/review_media/, cut by
+   scripts/register/build_demos.py from the list in docs/analysis/register/demos.yaml), a close-up still, what to look
+   for (each time jumps the clip there) and the other sections the same clip explains. */
+const DEMOS = REG.demos || [];
+const DVIEWS = { both: ['Both screens', '', 'both'], strat: ['Strategic (left)', '_strat', 'left screen'], tac: ['Tactical (right)', '_tac', 'right screen'] };
+const secTitle = key => { const [fid, sid] = key.split('#'), f = BYID[fid], s = f && (f.sections || []).find(x => x.id === sid);
+  return s ? `${f.title.split(/ — |: /)[0]} › ${s.title}` : key; };
+function goSec(key) {
+  const [fid, sid] = key.split('#'); go(fid);
+  setTimeout(() => { const e = document.getElementById('sec-' + sid); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+}
+function demoBlock(host, d, open, here) {
+  const det = h('details', { class: 'demo' }, host);
+  if (open) det.open = true;
+  const sm = h('summary', {}, det);
+  sm.append('See it on screen: '); h('b', { text: d.title }, sm);
+  h('span', { class: 'who', text: `${d.pid} · session ${d.session} · ${d.mission} · ${Math.round(d.to - d.from)} s, no sound` }, sm);
+  const b = h('div', { class: 'dbody' }, det);
+  const fill = () => {
+    if (b.childElementCount) return;
+    const bar = h('div', { class: 'dviews', text: 'Show: ' }, b);
+    const v = h('video', { controls: '', muted: '', loop: '', playsinline: '', preload: 'metadata' }, b);
+    v.muted = true;
+    v.onerror = () => { if (!v.dataset.failed) { v.dataset.failed = 1; v.replaceWith(h('div', { class: 'dnote', text: 'This clip has not been cut on this machine: run python scripts/register/build_demos.py (needs Results/Recordings/).' })); } };
+    let view = null;
+    const seekTo = (at, play) => { const go_ = () => { if (at != null) v.currentTime = at; if (play) v.play(); };   // a seek before the metadata loads is lost
+      if (v.readyState >= 1) go_(); else v.addEventListener('loadedmetadata', go_, { once: true }); };
+    const setView = (k, at) => {
+      if (k === view) { if (at != null) seekTo(at, true); return; }
+      const was = v.currentTime, playing = !v.paused && !v.ended;
+      view = k; v.src = `review_media/${d.id}${DVIEWS[k][1]}.mp4`; v.poster = `review_media/${d.id}${DVIEWS[k][1]}.jpg`;
+      bar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.k === k));
+      seekTo(at != null ? at : was || null, at != null || playing);
+    };
+    Object.entries(DVIEWS).forEach(([k, [lab]]) => { const x = h('button', { text: lab }, bar); x.dataset.k = k; x.onclick = () => setView(k); });
+    setView(d.view || 'both');
+    const row = h('div', { class: 'drow' + (d.zoom ? '' : ' nozoom') }, b), txtCol = h('div', {}, row);
+    if (d.zoom) { const fg = h('figure', { class: 'zoom' }),  img = h('img', { src: `review_media/${d.id}_zoom.jpg`, alt: d.zoom.caption }, fg);
+      img.onclick = () => window.open(img.src, '_blank'); img.onerror = () => fg.remove(); h('figcaption', { text: 'Close-up (click to enlarge): ' + d.zoom.caption }, fg); row.insertBefore(fg, txtCol); }
+    h('p', { class: 'dexp', text: d.explains }, txtCol);
+    const ol = h('ol', { class: 'look' }, txtCol);
+    (d.look || []).forEach(([at, what, scr]) => { const li = h('li', {}, ol);
+      h('button', { text: `0:${String(at).padStart(2, '0')}`, title: 'jump the clip here (same screen view)' }, li).onclick = () => seekTo(at, true);
+      const sp = h('span', {}, li);
+      if (scr && scr !== 'both') h('button', { class: 'scr', text: DVIEWS[scr][2], title: 'show just this screen, from this moment' }, sp).onclick = () => setView(scr, at);
+      sp.append(what); });
+    if (d.said) h('div', { class: 'dsaid', text: d.said }, txtCol);
+    const others = (d.sections || []).filter(k => k !== here && BYID[k.split('#')[0]]);
+    if (others.length) { const a = h('div', { class: 'dalso', text: here ? 'Also used in: ' : 'Explains: ' }, b);
+      others.forEach(k => { const [fid, sid] = k.split('#'), s = (BYID[fid].sections || []).find(x => x.id === sid);
+        h('a', { text: s ? s.title : k, title: secTitle(k) }, a).onclick = () => goSec(k); }); }
+  };
+  if (open) fill(); else det.addEventListener('toggle', () => { if (det.open) fill(); else { const vv = b.querySelector('video'); if (vv) vv.pause(); } });
+}
+function renderOnScreen(body) {
+  const w = h('section', { class: 'onscreen' }, body);
+  h('h2', { text: 'On screen: what the findings’ terms look like' }, w);
+  h('p', { class: 'intro', html: 'Short clips from the session recordings, one per idea the findings lean on. Each shows both screens as the operator had them: the <b>strategic</b> window on the left (the mission queue, the map and the strategy cards) and the <b>tactical</b> planner on the right (assigning drones to tasks, Suggest, recovery). Clips are muted. Switch between both screens and either screen alone with the buttons above each clip (the clip keeps its place); click a time to jump to that moment, or the ‘left screen’ / ‘right screen’ tag beside it to jump there showing just that screen; click a close-up to enlarge it. The same clips appear under the sections they explain. They come from participants’ own sessions: like the quotes, keep them to this page.' }, w);
+  if (!DEMOS.length) { h('p', { text: 'No clips listed (docs/analysis/register/demos.yaml).' }, w); return; }
+  DEMOS.forEach(d => demoBlock(w, d, true, null));
+}
+
+/* Links back to the results (a qualitative section's `refs`: {to, ps, kind, point}): each names the result, how the
+   passage bears on it, and the passage. `refs: all` gathers every other section's links, grouped by kind. */
+const REFKINDS = [['agrees', 'Agrees with the result'], ['qualifies', 'Qualifies it'], ['beyond', 'Goes beyond it']];
+function refRow(host, r, kindTag, passage) {      // one link back: the result (click to go), how it bears, the passage
+  const row = h('div', { class: 'refrow' }, host), top = h('div', {}, row);
+  const [rf, rs] = r.to.split('#'), F_ = BYID[rf], S_ = F_ && (F_.sections || []).find(x => x.id === rs);
+  h('a', { class: 'lk', text: S_ ? S_.title : r.to, title: 'go to that result' }, top).onclick = () => goSec(r.to);
+  if (F_) { const ft = F_.title.split(/ — |: |; /)[0]; h('span', { class: 'refwhere', text: ' · ' + (ft.length > 70 ? ft.slice(0, 68) + '…' : ft), title: F_.title }, top); }
+  if (kindTag) h('span', { class: 'refkind ' + r.kind, text: (REFKINDS.find(x => x[0] === r.kind) || [, r.kind])[1] }, top);
+  const pt = h('div', { class: 'refpt', html: r.point }, row);
+  if (passage) h('span', { class: 'refps', text: ` — passage: ${passage}` }, pt);
+}
+function refsBlock(host, f, s) {
+  // `refs: all` gathers the links back on the featured quotes of this finding's main sections (each quote once)
+  let R = s.refs || [];
+  if (s.refs === 'all') { const seen = new Set();
+    R = f.sections.filter(x => x.tier !== 'side').flatMap(x => (x.qual || {}).featured || [])
+      .filter(id => !seen.has(id) && seen.add(id)).flatMap(id => (((REG.quotes || {})[id] || {}).refs || []).map(r => Object.assign({ title: REG.quotes[id].title }, r))); }
+  if (!Array.isArray(R) || !R.length) return;
+  const every = s.refs === 'all', b = h('div', { class: 'box refs' }, host);
+  h('h4', { text: every ? `Every link back to the results (${R.length})` : 'Links back to the results' }, b);
+  (every ? REFKINDS : [[null]]).forEach(([k, lab]) => {
+    const rows = R.filter(r => !k || r.kind === k);
+    if (!rows.length) return;
+    if (k) h('div', { class: 'refgrp', text: `${lab} (${rows.length})` }, b);
+    rows.forEach(r => refRow(b, r, !k, r.title || ((REG.quotes || {})['ps:' + r.ps] || {}).title));
+  });
 }
 function renderSection(host, f, s, label) {
   const d = h('div', { class: 'fsec', id: 'sec-' + s.id }, host), t = h('h3', { text: `${label}. ${s.title}` }, d);
@@ -679,6 +954,7 @@ function renderSection(host, f, s, label) {
     s.sharedWith.forEach((o, j) => { if (j) sh.append(', '); h('a', { text: (BYID[o] || { title: o }).title }, sh).onclick = () => go(o); }); }
   if (s.was) h('span', { class: 'shared', text: 'moved in from ' + s.was.split('#')[0] }, t);
   if (s.text) h('p', { class: 'stext', html: s.text }, d);
+  DEMOS.filter(x => (x.sections || []).includes(f.id + '#' + s.id)).forEach(x => demoBlock(d, x, false, f.id + '#' + s.id));
   if (s.chart) {
     const ch = h('div', { class: 'chart' }, h('div', { class: 'box chartbox' }, d));
     if (!CH[s.chart]) ch.textContent = 'No chart function for ' + s.chart;
@@ -686,12 +962,13 @@ function renderSection(host, f, s, label) {
   }
   if ((s.numbers || []).length) { const ul = h('ul', { class: 'nums' }, d); s.numbers.forEach(n => h('li', { html: n }, ul)); }
   if (s.how) { const hw = h('details', { class: 'how', open: '' }, d); h('summary', { text: 'How this was worked out' }, hw); h('div', { html: s.how }, hw); }
+  refsBlock(d, f, s);
   quoteBlock(d, s, f.id + '#' + s.id);
   if ((s.atoms || []).length) { const at = h('div', { class: 'atoms', text: 'pass-1 cards: ' }, d);
     s.atoms.forEach(a => { if (BYID[a]) h('a', { text: BYID[a].title, title: 'open the pass-1 card' }, at).onclick = () => go(a); }); }
   const key = f.id + '#' + s.id;
   prevBox(d, [key, s.was]);
-  rolePicker(d, key, s.role, null, s.role_set);
+  if (f.kind !== 'intro') rolePicker(d, key, s.role, null, s.role_set);
   const ta = h('textarea', { class: 'secnote', placeholder: 'Note on this section (optional)…' }, d);
   ta.value = (RESP.cards[key] || {}).note || '';
   ta.oninput = () => { resp(key).note = ta.value; save(key); };
@@ -700,7 +977,7 @@ function renderFinding(host, f) {
   h('div', { class: 'kick', text: `${f.area} · ${f.id}` }, host);
   h('h2', { text: f.title }, host);
   const chips = h('div', {}, host);
-  h('span', { class: 'chip k-finding', text: 'finding' }, chips);
+  h('span', { class: 'chip k-finding', text: f.kind === 'intro' ? 'start here' : 'finding' }, chips);
   if (f.status === 'retired') h('span', { class: 'chip sidechip', text: 'retired' }, chips);
   else if (f.tier === 'side') h('span', { class: 'chip sidechip', text: 'sidelined' }, chips);
   if (f.confidence) h('span', { class: `chip c-${f.confidence === 'mixed' ? 'moderate' : f.confidence}`, text: f.confidence }, chips);
@@ -739,13 +1016,14 @@ function renderFinding(host, f) {
       h('div', { class: 'a', html: rp.text }, b); });
   }
   const all = [...new Set([...(f.absorbs || []), ...secs.flatMap(s => s.atoms || [])])];
-  h('div', { class: 'meta2', text: `Carries ${all.length} pass-1 cards: ${all.join(', ')}` }, host);
+  if (f.kind !== 'intro') h('div', { class: 'meta2', text: `Carries ${all.length} pass-1 cards: ${all.join(', ')}` }, host);
 }
 
 function renderResp(host, c) {
   const r = resp(c.id);
-  h('h3', { text: 'Your response' }, host);
+  h('h3', { text: c.kind === 'intro' ? 'Your note (no verdict needed)' : 'Your response' }, host);
   const vb = h('div', { class: 'verdicts' }, host);
+  if (c.kind === 'intro') vb.style.display = 'none';
   VERDICTS.forEach(([k, l, col], i) => {
     const b = h('button', { html: `${l}<span class="k">${i + 1}</span>` }, vb);
     if (r.verdict === k) { b.classList.add('on'); b.style.background = `var(${col})`; b.style.borderColor = `var(${col})`; }

@@ -1,0 +1,32 @@
+# Long verbatim passages: P29 (skim group: reflective segments and debrief only). Phrases only.
+pid: P29
+read:
+  date: 2026-10-20
+  scope: questionnaire talk, break and debrief read in full; in-play talk only where a long stretch was flagged
+  verdict: Talkative in play but mostly running commentary. The debrief has three useful reflective passages on testing, checking and speed over perfection.
+passages:
+  - id: p29-test-then-trust
+    title: Testing it against myself, then trusting it
+    parts: [{seg: interview, from: "I mostly trusted it, although, uh, I did kind of want to test it more at the beginning", to: "made me want to use the AI more often."}]
+    prompt: {seg: interview, from: "The degree to which you trusted the decisions the AI was making", to: "progressed throughout the study?"}
+    context: Debrief.
+    topics: [checking, practice]
+    why: Trust built by comparison; their own manual missions were the ones that failed.
+    links: [f-practice, f-manual-cards]
+  - id: p29-not-checking
+    title: "\"I can't say I was completely checking everything\""
+    parts: [{seg: interview, from: "Yeah, I suppose that's true. Like I can't say I was completely checking everything", to: "Yeah, I think overall it is quite good."}]
+    prompt: {seg: interview, from: "Do you worry at all?", to: "Do you ever fear about that?"}
+    speaker: mixed
+    context: Debrief, after a long researcher question about accepting suggestions unchecked.
+    topics: [checking]
+    why: Admits not checking and accepts it, on the grounds that the suggestions were good on balance.
+    links: [f-tier-trust]
+  - id: p29-speed-over-perfection
+    title: Get something going, even if not perfect
+    parts: [{seg: interview, from: "I think it was a really good idea. Um, yeah, obviously it would be a bit different", to: "like quite quickly to speed over perfection."}]
+    prompt: {seg: interview, from: "How do you feel about people using systems like this in", to: "high risk scenarios?"}
+    speaker: mixed
+    context: Debrief, the five-years question; the researcher adds "More than 25 minutes of training" and "speed over perfection".
+    topics: [stakes, skills]
+    why: Welcomes it for emergencies, on condition of a trained operator and the option not to use it.

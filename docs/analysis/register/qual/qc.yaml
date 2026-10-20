@@ -1133,12 +1133,11 @@ sections:
       probabilities or performance data, 6 wanted options between the two cards, 5 wanted the assistant's reasoning and
       4 wanted more automation. Reading everything (including the in-play talk) raises the information asks: about 11
       asked or wondered how the assistants decided, and 8 asked for failure or performance numbers. The dissent is
-      small but sharp: P11 does not want to be 'reduced to pressing allocate, suggest, deploy', and P36 warns that what
-      you hand over you no longer have in your head when it fails. The mini sections below take each strand in turn."
+      small but sharp: P11 does not want to be 'reduced to pressing allocate, suggest, deploy'. The mini sections below take each strand in turn."
     featured: [ev184, ev157, ev254, ev68]
     more: [ev13, ev22, ev142, ev152, ev155, ev168, ev205, ev246, ev247, ev6, ev61, ev88, ev156, ev158, ev252, ev253,
       ev43, ev44, ev62, ev66, ev67, ev214, ev226, ev227, ev69, ev70, ev171, ev172, ev206, ev207, ev215, ev216, ev30,
-      ev86, ev91, ev137, ev178, ev179, ev249, ev250, ev47, qc-P36-06]
+      ev86, ev91, ev137, ev178, ev179, ev249, ev250, ev47]
     codes: [C25, C26, C27, C28, C08]
 
 new_sections:
@@ -1149,13 +1148,11 @@ new_sections:
     summary: "Asked the closing 'five years from now' question, at least 14 welcomed the idea, nearly always for speed
       ('a bad approximation is better than no response at all'), and 9 said a human must keep the final decision (8
       unprompted). Conditions came with it: well regulated (P20), only where the job is understood and stakes low (P03,
-      P05), only if better than today's AI (P15). Four raised a deeper worry: who is accountable when an AI fails to save
-      someone (P31, P22), a confident plan with a hole in it, repeated at scale (P36), and military use of the research
-      (P31). When pressed on whether a busy human could really check, P24 conceded they could not and still wanted one
+      P05), only if better than today's AI (P15). Others raised a deeper worry: who is accountable when an AI fails to save
+      someone (P31, P22), and military use of the research (P31). When pressed on whether a busy human could really check, P24 conceded they could not and still wanted one
       there."
     featured: [ev184, qc-P22-01, qc-P31-01, qc-P32-01]
-    more: [ev13, ev22, ev142, ev152, ev155, ev168, ev205, ev246, ev247, qc-P24-01, qc-P03-01, qc-P05-01, qc-P36-01,
-      qc-P36-02, qc-P36-03, qc-P31-02, qc-P24-02, qc-P29-01, qc-P34-01, qc-P20-01, qc-P30-01, qc-P15-01]
+    more: [ev13, ev22, ev142, ev152, ev155, ev168, ev205, ev246, ev247, qc-P24-01, qc-P03-01, qc-P05-01, qc-P31-02, qc-P24-02, qc-P29-01, qc-P34-01, qc-P20-01, qc-P30-01, qc-P15-01]
     codes: [C25]
     tier: main
     role: extra
@@ -1182,12 +1179,9 @@ new_sections:
     summary: "8 of 33 asked for failure probabilities or performance data (P10, P11, P12, P13, P25, P31, P32, P36); P10,
       P11 and P13 independently wanted the risk tied to place, terrain or drone type and fed into the allocation. Without
       it, 2 read patterns into failures that were in fact flat and random (P19: some tasks fail more; P01: the rate was
-      'cranked up'). 4 could not tell from the score how well they were doing (P10, P29, P31, P32). P36 adds the caution:
-      a raw failure percentage needs context, or operators will refuse any risk, though 'the failure rate of doing
-      nothing is 100%'."
+      'cranked up'). 4 could not tell from the score how well they were doing (P10, P29, P31, P32)."
     featured: [ev254, ev66, qc-P11-02, ev214]
-    more: [ev43, ev44, ev62, ev67, ev226, ev227, qc-P11-01, qc-P13-03, qc-P13-04, qc-P25-02, qc-P19-02, qc-P01-02,
-      qc-P36-04, qc-P36-05, qc-P10-01, qc-P29-02, qc-P32-02]
+    more: [ev43, ev44, ev62, ev67, ev226, ev227, qc-P11-01, qc-P13-03, qc-P13-04, qc-P25-02, qc-P19-02, qc-P01-02, qc-P10-01, qc-P29-02, qc-P32-02]
     codes: [C27]
     tier: main
     role: extra
@@ -1197,11 +1191,11 @@ new_sections:
       8 of 33 said something on this."
     summary: "4 of 33 asked in general for more automation (P13, P27, P30, P31) and 4 more proposed a specific new job:
       choose which mission to open next (P32, and P27's feasibility-then-criticality ordering), check the operator's own
-      plan for slips (P11), red-team the assistants' outputs (P36), build back-up routes into the tactical plan (P21),
+      plan for slips (P11), build back-up routes into the tactical plan (P21),
       re-route spares after a failure (P30) and look ahead to missions not yet arrived (P30). The common thread is help
       with what neither assistant touches: choosing what to work on, and failures. Against: P11 does not want to be
-      reduced to clicking, and P36 warns that handing over the plan means playing catch-up when it fails."
-    featured: [ev68, qc-P32-03, qc-P11-03, qc-P36-06]
+      reduced to clicking."
+    featured: [ev68, qc-P32-03, qc-P11-03]
     more: [ev69, ev70, ev171, ev172, ev206, ev207, ev215, ev216, ev253, ev249, qc-P32-04, qc-P27-01, qc-P21-01, qc-P30-02,
       qc-P13-05, qc-P11-04, ev47]
     codes: [C28]
@@ -1232,10 +1226,9 @@ new_sections:
       Several said the human belongs at the strategic level and the assistant at the tactical one, 'give it resources and
       allow it to optimise' (P05, P30, P32, P33 when asked, P12 reasoning that the strategic sum is the easier one), and
       P10 found an Aggressive card leaves only one sensible tactical plan. The cross-current: P21 builds the tactical plan
-      themself because their strategic choice already carries a plan in their head, and P36 frames it as human-in-the-loop
-      now, with on-the-loop needing far more trust."
-    featured: [qc-P03-03, qc-P36-08, qc-P30-04, qc-P32-06]
-    more: [ev12, ev22, qc-P19-05, qc-P36-07, qc-P21-03, qc-P10-02, qc-P36-09, qc-P36-10, qc-P12-01, qc-P33-02]
+      themself because their strategic choice already carries a plan in their head."
+    featured: [qc-P03-03, qc-P30-04, qc-P32-06]
+    more: [ev12, ev22, qc-P19-05, qc-P21-03, qc-P10-02, qc-P12-01, qc-P33-02]
     codes: [C25, C20]
     tier: main
     role: extra
@@ -1260,12 +1253,11 @@ new_sections:
     text: "Concrete requests about the screens, plus the praise. 11 of 33 said something on this."
     summary: "8 of 33 asked for something on screen: a total drone requirement per mission (P10, P13), a cue on one
       screen when the other needs attention (P10), drones-in-hub and feasibility in the queue (P27; the criticality sort
-      exists but they had not found it), filtering by penalty (P19), confirmation before cancelling a task (P13), the
-      missing green icon (P36), and keeping a Suggest plan when clicked away (P01). P06 said the task needs two monitors
+      exists but they had not found it), filtering by penalty (P19), confirmation before cancelling a task (P13), and keeping a Suggest plan when clicked away (P01). P06 said the task needs two monitors
       and P31 that the central map went unwatched. Praise came from 4 (P10, P14, P25, P07: easy, intuitive). Two people
       (P13, P14) were confused by the reversed NASA-TLX performance slider, which matters for that item's data."
     featured: [qc-P10-03, qc-P27-04, qc-P13-07, qc-P14-01]
-    more: [qc-P10-04, qc-P13-06, qc-P19-06, qc-P36-11, qc-P01-04, qc-P06-03, qc-P31-04, qc-P10-05, qc-P25-04, qc-P14-02,
+    more: [qc-P10-04, qc-P13-06, qc-P19-06, qc-P01-04, qc-P06-03, qc-P31-04, qc-P10-05, qc-P25-04, qc-P14-02,
       qc-P13-08, ev171, qc-P07-02]
     codes: []
     tier: main
@@ -1274,14 +1266,12 @@ new_sections:
     title: "It's a game: what real stakes, pace and training would change"
     text: "How people saw the realism of the task: no lives at stake, the pace, what the simulation leaves out, and the
       training a real operator would need. 12 of 33 said something on this."
-    summary: "9 of 33 said real lives would change how they played: more stress (P01, P11, P15, P34), less decisiveness
-      (P36), more care about efficiency (P07), while P01 expected to behave the same and saw that as the problem. Some
+    summary: "9 of 33 said real lives would change how they played: more stress (P01, P11, P15, P34), more care about efficiency (P07), while P01 expected to behave the same and saw that as the problem. Some
       rules read as unrealistic: abandoning a mission (P02, P13), partial rescue (P28: a drone that finds someone and
       leaves), task locations known in advance (P28, P36), the pace (P31, P36). 4 said real operators would need
-      training or new skills (P29, P35, P36, P13), P36 putting the skill, not the trust, first."
-    featured: [qc-P01-06, qc-P34-02, qc-P36-13, qc-P28-01]
-    more: [qc-P01-05, qc-P11-06, qc-P36-12, qc-P36-14, qc-P31-05, qc-P13-09, qc-P02-01, qc-P07-01, qc-P15-04, qc-P35-03,
-      qc-P36-15, qc-P29-04, qc-P36-16, qc-P28-02, qc-P13-05]
+      training or new skills (P29, P35, P36, P13)."
+    featured: [qc-P01-06, qc-P34-02, qc-P28-01]
+    more: [qc-P01-05, qc-P11-06, qc-P31-05, qc-P13-09, qc-P02-01, qc-P07-01, qc-P15-04, qc-P35-03, qc-P29-04, qc-P28-02, qc-P13-05]
     codes: []
     tier: main
     role: extra
@@ -1296,7 +1286,7 @@ new_sections:
       Strategic Assistant, P22 and P32 urged it on, P11 felt the pull to 'personify the computer and feel some sort of
       grudge', alongside pride when doing it themself."
     featured: [qc-P01-07, qc-P19-07, qc-P11-07, qc-P29-05]
-    more: [qc-P01-08, qc-P22-03, qc-P32-07, qc-P35-04, qc-P27-05, qc-P10-07, qc-P31-06, qc-P36-17, qc-P18-01, qc-P24-04,
+    more: [qc-P01-08, qc-P22-03, qc-P32-07, qc-P35-04, qc-P27-05, qc-P10-07, qc-P31-06, qc-P18-01, qc-P24-04,
       qc-P11-08, qc-P22-04, ev114, ev48, ev49, qc-P01-03, qc-P33-01]
     codes: [C02]
     tier: main

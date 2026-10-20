@@ -1,0 +1,489 @@
+{
+ "f-personal-style#habits": [
+  {
+   "file": "f-personal-style__habits__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-personal-style#fingerprint-ranks": [
+  {
+   "file": "f-personal-style__fingerprint-ranks__all.png",
+   "suffix": "all",
+   "note": "All ten habits."
+  },
+  {
+   "file": "f-personal-style__fingerprint-ranks__noaxis.png",
+   "suffix": "noaxis",
+   "note": "With the reliance axis removed."
+  }
+ ],
+ "f-personal-style#who-vs-what": [
+  {
+   "file": "f-personal-style__who-vs-what__r2.png",
+   "suffix": "r2",
+   "note": "McFadden pseudo-$R^2$."
+  },
+  {
+   "file": "f-personal-style__who-vs-what__auc.png",
+   "suffix": "auc",
+   "note": "The same comparison as a ranking test (AUC); whiskers are 95\\% intervals (people resampled)."
+  }
+ ],
+ "f-personal-style#retest-summary": [
+  {
+   "file": "f-personal-style__retest-summary__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-personal-style#axis-scatter": [
+  {
+   "file": "f-personal-style__axis-scatter__between.png",
+   "suffix": "between",
+   "note": "Between people."
+  },
+  {
+   "file": "f-personal-style__axis-scatter__within.png",
+   "suffix": "within",
+   "note": "Within a person: change from session 1 to session 2."
+  }
+ ],
+ "f-personal-style#not-types": [
+  {
+   "file": "f-personal-style__not-types__map.png",
+   "suffix": "map",
+   "note": "The people, mapped on the first two principal components."
+  },
+  {
+   "file": "f-personal-style__not-types__separate.png",
+   "suffix": "separate",
+   "note": "Cluster separation (silhouette) against no-types simulations."
+  },
+  {
+   "file": "f-personal-style__not-types__recur.png",
+   "suffix": "recur",
+   "note": "Recurrence of groupings across sessions (adjusted Rand index)."
+  }
+ ],
+ "f-personal-style#not-disposition": [
+  {
+   "file": "f-personal-style__not-disposition__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-personal-style#fingerprint": [
+  {
+   "file": "f-personal-style__fingerprint__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-personal-style#profiles": [
+  {
+   "file": "f-personal-style__profiles__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-personal-style#habit-by-habit": [
+  {
+   "file": "f-personal-style__habit-by-habit__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-personal-style#preempt": [
+  {
+   "file": "f-personal-style__preempt__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-size-decides#both": [
+  {
+   "file": "f-size-decides__both__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-size-decides#models": [
+  {
+   "file": "f-size-decides__models__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-size-decides#tactical": [
+  {
+   "file": "f-size-decides__tactical__needed.png",
+   "suffix": "needed",
+   "note": "Size measured as drones needed."
+  },
+  {
+   "file": "f-size-decides__tactical__marker.png",
+   "suffix": "marker",
+   "note": "With a marker on each pair at the rate for all plans in that size group."
+  }
+ ],
+ "f-size-decides#route-people": [
+  {
+   "file": "f-size-decides__route-people__gap.png",
+   "suffix": "gap",
+   "note": "Each person's gap, mission size held."
+  },
+  {
+   "file": "f-size-decides__route-people__rates.png",
+   "suffix": "rates",
+   "note": "Each person's two raw rates."
+  }
+ ],
+ "f-size-decides#speed": [
+  {
+   "file": "f-size-decides__speed__strat-all.png",
+   "suffix": "strat-all",
+   "note": "Strategic tier, all time counted."
+  },
+  {
+   "file": "f-size-decides__speed__strat-noidle.png",
+   "suffix": "strat-noidle",
+   "note": "Strategic tier, idle time removed."
+  },
+  {
+   "file": "f-size-decides__speed__tac-all.png",
+   "suffix": "tac-all",
+   "note": "Tactical tier, all time counted."
+  }
+ ],
+ "f-size-decides#parallel": [
+  {
+   "file": "f-size-decides__parallel__all.png",
+   "suffix": "all",
+   "note": "All four phases."
+  },
+  {
+   "file": "f-size-decides__parallel__noidle.png",
+   "suffix": "noidle",
+   "note": "Without the time before the first action."
+  }
+ ],
+ "f-size-decides#artefacts": [
+  {
+   "file": "f-size-decides__artefacts__strat.png",
+   "suffix": "strat",
+   "note": "Strategic tier."
+  },
+  {
+   "file": "f-size-decides__artefacts__tac.png",
+   "suffix": "tac",
+   "note": "Tactical tier."
+  }
+ ],
+ "f-size-decides#people": [
+  {
+   "file": "f-size-decides__people__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-size-decides#speed-model": [
+  {
+   "file": "f-size-decides__speed-model__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-size-decides#slow": [
+  {
+   "file": "f-size-decides__slow__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-manual-cards#dots": [
+  {
+   "file": "f-manual-cards__dots__all.png",
+   "suffix": "all",
+   "note": "All drone types."
+  },
+  {
+   "file": "f-manual-cards__dots__needed.png",
+   "suffix": "needed",
+   "note": "Needed drone types only."
+  }
+ ],
+ "f-manual-cards#position": [
+  {
+   "file": "f-manual-cards__position__raw.png",
+   "suffix": "raw",
+   "note": "As built."
+  },
+  {
+   "file": "f-manual-cards__position__balanced.png",
+   "suffix": "balanced",
+   "note": "Balanced for mission size, drone types, the gap between the cards, game, session and minute."
+  }
+ ],
+ "f-practice#speed": [
+  {
+   "file": "f-practice__speed__strat.png",
+   "suffix": "strat",
+   "note": "Strategic tier."
+  },
+  {
+   "file": "f-practice__speed__tac.png",
+   "suffix": "tac",
+   "note": "Tactical tier."
+  }
+ ],
+ "f-practice#c22": [
+  {
+   "file": "f-practice__c22__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-workload#raw-vs-adjusted": [
+  {
+   "file": "f-workload__raw-vs-adjusted__strat-raw.png",
+   "suffix": "strat-raw",
+   "note": "Strategic tier, raw rates."
+  },
+  {
+   "file": "f-workload__raw-vs-adjusted__strat-exp.png",
+   "suffix": "strat-exp",
+   "note": "Strategic tier, raw with the expected rate (dashed)."
+  },
+  {
+   "file": "f-workload__raw-vs-adjusted__strat-adj.png",
+   "suffix": "strat-adj",
+   "note": "Strategic tier, adjusted."
+  },
+  {
+   "file": "f-workload__raw-vs-adjusted__both-adj.png",
+   "suffix": "both-adj",
+   "note": "Both tiers, adjusted."
+  },
+  {
+   "file": "f-workload__raw-vs-adjusted__both-exp.png",
+   "suffix": "both-exp",
+   "note": "Both tiers, raw with their expected rates (dashed)."
+  }
+ ],
+ "f-workload#waited": [
+  {
+   "file": "f-workload__waited__strat.png",
+   "suffix": "strat",
+   "note": "Strategic tier: how long the mission had waited in the queue."
+  },
+  {
+   "file": "f-workload__waited__tac.png",
+   "suffix": "tac",
+   "note": "Tactical tier: how long the plan had been left open."
+  }
+ ],
+ "f-workload#robust": [
+  {
+   "file": "f-workload__robust__strat.png",
+   "suffix": "strat",
+   "note": "Strategic tier."
+  },
+  {
+   "file": "f-workload__robust__tac.png",
+   "suffix": "tac",
+   "note": "Tactical tier."
+  }
+ ],
+ "f-workload#said-did": [
+  {
+   "file": "f-workload__said-did__strat.png",
+   "suffix": "strat",
+   "note": "Strategic tier, moment to moment."
+  },
+  {
+   "file": "f-workload__said-did__tac.png",
+   "suffix": "tac",
+   "note": "Tactical tier, moment to moment."
+  }
+ ],
+ "f-workload#spoken": [
+  {
+   "file": "f-workload__spoken__main.png",
+   "suffix": "main",
+   "note": "Top: missions waiting at the overload moments; middle: strategy cards taken within $\\pm$60\\,s (observed $-$ expected); bottom: Suggest pressed within $\\pm$60\\,s (observed $-$ expected). Red line = observed mean; grey = 5,000 draws of the same number of random utterances from the same sessions."
+  }
+ ],
+ "f-triage#order": [
+  {
+   "file": "f-triage__order__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-triage#choice": [
+  {
+   "file": "f-triage__choice__sh.png",
+   "suffix": "sh",
+   "note": "Strategic Heavy games only."
+  },
+  {
+   "file": "f-triage__choice__all.png",
+   "suffix": "all",
+   "note": "All four games."
+  }
+ ],
+ "f-flaw-odd#event": [
+  {
+   "file": "f-flaw-odd__event__all.png",
+   "suffix": "all",
+   "note": "All missions."
+  },
+  {
+   "file": "f-flaw-odd__event__three.png",
+   "suffix": "three",
+   "note": "Three-type missions only."
+  }
+ ],
+ "f-flaw-odd#over-time": [
+  {
+   "file": "f-flaw-odd__over-time__s1.png",
+   "suffix": "s1",
+   "note": "Session 1."
+  },
+  {
+   "file": "f-flaw-odd__over-time__s2.png",
+   "suffix": "s2",
+   "note": "Session 2."
+  }
+ ],
+ "f-flaw-odd#by-index": [
+  {
+   "file": "f-flaw-odd__by-index__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#spoken": [
+  {
+   "file": "f-flaw-odd__spoken__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#refusal": [
+  {
+   "file": "f-flaw-odd__refusal__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#visibility": [
+  {
+   "file": "f-flaw-odd__visibility__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#odd-missions": [
+  {
+   "file": "f-flaw-odd__odd-missions__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#adjustment": [
+  {
+   "file": "f-flaw-odd__adjustment__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#rates": [
+  {
+   "file": "f-flaw-odd__rates__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-flaw-odd#checking-after": [
+  {
+   "file": "f-flaw-odd__checking-after__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-tier-trust#gap": [
+  {
+   "file": "f-tier-trust__gap__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-tier-trust#where": [
+  {
+   "file": "f-tier-trust__where__items.png",
+   "suffix": "items",
+   "note": "By questionnaire item."
+  },
+  {
+   "file": "f-tier-trust__where__scenario.png",
+   "suffix": "scenario",
+   "note": "By scenario played."
+  },
+  {
+   "file": "f-tier-trust__where__session.png",
+   "suffix": "session",
+   "note": "By session order as well."
+  }
+ ],
+ "f-tier-trust#attention": [
+  {
+   "file": "f-tier-trust__attention__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-tier-trust#checking": [
+  {
+   "file": "f-tier-trust__checking__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-tier-trust#stated-revealed": [
+  {
+   "file": "f-tier-trust__stated-revealed__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-tier-trust#trust-lead-strip": [
+  {
+   "file": "f-tier-trust__trust-lead-strip__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-tier-trust#stated": [
+  {
+   "file": "f-tier-trust__stated__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-operator-wants#wants": [
+  {
+   "file": "f-operator-wants__wants__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ],
+ "f-methods#games": [
+  {
+   "file": "f-methods__games__main.png",
+   "suffix": "main",
+   "note": ""
+  }
+ ]
+}

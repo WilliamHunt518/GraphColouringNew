@@ -10,10 +10,10 @@
   },
   "f-size-decides": {
    "verdict": "core",
-   "note": "I think the parallel work quotes will go at the end after the graphs - not exactly about the graphs but in conclusion of this part. For that purpose please move those quotes to a mini bit at the end of this finding section",
+   "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:49:58.626Z"
+   "updated": "2026-10-16T09:40:02.000Z"
   },
   "f-manual-cards": {
    "verdict": "keep",
@@ -31,17 +31,17 @@
   },
   "f-workload": {
    "verdict": "core",
-   "note": "Add another graph that looks at the correlation between how long a task has been waiting and how likely they are to automate it. I wonder if they automate when they realise they've  left a card hanging",
+   "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:42:12.760Z"
+   "updated": "2026-10-15T15:32:19.487Z"
   },
   "f-flaw-odd": {
    "verdict": "core",
-   "note": "4 and 5 say somewhat different things. This might be read as a discrepancy. Can wee work out how they can both be true? 4 suggests that there's a big drop in useage after noticing but 5 says nothing is significant. Are these different windows of time or something?",
+   "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:23:16.340Z"
+   "updated": "2026-10-16T09:40:02.000Z"
   },
   "f-tier-trust": {
    "verdict": "keep",
@@ -174,7 +174,7 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": null
+   "updated": "2026-10-19T12:30:53.000Z"
   },
   "f-personal-style#retest-summary": {
    "verdict": null,
@@ -265,61 +265,92 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:22:59.480Z",
+   "updated": "2026-10-20T13:42:27.000Z",
    "quotes": [
     "qa:qa-P29-04",
     "ev50",
-    "qa:qa-P36-01",
-    "ev186",
     "ev187",
-    "ev76",
     "ev237",
-    "qa:qa-P11-04",
     "qa:qa-P05-02"
-   ]
+   ],
+   "checked": {
+    "qa:qa-P29-04": "I think if it's just one colour, I'm gonna do it, like, assign it myself, but if it's multiple colours, I think I'm gonna let, um, the AI choose for me, for the, the strategic side.",
+    "ev50": "either it's a really big mission, and it's like, oh, I can trust it with a large mission. […] Or it's a simple mission, and I'll be like, oh, I can just bang it up myself.",
+    "ev186": "But when it was just one color, I could just kind of count how many is necessary and then add, like, one extra more. Mm-hmm. And that was usually enough. So, it was fast for me to just click manual",
+    "ev187": "I did feel like some of them I should do myself and I trusted it more with the complicated tasks",
+    "ev237": "“When they only needed a single colour of drone I tended to do it manually”",
+    "qa:qa-P05-02": "I'll use the suggest, because there's a lot of drones here, so because there's a lot of drones to allocate"
+   },
+   "trims": {
+    "qa:qa-P05-02": "I'll use the suggest, because there's a lot of drones here, so because there's a lot of drones to allocate"
+   }
   },
   "f-size-decides#models": {
    "verdict": null,
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:24:10.741Z",
-   "quotes": []
+   "updated": "2026-10-20T12:31:27.228Z",
+   "quotes": [],
+   "checked": {}
   },
   "f-size-decides#tactical": {
    "verdict": null,
-   "note": "Dig a little deeper for the quote about maintaining a continuity between the two - If I used strat here then I'll want to use tac after",
+   "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:26:28.364Z",
+   "updated": "2026-10-20T12:32:42.468Z",
    "quotes": [
     "qa:qa-P10-03",
     "qa:qa-P10-05",
     "qa:qa-P11-04",
     "qa:qa-P10-01"
-   ]
+   ],
+   "checked": {
+    "qa:qa-P10-03": "Now I'm using the suggestion because I took the aggressive approach which means I know that I have enough drones.",
+    "qa:qa-P10-05": "Better to use tac agent when using the aggressive strat agent",
+    "qa:qa-P11-04": "If I look at a mission with 15 drones and I need to move two or three chains, that's just going to take me about a minute, and it's just no point.",
+    "qa:qa-P10-01": "Dragging 14 drones is going to take way more time than hitting the assign and waiting for eight seconds."
+   },
+   "trims": {
+    "qa:qa-P11-04": "If I look at a mission with 15 drones and I need to move two or three chains, that's just going to take me about a minute, and it's just no point."
+   }
   },
   "f-size-decides#speed": {
    "verdict": null,
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:29:47.555Z",
+   "updated": "2026-10-20T12:36:24.731Z",
    "quotes": [
     "ev176",
     "qa:qa-P17-02",
     "qa:qa-P21-04",
     "ev52",
-    "ev163",
-    "ev29",
     "ev208",
-    "ev238",
     "qa:qa-P22-03",
     "qa:qa-P32-07",
     "qa:qa-P32-04",
     "ev169",
     "ev164"
-   ]
+   ],
+   "trims": {
+    "ev176": "I think the key strength when I [am] using the agent is it can help me to save the time and energy to those specific deployments",
+    "qa:qa-P21-04": "Manually, [I] can't wait for the processing, to be honest."
+   },
+   "checked": {
+    "ev176": "I think the key strength when I [am] using the agent is it can help me to save the time and energy to those specific deployments",
+    "qa:qa-P17-02": "the point is, it takes me so much time to untangle that, that maybe it probably will not be faster if I do it myself manually. So as long as the AI makes sure that everything is covered once.",
+    "qa:qa-P21-04": "Manually, [I] can't wait for the processing, to be honest.",
+    "ev52": "I think even if the tactical agent gave me a dodgy suggestion and the mission failed and I lost points, I probably would have gained more points from the time saved...",
+    "ev163": "if you use human's knowledge to do it, it will take a longer time, much longer time. But in this situation, in some situations, the time is very limited. So the AI will give much quickly.",
+    "ev208": "The top advantage in this situation was the speed of response.",
+    "qa:qa-P22-03": "I think I was definitely a bit slower than the, than the algorithm there.",
+    "qa:qa-P32-07": "You know, it's quicker to get a suggestion, but it is less clicking, and it seems to do what I would do.",
+    "qa:qa-P32-04": "So, it just seems quicker to just send some myself than wait for the recommendation. I might just be impatient.",
+    "ev169": "So, when we are trying to do with the tactical screen, I find the agent is quite slow.",
+    "ev164": "Yeah, when I located, I think sometimes the AI will take a little longer. And I just mess up my strategy"
+   }
   },
   "f-size-decides#parallel": {
    "verdict": null,
@@ -403,15 +434,24 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:05:55.108Z",
+   "updated": "2026-10-20T12:41:48.641Z",
    "quotes": [
-    "ev20",
     "ev119",
     "ev106",
     "qb:qb-P05-02",
     "ev242",
     "ev229"
-   ]
+   ],
+   "checked": {
+    "ev119": "You can have a lot of tasks to be overloaded and try and offload some of that work to AI and then for the very complex stuff, maybe you don't.",
+    "ev106": "So I think if, at first glance, I felt really overwhelmed by the amount of drones to be assigned. I would use the assistant",
+    "qb:qb-P05-02": "there was no more active missions coming in, so therefore I could take more time and ensure that it was correct. But perhaps if I was more time pressured, then I'd ask it to suggest.",
+    "ev242": "But in an urgent situation and the number of the swarm is not enough, so I need to consider about the strategies and I think I need the help of AI assistant.",
+    "ev229": "I think the first one, I feel the pace is very, very fast. So, I can't do it very well in a very short time. So, I used a lot of AI suggestions."
+   },
+   "trims": {
+    "ev106": "So I think if, at first glance, I felt really overwhelmed by the amount of drones to be assigned. I would use the assistant"
+   }
   },
   "f-workload#robust": {
    "verdict": null,
@@ -460,23 +500,36 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:53:10.218Z",
+   "updated": "2026-10-20T12:37:25.787Z",
    "quotes": [
     "qa:qa-P10-09",
     "ev177"
-   ]
+   ],
+   "trims": {
+    "qa:qa-P10-09": "All right. Let's just send everything I have. Edit, give me five red ones. Five green ones. Hit it."
+   },
+   "checked": {
+    "qa:qa-P10-09": "All right. Let's just send everything I have. Edit, give me five red ones. Five green ones. Hit it.",
+    "ev177": "I'm trying to reserve more and more drones in the base, rather than send them out to finish the task quickly, because I cannot predict when the next task will appear."
+   }
   },
   "f-manual-cards#position": {
    "verdict": null,
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T09:57:53.099Z",
+   "updated": "2026-10-20T12:38:42.049Z",
    "quotes": [
     "ev91",
-    "ev137",
-    "ev86"
-   ]
+    "ev137"
+   ],
+   "trims": {
+    "ev91": "But whenever I clicked manual, it's either been for the cause of 'they are sending too much', or I want it to be somewhere between those two levels."
+   },
+   "checked": {
+    "ev91": "But whenever I clicked manual, it's either been for the cause of 'they are sending too much', or I want it to be somewhere between those two levels.",
+    "ev137": "I felt like sometimes I could find like a middle ground that had like maybe a little bit of gambling in there, essentially, that you wouldn't have the necessary coverage."
+   }
   },
   "f-manual-cards#said": {
    "verdict": null,
@@ -497,22 +550,34 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:02:56.823Z",
+   "updated": "2026-10-20T12:39:53.964Z",
    "quotes": [
     "ev41",
     "qa:qa-P30-05",
     "qa:qa-P22-04",
     "ev40",
-    "qa:qa-P05-03",
-    "qa:qa-P11-07"
-   ]
+    "qa:qa-P05-03"
+   ],
+   "checked": {
+    "ev41": "there was definitely an improvement further throughout session one, and in session two, you really find your stride",
+    "qa:qa-P30-05": "i think the second scenario i used more personalised, i think it was easier because i had to i sort of got into the rhythm of having to anticipate other problems",
+    "qa:qa-P22-04": "Right. So now we also know from the last one, don't send everything straight away. Cause otherwise we end up, we're waiting for drones.",
+    "ev40": "And I could definitely feel that there is absolutely a learning effect.",
+    "qa:qa-P05-03": "I think with having some experience, yeah, I was able to quickly understand this"
+   },
+   "trims": {
+    "qa:qa-P30-05": "i think the second scenario i used more personalised, i think it was easier because i had to i sort of got into the rhythm of having to anticipate other problems"
+   }
   },
   "f-practice#c22": {
    "verdict": null,
    "note": "",
    "links": [],
    "tags": [],
-   "updated": null
+   "updated": "2026-10-20T12:40:04.244Z",
+   "checked": {
+    "ev58": "partly this is due to the experience, I suppose. And I was better at it the second time."
+   }
   },
   "f-practice#calibration": {
    "verdict": null,
@@ -526,39 +591,57 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:07:18.673Z",
+   "updated": "2026-10-20T12:44:16.543Z",
    "quotes": [
     "qb:qb-P19-01",
     "qb:qb-P17-01",
     "ev122",
-    "qb:qb-P04-01",
     "qb:qb-P30-01",
     "qb:qb-P35-01",
     "ev121",
     "ev127",
     "ev64",
     "qb:qb-P20-01"
-   ]
+   ],
+   "checked": {
+    "qb:qb-P19-01": "Oh, this just sends a bunch of extra of these even though it doesn't need it?",
+    "qb:qb-P17-01": "Why is it that the green ones, there's no green or red, unless I'm missing something.",
+    "ev122": "And then when it came to assigning them, I noticed, oh, okay, it's made a mistake.",
+    "qb:qb-P30-01": "where we can go conservative, but we don't need any, in this one we don't need any lifter or cameras.",
+    "qb:qb-P35-01": "But I find that the first task it allocated too much Lifter and Camera. So I think I'm less confident for it.",
+    "ev121": "there was one example in the first round where it was required all fast drones. And I think the AI assistant recommended I add some red and green drones.",
+    "ev127": "I mean, it was giving me the wrong type of drones. It required only blue drones and kept giving me red and green ones.",
+    "ev64": "But in conservative, you don't need camera or lifters, yet it adds it as reserve. Even for tasks it doesn't do. That doesn't make sense.",
+    "qb:qb-P20-01": "deploy a conservative strategy for that one doesn't make sense, I don't think. Because I don't need any red or blue drones."
+   },
+   "trims": {
+    "qb:qb-P35-01": "But I find that the first task it allocated too much Lifter and Camera. So I think I'm less confident for it.",
+    "ev64": "But in conservative, you don't need camera or lifters, yet it adds it as reserve. Even for tasks it doesn't do. That doesn't make sense.",
+    "qb:qb-P20-01": "deploy a conservative strategy for that one doesn't make sense, I don't think. Because I don't need any red or blue drones."
+   }
   },
   "f-flaw-odd#over-time": {
    "verdict": null,
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:07:59.423Z",
+   "updated": "2026-10-20T12:45:01.183Z",
    "quotes": [
-    "ev174"
-   ]
+    "ev174",
+    "ev175"
+   ],
+   "checked": {
+    "ev174": "I think it's less reliable than before, but I still use its suggestion, and that's the case. Yeah, because at least it saves time.",
+    "ev175": "I know there is a better choice, but I have no time to tune everything."
+   }
   },
   "f-flaw-odd#by-index": {
    "verdict": null,
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:09:08.921Z",
-   "quotes": [
-    "ev82"
-   ]
+   "updated": "2026-10-20T12:45:24.603Z",
+   "quotes": []
   },
   "f-flaw-odd#spoken": {
    "verdict": null,
@@ -698,13 +781,21 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:26:56.850Z",
+   "updated": "2026-10-20T12:46:18.641Z",
    "quotes": [
     "qb:qb-P33-01",
     "ev12",
-    "ev223",
-    "qb:qb-P13-03"
-   ]
+    "ev223"
+   ],
+   "trims": {
+    "qb:qb-P33-01": "But I think in the [tactical level], it works very well."
+   },
+   "checked": {
+    "qb:qb-P33-01": "But I think in the [tactical level], it works very well.",
+    "ev12": "“You can’t blame the tactical for drone failures but you can blame the strategic for not having redundancy”",
+    "ev223": "So the tactical one seemed to be doing what I was doing. So quite reliably. And obviously the strategic one wasn't.",
+    "qb:qb-P13-03": "But tactical was pretty good."
+   }
   },
   "f-tier-trust#where": {
    "verdict": null,
@@ -718,12 +809,18 @@
    "note": "",
    "links": [],
    "tags": [],
-   "updated": "2026-10-15T10:36:29.624Z",
+   "updated": "2026-10-20T12:47:11.003Z",
    "quotes": [
     "ev140",
-    "qb:qb-P27-02",
     "qb:qb-P27-03"
-   ]
+   ],
+   "checked": {
+    "ev140": "as soon as it got to any sort of non-linear, difficult, high dimensional problem, I just took the AI's word for it, essentially, probably because I couldn't assess in the time",
+    "qb:qb-P27-03": "My reason is there are so many drones, so I don't have enough energy and attention to just the check them."
+   },
+   "trims": {
+    "qb:qb-P27-03": "My reason is there are so many drones, so I don't have enough energy and attention to just the check them."
+   }
   },
   "f-tier-trust#stated-revealed": {
    "verdict": null,
@@ -754,6 +851,936 @@
    "updated": null
   },
   "f-tier-trust#stated": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#parallel-said": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-workload#waited": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#order": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#choice": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#games": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#size": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#pace": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-triage#visible-t": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-size-decides#route-people": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-19T12:30:53.000Z"
+  },
+  "f-about": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "f-about#screens": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-16T09:44:40.000Z"
+  },
+  "q-trust-unchecked#cant-check": {
+   "verdict": null,
+   "note": "A nice few quotes that we can use to make a point.",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T12:52:02.735Z",
+   "trims": {
+    "ps:p22-cant-perceive-optimal": "The tactical assistant, I never really saw it do anything wrong, but that's basically because I think the problem is so complex [that] seeing a more optimal solution is really hard. So I wonder if it's one of those things where these are based on the fact that I actually can't perceive the difference between its performance and the optimal.",
+    "ps:p19-inadvertently-trusted": "I will be honest with you. I don't think I was paying as much attention to the suggestions of the tactical assistant as I could have been. Just purely because the tasks were often very multi-drone. I think I would have committed a lot of extra thought-space to assigning all of the drones individually to those. So I definitely inadvertently trusted the tactical [agent]. I think it's worth saying any assessment of the tactical system would probably be disingenuous just because of my lack of engagement with it. But the strategic assistant, I think on the most part, I have absolutely no problems with. There was that one issue, but that's okay because I noticed it because the display is straightforward and it's clear enough that you can as a human spot discrepancies if they arise.",
+    "ps:p22-pinch-of-salt": "i felt like i took a bigger pinch of salt for the strategic one because i felt like i could assess the quality of it more immediately whereas with the tactical assistant, I couldn't accurately and rapidly assess how well it was performing. So I just kind of said, OK, I have to take your word for it, essentially."
+   },
+   "quotes": [
+    "ps:p22-cant-perceive-optimal",
+    "ps:p19-inadvertently-trusted",
+    "ps:p22-pinch-of-salt"
+   ],
+   "role": "paper",
+   "checked": {
+    "ps:p22-cant-perceive-optimal": "The tactical assistant, I never really saw it do anything wrong, but that's basically because I think the problem is so complex [that] seeing a more optimal solution is really hard. So I wonder if it's one of those things where these are based on the fact that I actually can't perceive the difference between its performance and the optimal.",
+    "ps:p19-inadvertently-trusted": "I will be honest with you. I don't think I was paying as much attention to the suggestions of the tactical assistant as I could have been. Just purely because the tasks were often very multi-drone. I think I would have committed a lot of extra thought-space to assigning all of the drones individually to those. So I definitely inadvertently trusted the tactical [agent]. I think it's worth saying any assessment of the tactical system would probably be disingenuous just because of my lack of engagement with it. But the strategic assistant, I think on the most part, I have absolutely no problems with. There was that one issue, but that's okay because I noticed it because the display is straightforward and it's clear enough that you can as a human spot discrepancies if they arise.",
+    "ps:p22-pinch-of-salt": "i felt like i took a bigger pinch of salt for the strategic one because i felt like i could assess the quality of it more immediately whereas with the tactical assistant, I couldn't accurately and rapidly assess how well it was performing. So I just kind of said, OK, I have to take your word for it, essentially."
+   }
+  },
+  "q-trust-unchecked#glance": {
+   "verdict": null,
+   "note": "Less significant but might be worth a mention",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:02:37.362Z",
+   "trims": {
+    "ps:p31-less-oversight": "Whatever lack of optimality that comes from using the AI agents is more than compensated for in their speed. Or at least in their speed of decision making. I also feel like the longer that this session has gone on, the less oversight that I've been giving it, and the more I've been focusing on the strategic layer and the incoming missions.",
+    "ps:p11-dodgy-suggestion": "Yeah. I think even if the tactical agent gave me a dodgy suggestion and the mission failed and I lost points, I probably would have gained more points from the time saved",
+    "ps:p22-fast-not-perfect": "Speed is the name of the game. So sometimes in these ones, I guess making a decision earlier is beneficial because at some point the other ones are going to pop up."
+   },
+   "quotes": [
+    "ps:p31-less-oversight",
+    "ps:p11-dodgy-suggestion",
+    "ps:p22-fast-not-perfect"
+   ],
+   "role": "extra",
+   "checked": {
+    "ps:p31-less-oversight": "Whatever lack of optimality that comes from using the AI agents is more than compensated for in their speed. Or at least in their speed of decision making. I also feel like the longer that this session has gone on, the less oversight that I've been giving it, and the more I've been focusing on the strategic layer and the incoming missions.",
+    "ps:p11-dodgy-suggestion": "Yeah. I think even if the tactical agent gave me a dodgy suggestion and the mission failed and I lost points, I probably would have gained more points from the time saved",
+    "ps:p22-fast-not-perfect": "Speed is the name of the game. So sometimes in these ones, I guess making a decision earlier is beneficial because at some point the other ones are going to pop up."
+   }
+  },
+  "q-trust-unchecked#at-scale": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "q-trust-unchecked#earned": {
+   "verdict": null,
+   "note": "Minimal but nice",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:04:22.239Z",
+   "trims": {
+    "ps:p32-earned-trust": "I think I developed a stronger opinion on how much to trust each of them. By, I guess, comparing them to what I would have done. And I mean, I understood the task more as I went. So the tactical one seemed to be doing what I was doing. So quite reliably. And obviously the strategic one wasn't. So I guess it was very much comparing them to what I'd do. And then letting the tactical one get on with it.",
+    "ps:p29-test-then-trust": "I mostly trusted it, although, uh, I did kind of want to test it more at the beginning, like comparing it, like doing a few manual ones myself to see, like, whether it would be better, faster. I guess it was kind of hard to keep track of which tasks were being finished when, but I noticed that the ones that failed were normally cause I'd just done a manual one. So I guess that made me want to use the AI more often."
+   },
+   "quotes": [
+    "ps:p32-earned-trust",
+    "ps:p29-test-then-trust"
+   ],
+   "role": "paper",
+   "checked": {
+    "ps:p32-earned-trust": "I think I developed a stronger opinion on how much to trust each of them. By, I guess, comparing them to what I would have done. And I mean, I understood the task more as I went. So the tactical one seemed to be doing what I was doing. So quite reliably. And obviously the strategic one wasn't. So I guess it was very much comparing them to what I'd do. And then letting the tactical one get on with it.",
+    "ps:p29-test-then-trust": "I mostly trusted it, although, uh, I did kind of want to test it more at the beginning, like comparing it, like doing a few manual ones myself to see, like, whether it would be better, faster. I guess it was kind of hard to keep track of which tasks were being finished when, but I noticed that the ones that failed were normally cause I'd just done a manual one. So I guess that made me want to use the AI more often."
+   }
+  },
+  "q-trust-unchecked": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:42:27.000Z"
+  },
+  "q-process#staff": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "q-process#asking-why": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T10:59:32.014Z",
+   "role": "archive"
+  },
+  "q-process#mental-models": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:01:21.082Z",
+   "role": "archive"
+  },
+  "q-process#clear-mistake": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:01:41.842Z",
+   "role": "archive"
+  },
+  "q-process": {
+   "verdict": "prune",
+   "note": "It's fine, but I don't think it's as much what we're after and it steps on the better-strucutred earlier results about this stuff, muddying the message that's already been better argued",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:02:18.876Z"
+  },
+  "q-who-decides#accountability": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:08:45.504Z",
+   "trims": {
+    "ps:p31-accountability": "Yeah, I feel like that's a very interesting question for more of a moral reason, because if you look at it entirely from the perspective of your option A, option B, and option A saves more lives, that always seems like a good thing, but taking it ... in a slightly less simplified way, you've got to make sort of moral judgments about how these resources are being allocated, and if someone's life was like failed to be saved, under a completely human system, you'd have some sort of like, not responsibility, what's the word I'm looking for? [interviewer suggests the word 'accountability']. Accountability, thank you! Of who was on the job that failed to save your life, whereas if it's an AI system, even if it performs on average better than a human, that accountability just isn't there.",
+    "ps:p29-speed-over-perfection": "I think definitely with emergency scenarios, it's best to just get something going, even if it's not the most perfect plan. And AI lets you do that quite good, like quite quickly."
+   },
+   "quotes": [
+    "ps:p31-accountability",
+    "ps:p29-speed-over-perfection"
+   ],
+   "role": "paper",
+   "checked": {
+    "ps:p31-accountability": "Yeah, I feel like that's a very interesting question for more of a moral reason, because if you look at it entirely from the perspective of your option A, option B, and option A saves more lives, that always seems like a good thing, but taking it ... in a slightly less simplified way, you've got to make sort of moral judgments about how these resources are being allocated, and if someone's life was like failed to be saved, under a completely human system, you'd have some sort of like, not responsibility, what's the word I'm looking for? [interviewer suggests the word 'accountability']. Accountability, thank you! Of who was on the job that failed to save your life, whereas if it's an AI system, even if it performs on average better than a human, that accountability just isn't there.",
+    "ps:p29-speed-over-perfection": "I think definitely with emergency scenarios, it's best to just get something going, even if it's not the most perfect plan. And AI lets you do that quite good, like quite quickly."
+   }
+  },
+  "q-who-decides#loop": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:12:40.933Z",
+   "quotes": [
+    "ps:p32-organisational"
+   ],
+   "role": "paper",
+   "checked": {
+    "ps:p32-organisational": "I think if I were being organisationally strategic about that, it seems like it's really helpful. Assuming that you're human constrained (if you've got loads of spare humans, I'd want to see if the AI was actually better) but assuming that you've got less humans than you ideally would have, it feels like a good accelerator. I'd want the analytics on, I guess, like drone utilisation and mission success. I feel like that would be a good place to be making these decisions. And should I be, for example, in this case where I think the strategic one was less good than the tactical, if I were being really strategic, I'd be saying: 'okay, people are going to do the strategic stuff, and we're just going to trust it for the tactical'. So I guess very much doing that optimisation around: 'is it the agents or the humans who are adding the most value, and where do they add the most value', and then have them allocate them... I'd want to understand, well, just because I like to understand everything, I'd want to understand empirically actually how it was performing, who should be doing what."
+   },
+   "trims": {
+    "ps:p32-organisational": "I think if I were being organisationally strategic about that, it seems like it's really helpful. Assuming that you're human constrained (if you've got loads of spare humans, I'd want to see if the AI was actually better) but assuming that you've got less humans than you ideally would have, it feels like a good accelerator. I'd want the analytics on, I guess, like drone utilisation and mission success. I feel like that would be a good place to be making these decisions. And should I be, for example, in this case where I think the strategic one was less good than the tactical, if I were being really strategic, I'd be saying: 'okay, people are going to do the strategic stuff, and we're just going to trust it for the tactical'. So I guess very much doing that optimisation around: 'is it the agents or the humans who are adding the most value, and where do they add the most value', and then have them allocate them... I'd want to understand, well, just because I like to understand everything, I'd want to understand empirically actually how it was performing, who should be doing what."
+   }
+  },
+  "q-who-decides#ownership": {
+   "verdict": null,
+   "note": "This is one of the better ones",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:14:21.276Z",
+   "quotes": [
+    "ps:p11-connected",
+    "ps:p11-ownership"
+   ],
+   "trims": {
+    "ps:p11-ownership": "it would be a dreadful task without any of the tools, especially on the tactical side. It's just a lot of laborious dragging, holding shift at the right time.... And I guess I do feel I want to use (empahsis)my(/emphasis) solution, and I don't want to like, oh, you know, of course the computer thinks it's better. Or like personify the computer and feel some sort of grudge to hold it.",
+    "ps:p21-plan-in-mind": "[After doing a manual strategic allocation] I prefer to set the drones myself. Because I'm not sure how exactly it will be allocated [tactically]. Because I have something in mind when I consider the [strategic] allocation ... When I make the selection for the drones, I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that.",
+    "ps:p11-connected": "I don't want to be reduced to pressing allocate, suggest, deploy, because otherwise I might as well be in the next room. And I think the small missions give me the chance to do that more. And I'm like, 'oh, I can just do that. Don't worry. I'll do that'. Done. And I feel satisfaction."
+   },
+   "role": "paper",
+   "checked": {
+    "ps:p11-connected": "I don't want to be reduced to pressing allocate, suggest, deploy, because otherwise I might as well be in the next room. And I think the small missions give me the chance to do that more. And I'm like, 'oh, I can just do that. Don't worry. I'll do that'. Done. And I feel satisfaction.",
+    "ps:p11-ownership": "it would be a dreadful task without any of the tools, especially on the tactical side. It's just a lot of laborious dragging, holding shift at the right time.... And I guess I do feel I want to use (empahsis)my(/emphasis) solution, and I don't want to like, oh, you know, of course the computer thinks it's better. Or like personify the computer and feel some sort of grudge to hold it."
+   }
+  },
+  "q-who-decides#imposed-loop": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:17:09.153Z",
+   "role": "archive",
+   "trims": {
+    "ps:p21-contingency-unrecognised": "Basically, what I wanted is at the tactical side of things, when you get to the mission, I wanted to add additional redundancies. So the way that the AI assistant was allocating them was, OK, go there, do the thing you have to do. But in case of something failed, there wasn't a backup drone coming around... So technically, with the way I've set up most of them, every drone basically was going through every base in a in a sequential manner. Here I could cope even with two failures because a single drone can finish the two drone job, but at a slower rate. So again, here, two drones could fail. And so complete the task. One failed. But yes, this is just an example I showed there. I was adding the contingency plans from the start, which didn't require that intervention. So it kind of makes sense."
+   },
+   "checked": {
+    "ps:p21-contingency-unrecognised": "Basically, what I wanted is at the tactical side of things, when you get to the mission, I wanted to add additional redundancies. So the way that the AI assistant was allocating them was, OK, go there, do the thing you have to do. But in case of something failed, there wasn't a backup drone coming around... So technically, with the way I've set up most of them, every drone basically was going through every base in a in a sequential manner. Here I could cope even with two failures because a single drone can finish the two drone job, but at a slower rate. So again, here, two drones could fail. And so complete the task. One failed. But yes, this is just an example I showed there. I was adding the contingency plans from the start, which didn't require that intervention. So it kind of makes sense."
+   },
+   "quotes": [
+    "ps:p21-contingency-unrecognised"
+   ]
+  },
+  "q-who-decides": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:16:27.049Z"
+  },
+  "q-failure#blind": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:18:36.816Z",
+   "trims": {
+    "ps:p10-failure-likelihood": "I think in a in a real world scenario where if I imagine I'm a drone swarm operator you will have some numbers presumably about 'so what's the likelihood for drone failure' right? Based on historic data, and that will presumably bias (or inform, not bias) but inform your selection if I'm like okay the lifter drone is much heavier therefore there's more wear and tear on it or whatever it's more likely to fail down that means that my redundancy strategy might change from 'send one additional drone for the lifter' towards 'send 20 percent more more lifters than you need'"
+   },
+   "quotes": [
+    "ps:p10-failure-likelihood"
+   ],
+   "role": "paper",
+   "checked": {
+    "ps:p10-failure-likelihood": "I think in a in a real world scenario where if I imagine I'm a drone swarm operator you will have some numbers presumably about 'so what's the likelihood for drone failure' right? Based on historic data, and that will presumably bias (or inform, not bias) but inform your selection if I'm like okay the lifter drone is much heavier therefore there's more wear and tear on it or whatever it's more likely to fail down that means that my redundancy strategy might change from 'send one additional drone for the lifter' towards 'send 20 percent more more lifters than you need'"
+   }
+  },
+  "q-failure#framing": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "q-failure#patterns": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:20:10.523Z",
+   "role": "archive"
+  },
+  "q-failure": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:20:12.087Z"
+  },
+  "q-hierarchy#cascade": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:23:57.041Z",
+   "trims": {
+    "ps:p19-tactical-results": "Basically, it did everything. If failure rate of drones is unrelated to my assignment, so rate of failure as opposed to how many drones I send out, then all things considered, the tactical assistant is probably the best. The tactical assistant completed all the jobs and we didn't end up in any kind of a situation where we didn't have enough drones if it hadn't been for random drone failures. And the only way to remedy drone failures is to have sent enough drones at the beginning, which I think is the strategic assistant's prerogative.",
+    "ps:p28-defensive-reserve": "I'm trying to be more defensive in the strategy, so I'm trying to reserve more and more drones in the base, rather than send them out to finish the task quickly, because I cannot predict when the next task will appear. So luckily, there's only one task is holding for a long time, only one there, and another problem is [that] such a choice will make the drones in the case becomes not sufficient for that case. So if I only send out one drone for one specific color, and it fails, then I have to abort that mission, and I only abort one of them, because that happened, and the rest is still able to finish, so I think this, such a deployment is still all right."
+   },
+   "quotes": [
+    "ps:p19-tactical-results",
+    "ps:p28-defensive-reserve"
+   ],
+   "role": "paper",
+   "checked": {
+    "ps:p19-tactical-results": "Basically, it did everything. If failure rate of drones is unrelated to my assignment, so rate of failure as opposed to how many drones I send out, then all things considered, the tactical assistant is probably the best. The tactical assistant completed all the jobs and we didn't end up in any kind of a situation where we didn't have enough drones if it hadn't been for random drone failures. And the only way to remedy drone failures is to have sent enough drones at the beginning, which I think is the strategic assistant's prerogative.",
+    "ps:p28-defensive-reserve": "I'm trying to be more defensive in the strategy, so I'm trying to reserve more and more drones in the base, rather than send them out to finish the task quickly, because I cannot predict when the next task will appear. So luckily, there's only one task is holding for a long time, only one there, and another problem is [that] such a choice will make the drones in the case becomes not sufficient for that case. So if I only send out one drone for one specific color, and it fails, then I have to abort that mission, and I only abort one of them, because that happened, and the rest is still able to finish, so I think this, such a deployment is still all right."
+   }
+  },
+  "q-hierarchy#one-plan": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:42:27.000Z",
+   "quotes": [
+    "ps:p10-only-one-way",
+    "ps:p21-plan-in-mind",
+    "ps:p21-shared-patterns"
+   ],
+   "trims": {
+    "ps:p10-only-one-way": "it's better to use the autonomy on the tactical level on top of the strategic",
+    "ps:p21-plan-in-mind": "[Having manually set a strategic allocation] I prefer to [tactically] set the drones myself. Because I'm not sure how exactly it will be allocated [if I use the agent]. Because I have something in mind when I consider the allocation... When I make the selection for the drones, I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that.",
+    "ps:p21-shared-patterns": "Actually, they might work better if I use the AI agent for the selection and that as well, because. Yeah, because when I assume when it makes a selection, when it tries to make the drone allocation, it follows certain patterns, which could then be adopted by the tactical agent afterwards. And if I try to think of something else, so I'm going to split them like that and change them in a certain way. I'm not sure if the tactical agent will be able to match my thought process."
+   },
+   "role": "paper",
+   "checked": {
+    "ps:p10-only-one-way": "it's better to use the autonomy on the tactical level on top of the strategic",
+    "ps:p21-plan-in-mind": "[Having manually set a strategic allocation] I prefer to [tactically] set the drones myself. Because I'm not sure how exactly it will be allocated [if I use the agent]. Because I have something in mind when I consider the allocation... When I make the selection for the drones, I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that.",
+    "ps:p21-shared-patterns": "Actually, they might work better if I use the AI agent for the selection and that as well, because. Yeah, because when I assume when it makes a selection, when it tries to make the drone allocation, it follows certain patterns, which could then be adopted by the tactical agent afterwards. And if I try to think of something else, so I'm going to split them like that and change them in a certain way. I'm not sure if the tactical agent will be able to match my thought process."
+   }
+  },
+  "q-hierarchy#cross-mission": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:32:06.521Z",
+   "trims": {
+    "ps:p22-middle-ground": "I felt like sometimes I could find like a middle ground that had like maybe a little bit of gambling in there, essentially, that you wouldn't have the necessary coverage. But then also then that meant that you'd keep some more in reserve. So it wasn't just fully because it's cautious, it was also because it was actually to keep some in reserve for other tasks, because, yes, you're covering this task specifically very well. But that doesn't mean that then you actually have enough coverage for the, for the rest of your tasks. So I felt that often I could find, I could strike a middle ground. So I felt comfortable assessing and then overriding the strategic assistant.",
+    "ps:p19-criticality-wait": "And the problem is we don't know whether a extremely critical job is going to show up later.",
+    "ps:p31-below-conservative": "If you wanted to send as few drones as possible, you could send four fast drones, one lifter, one camera. Whereas even the conservative recommendation recommended sending two of the lifters, and the cameras in case of drone failure. When I was in that situation, I had a lot of other pending tasks, so I went more conservative than the conservative recommendation."
+   },
+   "quotes": [
+    "ps:p22-middle-ground",
+    "ps:p19-criticality-wait",
+    "ps:p31-below-conservative"
+   ],
+   "checked": {
+    "ps:p22-middle-ground": "I felt like sometimes I could find like a middle ground that had like maybe a little bit of gambling in there, essentially, that you wouldn't have the necessary coverage. But then also then that meant that you'd keep some more in reserve. So it wasn't just fully because it's cautious, it was also because it was actually to keep some in reserve for other tasks, because, yes, you're covering this task specifically very well. But that doesn't mean that then you actually have enough coverage for the, for the rest of your tasks. So I felt that often I could find, I could strike a middle ground. So I felt comfortable assessing and then overriding the strategic assistant.",
+    "ps:p19-criticality-wait": "And the problem is we don't know whether a extremely critical job is going to show up later.",
+    "ps:p31-below-conservative": "If you wanted to send as few drones as possible, you could send four fast drones, one lifter, one camera. Whereas even the conservative recommendation recommended sending two of the lifters, and the cameras in case of drone failure. When I was in that situation, I had a lot of other pending tasks, so I went more conservative than the conservative recommendation."
+   }
+  },
+  "q-hierarchy#context": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": null
+  },
+  "q-hierarchy": {
+   "verdict": "core",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:42:27.000Z"
+  },
+  "q-real-ops#pace": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:37:51.326Z",
+   "role": "archive"
+  },
+  "q-real-ops#stakes": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:38:35.778Z",
+   "role": "archive"
+  },
+  "q-real-ops#skills": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:41:21.445Z",
+   "role": "archive"
+  },
+  "q-real-ops": {
+   "verdict": "prune",
+   "note": "Fine but just not that interesting - I think the limtations are implied and we can mention near the end",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:41:48.202Z"
+  },
+  "q-new-jobs#checkers": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:42:33.045Z",
+   "role": "archive"
+  },
+  "q-new-jobs#smarter-rules": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:42:47.526Z",
+   "role": "archive"
+  },
+  "q-new-jobs#options": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:43:38.196Z",
+   "role": "archive"
+  },
+  "q-new-jobs#interface": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T11:45:25.458Z",
+   "role": "archive"
+  },
+  "q-new-jobs": {
+   "verdict": "keep",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:58:28.366Z"
+  },
+  "q-practitioner#own-play": {
+   "verdict": null,
+   "note": "We will say that our expert was a good performer with a slightly higher workrate than others, prempting cards more, but was otherwise fairly typical (insert a couple numbers into here)",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T14:54:20.071Z",
+   "role": "numbers",
+   "trims": {
+    "ps:p36-play-across-tasks": "so when I think it's going to be quicker because it's not necessarily about just that task it's about all of the tasks and success is generated across all of the tasks rather than just an individual task.",
+    "ps:p36-branching-paths": "sometimes it's going to be a little bit uh quicker to do these myself only because i know the answer based on what i'm seeing visually in front of me so i don't need to do that much [...] simple task you probably want to do yourself if you're going to get the solution quicker and the more complex tasks you're going to want somebody to give you that solution in front of you so you can give it a quick once over and go that looks about right um whether or not it is right of course it's another question entirely [...] the solutions it is coming up with uh i would have to go and do a much more thorough scan of the solution to say have you put redundancy into that plan or do i care like i've put redundancy into that plan so i don't have to come back to it i've put every turn on that last blue one every single drone is going to every single task so that if one of my drones fails my assumption is that my other drones are picking up the task whereas the more complex ones just literally looking have they allocated enough to that task started going because if it fails um think about like hypertextual branching paths so as soon as i get one failure that's going to change the entire story how much of that story do we need to change on the blue ones you don't really need to change the story you're just going to flick through whereas the other ones it's like okay no i've got more options so my option scope is broader and so it's going to need more human intervention to go into it so there's no point in me trying to think about all of that ahead of time i may as well let them start on that task and then intervene when i need to",
+    "ps:p36-resource-rich": "so again this one here that's relatively simple and I'm resource rich at the moment so we'll go nuts I'll start suggesting some stuff through because there's nothing else that's coming in",
+    "ps:p36-strategic-less-hesitant": "the strategic one i was less concerned about the solutions it presented so i hesitated less on the strategic than the tactical but only because all i was looking at there was have i got a reserve allocated whereas a tactical one it's 'have you covered all the tasks' and there is a reserve […] I wouldn't trust any of them without checking but I trust the strategic slightly more because the consequences are slightly - less they're probably not actually are they if you fuck up the allocation at the start of it then you're screwed going into the tactical"
+   },
+   "checked": {
+    "ps:p36-play-across-tasks": "so when I think it's going to be quicker because it's not necessarily about just that task it's about all of the tasks and success is generated across all of the tasks rather than just an individual task.",
+    "ps:p36-branching-paths": "sometimes it's going to be a little bit uh quicker to do these myself only because i know the answer based on what i'm seeing visually in front of me so i don't need to do that much [...] simple task you probably want to do yourself if you're going to get the solution quicker and the more complex tasks you're going to want somebody to give you that solution in front of you so you can give it a quick once over and go that looks about right um whether or not it is right of course it's another question entirely [...] the solutions it is coming up with uh i would have to go and do a much more thorough scan of the solution to say have you put redundancy into that plan or do i care like i've put redundancy into that plan so i don't have to come back to it i've put every turn on that last blue one every single drone is going to every single task so that if one of my drones fails my assumption is that my other drones are picking up the task whereas the more complex ones just literally looking have they allocated enough to that task started going because if it fails um think about like hypertextual branching paths so as soon as i get one failure that's going to change the entire story how much of that story do we need to change on the blue ones you don't really need to change the story you're just going to flick through whereas the other ones it's like okay no i've got more options so my option scope is broader and so it's going to need more human intervention to go into it so there's no point in me trying to think about all of that ahead of time i may as well let them start on that task and then intervene when i need to",
+    "ps:p36-quicker-by-hand": "Do you know what? Probably quicker just to hit three on there. But we'll go three on that one there. […] I probably should have done that one manually. It would have been quicker.",
+    "ps:p36-never-without-reserve": "this one's been there for the longest i've got nothing in there that's going to change my prioritization so i'm going to go into here and probably send manually i'm going to give you minimum two we're going to go three just never deploy without a reserve",
+    "ps:p36-as-many-across": "so generally speaking all I'm trying to do here is get as many across as quickly as I can to complete all of the tasks managing my resources that I've got left here so I'm running a little bit low on blue over there and then just double checking on here so I've got the redundancy in there",
+    "ps:p36-critical-first": "i've run out of blue so that's gonna hurt my score but at the same time i've got the critical tasks done so i'd rather do the critical tasks if this is a real life scenario i'd rather be focused on the critical tasks than getting those done to a higher value rather than moderate tasks of getting them done to a low",
+    "ps:p36-resource-rich": "so again this one here that's relatively simple and I'm resource rich at the moment so we'll go nuts I'll start suggesting some stuff through because there's nothing else that's coming in",
+    "ps:p36-strategic-less-hesitant": "the strategic one i was less concerned about the solutions it presented so i hesitated less on the strategic than the tactical but only because all i was looking at there was have i got a reserve allocated whereas a tactical one it's 'have you covered all the tasks' and there is a reserve […] I wouldn't trust any of them without checking but I trust the strategic slightly more because the consequences are slightly - less they're probably not actually are they if you fuck up the allocation at the start of it then you're screwed going into the tactical"
+   },
+   "quotes": [
+    "ps:p36-play-across-tasks",
+    "ps:p36-branching-paths",
+    "ps:p36-never-without-reserve",
+    "ps:p36-as-many-across",
+    "ps:p36-critical-first",
+    "ps:p36-resource-rich",
+    "ps:p36-quicker-by-hand",
+    "ps:p36-strategic-less-hesitant"
+   ]
+  },
+  "q-practitioner#realism": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T14:11:34.115Z",
+   "quotes": [
+    "ps:p36-physics-pace",
+    "ps:p36-tempo-echelon"
+   ],
+   "trims": {
+    "ps:p36-physics-pace": "so in terms of delivery absolutely in terms of the pace probably not so much [...]if you think so the biggest thing for us that is always hard to convey to decision makers is: physics remains the bounding factor I've got to get from this point here to that point there and if the adversary can see me from 20k away then I'm doing that activity from 20k and if you're going at 3k an hour then that's going to take you a long time to get from here to over there so there's a level of that acceleration in terms of decision however on the flip side of it when the shit hits the fan you are probably going to be very frustrated; As I move this thing to here I've now got to wait for this thing to get into place to go and do this thing here hurry up and get there but at the same time as a commander you're sat there thinking okay what am I going to do if this thing fails what am I then going to do what am I going to do so your mental load is still loaded it's just loaded in a slightly different way so you're always trying to balance cognitive capacity against the time pressure effectively",
+    "ps:p36-tempo-echelon": "so it's how you're talking about when does the effect need to be delivered and coordinated in time and space then it's the higher up you are the further out and then the less so when you see something, 'cool I've now got to pass that information down but that's just like a routine routine task I'm going to move on to the next task' whereas if I see 10 things in front of me as it's all come down the chain I've got to do this thing now then that thing then that thing then that thing and then for it to stack back up the chain so yes there is a level of that is getting both faster"
+   },
+   "checked": {
+    "ps:p36-physics-pace": "so in terms of delivery absolutely in terms of the pace probably not so much [...]if you think so the biggest thing for us that is always hard to convey to decision makers is: physics remains the bounding factor I've got to get from this point here to that point there and if the adversary can see me from 20k away then I'm doing that activity from 20k and if you're going at 3k an hour then that's going to take you a long time to get from here to over there so there's a level of that acceleration in terms of decision however on the flip side of it when the shit hits the fan you are probably going to be very frustrated; As I move this thing to here I've now got to wait for this thing to get into place to go and do this thing here hurry up and get there but at the same time as a commander you're sat there thinking okay what am I going to do if this thing fails what am I then going to do what am I going to do so your mental load is still loaded it's just loaded in a slightly different way so you're always trying to balance cognitive capacity against the time pressure effectively",
+    "ps:p36-tempo-echelon": "so it's how you're talking about when does the effect need to be delivered and coordinated in time and space then it's the higher up you are the further out and then the less so when you see something, 'cool I've now got to pass that information down but that's just like a routine routine task I'm going to move on to the next task' whereas if I see 10 things in front of me as it's all come down the chain I've got to do this thing now then that thing then that thing then that thing and then for it to stack back up the chain so yes there is a level of that is getting both faster"
+   }
+  },
+  "q-practitioner#control": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T14:21:34.557Z",
+   "quotes": [
+    "ps:p36-staff-process",
+    "ps:p36-trust-but-verify",
+    "ps:p36-play-catch-up"
+   ],
+   "trims": {
+    "ps:p36-staff-process": "well it's kind of this how it works in military planning anyway so in anything above battlegroup level [our 'strategic'] there would be a staff there that would work up plans socialise those plans amongst themselves and back brief me as a commander. I would then go okay yeah I want you a bit of that plan and a bit of that plan give me this new plan. They'll go and write up by then sort of basically finish off that way. So it's a it is always a collective input into it but I'm just getting the synthesis of them work because I can't as an individual I couldn't work through the ground the enemy, the enemy's plan, the likelihood of my plan succeeding, the logistics behind it it would take me forever which is why your staff do it, so at that level you're already in a position where somebody's just coming back to you with the answers as long as you have trust in how they've come up with those answers then if it looks right: because you've gone through the process yourself [...] you'd have worked up in those levels so you kind of understand how those answers are generated so there's a level of trust in that process",
+    "ps:p36-trust-but-verify": "I write a plan I will go and take it to the lowest tactical level which is something like this where you're moving different units around different people you'd probably speak to the platoon commander you'd speak to the platoon sergeant: 'I'm thinking of doing this', you'd bring your section commanders in you'd go through yours and that's the process 'guys this is what I'm thinking and this is what your likely mission is, go away and work out the plan'. [...] As humans we should be used to socialising our decision making process to an extent. How you do that is entirely up to the commander but at the same time I'm still going through a process where somebody is checking my thinking and has the option to challenge me so with AI it should always be open to challenge [...] but also trust in the fact it's done the maths behind it and has allocated enough platforms to do the task you're after",
+    "ps:p36-play-catch-up": "If I've sent that off it allows me to scan over here and then go back and check the answer over there. [...] That's what's going to be required if you're doing a drone swarm the whole point of it is to make sure that you have got, but the utility of it is that point of presence that point of intervention where I need something to check that and know I'm going to take over that critical thing myself because it's the most important thing whereas for the routine sort of activity of getting from A to B do you know what whatever you want to do as long as the resources are in place and I can see what resource I'll have to play with if something goes wrong whereas if I did all of that manually I would know all of that because I've built the plan I've got it in my head if I just said 'go nuts' when something goes wrong I've got to play catch up I've got to start thinking how do I now have to do that differently so the key thing for me in all of this is not necessarily trusting the AI it is the skills that a human is going to need to be able to exploit all of this [...] that's what air traffic controllers do and they're actually testing it for it and their pay reflects that because it's not a particularly common skill if you're going to start saying search and rescue teams you now need this skill set it's going to cost you this much to pay these people because they're a niche skill set"
+   },
+   "checked": {
+    "ps:p36-staff-process": "well it's kind of this how it works in military planning anyway so in anything above battlegroup level [our 'strategic'] there would be a staff there that would work up plans socialise those plans amongst themselves and back brief me as a commander. I would then go okay yeah I want you a bit of that plan and a bit of that plan give me this new plan. They'll go and write up by then sort of basically finish off that way. So it's a it is always a collective input into it but I'm just getting the synthesis of them work because I can't as an individual I couldn't work through the ground the enemy, the enemy's plan, the likelihood of my plan succeeding, the logistics behind it it would take me forever which is why your staff do it, so at that level you're already in a position where somebody's just coming back to you with the answers as long as you have trust in how they've come up with those answers then if it looks right: because you've gone through the process yourself [...] you'd have worked up in those levels so you kind of understand how those answers are generated so there's a level of trust in that process",
+    "ps:p36-trust-but-verify": "I write a plan I will go and take it to the lowest tactical level which is something like this where you're moving different units around different people you'd probably speak to the platoon commander you'd speak to the platoon sergeant: 'I'm thinking of doing this', you'd bring your section commanders in you'd go through yours and that's the process 'guys this is what I'm thinking and this is what your likely mission is, go away and work out the plan'. [...] As humans we should be used to socialising our decision making process to an extent. How you do that is entirely up to the commander but at the same time I'm still going through a process where somebody is checking my thinking and has the option to challenge me so with AI it should always be open to challenge [...] but also trust in the fact it's done the maths behind it and has allocated enough platforms to do the task you're after",
+    "ps:p36-play-catch-up": "If I've sent that off it allows me to scan over here and then go back and check the answer over there. [...] That's what's going to be required if you're doing a drone swarm the whole point of it is to make sure that you have got, but the utility of it is that point of presence that point of intervention where I need something to check that and know I'm going to take over that critical thing myself because it's the most important thing whereas for the routine sort of activity of getting from A to B do you know what whatever you want to do as long as the resources are in place and I can see what resource I'll have to play with if something goes wrong whereas if I did all of that manually I would know all of that because I've built the plan I've got it in my head if I just said 'go nuts' when something goes wrong I've got to play catch up I've got to start thinking how do I now have to do that differently so the key thing for me in all of this is not necessarily trusting the AI it is the skills that a human is going to need to be able to exploit all of this [...] that's what air traffic controllers do and they're actually testing it for it and their pay reflects that because it's not a particularly common skill if you're going to start saying search and rescue teams you now need this skill set it's going to cost you this much to pay these people because they're a niche skill set"
+   }
+  },
+  "q-practitioner#risk": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T14:24:16.207Z",
+   "quotes": [
+    "ps:p36-failure-rate",
+    "ps:p36-shared-risk"
+   ],
+   "trims": {
+    "ps:p36-failure-rate": "but the interesting thing so that that always messes with people's heads doesn't it because we look at the failure 40% failure chance fucking no chance it's like okay but if you put a person into that scenario and it was all people doing it your failure chance would be this as well so there's got to be something where it shows a bit of context to it so just to understand that when you see that failure rate because everyone will try to push it up and up and up and up and up no one likes gambling particularly gambling in people's lives but particularly in the military environment or even in the search and rescue environment you're always gambling with someone's life like the failure rate of doing nothing is 100% so you've got to do something you're just trying to chip away at it and prioritise accordingly so having that information presented again great to see the information but it's then down to that person that you're training for them to be used to there's always going to be a failure rate I'm just trying to make it as low as reasonable",
+    "ps:p36-shared-risk": "yes well and that's kind of a challenge within this is because I know it's a simulation there isn't someone's life on the line at the end of it and I've done enough planning activities to know and I'm very visual so looking at a glance yes it's allocated what I needed to allocate it cool let's start running with it whereas I can imagine if you've not had that experience that I've generated through non-use of drone swarming technology if you've not had that if you're you know young platoon commander who's literally just come out of Sandhurst and all is only a very experienced perhaps this is a simulation at Sandhurst and all of a sudden it's now you know the bullets are flying it's a two-way range they're gonna be much either they're gonna be foolhardy and just fucking go for it and people are gonna die or they'll be almost paralysed because it's like oh shit no if I do that someone is gonna die here's 40% failure rate on this task I'm gonna lose people but if I don't do that task this whole battle falls apart that's always been true regardless of whether or not technology was in there but before there was a level of interpersonal sort of contact I'm out there with my people I might die alongside them but I'm so I'm when I'm putting them under that risk I'm because I'm taking the same risk myself whereas something like this where you're not necessarily taking the risk yourself and you've put humans albeit they might be one removed from your autonomy but you've put humans on the way then that's going to then come back and impact on your decision-making so I imagine you're going to see me less decisive if someone's gonna die at the end"
+   },
+   "checked": {
+    "ps:p36-failure-rate": "but the interesting thing so that that always messes with people's heads doesn't it because we look at the failure 40% failure chance fucking no chance it's like okay but if you put a person into that scenario and it was all people doing it your failure chance would be this as well so there's got to be something where it shows a bit of context to it so just to understand that when you see that failure rate because everyone will try to push it up and up and up and up and up no one likes gambling particularly gambling in people's lives but particularly in the military environment or even in the search and rescue environment you're always gambling with someone's life like the failure rate of doing nothing is 100% so you've got to do something you're just trying to chip away at it and prioritise accordingly so having that information presented again great to see the information but it's then down to that person that you're training for them to be used to there's always going to be a failure rate I'm just trying to make it as low as reasonable",
+    "ps:p36-shared-risk": "yes well and that's kind of a challenge within this is because I know it's a simulation there isn't someone's life on the line at the end of it and I've done enough planning activities to know and I'm very visual so looking at a glance yes it's allocated what I needed to allocate it cool let's start running with it whereas I can imagine if you've not had that experience that I've generated through non-use of drone swarming technology if you've not had that if you're you know young platoon commander who's literally just come out of Sandhurst and all is only a very experienced perhaps this is a simulation at Sandhurst and all of a sudden it's now you know the bullets are flying it's a two-way range they're gonna be much either they're gonna be foolhardy and just fucking go for it and people are gonna die or they'll be almost paralysed because it's like oh shit no if I do that someone is gonna die here's 40% failure rate on this task I'm gonna lose people but if I don't do that task this whole battle falls apart that's always been true regardless of whether or not technology was in there but before there was a level of interpersonal sort of contact I'm out there with my people I might die alongside them but I'm so I'm when I'm putting them under that risk I'm because I'm taking the same risk myself whereas something like this where you're not necessarily taking the risk yourself and you've put humans albeit they might be one removed from your autonomy but you've put humans on the way then that's going to then come back and impact on your decision-making so I imagine you're going to see me less decisive if someone's gonna die at the end"
+   }
+  },
+  "q-practitioner#architecture": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T14:31:50.488Z",
+   "quotes": [
+    "ps:p36-resource-cascade",
+    "ps:p36-silos",
+    "ps:p36-one-up-two-down",
+    "ps:p36-red-team-agent"
+   ],
+   "trims": {
+    "ps:p36-resource-cascade": "I would argue that if you've not got the resources available to you at the low level then or you've over allocated resources at the high level then you're running out of resources cascade down so you're it's a balance it's never perfectly weighted one way or the other so if you're let's say you split the task this dude here is doing this task and all of a sudden has got no resource left look at the task I need more resource I told you need more resource when I told you this is my plan and this is I've got no redundancy here you're carrying risk whereas if you've done both it's your risk to carry on the flip side of it if you've over allocated a resource that's just wasted resource now I can't complete you might want more resource but I've got five tasks that I need to do so I'm balancing these five do what you can with what you've got let me know where it all falls down because it doesn't matter if yours falls down because yours is a moderate task I've got a critical one over here that I'm allocating more to",
+    "ps:p36-silos": "You kind of work in your own silo so if you're the g2'er [intelligence branch of general's staff planning team] you just focus on the enemy and you're delivering what the enemy is likely to do and you have a team working to you to do that so as a g2 officer you'll have like a one person will work on the enemy capability, one person will look at on the ground, one person will look on the sort of the human terrain and they'll work through their own analytical processes to come up with an answer then gets aggregated up and you go into it so going into that planning brief you as a g2'er are will only see your part of the plan and then the g3 [operations branch] guys will see their part of the plan and then that's kind of the first time you come together but generally speaking you're you're not getting all of the context okay so but you don't that you need that because as a person you need to be able to work through the context solution part of it yeah and this type of scenario here you wouldn't need that because of the simplicity of the task it's i've got to go and do these things and for those things i need these allocations so it's hard to sort of translate across the two as long as in each of them it's gone through the analytical process and spat out an answer",
+    "ps:p36-one-up-two-down": "so it depends yeah so you could have your agent that's checking the colors might be the one that understands two up [the intent of those above you, and one about that] so you understand two up in the same way as you plan two down issue orders one down so you think about i'm going to be sure to report to my section commanders but my i'm thinking about what each of those individual soldiers doing with that scenario and that might be your agent that corrals all your thing but in a when we go through that staff process the person who's just doing a scenario they will understand the one up they will understand or part of the one up that's given to them as their task is there's an area of responsibility there's an area of interest there's a thing that the enemy is doing within this space i just need to kind of understand that that so it might be you might understand that your mission that's come to you within your organisation so that's technically your organisation's mission but you might consider that your one up so it's depending on on as long as the person doing the task is given the understanding they're required to do that task then it doesn't matter how it docks into everything else that's not their job that's the person above them to do that so for your agents yes it might be useful but no it might not be useful it depends and particularly it's not useful if they're giving shit answers like if they're coming out and going no i've allocated five over here because there's a thing over there it's like cool that's not your job your job is to do this thing over here and then there's other agents to do this thing over here and they don't need them to do both because that's where this agent is going to do both for them and that's quite often even humans doing it humans start thinking or g2 again they'll start thinking blue plan but your job is not to do the blue plan your job is to do the red plan stop thinking about or the blue is probably going to do this so i'm going to do this no no but i need to know that sir because i need to understand the context of what the red is going to do so you need to have an idea of what blue capabilities have but you don't have control over the blue plan and you're not there to anticipate the blue plan you're there to put it within this context just stick to your lane and do that output because someone else will do that for you",
+    "ps:p36-red-team-agent": "One of the good things about ai is that you can have an agent whose only job is to go and red team [adversarially check] all of your outputs very quickly so if you've got that there is that hole in that data set and it go through and start all your job is to do is to check the data that they've based their answers on and then you can't go well this data is wrong so all these answers are now redundant we now need to look at this change this and then the answers will be right"
+   },
+   "checked": {
+    "ps:p36-resource-cascade": "I would argue that if you've not got the resources available to you at the low level then or you've over allocated resources at the high level then you're running out of resources cascade down so you're it's a balance it's never perfectly weighted one way or the other so if you're let's say you split the task this dude here is doing this task and all of a sudden has got no resource left look at the task I need more resource I told you need more resource when I told you this is my plan and this is I've got no redundancy here you're carrying risk whereas if you've done both it's your risk to carry on the flip side of it if you've over allocated a resource that's just wasted resource now I can't complete you might want more resource but I've got five tasks that I need to do so I'm balancing these five do what you can with what you've got let me know where it all falls down because it doesn't matter if yours falls down because yours is a moderate task I've got a critical one over here that I'm allocating more to",
+    "ps:p36-silos": "You kind of work in your own silo so if you're the g2'er [intelligence branch of general's staff planning team] you just focus on the enemy and you're delivering what the enemy is likely to do and you have a team working to you to do that so as a g2 officer you'll have like a one person will work on the enemy capability, one person will look at on the ground, one person will look on the sort of the human terrain and they'll work through their own analytical processes to come up with an answer then gets aggregated up and you go into it so going into that planning brief you as a g2'er are will only see your part of the plan and then the g3 [operations branch] guys will see their part of the plan and then that's kind of the first time you come together but generally speaking you're you're not getting all of the context okay so but you don't that you need that because as a person you need to be able to work through the context solution part of it yeah and this type of scenario here you wouldn't need that because of the simplicity of the task it's i've got to go and do these things and for those things i need these allocations so it's hard to sort of translate across the two as long as in each of them it's gone through the analytical process and spat out an answer",
+    "ps:p36-one-up-two-down": "so it depends yeah so you could have your agent that's checking the colors might be the one that understands two up [the intent of those above you, and one about that] so you understand two up in the same way as you plan two down issue orders one down so you think about i'm going to be sure to report to my section commanders but my i'm thinking about what each of those individual soldiers doing with that scenario and that might be your agent that corrals all your thing but in a when we go through that staff process the person who's just doing a scenario they will understand the one up they will understand or part of the one up that's given to them as their task is there's an area of responsibility there's an area of interest there's a thing that the enemy is doing within this space i just need to kind of understand that that so it might be you might understand that your mission that's come to you within your organisation so that's technically your organisation's mission but you might consider that your one up so it's depending on on as long as the person doing the task is given the understanding they're required to do that task then it doesn't matter how it docks into everything else that's not their job that's the person above them to do that so for your agents yes it might be useful but no it might not be useful it depends and particularly it's not useful if they're giving shit answers like if they're coming out and going no i've allocated five over here because there's a thing over there it's like cool that's not your job your job is to do this thing over here and then there's other agents to do this thing over here and they don't need them to do both because that's where this agent is going to do both for them and that's quite often even humans doing it humans start thinking or g2 again they'll start thinking blue plan but your job is not to do the blue plan your job is to do the red plan stop thinking about or the blue is probably going to do this so i'm going to do this no no but i need to know that sir because i need to understand the context of what the red is going to do so you need to have an idea of what blue capabilities have but you don't have control over the blue plan and you're not there to anticipate the blue plan you're there to put it within this context just stick to your lane and do that output because someone else will do that for you",
+    "ps:p36-red-team-agent": "One of the good things about ai is that you can have an agent whose only job is to go and red team [adversarially check] all of your outputs very quickly so if you've got that there is that hole in that data set and it go through and start all your job is to do is to check the data that they've based their answers on and then you can't go well this data is wrong so all these answers are now redundant we now need to look at this change this and then the answers will be right"
+   }
+  },
+  "q-practitioner#against-results": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T12:08:52.137Z",
+   "quotes": [
+    "ps:p36-branching-paths"
+   ]
+  },
+  "q-practitioner": {
+   "verdict": "core",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:42:27.000Z"
+  },
+  "q-new-jobs#queue-order": {
+   "verdict": null,
+   "note": "",
+   "links": [],
+   "tags": [],
+   "updated": "2026-10-20T13:58:25.560Z",
+   "trims": {
+    "ps:p27-queue-order": "Then I think maybe I also want another feature like how many drones is in the hub. And how many drones are required. So, I'd prefer to put the task which cannot be done for now to the end of the list. [...] So I just need to check the task with the highest priority. [...] Maybe the evaluation metrics can be the two sides [...] The first one is which task can be completed. And if all the tasks can be completed, then I'd prefer to order them with the critical. [...] And maybe it would be better to consider the task which is being executed.",
+    "ps:p32-pick-next": "Actually, it would be helpful if it just picked the next mission for me. A suggestion of what to do next would be handy [...] if it was like,' you've got enough drones for this one'. Because I know I haven't got enough one to go and do this, so it's kind of annoying that it's there"
+   },
+   "checked": {
+    "ps:p27-queue-order": "Then I think maybe I also want another feature like how many drones is in the hub. And how many drones are required. So, I'd prefer to put the task which cannot be done for now to the end of the list. [...] So I just need to check the task with the highest priority. [...] Maybe the evaluation metrics can be the two sides [...] The first one is which task can be completed. And if all the tasks can be completed, then I'd prefer to order them with the critical. [...] And maybe it would be better to consider the task which is being executed.",
+    "ps:p32-pick-next": "Actually, it would be helpful if it just picked the next mission for me. A suggestion of what to do next would be handy [...] if it was like,' you've got enough drones for this one'. Because I know I haven't got enough one to go and do this, so it's kind of annoying that it's there"
+   },
+   "role": "paper"
+  },
+  "q-practitioner#pt-whole-board": {
+   "verdict": "",
+   "note": "We'll briefly quote the second part I think",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-as-many-across",
+    "ps:p36-play-across-tasks"
+   ],
+   "trims": {
+    "ps:p36-play-across-tasks": "so when I think it's going to be quicker because it's not necessarily about just that task it's about all of the tasks and success is generated across all of the tasks rather than just an individual task."
+   },
+   "checked": {
+    "ps:p36-play-across-tasks": "so when I think it's going to be quicker because it's not necessarily about just that task it's about all of the tasks and success is generated across all of the tasks rather than just an individual task.",
+    "ps:p36-as-many-across": "so generally speaking all I'm trying to do here is get as many across as quickly as I can to complete all of the tasks managing my resources that I've got left here so I'm running a little bit low on blue over there and then just double checking on here so I've got the redundancy in there"
+   },
+   "updated": "2026-10-20T14:55:22.841Z",
+   "qnotes": {
+    "ps:p36-as-many-across": "Minor",
+    "ps:p36-play-across-tasks": "Interesting"
+   },
+   "role": "paper"
+  },
+  "q-practitioner#pt-quicker-by-hand": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-quicker-by-hand"
+   ],
+   "trims": {},
+   "checked": {
+    "ps:p36-quicker-by-hand": "Do you know what? Probably quicker just to hit three on there. But we'll go three on that one there. […] I probably should have done that one manually. It would have been quicker."
+   },
+   "updated": "2026-10-20T14:55:36.084Z",
+   "role": "extra"
+  },
+  "q-practitioner#pt-branching-paths": {
+   "verdict": "",
+   "note": "This one is a new idea that we can talk about in more depth in the paper: More complicated tasks can have a more branching failure space. This is not something we cover in this work, but could be an important factor in future works.",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-branching-paths"
+   ],
+   "trims": {
+    "ps:p36-branching-paths": "sometimes it's going to be a little bit uh quicker to do these myself only because i know the answer based on what i'm seeing visually in front of me so i don't need to do that much [...] simple task you probably want to do yourself if you're going to get the solution quicker and the more complex tasks you're going to want somebody to give you that solution in front of you so you can give it a quick once over and go that looks about right um whether or not it is right of course it's another question entirely [...] the solutions it is coming up with uh i would have to go and do a much more thorough scan of the solution to say have you put redundancy into that plan or do i care like i've put redundancy into that plan so i don't have to come back to it i've put every turn on that last blue one every single drone is going to every single task so that if one of my drones fails my assumption is that my other drones are picking up the task whereas the more complex ones just literally looking have they allocated enough to that task started going because if it fails um think about like hypertextual branching paths so as soon as i get one failure that's going to change the entire story how much of that story do we need to change on the blue ones you don't really need to change the story you're just going to flick through whereas the other ones it's like okay no i've got more options so my option scope is broader and so it's going to need more human intervention to go into it so there's no point in me trying to think about all of that ahead of time i may as well let them start on that task and then intervene when i need to"
+   },
+   "checked": {
+    "ps:p36-branching-paths": "sometimes it's going to be a little bit uh quicker to do these myself only because i know the answer based on what i'm seeing visually in front of me so i don't need to do that much [...] simple task you probably want to do yourself if you're going to get the solution quicker and the more complex tasks you're going to want somebody to give you that solution in front of you so you can give it a quick once over and go that looks about right um whether or not it is right of course it's another question entirely [...] the solutions it is coming up with uh i would have to go and do a much more thorough scan of the solution to say have you put redundancy into that plan or do i care like i've put redundancy into that plan so i don't have to come back to it i've put every turn on that last blue one every single drone is going to every single task so that if one of my drones fails my assumption is that my other drones are picking up the task whereas the more complex ones just literally looking have they allocated enough to that task started going because if it fails um think about like hypertextual branching paths so as soon as i get one failure that's going to change the entire story how much of that story do we need to change on the blue ones you don't really need to change the story you're just going to flick through whereas the other ones it's like okay no i've got more options so my option scope is broader and so it's going to need more human intervention to go into it so there's no point in me trying to think about all of that ahead of time i may as well let them start on that task and then intervene when i need to"
+   },
+   "updated": "2026-10-20T14:56:57.752Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-resource-rich": {
+   "verdict": "",
+   "note": "minor, may make it in",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-resource-rich"
+   ],
+   "trims": {
+    "ps:p36-resource-rich": "so again this one here that's relatively simple and I'm resource rich at the moment so we'll go nuts I'll start suggesting some stuff through because there's nothing else that's coming in"
+   },
+   "checked": {
+    "ps:p36-resource-rich": "so again this one here that's relatively simple and I'm resource rich at the moment so we'll go nuts I'll start suggesting some stuff through because there's nothing else that's coming in"
+   },
+   "updated": "2026-10-20T14:57:25.131Z",
+   "role": "extra"
+  },
+  "q-practitioner#pt-reserve": {
+   "verdict": "",
+   "note": "Short note - they identified an classified a rule \"never without a reserve\". Links to the consistency factor in training.",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-never-without-reserve"
+   ],
+   "trims": {},
+   "checked": {
+    "ps:p36-never-without-reserve": "this one's been there for the longest i've got nothing in there that's going to change my prioritization so i'm going to go into here and probably send manually i'm going to give you minimum two we're going to go three just never deploy without a reserve"
+   },
+   "updated": "2026-10-20T14:57:56.936Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-critical-first": {
+   "verdict": "",
+   "note": "good",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-critical-first"
+   ],
+   "trims": {},
+   "checked": {
+    "ps:p36-critical-first": "i've run out of blue so that's gonna hurt my score but at the same time i've got the critical tasks done so i'd rather do the critical tasks if this is a real life scenario i'd rather be focused on the critical tasks than getting those done to a higher value rather than moderate tasks of getting them done to a low"
+   },
+   "updated": "2026-10-20T14:59:13.056Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-strategic-trust": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-strategic-less-hesitant"
+   ],
+   "trims": {
+    "ps:p36-strategic-less-hesitant": "the strategic one i was less concerned about the solutions it presented so i hesitated less on the strategic than the tactical but only because all i was looking at there was have i got a reserve allocated whereas a tactical one it's 'have you covered all the tasks' and there is a reserve […] I wouldn't trust any of them without checking but I trust the strategic slightly more because the consequences are slightly - less they're probably not actually are they if you fuck up the allocation at the start of it then you're screwed going into the tactical"
+   },
+   "checked": {
+    "ps:p36-strategic-less-hesitant": "the strategic one i was less concerned about the solutions it presented so i hesitated less on the strategic than the tactical but only because all i was looking at there was have i got a reserve allocated whereas a tactical one it's 'have you covered all the tasks' and there is a reserve […] I wouldn't trust any of them without checking but I trust the strategic slightly more because the consequences are slightly - less they're probably not actually are they if you fuck up the allocation at the start of it then you're screwed going into the tactical"
+   },
+   "updated": "2026-10-20T15:00:16.506Z",
+   "role": "extra"
+  },
+  "q-practitioner#pt-physics-pace": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-physics-pace"
+   ],
+   "trims": {
+    "ps:p36-physics-pace": "so in terms of delivery absolutely in terms of the pace probably not so much [...]if you think so the biggest thing for us that is always hard to convey to decision makers is: physics remains the bounding factor I've got to get from this point here to that point there and if the adversary can see me from 20k away then I'm doing that activity from 20k and if you're going at 3k an hour then that's going to take you a long time to get from here to over there so there's a level of that acceleration in terms of decision however on the flip side of it when the shit hits the fan you are probably going to be very frustrated; As I move this thing to here I've now got to wait for this thing to get into place to go and do this thing here hurry up and get there but at the same time as a commander you're sat there thinking okay what am I going to do if this thing fails what am I then going to do what am I going to do so your mental load is still loaded it's just loaded in a slightly different way so you're always trying to balance cognitive capacity against the time pressure effectively"
+   },
+   "checked": {
+    "ps:p36-physics-pace": "so in terms of delivery absolutely in terms of the pace probably not so much [...]if you think so the biggest thing for us that is always hard to convey to decision makers is: physics remains the bounding factor I've got to get from this point here to that point there and if the adversary can see me from 20k away then I'm doing that activity from 20k and if you're going at 3k an hour then that's going to take you a long time to get from here to over there so there's a level of that acceleration in terms of decision however on the flip side of it when the shit hits the fan you are probably going to be very frustrated; As I move this thing to here I've now got to wait for this thing to get into place to go and do this thing here hurry up and get there but at the same time as a commander you're sat there thinking okay what am I going to do if this thing fails what am I then going to do what am I going to do so your mental load is still loaded it's just loaded in a slightly different way so you're always trying to balance cognitive capacity against the time pressure effectively"
+   },
+   "updated": "2026-10-20T15:00:23.066Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-tempo-echelon": {
+   "verdict": "",
+   "note": "maybe include",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-tempo-echelon"
+   ],
+   "trims": {
+    "ps:p36-tempo-echelon": "so it's how you're talking about when does the effect need to be delivered and coordinated in time and space then it's the higher up you are the further out and then the less so when you see something, 'cool I've now got to pass that information down but that's just like a routine routine task I'm going to move on to the next task' whereas if I see 10 things in front of me as it's all come down the chain I've got to do this thing now then that thing then that thing then that thing and then for it to stack back up the chain so yes there is a level of that is getting both faster"
+   },
+   "checked": {
+    "ps:p36-tempo-echelon": "so it's how you're talking about when does the effect need to be delivered and coordinated in time and space then it's the higher up you are the further out and then the less so when you see something, 'cool I've now got to pass that information down but that's just like a routine routine task I'm going to move on to the next task' whereas if I see 10 things in front of me as it's all come down the chain I've got to do this thing now then that thing then that thing then that thing and then for it to stack back up the chain so yes there is a level of that is getting both faster"
+   },
+   "updated": "2026-10-20T15:00:59.319Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-staff-process": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-staff-process"
+   ],
+   "trims": {
+    "ps:p36-staff-process": "well it's kind of this how it works in military planning anyway so in anything above battlegroup level [our 'strategic'] there would be a staff there that would work up plans socialise those plans amongst themselves and back brief me as a commander. I would then go okay yeah I want you a bit of that plan and a bit of that plan give me this new plan. They'll go and write up by then sort of basically finish off that way. So it's a it is always a collective input into it but I'm just getting the synthesis of them work because I can't as an individual I couldn't work through the ground the enemy, the enemy's plan, the likelihood of my plan succeeding, the logistics behind it it would take me forever which is why your staff do it, so at that level you're already in a position where somebody's just coming back to you with the answers as long as you have trust in how they've come up with those answers then if it looks right: because you've gone through the process yourself [...] you'd have worked up in those levels so you kind of understand how those answers are generated so there's a level of trust in that process"
+   },
+   "checked": {
+    "ps:p36-staff-process": "well it's kind of this how it works in military planning anyway so in anything above battlegroup level [our 'strategic'] there would be a staff there that would work up plans socialise those plans amongst themselves and back brief me as a commander. I would then go okay yeah I want you a bit of that plan and a bit of that plan give me this new plan. They'll go and write up by then sort of basically finish off that way. So it's a it is always a collective input into it but I'm just getting the synthesis of them work because I can't as an individual I couldn't work through the ground the enemy, the enemy's plan, the likelihood of my plan succeeding, the logistics behind it it would take me forever which is why your staff do it, so at that level you're already in a position where somebody's just coming back to you with the answers as long as you have trust in how they've come up with those answers then if it looks right: because you've gone through the process yourself [...] you'd have worked up in those levels so you kind of understand how those answers are generated so there's a level of trust in that process"
+   },
+   "updated": "2026-10-20T15:01:04.427Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-trust-but-verify": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-trust-but-verify"
+   ],
+   "trims": {
+    "ps:p36-trust-but-verify": "I write a plan I will go and take it to the lowest tactical level which is something like this where you're moving different units around different people you'd probably speak to the platoon commander you'd speak to the platoon sergeant: 'I'm thinking of doing this', you'd bring your section commanders in you'd go through yours and that's the process 'guys this is what I'm thinking and this is what your likely mission is, go away and work out the plan'. [...] As humans we should be used to socialising our decision making process to an extent. How you do that is entirely up to the commander but at the same time I'm still going through a process where somebody is checking my thinking and has the option to challenge me so with AI it should always be open to challenge [...] but also trust in the fact it's done the maths behind it and has allocated enough platforms to do the task you're after"
+   },
+   "checked": {
+    "ps:p36-trust-but-verify": "I write a plan I will go and take it to the lowest tactical level which is something like this where you're moving different units around different people you'd probably speak to the platoon commander you'd speak to the platoon sergeant: 'I'm thinking of doing this', you'd bring your section commanders in you'd go through yours and that's the process 'guys this is what I'm thinking and this is what your likely mission is, go away and work out the plan'. [...] As humans we should be used to socialising our decision making process to an extent. How you do that is entirely up to the commander but at the same time I'm still going through a process where somebody is checking my thinking and has the option to challenge me so with AI it should always be open to challenge [...] but also trust in the fact it's done the maths behind it and has allocated enough platforms to do the task you're after"
+   },
+   "updated": "2026-10-20T15:01:13.441Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-play-catch-up": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-play-catch-up"
+   ],
+   "trims": {
+    "ps:p36-play-catch-up": "If I've sent that off it allows me to scan over here and then go back and check the answer over there. [...] That's what's going to be required if you're doing a drone swarm the whole point of it is to make sure that you have got, but the utility of it is that point of presence that point of intervention where I need something to check that and know I'm going to take over that critical thing myself because it's the most important thing whereas for the routine sort of activity of getting from A to B do you know what whatever you want to do as long as the resources are in place and I can see what resource I'll have to play with if something goes wrong whereas if I did all of that manually I would know all of that because I've built the plan I've got it in my head if I just said 'go nuts' when something goes wrong I've got to play catch up I've got to start thinking how do I now have to do that differently so the key thing for me in all of this is not necessarily trusting the AI it is the skills that a human is going to need to be able to exploit all of this [...] that's what air traffic controllers do and they're actually testing it for it and their pay reflects that because it's not a particularly common skill if you're going to start saying search and rescue teams you now need this skill set it's going to cost you this much to pay these people because they're a niche skill set"
+   },
+   "checked": {
+    "ps:p36-play-catch-up": "If I've sent that off it allows me to scan over here and then go back and check the answer over there. [...] That's what's going to be required if you're doing a drone swarm the whole point of it is to make sure that you have got, but the utility of it is that point of presence that point of intervention where I need something to check that and know I'm going to take over that critical thing myself because it's the most important thing whereas for the routine sort of activity of getting from A to B do you know what whatever you want to do as long as the resources are in place and I can see what resource I'll have to play with if something goes wrong whereas if I did all of that manually I would know all of that because I've built the plan I've got it in my head if I just said 'go nuts' when something goes wrong I've got to play catch up I've got to start thinking how do I now have to do that differently so the key thing for me in all of this is not necessarily trusting the AI it is the skills that a human is going to need to be able to exploit all of this [...] that's what air traffic controllers do and they're actually testing it for it and their pay reflects that because it's not a particularly common skill if you're going to start saying search and rescue teams you now need this skill set it's going to cost you this much to pay these people because they're a niche skill set"
+   },
+   "updated": "2026-10-20T15:01:25.179Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-failure-rate": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-failure-rate"
+   ],
+   "trims": {
+    "ps:p36-failure-rate": "but the interesting thing so that that always messes with people's heads doesn't it because we look at the failure 40% failure chance fucking no chance it's like okay but if you put a person into that scenario and it was all people doing it your failure chance would be this as well so there's got to be something where it shows a bit of context to it so just to understand that when you see that failure rate because everyone will try to push it up and up and up and up and up no one likes gambling particularly gambling in people's lives but particularly in the military environment or even in the search and rescue environment you're always gambling with someone's life like the failure rate of doing nothing is 100% so you've got to do something you're just trying to chip away at it and prioritise accordingly so having that information presented again great to see the information but it's then down to that person that you're training for them to be used to there's always going to be a failure rate I'm just trying to make it as low as reasonable"
+   },
+   "checked": {
+    "ps:p36-failure-rate": "but the interesting thing so that that always messes with people's heads doesn't it because we look at the failure 40% failure chance fucking no chance it's like okay but if you put a person into that scenario and it was all people doing it your failure chance would be this as well so there's got to be something where it shows a bit of context to it so just to understand that when you see that failure rate because everyone will try to push it up and up and up and up and up no one likes gambling particularly gambling in people's lives but particularly in the military environment or even in the search and rescue environment you're always gambling with someone's life like the failure rate of doing nothing is 100% so you've got to do something you're just trying to chip away at it and prioritise accordingly so having that information presented again great to see the information but it's then down to that person that you're training for them to be used to there's always going to be a failure rate I'm just trying to make it as low as reasonable"
+   },
+   "updated": "2026-10-20T15:01:29.443Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-shared-risk": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-shared-risk"
+   ],
+   "trims": {
+    "ps:p36-shared-risk": "yes well and that's kind of a challenge within this is because I know it's a simulation there isn't someone's life on the line at the end of it and I've done enough planning activities to know and I'm very visual so looking at a glance yes it's allocated what I needed to allocate it cool let's start running with it whereas I can imagine if you've not had that experience that I've generated through non-use of drone swarming technology if you've not had that if you're you know young platoon commander who's literally just come out of Sandhurst and all is only a very experienced perhaps this is a simulation at Sandhurst and all of a sudden it's now you know the bullets are flying it's a two-way range they're gonna be much either they're gonna be foolhardy and just fucking go for it and people are gonna die or they'll be almost paralysed because it's like oh shit no if I do that someone is gonna die here's 40% failure rate on this task I'm gonna lose people but if I don't do that task this whole battle falls apart that's always been true regardless of whether or not technology was in there but before there was a level of interpersonal sort of contact I'm out there with my people I might die alongside them but I'm so I'm when I'm putting them under that risk I'm because I'm taking the same risk myself whereas something like this where you're not necessarily taking the risk yourself and you've put humans albeit they might be one removed from your autonomy but you've put humans on the way then that's going to then come back and impact on your decision-making so I imagine you're going to see me less decisive if someone's gonna die at the end"
+   },
+   "checked": {
+    "ps:p36-shared-risk": "yes well and that's kind of a challenge within this is because I know it's a simulation there isn't someone's life on the line at the end of it and I've done enough planning activities to know and I'm very visual so looking at a glance yes it's allocated what I needed to allocate it cool let's start running with it whereas I can imagine if you've not had that experience that I've generated through non-use of drone swarming technology if you've not had that if you're you know young platoon commander who's literally just come out of Sandhurst and all is only a very experienced perhaps this is a simulation at Sandhurst and all of a sudden it's now you know the bullets are flying it's a two-way range they're gonna be much either they're gonna be foolhardy and just fucking go for it and people are gonna die or they'll be almost paralysed because it's like oh shit no if I do that someone is gonna die here's 40% failure rate on this task I'm gonna lose people but if I don't do that task this whole battle falls apart that's always been true regardless of whether or not technology was in there but before there was a level of interpersonal sort of contact I'm out there with my people I might die alongside them but I'm so I'm when I'm putting them under that risk I'm because I'm taking the same risk myself whereas something like this where you're not necessarily taking the risk yourself and you've put humans albeit they might be one removed from your autonomy but you've put humans on the way then that's going to then come back and impact on your decision-making so I imagine you're going to see me less decisive if someone's gonna die at the end"
+   },
+   "updated": "2026-10-20T15:01:39.042Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-resource-cascade": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-resource-cascade"
+   ],
+   "trims": {
+    "ps:p36-resource-cascade": "I would argue that if you've not got the resources available to you at the low level then or you've over allocated resources at the high level then you're running out of resources cascade down so you're it's a balance it's never perfectly weighted one way or the other so if you're let's say you split the task this dude here is doing this task and all of a sudden has got no resource left look at the task I need more resource I told you need more resource when I told you this is my plan and this is I've got no redundancy here you're carrying risk whereas if you've done both it's your risk to carry on the flip side of it if you've over allocated a resource that's just wasted resource now I can't complete you might want more resource but I've got five tasks that I need to do so I'm balancing these five do what you can with what you've got let me know where it all falls down because it doesn't matter if yours falls down because yours is a moderate task I've got a critical one over here that I'm allocating more to"
+   },
+   "checked": {
+    "ps:p36-resource-cascade": "I would argue that if you've not got the resources available to you at the low level then or you've over allocated resources at the high level then you're running out of resources cascade down so you're it's a balance it's never perfectly weighted one way or the other so if you're let's say you split the task this dude here is doing this task and all of a sudden has got no resource left look at the task I need more resource I told you need more resource when I told you this is my plan and this is I've got no redundancy here you're carrying risk whereas if you've done both it's your risk to carry on the flip side of it if you've over allocated a resource that's just wasted resource now I can't complete you might want more resource but I've got five tasks that I need to do so I'm balancing these five do what you can with what you've got let me know where it all falls down because it doesn't matter if yours falls down because yours is a moderate task I've got a critical one over here that I'm allocating more to"
+   },
+   "updated": "2026-10-20T15:01:42.963Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-silos": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-silos"
+   ],
+   "trims": {
+    "ps:p36-silos": "You kind of work in your own silo so if you're the g2'er [intelligence branch of general's staff planning team] you just focus on the enemy and you're delivering what the enemy is likely to do and you have a team working to you to do that so as a g2 officer you'll have like a one person will work on the enemy capability, one person will look at on the ground, one person will look on the sort of the human terrain and they'll work through their own analytical processes to come up with an answer then gets aggregated up and you go into it so going into that planning brief you as a g2'er are will only see your part of the plan and then the g3 [operations branch] guys will see their part of the plan and then that's kind of the first time you come together but generally speaking you're you're not getting all of the context okay so but you don't that you need that because as a person you need to be able to work through the context solution part of it yeah and this type of scenario here you wouldn't need that because of the simplicity of the task it's i've got to go and do these things and for those things i need these allocations so it's hard to sort of translate across the two as long as in each of them it's gone through the analytical process and spat out an answer"
+   },
+   "checked": {
+    "ps:p36-silos": "You kind of work in your own silo so if you're the g2'er [intelligence branch of general's staff planning team] you just focus on the enemy and you're delivering what the enemy is likely to do and you have a team working to you to do that so as a g2 officer you'll have like a one person will work on the enemy capability, one person will look at on the ground, one person will look on the sort of the human terrain and they'll work through their own analytical processes to come up with an answer then gets aggregated up and you go into it so going into that planning brief you as a g2'er are will only see your part of the plan and then the g3 [operations branch] guys will see their part of the plan and then that's kind of the first time you come together but generally speaking you're you're not getting all of the context okay so but you don't that you need that because as a person you need to be able to work through the context solution part of it yeah and this type of scenario here you wouldn't need that because of the simplicity of the task it's i've got to go and do these things and for those things i need these allocations so it's hard to sort of translate across the two as long as in each of them it's gone through the analytical process and spat out an answer"
+   },
+   "updated": "2026-10-20T15:01:45.970Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-one-up-two-down": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-one-up-two-down"
+   ],
+   "trims": {
+    "ps:p36-one-up-two-down": "so it depends yeah so you could have your agent that's checking the colors might be the one that understands two up [the intent of those above you, and one about that] so you understand two up in the same way as you plan two down issue orders one down so you think about i'm going to be sure to report to my section commanders but my i'm thinking about what each of those individual soldiers doing with that scenario and that might be your agent that corrals all your thing but in a when we go through that staff process the person who's just doing a scenario they will understand the one up they will understand or part of the one up that's given to them as their task is there's an area of responsibility there's an area of interest there's a thing that the enemy is doing within this space i just need to kind of understand that that so it might be you might understand that your mission that's come to you within your organisation so that's technically your organisation's mission but you might consider that your one up so it's depending on on as long as the person doing the task is given the understanding they're required to do that task then it doesn't matter how it docks into everything else that's not their job that's the person above them to do that so for your agents yes it might be useful but no it might not be useful it depends and particularly it's not useful if they're giving shit answers like if they're coming out and going no i've allocated five over here because there's a thing over there it's like cool that's not your job your job is to do this thing over here and then there's other agents to do this thing over here and they don't need them to do both because that's where this agent is going to do both for them and that's quite often even humans doing it humans start thinking or g2 again they'll start thinking blue plan but your job is not to do the blue plan your job is to do the red plan stop thinking about or the blue is probably going to do this so i'm going to do this no no but i need to know that sir because i need to understand the context of what the red is going to do so you need to have an idea of what blue capabilities have but you don't have control over the blue plan and you're not there to anticipate the blue plan you're there to put it within this context just stick to your lane and do that output because someone else will do that for you"
+   },
+   "checked": {
+    "ps:p36-one-up-two-down": "so it depends yeah so you could have your agent that's checking the colors might be the one that understands two up [the intent of those above you, and one about that] so you understand two up in the same way as you plan two down issue orders one down so you think about i'm going to be sure to report to my section commanders but my i'm thinking about what each of those individual soldiers doing with that scenario and that might be your agent that corrals all your thing but in a when we go through that staff process the person who's just doing a scenario they will understand the one up they will understand or part of the one up that's given to them as their task is there's an area of responsibility there's an area of interest there's a thing that the enemy is doing within this space i just need to kind of understand that that so it might be you might understand that your mission that's come to you within your organisation so that's technically your organisation's mission but you might consider that your one up so it's depending on on as long as the person doing the task is given the understanding they're required to do that task then it doesn't matter how it docks into everything else that's not their job that's the person above them to do that so for your agents yes it might be useful but no it might not be useful it depends and particularly it's not useful if they're giving shit answers like if they're coming out and going no i've allocated five over here because there's a thing over there it's like cool that's not your job your job is to do this thing over here and then there's other agents to do this thing over here and they don't need them to do both because that's where this agent is going to do both for them and that's quite often even humans doing it humans start thinking or g2 again they'll start thinking blue plan but your job is not to do the blue plan your job is to do the red plan stop thinking about or the blue is probably going to do this so i'm going to do this no no but i need to know that sir because i need to understand the context of what the red is going to do so you need to have an idea of what blue capabilities have but you don't have control over the blue plan and you're not there to anticipate the blue plan you're there to put it within this context just stick to your lane and do that output because someone else will do that for you"
+   },
+   "updated": "2026-10-20T15:01:51.210Z",
+   "role": "paper"
+  },
+  "q-practitioner#pt-red-team": {
+   "verdict": "",
+   "note": "",
+   "links": [],
+   "tags": [],
+   "quotes": [
+    "ps:p36-red-team-agent"
+   ],
+   "trims": {
+    "ps:p36-red-team-agent": "One of the good things about ai is that you can have an agent whose only job is to go and red team [adversarially check] all of your outputs very quickly so if you've got that there is that hole in that data set and it go through and start all your job is to do is to check the data that they've based their answers on and then you can't go well this data is wrong so all these answers are now redundant we now need to look at this change this and then the answers will be right"
+   },
+   "checked": {
+    "ps:p36-red-team-agent": "One of the good things about ai is that you can have an agent whose only job is to go and red team [adversarially check] all of your outputs very quickly so if you've got that there is that hole in that data set and it go through and start all your job is to do is to check the data that they've based their answers on and then you can't go well this data is wrong so all these answers are now redundant we now need to look at this change this and then the answers will be right"
+   },
+   "updated": "2026-10-20T15:01:54.740Z",
+   "role": "paper"
+  },
+  "q-practitioner#not-picked": {
    "verdict": null,
    "note": "",
    "links": [],

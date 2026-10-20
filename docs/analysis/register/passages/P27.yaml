@@ -1,0 +1,30 @@
+# Long verbatim passages: P27 (targeted, not a full read). Phrases only.
+pid: P27
+read:
+  date: 2026-10-20
+  scope: targeted — the second questionnaire's exchange about ordering the queue, found by searching all transcripts for the idea
+  verdict: Not read in full. The exchange is mostly a dialogue; the researcher's turns (questions, the sort button, summaries) are inside the cut and flagged mixed.
+passages:
+  - id: p27-queue-order
+    title: An agent that orders the queue — doable first, then by criticality
+    parts:
+      - {seg: survey2, from: "Then I think maybe I also want another feature", to: "consider the task which is being executed."}
+      - {seg: survey2, from: "For this agent, I'd prefer what we discussed before.", to: "helping you prioritize it."}
+    prompt: {seg: survey2, from: "So, when I'm trying to complete this task, maybe I need to check which one is more critical.", to: "So, it's not very well designed."}
+    speaker: mixed
+    context: >-
+      Second questionnaire. The lead-in starts as P27's and turns into the researcher saying there is a sort button
+      that almost nobody found; inside the cut, "Oh, that's interesting ... Don't worry about those for now", "I think
+      what you're talking about ... orders them" and "You order them by criticality ... basically" are the researcher.
+    topics: [new-jobs, queue]
+    why: >-
+      P27 asks for missions that cannot be done yet to drop to the end of the list, and gives a rule (doable first,
+      then criticality, allowing for what is already running). Calling it an agent is the researcher's framing, which
+      P27 then takes up: the Strategic Assistant should be "more about ordering and helping you prioritize".
+    refs:
+      - to: f-triage#choice
+        kind: qualifies
+        point: 'The choice model found oldest-first and a mild preference for larger missions. Adding the two things P27 would order by: criticality does pull (×1.45 per category above the waiting set, p = .02), whether the reserve can cover the mission does not (×1.04, p = .79). An ordering assistant would mostly change the second.'
+      - to: f-triage#order
+        kind: beyond
+        point: 'P27''s order differs from oldest-first at 59% of decisions with two or more waiting; at those, operators opened P27''s pick 35% of the time (chance 30%).'

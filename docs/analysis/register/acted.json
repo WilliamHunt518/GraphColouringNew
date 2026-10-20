@@ -1,0 +1,103 @@
+{
+ "pass": 5,
+ "notes": {
+  "f-flaw-odd": [
+   {
+    "note": "4 and 5 say somewhat different things. This might be read as a discrepancy. Can wee work out how they can both be true? 4 suggests that there's a big drop in useage after noticing but 5 says nothing is significant. Are these different windows of time or something?",
+    "updated": "2026-10-15T10:23:16.340Z",
+    "cleared": "2026-10-16T09:40:02.000Z"
+   }
+  ],
+  "f-practice#speed": [
+   {
+    "note": "Minor change. Let me group it either way. Either as is, or so it's all the session 1 at each interval, then session 2",
+    "updated": "2026-10-16T09:31:04.074Z",
+    "cleared": "2026-10-16T09:40:02.000Z"
+   }
+  ],
+  "f-size-decides": [
+   {
+    "note": "I think the parallel work quotes will go at the end after the graphs - not exactly about the graphs but in conclusion of this part. For that purpose please move those quotes to a mini bit at the end of this finding section",
+    "updated": "2026-10-15T09:49:58.626Z",
+    "cleared": "2026-10-16T09:40:02.000Z"
+   }
+  ],
+  "f-size-decides#tactical": [
+   {
+    "note": "Dig a little deeper for the quote about maintaining a continuity between the two - If I used strat here then I'll want to use tac after. I'm sure there were some more relevant quotes. Also we may need another graph looking at the degree to which this is down to specific people - is it that case the the difference is dominated by a few people who do certain stuff. Also have an option on this (the one we already have) graph where I can also put markers on each pair of bars for the overall average use. This will let us see better how the bars are converging on some point.",
+    "updated": "2026-10-16T09:01:53.711Z",
+    "cleared": "2026-10-16T09:40:02.000Z"
+   }
+  ],
+  "f-about#screens": [
+   {
+    "note": "Pick examples where the user works manually for this bit. Then do another where it's both using the agent. It's easier to understand the manual part first",
+    "updated": "2026-10-16T09:44:03.278Z",
+    "cleared": "2026-10-16T09:44:40.000Z"
+   }
+  ],
+  "f-manual-cards#position": [
+   {
+    "note": "Add a variant of this which also tries to balance for mission size etc.",
+    "updated": "2026-10-19T12:13:39.439Z",
+    "cleared": "2026-10-19T12:30:53.000Z"
+   }
+  ],
+  "f-personal-style#who-vs-what": [
+   {
+    "note": "This is something I really like but I want a little more understanding. I suppose 30% is an arbitrary number to me - does this mean they're predictable or not? Saying 24 of that 30 is down to who they are - that's interesting. But idk how much I'm able to say how good this is. \n",
+    "updated": "2026-10-19T12:15:54.353Z",
+    "cleared": "2026-10-19T12:30:53.000Z"
+   }
+  ],
+  "f-size-decides#route-people": [
+   {
+    "note": "Look at their quotes and see if you can find anything about the people who were atypical",
+    "updated": "2026-10-19T12:14:04.071Z",
+    "cleared": "2026-10-19T12:30:53.000Z"
+   }
+  ],
+  "q-new-jobs": [
+   {
+    "note": "These aren't interesting - but something mentioned I think by P27, and possibly others, was that reordering the queue would be interesting. So an agent which pushed you by suggesting an order or what to attend to next",
+    "updated": "2026-10-20T11:46:16.930Z",
+    "cleared": "2026-10-20T12:17:32.000Z"
+   }
+  ],
+  "q-hierarchy": [
+   {
+    "note": "This is something that will lead well into broader questions and p36's view. It's really important",
+    "updated": "2026-10-20T11:37:29.832Z",
+    "cleared": "2026-10-20T13:42:27.000Z"
+   }
+  ],
+  "q-hierarchy#one-plan": [
+   {
+    "note": "Some very nice stuff here. Also (later) may clash with P36's isolated view concept (interesting - good!)",
+    "updated": "2026-10-20T13:26:59.820Z",
+    "cleared": "2026-10-20T13:42:27.000Z"
+   }
+  ],
+  "q-practitioner": [
+   {
+    "note": "What I've done for now is highlight the passages that look interesting. I really like how you're linking to the previous stuff. Can we do that per quote instead of just per section please",
+    "updated": "2026-10-20T12:07:58.881Z",
+    "cleared": "2026-10-20T13:42:27.000Z"
+   }
+  ],
+  "q-trust-unchecked": [
+   {
+    "note": "I've skipped the p36 ones and saved for that section.",
+    "updated": "2026-10-20T10:56:57.637Z",
+    "cleared": "2026-10-20T13:42:27.000Z"
+   }
+  ],
+  "q-practitioner#own-play": [
+   {
+    "note": "That he aligns is interesting",
+    "updated": "2026-10-20T14:48:37.000Z",
+    "cleared": "2026-10-20T14:48:42.000Z"
+   }
+  ]
+ }
+}

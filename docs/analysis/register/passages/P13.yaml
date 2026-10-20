@@ -1,0 +1,79 @@
+# Long verbatim passages: P13. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P13
+read:
+  date: 2026-10-20
+  scope: everything (both sessions, surveys, break, debrief, written interview notes; about 2,700 words)
+  verdict: >-
+    Quiet in play, but a sustained line of argument across the session and debrief: the assistants should work from
+    failure data, and automation should lower the skill needed to operate the system. The researcher's own turns are
+    long and interleaved (including dictating a quote back), so most cuts are marked mixed. The written notes agree.
+passages:
+  - id: p13-same-eta
+    title: Why spend more for the same ETA?
+    parts: [{seg: session1, from: "If it was a significant trade-off, I wouldn't mind", to: "Depending on what I have in reserve, but..."}]
+    context: Session 1, comparing the two cards' totals (333 vs 432) before building their own.
+    topics: [flaws, mental-model]
+    why: Reads the cards against each other and rejects the extra drones because they buy nothing.
+    links: [f-manual-cards]
+
+  - id: p13-why-the-buffer
+    title: "\"Do fast drones have a higher chance of failing?\""
+    parts: [{seg: session1, from: "Why does it have a buffer of five fast drones?", to: "So, that's too much of a redundancy."}]
+    speaker: mixed
+    context: Session 1, looking at a strategy card; the researcher declines to say how the assistant decides.
+    topics: [explain, flaws]
+    why: Looks for a reason behind the card before calling it an error — and gets no explanation.
+    links: [f-flaw-odd]
+
+  - id: p13-blind-decisions
+    title: "\"I'm just making blind decisions\""
+    parts: [{seg: session2, from: "What is the probability of failure?", to: "That would be a pretty nice number to know."}]
+    speaker: mixed
+    context: Session 2; the researcher explains that failures are random and that a real operator would only have a prior.
+    topics: [failure-data, explain]
+    why: Frames allocation as a decision about risk that cannot be made well without the failure rate.
+    links: [f-operator-wants]
+
+  - id: p13-confirm-cancel
+    title: Ask twice before cancelling a running task
+    parts: [{seg: session2, from: "A double confirmation or a multi-factor authentication", to: "since they're bundled up together"}]
+    speaker: mixed
+    context: Session 2, after accidentally changing a task in progress.
+    topics: [interface]
+    why: A concrete safety request for the planner.
+
+  - id: p13-abandon-unrealistic
+    title: Abandoning a mission is not realistic
+    parts: [{seg: interview, from: "Real-world scenario, abandoning mission doesn't make sense", to: "And here, you don't have enough data."}]
+    speaker: mixed
+    context: Debrief; the researcher explains that abandoning exists to make mistakes costly.
+    topics: [realism, failure-data]
+    why: The game's rule for failure does not match a real operation, where you would simply send more; with data, decisions could be calculated.
+
+  - id: p13-failure-into-algorithm
+    title: Feed failure probability into the allocation
+    parts: [{seg: interview, from: "Based on that, I think you can have a pretty good guess", to: "Then you factor that in while you're optimizing the resources."}]
+    speaker: mixed
+    context: Debrief; the researcher reads their quote back while writing it down.
+    topics: [failure-data, agents]
+    why: Proposes what the strategic assistant should do instead of fixed padding — estimate failure risk from conditions and size the reserve to it.
+    links: [f-flaw-odd, f-operator-wants]
+
+  - id: p13-anyone-could-use-it
+    title: Automate it so the end user could be anyone
+    parts: [{seg: interview, from: "Honestly, I think I am doing a lot of work right now", to: "The ease of access would be much higher."}]
+    prompt: {seg: interview, from: "If I went away for six months and I came back with a really well-developed version", to: "how would you feel?"}
+    speaker: mixed
+    context: Debrief, asked how they would feel about mature versions of the assistants.
+    topics: [agents, skills, loop]
+    why: "The opposite view to P36's: more automation should lower the skill an operator needs, automating everything that is not ethically constrained."
+    links: [f-operator-wants]
+
+  - id: p13-allocation-algorithm
+    title: Everything is fine except the allocation rule
+    parts: [{seg: interview, from: "You need an expert operator to manage it efficiently at this point in time", to: "Everything is fine aside from the allocation algorithm."}]
+    speaker: mixed
+    context: Debrief.
+    topics: [flaws, mental-model]
+    why: A clear account of the illogical card (reserve of types no task uses) from someone who still used the cards a lot.
+    links: [f-flaw-odd]

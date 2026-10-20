@@ -1,0 +1,59 @@
+# Second batch of pass-5 notes (2026-10-16). `done` = what Claude did about a note made THIS pass.
+findings:
+  f-size-decides:
+    sections:
+      tactical:
+        done: "<b>Quotes.</b> I went through every think-aloud, debrief and written interview again for the 'if I used the
+          strategic assistant here I'll use the tactical one after' idea. Besides P21 (14:38, 'continuity', the
+          researcher's word), the clearest are P10, three times ('Now I'm using the suggestion because I took the
+          aggressive approach'; 'for the aggressive approach, anything but suggestion doesn't really make sense'; and in
+          the interview 'better to use tac agent when using the aggressive strat agent'), P05 ('I will then use the
+          aggressive and use to suggest') and a new one from P30, who picks the Aggressive card <i>so that</i> Suggest
+          will have spares to work with ('if you have spare, I can suggest it'). P30's debrief says it the other way round:
+          give the assistant the resources, then let it optimise. All are now in this section's quotes; P30's new one is
+          first under 'More quotes'. Nobody else says it; the people who pair the tiers the other way (P18, P26, P28)
+          give size or effort as the reason, not continuity. <b>Overall-average marker:</b> the chart has a new 'Overall
+          average' toggle that puts a dark marker across each pair of bars at the rate for all plans in that group, so you
+          can see both routes closing in on it as missions grow. <b>Is it a few people?</b> See the new section just below."
+    new_sections:
+      - id: route-people
+        after: tactical
+        title: "Card then Suggest, person by person: a broad tilt, but a few people carry much of it"
+        chart: handover.routePeople
+        tier: main
+        role: numbers
+        text: "You asked whether the card → Suggest link is down to a few people. Partly. Each bar is one person: how much
+          more often they pressed Suggest on missions they had allocated from a card than on ones they allocated by hand,
+          with mission size held (the second view shows the two raw rates). Of the 26 people who did both often enough to
+          compare, <b>17 lean towards Suggest after a card, 8 the other way, 1 neither</b>, so it is not one or two
+          people. But it is uneven: the three biggest gaps (P13, P06, P15) make up about half of the total, and the
+          person-adjusted odds ratio (×2.10 for everyone) falls to ×1.63 without those three (still p = .03) and to ×1.46
+          without the top five (p = .08). Leaving out any single person never moves it outside ×1.90–×2.40. So: a general
+          tendency, strongest in a handful of people. Seven people cannot show a gap at all, six because they nearly
+          always took a card before planning."
+        how: "Rows: the 627 tactical plans with a known mission size, split by how the mission was allocated (strategy card
+          or by hand). For each person with at least two plans each way, the gap is the mean of (pressed Suggest −
+          expected) after a card minus the same after a hand allocation, where 'expected' comes from a person-clustered
+          model of Suggest on mission size (drones needed, within and between person), game and session, without the
+          route; so the gap compares missions of the same size. The odds ratio is the section above's route model (card
+          vs hand, same person, size held), refitted leaving out one person at a time, and then leaving out the people
+          with the 1, 3, 5 and 8 largest gaps. The sign test asks whether more people lean one way than chance."
+        numbers:
+          - "People with ≥ 2 plans each way: 26. Gap (size held) positive 17, negative 8, none 1; sign test p = .11; mean
+            gap +11 points."
+          - "Card vs hand odds ratio, everyone ×2.10; leaving out any one person ×1.90 (without P15) to ×2.40 (without
+            P11), always p < .05."
+          - "Without the largest gaps: top 1 (P13) ×1.97, p = .006; top 3 (P06, P13, P15) ×1.63 [1.05, 2.52], p = .03; top 5
+            ×1.46 [0.96, 2.22], p = .08; top 8 ×1.23, p = .34."
+          - "The three largest gaps are 52% of the summed gap. Not comparable: 6 people almost only planned after a card,
+            1 almost only after a hand allocation."
+  f-practice:
+    sections:
+      speed:
+        chart: handover.learnFine
+        done: "Done: the chart now has a 'Group by' toggle: every minute, every pair of minutes (the default), thirds of the
+          session, or the old first-2 vs last-2 minutes. The finer views show the speed-up is gradual rather than a step:
+          strategic decisions in session 1 take a median 11.6 s in minutes 1–2, 10.7 s in 3–4, 7.4 s in 5–6 and 6.9 s in
+          7–8; session 2 starts at 10.6 s and drops faster (6.8 s by minutes 3–4). The tactical tier is the same shape
+          (18.0 → 14.9 → 14.9 → 12.9 s in session 1; 15.5 → 12.0 → 13.3 → 8.0 s in session 2). Single minutes are
+          thin (17–68 decisions each), so they wobble; pairs or thirds are the views to read."

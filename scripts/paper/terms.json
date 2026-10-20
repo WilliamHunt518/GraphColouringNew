@@ -1,0 +1,381 @@
+{
+ "_doc": "The paper's terms (researcher, 2026-10-20): the Strategic Assistant offers strategy cards, which an operator chooses or not; the Tactical Assistant gives a suggestion when asked (the button is Suggest). Applied in order, as JavaScript-compatible regular expressions, to every text node of a chart when capture_figs.mjs renders it, and to register text that build_paper.py carries into the paper. Longer, more specific patterns come first.",
+ "rules": [
+  [
+   "Card uptake: three-type minus one-type missions",
+   "Card choice, three-type minus one-type"
+  ],
+  [
+   "^Suggest plans kept unedited",
+   "Suggested plans kept unedited"
+  ],
+  [
+   "Cards vs Suggest:",
+   "Cards vs suggestions:"
+  ],
+  [
+   "^Took a$",
+   "Chose a"
+  ],
+  [
+   "^Consulted the$",
+   "Requested a"
+  ],
+  [
+   "^Took the tactical$",
+   "Kept the tactical"
+  ],
+  [
+   "Suggest is not slower",
+   "a tactical suggestion is not slower"
+  ],
+  [
+   "Suggest rises with",
+   "tactical suggestions rise with"
+  ],
+  [
+   "the Suggest fill",
+   "the suggestion fill"
+  ],
+  [
+   "The time Suggest frees",
+   "The time a tactical suggestion frees"
+  ],
+  [
+   "Card then Suggest",
+   "Strategy card then tactical suggestion"
+  ],
+  [
+   "card \\u2192 Suggest",
+   "strategy card \\u2192 tactical suggestion"
+  ],
+  [
+   "deployed unchanged, % of plans where Suggest was pressed",
+   "deployed unchanged, % of suggested plans"
+  ],
+  [
+   "\\(card taken / Suggest pressed\\)",
+   "(strategy card chosen / tactical suggestion requested)"
+  ],
+  [
+   "card taken / Suggest pressed",
+   "strategy card chosen / tactical suggestion requested"
+  ],
+  [
+   "Strategic: strategy card taken",
+   "Strategic: strategy card chosen"
+  ],
+  [
+   "Strategic: card taken",
+   "Strategic: strategy card chosen"
+  ],
+  [
+   "Strategic: % of strategic decisions where a card was taken",
+   "Strategic: % of decisions where a strategy card was chosen"
+  ],
+  [
+   "Tactical: Suggest pressed",
+   "Tactical: suggestion requested"
+  ],
+  [
+   "Tactical Suggest pressed",
+   "Tactical: suggestion requested"
+  ],
+  [
+   "Tactical: % of plans with Suggest",
+   "Tactical: % of plans with a suggestion requested"
+  ],
+  [
+   "Tactical tier \\(Suggest\\)",
+   "Tactical tier (suggestions)"
+  ],
+  [
+   "where a strategy card was taken",
+   "where a strategy card was chosen"
+  ],
+  [
+   "where a card was taken",
+   "where a strategy card was chosen"
+  ],
+  [
+   "Strategy cards taken",
+   "Strategy cards chosen"
+  ],
+  [
+   "Cards taken",
+   "Strategy cards chosen"
+  ],
+  [
+   "cards taken",
+   "strategy cards chosen"
+  ],
+  [
+   "strategy card taken",
+   "strategy card chosen"
+  ],
+  [
+   "card taken as offered",
+   "strategy card chosen as offered"
+  ],
+  [
+   "Card taken",
+   "Strategy card chosen"
+  ],
+  [
+   "card taken",
+   "strategy card chosen"
+  ],
+  [
+   "card is taken",
+   "card is chosen"
+  ],
+  [
+   "cards are taken",
+   "cards are chosen"
+  ],
+  [
+   "card was taken",
+   "card was chosen"
+  ],
+  [
+   "cards were taken",
+   "cards were chosen"
+  ],
+  [
+   "\\btake a strategy card\\b",
+   "choose a strategy card"
+  ],
+  [
+   "\\btakes a strategy card\\b",
+   "chooses a strategy card"
+  ],
+  [
+   "\\btaking a strategy card\\b",
+   "choosing a strategy card"
+  ],
+  [
+   "\\btook a strategy card\\b",
+   "chose a strategy card"
+  ],
+  [
+   "\\btake a card\\b",
+   "choose a strategy card"
+  ],
+  [
+   "\\btakes a card\\b",
+   "chooses a strategy card"
+  ],
+  [
+   "\\btaking a card\\b",
+   "choosing a strategy card"
+  ],
+  [
+   "\\btook the card\\b",
+   "chose the card"
+  ],
+  [
+   "\\btake the card\\b",
+   "choose the card"
+  ],
+  [
+   "\\btaking the card\\b",
+   "choosing the card"
+  ],
+  [
+   "\\btake more strategy cards\\b",
+   "choose strategy cards more often"
+  ],
+  [
+   "\\btake more cards\\b",
+   "choose strategy cards more often"
+  ],
+  [
+   "Suggest is pressed",
+   "a tactical suggestion is requested"
+  ],
+  [
+   "Suggest was pressed",
+   "a tactical suggestion was requested"
+  ],
+  [
+   "\\bpressing Suggest\\b",
+   "requesting a tactical suggestion"
+  ],
+  [
+   "\\bpresses Suggest\\b",
+   "requests a tactical suggestion"
+  ],
+  [
+   "\\bpress Suggest\\b",
+   "request a tactical suggestion"
+  ],
+  [
+   "\\bSuggest more\\b",
+   "tactical suggestions more"
+  ],
+  [
+   "\\bgets Suggest\\b",
+   "gets a tactical suggestion"
+  ],
+  [
+   "\\bget Suggest\\b",
+   "get a tactical suggestion"
+  ],
+  [
+   "a Suggest plan",
+   "a suggested plan"
+  ],
+  [
+   "Suggest plans",
+   "suggested plans"
+  ],
+  [
+   "\\bSuggest plan\\b",
+   "suggested plan"
+  ],
+  [
+   "Card uptake",
+   "Strategy card choice"
+  ],
+  [
+   "card uptake",
+   "strategy card choice"
+  ],
+  [
+   "card-taking",
+   "strategy card choice"
+  ],
+  [
+   "change in card use",
+   "change in strategy card use"
+  ],
+  [
+   "took a card",
+   "chose a strategy card"
+  ],
+  [
+   "Takes the strategy card",
+   "Chooses a strategy card"
+  ],
+  [
+   "Edits a card instead of taking it",
+   "Edits a strategy card instead of choosing it"
+  ],
+  [
+   "Goes manual before the cards load",
+   "Builds by hand before the cards load"
+  ],
+  [
+   "Previews cards before choosing",
+   "Previews strategy cards before choosing"
+  ],
+  [
+   "Presses Suggest on tactical plans",
+   "Requests tactical suggestions"
+  ],
+  [
+   "Presses Suggest in recovery",
+   "Requests a suggestion in recovery"
+  ],
+  [
+   "Keeps the Suggest plan unchanged",
+   "Keeps the tactical suggestion unchanged"
+  ],
+  [
+   "Suggest plans kept unedited",
+   "Tactical suggestions kept unedited"
+  ],
+  [
+   "Plans with Suggest pressed",
+   "Plans with a tactical suggestion requested"
+  ],
+  [
+   "Pressed Suggest \\(95% CI\\)",
+   "Tactical suggestion requested (95% CI)"
+  ],
+  [
+   "Pressed Suggest \\(consulted\\)",
+   "Tactical suggestion requested"
+  ],
+  [
+   "Pressed Suggest at all",
+   "Requested a tactical suggestion at all"
+  ],
+  [
+   "pressed Suggest",
+   "requested a tactical suggestion"
+  ],
+  [
+   "Suggest pressed / plan kept unmodified",
+   "Suggestion requested / plan kept unmodified"
+  ],
+  [
+   "Suggest pressed, % of recovery episodes",
+   "Suggestion requested, % of recovery episodes"
+  ],
+  [
+   "Suggest pressed, % of tactical plans",
+   "Tactical suggestion requested, % of plans"
+  ],
+  [
+   "Suggest pressed \\(% points\\)",
+   "Tactical suggestions requested (% points)"
+  ],
+  [
+   "Suggest pressed \\(share of plans\\)",
+   "Tactical suggestion requested (share of plans)"
+  ],
+  [
+   "Checking time \\(plans where Suggest was pressed\\)",
+   "Checking time (plans with a suggestion requested)"
+  ],
+  [
+   "% of plans where Suggest was pressed",
+   "% of plans with a suggestion requested"
+  ],
+  [
+   "Suggest use after a card minus after a hand allocation",
+   "Tactical suggestion use after a strategy card minus after a hand allocation"
+  ],
+  [
+   "Suggest: big minus small plans",
+   "Tactical suggestion: big minus small plans"
+  ],
+  [
+   "Suggest use",
+   "tactical suggestion use"
+  ],
+  [
+   "with Suggest pressed",
+   "with a suggestion requested"
+  ],
+  [
+   "\"Suggest\" = Suggest pressed",
+   "\"suggestion\" = suggestion requested"
+  ],
+  [
+   "Suggest pressed",
+   "suggestion requested"
+  ],
+  [
+   "more Suggest after a card",
+   "more suggestions after a strategy card"
+  ],
+  [
+   "more Suggest after a hand allocation",
+   "more suggestions after a hand allocation"
+  ],
+  [
+   "seconds, Suggest minus by hand",
+   "seconds, suggestion minus by hand"
+  ],
+  [
+   "from Suggest",
+   "from the Tactical Assistant"
+  ],
+  [
+   "^Suggest$",
+   "Suggested"
+  ]
+ ]
+}

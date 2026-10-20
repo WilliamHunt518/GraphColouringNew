@@ -17,6 +17,109 @@
 # between passes after that. Never rename an id -- responses key on it.
 
 findings:
+- id: f-about
+  kind: intro
+  area: Start here
+  title: 'Start here: the study and the platform'
+  headline: 'What a participant did, what was on their two screens, what the two assistants did, and what the words
+    in the findings mean. Each part has a short clip from a real session: use the buttons above a clip to show both
+    screens or just one.'
+  links: []
+  sections:
+  - id: task
+    tier: main
+    title: The task in one paragraph
+    text: 'Each participant played a search-and-rescue operator directing a fleet of 33 drones: 11 <b>Fast</b>,
+      11 <b>Lifter</b> and 11 <b>Camera</b> drones (Fast is quickest, Camera slowest). Missions keep arriving on
+      a map. For each one the operator makes two decisions: <b>how many drones of each type to send</b> (the <i>strategic</i>
+      decision) and <b>which drone does which task, in what order</b> (the <i>tactical</i> decision). An assistant
+      can do each one: the <b>Strategic Assistant</b> offers two ready-made allocations (''strategy cards''), and
+      the <b>Tactical Assistant</b> fills in a plan when the operator presses <b>Suggest</b>. Using either is always
+      optional. Drones sometimes fail mid-mission and the operator has to repair the plan or abandon the mission.
+      The score is the points for finished tasks minus a penalty that keeps growing while missions are unfinished,
+      so speed matters as well as getting it right.'
+  - id: screens
+    tier: main
+    title: Two screens
+    text: 'The platform runs on two monitors side by side. The <b>strategic screen</b> (left) has the queue of waiting
+      missions down its left edge (each a card with its tasks, an Allocate button and a red penalty bar that grows
+      while it waits), the map with every mission zone and drone, and the reserve count at the top. The strategy
+      cards appear under a mission when the operator allocates it. The <b>tactical screen</b> (right) is the planner:
+      once a mission has its drones, they appear beside the mission zone and the operator assigns them to the tasks,
+      or presses Suggest. It is also where failures are repaired. Below are two examples of the same steps: first
+      an operator doing everything by hand, which shows what each screen is for, then one using both assistants.
+      Each clip can show either screen alone or both.'
+    done: 'Done: this section now shows two clips in that order. First P22 doing a mission entirely by hand (setting
+      the counts, then dragging each drone onto a task), then P10 using both assistants (a strategy card, then Suggest).
+      The by-hand clip now comes first everywhere the pair appears, including the next section and the On screen
+      tab, and is labelled Route 1. The queue clip moved to the workload finding only.'
+  - id: missions
+    tier: main
+    title: Missions, tasks and drone types
+    text: 'A mission has 2–6 tasks. Each task type needs a fixed team, shown on its badge: <table class=''mini''><tr><th>Task</th><th>Needs</th><th>Points</th></tr>
+      <tr><td>Recce</td><td>1 Fast</td><td>20</td></tr> <tr><td>Recon</td><td>2 Fast (or 1, slower)</td><td>40</td></tr>
+      <tr><td>Supply Drop</td><td>2 Lifter + 1 Camera (or 1 + 1, slower)</td><td>60</td></tr> <tr><td>Precision
+      Supply Drop</td><td>1 Lifter + 2 Camera (or 1 + 1, slower)</td><td>80</td></tr> <tr><td>Search &amp; Service</td><td>1
+      Fast + 1 Lifter + 1 Camera</td><td>100</td></tr></table> So a mission can need one drone type (e.g. only recce:
+      all Fast) or all three. A mission''s <b>category</b> (A Routine, B Moderate, C Significant, D Critical, E
+      Mass Casualty) sets how fast its penalty grows, from 0.05 to 0.40 points a second. When the findings talk
+      about <b>mission size</b> they mean <b>the number of drones the mission needs</b>: the sum of its task badges,
+      the same for everyone who met that mission.'
+    numbers:
+    - Points per finished task 20 / 40 / 60 / 80 / 100 by type (half that in the earliest builds, up to study-v1.2);
+      the penalty runs from a mission's arrival until each of its tasks is finished.
+  - id: decisions
+    tier: main
+    title: The two decisions, and the two routes through them
+    text: '<b>Strategic.</b> The operator clicks Allocate on a mission. Two strategy cards load, each after about
+      4–5 seconds: <b>Aggressive</b> (every task at once, with a spare of each type used) and <b>Conservative</b>
+      (a spare of every type, tasks mostly one after another). The operator deploys a card, or chooses <i>Set manually
+      instead</i> (also possible before the cards have loaded) or <i>Edit this allocation</i> and sets the counts
+      themselves. The drones leave the reserve and fly out straight away, waiting at the zone. <b>Tactical.</b>
+      The planner opens empty. The operator drags each drone onto a task (shift-drag chains it on to a next task),
+      or presses <b>Suggest</b>, which fills in the assistant''s plan one drone per second; they can change it,
+      then confirm. The first clip shows both decisions made by hand (here before the cards had even loaded); the
+      second shows a card followed by Suggest, the route most people take on big missions.'
+  - id: wrong
+    tier: main
+    title: What can go wrong
+    text: '<b>Drone failures.</b> Any deployed drone can fail. The planner then switches to recovery (red banner):
+      the operator reassigns the drones left on the mission, presses Suggest for a repair, or abandons the mission,
+      whose unfinished tasks go back into the queue as a new mission (its id gets ''-R''), so the work is not lost.
+      <b>The assistants'' own flaws.</b> Neither assistant had errors injected for anyone analysed. But each has
+      a built-in quirk the findings return to. The Conservative card adds a spare of <i>every</i> drone type, including
+      types the mission never uses (the <b>illogical card</b>: e.g. a Camera on an all-Fast mission; 132 of 606
+      strategic decisions). And recovery Suggest ignores drones that are busy on another task, so it can answer
+      ''No workable plan'' when a fix exists (a <b>wrong refusal</b>).'
+  - id: procedure
+    tier: main
+    title: What each participant went through
+    text: Consent; a short 'about you' form with three attitude-to-AI scales (AIAS-4, plus bespoke scales on how
+      much they check and what they would delegate; builds from study-v1.3); a guided tutorial (48 steps, doing
+      everything by hand first, the two assistants only after); <b>session 1</b> (8 minutes); questionnaires (NASA-TLX
+      workload, trust in each assistant, technology acceptance); a 30-second break; <b>session 2</b> (8 minutes);
+      the same questionnaires; then a debrief interview. They talked aloud while playing and the researcher sometimes
+      asked a question mid-game (quotes that answer one are marked 'after a leading question'). Screens and voice
+      were recorded, which is where the quotes and clips come from.
+    numbers:
+    - 'Two scenarios, one per session, in counterbalanced order (17 people each way): <b>Strategic Heavy</b> sends
+      many small missions (13–14 a session, about 6.5 drones each), <b>Tactical Heavy</b> fewer, larger ones.'
+    - 'Everyone played fixed mission streams: four ''games'' (two per scenario) that differ in workload; which pair
+      a person met depends on when they took part, so the analyses hold the game fixed.'
+    - 34 people took part; 33 are analysed (P09 ran with injected assistant errors and is excluded). The build was
+      updated during data collection (study-v1.0 to v1.13, most sessions on v1.12); docs/STUDY_BUILD.md lists what
+      changed.
+  - id: words
+    tier: main
+    title: How to read the findings
+    text: '<b>Took a card</b>: a strategic decision deployed from a strategy card as offered. An allocation that
+      started from a card but was edited counts as <b>by hand</b>. <b>Pressed Suggest</b>: Suggest was used at least
+      once in that tactical plan. <b>Handed over</b> covers both. <b>Within person</b> means comparing each person
+      only with themselves (their big missions with their own small ones), so habits that differ between people
+      do not count as an effect. <b>Adjusted</b> means the observed rate minus what the mission, the minute of the
+      session, the game and the person alone would predict. <b>Game held fixed</b>: comparisons are made within
+      each of the four games. Each section ends with what people said (summaries, quote cards you can highlight)
+      and, where it helps, a clip from the recordings.'
 - id: f-personal-style
   area: Who the operator is
   title: Each operator has a personal style — individual, not a type
@@ -159,17 +262,30 @@ findings:
     - C01
   - id: who-vs-what
     title: Who decides matters more than what is being decided
-    text: Card uptake runs from 8% to 100% across people (median 61%). Knowing <i>who</i> is deciding predicts whether
-      a card is taken about six times better than knowing everything about the mission and when it arrived.
+    text: 'Card uptake runs from 8% to 100% across people (median 61%). Knowing <i>who</i> is deciding predicts
+      whether a card is taken about six times better than knowing everything about the mission and when it arrived.
+      In plain terms: shown two decisions, one where a card was taken and one where it was not, and told only who
+      made each, you would pick the right one 75% of the time (a coin: 50%; knowing only the mission: 63%). A person''s
+      session-1 rate on its own still does it 71% of the time for their session-2 decisions.'
     how: '606 strategic decisions. Three logistic models of "card taken": (a) mission and timing only — drone types
       needed, drones needed, scenario, session 1 or 2, decision number; (b) the person only (one term each); (c)
       both. McFadden pseudo-R² = how much each improves on predicting the overall rate for everyone (0 = no better,
-      1 = perfect). Descriptive, not a test: with ~18 decisions each, the person-only model flatters itself a little.
-      Retest of raw card uptake session 1 vs 2: ρ = .57 (.62 once game-adjusted, next section).'
+      1 = perfect). Descriptive, not a test: with ~18 decisions each, the person-only model flatters itself a little;
+      refitted 200 times with the person labels shuffled it scores 4% on average, so about 20 of its 24 points are
+      real. Retest of raw card uptake session 1 vs 2: ρ = .57 (.62 once game-adjusted, next section). <b>In plain
+      terms</b> (the second view): AUC = the chance a model ranks a random card-taken decision above a random not-taken
+      one. The person enters as their rate on all their OTHER decisions (on the log-odds scale), so no decision
+      predicts itself; ''session 2 from session 1'' uses only each person''s session-1 rate. Intervals: people resampled
+      1,000 times, predictions held fixed.'
     chart: style.whoVsWhat
     numbers:
     - 'Pseudo-R²: mission + timing 4%; person 24%; both 30%'
     - Card uptake per person 8%–100%, median 61%; 6 people ≥ 90%, 3 people ≤ 25%
+    - 'Telling a taken from a not-taken decision (AUC): mission and timing 63% [57%, 68%]; the person, from their
+      other decisions, 75% [64%, 81%]; both 80% [74%, 86%]; session-2 decisions from the session-1 rate alone 71%
+      [61%, 80%] (321 decisions).'
+    - 'Right-or-wrong guessing: always ''card'' 66%; mission 65%; person 70%; both 77%.'
+    - 'Person-only pseudo-R² with the person labels shuffled: 4% on average (95th percentile 6%), against 24% observed.'
     atoms:
     - style-trait
     tier: main
@@ -199,6 +315,22 @@ findings:
     - C01
     - C02
     - C11
+    done: 'You asked whether 30% means people are predictable, and how good that is. Pseudo-R² is hard to read on
+      its own, so the chart now has a second view, <b>In plain terms</b>. It asks each model to tell apart a decision
+      where a card was taken from one where it was not. A coin gets this right 50% of the time. Knowing only the
+      mission and its timing: 63%. Knowing only who is deciding, taken from their <i>other</i> decisions so nothing
+      predicts itself: 75%. Both: 80%. The strictest test uses nothing but each person''s session-1 rate to sort
+      their session-2 decisions: 71% [61%, 80%]. <b>So yes, people are predictable</b>: who someone is predicts
+      their card-taking well above chance and well above the mission, and it carries from one session to the next.
+      But it is far from certain. Most people take cards at an in-between rate (median 61%), so even perfect knowledge
+      of a person''s rate leaves each of their decisions partly a coin flip. That limit applies to any model, which
+      is why no score here gets near 100%. Three notes on the 24%. (1) With the person labels shuffled at random,
+      a one-term-per-person model still scores 4% from nothing, so about 20 of the 24 points are real. (2) The three
+      numbers are not shares of one total: the person alone 24%, the mission alone 4%, both 30%. So the person adds
+      26 points over the mission, and the mission adds 6 over the person. (3) As a yardstick, McFadden (who devised
+      the measure) called 0.2–0.4 an excellent fit; it runs much lower than an ordinary R². Plain right-or-wrong
+      guessing barely moves (70% vs 66%), because 66% of decisions took a card and ''always card'' is already right
+      that often. The ranking test is the one to read.'
   - id: retest-summary
     title: How far each habit holds from one session to the next
     text: 'One line per habit: how strongly a person''s place on that habit in session 1 predicts their place in
@@ -717,7 +849,6 @@ findings:
       featured:
       - qa:qa-P29-04
       - ev50
-      - qa:qa-P36-01
       - qa:qa-P30-02
       more:
       - ev186
@@ -920,6 +1051,7 @@ findings:
       - qa:qa-P18-02
       - qa:qa-P21-09
       more:
+      - qa:qa-P30-06
       - qa:qa-P10-03
       - qa:qa-P10-05
       - qa:qa-P11-04
@@ -932,14 +1064,100 @@ findings:
     codes:
     - C03
     - C04
-    done: 'Found it: P21 in play, session 1 at 14:38. They say they lay out a plan in their mind while making the
-      allocation by hand and that switching to Suggest would ''disrupt my thought process''; the researcher put
-      it back to them as ''some continuity between the strategic and [assigning] with a plan in mind'', and P21
-      said ''Yeah, exactly.'' It is added to this section''s quotes (marked as answering a leading question, since
-      ''continuity'' is the researcher''s word). The same link the other way, card then Suggest, is P10 (''Now I''m
-      using the suggestion because I took the aggressive approach''), P05 and P30, all already in the list. Searching
-      every transcript and interview for continuity, consistency or ''since I used…'' remarks turned up nothing
-      else like it.'
+    done: '<b>Quotes.</b> I went through every think-aloud, debrief and written interview again for the ''if I used
+      the strategic assistant here I''ll use the tactical one after'' idea. Besides P21 (14:38, ''continuity'',
+      the researcher''s word), the clearest are P10, three times (''Now I''m using the suggestion because I took
+      the aggressive approach''; ''for the aggressive approach, anything but suggestion doesn''t really make sense'';
+      and in the interview ''better to use tac agent when using the aggressive strat agent''), P05 (''I will then
+      use the aggressive and use to suggest'') and a new one from P30, who picks the Aggressive card <i>so that</i>
+      Suggest will have spares to work with (''if you have spare, I can suggest it''). P30''s debrief says it the
+      other way round: give the assistant the resources, then let it optimise. All are now in this section''s quotes;
+      P30''s new one is first under ''More quotes''. Nobody else says it; the people who pair the tiers the other
+      way (P18, P26, P28) give size or effort as the reason, not continuity. <b>Overall-average marker:</b> the
+      chart has a new ''Overall average'' toggle that puts a dark marker across each pair of bars at the rate for
+      all plans in that group, so you can see both routes closing in on it as missions grow. <b>Is it a few people?</b>
+      See the new section just below.'
+  - id: route-people
+    title: 'Card then Suggest, person by person: a broad tilt, but a few people carry much of it'
+    chart: handover.routePeople
+    tier: main
+    role: numbers
+    text: 'You asked whether the card → Suggest link is down to a few people. Partly. Each bar is one person: how
+      much more often they pressed Suggest on missions they had allocated from a card than on ones they allocated
+      by hand, with mission size held (the second view shows the two raw rates). Of the 26 people who did both often
+      enough to compare, <b>17 lean towards Suggest after a card, 8 the other way, 1 neither</b>, so it is not one
+      or two people. But it is uneven: the three biggest gaps (P13, P06, P15) make up about half of the total, and
+      the person-adjusted odds ratio (×2.10 for everyone) falls to ×1.63 without those three (still p = .03) and
+      to ×1.46 without the top five (p = .08). Leaving out any single person never moves it outside ×1.90–×2.40.
+      So: a general tendency, strongest in a handful of people. Seven people cannot show a gap at all, six because
+      they nearly always took a card before planning.'
+    how: 'Rows: the 627 tactical plans with a known mission size, split by how the mission was allocated (strategy
+      card or by hand). For each person with at least two plans each way, the gap is the mean of (pressed Suggest
+      − expected) after a card minus the same after a hand allocation, where ''expected'' comes from a person-clustered
+      model of Suggest on mission size (drones needed, within and between person), game and session, without the
+      route; so the gap compares missions of the same size. The odds ratio is the section above''s route model (card
+      vs hand, same person, size held), refitted leaving out one person at a time, and then leaving out the people
+      with the 1, 3, 5 and 8 largest gaps. The sign test asks whether more people lean one way than chance.'
+    numbers:
+    - 'People with ≥ 2 plans each way: 26. Gap (size held) positive 17, negative 8, none 1; sign test p = .11; mean
+      gap +11 points.'
+    - Card vs hand odds ratio, everyone ×2.10; leaving out any one person ×1.90 (without P15) to ×2.40 (without
+      P11), always p < .05.
+    - 'Without the largest gaps: top 1 (P13) ×1.97, p = .006; top 3 (P06, P13, P15) ×1.63 [1.05, 2.52], p = .03;
+      top 5 ×1.46 [0.96, 2.22], p = .08; top 8 ×1.23, p = .34.'
+    - 'The three largest gaps are 52% of the summed gap. Not comparable: 6 people almost only planned after a card,
+      1 almost only after a hand allocation.'
+    - 'Also holding fixed whether the mission needs one drone type: ×2.13 [1.30, 3.49]; and the number of tasks
+      too: ×2.06 [1.24, 3.43], p = .005.'
+    done: 'Quotes from the people who do not fit are now under this section, with a summary above them. Five are
+      marked as Claude''s picks; highlight the ones you want. In short: the people with the biggest card → Suggest
+      gap (P13, P15, P06, then P29) do not describe linking the two steps. They describe a rule for the whole mission:
+      hand over the complicated ones at both steps, do the simple ones yourself. The people who go the other way
+      (P20, P03, P11, P31) allocate by hand for other reasons, such as a shortage, checking the card, or wanting
+      to own the plan, and then use Suggest or not regardless. P13, the largest gap, says the opposite of what they
+      did: ''I always let the agent do it first'', but none of their five plans after a hand allocation used Suggest.
+      I tested the whole-mission idea against the data: holding fixed whether the mission needs one drone type and
+      how many tasks it has, as well as drones needed, leaves the link at ×2.06 [1.24, 3.43] (×2.10 before). So
+      the ''complicated'' that people describe is not captured by the mission''s features. Either it is a judgement
+      made in the moment, or the link is the carry-over that P21, P10 and P30 describe (previous section).'
+    qual:
+      summary: 'The people at the ends of the chart, in their own words (added 2026-10-19 at your request). <b>Strongest
+        tilt</b> (P13, P15, P06, then P29): none of them talks about linking the two steps. They describe a rule
+        for the whole mission: P15 hands over when there are ''too many decisions'', P29 does one-colour missions
+        themself and lets the assistant take multi-colour ones, and P06 drags and drops less as the work piles up.
+        P13''s hand allocations are disagreements with over-stocked cards (''why would I spend more resources''),
+        and they say ''I always let the agent do it first'' on the tactical step, yet none of their five plans after
+        a hand allocation used Suggest. Their words do not explain their gap. <b>Leaning the other way</b> (P20,
+        P03, P11, P31): their hand allocations are of a different kind. P20 builds by hand when the card cannot
+        be met (''I''ve run out of blues'') and then presses Suggest because the mission has many tasks. P03 works
+        every allocation out first and checks the card against it. P11 rarely presses Suggest at all and does not
+        want ''to be reduced to pressing allocate, suggest, deploy''. P31 lets Suggest get ''the majority of the
+        way'' whatever happened at the strategic step. <b>Only one route</b>: P21, who almost always allocated by
+        hand, gives the clearest account of carrying a plan from one step to the next (''it''s going to disrupt
+        my thought process''). The card-only people (P07, P12, P14, P25, P27, P34) mostly give speed and urgency
+        as the reason; P14 used the assistants ''for almost every allocation''.'
+      featured:
+      - ev75
+      - qa:qa-P29-04
+      - qa:qa-P13-02
+      - qa:qa-P20-06
+      - qa:qa-P21-09
+      more:
+      - qa:qa-P13-01
+      - qa:qa-P06-04
+      - qa:qa-P29-08
+      - ev9
+      - ev47
+      - qa:qa-P11-02
+      - qa:qa-P31-01
+      - qa:qa-P20-01
+      - qa:qa-P20-03
+      - qa:qa-P14-01
+      - ev170
+    codes:
+    - C01
+    - C02
+    - C03
   - id: speed
     title: 'Why the rule makes sense: the card pays only on big strategic jobs; Suggest is not slower'
     text: 'Each decision''s time split into the time before the operator''s first action and the time after it,
@@ -1149,7 +1367,6 @@ findings:
       - ev240
       - ev52
       - qa:qa-P32-05
-      - qa:qa-P36-01
       - qa:qa-P29-04
   - id: artefacts
     title: Is it an artefact? Checks, all reported
@@ -1301,15 +1518,12 @@ findings:
       summary: '8 of 33 describe starting Suggest and working elsewhere while it fills in (C05). The think-aloud
         shows more of it (P19, P32, P36). Nobody said a Suggest plan finishes the mission sooner. Two people said
         the opposite about plan quality: P31 adjusted a Suggest plan they thought visited tasks in a poor order,
-        and P21 found it lacked the cross-task redundancy they built themself. P36 names a cost of handing over:
-        if you did not build the plan, you are playing catch-up when something fails.'
+        and P21 found it lacked the cross-task redundancy they built themself.'
       featured:
       - ev33
       - ev201
-      - qa:qa-P36-02
       - qa:qa-P31-04
       more:
-      - qa:qa-P36-03
       - ev32
       - ev54
       - ev55
@@ -1440,15 +1654,28 @@ findings:
       - ev147
   - id: position
     title: Where manual builds sit relative to the two cards
-    text: Mostly below both cards or equal to one of them, rarely above. Pre-emptive builds — made without seeing
-      the cards — land equal to a card total more often than builds made after seeing them (39% vs 27%), so 'equal
-      to a card' is partly just the obvious allocation, not copying.
+    text: 'Mostly below both cards or equal to one of them, rarely above. Pre-emptive builds — made without seeing
+      the cards — land equal to a card total more often than builds made after seeing them (39% vs 27%), so ''equal
+      to a card'' is partly just the obvious allocation, not copying. Part of that gap is the missions: pre-emptive
+      builds were on smaller, more often one-type missions. Balanced for the mission (second view), it is 37% vs
+      29%, too close to tell apart.'
     how: 'Each manual total compared with the two card totals (all types): below both, equal to either, strictly
-      between, above both. Counts per kind of manual decision.'
+      between, above both. Counts per kind of manual decision. <b>Balanced view</b>: one logistic model per position
+      (below both / equal / between / above) on the kind of build + drones needed + number of drone types + the
+      gap between the two card totals + game + session + minute. Every one of the 209 builds is predicted as each
+      kind in turn and averaged, so the three kinds are compared on the same mix of missions; the four shares are
+      rescaled to 100%. Intervals: people resampled 1,000 times, models refitted. The person is not held fixed (too
+      few builds each).'
     chart: handover.manualPos
     numbers:
     - 'All 209: below both 44%, equal to a card 33%, strictly between 14%, above both 8%'
     - 'Built after seeing (77): 57% below, 27% equal, 9% between, 6% above; pre-emptive (97): 38%, 39%, 16%, 6%'
+    - 'Mission mix: pre-emptive builds needed 6.9 drones on average (after seeing 7.6, edited 9.3) and 52% were
+      one drone type (38%, 23%).'
+    - 'Balanced: after seeing 54% below, 29% equal, 9% between, 7% above; pre-emptive 38%, 37%, 20%, 5%; edited
+      a card 39%, 32%, 12%, 17%.'
+    - 'Pre-emptive minus after seeing, balanced: equal to a card +8 points [−10, +23] (raw +12); below both −16
+      [−33, +4] (raw −19).'
     atoms:
     - manual-anchored
     codes:
@@ -1476,6 +1703,16 @@ findings:
       - ev250
       - ev198
       - ev8
+    done: 'Done: the chart has a second view, <b>Balanced for mission size, types, game, timing</b>, with a table
+      of raw and balanced shares and each kind''s mission mix. Builds made before seeing the cards were on smaller
+      missions (6.9 drones needed vs 7.6) and more often needed a single drone type (52% vs 38%), where matching
+      a card''s total is easier. With all three kinds put on the same mix of missions, pre-emptive builds equal
+      a card 37% of the time and builds made after seeing them 29%. The gap shrinks from 12 to 8 points and its
+      95% interval now runs from −10 to +23, so the data no longer separate the two. The same goes for ''below both''
+      (54% vs 38%, interval −33 to +4). The overall shape is unchanged: mostly below both or equal to a card, rarely
+      above. So ''equal to a card is partly just the obvious allocation'' still fits, but the pre-emptive vs after-seeing
+      difference is too weak to count as evidence for it. The balancing does not hold the person fixed (too few
+      builds each), so who tends to pre-empt is still mixed in.'
   - id: said
     title: What operators say about building by hand
     text: 'Four accounts of manual allocation sit alongside the numbers. Holding drones in reserve (C07, 6 people)
@@ -1598,12 +1835,13 @@ findings:
   sections:
   - id: speed
     title: Faster within a session; on the strategic tier the gain mostly resets by the next
-    text: Median net decision time in the first two minutes and the last two minutes of each session. On the strategic
-      tier decisions get much faster through a session (11.6 → 6.9 s in session 1) and then start nearly as slow
-      again (10.6 s), before speeding up once more (5.8 s). The model keeps about half of the gain across the break,
-      but uncertainly. On the tactical tier the first session's speed-up is weaker and session 2 starts about where
-      session 1 ended, then speeds up again. Holding the number of waiting missions fixed does not remove the within-session
-      speed-up, so it is not just time pressure from a longer queue.
+    text: Median net decision time through each session, by pair of minutes (the toggle switches to every minute,
+      thirds, or the first two vs last two minutes that the numbers below quote). On the strategic tier decisions
+      get much faster through a session (11.6 → 6.9 s in session 1) and then start nearly as slow again (10.6 s),
+      before speeding up once more (5.8 s). The model keeps about half of the gain across the break, but uncertainly.
+      On the tactical tier the first session's speed-up is weaker and session 2 starts about where session 1 ended,
+      then speeds up again. Holding the number of waiting missions fixed does not remove the within-session speed-up,
+      so it is not just time pressure from a longer queue.
     how: '<b>Net time</b> = seconds to decide minus the forced wait (the card reveal for card choices; 1 s per entry
       for Suggest plans). Bars: medians of all decisions made in minutes 1–2 and 7–8 of each session, with 95% intervals
       from resampling people. <b>Model</b>: Gaussian GEE on log net time, clustered on person, with minute of session,
@@ -1612,7 +1850,7 @@ findings:
       relative to the end of session 1 (a positive value = slower again after the break). A log-scale coefficient
       converts to "% faster". The start of a session is also the start of a game (first missions, short queue),
       so part of a within-session speed-up may be the session''s own rhythm rather than learning.'
-    chart: handover.learnCarry
+    chart: handover.learnFine
     numbers:
     - 'Strategic, medians: session 1 minutes 1–2 11.6 s [7.8, 14.5] → minutes 7–8 6.9 s [4.9, 10.2]; session 2 10.6
       s [7.0, 13.5] → 5.8 s [5.0, 7.6]'
@@ -1651,6 +1889,14 @@ findings:
       - ev40
     codes:
     - C22
+    done: 'Done: the chart now has a ''Group by'' toggle: every minute, every pair of minutes (the default), thirds
+      of the session, or the old first-2 vs last-2 minutes. The finer views show the speed-up is gradual rather
+      than a step: strategic decisions in session 1 take a median 11.6 s in minutes 1–2, 10.7 s in 3–4, 7.4 s in
+      5–6 and 6.9 s in 7–8; session 2 starts at 10.6 s and drops faster (6.8 s by minutes 3–4). The tactical tier
+      is the same shape (18.0 → 14.9 → 14.9 → 12.9 s in session 1; 15.5 → 12.0 → 13.3 → 8.0 s in session 2). Single
+      minutes are thin (17–68 decisions each), so they wobble; pairs or thirds are the views to read. <b>Second
+      note:</b> there is now an ''Order'' toggle too: sessions side by side at each interval (as before), or all
+      of session 1 then all of session 2, so each session reads as its own run left to right.'
   - id: c22
     title: Does 'I got better with practice' match the logs? For score yes; not for speed or assistant use
     text: 'Six people say they got better, faster or more confident (C22: P10, P11, P15, P21, P30, P32). All six
@@ -3519,9 +3765,8 @@ findings:
         failure probabilities or performance data, 6 wanted options between the two cards, 5 wanted the assistant''s
         reasoning and 4 wanted more automation. Reading everything (including the in-play talk) raises the information
         asks: about 11 asked or wondered how the assistants decided, and 8 asked for failure or performance numbers.
-        The dissent is small but sharp: P11 does not want to be ''reduced to pressing allocate, suggest, deploy'',
-        and P36 warns that what you hand over you no longer have in your head when it fails. The mini sections below
-        take each strand in turn.'
+        The dissent is small but sharp: P11 does not want to be ''reduced to pressing allocate, suggest, deploy''.
+        The mini sections below take each strand in turn.'
       featured:
       - ev184
       - ev157
@@ -3569,7 +3814,6 @@ findings:
       - ev249
       - ev250
       - ev47
-      - qc:qc-P36-06
   - id: real-world
     title: 'Real search and rescue: welcome, with a human deciding'
     text: What people said when asked how they would feel about systems like this in real search and rescue. 16
@@ -3583,10 +3827,9 @@ findings:
       summary: 'Asked the closing ''five years from now'' question, at least 14 welcomed the idea, nearly always
         for speed (''a bad approximation is better than no response at all''), and 9 said a human must keep the
         final decision (8 unprompted). Conditions came with it: well regulated (P20), only where the job is understood
-        and stakes low (P03, P05), only if better than today''s AI (P15). Four raised a deeper worry: who is accountable
-        when an AI fails to save someone (P31, P22), a confident plan with a hole in it, repeated at scale (P36),
-        and military use of the research (P31). When pressed on whether a busy human could really check, P24 conceded
-        they could not and still wanted one there.'
+        and stakes low (P03, P05), only if better than today''s AI (P15). Others raised a deeper worry: who is accountable
+        when an AI fails to save someone (P31, P22), and military use of the research (P31). When pressed on whether
+        a busy human could really check, P24 conceded they could not and still wanted one there.'
       featured:
       - ev184
       - qc:qc-P22-01
@@ -3605,9 +3848,6 @@ findings:
       - qc:qc-P24-01
       - qc:qc-P03-01
       - qc:qc-P05-01
-      - qc:qc-P36-01
-      - qc:qc-P36-02
-      - qc:qc-P36-03
       - qc:qc-P31-02
       - qc:qc-P24-02
       - qc:qc-P29-01
@@ -3663,8 +3903,7 @@ findings:
         P36); P10, P11 and P13 independently wanted the risk tied to place, terrain or drone type and fed into the
         allocation. Without it, 2 read patterns into failures that were in fact flat and random (P19: some tasks
         fail more; P01: the rate was ''cranked up''). 4 could not tell from the score how well they were doing (P10,
-        P29, P31, P32). P36 adds the caution: a raw failure percentage needs context, or operators will refuse any
-        risk, though ''the failure rate of doing nothing is 100%''.'
+        P29, P31, P32).'
       featured:
       - ev254
       - ev66
@@ -3683,8 +3922,6 @@ findings:
       - qc:qc-P25-02
       - qc:qc-P19-02
       - qc:qc-P01-02
-      - qc:qc-P36-04
-      - qc:qc-P36-05
       - qc:qc-P10-01
       - qc:qc-P29-02
       - qc:qc-P32-02
@@ -3699,16 +3936,14 @@ findings:
     qual:
       summary: '4 of 33 asked in general for more automation (P13, P27, P30, P31) and 4 more proposed a specific
         new job: choose which mission to open next (P32, and P27''s feasibility-then-criticality ordering), check
-        the operator''s own plan for slips (P11), red-team the assistants'' outputs (P36), build back-up routes
-        into the tactical plan (P21), re-route spares after a failure (P30) and look ahead to missions not yet arrived
-        (P30). The common thread is help with what neither assistant touches: choosing what to work on, and failures.
-        Against: P11 does not want to be reduced to clicking, and P36 warns that handing over the plan means playing
-        catch-up when it fails.'
+        the operator''s own plan for slips (P11), build back-up routes into the tactical plan (P21), re-route spares
+        after a failure (P30) and look ahead to missions not yet arrived (P30). The common thread is help with what
+        neither assistant touches: choosing what to work on, and failures. Against: P11 does not want to be reduced
+        to clicking.'
       featured:
       - ev68
       - qc:qc-P32-03
       - qc:qc-P11-03
-      - qc:qc-P36-06
       more:
       - ev69
       - ev70
@@ -3776,22 +4011,17 @@ findings:
         P19, P36). Several said the human belongs at the strategic level and the assistant at the tactical one,
         ''give it resources and allow it to optimise'' (P05, P30, P32, P33 when asked, P12 reasoning that the strategic
         sum is the easier one), and P10 found an Aggressive card leaves only one sensible tactical plan. The cross-current:
-        P21 builds the tactical plan themself because their strategic choice already carries a plan in their head,
-        and P36 frames it as human-in-the-loop now, with on-the-loop needing far more trust.'
+        P21 builds the tactical plan themself because their strategic choice already carries a plan in their head.'
       featured:
       - qc:qc-P03-03
-      - qc:qc-P36-08
       - qc:qc-P30-04
       - qc:qc-P32-06
       more:
       - ev12
       - ev22
       - qc:qc-P19-05
-      - qc:qc-P36-07
       - qc:qc-P21-03
       - qc:qc-P10-02
-      - qc:qc-P36-09
-      - qc:qc-P36-10
       - qc:qc-P12-01
       - qc:qc-P33-02
   - id: me-vs-assistant
@@ -3840,10 +4070,9 @@ findings:
       summary: '8 of 33 asked for something on screen: a total drone requirement per mission (P10, P13), a cue on
         one screen when the other needs attention (P10), drones-in-hub and feasibility in the queue (P27; the criticality
         sort exists but they had not found it), filtering by penalty (P19), confirmation before cancelling a task
-        (P13), the missing green icon (P36), and keeping a Suggest plan when clicked away (P01). P06 said the task
-        needs two monitors and P31 that the central map went unwatched. Praise came from 4 (P10, P14, P25, P07:
-        easy, intuitive). Two people (P13, P14) were confused by the reversed NASA-TLX performance slider, which
-        matters for that item''s data.'
+        (P13), and keeping a Suggest plan when clicked away (P01). P06 said the task needs two monitors and P31
+        that the central map went unwatched. Praise came from 4 (P10, P14, P25, P07: easy, intuitive). Two people
+        (P13, P14) were confused by the reversed NASA-TLX performance slider, which matters for that item''s data.'
       featured:
       - qc:qc-P10-03
       - qc:qc-P27-04
@@ -3853,7 +4082,6 @@ findings:
       - qc:qc-P10-04
       - qc:qc-P13-06
       - qc:qc-P19-06
-      - qc:qc-P36-11
       - qc:qc-P01-04
       - qc:qc-P06-03
       - qc:qc-P31-04
@@ -3871,30 +4099,25 @@ findings:
     role: extra
     codes: []
     qual:
-      summary: '9 of 33 said real lives would change how they played: more stress (P01, P11, P15, P34), less decisiveness
-        (P36), more care about efficiency (P07), while P01 expected to behave the same and saw that as the problem.
-        Some rules read as unrealistic: abandoning a mission (P02, P13), partial rescue (P28: a drone that finds
-        someone and leaves), task locations known in advance (P28, P36), the pace (P31, P36). 4 said real operators
-        would need training or new skills (P29, P35, P36, P13), P36 putting the skill, not the trust, first.'
+      summary: '9 of 33 said real lives would change how they played: more stress (P01, P11, P15, P34), more care
+        about efficiency (P07), while P01 expected to behave the same and saw that as the problem. Some rules read
+        as unrealistic: abandoning a mission (P02, P13), partial rescue (P28: a drone that finds someone and leaves),
+        task locations known in advance (P28, P36), the pace (P31, P36). 4 said real operators would need training
+        or new skills (P29, P35, P36, P13).'
       featured:
       - qc:qc-P01-06
       - qc:qc-P34-02
-      - qc:qc-P36-13
       - qc:qc-P28-01
       more:
       - qc:qc-P01-05
       - qc:qc-P11-06
-      - qc:qc-P36-12
-      - qc:qc-P36-14
       - qc:qc-P31-05
       - qc:qc-P13-09
       - qc:qc-P02-01
       - qc:qc-P07-01
       - qc:qc-P15-04
       - qc:qc-P35-03
-      - qc:qc-P36-15
       - qc:qc-P29-04
-      - qc:qc-P36-16
       - qc:qc-P28-02
       - qc:qc-P13-05
   - id: feelings
@@ -3925,7 +4148,6 @@ findings:
       - qc:qc-P27-05
       - qc:qc-P10-07
       - qc:qc-P31-06
-      - qc:qc-P36-17
       - qc:qc-P18-01
       - qc:qc-P24-04
       - qc:qc-P11-08
@@ -3954,6 +4176,757 @@ findings:
   reply: 'Rebuilt as the discussion finding: ten mini sections, one per theme of what people said that has no home
     in a main section. It also brings back the outcome quotes from the sidelined "who does better" finding ("Me
     or the assistant"). Every section has quote cards. Click "More quotes" for the rest.'
+- id: q-trust-unchecked
+  title: You trust what you cannot check
+  confidence: qualitative
+  headline: 'The most articulate operators describe trusting the Tactical Assistant <i>because</i> they could not
+    assess its plan, while the strategy card was simple enough to judge at a glance, and so was judged, often harshly.
+    Under time pressure checking shrinks to a glance, and people say so with unusual candour: "if we look at the
+    recording I was doing exactly that". A minority did check, and their trust was earned by comparing the assistant''s
+    plan with their own.'
+  done: P36 is out of this finding, as they are of every finding but their own (which now comes after all the other
+    quote findings). The at-scale section was all P36 and is gone; its passages are in the practitioner finding.
+  sections:
+  - id: cant-check
+    title: Trusted because it cannot be checked
+    tier: main
+    text: 'The strategy card shows a few numbers per drone type beside the mission''s own requirements, so its oddities
+      are visible. The tactical plan is a web of routes on a map. P22 puts the consequence most clearly: they take
+      the tactical plan "at its word" because they cannot see how far it is from optimal, and they suspect that
+      is the only reason it seems so good. P19 says rating it would be "disingenuous" because they never really
+      looked, and P01 that it is "a lot harder to mentally challenge" than drone numbers. This is the participants''
+      own account of two quantitative results: the trust gap between the tiers (f-tier-trust) and the visible versus
+      invisible flaws (f-flaw-odd). It suggests the gap is partly a gap in <i>checkability</i>, not in quality.'
+    qual:
+      summary: The clearest voices are P22, P19 and P01; P28 gives the same split from the other side (the strategic
+        decision is the one you can analyse).
+      featured:
+      - ps:p22-cant-perceive-optimal
+      - ps:p19-inadvertently-trusted
+      - ps:p01-rely-more-trust-less
+      - ps:p22-take-its-word
+      more:
+      - ps:p22-pinch-of-salt
+      - ps:p28-strategic-easier
+      - ps:p15-busy-man
+      - ps:p21-reliable-no-redundancy
+      - ps:p22-similar-quality
+  - id: glance
+    title: Checking shrinks to a glance
+    tier: main
+    text: 'Nobody describes careful checking under pressure. They describe a quick look ("does anything look ridiculous?"),
+      knowing that a plan can look fine and not be, and accepting that trade because penalty accrues while they
+      check. P31 gives the whole arc: over-checking at the start, under-checking by the end, less oversight as the
+      session goes on, and a rating corrected against their own behaviour. P11 makes the expected-value argument
+      explicitly: on a big mission even a dodgy plan pays, because of the time saved for the next mission. P28 is
+      the exception, saying they checked every answer, though "a quick browse".'
+    qual:
+      summary: P31 is the richest single source here; P29, P15 and P22 say it more briefly; P28 dissents.
+      featured:
+      - ps:p31-majority-of-the-way
+      - ps:p31-less-oversight
+      - ps:p31-recording-shows
+      - ps:p11-dodgy-suggestion
+      more:
+      - ps:p31-checking-balance
+      - ps:p31-under-the-radar
+      - ps:p29-not-checking
+      - ps:p15-no-time-trust
+      - ps:p22-pressure-less-verification
+      - ps:p22-fast-not-perfect
+      - ps:p28-check-everything
+      - ps:p28-less-reliable-still-use
+      - ps:p22-fall-back
+  - id: earned
+    title: Trust earned by comparison, and doubts that came with practice
+    tier: main
+    text: 'Where trust was earned, it was by comparison. P32 trusted the tactical plan because it "seemed to be
+      doing what I was doing" and the cards did not; P29 tested themself against the assistant early and found their
+      own builds were the ones that failed; P11 decided they had been "too harsh" once Suggest matched their simple
+      plan at the same speed. Practice cut both ways: P15 only saw the assistant''s mistakes once they had time
+      to look, and suspects they were there all along.'
+    qual:
+      summary: P32, P29, P11 and P15.
+      featured:
+      - ps:p32-earned-trust
+      - ps:p29-test-then-trust
+      - ps:p11-too-harsh
+      - ps:p15-mistakes-noticed
+      more:
+      - ps:p28-start-with-ai
+  area: In their own words
+- id: q-process
+  title: 'Trust in the process, not the answer: what operators thought the assistants were'
+  confidence: qualitative
+  headline: Operators did not take the assistants' outputs at face value; they tried to work out how the answers
+    were made, and mostly could not. They asked why a card carried a buffer and got no answer, misread what the
+    card's figures meant, or concluded the "AI" was "a dozen lines of code". Their pictures of the assistants ranged
+    from a matching algorithm to a hallucinating AI to be scolded and apologised to. And one humanly obvious mistake
+    did more damage to trust than any numerical shortfall.
+  sections:
+  - id: asking-why
+    title: Asking why, and getting no answer
+    tier: main
+    text: 'Several people stopped at a card and tried to reason about it before calling it wrong. P13 compares the
+      two cards'' totals and asks "Do fast drones have a higher chance of failing?"; the researcher cannot say.
+      P11 misreads the card''s resilience figures ("it wasn''t telling me what I guess I thought it was telling
+      me"). P10 works out the rule behind the Aggressive card''s spares and trusts it more once they do. P22 and
+      P19 notice the cards say something different from what they seem to: three drones offered for a six-drone
+      job when the reserve is short, and a "Conservative" card sending more than the "Aggressive" one.'
+    qual:
+      summary: P13, P11, P10, P22 and P19. None of the card behaviours they puzzle over is explained anywhere on
+        screen.
+      featured:
+      - ps:p13-why-the-buffer
+      - ps:p10-redundancy-understood
+      - ps:p22-three-for-six
+      - ps:p19-reverse-labels
+      more:
+      - ps:p13-same-eta
+      - ps:p11-redundancy-misread
+  - id: mental-models
+    title: Matching algorithm, toaster or hallucinating AI
+    tier: main
+    text: 'The participants were almost all from computing, and several saw straight through the label: "a dozen
+      lines of code" (P31), "almost like a matching algorithm" (P19), "a little bit stupid" (P15), "is it deliberately
+      slow?" (P11). Others gave the assistants more than they had, assuming the two tiers share patterns (P21) or
+      that a wrong card was an AI "hallucinating" (P19, who then apologised to it). The slowness of a calculation
+      that should be instant shaped these pictures, and it fed back into trust: under pressure the same algorithm
+      "felt" less reliable because it felt slower (P22).'
+    qual:
+      summary: P31, P19, P15, P11, P21, P22 and P13.
+      featured:
+      - ps:p31-dozen-lines
+      - ps:p19-hallucinating
+      - ps:p22-slow-feels-unreliable
+      - ps:p31-task-ordering
+      more:
+      - ps:p19-matching-algorithm
+      - ps:p15-stupid-slow
+      - ps:p11-deliberate-slowing
+      - ps:p13-allocation-algorithm
+      - ps:p21-shared-patterns
+  - id: clear-mistake
+    title: One humanly obvious mistake costs more than a numerical one
+    tier: main
+    text: 'The illogical card (a Camera on an all-Fast mission) did more to trust than its frequency would suggest,
+      because it is the kind of mistake no person would make. P21 says so directly: "if it was kind of just a numbers
+      thing, I wouldn''t probably notice. But because it was a clear mistake for a person to see, it just made me
+      automatically lose my trust". P32 expected "random drones flying all over the place". Yet trust and use came
+      apart: P28 rated the card lower and kept using it "because at least it saves time". P01, who played an early
+      build with a real deployment bug, sensed something was wrong, could not confirm it, and ended up doubting
+      themself.'
+    qual:
+      summary: P21, P32, P28 and P01.
+      featured:
+      - ps:p21-clear-mistake
+      - ps:p32-random-drones
+      - ps:p28-less-reliable-still-use
+      - ps:p01-fighting-it
+      more:
+      - ps:p13-allocation-algorithm
+  area: In their own words
+- id: q-who-decides
+  title: Who decides, and who answers for it
+  confidence: qualitative
+  headline: 'Asked about real search and rescue, nobody rejected assistants like these, but almost everyone wanted
+    a human to keep the decision, and the reasons were moral as much as practical: accountability for a life not
+    saved, a human "connected" to the operation, and the plan held in someone''s head. People were candid that the
+    human they want in the loop may not be able to check much. Against the grain, P13 wants enough automation that
+    "the end users could be anyone".'
+  sections:
+  - id: accountability
+    title: Accountability that just isn't there
+    tier: main
+    text: 'P31 sets out the dilemma: even if an AI saves more lives on average, when it fails to save one, "that
+      accountability just isn''t there". P22 weighs the same discomfort against saving five people sub-optimally
+      rather than none, and settles on a human making the final decision. (P22''s "a bad approximation is better
+      than no response at all" refers back to an item of the pre-study questionnaire.) P31 also raised, unprompted,
+      that this research "will inevitably lead to it being used in military".'
+    qual:
+      summary: P31 and P22.
+      featured:
+      - ps:p31-accountability
+      - ps:p22-bad-approximation
+      more:
+      - ps:p31-military-use
+      - ps:p29-speed-over-perfection
+  - id: loop
+    title: A human in the loop, even one who cannot check
+    tier: main
+    text: 'Some want the human there regardless of what they can do: P24, pressed on whether a busy human could
+      check, concedes they could not and still wants "a human stand here"; P28 says "humans should make that decision"
+      because "we cannot guarantee what type of answers it will provide". P32 gives the organisational version:
+      measure where people and agents add value and assign the tiers accordingly.'
+    qual:
+      summary: P24, P28 and P32.
+      featured:
+      - ps:p24-human-anyway
+      - ps:p28-check-everything
+      - ps:p32-organisational
+      more: []
+  - id: ownership
+    title: Ownership, and the opposite view
+    tier: main
+    text: 'For some the reason to keep work is not safety but connection. P11 does not want to be "reduced to pressing
+      allocate, suggest, deploy, because otherwise I might as well be in the next room", and admits to pride and
+      "some sort of grudge" against the computer. P21 keeps both decisions because the allocation already carries
+      a plan in their head that the assistant would "disrupt". P13 takes the opposite view: automate everything
+      not ethically constrained, so that the operator''s skill matters less.'
+    qual:
+      summary: P11 and P21 against P13.
+      featured:
+      - ps:p11-connected
+      - ps:p11-ownership
+      - ps:p21-plan-in-mind
+      - ps:p13-anyone-could-use-it
+      more: []
+  - id: imposed-loop
+    title: The loop the system imposes
+    tier: main
+    text: 'P21 built contingency into every plan, chaining drones so that a failure only costs time, and then found
+      that every failure still stopped for human approval: "it doesn''t know that I''ve already added contingency
+      plans". The loop as designed made no room for an operator who had planned ahead. P13 asks for the opposite
+      safeguard, a second confirmation before a running task can be cancelled.'
+    qual:
+      summary: P21 and P13.
+      featured:
+      - ps:p21-contingency-unrecognised
+      - ps:p13-confirm-cancel
+      more: []
+  area: In their own words
+- id: q-failure
+  title: Failure without feedback
+  confidence: qualitative
+  headline: 'Drone failures were random and uniform, and nothing on screen said so or said how likely they were.
+    Operators felt the lack: P13 is "making blind decisions", P31 cannot tell whether their nudging helped, and
+    several wanted failure rates tied to drone type or place built into the allocation. Without information they
+    built their own theories (hostile places, "fires or something") and blamed themselves.'
+  sections:
+  - id: blind
+    title: Blind decisions, and failure data built into the plan
+    tier: main
+    text: P13 treats allocation as a decision about risk that cannot be made well without the failure rate, and
+      later proposes feeding a terrain-based estimate into the allocation rule so that the reserve is sized to the
+      risk rather than padded. P10 wants failure rates by drone type from historic data. (In P11's and P10's debriefs
+      the idea of per-area risk was raised by the researcher; P13 arrived at it themselves.)
+    qual:
+      summary: P13, P10 and P11.
+      featured:
+      - ps:p13-blind-decisions
+      - ps:p13-failure-into-algorithm
+      - ps:p10-failure-likelihood
+      more:
+      - ps:p11-danger-rating
+      - ps:p13-abandon-unrealistic
+  - id: patterns
+    title: Patterns in random failures, and blaming yourself
+    tier: main
+    text: 'With no information, P19 decides that "the same tasks had failure rates that were similarly high" and
+      that "the environment was very harsh for them", then blames their own allocation: "I think those were my failures".
+      P31 intervened without ever knowing whether it helped. P01, in an early build that really did have a fault,
+      could not tell bug from bad luck from their own error and ended up saying "I don''t trust myself anymore".'
+    qual:
+      summary: P19, P31 and P01.
+      featured:
+      - ps:p19-harsh-environment
+      - ps:p19-my-failures
+      - ps:p31-no-feedback
+      - ps:p01-fighting-it
+      more: []
+  area: In their own words
+- id: q-hierarchy
+  title: 'The hierarchy as one plan: how the two decisions connect'
+  confidence: qualitative
+  headline: 'Operators did not experience two independent assistants. They describe one plan that starts at the
+    strategic step: over-allocate at the top and the shortage cascades down; allocate generously and there is "really
+    only one way" to assign the drones; build the allocation yourself and the tactical plan is already in your head.
+    Several place responsibility for failures with the strategic tier, and use the cross-mission view the cards
+    lack (who can wait, what to hold back). Whether one plan held across the tiers is the right ideal is the question
+    the practitioner''s account, at the end, takes up and answers differently.'
+  done: P36 is out of this finding now (their cascade, one-up-two-down and critical-first passages are in their
+    own finding). The headline and the one-plan section end on a pointer to their opposing view, so this finding
+    can lead into it. The cascade section is now P19 and P28 only, the two you had already picked.
+  sections:
+  - id: cascade
+    title: The strategic step carries the risk
+    tier: main
+    text: 'P19 reaches the conclusion from the results: the tactical assistant "did everything", and the only remedy
+      for failures is sending enough drones at the start, "the strategic assistant''s prerogative". P28 weighs the
+      same step from the other side: they hold drones back in the base because "I cannot predict when the next task
+      will appear", and accept that a colour sent as a single drone may fail.'
+    qual:
+      summary: P19 and P28.
+      featured:
+      - ps:p19-tactical-results
+      - ps:p28-defensive-reserve
+      more: []
+  - id: one-plan
+    title: One plan across both decisions
+    tier: main
+    text: 'The card-then-Suggest pattern in the logs (f-size-decides) is described from both sides. P10: a generous
+      card means "there is really only one way of assigning them, which means if I just hit the suggest button then
+      I can focus on something else". P21: building the allocation by hand lays out a plan in the mind, so switching
+      to Suggest would disrupt it; their own plans chain drones through each other''s tasks to get "redundancy for
+      free". P21 also wonders whether the tactical assistant follows the strategic one''s patterns. The practitioner''s
+      account at the end disagrees with this ideal: in staff planning each cell sees only its part, which is fine
+      if each part has been through a sound process.'
+    done: P36's view is now kept for their own finding, which comes after the other quote findings. This section
+      points forward to it in one line, and P36's silos and one-up-two-down passages link back here as "qualifies",
+      so the clash you noted is shown from both sides.
+    qual:
+      summary: P10 and P21.
+      featured:
+      - ps:p10-only-one-way
+      - ps:p21-plan-in-mind
+      - ps:p21-redundancy-for-free
+      more:
+      - ps:p21-shared-patterns
+  - id: cross-mission
+    title: The cross-mission view the cards lack
+    tier: main
+    text: 'The strategy cards look at one mission. Operators override them to act on what the cards cannot see:
+      P22 strikes a "middle ground" to keep drones back for other tasks; P24 trims cards not because they are better
+      than the AI but to save drones, and only then learns the cards see one mission; P19 reasons about who can
+      afford to wait; P31 goes below even the Conservative card when other tasks are pending.'
+    qual:
+      summary: P22, P24, P19 and P31.
+      featured:
+      - ps:p22-middle-ground
+      - ps:p24-save-drones
+      - ps:p19-criticality-wait
+      more:
+      - ps:p31-below-conservative
+  area: In their own words
+- id: q-real-ops
+  title: What a real operation would need
+  confidence: qualitative
+  headline: Participants were clear that this was a game, and several said what would change with real stakes. They
+    pointed to what the simulation leaves out (searching for people whose location is unknown, a drone that finds
+    someone and leaves, abandoning a mission), questioned the time pressure, and disagreed about whether real operators
+    should need much skill at all.
+  sections:
+  - id: pace
+    title: What the simulation leaves out
+    tier: main
+    text: P28 points out that in reality task locations are not known in advance, so drones would need to share
+      what they find, and that a drone that finds a person and leaves "will make people very disappointed". P13
+      finds abandoning a mission unrealistic, since you would simply send more.
+    qual:
+      summary: P28 and P13.
+      featured:
+      - ps:p28-shared-model
+      - ps:p28-found-and-left
+      - ps:p13-abandon-unrealistic
+      more: []
+  - id: stakes
+    title: Stakes and time pressure
+    tier: main
+    text: P31 questions whether real operators should be under this time pressure at all; P01 suspects they would
+      behave the same with real stakes, "and that might not be a good thing".
+    qual:
+      summary: P31 and P01.
+      featured:
+      - ps:p31-real-lives-pressure
+      - ps:p01-behave-the-same
+      more:
+      - ps:p11-first-felt-harder
+      - ps:p29-speed-over-perfection
+  - id: skills
+    title: Who could do this job
+    tier: main
+    text: P13 wants automation that lowers the skill bar, so that "the end users could be anyone". P28 and P10 describe
+      the learning curve inside the study.
+    qual:
+      summary: P13; P28 and P10 on learning.
+      featured:
+      - ps:p13-anyone-could-use-it
+      - ps:p28-start-with-ai
+      - ps:p10-learning-effect
+      more: []
+  area: In their own words
+- id: q-new-jobs
+  title: New jobs for an assistant
+  confidence: qualitative
+  headline: 'Asked what the assistants should do, people rarely asked for more automation of the same kind. They
+    asked for assistants that check: one that reviews the operator''s own plan for slips rather than taking it over
+    (P11). They asked for smarter rules (redundancy scaled to failure risk, backup routes in the tactical plan),
+    for options between and beyond the two cards, and for an interface that knows what they have already planned.
+    Two (P27, P32) asked for something neither assistant does: help deciding which waiting mission to open next.'
+  done: 'Looked into the queue-ordering idea. Two people raise it, P27 (in the second questionnaire, with a rule:
+    missions that can be done first, then by criticality) and P32 (in play: "it would be helpful if it just picked
+    the next mission for me"); a keyword search of every transcript found no others. Both are now passages, in a
+    new first section with the numbers on how people actually ordered the queue: criticality does pull (it was not
+    in the earlier choice model), whether the reserve could cover a mission does not, and the oldest waiting mission
+    could not be covered at 41% of decisions. The queue''s sort toggle is not logged, so its use cannot be counted.
+    Script: scripts/register/pass2/queue_order.py.'
+  sections:
+  - id: queue-order
+    title: An assistant for what to open next
+    tier: main
+    text: 'Neither assistant helps with the first decision of every allocation: which waiting mission to open. P32
+      asked for it in play ("a suggestion of what to do next would be handy"), because a mission the reserve cannot
+      cover sits at the top of the list anyway; P27 gave a rule, missions that can be done first, then by criticality,
+      allowing for what is already running. The logs show the gap such an assistant would fill. With two or more
+      missions waiting (411 decisions, 33 people), operators open the oldest (49%; chance 34%) and lean towards
+      the more critical (×1.45 per category above the waiting set''s average, p = .02), but not towards missions
+      they can actually cover: whether the reserve could supply a mission''s drones makes no difference (×1.04,
+      p = .79), and at 41% of decisions the oldest waiting mission could not be covered. P27''s order differs from
+      what operators did at 59% of decisions. The queue had a "Sort: Score" toggle; the researcher told P27 only
+      one participant had found it, and it is not logged.'
+    numbers:
+    - 'Decisions with 2+ missions waiting: 411 (33 people). Opened the oldest 49% (chance 34%); when one waiting
+      mission was uniquely the most critical, opened it 49% (chance 33%)'
+    - 'Choice among the waiting missions (conditional logit, person bootstrap, 400 draws): oldest ×2.75 [1.97, 4.12],
+      p < .001; newest ×1.64 [1.17, 2.32], p < .001; criticality, per category above the set''s mean ×1.45 [1.09,
+      2.15], p = .02; coverable from the reserve ×1.04 [0.72, 1.58], p = .79; size per 3 drones ×0.95 [0.78, 1.11],
+      p = .61'
+    - The oldest waiting mission could not be covered from the reserve at 41% of these decisions; some waiting mission
+      could not be covered at 57%. When some could not, the one opened was coverable 32% of the time (chance 39%)
+    - P27's order (coverable, then most critical, then oldest) picks a different mission from oldest-first at 59%
+      of decisions; there operators opened P27's pick 35% of the time (chance 30%)
+    how: 'Same decisions and waiting sets as the triage choice model (load.py), with two features added per waiting
+      mission: its category (A–E, the penalty rate the operator sees), centred on the set; and whether the drones
+      available in the reserve just before the decision covered its primary composition in every colour. Coverable
+      is strict: tasks also have substitute compositions, and drones returning to the hub are not counted, so it
+      understates what an operator could have done. scripts/register/pass2/queue_order.py; results in pass2/load.json,
+      queueOrder.'
+    qual:
+      summary: P27 and P32; both cuts include the researcher's words (flagged).
+      featured:
+      - ps:p27-queue-order
+      - ps:p32-pick-next
+      more: []
+  - id: checkers
+    title: Assistants that check rather than decide
+    tier: main
+    text: P11, building plans by hand, would welcome an assistant that "could have said, oh, dummy, you're missing
+      a camera there", which "is different from letting it take over completely".
+    qual:
+      summary: P11.
+      featured:
+      - ps:p11-check-my-plan
+      more: []
+  - id: smarter-rules
+    title: Smarter rules
+    tier: main
+    text: 'The fixed padding of the Conservative card is the target of most suggestions: size the reserve to an
+      estimated failure risk (P13), and in the tactical plan add the backup routes that P21 built by hand ("in case
+      of failure, it doesn''t redirect those drones").'
+    qual:
+      summary: P13 and P21.
+      featured:
+      - ps:p13-failure-into-algorithm
+      - ps:p21-no-backup-route
+      more: []
+  - id: options
+    title: Options, not a choice of two
+    tier: main
+    text: 'Several wanted to shape the suggestion rather than accept or reject it: P28 found "fixed options" insufficient;
+      P22 found their own middle ground; P19 valued the card as a first draft ("you can fix bad, you can''t fix
+      nothing").'
+    qual:
+      summary: P28, P22 and P19.
+      featured:
+      - ps:p28-customise
+      - ps:p19-fix-bad
+      - ps:p22-middle-ground
+      more: []
+  - id: interface
+    title: An interface that knows what you have done
+    tier: main
+    text: 'Concrete requests: recognise contingency already built into a plan (P21), confirm before a running task
+      is cancelled (P13), show the total drones a mission needs (P10). P31 notes the map in the middle went unwatched,
+      because attention lived on the queue and the planner.'
+    qual:
+      summary: P21, P13, P10 and P31.
+      featured:
+      - ps:p21-contingency-unrecognised
+      - ps:p13-confirm-cancel
+      - ps:p10-interface-asks
+      - ps:p31-map-unwatched
+      more: []
+  area: In their own words
+- id: q-practitioner
+  title: 'A practitioner''s reading: P36, a participant with operational military experience'
+  confidence: qualitative
+  headline: 'One participant had operational military experience. They played like everyone else, and differed in
+    who they are: the oldest participant, the only one with extensive command experience, and among the most positive
+    about AI. Their sessions and debrief are the richest material in the study, and nearly every result here has
+    a passage of theirs that agrees with it, qualifies it or goes past it. Each point below is one passage with
+    its own links back; the last section gathers them. This is one person''s expert commentary, not evidence about
+    the cohort; in any paper, describe them only as "a participant with operational military experience".'
+  done: Rebuilt from your ticked, highlighted passages only (19), each read again in your trimmed version. One point
+    per passage, except the two "whole board" passages, which make the same point. Every link back was rewritten
+    so that it quotes only words your trim keeps; some changed. The trust-but-verify trim drops the "overcooking"
+    remark, so its links to the card's spare drone are gone; play-across-tasks is now about success across all tasks
+    rather than working in parallel. The passages you did not pick are in a sidelined section at the end. Highlighted
+    quotes now have a comment box under them.
+  sections:
+  - id: own-play
+    title: How typical are they?
+    tier: main
+    chart: typical.p36
+    text: '<b>Typical in how they played.</b> On every habit the findings measure (card use, how card use grows
+      with mission size, Suggest use and how it grows with plan size, keeping Suggest plans unedited, the drones
+      on a hand build, oldest-first) they sit in the middle half of the cohort. They were a little quicker on the
+      strategic step (9.6 s per decision against a median of 11.4) and decided before the cards loaded a little
+      more often (32% against 10%), at the 20th and 80th percentiles, and they scored a little above most (0.7 SD
+      within game, 80th percentile). <b>Different in who they are.</b> They are the oldest participant (44; median
+      27), the only one with extensive command experience (24 of 33 report none), one of four with moderate drone
+      experience, at the top of the AI-attitude scale (10 of 10, with one other), and among the least insistent
+      that a human keep authority (3.0 against a median of 4.3). Their trust in the Strategic Assistant was higher
+      than most (5.9; median 4.5). So the commentary that follows comes from someone whose play was ordinary: what
+      they add is the reading, not a different way of playing.'
+    how: 'One value per person for each measure (33 people, P09 excluded): play habits from the same per-person
+      table as the size and speed findings, oldest-first from the queue choice decisions, trust as the mean of the
+      session ratings, and the pre-study questionnaire (experience items scored none 0 to extensive 3). P36''s percentile
+      rank among the 33 (ties share the middle). Typical = middle half; leans = 10th–25th or 75th–90th; unusual
+      = beyond. With one person nothing is tested; this only places them. scripts/register/pass2/typical.py; results
+      in pass2/typical.json.'
+    done: 'Added the chart you asked for: one row per measure, everyone as a dot, P36 highlighted, and a plain verdict
+      on each row. The short answer is above the chart: ordinary play, unusual background.'
+  - id: pt-whole-board
+    title: 'How they played: for the whole board, not the mission'
+    tier: main
+    text: 'Five minutes in, P36 states the aim as throughput across every task while watching the reserve ("running
+      a little bit low on blue"), and later gives the reason: "success is generated across all of the tasks rather
+      than just an individual task". The two passages make one point, so they share it. This is the cross-mission
+      view operators said the cards lack, and it fits the cohort''s hand builds, which mostly sit at or below the
+      cards.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-as-many-across
+      - ps:p36-play-across-tasks
+      more: []
+  - id: pt-quicker-by-hand
+    title: 'How they played: the card can be slower than doing it yourself'
+    tier: main
+    text: 'Three minutes into the first session, after taking a card on a small mission, P36 decides it would have
+      been quicker by hand. It is the speed result in miniature: the card saves time only on big, three-type jobs.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-quicker-by-hand
+      more: []
+  - id: pt-branching-paths
+    title: 'How they played: simple by hand, complex to the assistant, and why'
+    tier: main
+    text: 'The fullest statement of the size rule in the study, with both halves of the reason. On a simple mission
+      they already know the answer by eye, and they build in redundancy (every drone to every task) so that after
+      a failure "you don''t really need to change the story". On a complex one the options branch, so they let the
+      assistant start and step in when needed. They also name the limit of the quick check that goes with handing
+      over: whether it is right "is another question entirely". Their own log follows the rule.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-branching-paths
+      more: []
+  - id: pt-resource-rich
+    title: 'How they played: the rule bends when the reserve is full'
+    tier: main
+    text: 'A simple mission, so by their own rule one to do by hand; but the reserve is full and nothing is coming
+      in, so they press Suggest anyway. The size rule is a default, not a law, and slack loosens it. It also cuts
+      against the idea that people hand over because they are busy: here they hand over because they are not.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-resource-rich
+      more: []
+  - id: pt-reserve
+    title: 'How they played: oldest first, and never without a reserve'
+    tier: main
+    text: 'Two of the cohort''s habits in one sentence: open the mission that has waited longest unless something
+      changes the priority, and build by hand with a spare ("minimum two, we''re going to go three"). Their builds
+      still land where the cohort''s do relative to the cards.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-never-without-reserve
+      more: []
+  - id: pt-critical-first
+    title: 'How they played: critical tasks over score'
+    tier: main
+    text: Out of Fast drones, they accept a lower score to get the critical tasks done, "if this is a real life
+      scenario". The cohort leans the same way, opening the more critical waiting mission more often; P36 says the
+      trade aloud and frames it as what a real operation would demand.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-critical-first
+      more: []
+  - id: pt-strategic-trust
+    title: 'How they played: trusting the strategy card more, then seeing why that is a risk'
+    tier: main
+    text: 'One of the few who trusted the Strategic Assistant more than the Tactical, and their ratings say the
+      same. The reason is that checking a card is easy (is there a reserve?), and a strategic mistake seemed less
+      costly; then, mid-sentence, they reverse it: a bad allocation at the start leaves the tactical step "screwed".
+      Easy to check is not the same as low stakes.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-strategic-less-hesitant
+      more: []
+  - id: pt-physics-pace
+    title: 'The task: physics sets the pace, and the load moves to waiting'
+    tier: main
+    text: 'The game''s pace is not realistic: real drones are bounded by distance and speed, so decisions get faster
+      but the operation does not. The load does not go away; it becomes waiting and contingency planning ("what
+      am I going to do if this thing fails"), "loaded in a slightly different way".'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-physics-pace
+      more: []
+  - id: pt-tempo-echelon
+    title: 'The task: the pressure lands on the lower tier'
+    tier: main
+    text: Higher up, decisions look further out and a new item is routine; at the lower tier everything arrives
+      at once and must be sequenced. The game gave one operator both tiers; in a real hierarchy the time pressure
+      the workload findings looked for would sit with the tactical level, and so would any assistant for what to
+      do next.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-tempo-echelon
+      more: []
+  - id: pt-staff-process
+    title: 'Control: trust in the process, as with staff'
+    tier: main
+    text: 'At battlegroup level and above (which the bracket in the trim maps to the study''s strategic tier), a
+      commander takes plans worked up by staff, because one person could not do the analysis in time, and trusts
+      them because they have done those jobs and know how the answers are made. The link to the assistants is the
+      gap: no operator has done the assistant''s job, so the basis for that trust is missing.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-staff-process
+      more: []
+  - id: pt-trust-but-verify
+    title: 'Control: verify by socialising the plan, and trust the maths'
+    tier: main
+    text: Verifying, for P36, is a process around the plan (take it to those who will carry it out, keep it open
+      to challenge), plus trust that the machine has "done the maths" and allocated enough. The second half is about
+      what a two-second look at a tactical plan can confirm; the first is something the study's set-up has no place
+      for.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-trust-but-verify
+      more: []
+  - id: pt-play-catch-up
+    title: 'Control: hand over the routine, keep the critical, and pay for it in skill'
+    tier: main
+    text: Three ideas in one passage. Handing over lets them scan elsewhere and come back. They would take the critical
+      thing themselves and leave the routine to the machine "as long as the resources are in place" (a criticality
+      rule for handing over, which the study has not tested). And the cost of not building the plan is playing catch-up
+      when it fails, so the key is not trusting the AI but the scarce, expensive skill of exploiting it.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-play-catch-up
+      more: []
+  - id: pt-failure-rate
+    title: 'Risk: the failure rate of doing nothing is 100%'
+    tier: main
+    text: 'Show failure rates, but with context, or people will refuse any risk: a bare "40%" reads as "no chance"
+      when a person would fail as often and doing nothing always fails. Their answer to risk is to act and reduce
+      it, and to train people to read the numbers.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-failure-rate
+      more: []
+  - id: pt-shared-risk
+    title: 'Risk: real stakes, experience, and the risk the commander no longer shares'
+    tier: main
+    text: Their decisiveness came from planning experience and knowing it was a simulation. With real lives an inexperienced
+      commander would be reckless or paralysed, and remote autonomy removes the shared risk that used to temper
+      the order. They expect to be less decisive themselves if someone could die.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-shared-risk
+      more: []
+  - id: pt-resource-cascade
+    title: 'Organising assistants: the top allocation sets the risk below'
+    tier: main
+    text: Under-allocate at the top and the lower tier carries the risk; over-allocate and it is wasted elsewhere.
+      The commander balances several tasks at once and puts more into the critical one. This is the coupling between
+      the tiers that the cohort's card-then-Suggest pattern shows, said from the top.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-resource-cascade
+      more: []
+  - id: pt-silos
+    title: 'Organising assistants: narrow context is normal'
+    tier: main
+    text: Staff cells each see only their part of the plan and first come together at the brief; that is fine if
+      each part has been through a sound process. They add that this game's tasks are simple enough not to need
+      more context. This is the clash with the operators who wanted one plan held across both decisions.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-silos
+      more: []
+  - id: pt-one-up-two-down
+    title: 'Organising assistants: one up, two down, and stay in your lane'
+    tier: main
+    text: 'Each level is given the part of the level above that its task needs, and no more; an agent that reaches
+      past its remit gives worse answers and is told "that''s not your job". It pairs with the silos passage (both
+      answer how much context a tier needs) but makes a separate point: what to give each level, rather than whether
+      narrow context is acceptable.'
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-one-up-two-down
+      more: []
+  - id: pt-red-team
+    title: 'Organising assistants: an agent that red-teams the others'
+    tier: main
+    text: A checker that tests the data the other agents' answers rest on, so that a bad input is found before the
+      answers built on it. It answers the hidden-flaw result without relying on the operator to notice.
+    qual:
+      summary: ''
+      featured:
+      - ps:p36-red-team-agent
+      more: []
+  - id: against-results
+    title: 'Read against the results: where a practitioner agrees, qualifies and goes beyond'
+    tier: main
+    text: 'Every link on the points above, in one place, grouped by how the passage bears on the result. <b>Agrees</b>:
+      the size rule and its reasons, the card''s speed, working across the board, oldest first, criticality, quick
+      checking and its limit, trust in how answers are made, and the tiers coupled from the top. <b>Qualifies</b>:
+      workload (the pressure in real operations is pace and the lower tier), the trust gap (easy to check is not
+      low stakes), the size rule (it bends with slack), hand-build spares, checking (verifying is a process, not
+      a look), failure data (it needs context), experience (it matters when the stakes are real), and one plan across
+      the tiers (narrow context is normal). <b>Goes beyond</b>: skills and selection, verifying by challenge, always
+      acting on risk, what real stakes do to decisiveness, staff cells and one-up two-down, a red-team agent, and
+      where an assistant for what to do next would sit. This could close the paper.'
+    refs: all
+  - id: not-picked
+    title: Passages not picked this pass
+    tier: side
+    text: The P36 passages you did not tick or highlight, kept so nothing is lost. Each still carries its old links
+      back; they were not re-read.
+    qual:
+      summary: ''
+      featured: []
+      more:
+      - ps:p36-in-on-loop
+      - ps:p36-bad-plan-quickly
+      - ps:p36-redundancy-by-criticality
+      - ps:p36-commander-role
+      - ps:p36-practise-simulate
+      - ps:p36-lag
+      - ps:p36-cost-capability
+      - ps:p36-tweak-and-data
+      - ps:p36-ai-is-worse
+      - ps:p36-did-its-thing
+      - qc:qc-P36-11
+  area: In their own words
 - id: f-triage
   area: Workload and the queue
   title: Busy operators speed up a little but do not change what they pick

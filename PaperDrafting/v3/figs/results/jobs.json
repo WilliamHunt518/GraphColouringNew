@@ -1,0 +1,957 @@
+[
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "habits",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "fingerprint-ranks",
+  "views": [
+   [
+    "all",
+    [],
+    "All ten habits."
+   ],
+   [
+    "noaxis",
+    [
+     [
+      "Habits",
+      "Reliance axis removed"
+     ]
+    ],
+    "With the reliance axis removed."
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "who-vs-what",
+  "views": [
+   [
+    "r2",
+    [],
+    "McFadden pseudo-$R^2$."
+   ],
+   [
+    "auc",
+    [
+     [
+      "Measure",
+      "In plain terms: telling taken from not taken"
+     ]
+    ],
+    "The same comparison as a ranking test (AUC); whiskers are 95\\% intervals (people resampled)."
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "retest-summary",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "axis-scatter",
+  "views": [
+   [
+    "between",
+    [],
+    "Between people."
+   ],
+   [
+    "within",
+    [
+     [
+      "Compare",
+      "Within a person, session to session"
+     ]
+    ],
+    "Within a person: change from session 1 to session 2."
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "not-types",
+  "views": [
+   [
+    "map",
+    [],
+    "The people, mapped on the first two principal components."
+   ],
+   [
+    "separate",
+    [
+     [
+      "Show",
+      "Do groups separate?"
+     ]
+    ],
+    "Cluster separation (silhouette) against no-types simulations."
+   ],
+   [
+    "recur",
+    [
+     [
+      "Show",
+      "Do groups come back?"
+     ]
+    ],
+    "Recurrence of groupings across sessions (adjusted Rand index)."
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "not-disposition",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "fingerprint",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "profiles",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "habit-by-habit",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-personal-style",
+  "findingTitle": "Each operator has a personal style — individual, not a type",
+  "section": "preempt",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "both",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "models",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "tactical",
+  "views": [
+   [
+    "needed",
+    [],
+    "Size measured as drones needed."
+   ],
+   [
+    "marker",
+    [
+     [
+      "Overall average",
+      "show a marker on each pair"
+     ]
+    ],
+    "With a marker on each pair at the rate for all plans in that size group."
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "route-people",
+  "views": [
+   [
+    "gap",
+    [],
+    "Each person's gap, mission size held."
+   ],
+   [
+    "rates",
+    [
+     [
+      "Show",
+      "each person’s two rates"
+     ]
+    ],
+    "Each person's two raw rates."
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "speed",
+  "views": [
+   [
+    "strat-all",
+    [],
+    "Strategic tier, all time counted."
+   ],
+   [
+    "strat-noidle",
+    [
+     [
+      "Time counted:",
+      "without idle time"
+     ]
+    ],
+    "Strategic tier, idle time removed."
+   ],
+   [
+    "tac-all",
+    [
+     [
+      "Tier",
+      "Tactical"
+     ]
+    ],
+    "Tactical tier, all time counted."
+   ],
+   [
+    "tac-noidle",
+    [
+     [
+      "Tier",
+      "Tactical"
+     ],
+     [
+      "Time counted:",
+      "without idle time"
+     ]
+    ],
+    "Tactical tier, idle time removed."
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "parallel",
+  "views": [
+   [
+    "all",
+    [],
+    "All four phases."
+   ],
+   [
+    "noidle",
+    [
+     [
+      "Time counted:",
+      "without time before the first action (grey)"
+     ]
+    ],
+    "Without the time before the first action."
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "artefacts",
+  "views": [
+   [
+    "strat",
+    [],
+    "Strategic tier."
+   ],
+   [
+    "tac",
+    [
+     [
+      "Tier",
+      "Tactical"
+     ]
+    ],
+    "Tactical tier."
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "people",
+  "views": [
+   [
+    "own",
+    [],
+    "Each person compared with their own average."
+   ],
+   [
+    "plain",
+    [
+     [
+      "Each person",
+      "plain average of people"
+     ]
+    ],
+    "Plain average of people."
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "speed-model",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-size-decides",
+  "findingTitle": "Small jobs by hand, big jobs to the assistant — on both tiers, and it is where the assistant saves time",
+  "section": "slow",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-manual-cards",
+  "findingTitle": "Manual allocations are anchored on the cards — and the 'trimming small missions' was mostly dropping the illogical spare",
+  "section": "dots",
+  "views": [
+   [
+    "all",
+    [],
+    "All drone types."
+   ],
+   [
+    "needed",
+    [
+     [
+      "Count",
+      "needed types only"
+     ]
+    ],
+    "Needed drone types only."
+   ]
+  ]
+ },
+ {
+  "finding": "f-manual-cards",
+  "findingTitle": "Manual allocations are anchored on the cards — and the 'trimming small missions' was mostly dropping the illogical spare",
+  "section": "position",
+  "views": [
+   [
+    "raw",
+    [],
+    "As built."
+   ],
+   [
+    "balanced",
+    [
+     [
+      "View",
+      "Balanced for mission size, types, game, timing"
+     ]
+    ],
+    "Balanced for mission size, drone types, the gap between the cards, game, session and minute."
+   ]
+  ]
+ },
+ {
+  "finding": "f-practice",
+  "findingTitle": "Practice makes operators faster, not better at choosing when to hand over",
+  "section": "speed",
+  "views": [
+   [
+    "strat",
+    [],
+    "Strategic tier, sessions side by side."
+   ],
+   [
+    "strat-order",
+    [
+     [
+      "Order",
+      "all of session 1, then all of session 2"
+     ]
+    ],
+    "Strategic tier, all of session 1 then all of session 2."
+   ],
+   [
+    "tac",
+    [
+     [
+      "Tier",
+      "Tactical"
+     ]
+    ],
+    "Tactical tier, sessions side by side."
+   ]
+  ]
+ },
+ {
+  "finding": "f-practice",
+  "findingTitle": "Practice makes operators faster, not better at choosing when to hand over",
+  "section": "c22",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-workload",
+  "findingTitle": "A busier moment does not push people onto the assistants — even though they say it does",
+  "section": "raw-vs-adjusted",
+  "views": [
+   [
+    "both-exp",
+    [
+     [
+      "Assistant",
+      "Both together"
+     ],
+     [
+      "View",
+      "Raw + expected"
+     ]
+    ],
+    "Both tiers together, raw with their expected rates (dashed)."
+   ],
+   [
+    "both-adj",
+    [
+     [
+      "Assistant",
+      "Both together"
+     ],
+     [
+      "View",
+      "Adjusted"
+     ]
+    ],
+    "Both tiers together, adjusted."
+   ],
+   [
+    "strat-exp",
+    [
+     [
+      "View",
+      "Raw + expected"
+     ]
+    ],
+    "Strategic tier, raw with the expected rate (dashed)."
+   ],
+   [
+    "tac-exp",
+    [
+     [
+      "Assistant",
+      "Tactical"
+     ],
+     [
+      "View",
+      "Raw + expected"
+     ]
+    ],
+    "Tactical tier, raw with the expected rate (dashed)."
+   ]
+  ]
+ },
+ {
+  "finding": "f-workload",
+  "findingTitle": "A busier moment does not push people onto the assistants — even though they say it does",
+  "section": "waited",
+  "views": [
+   [
+    "strat",
+    [],
+    "Strategic tier: how long the mission had waited in the queue."
+   ],
+   [
+    "tac",
+    [
+     [
+      "Assistant",
+      "Tactical (plan left open)"
+     ]
+    ],
+    "Tactical tier: how long the plan had been left open."
+   ]
+  ]
+ },
+ {
+  "finding": "f-workload",
+  "findingTitle": "A busier moment does not push people onto the assistants — even though they say it does",
+  "section": "robust",
+  "views": [
+   [
+    "strat",
+    [],
+    "Strategic tier."
+   ],
+   [
+    "tac",
+    [
+     [
+      "Assistant",
+      "Tactical"
+     ]
+    ],
+    "Tactical tier."
+   ]
+  ]
+ },
+ {
+  "finding": "f-workload",
+  "findingTitle": "A busier moment does not push people onto the assistants — even though they say it does",
+  "section": "said-did",
+  "views": [
+   [
+    "strat",
+    [],
+    "Strategic tier, moment to moment."
+   ],
+   [
+    "tac",
+    [
+     [
+      "Assistant",
+      "Tactical"
+     ]
+    ],
+    "Tactical tier, moment to moment."
+   ]
+  ]
+ },
+ {
+  "finding": "f-workload",
+  "findingTitle": "A busier moment does not push people onto the assistants — even though they say it does",
+  "section": "spoken",
+  "views": [
+   [
+    "main",
+    [],
+    "Top: missions waiting at the overload moments; middle: strategy cards taken within $\\pm$60\\,s (observed $-$ expected); bottom: Suggest pressed within $\\pm$60\\,s (observed $-$ expected). Red line = observed mean; grey = 5,000 draws of the same number of random utterances from the same sessions."
+   ]
+  ]
+ },
+ {
+  "finding": "f-triage",
+  "findingTitle": "Busy operators speed up a little but do not change what they pick",
+  "section": "order",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-triage",
+  "findingTitle": "Busy operators speed up a little but do not change what they pick",
+  "section": "choice",
+  "views": [
+   [
+    "sh",
+    [],
+    "Strategic Heavy games only."
+   ],
+   [
+    "all",
+    [
+     [
+      "Games",
+      "All four games"
+     ]
+    ],
+    "All four games."
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "event",
+  "views": [
+   [
+    "pairs",
+    [],
+    "All missions, every pair of decisions, observed."
+   ],
+   [
+    "steps",
+    [
+     [
+      "Grouping",
+      "Every step"
+     ]
+    ],
+    "All missions, every step."
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "over-time",
+  "views": [
+   [
+    "s1",
+    [],
+    "Session 1: each group and everyone."
+   ],
+   [
+    "s2",
+    [
+     [
+      "Session",
+      "Session 2"
+     ]
+    ],
+    "Session 2: each group and everyone."
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "by-index",
+  "views": [
+   [
+    "groups",
+    [],
+    "Noticers against never-said, session 1 then session 2."
+   ],
+   [
+    "everyone",
+    [
+     [
+      "People",
+      "Each group + everyone"
+     ]
+    ],
+    "Each group and everyone."
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "spoken",
+  "views": [
+   [
+    "strict",
+    [],
+    "Strict remarks: all missions against one- and two-type missions."
+   ],
+   [
+    "any",
+    [
+     [
+      "Remarks",
+      "Strict and any remark, side by side"
+     ]
+    ],
+    "Strict and any remark, side by side."
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "refusal",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "visibility",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "odd-missions",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "adjustment",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "rates",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-flaw-odd",
+  "findingTitle": "The dip in strategy-card use belongs to the people who later said they noticed the illogical card, early in the session; it shows up whether or not they had met that card yet",
+  "section": "checking-after",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "gap",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "where",
+  "views": [
+   [
+    "items",
+    [],
+    "By questionnaire item."
+   ],
+   [
+    "scenario",
+    [
+     [
+      "Split by",
+      "Scenario played"
+     ]
+    ],
+    "By scenario played."
+   ],
+   [
+    "session",
+    [
+     [
+      "Split by",
+      "Also: first / second session"
+     ]
+    ],
+    "By session order as well."
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "attention",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "checking",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "stated-revealed",
+  "views": [
+   [
+    "kept",
+    [],
+    "Use measured as keeping the plan unmodified."
+   ],
+   [
+    "pressed",
+    [
+     [
+      "Use measure",
+      "Pressed Suggest at all"
+     ]
+    ],
+    "Use measured as pressing Suggest at all."
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "trust-lead-strip",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-tier-trust",
+  "findingTitle": "The Tactical Assistant is trusted more, and most people say so too",
+  "section": "stated",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-operator-wants",
+  "findingTitle": "Beyond the findings: what operators said they want, believe and feel",
+  "section": "wants",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "q-practitioner",
+  "findingTitle": "A practitioner's reading: P36, a participant with operational military experience",
+  "section": "own-play",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ },
+ {
+  "finding": "f-methods",
+  "findingTitle": "Methods notes",
+  "section": "games",
+  "views": [
+   [
+    "main",
+    [],
+    ""
+   ]
+  ]
+ }
+]

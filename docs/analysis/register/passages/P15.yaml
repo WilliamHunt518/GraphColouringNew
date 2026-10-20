@@ -1,0 +1,36 @@
+# Long verbatim passages: P15 (skim group). Phrases only.
+pid: P15
+read:
+  date: 2026-10-20
+  scope: questionnaire talk, break and debrief read in full
+  verdict: English is a second language; many short statements, a few longer. Strong on having no time to check and so having to trust, and on the AI being too slow for a simple problem.
+passages:
+  - id: p15-no-time-trust
+    title: No time to judge it, so you have to trust it
+    parts: [{seg: survey1, from: "I trust the strategy system implementation five because I have no time to think", to: "and it pressed me to make the decisions"}]
+    context: Strategic trust questionnaire after session 1.
+    topics: [checking]
+    why: Trust as a consequence of time pressure rather than of evidence.
+    links: [f-tier-trust, f-workload]
+  - id: p15-busy-man
+    title: "\"I'm very busy, I don't have the time to check it\""
+    parts: [{seg: survey2, from: "maybe it's reliable I haven't checked I have no time to check", to: "I'm a busy man leave me alone"}]
+    speaker: mixed
+    context: Tactical trust questionnaire after session 2.
+    topics: [checking]
+    why: Rating an assistant they say they never had time to check.
+    links: [f-tier-trust]
+  - id: p15-stupid-slow
+    title: The AI is a little bit stupid
+    parts: [{seg: interview, from: "I think these applications is very good but the AI is a little bit stupid", to: "it will take maybe four or five seconds"}]
+    context: Debrief opening.
+    topics: [mental-model]
+    why: Sees through to a simple calculation and resents the wait.
+  - id: p15-mistakes-noticed
+    title: With experience I could see it makes mistakes
+    parts: [{seg: interview, from: "the second round side because i have more experience after the first round", to: "i haven't found the time i'm the fresher for using this one"}]
+    speaker: mixed
+    context: Debrief.
+    topics: [checking, practice, flaws]
+    why: Mistakes were only noticed once they had capacity to check, and probably went unnoticed in session 1.
+    links: [f-practice, f-flaw-odd]

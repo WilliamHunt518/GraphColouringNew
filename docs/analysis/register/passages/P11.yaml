@@ -1,0 +1,97 @@
+# Long verbatim passages: P11. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P11
+read:
+  date: 2026-10-20
+  scope: everything (both sessions, surveys, break, debrief, written interview notes; about 4,000 words)
+  verdict: >-
+    The strongest voice for ownership of the plan, and reflective about their own reasons. Researcher-influence notes:
+    after a recovery refusal the researcher said "It may or may not be correct ... You could do this manually" (a hint
+    about the wrong refusal); and the idea of a per-area danger prior for failures was proposed by the researcher,
+    with P11 agreeing, so it should not be read as P11's own request.
+passages:
+  - id: p11-gives-up
+    title: "\"It gives up quite easily\""
+    parts: [{seg: session1, from: "I can't get the information I need very quickly. No workable plan.", to: "it gives up quite easily."}]
+    speaker: mixed
+    context: Session 1, recovery Suggest answering "No workable plan"; the researcher says the refusal may or may not be correct and that it could be done by hand.
+    topics: [flaws, checking]
+    why: One of the few moments a participant questions a refusal — and only after a hint from the researcher.
+    links: [f-flaw-odd]
+
+  - id: p11-redundancy-misread
+    title: The card wasn't telling me what I thought
+    parts: [{seg: session1, from: "I noticed that I could just probably up the redundancy of the aggressive solution", to: "It wasn't telling me what I guess I thought it was telling me."}]
+    speaker: mixed
+    context: Session 1, prompted to finish a thought, about a card's "could fail" figures.
+    topics: [explain, mental-model]
+    why: Misreading the card's resilience figures — a display that says less than it seems to.
+
+  - id: p11-danger-rating
+    title: How often do they fail? (with a prompted idea)
+    parts: [{seg: survey1, from: "I don't know very well how often they fail and things", to: "Give it a danger rating. Yeah."}]
+    speaker: mixed
+    context: Strategic trust questionnaire after session 1. The area danger rating is the researcher's suggestion; P11 agrees.
+    topics: [failure-data]
+    why: Not knowing the failure rate makes it impossible to judge whether a card's reserve is enough. Read the prior/topography idea as co-constructed.
+    links: [f-operator-wants]
+
+  - id: p11-check-my-plan
+    title: An assistant to check my plan, not take it over
+    parts:
+      - {seg: session2, from: "I suppose when I'm doing these sort of, when my attention", to: "I'm probably missing a lot of things."}
+      - {seg: session2, from: "I guess a useful, maybe a useful thing for the agent to tell me", to: "I would, like, accept that suggestion, I think."}
+    speaker: mixed
+    context: Session 2, building plans by hand while busy.
+    topics: [agents, failure-data, checking]
+    why: A new job for an assistant — rate failure risk and catch slips in the operator's own plan — distinct from taking over.
+    links: [f-operator-wants]
+
+  - id: p11-deliberate-slowing
+    title: Is it deliberately slow?
+    parts: [{seg: session2, from: "I mean, the suggestion thing is quite slow.", to: "One could theoretically have a faster one."}]
+    speaker: mixed
+    context: Session 2, dragging a simple plan by hand; the researcher concedes it is "not necessarily state-of-the-art AI".
+    topics: [mental-model]
+    why: Expects a trivial calculation to be instant and suspects the delay is deliberate.
+
+  - id: p11-too-harsh
+    title: Perhaps I was too harsh on it
+    parts: [{seg: survey2, from: "It had the same, I guess it was kind of interesting that when I was just doing that simple case", to: "it's not as slow as I think for the simple ones."}]
+    context: Tactical trust questionnaire after session 2.
+    topics: [checking, practice]
+    why: Revises their own size rule after seeing Suggest match their simple plan at the same speed.
+    links: [f-size-decides]
+
+  - id: p11-ownership
+    title: Pride, ownership and a grudge against the computer
+    parts: [{seg: interview, from: "it would be a dreadful task without any of the tools", to: "the same can be said for a lot of things."}]
+    speaker: mixed
+    context: Opening of the debrief.
+    topics: [loop, mental-model]
+    why: The emotional side of handing over — wanting their own solution, and personifying the computer.
+
+  - id: p11-dodgy-suggestion
+    title: A dodgy plan still pays on big missions
+    parts: [{seg: interview, from: "I think that's the trade-off that I make.", to: "I mean, there's probably some trade-off."}]
+    prompt: {seg: interview, from: "So you say you especially trust it with a large mission.", to: "because of the speed?"}
+    speaker: mixed
+    context: Debrief.
+    topics: [checking]
+    why: An explicit expected-value argument for accepting an imperfect plan on big missions and keeping small ones.
+    links: [f-size-decides]
+
+  - id: p11-connected
+    title: "\"Otherwise I might as well be in the next room\""
+    parts: [{seg: interview, from: "I don't want to be reduced to pressing allocate, suggest, deploy", to: "And I feel satisfaction."}]
+    context: Debrief, confirming the researcher's notes.
+    topics: [loop]
+    why: Being connected to the operation as a reason to keep work for oneself.
+
+  - id: p11-first-felt-harder
+    title: The first session felt beyond my abilities
+    parts: [{seg: interview, from: "I mean, the first one was, it seemed like fewer, much more critical missions.", to: "oh, the agent could probably just do that for me."}]
+    speaker: mixed
+    context: Debrief, asked about the two scenarios.
+    topics: [stakes, practice]
+    why: The session-level version of the workload claim — a harder-feeling session meant more reliance.
+    links: [f-workload]

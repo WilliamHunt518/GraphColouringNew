@@ -1,0 +1,439 @@
+# Long verbatim passages: P36 (participant with operational military experience; the "consulted expert").
+# Phrases only; scripts/register/build_passages.py cuts the verbatim text from the transcripts.
+# Identifiable: in any paper, describe P36 only as "a participant with operational military experience".
+pid: P36
+read:
+  date: 2026-10-20
+  scope: everything — both sessions' think-aloud, both survey and break segments, the full debrief (about 8,000 words)
+  verdict: >-
+    The richest material in the study by a distance, and largely about things no chart covers: what this role would
+    be in a real operation, the human-in-/on-the-loop line, trust in a process versus trust in an answer, the failure
+    mode of a confident AI plan at scale, and training and selection. About half the debrief is the researcher's own
+    long prompts; those are kept as the prompt, never as P36's words. Much profanity: the transcript is kept verbatim.
+passages:
+  - id: p36-commander-role
+    title: The commander's job is changing
+    parts: [{seg: interview, from: "be very keen to get this in front of the staff officers", to: "not just training but selection as well"}]
+    prompt: {seg: interview, from: "I always start with how did you find that", to: "how did you find that"}
+    context: Opening of the debrief, asked how they found it.
+    topics: [realism, skills]
+    why: What the task is in a real operation — approving a machine's route rather than leading from a trench — and that this changes selection, not just training.
+    refs:
+      - to: f-personal-style#who-vs-what
+        kind: beyond
+        point: 'Who decides matters more than what is decided; P36: this role changes "not just training but selection as well".'
+
+  - id: p36-physics-pace
+    title: Pace, physics and mental load
+    parts: [{seg: interview, from: "so in terms of delivery absolutely", to: "the time pressure effectively"}]
+    prompt: {seg: interview, from: "so I would ask in your professional opinion", to: "relevant would you say this kind of set up is"}
+    context: Asked how relevant the set-up is to real operations.
+    topics: [realism]
+    why: The simulation compresses time and distance; real operations are bounded by physics, so the load moves from deciding fast to waiting and contingency-planning.
+    refs:
+      - to: f-workload#raw-vs-adjusted
+        kind: qualifies
+        point: 'A busier queue did not push anyone onto the assistants. P36 puts the real pressure elsewhere: "physics remains the bounding factor", and the load becomes waiting and asking "what am I going to do if this thing fails". "Your mental load is still loaded it''s just loaded in a slightly different way."'
+      - to: f-size-decides#parallel
+        kind: agrees
+        point: 'The time Suggest frees is spent elsewhere while a plan runs. P36 describes that dead time from the commander''s side: "I''ve now got to wait for this thing to get into place", and uses it to plan for failure.'
+      - to: f-operator-wants#real-stakes
+        kind: agrees
+        point: 'Others said the pace was unreal; P36 agrees ("in terms of the pace probably not so much") and says what sets the real pace: "if you''re going at 3k an hour then that''s going to take you a long time".'
+
+  - id: p36-lag
+    title: Seeing far, acting slowly
+    parts: [{seg: interview, from: "I think lag probably the best thing", to: "other things that are going to come up to manage as well"}]
+    context: Continuing on pace.
+    topics: [realism]
+    why: The real constraint is the lag between seeing a problem and being able to act on it, during which other problems arrive.
+
+  - id: p36-resource-cascade
+    title: Over-allocate at the top and the shortage cascades down
+    parts: [{seg: interview, from: "horses the courses but I would argue", to: "I've got a critical one over here that I'm allocating more to"}]
+    prompt: {seg: interview, from: "one thing that you did clearly is you very much immediately", to: "and then I can fix it"}
+    context: Told that about half the participants automate the tactical tier and keep the strategic one, and half the reverse.
+    topics: [hierarchy]
+    why: The two tiers are coupled through resources and risk; who carries the risk depends on who made the allocation.
+    links: [f-size-decides, f-tier-trust]
+    refs:
+      - to: f-size-decides#tactical
+        kind: agrees
+        point: 'Handing over at one tier goes with handing over at the other (Suggest ×2.1 after a card, same person, same size). P36 explains the coupling: the top allocation sets the lower tier''s risk ("I told you need more resource when I told you this is my plan ... you''re carrying risk"). Their own card-then-Suggest gap was close to zero, so the link is the cohort''s, not theirs.'
+      - to: f-manual-cards#dots
+        kind: agrees
+        point: 'Over-allocating at the top: "that''s just wasted resource". In their own builds the cohort mostly trimmed the card''s spare drone.'
+      - to: q-hierarchy#cross-mission
+        kind: agrees
+        point: 'Operators overrode the cards to weigh other missions. P36 says it as a commander: "I''ve got five tasks that I need to do so I''m balancing these five", and "I''ve got a critical one over here that I''m allocating more to".'
+
+  - id: p36-in-on-loop
+    title: Human in the loop versus on the loop
+    parts: [{seg: interview, from: "a level of human to human trust presuming", to: "there's got to be way more trust that it gets the answer right every time"}]
+    context: Continuing from the resource-cascade passage.
+    topics: [loop]
+    why: This set-up is human-in-the-loop (every task is okayed); on-the-loop would need rules set in advance and far more trust, because timely intervention is hard.
+    refs:
+      - to: f-about#decisions
+        kind: beyond
+        point: 'The platform keeps the operator approving every allocation and plan. P36 calls that human-in-the-loop and spells out on-the-loop: a standing rule (Aggressive for critical missions, Conservative otherwise) that "just churns through", with intervention in time the hard part.'
+      - to: f-tier-trust#checking
+        kind: qualifies
+        point: 'In the loop on paper, close to on the loop in practice: tactical plans get a median 2–4 s once Deploy unlocks and 468 of 486 consulted plans go out as they came. P36''s line is about who approves; the data show how little approving can involve.'
+      - to: f-size-decides#strategic-steps
+        kind: beyond
+        point: Much strategic work is deciding small missions before the cards arrive. P36's on-the-loop rule would hand exactly those decisions to a standing policy and keep the human for exceptions.
+
+  - id: p36-tweak-and-data
+    title: Tune the rule, then test it with data
+    parts: [{seg: interview, from: "for the strategic a lot of it's a lot of over allocation of resource", to: "only ever as good as a model that's gone into it"}]
+    context: Continuing on how they would want the strategic assistant to work.
+    topics: [failure-data, agents]
+    why: Would set the redundancy rule by criticality and then judge it by simulated failure rates, not by trusting it.
+    links: [f-flaw-odd]
+
+  - id: p36-failure-rate
+    title: "\"The failure rate of doing nothing is 100%\""
+    parts: [{seg: interview, from: "but the interesting thing so that that always messes with people's heads", to: "I'm just trying to make it as low as reasonable"}]
+    prompt: {seg: interview, from: "you would appreciate having a sort of a prior estimation", to: "of what's coming in kind of thing"}
+    context: Asked whether a prior estimate of failure chance would help.
+    topics: [failure-data, stakes]
+    why: Failure probabilities need context or operators refuse any risk; inaction is also a failure.
+    links: [f-operator-wants]
+    refs:
+      - to: f-operator-wants#failure-data
+        kind: qualifies
+        point: Several operators asked for failure numbers. P36 wants them with context ("there's got to be something where it shows a bit of context to it"), because a bare "40% failure chance" reads as "no chance" when "the failure rate of doing nothing is 100%".
+      - to: q-failure#blind
+        kind: agrees
+        point: 'Operators facing random failures with no numbers felt they were deciding blind. P36 agrees the numbers should be shown ("great to see the information") and adds that people then need training to act on them: "there''s always going to be a failure rate I''m just trying to make it as low as reasonable".'
+      - to: f-flaw-odd#reliance
+        kind: beyond
+        point: 'Lower-reliance operators attempted fewer recoveries. P36''s rule cuts the other way: in search and rescue "you''re always gambling with someone''s life", so you act and "chip away at it".'
+
+  - id: p36-shared-risk
+    title: Decisiveness, stakes and not sharing the risk
+    parts: [{seg: interview, from: "yes well and that's kind of a challenge within this is because I know it's a simulation", to: "I imagine you're going to see me less decisive if someone's gonna die at the end"}]
+    prompt: {seg: interview, from: "I noticed that you're you were very decisive", to: "you just did stuff"}
+    context: Told they were very decisive in play.
+    topics: [stakes, realism, skills]
+    why: Their speed came from planning experience and knowing it was a simulation; an inexperienced commander facing real casualties will be reckless or paralysed, and remote autonomy removes the shared risk that used to temper those decisions.
+    refs:
+      - to: f-operator-wants#real-stakes
+        kind: beyond
+        point: '"It''s a game" was a common caveat. P36 says what changes with a life at stake ("I imagine you''re going to see me less decisive if someone''s gonna die at the end"), and that a commander who no longer shares the risk ("I might die alongside them") loses what used to temper the order.'
+      - to: f-personal-style#not-disposition
+        kind: qualifies
+        point: 'Prior experience did not predict style here. P36 expects it to matter most when the stakes are real: their own "looking at a glance yes it''s allocated what I needed ... cool let''s start running with it" comes from experience, where a new platoon commander would be "foolhardy" or "almost paralysed". A game with no lives on the line hides that difference.'
+
+  - id: p36-staff-process
+    title: Trust in the process, not the answer
+    parts: [{seg: interview, from: "well it's kind of this how it works in military planning anyway", to: "so there's a level of trust in that process"}]
+    prompt: {seg: interview, from: "speaking specifically about the relationship between you and these two assistants", to: "if you had two subordinate people here"}
+    speaker: mixed
+    context: Asked how the two assistants compare with two human subordinates; the researcher's aside ("sorry I'm a lay person ... how do you say scale") sits inside the cut.
+    topics: [explain, loop, hierarchy]
+    why: Commanders accept staff answers because they have done those jobs themselves and trust how the answers were made — which an operator of an AI assistant has not.
+    links: [f-tier-trust, f-operator-wants]
+    refs:
+      - to: f-tier-trust#checking
+        kind: agrees
+        point: 'Plans are accepted after a brief look. P36 explains why that can be rational: answers from staff are taken "as long as you have trust in how they''ve come up with those answers", not re-derived.'
+      - to: f-operator-wants#reasoning
+        kind: agrees
+        point: 'Several operators wanted to know how the assistants decide. For P36 that is the basis of trust: a commander can take the staff''s answers because "you''d have worked up in those levels so you kind of understand how those answers are generated". No operator has done the assistant''s job.'
+      - to: f-size-decides#speed
+        kind: agrees
+        point: 'The card pays where a job is too big to do quickly by hand. P36 gives the same reason for having staff at all: "I couldn''t work through the ground the enemy, the enemy''s plan, the likelihood of my plan succeeding, the logistics behind it it would take me forever which is why your staff do it".'
+
+  - id: p36-bad-plan-quickly
+    title: A really bad plan, really quickly, at scale
+    parts: [{seg: interview, from: "if you're looking at something like here and one of the risks with AI", to: "doesn't mean a human can't make that mistake"}]
+    context: Continuing directly from the staff-process passage.
+    topics: [explain, checking, stakes]
+    why: The specific danger of a confident assistant — a plan that looks right with a hole you have not worked through yourself, replicated to every commander at operational tempo.
+    links: [f-tier-trust, f-flaw-odd]
+    refs:
+      - to: f-flaw-odd#visibility
+        kind: agrees
+        point: 'The tactical flaw was hidden and rarely seen. P36''s central risk is that kind: a confident plan with "a massive hole in that plan that you''re not seeing", replicated at pace.'
+
+  - id: p36-silos
+    title: Every planner sees only their part
+    parts: [{seg: interview, from: "be a kind of work in your own silo", to: "gone through the analytical process and spat out an answer"}]
+    prompt: {seg: interview, from: "both of them are myopic in terms of what they see", to: "six or seven layer command structure"}
+    context: Told that both assistants see only the current mission, and asked how that compares with human planning across layers.
+    topics: [hierarchy, agents]
+    why: Narrow context is normal in staff work (G2, G3 each see their part); what matters is that each part has been through a proper analytical process.
+    refs:
+      - to: q-hierarchy#one-plan
+        kind: qualifies
+        point: 'Several operators wanted one plan held in mind across the tiers. P36 sees narrow context as normal ("you as a g2''er are will only see your part of the plan") and fine "as long as in each of them it''s gone through the analytical process", and adds that this game''s tasks are simple enough not to need more: a direct tension with those operators.'
+      - to: f-operator-wants#tiers-together
+        kind: beyond
+        point: Operators wondered how the two assistants fit together. P36's model is staff cells that each see their part and first "come together" at the planning brief.
+
+  - id: p36-red-team-agent
+    title: An agent whose job is to red-team the others
+    parts: [{seg: interview, from: "so this would be your agentic approach wasn't it", to: "then the answers will be right"}]
+    context: Continuing from the silos passage.
+    topics: [agents, checking]
+    why: 'Proposes the architecture: specialist agents, one checking across them, a human choosing between options, and a red-team agent that checks the data the answers rest on.'
+    links: [f-operator-wants]
+    refs:
+      - to: f-flaw-odd#visibility
+        kind: beyond
+        point: 'The tactical flaw (a wrong "No workable plan") went almost unseen: only 4 people reacted to one aloud. P36''s answer does not rely on the operator: "an agent whose only job is to go and red team [adversarially check] all of your outputs very quickly", checking "the data that they''ve based their answers on".'
+      - to: q-new-jobs#checkers
+        kind: agrees
+        point: P11 wanted an assistant that checks their own plan. P36's checker tests the other agents' data instead, so a bad input shows up before the answers built on it.
+
+  - id: p36-practise-simulate
+    title: You find the holes by practising
+    parts: [{seg: interview, from: "in thinking and then associated mitigation that makes this kind of thing a success or a failure", to: "into military thinking in that sort of space"}]
+    context: Continuing; includes what the simulation leaves out (task locations known in advance) and a planning exercise they would like to run through an AI.
+    topics: [skills, realism, agents]
+    why: Integration comes from simulating close to the real world until you see where the AI falls down, then adding the checks that would have caught it.
+    refs:
+      - to: f-practice#calibration
+        kind: qualifies
+        point: Two short sessions did not sharpen when people hand over. P36 prescribes long practice in realistic scenarios to find the holes; this study saw the first minutes of that curve.
+
+  - id: p36-one-up-two-down
+    title: Understand one up, plan two down — and stick to your lane
+    parts: [{seg: interview, from: "so it depends yeah so you could have your agent that's checking the colors", to: "just stick to your lane and do that output because someone else will do that for you"}]
+    prompt: {seg: interview, from: "there's a philosophy of understanding what's going on one level above you", to: "linking up of understanding what's a little way up above you"}
+    context: Asked whether agents should understand the context one level above them.
+    topics: [hierarchy, agents]
+    why: Context above is useful only as far as the task needs; an agent (or staff officer) reaching beyond its remit gives worse answers.
+    links: [f-size-decides]
+    refs:
+      - to: f-operator-wants#tiers-together
+        kind: beyond
+        point: 'How should the tiers fit? From doctrine: "you understand two up in the same way as you plan two down", each task comes with the part of the level above that it needs, and an agent reaching outside its lane is told "that''s not your job".'
+      - to: q-hierarchy#one-plan
+        kind: qualifies
+        point: 'The operators who wanted one shared plan are answered by a different design: each level gets "the understanding they''re required to do that task", and "it doesn''t matter how it docks into everything else".'
+
+  - id: p36-play-across-tasks
+    title: Success is across all the tasks, not one
+    parts: [{seg: session1, from: "it's quite a fun game strategy in terms of what when you are and aren't using each agent", to: "already done the next layer of work that I need to do"}]
+    speaker: participant
+    context: Session 1, about 3.5 minutes in, after a fast hand allocation on an all-Fast mission.
+    topics: [parallel, checking]
+    why: Their rule for when to use each assistant in their own words — whatever keeps all the tasks moving, working elsewhere while the assistant runs.
+    links: [f-size-decides]
+    refs:
+      - to: q-hierarchy#cross-mission
+        kind: agrees
+        point: 'Operators overrode the cards to act on what one mission''s card cannot see. P36 says why in one line: "success is generated across all of the tasks rather than just an individual task".'
+      - to: f-manual-cards#dots
+        kind: agrees
+        point: 'Playing for every task shows in the cohort''s hand builds: on 44% of decisions they sit below both cards, mostly by leaving off the card''s spare, which keeps drones for the next mission.'
+
+  - id: p36-critical-first
+    title: Critical tasks over score
+    parts: [{seg: session1, from: "i've run out of blue so that's gonna hurt my score", to: "rather than moderate tasks of getting them done to a low"}]
+    context: Session 1, out of Fast drones.
+    topics: [stakes, realism]
+    why: Prioritises as they would in a real scenario even when it costs points.
+    links: [f-triage]
+    refs:
+      - to: q-new-jobs#queue-order
+        kind: agrees
+        point: 'Operators lean towards the more critical waiting mission (×1.45 per category, on top of oldest-first). P36 goes further and spends score on it: "i''ve run out of blue so that''s gonna hurt my score but ... i''d rather do the critical tasks if this is a real life scenario".'
+
+  - id: p36-branching-paths
+    title: Simple missions myself; complex ones branch
+    parts:
+      - {seg: session1, from: "sometimes it's going to be a little bit uh quicker to do these myself", to: "every single drone is going to every single task so that if one of my drones fails my"}
+      - {seg: survey1, from: "assumption is that my other drones are picking up the task", to: "intervene when i need to"}
+    speaker: mixed
+    context: End of session 1 into the first questionnaire; the researcher's question about quality ("do you see at all a quality difference") sits inside the cut.
+    topics: [checking, hierarchy]
+    why: 'Why the size rule holds for them — on a simple mission a failure does not change the story; on a complex one the option space branches, so it is not worth pre-planning: let the assistant start and intervene.'
+    links: [f-size-decides]
+    refs:
+      - to: f-size-decides#both
+        kind: agrees
+        point: 'Small jobs by hand, big jobs to the assistant (cohort: card 56% to 75%, Suggest 54% to 91%). P36 gives both halves of the reason: on a simple job "i know the answer based on what i''m seeing visually", and a failure needs no re-plan ("you don''t really need to change the story"); on a complex one "my option scope is broader", so "let them start on that task and then intervene when i need to". Their own log follows it (card 33% to 70%, Suggest 79% to 100%).'
+      - to: f-tier-trust#checking
+        kind: agrees
+        point: '"Give it a quick once over and go that looks about right ... whether or not it is right of course it''s another question entirely": the brief check the timing data show, with its limit named.'
+      - to: q-hierarchy#one-plan
+        kind: agrees
+        point: P21 chained drones through each other's tasks for "redundancy for free". P36 does the same on simple missions ("every single drone is going to every single task so that if one of my drones fails ... my other drones are picking up the task"), which is why those plans need no checking afterwards.
+
+  - id: p36-strategic-less-hesitant
+    title: Hesitating less on the strategic tier — and then not
+    parts:
+      - {seg: survey1, from: "the strategic one i was less concerned about the solutions it presented", to: "have you covered all the tasks and there is a reserve"}
+      - {seg: survey1, from: "so I wouldn't trust any of them without checking", to: "trust the strategic slightly more because the consequences"}
+      - {seg: between1, from: "are slightly less", to: "then you're screwed going into the tactical"}
+    context: Filling in the trust questionnaire after session 1.
+    topics: [checking, hierarchy]
+    why: 'Checks less on the strategic card because there is less to check — then corrects themself: a bad allocation is what ruins the tactical stage.'
+    links: [f-tier-trust]
+    refs:
+      - to: f-tier-trust#gap
+        kind: qualifies
+        point: 'The cohort trusts the Tactical Assistant more; P36 is one of the exceptions, and their ratings match what they say ("I trust the strategic slightly more": 5.9 against 5.8 on the 1–7 scale, where the cohort''s median strategic rating is 4.5). They hesitated less over the cards only because "all i was looking at there was have i got a reserve allocated".'
+      - to: q-hierarchy#cascade
+        kind: agrees
+        point: 'P19 put the only remedy for failures with the strategic tier. P36 reaches the same point in mid-sentence, and it reverses their reason for trusting the cards: "they''re probably not actually are they if you fuck up the allocation at the start of it then you''re screwed going into the tactical".'
+
+  - id: p36-trust-but-verify
+    title: "Trust but verify, and socialise the plan"
+    parts: [{seg: session2, from: "yeah so a couple of times it was overcooking", to: "platforms to do the task you're after"}]
+    prompt: {seg: session2, from: "so you thought they say I might be worse", to: "so you thought they say I might be worse"}
+    speaker: mixed
+    context: Session 2, after saying "this AI is worse"; game chatter ("oh two seconds", "reassigning completely") sits inside the cut.
+    topics: [checking, explain, loop]
+    why: How human plans are checked — taken down to the platoon commander and sergeant and open to challenge — and that an AI should be open to challenge in the same way.
+    links: [f-flaw-odd, f-tier-trust]
+    refs:
+      - to: f-tier-trust#checking
+        kind: qualifies
+        point: 'This is from someone who kept every consulted tactical plan unedited. In P36''s account verifying happens around the plan, not in a long look at it: take it to the people who will carry it out ("go away and work out the plan") and keep it "open to challenge". Beside that sits "trust in the fact it''s done the maths behind it and has allocated enough platforms", which is about all the cohort''s 2–4 seconds of checking can cover.'
+      - to: q-who-decides#loop
+        kind: beyond
+        point: Some operators want a human in the loop even one who cannot check. P36's check is not one person looking harder but a plan socialised so that "somebody is checking my thinking and has the option to challenge me".
+      - to: f-operator-wants#reasoning
+        kind: agrees
+        point: '"With AI it should always be open to challenge": the same ask as the operators who wanted to know how the assistants decide.'
+
+  - id: p36-redundancy-by-criticality
+    title: "Who dies if I get this wrong"
+    parts: [{seg: session2, from: "proof being to put in on the scoring system", to: "if a dog dies fucking hell shut the whole thing down"}]
+    context: Session 2, continuing.
+    topics: [stakes, agents]
+    why: What the strategic assistant should have reasoned (redundancy scaled to criticality), and the question a real commander is always asking.
+    links: [f-flaw-odd]
+    refs:
+      - to: f-manual-cards#dots
+        kind: beyond
+        point: 'Spare drones in manual builds grow with mission size. P36 would set them by criticality: double for critical, none for routine. Not yet tested; it could be, from the logs.'
+
+  - id: p36-play-catch-up
+    title: If you did not build the plan, you play catch-up
+    parts: [{seg: session2, from: "because it's just better so if I've sent that off", to: "it's going to cost you this much to pay these people because they're a niche skill set"}]
+    prompt: {seg: session2, from: "so the last scenario you said something about", to: "the main advantage of the agents being speed"}
+    context: Session 2, asked about speed versus accuracy and why they use the tactical assistant even when not busy.
+    topics: [checking, skills, parallel]
+    why: 'The cost of handing over: the operator no longer holds the plan when it fails; so the key is not trusting the AI but the (scarce, expensive) skill of exploiting it, as in air traffic control.'
+    links: [f-tier-trust, f-size-decides]
+    refs:
+      - to: f-size-decides#parallel
+        kind: agrees
+        point: 'Handing over frees the operator to work elsewhere: "If I''ve sent that off it allows me to scan over here and then go back and check the answer over there", which is where the cohort''s Suggest time goes.'
+      - to: f-tier-trust#checking
+        kind: agrees
+        point: 'Brief checking, whatever the plan size. P36 names its price: "if I just said ''go nuts'' when something goes wrong I''ve got to play catch up", because the plan is not in your head.'
+      - to: f-personal-style#who-vs-what
+        kind: beyond
+        point: 'Who decides predicts handover far better than the mission does. P36 draws the operational conclusion: "the key thing for me in all of this is not necessarily trusting the AI it is the skills that a human is going to need to be able to exploit all of this", a niche skill set like air traffic control, paid accordingly.'
+
+  - id: p36-cost-capability
+    title: More capable for less money, or it won't take off
+    parts: [{seg: survey2, from: "or could you buy could you get more out of it by having more people and equipment", to: "it's got to be a yes"}]
+    context: Start of the second questionnaire, continuing from the skills passage.
+    topics: [skills, realism]
+    why: The adoption test as a practitioner sees it.
+
+  # ── added 2026-10-20 on a second read for the practitioner finding: short in-play moments that line up with a result
+  - id: p36-quicker-by-hand
+    title: "\"It would have been quicker\" by hand"
+    parts:
+      - {seg: session1, from: "Do you know what? Probably quicker just to hit three", to: "But we'll go three on that one there."}
+      - {seg: session1, from: "I probably should have done that one manually.", to: "It would have been quicker."}
+    context: Session 1, first minute; small missions, waiting for the cards.
+    topics: [own-play, size]
+    why: The size rule and its reason (on a small job the card costs time) said aloud in the first minute of play.
+    links: [f-size-decides]
+    refs:
+      - to: f-size-decides#speed
+        kind: agrees
+        point: 'The card saves time only on big three-type jobs. Three minutes into their first session P36 finds it out: "Probably quicker just to hit three", then "I probably should have done that one manually. It would have been quicker."'
+
+  - id: p36-as-many-across
+    title: As many across as quickly as I can
+    parts: [{seg: session1, from: "so generally speaking all I'm trying to do here", to: "so I've got the redundancy in there"}]
+    context: Session 1, about three minutes in, describing what they are doing.
+    topics: [own-play]
+    why: The goal in their own words — throughput across all tasks, watching the reserve, keeping redundancy.
+    links: [f-size-decides, f-manual-cards]
+    refs:
+      - to: f-size-decides#parallel
+        kind: agrees
+        point: Their aim is throughput across the board ("get as many across as quickly as I can to complete all of the tasks"), the same reason the cohort gives for starting Suggest and moving on.
+
+  - id: p36-never-without-reserve
+    title: Oldest first, and never deploy without a reserve
+    parts: [{seg: session1, from: "this one's been there for the longest", to: "just never deploy without a reserve"}]
+    context: Session 1, about six minutes in, opening the next mission and building it by hand.
+    topics: [own-play, redundancy]
+    why: Two cohort results in one breath — the oldest mission first, and a hand build that adds a spare drone over the minimum.
+    links: [f-triage, f-manual-cards]
+    refs:
+      - to: f-triage#order
+        kind: agrees
+        point: 'Operators open the oldest waiting mission well above chance. P36: "this one''s been there for the longest i''ve got nothing in there that''s going to change my prioritization".'
+      - to: f-manual-cards#dots
+        kind: qualifies
+        point: 'Most of the cohort''s hand builds sit at or below the cards (44% below both). P36 adds a spare on purpose ("minimum two we''re going to go three just never deploy without a reserve"), yet their builds land where the cohort''s do: on average 0.4 of a drone under the Conservative card, against a median of 0.6 under.'
+
+  - id: p36-ai-is-worse
+    title: "\"This AI is worse\" — and not looking"
+    parts: [{seg: session2, from: "three and a two and a three", to: "should have looked at that one in more detail"}]
+    context: Session 2, first minute; rejecting both strategy cards, then letting a later one through unread.
+    topics: [checking, own-play]
+    why: Spotting a bad card and, seconds later, waving one through without reading it — noticing a flaw does not by itself make someone check the next card.
+    links: [f-flaw-odd, f-tier-trust]
+    refs:
+      - to: f-flaw-odd#event
+        kind: qualifies
+        point: 'P36 is one of the 15 who said they noticed the illogical card. Here they reject both cards and seconds later let one through unread: noticing one bad card does not turn into checking the next.'
+
+  - id: p36-resource-rich
+    title: Resource rich, nothing coming in — Suggest anyway
+    parts: [{seg: session2, from: "so again this one here that's relatively simple", to: "coming in off we go"}]
+    context: Session 2, about five minutes in, a quiet moment with a full reserve.
+    topics: [own-play, pace]
+    why: Handing over at a quiet moment, which is what the queue analysis finds — reliance does not wait for pressure.
+    links: [f-workload]
+    refs:
+      - to: f-size-decides#both
+        kind: qualifies
+        point: 'The size rule bends with slack: this mission is "relatively simple", but "I''m resource rich at the moment so we''ll go nuts I''ll start suggesting".'
+      - to: f-workload#raw-vs-adjusted
+        kind: agrees
+        point: A busier moment does not push people onto the assistants. P36 presses Suggest at a quiet moment, "because there's nothing else that's coming in".
+
+  - id: p36-did-its-thing
+    title: It just kind of did its thing
+    parts: [{seg: survey1, from: "yeah i didn't read much about it", to: "i'm gonna score in the middle"}]
+    prompt: {seg: survey1, from: "i was gonna ask you questions about the strategic system", to: "which is these recommendations here"}
+    context: First questionnaire, the items on the Strategic Assistant.
+    topics: [checking, trust]
+    why: Trust rated in the middle for want of having looked; the rating reflects how much attention was paid as well as the assistant.
+    links: [f-tier-trust]
+    refs:
+      - to: f-tier-trust#gap
+        kind: qualifies
+        point: 'A trust rating can reflect how little someone looked: mid-scale for an assistant they "didn''t really read".'
+
+  - id: p36-tempo-echelon
+    title: Tempo by level — routine at the top, ten things at once at the bottom
+    parts: [{seg: interview, from: "so it's how you're talking about when does the effect", to: "that is getting both faster"}]
+    prompt: {seg: interview, from: "and I suppose I think it would be fair to say", to: "within a tactical kind of small scale"}
+    context: Debrief, on pace; the lead-in about long shifts and watchkeeping is probably the researcher (no speaker labels).
+    topics: [pace, hierarchy, realism]
+    why: Where workload sits in a real hierarchy — the lower tier gets everything at once as it comes down the chain — which the game compresses into one person.
+    links: [f-workload, f-tier-trust]
+    refs:
+      - to: f-workload#said-did
+        kind: qualifies
+        point: 'Nine people said they lean on the assistant when busy, yet their reliance did not rise with the queue. P36 puts the busy in a real hierarchy: "the higher up you are the further out", where a new item is "just like a routine routine task"; at the lower tier "10 things in front of me as it''s all come down the chain". The game gave one person both tiers.'
+      - to: q-new-jobs#queue-order
+        kind: beyond
+        point: 'P27 and P32 asked for an assistant that says what to open next. P36''s lower tier is where that job would sit: "I''ve got to do this thing now then that thing then that thing then that thing".'

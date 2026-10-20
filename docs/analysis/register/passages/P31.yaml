@@ -1,0 +1,124 @@
+# Long verbatim passages: P31. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P31
+read:
+  date: 2026-10-20
+  scope: everything (both sessions, surveys, break, debrief; about 4,000 words)
+  verdict: >-
+    Articulate throughout and unusually reflective about their own behaviour. Strongest on accountability, on what the
+    "AI" really is, and on checking without feedback. Methods note: in session 2 and the debrief the researcher told
+    P31 that the assistants' delays are artificial ("it actually computes the plan instantly and then adds it step by
+    step", "part of the gamification") and that Suggest is "greedy best first"; P31's later views on speed and on the
+    assistants' nature were formed after that.
+passages:
+  - id: p31-majority-of-the-way
+    title: Most of the way there, then look it over
+    parts: [{seg: session1, from: "I think as I'm getting a little bit more, uh, used to this system", to: "a lot of work to be doing with them."}]
+    context: Session 1, about 5 minutes in.
+    topics: [checking]
+    why: "The checking trade-off as it is lived: a quick look can miss that a plan only looks fine, but agonising costs penalty."
+    links: [f-tier-trust]
+
+  - id: p31-real-lives-pressure
+    title: Would we put real operators under this pressure?
+    parts: [{seg: session1, from: "This does always raise the question of like if this is in a situation", to: "I know this is like intentionally created"}]
+    prompt: {seg: session1, from: "It sounds like it sounds like you feel that what the AI is doing", to: "Yes, yes absolutely."}
+    speaker: mixed
+    context: Session 1; the prompt is the researcher summarising that the assistants are sub-optimal but quick.
+    topics: [stakes, realism]
+    why: Questions the premise of operating under this time and resource pressure when lives are at stake.
+
+  - id: p31-under-the-radar
+    title: Less thought, so issues fly under the radar
+    parts: [{seg: survey1, from: "I'd say that that I was giving less thought to that", to: "I think is much of a muchness"}]
+    context: Filling in the strategic trust questionnaire after session 1.
+    topics: [checking]
+    why: Trusting the cards meant attending to them less, and so possibly missing problems; their own judgement is "much of a muchness" with the assistant's.
+    links: [f-tier-trust]
+
+  - id: p31-recording-shows
+    title: "\"If we look at the recording I was doing exactly that\""
+    parts: [{seg: survey1, from: "I feel like I would personally answer this question a bit lower", to: "same obviously for the suggest button on the right hand screen"}]
+    context: Rating "I would follow the Strategic Assistant's suggestions without hesitation".
+    topics: [checking]
+    why: A participant noticing the gap between the trust they would state and the reliance they showed, and rating the behaviour.
+    links: [f-tier-trust]
+
+  - id: p31-less-oversight
+    title: Less oversight as the session goes on
+    parts: [{seg: session2, from: "Yes, yeah, yeah. I think, as opposed to at the beginning", to: "focusing on the strategic layer and the incoming missions."}]
+    prompt: {seg: session2, from: "Am I correct in saying you should be using the agents a little bit more often now?", to: "a little bit more often now?"}
+    context: Session 2, about 6 minutes in.
+    topics: [checking, practice]
+    why: "An explicit drift: the speed of the assistants outweighs their lack of optimality, so oversight of the tactical plan falls over the session."
+    links: [f-practice, f-tier-trust]
+
+  - id: p31-below-conservative
+    title: More conservative than the Conservative card
+    parts: [{seg: survey2, from: "I think the behaviour of the recommendations, I was slightly less sure on what it was", to: "I paid less attention to the tactical side on the second run."}]
+    prompt: {seg: survey2, from: "Now that I've had a little bit more time", to: "And for what reason?"}
+    speaker: mixed
+    context: Second questionnaire, asked whether their views had changed.
+    topics: [checking, practice]
+    why: Learning what the card does, then trimming it below even the Conservative card when other tasks were pending; and paying the tactical plan less attention.
+    links: [f-manual-cards]
+
+  - id: p31-dozen-lines
+    title: "\"Just like a dozen lines of code\""
+    parts: [{seg: interview, from: "As a means of studying the kind of interaction between human and drone swarms", to: "more than I would do in a real situation."}]
+    prompt: {seg: interview, from: "I always just start with how did you find that?", to: "Anything immediately you would..."}
+    context: Opening of the debrief.
+    topics: [mental-model, agents]
+    why: Sees through the "AI" label to simple rules, and expects a real path planner to need no human adjustment at all.
+    links: [f-operator-wants]
+
+  - id: p31-accountability
+    title: Accountability that just isn't there
+    parts: [{seg: interview, from: "Yeah, I feel like that's a very interesting question for like more of a moral reason", to: "that accountability just isn't there."}]
+    prompt: {seg: interview, from: "But one of my questions is if in five years' time this was much more sophisticated", to: "in this kind of setup?"}
+    speaker: mixed
+    context: Asked how they would feel about search and rescue run with AI systems like this in five years; the researcher supplies the word "Accountability" when P31 searches for it.
+    topics: [loop, stakes]
+    why: Even an AI that saves more lives on average leaves no one accountable for the life it failed to save.
+    links: [f-operator-wants]
+
+  - id: p31-no-feedback
+    title: Was my nudging making things better or worse?
+    parts: [{seg: interview, from: "Equally, I'm not so sure. I think the tactical layer required", to: "I have no feedback on that, so I don't actually know."}]
+    prompt: {seg: interview, from: "On both of them, you think, equally?", to: "The tactical and the strategic?"}
+    context: Asked whether both assistants helped equally.
+    topics: [failure-data, checking]
+    why: Intervening without feedback on whether intervening helps.
+    links: [f-operator-wants]
+
+  - id: p31-checking-balance
+    title: Too much checking, then not enough
+    parts: [{seg: interview, from: "Prudent? I definitely think the checking", to: "finding a balance between them."}]
+    prompt: {seg: interview, from: "To what extent was it prudent to and possible to check the results of each AI?", to: "check the results of each AI?"}
+    context: Debrief.
+    topics: [checking, practice]
+    why: Checking should have been necessary, but in practice they over-checked at the start and under-checked by the end.
+    links: [f-tier-trust]
+
+  - id: p31-task-ordering
+    title: The tactical plan's order made no sense
+    parts: [{seg: interview, from: "With the tactical layer, most of the time it operated", to: "get the lowest possible fly time between them."}]
+    prompt: {seg: interview, from: "And did you notice any really kind of failings of either AI tool", to: "good enough at Y?"}
+    context: Debrief, asked about the assistants' failings.
+    topics: [mental-model, flaws]
+    why: One of the few precise accounts of a tactical-plan flaw (task order ignores where the drones come from), and a guess at the algorithm that would fix it.
+    links: [f-flaw-odd]
+
+  - id: p31-map-unwatched
+    title: The map in the middle went unwatched
+    parts: [{seg: interview, from: "On the screen, we have this central section", to: "I think I would have done so more."}]
+    context: Debrief, asked about losing track of drones once dispatched.
+    topics: [interface]
+    why: Attention lived on the queue and the planner; the map, which shows the drones' return, was left for when there was spare capacity.
+
+  - id: p31-military-use
+    title: This research will end up in military use
+    parts: [{seg: interview, from: "I suppose only one thing that I'd want to, like,", to: "drones have entirely revolutionized"}]
+    speaker: mixed
+    context: The last thing P31 raised, unprompted; the transcript ends mid-sentence.
+    topics: [stakes]
+    why: An unprompted ethical concern about dual use.

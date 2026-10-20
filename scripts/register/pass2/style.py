@@ -383,7 +383,66 @@ def who_vs_what(L):
                         high=int((rates >= .9).sum()), low=int((rates <= .25).sum()))
     w = df.groupby(['pid', 'run']).took.mean().unstack().dropna()
     out['tookRetest'] = spear(w[1], w[2])
+    out['plain'] = who_vs_what_plain(df, mission, fit)
     print(out)
+    return out
+
+
+def auc(y, p):
+    """Area under the ROC curve via ranks (no scikit-learn): the chance a random card-taken decision gets a higher
+    prediction than a random not-taken one. 0.5 = coin, 1 = perfect."""
+    y, p = np.asarray(y), np.asarray(p, float)
+    rk = stats.rankdata(p)
+    n1, n0 = y.sum(), len(y) - y.sum()
+    return (rk[y == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * n0)
+
+
+def who_vs_what_plain(df, mission, fit):
+    """Pass-5 note on who-vs-what ('is 30% predictable or not?'): the same comparison in measures that read directly.
+    Person information is always taken from the person's OTHER decisions (leave-one-out rate), so no decision predicts
+    itself; 'session 2 from session 1' is the honest out-of-sample version. AUC intervals resample people (predictions
+    held fixed). The person-only pseudo-R2 is also refitted with the person labels shuffled, to show how much of the 24%
+    a model with one term per person gets from nothing."""
+    rng = np.random.default_rng(SEED + 4)
+    d = df.copy()
+    g = d.groupby('pid').took
+    d['loo'] = (g.transform('sum') - d.took) / (g.transform('count') - 1)
+    d['looL'] = np.log(d.loo.clip(.02, .98) / (1 - d.loo.clip(.02, .98)))
+    preds = dict(mission=quiet(fit, 'took ~ ' + mission).predict(d),
+                 person=smf.logit('took ~ looL', d).fit(disp=0).predict(d),
+                 both=smf.logit('took ~ ' + mission + ' + looL', d).fit(disp=0, method='bfgs', maxiter=4000).predict(d))
+    base = d.took.mean()
+    rows = []
+    pids = d.pid.unique()
+    idx = {p: np.flatnonzero(d.pid.to_numpy() == p) for p in pids}
+    y = d.took.to_numpy()
+
+    def row(key, yy, pp, ix):
+        bs = []
+        for _ in range(1000):
+            take = np.concatenate([ix[p] for p in rng.choice(list(ix), len(ix))])
+            if 0 < yy[take].sum() < len(take):
+                bs.append(auc(yy[take], pp[take]))
+        return dict(key=key, auc=r(auc(yy, pp)), lo=r(np.quantile(bs, .025)), hi=r(np.quantile(bs, .975)),
+                    acc=r(((pp >= .5) == yy).mean()), brier=r(((pp - yy) ** 2).mean()), n=int(len(yy)))
+    for k, p in preds.items():
+        rows.append(row(k, y, p.to_numpy(), idx))
+    # out of sample: each person's session-1 rate, applied to their session-2 decisions
+    r1 = d[d.run == 1].groupby('pid').took.mean()
+    d2 = d[d.run == 2].assign(r1=lambda x: x.pid.map(r1)).dropna(subset=['r1']).reset_index(drop=True)
+    ix2 = {p: np.flatnonzero(d2.pid.to_numpy() == p) for p in d2.pid.unique()}
+    rows.append(dict(row('s1s2', d2.took.to_numpy(), d2.r1.to_numpy(), ix2), people=int(d2.pid.nunique()),
+                     base=r(max(d2.took.mean(), 1 - d2.took.mean()))))
+    null = []
+    for _ in range(200):
+        dd = d.assign(pid=rng.permutation(d.pid.to_numpy()))
+        null.append(quiet(smf.logit('took ~ C(pid)', dd).fit, disp=0, method='bfgs', maxiter=4000).prsquared)
+    out = dict(rate=r(base), baseAcc=r(max(base, 1 - base)), baseBrier=r(base * (1 - base)), models=rows,
+               nullPerson=dict(mean=r(np.mean(null)), q95=r(np.quantile(null, .95)), draws=len(null)))
+    for x in rows:
+        print('   %-8s AUC %.3f [%.3f, %.3f]  accuracy %.3f  Brier %.3f  (n %d)' % (x['key'], x['auc'], x['lo'], x['hi'], x['acc'], x['brier'], x['n']))
+    print('   guessing the overall rate: accuracy %.3f, Brier %.3f; person-only R2 with labels shuffled: mean %.3f, 95th %.3f'
+          % (out['baseAcc'], out['baseBrier'], out['nullPerson']['mean'], out['nullPerson']['q95']))
     return out
 
 
@@ -924,6 +983,12 @@ def disposition_perm(L):
 # ════════════════════════════════════════════════════════════════════════════════════════════
 
 def main():
+    if '--wvw' in sys.argv:         # just who-vs-what, patched into the existing style.json
+        prev = json.loads(OUT.read_text(encoding='utf-8'))
+        prev['whoVsWhat'] = who_vs_what(load())
+        OUT.write_text(json.dumps(prev, separators=(',', ':')), encoding='utf-8')
+        print('\nwrote whoVsWhat into', OUT.relative_to(BASE))
+        return
     rng = np.random.default_rng(SEED)
     L = load()
     print('people %d, strategic decisions %d (P09 excluded)' % (L['dec'].pid.nunique(), len(L['dec'])))

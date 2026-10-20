@@ -1,0 +1,106 @@
+# Long verbatim passages: P22. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P22
+read:
+  date: 2026-10-20
+  scope: everything (both sessions, surveys, break, debrief; about 4,900 words)
+  verdict: >-
+    The clearest participant account of why the two tiers are trusted differently: the strategic card can be judged at
+    a glance, the tactical plan cannot, so it is taken on its word. Also the clearest statement of the "bad approximation
+    beats no response" position. Their claim that pressure made them verify less is the kind of claim the workload
+    finding tests and does not support across people. Influence note: their "bad approximation is better than no response" explicitly
+    refers back to the pre-study delegation item ("as I said in the warmup questionnaire"), so it echoes our own wording.
+passages:
+  - id: p22-fast-not-perfect
+    title: A fast decision is better than a perfect one
+    parts: [{seg: session1, from: "Although, yeah. So obviously speed is the name of the game.", to: "a fast decision is better than a perfect one."}]
+    speaker: mixed
+    context: Session 1, first mission; the researcher's "Exactly" closes the cut.
+    topics: [checking]
+    why: The speed–care trade-off stated at the very start of play.
+
+  - id: p22-similar-quality
+    title: Faster when simple, less accurate when complex
+    parts:
+      - {seg: session1, from: "I feel that they are similar.", to: "because that one was a straightforward problem."}
+      - {seg: survey1, from: "I think it's when the problem's like highly convex", to: "everything's in a line."}
+    prompt: {seg: session1, from: "Do you have any feeling as to whether your tactical allocations", to: "Obviously you mentioned speed."}
+    speaker: mixed
+    context: End of session 1, asked whether their hand-built plans are better or worse than the assistant's.
+    topics: [checking, mental-model]
+    why: Why the size rule holds for them, in terms of the geometry of the problem.
+    links: [f-size-decides]
+
+  - id: p22-fall-back
+    title: Never overwhelmed, because of the fall-back
+    parts: [{seg: survey1, from: "I didn't have a lot of time to plan.", to: "think about something else."}]
+    context: NASA-TLX after session 1, on temporal demand.
+    topics: [parallel, checking]
+    why: The assistant as a safety net that frees attention, not as a better planner.
+    links: [f-size-decides]
+
+  - id: p22-three-for-six
+    title: "\"There's no point in telling me that\""
+    parts: [{seg: survey1, from: "This guy was, um, somewhat reliable.", to: "you're limited in what you can actually provide me."}]
+    context: Strategic trust questionnaire after session 1.
+    topics: [flaws, explain]
+    why: A different strategic flaw from the illogical card — when the reserve is short the cards offer what is left (three drones for a six-drone job), which looks like advice but is not worth taking.
+
+  - id: p22-cant-perceive-optimal
+    title: Trusted because it cannot be checked
+    parts: [{seg: survey1, from: "This one, um, I think I generally relied on it more.", to: "I can't tell the difference between its thing and the optimal."}]
+    context: Tactical trust questionnaire after session 1.
+    topics: [checking, explain, flaws]
+    why: Names the mechanism behind the tier trust gap from the inside — the strategic card's shortfalls are visible, the tactical plan's are not, and their trust may rest on not being able to tell.
+    links: [f-tier-trust, f-flaw-odd]
+
+  - id: p22-pressure-less-verification
+    title: Under pressure, very little verification
+    parts: [{seg: session2, from: "Yeah. So definitely now that it's a more heavily resource constrained scenario", to: "I might as well spend my attention over here instead."}]
+    speaker: mixed
+    context: Session 2, short of drones with several mass-casualty missions waiting.
+    topics: [checking, stakes]
+    why: A first-hand claim that pressure means accepting the assistant with little checking — what the workload finding tests.
+    links: [f-workload]
+
+  - id: p22-slow-feels-unreliable
+    title: Slow under pressure feels unreliable
+    parts: [{seg: survey2, from: "in this scenario the strategic system felt more reliable", to: "just give me a good suggestion"}]
+    speaker: mixed
+    context: Trust questionnaires after the busier session 2.
+    topics: [mental-model, checking]
+    why: The same algorithm feels less reliable when the operator is rushed, because its wait feels longer.
+    links: [f-tier-trust, f-workload]
+
+  - id: p22-pinch-of-salt
+    title: A bigger pinch of salt for the strategic one
+    parts: [{seg: survey2, from: "i felt like i took a bigger pinch of salt for the strategic one", to: "just because I thought I could do it faster."}]
+    context: Finishing the tactical trust questionnaire after session 2.
+    topics: [checking, explain]
+    why: The same mechanism as after session 1, now with the conclusion that being unable to check also lowers trust.
+    links: [f-tier-trust]
+
+  - id: p22-middle-ground
+    title: Striking a middle ground on the strategic tier
+    parts: [{seg: interview, from: "So the strategic tool, I think I generally approached it as it was a good suggestion", to: "So I felt comfortable assessing and then overriding the strategic assistant."}]
+    prompt: {seg: interview, from: "Could you just summarize again, just in a sentence or two", to: "what scenarios you felt you were using each one?"}
+    context: Debrief, asked to summarise how they used each assistant.
+    topics: [hierarchy, checking]
+    why: Overriding the card to gamble on less coverage and keep a reserve for other missions — the cross-mission view the card lacks.
+    links: [f-manual-cards]
+
+  - id: p22-take-its-word
+    title: Taking the tactical assistant at its word
+    parts: [{seg: interview, from: "With the tactical assistant, especially in the more complex tasks,", to: "whereas the tactical view is much more complex."}]
+    context: Debrief, continuing.
+    topics: [checking, explain]
+    why: The fullest account in the study of why the tactical plan is kept unchecked on complex missions and built by hand only on simple ones.
+    links: [f-tier-trust, f-size-decides]
+
+  - id: p22-bad-approximation
+    title: A bad approximation is better than no response at all
+    parts: [{seg: interview, from: "I think it really is. It's the philosophy of", to: "but we don't have that luxury, essentially."}]
+    prompt: {seg: interview, from: "How do you feel about these tools being used in these types of problems", to: "AI tools of this type?"}
+    context: Debrief, asked how they would feel about mature tools like these in real search and rescue.
+    topics: [loop, stakes]
+    why: Weighs discomfort about responsibility against saving more people sub-optimally, and settles on a human in the loop making the final decision.
+    links: [f-operator-wants]

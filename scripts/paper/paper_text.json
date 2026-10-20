@@ -1,0 +1,116 @@
+{
+ "_doc": "Literal rewrites of register text for the paper: {key: {sub: {field: [[old, new], ...]}, replace: {field: value}}}. key = <finding> or <finding>#<section>; field = title | headline | text | how | numbers | qual. Each old string must occur in the register text (after page-only sentences are removed); build_paper.py warns if it does not.",
+ "f-size-decides#route-people": {
+  "sub": {
+   "text": [
+    [
+     "You asked whether the card → Suggest link is down to a few people. Partly.",
+     "Is the card → Suggest link down to a few people? Partly."
+    ]
+   ],
+   "qual": [
+    [
+     " (added 2026-10-19 at your request)",
+     ""
+    ]
+   ]
+  }
+ },
+ "f-flaw-odd#event": {
+  "sub": {
+   "text": [
+    [
+     "Every step is what you asked for, but each point",
+     "With every step shown, each point"
+    ]
+   ]
+  }
+ },
+ "f-flaw-odd#checking-after": {
+  "sub": {
+   "text": [
+    [
+     "The answer to the researcher's question is in the top block. ",
+     ""
+    ]
+   ]
+  }
+ },
+ "f-tier-trust#checking": {
+  "sub": {
+   "text": [
+    [
+     "This is the speed-versus-accuracy trade-off the researcher expects to come back to. ",
+     ""
+    ]
+   ]
+  }
+ },
+ "f-flaw-odd#refusal": {
+  "sub": {
+   "text": [
+    [
+     "<i>Not the same moment as section 4.</i>",
+     "<i>Not the same moment as the previous section.</i>"
+    ],
+    [
+     "You asked whether the only thing that changes after the first refusal is that <i>strategic</i> use goes down, with the problem cascading up the chain.",
+     "Does <i>strategic</i> use go down after the first refusal, with the problem cascading up the chain?"
+    ],
+    [
+     " The card's wording, 'neither assistant's use changes', was right.",
+     ""
+    ]
+   ]
+  }
+ },
+ "f-tier-trust#stated-revealed": {
+  "sub": {
+   "text": [
+    [
+     "<br> This is the stated-versus-revealed framing the researcher liked.",
+     ""
+    ]
+   ]
+  }
+ },
+ "f-workload#waited": {
+  "sub": {
+   "text": [
+    [
+     "You wondered whether people automate when they realise they have left a card hanging.",
+     "Do people hand a decision over when they realise they have left it waiting?"
+    ]
+   ]
+  }
+ },
+ "f-flaw-odd#spoken": {
+  "sub": {
+   "text": [
+    [
+     "section 5 is a different event",
+     "the next section is a different event"
+    ],
+    [
+     "You suggested anchoring on the moment someone said, during play, that a card was wrong. We did.",
+     "Here each person is anchored on the moment they said, during play, that a card was wrong."
+    ]
+   ]
+  }
+ },
+ "q-practitioner#not-picked": {
+  "replace": {
+   "text": "The passages from the same participant that were not picked for the main section, kept so nothing is lost. Each carries the links back it was first given; they were not re-read against a trimmed version."
+  }
+ },
+ "q-practitioner#pt-staff-process": {
+  "sub": {
+   "text": [
+    [
+     "(which the bracket in the trim maps to the study's strategic tier)",
+     "(glossed in the quote as the study's strategic tier)"
+    ]
+   ]
+  }
+ }
+}

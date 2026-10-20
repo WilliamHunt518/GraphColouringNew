@@ -1,0 +1,33 @@
+# Long verbatim passages: P01 (skim group). Phrases only.
+pid: P01
+read:
+  date: 2026-10-20
+  scope: questionnaire talk, break and debrief read in full
+  verdict: >-
+    Played build study-v1.0, which had two real bugs (drone failures biased towards Fast drones, and a card's promised
+    team not fully deploying; docs/STUDY_BUILD.md section 8). P01's sense that the assistant "wasn't sending out the
+    right number of drones" was therefore likely correct. The debrief also discusses the switched-off error-injection
+    setting with the researcher. Read these passages with that context.
+passages:
+  - id: p01-rely-more-trust-less
+    title: More to process means relying more and trusting less
+    parts: [{seg: survey1, from: "Great mental overhead reliever.", to: "I think, ironically enough."}]
+    speaker: mixed
+    context: Trust questionnaires after session 1.
+    topics: [checking, explain]
+    why: Follows the tactical plan without hesitation because it is harder to challenge mentally, and names the bind of relying more while trusting less.
+    links: [f-tier-trust]
+  - id: p01-fighting-it
+    title: "\"I don't trust myself anymore\""
+    parts: [{seg: survey2, from: "There's... There's something going on. There was something... It's not a conspiracy theory.", to: "I just follow it without hesitation."}]
+    speaker: mixed
+    context: After session 2 (build v1.0). Their suspicion that the cards were not sending the right number was probably a real bug.
+    topics: [flaws, failure-data, checking]
+    why: A participant who correctly senses a fault, cannot verify it, and ends up doubting themself while still following the tactical assistant.
+    links: [f-flaw-odd, f-tier-trust]
+  - id: p01-behave-the-same
+    title: If it were real I would behave the same, and that is the problem
+    parts: [{seg: interview, from: "I mean, if it was a real task, I feel like I'd behave the same.", to: "That might not be a good thing if you're actually controlling real drones."}]
+    context: End of the debrief.
+    topics: [stakes, realism]
+    why: Doubts that the game's playfulness would switch off with real stakes.

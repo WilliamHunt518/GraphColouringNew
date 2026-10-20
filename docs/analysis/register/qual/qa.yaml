@@ -30,6 +30,15 @@ quotes:
     text: "I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that. [Researcher: …there's some continuity between the strategic and signing with a plan in mind.] Yeah, exactly."
     codes: [C01, C02]
     context: "The continuity between tiers, in the researcher's word, which P21 agrees to: the plan made at the strategic step carries into building the tactical plan by hand. 'signing' is the transcript's rendering of 'assigning'."
+  - id: qa-P30-06
+    pid: P30
+    source: think-aloud
+    at: "s1 0:03:46"
+    led: 0
+    paraphrase: false
+    text: "So I would still grow aggressive on this. As well just because if you have spare, I can suggest it, but it should get it to easily."
+    codes: [C03]
+    context: "Choosing the Aggressive card with the tactical step in mind: spare drones make it easy for Suggest. 'grow' is the transcript's rendering of 'go'."
   - id: qa-P21-02
     pid: P21
     source: think-aloud
@@ -924,6 +933,16 @@ quotes:
     paraphrase: false
     text: "It was interesting. It was, you get the hang of it quite quickly, I think."
     codes: []
+  # ---- added 2026-10-19 (pass-5 note on f-size-decides#route-people: the people who do not fit) ----
+  - id: qa-P20-06
+    pid: P20
+    source: think-aloud
+    at: "s1 0:06:02"
+    led: 1
+    paraphrase: false
+    text: "Okay, yeah, unfortunately, I've run out of blues. […] I wanted to assign seven drones, but then I saw that seven drones weren't available. […] Um, since this is giving me a lot of tasks, let me get a suggestion."
+    codes: [C03]
+    context: "P20 leans against the card → Suggest pattern. Here the hand allocation is forced by a shortage (the researcher asked whether they disliked the cards), and the very next step on the same mission is Suggest, because it has many tasks. Utterances at 0:06:02 and 0:06:24."
 sections:
   # ======================= f-personal-style =======================
   "f-personal-style#habits":
@@ -964,7 +983,7 @@ sections:
   # ======================= f-size-decides =======================
   "f-size-decides#both":
     summary: "10 of 33 state the size rule in debrief or interview (C03). The think-aloud adds at least six more who give the same reason while playing: P04, P06, P12, P20, P32 and P36. They do single-colour or few-drone missions themselves and hand over large, multi-colour, many-chain ones, usually because it is quicker. There is dissent. P30 thinks simple tasks are the ones the AI 'should be able to do even easier'. P29 switched direction mid-session ('if it's easy, then it's hard for it to do it wrong'). P20 kept complex orderings for themself, and P10 hands trivial one-option plans to Suggest."
-    featured: [qa-P29-04, ev50, qa-P36-01, qa-P30-02]
+    featured: [qa-P29-04, ev50, qa-P30-02]
     more: [ev186, ev187, ev134, ev75, ev76, ev237, ev1, ev2, ev240, qa-P04-02, qa-P06-03, qa-P12-01, qa-P20-02, qa-P20-03, qa-P18-01, qa-P29-08, qa-P26-02, qa-P22-01, qa-P11-04, qa-P05-02, qa-P29-05, qa-P29-06, qa-P20-01, qa-P10-02, qa-P03-02, ev119]
     codes: [C03, C04]
   "f-size-decides#models":
@@ -975,8 +994,13 @@ sections:
   "f-size-decides#tactical":
     summary: "Three people tie the two tiers together the way the logs do (card-allocated missions get Suggest more). P10 says repeatedly that once they have taken the Aggressive card there is 'only really one way' to assign, so Suggest is the obvious next step. P05 and P30 take a card and then press Suggest on the same mission. The same continuity runs the other way for P21, who lays out a plan in their head while building the allocation by hand and says it would 'disrupt my thought process' to switch to Suggest for the tactical step; P30 likewise finds it easier to give the assistant resources and let it optimise. The opposite pairing is said too. P18 takes a card and then plans a routine mission by hand, and P26 and P28 build strategic allocations by hand but press Suggest. On size, the reasons given are drag-and-drop effort and the number of combinations or chains."
     featured: [qa-P10-04, qa-P05-01, qa-P30-03, qa-P18-02, qa-P21-09]
-    more: [qa-P10-03, qa-P10-05, qa-P11-04, qa-P06-04, qa-P26-02, qa-P28-01, qa-P10-01, qa-P10-02, qa-P30-01]
+    more: [qa-P30-06, qa-P10-03, qa-P10-05, qa-P11-04, qa-P06-04, qa-P26-02, qa-P28-01, qa-P10-01, qa-P10-02, qa-P30-01]
     codes: [C03, C04]
+  "f-size-decides#route-people":
+    summary: "The people at the ends of the chart, in their own words (added 2026-10-19 at your request). <b>Strongest tilt</b> (P13, P15, P06, then P29): none of them talks about linking the two steps. They describe a rule for the whole mission: P15 hands over when there are 'too many decisions', P29 does one-colour missions themself and lets the assistant take multi-colour ones, and P06 drags and drops less as the work piles up. P13's hand allocations are disagreements with over-stocked cards ('why would I spend more resources'), and they say 'I always let the agent do it first' on the tactical step, yet none of their five plans after a hand allocation used Suggest. Their words do not explain their gap. <b>Leaning the other way</b> (P20, P03, P11, P31): their hand allocations are of a different kind. P20 builds by hand when the card cannot be met ('I've run out of blues') and then presses Suggest because the mission has many tasks. P03 works every allocation out first and checks the card against it. P11 rarely presses Suggest at all and does not want 'to be reduced to pressing allocate, suggest, deploy'. P31 lets Suggest get 'the majority of the way' whatever happened at the strategic step. <b>Only one route</b>: P21, who almost always allocated by hand, gives the clearest account of carrying a plan from one step to the next ('it's going to disrupt my thought process'). The card-only people (P07, P12, P14, P25, P27, P34) mostly give speed and urgency as the reason; P14 used the assistants 'for almost every allocation'."
+    featured: [ev75, qa-P29-04, qa-P13-02, qa-P20-06, qa-P21-09]
+    more: [qa-P13-01, qa-P06-04, qa-P29-08, ev9, ev47, qa-P11-02, qa-P31-01, qa-P20-01, qa-P20-03, qa-P14-01, ev170]
+    codes: [C01, C02, C03]
   "f-size-decides#speed":
     summary: "Speed is the most common reason given for using the assistants: 15 of 33 coded C04. Many add that the plan is not better, just faster (P04, P17, P11). The card's loading wait is the main complaint. Six were coded C06, and in the think-aloud P18, P21, P29 and P32 go manual because they 'can't wait' for the cards, mostly on small missions. That matches the finding that the card pays off only on big strategic jobs. P20 first said the strategic assistant saved them more time, then corrected themself on remembering its loading stage."
     featured: [ev176, qa-P17-02, ev185, qa-P21-04]
@@ -985,7 +1009,7 @@ sections:
   "f-size-decides#said":
     summary: "10 of 33 state the size rule unprompted (C03), 15 value the assistant for speed rather than accuracy (C04) and 8 work in parallel (C05). The clearest statements tie all three together: small jobs are quicker by hand, big ones are a 'computation problem', and the wait frees attention for the next mission. Dissent from P30, P20 and P29 is in the first section. P32 said their use followed workload, not how hard a mission looked."
     featured: [ev51, ev186, ev163, ev201]
-    more: [qa-P11-04, ev134, ev135, ev75, ev240, ev52, qa-P32-05, qa-P36-01, qa-P29-04]
+    more: [qa-P11-04, ev134, ev135, ev75, ev240, ev52, qa-P32-05, qa-P29-04]
     codes: [C03, C04, C05]
   # ======================= f-manual-cards =======================
   "f-manual-cards#dots":
@@ -1021,7 +1045,7 @@ new_sections:
     text: "To close the finding: what people said about pressing Suggest and turning to other work while it fills in. It sits here rather than under the time-phase chart because it is about how people used the assistant, not about the chart's numbers."
     tier: main
     role: extra
-    summary: "8 of 33 describe starting Suggest and working elsewhere while it fills in (C05). The think-aloud shows more of it (P19, P32, P36). Nobody said a Suggest plan finishes the mission sooner. Two people said the opposite about plan quality: P31 adjusted a Suggest plan they thought visited tasks in a poor order, and P21 found it lacked the cross-task redundancy they built themself. P36 names a cost of handing over: if you did not build the plan, you are playing catch-up when something fails."
-    featured: [ev33, ev201, qa-P36-02, qa-P31-04]
-    more: [qa-P36-03, ev32, ev54, ev55, ev77, ev104, ev105, ev125, ev239, qa-P32-06, qa-P19-01, qa-P31-03, qa-P21-06]
+    summary: "8 of 33 describe starting Suggest and working elsewhere while it fills in (C05). The think-aloud shows more of it (P19, P32, P36). Nobody said a Suggest plan finishes the mission sooner. Two people said the opposite about plan quality: P31 adjusted a Suggest plan they thought visited tasks in a poor order, and P21 found it lacked the cross-task redundancy they built themself."
+    featured: [ev33, ev201, qa-P31-04]
+    more: [ ev32, ev54, ev55, ev77, ev104, ev105, ev125, ev239, qa-P32-06, qa-P19-01, qa-P31-03, qa-P21-06]
     codes: [C05]

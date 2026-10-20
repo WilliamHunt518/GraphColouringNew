@@ -14,6 +14,7 @@ findings.yaml. Unknown findings, sections or quote ids are errors, so nothing is
 from __future__ import annotations
 
 import csv
+import json
 import re
 import sys
 from pathlib import Path
@@ -27,6 +28,13 @@ FINDINGS = REG / 'findings.yaml'
 EVIDENCE = BASE / 'docs' / 'analysis' / 'qual' / 'evidence.csv'
 CODEBOOK = BASE / 'docs' / 'analysis' / 'qual' / 'CODEBOOK.md'
 DISCUSSION = 'f-operator-wants'
+# Participants quoted only in their own finding (the researcher's call, pass 5): a quote of theirs anywhere else is an error.
+OWN_FINDING = {'P36': 'q-practitioner'}
+
+
+def misplaced(B: dict, fid: str, qids) -> list:
+    """Quote ids in `qids` from a participant who is kept to a finding other than `fid`."""
+    return [q for q in qids if OWN_FINDING.get((B.get(q) or {}).get('pid'), fid) != fid]
 
 
 def ns(stem: str, qid: str) -> str:
@@ -37,12 +45,26 @@ def files():
     return [(p.stem, yaml.safe_load(p.read_text(encoding='utf-8')) or {}) for p in sorted(QUAL.glob('*.yaml'))]
 
 
+PASSAGES = REG / 'passages' / 'built.json'
+PSOURCE = {'session1': 'think-aloud', 'session2': 'think-aloud', 'survey1': 'questionnaire talk',
+           'survey2': 'questionnaire talk', 'between1': 'questionnaire talk', 'interview': 'debrief'}
+
+
 def bank() -> dict:
-    """Every analyst quote, by namespaced id (embedded in the page; holds verbatim speech)."""
+    """Every analyst quote, by namespaced id (embedded in the page; holds verbatim speech), plus the long passages
+    (passages/built.json, from scripts/register/build_passages.py) as ps:<id>, flagged long."""
     out = {}
     for stem, d in files():
         for q in d.get('quotes') or []:
             q = dict(q); out[ns(stem, q.pop('id'))] = q
+    if PASSAGES.exists():
+        for pid_, p in json.loads(PASSAGES.read_text(encoding='utf-8'))['passages'].items():
+            seg, at = p['seg'], p['at'].split(' ', 1)[-1]
+            out['ps:' + pid_] = dict(pid=p['pid'], source=PSOURCE.get(seg, seg), long=True, title=p['title'],
+                                     at=at if seg == 'interview' else '%s %s' % (seg.replace('session', 's'), at),
+                                     text=p['text'], prompt=p.get('prompt'), mixed=p.get('speaker') == 'mixed',
+                                     context=p.get('context', ''), why=p.get('why', ''), words=p['words'],
+                                     refs=[dict(r, ps=pid_) for r in p.get('refs') or []])
     return out
 
 
@@ -60,7 +82,8 @@ def main() -> None:
     by = {f['id']: f for f in F}
     with open(EVIDENCE, encoding='utf-8') as fh:
         n_ev = sum(1 for _ in csv.DictReader(fh))
-    known = set(bank())
+    B = bank()
+    known = set(B)
     errs, done = [], []
 
     def ids(stem, lst, where):
@@ -99,6 +122,13 @@ def main() -> None:
             else:
                 f['sections'].append(sec)
             done.append(fid + '#' + u['id'] + ' (new)')
+    touched = {k.split(' ')[0] for k in done}       # the themes.yaml findings are add_qual_findings.py's to check
+    for f in F:
+        for s in f.get('sections') or []:
+            if f['id'] + '#' + s['id'] not in touched:
+                continue
+            for q in misplaced(B, f['id'], (s.get('qual') or {}).get('featured', []) + (s.get('qual') or {}).get('more', [])):
+                errs.append('%s#%s: %s belongs only in %s' % (f['id'], s['id'], q, OWN_FINDING[B[q]['pid']]))
     print('%d quotes in the bank; %d sections given quotes' % (len(known), len(done)))
     if errs:
         raise SystemExit('\n'.join(errs))

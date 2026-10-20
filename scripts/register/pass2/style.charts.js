@@ -314,14 +314,51 @@
 
     /* 9 · how much of card-taking is the person vs the mission */
     'style.whoVsWhat': safe(host => {
-      const Wv = D.whoVsWhat;
-      h('p', { class: 'cap', html: '<b>Bar length</b> = McFadden pseudo-R², as a % (how much of whether a card is taken each model explains; 0% = no better than the overall rate).' }, host);
-      barsH(h('div', {}, host), [{ label: 'Mission, scenario, run, timing', value: Wv.mission, color: css('--mark-soft'), sub: 'drone types, drones, scenario, session, decision number' },
-        { label: 'Who the operator is', value: Wv.person, color: css('--s-strat'), sub: 'one term per person' },
-        { label: 'Both together', value: Wv.both, color: css('--mark'), sub: `${Wv.n} decisions, ${Wv.people} people` }],
-        { max: .4, fmt: v => pct(v, 0), padL: 220 });
-      cap(host, `McFadden pseudo-R²: how much better than a coin weighted at the overall rate each model predicts whether a card is taken (0 = no better, 1 = perfect). Descriptive only — person-only models flatter themselves at ~18 decisions each. `
-        + `Card uptake per person ranges ${pct(Wv.rates.lo, 0)}–${pct(Wv.rates.hi, 0)} (median ${pct(Wv.rates.median, 0)}).`);
+      const Wv = D.whoVsWhat, PL = Wv.plain;
+      const box = h('div', {}, host);
+      const r2 = () => {
+        h('p', { class: 'cap', html: '<b>Bar length</b> = McFadden pseudo-R², as a % (how much of whether a card is taken each model explains; 0% = no better than the overall rate).' }, box);
+        barsH(h('div', {}, box), [{ label: 'Mission, scenario, run, timing', value: Wv.mission, color: css('--mark-soft'), sub: 'drone types, drones, scenario, session, decision number' },
+          { label: 'Who the operator is', value: Wv.person, color: css('--s-strat'), sub: 'one term per person' },
+          { label: 'Both together', value: Wv.both, color: css('--mark'), sub: `${Wv.n} decisions, ${Wv.people} people` }],
+          { max: .4, fmt: v => pct(v, 0), padL: 220 });
+        cap(box, `McFadden pseudo-R²: how much better than a coin weighted at the overall rate each model predicts whether a card is taken (0 = no better, 1 = perfect). Descriptive only — person-only models flatter themselves at ~18 decisions each`
+          + (PL ? ` (with the person labels shuffled at random, the person-only model still scores ${pct(PL.nullPerson.mean, 0)} on average, so about ${pct(Wv.person - PL.nullPerson.mean, 0)} of its ${pct(Wv.person, 0)} is real)` : '')
+          + `. Card uptake per person ranges ${pct(Wv.rates.lo, 0)}–${pct(Wv.rates.hi, 0)} (median ${pct(Wv.rates.median, 0)}).`);
+      };
+      // The same comparison as a ranking test: bars run from 50% (a coin) towards 100% (perfect), whiskers = 95% interval.
+      const plain = () => {
+        const M = Object.fromEntries(PL.models.map(m => [m.key, m]));
+        const rows = [['mission', 'Mission, scenario, run, timing', '--mark-soft', 'everything about the mission and when it came'],
+                      ['person', 'Who the operator is', '--s-strat', 'their rate on all their OTHER decisions'],
+                      ['both', 'Both together', '--mark', 'mission + their rate on their other decisions'],
+                      ['s1s2', 'Session 2, from session 1 only', '--s-tac', 'each person\'s session-1 rate, applied to their session-2 decisions']];
+        const W = 700, rowH = 40, padL = 230, padR = 70, padT = 8, H = padT + rows.length * rowH + 34;
+        const s = svgRoot(h('div', {}, box), W, H);
+        const x = v => padL + (W - padL - padR) * ((v - .5) / .5);
+        [.5, .6, .7, .8, .9, 1].forEach(v => {
+          el('line', { x1: x(v), x2: x(v), y1: padT, y2: H - 28, stroke: css(v === .5 ? '--ink-3' : '--grid') }, s);
+          el('text', { x: x(v), y: H - 12, 'text-anchor': 'middle', fill: css('--ink-3'), 'font-size': 11, 'font-family': css('--mono') }, s).textContent = v === .5 ? '50% coin' : pct(v, 0);
+        });
+        rows.forEach(([k, lab, c, sub], i) => {
+          const m = M[k], y = padT + i * rowH + rowH / 2;
+          el('text', { x: padL - 10, y: y + 4, 'text-anchor': 'end', fill: css('--ink-2'), 'font-size': 12.5 }, s).textContent = lab;
+          el('rect', { x: x(.5), y: y - 8, width: Math.max(0, x(m.auc) - x(.5)), height: 16, rx: 4, fill: css(c) }, s);
+          el('line', { x1: x(m.lo), x2: x(m.hi), y1: y, y2: y, stroke: css('--ink'), 'stroke-width': 1.5 }, s);
+          [m.lo, m.hi].forEach(v => el('line', { x1: x(v), x2: x(v), y1: y - 5, y2: y + 5, stroke: css('--ink'), 'stroke-width': 1.5 }, s));
+          el('text', { x: x(m.hi) + 8, y: y + 4, fill: css('--ink-2'), 'font-size': 12, 'font-family': css('--mono') }, s).textContent = pct(m.auc, 0);
+          hoverable(el('rect', { x: padL, y: y - rowH / 2, width: W - padL - padR, height: rowH, fill: 'transparent' }, s),
+            `<b>${lab}</b><br>${sub}<br>ranks a taken/not-taken pair right ${pct(m.auc, 0)} of the time [${pct(m.lo, 0)}, ${pct(m.hi, 0)}]<br>`
+            + `guesses right ${pct(m.acc, 0)} (always guessing 'card': ${pct(m.base != null ? m.base : PL.baseAcc, 0)}) · ${m.n} decisions`);
+        });
+        cap(box, `<b>How to read it.</b> Take one decision where a card was taken and one where it was not, and ask each model which is which. `
+          + `A coin gets it right 50% of the time, a perfect model 100%. Knowing only the mission: ${pct(M.mission.auc, 0)}. Knowing only who is deciding, from their other decisions: ${pct(M.person.auc, 0)}. `
+          + `Both: ${pct(M.both.auc, 0)}. The honest test: each person's session-1 rate alone picks out their session-2 decisions ${pct(M.s1s2.auc, 0)} of the time. `
+          + `Whiskers = 95% intervals (people resampled). Plain 'right or wrong' guessing barely moves, because ${pct(PL.rate, 0)} of decisions took a card, so 'always card' is already right ${pct(PL.baseAcc, 0)} of the time.`);
+      };
+      const draw = k => { box.innerHTML = ''; (k === 'plain' && PL ? plain : r2)(); };
+      host.insertBefore(btnBar(host, 'Measure', [['r2', 'Pseudo-R² (as before)'], ['plain', 'In plain terms: telling taken from not taken']], 'r2', draw), box);
+      draw('r2');
     }),
 
     /* 10 · no types: observed against the no-types benchmarks */

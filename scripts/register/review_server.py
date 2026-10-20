@@ -55,7 +55,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if RESPONSES.exists():
                 return self._json(200, json.loads(RESPONSES.read_text(encoding='utf-8')))
             return self._json(200, {'pass': current_pass(), 'cards': {}})      # no notes yet; 200 so the page knows the server is here
+        if self.headers.get('Range') and self._range():
+            return
         return super().do_GET()
+
+    def _range(self):
+        """Byte ranges for the demo clips: without them a browser cannot seek a video (the base handler ignores Range)."""
+        m = re.fullmatch(r'bytes=(\d*)-(\d*)', self.headers.get('Range', '').strip())
+        path = Path(self.translate_path(self.path))
+        if not m or not path.is_file():
+            return False
+        size = path.stat().st_size
+        a, b = m.groups()
+        start, end = (int(a), int(b) if b else size - 1) if a else (max(0, size - int(b or 0)), size - 1)
+        end = min(end, size - 1)
+        if start > end:
+            self.send_response(416); self.send_header('Content-Range', 'bytes */%d' % size); self.end_headers()
+            return True
+        self.send_response(206)
+        self.send_header('Content-Type', self.guess_type(str(path)))
+        self.send_header('Accept-Ranges', 'bytes')
+        self.send_header('Content-Range', 'bytes %d-%d/%d' % (start, end, size))
+        self.send_header('Content-Length', str(end - start + 1))
+        self.end_headers()
+        with open(path, 'rb') as fh:
+            fh.seek(start)
+            self.wfile.write(fh.read(end - start + 1))
+        return True
 
     def do_POST(self):
         if self.path.split('?')[0] != '/api/responses':
@@ -68,6 +94,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if data['pass'] != current_pass():         # a stale tab from an earlier pass: refuse, keep the file
             return self._json(409, {'error': 'notes are for pass %s but pass %s is open -- reload the page'
                                              % (data['pass'], current_pass())})
+        acted = RESPONSES.with_name('acted.json')     # notes Claude has acted on (clear_acted.py): a stale tab must not revive them
+        if acted.exists():
+            for k, old in (json.loads(acted.read_text(encoding='utf-8')).get('notes') or {}).items():
+                card, _, qid = k.partition('@')       # <card>@<quote id>: a comment on one quote
+                r = data['cards'].get(card)
+                gone = {(o.get('note') or '').strip() for o in old}
+                if r and qid and ((r.get('qnotes') or {}).get(qid) or '').strip() in gone:
+                    r['qnotes'] = {x: v for x, v in r['qnotes'].items() if x != qid}
+                elif r and not qid and (r.get('note') or '').strip() in gone:
+                    r['note'] = ''
         with LOCK:
             RESPONSES.parent.mkdir(parents=True, exist_ok=True)
             if RESPONSES.exists():

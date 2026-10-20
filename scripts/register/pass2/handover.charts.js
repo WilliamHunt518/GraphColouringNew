@@ -439,10 +439,30 @@
       const M = D.manual;
       const keys = [{ key: 'below both', label: 'below both cards', color: C('--r-cons') }, { key: 'equals a card', label: 'equals a card total', color: C('--mark-soft') },
                     { key: 'strictly between', label: 'strictly between', color: C('--s-strat') }, { key: 'above both', label: 'above both cards', color: C('--r-aggr') }];
-      barsStacked(host, M.pos.map(p => ({ label: `${p.kind} (n=${p.n})`, values: Object.fromEntries(keys.map(k => [k.key, p[k.key] / p.n])) })), keys, { padL: 230 });
-      legend(host, keys.map(k => ({ label: k.label, color: k.color })));
-      head(host, 'Each bar is 100% of that kind of manual allocation (n = decisions); each segment is the % whose total drone count was below both cards\' totals, '
-        + 'equal to one card\'s total, strictly between the two, or above both.');
+      const A = (D.p5 || {}).manualPosAdj;
+      const box = h('div', {}, host);
+      const draw = v => {
+        box.innerHTML = '';
+        if (v === 'adj' && A) {
+          barsStacked(box, A.rows.map(p => ({ label: `${p.kind} (n=${p.n})`, values: p.adj,
+            sub: `balanced; 95% intervals: ${keys.map(k => `${k.label} ${pct(p.lo[k.key], 0)}–${pct(p.hi[k.key], 0)}`).join(' · ')}` })), keys, { padL: 230 });
+          legend(box, keys.map(k => ({ label: k.label, color: k.color })));
+          const E = A.diffs['equals a card'], B = A.diffs['below both'];
+          head(box, `<b>Balanced for the mission:</b> each kind of build shown as if it had been made on the same mix of missions (all ${A.rows.reduce((s, p) => s + p.n, 0)} manual builds): `
+            + `same drones needed, drone types, gap between the two cards, game, session and minute. Pre-emptive minus after seeing, 'equals a card': raw ${sgn(100 * E.raw, 0)} points, balanced ${sgn(100 * E.adj, 0)} [${sgn(100 * E.lo, 0)}, ${sgn(100 * E.hi, 0)}]; `
+            + `'below both': raw ${sgn(100 * B.raw, 0)}, balanced ${sgn(100 * B.adj, 0)} [${sgn(100 * B.lo, 0)}, ${sgn(100 * B.hi, 0)}]. Hover a segment for its interval.`);
+          tableFor(box, ['Kind', 'n', 'People', 'Drones needed', 'One drone type', 'Gap between cards', 'Session 2', ...keys.map(k => k.label + ' raw → balanced')],
+            A.rows.map(p => [p.kind, p.n, p.people, num(p.mix.drones, 1), pct(p.mix.oneType, 0), num(p.mix.spread, 1), pct(p.mix.session2, 0),
+              ...keys.map(k => `${pct(p.raw[k.key], 0)} → ${pct(p.adj[k.key], 0)} [${pct(p.lo[k.key], 0)}–${pct(p.hi[k.key], 0)}]`)]));
+          return;
+        }
+        barsStacked(box, M.pos.map(p => ({ label: `${p.kind} (n=${p.n})`, values: Object.fromEntries(keys.map(k => [k.key, p[k.key] / p.n])) })), keys, { padL: 230 });
+        legend(box, keys.map(k => ({ label: k.label, color: k.color })));
+        head(box, 'Each bar is 100% of that kind of manual allocation (n = decisions); each segment is the % whose total drone count was below both cards\' totals, '
+          + 'equal to one card\'s total, strictly between the two, or above both.');
+      };
+      if (A) host.insertBefore(btnBar(host, 'View', [['raw', 'As built'], ['adj', 'Balanced for mission size, types, game, timing']], 'raw', draw), box);
+      draw('raw');
     }),
   });
 
@@ -493,10 +513,20 @@
           + (p.tip ? '<br>' + p.tip : ''));
       });
     });
+    (o.marks || []).forEach(m => {     // a dark tick across the whole group: e.g. the overall rate for that category
+      const ci = cats.findIndex(c => String(c) === String(m.cat));
+      if (ci < 0 || m.v == null) return;
+      const cx = padL + bandW * (ci + 0.5), half = (ns * bw + gap * (ns - 1)) / 2 + 5;
+      el('line', { x1: cx - half, x2: cx + half, y1: y(m.v), y2: y(m.v), stroke: C('--ink'), 'stroke-width': 2.5 }, s);
+      el('circle', { cx: cx + half, cy: y(m.v), r: 3, fill: C('--ink') }, s);
+      const hit = el('rect', { x: cx - half, y: y(m.v) - 5, width: 2 * half, height: 10, fill: 'transparent' }, s);
+      hoverable(hit, `<b>${o.markLabel || 'overall'}</b> · ${m.cat}<br>${fmt(m.v)}${m.tip ? '<br>' + m.tip : ''}`);
+    });
     el('line', { x1: padL, x2: W - padR, y1: H - padB, y2: H - padB, stroke: C('--line') }, s);
     txt(s, { x: (padL + W - padR) / 2, y: H - 6, 'text-anchor': 'middle' }, o.xLabel || '');
     yTitle(s, o.yLabel, (padT + H - padB) / 2);
-    if (ns >= 2 && o.legend !== false) legend(host, series.map(se => ({ label: se.label, color: se.color })));
+    if (ns >= 2 && o.legend !== false) legend(host, series.map(se => ({ label: se.label, color: se.color }))
+      .concat(o.marks && o.marks.length ? [{ label: o.markLabel || 'overall', color: C('--ink') }] : []));
     return s;
   }
 
@@ -670,13 +700,16 @@
       const box = sub(host);
       const XL = { needed: 'drones the mission needs', team: 'drones committed to the mission (the team)', tasks: 'tasks in the mission (residual missions left out)',
                    types: 'drone types the mission needs (two-type: 12 plans)', plan: 'plan size = drones committed × tasks' };
+      let cur = 'needed', marks = 'off';
       const draw = k => {
+        cur = k;
         box.innerHTML = '';
         const R = TM[k];
         ciBars(box, R.bins, [
           { label: 'mission allocated from a strategy card', color: C('--s-strat'), pts: rateBars(R.card) },
           { label: 'mission allocated by hand', color: C('--r-man'), pts: rateBars(R.manual) }],
-          { xLabel: XL[k], yLabel: '% of tactical plans\nwith Suggest pressed' });
+          { xLabel: XL[k], yLabel: '% of tactical plans\nwith Suggest pressed', markLabel: 'all plans in this group (both routes)',
+            marks: marks === 'on' ? (R.all || []).map(x => ({ cat: String(x.bin), v: x.rate, tip: `n = ${x.n} plans, ${x.k} people` })) : [] });
         const sm_ = R.sameMissionDiff;
         head(box, `Size, within person: ${orTxt(R.size)} ${R.unit}. Card-allocated vs hand-allocated, size held: ${orTxt(R.route)}. `
           + `Does the gap narrow as size grows (route × size; below 1 = narrows)? ${orTxt(R.inter)}. `
@@ -685,6 +718,7 @@
             : 'This measure is fixed by the mission, the same whichever route the operator took.'));
       };
       btnBar(host, 'Size measured as', [['needed', 'drones needed'], ['team', 'drones committed'], ['tasks', 'tasks'], ['types', 'drone types'], ['plan', 'plan size']], 'needed', draw);
+      btnBar(host, 'Overall average', [['off', 'hide'], ['on', 'show a marker on each pair']], 'off', k => { marks = k; draw(cur); });
       host.appendChild(box);
       draw('needed');
       const L = TM.personLink;
@@ -813,6 +847,99 @@
       btnBar(host, 'Tier', [['strat', 'Strategic'], ['tac', 'Tactical']], 'strat', draw);
       host.appendChild(box);
       draw('strat');
+    }),
+
+    /* f-size-decides#route-people: is the card → Suggest link carried by a few people? */
+    'handover.routePeople': safe(host => {
+      const RP = (D.p5 || {}).routePeople;
+      if (!RP) throw new Error('pass-5 numbers missing: rerun handover.py --p5');
+      const box = sub(host);
+      const draw = mode => {
+        box.innerHTML = '';
+        const rows = RP.rows.filter(x => x.gap != null).sort((a, b) => (b.gapAdj - a.gapAdj));
+        const rowH = 17, padL = 70, padR = 40, padT = 14, padB = 40, H = padT + rows.length * rowH + padB;
+        const s = svgRoot(box, W, H);
+        const lo = mode === 'rates' ? 0 : -1, hi = 1;
+        const x = v => padL + (W - padL - padR) * ((v - lo) / (hi - lo));
+        (mode === 'rates' ? [0, .25, .5, .75, 1] : [-1, -.5, 0, .5, 1]).forEach(v => {
+          el('line', { x1: x(v), x2: x(v), y1: padT - 6, y2: H - padB, stroke: v === 0 && mode !== 'rates' ? C('--ink-3') : C('--grid') }, s);
+          txt(s, { x: x(v), y: H - padB + 14, 'text-anchor': 'middle', 'font-family': mono(), 'font-size': 10 }, mode === 'rates' ? pct(v, 0) : sgn(100 * v, 0) + ' pts');
+        });
+        txt(s, { x: (padL + W - padR) / 2, y: H - 6, 'text-anchor': 'middle' }, mode === 'rates'
+          ? '% of that person’s tactical plans with Suggest pressed'
+          : 'Suggest use after a card minus after a hand allocation, mission size held (percentage points)');
+        rows.forEach((p, i) => {
+          const yy = padT + i * rowH + rowH / 2;
+          txt(s, { x: padL - 8, y: yy + 4, 'text-anchor': 'end', 'font-family': mono(), 'font-size': 10.5 }, p.pid);
+          const tip = `<b>${p.pid}</b><br>after a card: ${pct(p.card, 0)} of ${p.nCard} plans<br>after a hand allocation: ${pct(p.hand, 0)} of ${p.nHand}<br>gap ${sgn(100 * p.gap, 0)} pts raw, ${sgn(100 * p.gapAdj, 0)} pts with mission size held`;
+          if (mode === 'rates') {
+            el('line', { x1: x(p.hand), x2: x(p.card), y1: yy, y2: yy, stroke: C('--line'), 'stroke-width': 3 }, s);
+            el('circle', { cx: x(p.hand), cy: yy, r: Math.min(8, 2 + Math.sqrt(p.nHand)), fill: C('--r-man'), opacity: .9 }, s);
+            el('circle', { cx: x(p.card), cy: yy, r: Math.min(8, 2 + Math.sqrt(p.nCard)), fill: C('--s-strat'), opacity: .9 }, s);
+          } else {
+            const v = Math.max(-1, Math.min(1, p.gapAdj));
+            el('rect', { x: Math.min(x(0), x(v)), y: yy - 5, width: Math.max(1, Math.abs(x(v) - x(0))), height: 10, rx: 2,
+                         fill: v >= 0 ? C('--s-strat') : C('--r-man'), opacity: .85 }, s);
+          }
+          hoverable(el('rect', { x: 0, y: yy - rowH / 2, width: W, height: rowH, fill: 'transparent' }, s), tip);
+        });
+        if (mode === 'rates') legend(box, [{ label: 'after a strategy card (dot size = plans)', color: C('--s-strat') }, { label: 'after a hand allocation', color: C('--r-man') }]);
+        else legend(box, [{ label: 'more Suggest after a card', color: C('--s-strat') }, { label: 'more Suggest after a hand allocation', color: C('--r-man') }]);
+        const dr = RP.drop.map(x => `without the top ${x.k}: ×${num(x.est, 2)} [${num(x.lo, 2)}, ${num(x.hi, 2)}], ${pval(x.p)}`).join('; ');
+        head(box, `${RP.nBoth} people had at least two plans each way (${RP.only.cardOnly} more only ever planned after a card and ${RP.only.handOnly} only after a hand allocation, so they cannot show a gap). `
+          + `With size held, ${RP.up} use Suggest more after a card, ${RP.down} less, ${RP.same} the same (sign test ${pval(RP.signP)}). `
+          + `The odds ratio for everyone (×${num(RP.main.est, 2)}) stays between ×${num(RP.loo.min.est, 2)} and ×${num(RP.loo.max.est, 2)} whichever single person is left out. Dropping the people with the biggest gaps: ${dr}. `
+          + `The three biggest gaps make up ${pct(RP.shareTop3, 0)} of the summed gap.`);
+      };
+      btnBar(host, 'Show', [['gap', 'each person’s gap (size held)'], ['rates', 'each person’s two rates']], 'gap', draw);
+      host.appendChild(box);
+      draw('gap');
+    }),
+
+    /* f-practice#speed at a chosen grain: every minute, every pair, thirds, or the first-2 vs last-2 view */
+    'handover.learnFine': safe(host => {
+      const FN = (D.p5 || {}).fine, CA = P3().carry;
+      if (!FN) throw new Error('pass-5 numbers missing: rerun handover.py --p5');
+      const box = sub(host);
+      let tier = 'strat', grain = 'pair', order = 'pairs';
+      const CATS = { minute: ['1', '2', '3', '4', '5', '6', '7', '8'], pair: ['1–2', '3–4', '5–6', '7–8'], third: ['first', 'middle', 'last'] };
+      const XL = { minute: 'minute of the session', pair: 'minutes of the session', third: 'third of the session (each 2 min 40 s)', ends: 'session' };
+      const draw = () => {
+        box.innerHTML = '';
+        const ymax = tier === 'strat' ? 16 : 35, yt = tier === 'strat' ? [0, 4, 8, 12, 16] : [0, 5, 10, 15, 20, 25, 30, 35];
+        const yl = tier === 'strat' ? 'seconds per strategic decision (median),\nforced card load removed' : 'seconds per tactical plan (median),\nforced Suggest fill removed';
+        const o = { fmt: v => num(v, 1) + ' s', tickFmt: v => num(v, 0) + ' s', ymin: 0, ymax, yticks: yt, maxBar: 46, xLabel: XL[grain], yLabel: yl };
+        if (grain === 'ends') {
+          const B = CA[tier].bars;
+          const pts = part => B.filter(b => b.part === part).map(b => ({ cat: 'session ' + b.run, v: b.med, lo: b.lo, hi: b.hi, tip: `n = ${b.n} decisions, ${b.k} people` }));
+          ciBars(box, ['session 1', 'session 2'], [
+            { label: 'minutes 1–2 of the session', color: C('--mark-soft'), pts: pts('start') },
+            { label: 'minutes 7–8', color: tier === 'strat' ? C('--s-strat') : C('--s-tac'), pts: pts('end') }], Object.assign(o, { maxBar: 70 }));
+        } else {
+          const R = FN[tier][grain], c2 = tier === 'strat' ? C('--s-strat') : C('--s-tac');
+          const mk = (run, pre = '', color) => (R[run] || []).map(b => ({ cat: pre + String(b.bin), v: b.med, lo: b.lo, hi: b.hi, color, tip: `session ${run} · n = ${b.n} decisions, ${b.k} people` }));
+          if (order === 'pairs') {
+            ciBars(box, CATS[grain], [
+              { label: 'session 1', color: C('--mark-soft'), pts: mk('1') },
+              { label: 'session 2', color: c2, pts: mk('2') }], o);
+          } else {            // session 1 all the way through, then session 2: one bar per interval, coloured by session
+            const cats = CATS[grain].map(c => 'S1 · ' + c).concat(CATS[grain].map(c => 'S2 · ' + c));
+            ciBars(box, cats, [{ label: 'median', color: c2, pts: mk('1', 'S1 · ', C('--mark-soft')).concat(mk('2', 'S2 · ', c2)) }],
+              Object.assign(o, { maxBar: 34, catLabel: c => c.replace(' · ', '\n'), xLabel: 'session, then ' + XL[grain] }));
+            legend(box, [{ label: 'session 1', color: C('--mark-soft') }, { label: 'session 2', color: c2 }]);
+          }
+        }
+        const M = CA[tier].model;
+        const pc = t => `${sgn(100 * t.pct, 0)}% [${sgn(100 * t.lo, 0)}, ${sgn(100 * t.hi, 0)}], ${pval(t.p)}`;
+        head(box, (grain === 'minute' ? 'Single minutes are thin (often 20–50 decisions, and minute 8 of session 1 fewer), so read the shape, not each bar. ' : '')
+          + `Medians with 95% intervals from resampling people; hover a bar for n. Model (person-clustered, game held fixed), relative to the start of session 1: end of session 1 ${pc(M.s1end)}; `
+          + `start of session 2 ${pc(M.s2start)}; start of session 2 relative to the end of session 1 ${pc(M.s2start_vs_s1end)}.`);
+      };
+      btnBar(host, 'Tier', [['strat', 'Strategic'], ['tac', 'Tactical']], tier, k => { tier = k; draw(); });
+      btnBar(host, 'Group by', [['minute', 'every minute'], ['pair', 'every pair of minutes'], ['third', 'thirds'], ['ends', 'first 2 vs last 2 minutes (as before)']], grain, k => { grain = k; draw(); });
+      btnBar(host, 'Order', [['pairs', 'sessions side by side at each interval'], ['sessions', 'all of session 1, then all of session 2']], order, k => { order = k; draw(); });
+      host.appendChild(box);
+      draw();
     }),
 
     /* f-practice#c22, with each assistant's use added */

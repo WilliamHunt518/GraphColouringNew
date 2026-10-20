@@ -81,6 +81,25 @@ def check(cards: list, findings: list, charts_js: str) -> None:
         print('WARNING: chart keys with no chart function: %s' % ', '.join(nochart))
 
 
+def acted(cur: int) -> dict:
+    """Notes from the open pass that Claude has acted on and cleared (clear_acted.py), shown beside the `done` reply."""
+    p = BASE / 'docs' / 'analysis' / 'register' / 'acted.json'
+    d = json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+    return d.get('notes') or {} if d.get('pass') == cur else {}
+
+
+def demos() -> list:
+    """The on-screen clips (docs/analysis/register/demos.yaml); the clips themselves are in Results/review_media/."""
+    p = BASE / 'docs' / 'analysis' / 'register' / 'demos.yaml'
+    return (yaml.safe_load(p.read_text(encoding='utf-8')) or {}).get('demos') or [] if p.exists() else []
+
+
+def audio() -> dict:
+    """{quote id: {file, start, end}} for the clips scripts/register/build_audio.py cut into Results/review_media/audio/."""
+    p = BASE / 'Results' / 'review_media' / 'audio' / 'index.json'
+    return json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+
+
 def main() -> None:
     reg = yaml.safe_load(CARDS.read_text(encoding='utf-8'))
     cards, cur = reg['cards'], int(reg.get('pass', 1))
@@ -113,7 +132,7 @@ def main() -> None:
     sys.path.insert(0, str(Path(__file__).parent))
     from apply_quotes import bank, code_labels      # the quote analysts' quotes (verbatim speech) + codebook labels
     blob = dict(pass_=cur, cards=cards, findings=findings, responses=responses, history=history, replies=replies,
-                quotes=bank(), codeLabels=code_labels(), built=datetime.now().strftime('%Y-%m-%d %H:%M'))
+                quotes=bank(), codeLabels=code_labels(), demos=demos(), audio=audio(), acted=acted(cur), built=datetime.now().strftime('%Y-%m-%d %H:%M'))
     blob['pass'] = blob.pop('pass_')
     enc = lambda o: json.dumps(o, separators=(',', ':'), ensure_ascii=True, default=str).replace('</', '<\\/')
     data = payload()

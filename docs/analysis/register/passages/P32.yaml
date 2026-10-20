@@ -1,0 +1,52 @@
+# Long verbatim passages: P32 (skim group). Phrases only.
+pid: P32
+read:
+  date: 2026-10-20
+  scope: questionnaire talk, break and debrief read in full
+  verdict: Brief in the questionnaires. The debrief has a clear account of trust earned by comparison and an organisational view of who should do which tier. Influence note, "very much about workload" is their yes to a researcher summary.
+passages:
+  - id: p32-earned-trust
+    title: Trust earned by comparing it with what I would do
+    parts: [{seg: interview, from: "I think I developed a stronger opinion on how much to trust each of them.", to: "And then letting the tactical one get on with it."}]
+    prompt: {seg: interview, from: "So I would start with just how did you find that?", to: "Anything immediately that you would comment on?"}
+    context: Opening of the debrief.
+    topics: [checking, practice]
+    why: The tactical plan matched their own and the strategic card did not, so one was trusted and left to run.
+    links: [f-tier-trust]
+  - id: p32-random-drones
+    title: "\"Random drones flying all over the place\""
+    parts: [{seg: survey2, from: "No, he wasn't very reliable. He didn't need to send a green one.", to: "I'd have random drones flying all over the place."}]
+    context: Strategic trust questionnaire after session 2.
+    topics: [flaws]
+    why: The illogical card as the reason for low strategic trust, in their own words.
+    links: [f-flaw-odd]
+  - id: p32-workload-not-difficulty
+    title: Use followed workload, not how hard a mission looked
+    parts: [{seg: interview, from: "So I think I had some missions that I hadn't done the first time.", to: "I wasn't really looking at how hard they were going to be."}]
+    speaker: mixed
+    context: Debrief; "Very much about workload" answers the researcher's summary.
+    topics: [checking, stakes]
+    why: The one participant who says the load of the moment, not the mission's difficulty, drove their use; this is the claim the workload finding tests.
+    links: [f-workload]
+  - id: p32-organisational
+    title: Decide who adds the most value where
+    parts: [{seg: interview, from: "Yeah, I think if I were being organizationally strategic about that", to: "who should be doing what."}]
+    prompt: {seg: interview, from: "If we took this five years in the future", to: "doing that sort of thing?"}
+    speaker: mixed
+    context: Debrief, the five-years question.
+    topics: [loop, failure-data, hierarchy]
+    why: An organisational answer, measure where agents and humans add value (utilisation, mission success) and allocate the tiers accordingly, with humans on strategic and trust in the tactical.
+    links: [f-tier-trust, f-operator-wants]
+
+  # added 2026-10-20 for the queue-ordering note (q-new-jobs#queue-order)
+  - id: p32-pick-next
+    title: '"It would be helpful if it just picked the next mission for me"'
+    parts: [{seg: session1, from: "Actually, it would be helpful if it just picked the next mission for me", to: "so it's kind of annoying that it's there"}]
+    speaker: mixed
+    context: Session 1, about five minutes in; "You mean if it chose one of the pending missions?" is the researcher.
+    topics: [new-jobs, queue]
+    why: The ask, in play, and its reason — a mission the reserve cannot cover sits at the top of the list anyway.
+    refs:
+      - to: f-triage#order
+        kind: qualifies
+        point: 'Operators open the oldest waiting mission well above chance, and at 41% of decisions with two or more waiting the oldest could not be covered from the reserve: the situation P32 finds "annoying".'

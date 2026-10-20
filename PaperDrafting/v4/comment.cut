@@ -1,0 +1,33 @@
+\optshead{Options for this finding}
+
+\optsec{How typical are they?} {\footnotesize [pass 5: numbers only]}
+
+\noindent Your note: We will say that our expert was a good performer with a slightly higher workrate than others, prempting cards more, but was otherwise fairly typical (insert a couple numbers into here)
+
+\optsec{How they played: for the whole board, not the mission} {\footnotesize [pass 5: for the paper]}
+
+\noindent Your note: We'll briefly quote the second part I think
+
+\noindent Highlighted quotes not used above:\begin{quotelist}
+\item ``so generally speaking all I'm trying to do here is get as many across as quickly as I can to complete all of the tasks managing my resources that I've got left here so I'm running a little bit low on blue over there and then just double checking on here so I've got the redundancy in there''\,---\,P36 (think-aloud s1 0:05:32)\par\usernote{Your comment: Minor}
+\end{quotelist}
+
+\optsec{How they played: simple by hand, complex to the assistant, and why} {\footnotesize [pass 5: for the paper]}
+
+\noindent Your note: This one is a new idea that we can talk about in more depth in the paper: More complicated tasks can have a more branching failure space. This is not something we cover in this work, but could be an important factor in future works.
+
+\optsec{How they played: the rule bends when the reserve is full} {\footnotesize [pass 5: extra: may make it in]}
+
+\noindent Your note: minor, may make it in
+
+\optsec{How they played: oldest first, and never without a reserve} {\footnotesize [pass 5: for the paper]}
+
+\noindent Your note: Short note - they identified an classified a rule ``never without a reserve''. Links to the consistency factor in training.
+
+\optsec{How they played: critical tasks over score} {\footnotesize [pass 5: for the paper]}
+
+\noindent Your note: good
+
+\optsec{The task: the pressure lands on the lower tier} {\footnotesize [pass 5: for the paper]}
+
+\noindent Your note: maybe include

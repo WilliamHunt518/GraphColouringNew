@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- arms -->
+  <line x1="32" y1="32" x2="12" y2="14" stroke="#4fa8e8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="32" x2="52" y2="14" stroke="#4fa8e8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="32" x2="12" y2="50" stroke="#4fa8e8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="32" x2="52" y2="50" stroke="#4fa8e8" stroke-width="2" stroke-linecap="round"/>
+  <!-- rotors -->
+  <ellipse cx="12" cy="13" rx="10" ry="4" fill="none" stroke="#4fa8e8" stroke-width="1.5"/>
+  <ellipse cx="52" cy="13" rx="10" ry="4" fill="none" stroke="#4fa8e8" stroke-width="1.5"/>
+  <ellipse cx="12" cy="51" rx="10" ry="4" fill="none" stroke="#4fa8e8" stroke-width="1.5"/>
+  <ellipse cx="52" cy="51" rx="10" ry="4" fill="none" stroke="#4fa8e8" stroke-width="1.5"/>
+  <!-- body -->
+  <rect x="24" y="24" width="16" height="16" rx="3" fill="#4fa8e8" stroke="#2e88cc" stroke-width="1"/>
+  <!-- gimbal arm -->
+  <line x1="32" y1="40" x2="32" y2="46" stroke="#2e88cc" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- camera lens -->
+  <circle cx="32" cy="52" r="6" fill="#1a3a5c" stroke="#4fa8e8" stroke-width="1.5"/>
+  <circle cx="32" cy="52" r="3" fill="#4fa8e8" opacity="0.5"/>
+  <circle cx="32" cy="52" r="1.5" fill="#4fa8e8" opacity="0.9"/>
+</svg>

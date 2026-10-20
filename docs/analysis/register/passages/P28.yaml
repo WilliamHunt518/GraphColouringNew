@@ -1,0 +1,82 @@
+# Long verbatim passages: P28. Phrases only; scripts/register/build_passages.py cuts the text.
+pid: P28
+read:
+  date: 2026-10-20
+  scope: everything recorded (both sessions, surveys, break, debrief; about 3,000 words). Session 2 has about seven minutes with no recorded speech while the researcher was out of the room.
+  verdict: >-
+    Fewer long stretches than expected (some transcription is garbled), but distinctive on the realism of the task
+    (a drone that finds someone and leaves; drones that should share what they find) and on wanting customisable
+    options. Influence note: in the second questionnaire the researcher quotes the pre-study delegation item
+    ("a bad recommendation is better than no recommendation at all"); P28 agrees.
+passages:
+  - id: p28-start-with-ai
+    title: Start with the assistant, adjust once familiar
+    parts: [{seg: session1, from: "So I think at all the beginning, because I'm not very familiar with this game", to: "perhaps a bit later I will try to adjust some more details for that."}]
+    prompt: {seg: session1, from: "So you began there using the agent for both modes.", to: "Any particular reason for that?"}
+    context: Session 1, first decisions.
+    topics: [practice, checking]
+    why: The assistant as a learning scaffold for a newcomer, with the expectation of taking over later.
+    links: [f-practice]
+
+  - id: p28-strategic-easier
+    title: The strategic tier is easier to analyse
+    parts:
+      - {seg: session1, from: "yes so I find that for such a strategy level it is much more easier to analyze", to: "how many numbers for each type of"}
+      - {seg: survey1, from: "drawings and in this task I should maybe try to make a perfect plan", to: "if not I will stop trying to adjust it"}
+    prompt: {seg: session1, from: "I noticed you said that you were going to begin with lots of using the AI", to: "is there a reason for that"}
+    speaker: mixed
+    context: End of session 1 into the first questionnaire; the transcription is partly garbled ("Poido", "drawings" for drones).
+    topics: [hierarchy, checking]
+    why: Keeps the strategic decision because it is analysable and hands over the tactical one because doing both at once is too much.
+    links: [f-tier-trust, f-personal-style]
+
+  - id: p28-defensive-reserve
+    title: Defensive, because the next task cannot be predicted
+    parts: [{seg: survey2, from: "Yes, because the situation becomes more complicated", to: "such a deployment is still all right."}]
+    prompt: {seg: survey2, from: "You found that one more demanding?", to: "You found that one more demanding?"}
+    context: Second questionnaire, after the Tactical Heavy session.
+    topics: [hierarchy, failure-data]
+    why: Holds drones back for unknown future missions and accepts single-drone risk, judging the occasional abort acceptable.
+    links: [f-manual-cards]
+
+  - id: p28-less-reliable-still-use
+    title: Less reliable, but I still use it
+    parts: [{seg: survey2, from: "Yes, because I think it depends on its default settings.", to: "I have no time to tune everything."}]
+    speaker: mixed
+    context: Strategic trust questionnaire; the researcher quotes the pre-study item about a bad recommendation being better than none.
+    topics: [checking, flaws]
+    why: Rated lower, used anyway, because it saves time — use and trust diverge.
+    links: [f-tier-trust]
+
+  - id: p28-customise
+    title: Fixed options are not enough
+    parts: [{seg: interview, from: "I think the key strength when I using the agent", to: "it is still insufficient for some case"}]
+    prompt: {seg: interview, from: "could you just summarize your strategy", to: "roughly when were you choosing to use the two tools?"}
+    context: Debrief.
+    topics: [agents]
+    why: Wants a way to add their own ideas to the assistant's suggestion rather than choose between two fixed cards.
+    links: [f-manual-cards, f-operator-wants]
+
+  - id: p28-check-everything
+    title: "\"Humans should make that decision\""
+    parts: [{seg: interview, from: "Yes, I actually check every answer.", to: "humans should make that decision."}]
+    speaker: mixed
+    context: Debrief, asked whether they checked the assistants' outputs and whether load would stop them.
+    topics: [checking, loop]
+    why: Checks every answer with a quick browse, because what the assistant will produce cannot be guaranteed.
+
+  - id: p28-found-and-left
+    title: A drone that finds you and then leaves
+    parts: [{seg: interview, from: "I would say it's a good idea,", to: "it will make people very disappointed."}]
+    prompt: {seg: interview, from: "If I took this five years into the future", to: "when human lives are at stake?"}
+    context: Debrief, asked about real search and rescue with mature AI.
+    topics: [realism, stakes]
+    why: The human side of partial completion — a person who is found but not helped.
+
+  - id: p28-shared-model
+    title: Drones that tell each other what they find
+    parts: [{seg: interview, from: "I think maybe, because this scenario has been simplified,", to: "I think that requires a very complicated model."}]
+    prompt: {seg: interview, from: "Do you have any opinions on how much something more sophisticated, like RL", to: "and that sort of thing?"}
+    context: Debrief, asked (as someone working in RL) about more sophisticated AI.
+    topics: [realism, agents]
+    why: What the simulation leaves out — searching for people whose location is unknown — and the shared world model it would need.
