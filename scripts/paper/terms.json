@@ -2,6 +2,18 @@
  "_doc": "The paper's terms (researcher, 2026-10-20): the Strategic Assistant offers strategy cards, which an operator chooses or not; the Tactical Assistant gives a suggestion when asked (the button is Suggest). Applied in order, as JavaScript-compatible regular expressions, to every text node of a chart when capture_figs.mjs renders it, and to register text that build_paper.py carries into the paper. Longer, more specific patterns come first.",
  "rules": [
   [
+   "^Said they noticed$",
+   "Noticers"
+  ],
+  [
+   "^Never said so$",
+   "Non-noticers"
+  ],
+  [
+   "^never said$",
+   "non-noticers"
+  ],
+  [
    "Card uptake: three-type minus one-type missions",
    "Card choice, three-type minus one-type"
   ],

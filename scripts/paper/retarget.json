@@ -1,0 +1,13 @@
+{
+  "_doc": "Register sections the researcher's edit of the results (PaperDrafting/HumanEdited) no longer contains. Links to them from the practitioner and qualitative sections (passages' `refs`) are pointed at the closest section that remains. Applied by build_paper.refs_list / gather_refs before the label lookup. 'sec:limitations' is the Limitations subsection of main.tex.",
+  "map": {
+    "f-tier-trust#checking": "q-trust-unchecked#glance",
+    "f-triage#order": "q-new-jobs#queue-order",
+    "f-triage#choice": "q-new-jobs#queue-order",
+    "f-operator-wants#failure-data": "q-failure#blind",
+    "f-operator-wants#tiers-together": "q-hierarchy#one-plan",
+    "f-operator-wants#reasoning": "q-trust-unchecked#cant-check",
+    "f-operator-wants#real-stakes": "@sec:limitations|Limitations",
+    "f-operator-wants#more-automation": "q-new-jobs#queue-order"
+  }
+}

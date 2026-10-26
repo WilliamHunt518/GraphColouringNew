@@ -278,15 +278,33 @@ def fmt_quote(q, checked, comment):
 KIND = {'agrees': 'Agrees with', 'qualifies': 'Qualifies', 'beyond': 'Goes beyond'}
 
 
+_RETARGET = None
+
+
+def link(to, F):
+    """(\\ref text, target title) for a link to register section `to`, after scripts/paper/retarget.json (sections
+    the researcher's edit of the results removed, pointed at the closest one that remains)."""
+    global _RETARGET
+    if _RETARGET is None:
+        p = HERE / 'retarget.json'
+        _RETARGET = json.loads(p.read_text(encoding='utf-8'))['map'] if p.exists() else {}
+    to = _RETARGET.get(to, to)
+    if to.startswith('@'):                                    # a label in main.tex, given as @label|title
+        lab_, _, title = to[1:].partition('|')
+        return 'Section~\\ref{%s}' % lab_, title
+    fid, _, sid = to.partition('#')
+    s = next((x for x in (F.get(fid) or {}).get('sections') or [] if x['id'] == sid), None)
+    title = terms(s['title']) if s else to
+    return (('Section~\\ref{%s}' % LABELS[to]) if to in LABELS else None), title
+
+
 def refs_list(q, F):
     """A passage's links back to the results (passages/<PID>.yaml `refs`), as cross-references."""
     L = []
     for r in q.get('refs') or []:
-        fid, _, sid = r['to'].partition('#')
-        f = F.get(fid)
-        s = next((x for x in (f or {}).get('sections') or [] if x['id'] == sid), None)
-        name = tex(terms(s['title']) if s else r['to'])
-        where = ('Section~\\ref{%s}' % LABELS[r['to']]) if r['to'] in LABELS else '(not in the paper)'
+        where, title = link(r['to'], F)
+        name = tex(title)
+        where = where or '(not in the paper)'
         L.append('\\item \\textit{%s} %s, \\emph{%s}: %s' % (KIND.get(r['kind'], r['kind']), where, name, tex(terms(r['point']))))
     if not L:
         return ''
@@ -392,10 +410,8 @@ def gather_refs(f, R, F):
             continue
         L += ['\\paragraph*{%s the results (%d).}' % (lab_, len(part)), '\\begin{itemize}[leftmargin=1.2em,itemsep=1pt]\\small']
         for r, s in part:
-            tf, _, ts = r['to'].partition('#')
-            tsec = next((x for x in (F.get(tf) or {}).get('sections') or [] if x['id'] == ts), None)
-            where = ('Section~\\ref{%s}' % LABELS[r['to']]) if r['to'] in LABELS else \
-                "(``%s'', not in the paper)" % tex(tsec['title'] if tsec else r['to'])
+            where, title = link(r['to'], F)
+            where = where or "(``%s'', not in the paper)" % tex(title)
             L.append('\\item %s, from the point in Section~\\ref{%s}: %s' % (where, LABELS[f['id'] + '#' + s['id']], tex(terms(r['point']))))
         L.append('\\end{itemize}')
     return '\n'.join(L)

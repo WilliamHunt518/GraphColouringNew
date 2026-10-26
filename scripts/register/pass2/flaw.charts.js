@@ -377,7 +377,8 @@
      sessions), and o.segBreaks draws a labelled divider at each break. */
   function bandChart(host, cats, series, o = {}) {
     const nR = (o.nRows || []).length, nH = nR ? 8 + 13 * nR : 0;
-    const W = 700, H = (o.height || 290) + (o.strip ? 26 : 0) + (o.segLabels ? 14 : 0) + nH, padL = 64, padR = 130,
+    // the n rows' labels sit in the left margin; "non-noticers" (the paper's term) needs a little more of it
+    const W = 700, H = (o.height || 290) + (o.strip ? 26 : 0) + (o.segLabels ? 14 : 0) + nH, padL = nR ? 76 : 64, padR = 130,
       padT = 18 + (o.segLabels ? 14 : 0), padB = 46 + (o.strip ? 26 : 0) + nH;
     const s = svgRoot(host, W, H);
     yTitle(s, o.yLabel || Y_TOOK, padT, H - padB);
@@ -692,7 +693,11 @@
     btnBar(host, 'Session', [['both', 'Session 1 then session 2'], ['s1', 'Session 1'], ['s2', 'Session 2']], sess, k => { sess = k; draw(); });
     btnBar(host, 'People', PEOPLE_BTN, grp, k => { grp = k; draw(); });
     btnBar(host, 'Who is counted', [['all', 'Everyone who reached each number'], ['panel', 'Only people present throughout (fixed panel)']], who, k => { who = k; draw(); });
-    btnBar(host, 'Thin points', [['hide', `Hide points from fewer than ${MIN} people`], ['show', 'Show them, faded']], tail, k => { tail = k; draw(); });
+    // r5: the paper's trimmed view drops a decision number from BOTH groups unless each group has at least JMIN people
+    // there (11 = the smallest count still standing at session 1's 7–8 pair; it removes 9–10 and 11+ in both sessions)
+    const JMIN = 11;
+    btnBar(host, 'Thin points', [['hide', `Hide points from fewer than ${MIN} people`], ['show', 'Show them, faded'],
+                                 ['joint', `Keep a number only if both groups have ${JMIN}+ people`]], tail, k => { tail = k; draw(); });
     btnBar(host, 'Missions', SAMPLE_BTN.concat([['clean', 'No illogical card on the mission']]), sample, k => { sample = k; draw(); });
     btnBar(host, 'Game order', ORDER_BTN, order, k => { order = k; draw(); });
     btnBar(host, 'Grouping', [['1', 'Every decision'], ['2', 'Pairs']], w, k => { w = k; draw(); });
@@ -706,8 +711,9 @@
       const full = (sk, g) => { const V = P5.index[sample][sk].all[who][g]; return Object.fromEntries(((V || {})[w] || []).map(asRow5).map(b => [b.bin, b.people])); };
       const rows = Object.fromEntries(groups.map(g => [g, ss.flatMap((sk, si) => {
         const V = P5.index[sample] && P5.index[sample][sk] && P5.index[sample][sk][order] && P5.index[sample][sk][order][who];
-        const fp = full(sk, g);
-        return ((V && V[g] || {})[w] || []).map(asRow5).map(b => Object.assign({}, b, { key: sk + ':' + b.bin, seg: si, sk, thin: (fp[b.bin] || 0) < MIN }))
+        const fp = full(sk, g), fs = full(sk, 'said'), fn = full(sk, 'notSaid');
+        const thin = bin => tail === 'joint' ? Math.min(fs[bin] || 0, fn[bin] || 0) < JMIN : (fp[bin] || 0) < MIN;
+        return ((V && V[g] || {})[w] || []).map(asRow5).map(b => Object.assign({}, b, { key: sk + ':' + b.bin, seg: si, sk, thin: thin(b.bin) }))
           .filter(b => tail === 'show' || !b.thin);
       })]));
       const keys = [];

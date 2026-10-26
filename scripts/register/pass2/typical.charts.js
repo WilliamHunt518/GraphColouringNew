@@ -14,9 +14,13 @@
   const COL = { typical: '--ink-3', leans: '--warn', unusual: '--bad' };
 
   Object.assign(CH, {
-    'typical.p36': host => {
-      if (!D) return say(host, 'No data — run scripts/register/pass2/typical.py.');
-      const rows = D.rows, groups = [...new Set(rows.map(r => r.group))];
+    'typical.p36': host0 => {
+      if (!D) return say(host0, 'No data — run scripts/register/pass2/typical.py.');
+      // the paper drops the pre-study rows (researcher, 2026-10-23): a toggle keeps both views
+      const bar = h('div', {}, host0), host = h('div', {}, host0);
+      const draw = all => { host.innerHTML = ''; drawRows(all ? D.rows : D.rows.filter(r => r.group !== 'Before the study')); };
+      const drawRows = rows => {
+      const groups = [...new Set(rows.map(r => r.group))];
       const rowH = 24, gapH = 26, padL = 300, padR = 190, padT = 6;
       const H = padT + rows.length * rowH + groups.length * gapH + 22;
       const s = svgRoot(h('div', {}, host), W, H);
@@ -59,6 +63,9 @@
       T(s, x0, H - 4, 'each row on its own scale · grey band = middle half of the 33 · tick = median', { fill: css('--ink-3'), 'font-size': 10.5 });
       const names = k => rows.filter(r => D[k].includes(r.key)).map(r => r.label);
       say(host, `Typical (middle half): ${names('typical').join('; ')}. Leaning (10th–25th or 75th–90th percentile): ${names('leans').join('; ')}. Unusual (beyond the 10th or 90th): ${names('unusual').join('; ')}.`);
+      };
+      btnBar(bar, 'Rows', [['all', 'all measures'], ['play', 'play and outcome only']], 'all', k => draw(k === 'all'));
+      draw(true);
     },
   });
 })();

@@ -1022,13 +1022,13 @@ def boot_mean_people(vals, B=B_BOOT):
     return dict(mean=r(v.mean()), lo=r(np.percentile(bs, 2.5)), hi=r(np.percentile(bs, 97.5)), k=int(len(v)))
 
 
-def boot_seg_means(d, cols, B=B_BOOT):
+def boot_seg_means(d, cols, B=B_BOOT, rng=None):
     """Mean of each column over rows, 95% interval from resampling PEOPLE (rows travel with their person)."""
     people = sorted(d.pid.unique())
     groups = [d[d.pid == p_] for p_ in people]
     sums = np.array([[g[c].sum() for c in cols] for g in groups])
     ns = np.array([len(g) for g in groups])
-    draw = RNG.integers(0, len(people), (B, len(people)))
+    draw = (rng or RNG).integers(0, len(people), (B, len(people)))
     bs = sums[draw].sum(1) / ns[draw].sum(1)[:, None]
     return {c: dict(mean=r(d[c].mean(), 2), lo=r(np.percentile(bs[:, j], 2.5), 2), hi=r(np.percentile(bs[:, j], 97.5), 2))
             for j, c in enumerate(cols)}
@@ -1417,7 +1417,7 @@ SPEED_BANDS = ['one type', 'three types, 6–9 drones', 'three types, 10–18 dr
 TAC_BANDS = ['small', 'mid', 'large']
 
 
-def boot_std_means(d, cols, band_col, bands, weights, B=B_BOOT):
+def boot_std_means(d, cols, band_col, bands, weights, B=B_BOOT, rng=None):
     """Size-standardised mean of each column: sum over bands of weight x the band's mean, with the SAME
     band weights for every route. 95% interval from resampling people (draws where a band is empty skipped)."""
     people = sorted(d.pid.unique())
@@ -1440,7 +1440,7 @@ def boot_std_means(d, cols, band_col, bands, weights, B=B_BOOT):
     est = stat(np.arange(len(people)))
     bs, skipped = [], 0
     for _ in range(B):
-        v = stat(RNG.integers(0, len(people), len(people)))
+        v = stat((rng or RNG).integers(0, len(people), len(people)))
         if v is None:
             skipped += 1
         else:
@@ -1570,7 +1570,23 @@ def section_pass4(who):
                 share10=r((S.idle > 10).mean()))
     print('   idle with cards on screen, median: card %.1f s, manual after cards %.1f s; > 10 s in %.0f%% of decisions'
           % (hang['card'], hang['manualAfter'], 100 * hang['share10']))
-    out['stratPhases'] = dict(phases=sph, models=smod, idle=hang, n=int(len(S)))
+    # r5 (2026-10-26): card vs by hand after the cards loaded (pre-emptive left out), pooled over the three bands as
+    # decided (raw mix) and size-standardised (each band weighted by its share of those decisions, the same for both
+    # routes), as in the tactical chart. Own generator, so adding it leaves every other interval in this file unchanged.
+    rng5 = np.random.default_rng(SEED + 2610)
+    S2 = S[S['size'].isin(SPEED_BANDS) & S.route.isin(['card', 'manual after cards'])]
+    swts = {b_: float((S2['size'] == b_).mean()) for b_ in SPEED_BANDS}
+    smix = {}
+    for rt in ('card', 'manual after cards'):
+        g = S2[S2.route == rt]
+        smix[rt] = dict(raw=dict(boot_seg_means(g, seg, rng=rng5), n=int(len(g)), k=int(g.pid.nunique())),
+                        std=boot_std_means(g, seg, 'size', SPEED_BANDS, swts, rng=rng5),
+                        mix={b_: r((g['size'] == b_).mean()) for b_ in SPEED_BANDS})
+        print('   %-19s all bands, raw: load %.1f + act %.1f = %.1f s (no idle) | standardised: %.1f [%.1f, %.1f]; mix %s'
+              % (rt, smix[rt]['raw']['load']['mean'], smix[rt]['raw']['act']['mean'], smix[rt]['raw']['noidle']['mean'],
+                 smix[rt]['std']['noidle']['mean'], smix[rt]['std']['noidle']['lo'], smix[rt]['std']['noidle']['hi'], smix[rt]['mix']))
+    print('   weights (both routes pooled):', {k: round(v, 3) for k, v in swts.items()})
+    out['stratPhases'] = dict(phases=sph, models=smod, idle=hang, n=int(len(S)), mix=smix, weights=swts)
 
     # ── H4 · tactical planner time, phase by phase, all plans (f-size-decides#speed) ─────────────
     print('\nH4 tactical planner split (all plans with a known size): before first action / building / ready -> confirmed')

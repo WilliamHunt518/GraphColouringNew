@@ -671,7 +671,9 @@
       const M = D.size.models, X = P3().missionChecks;
       const find = (lst, lab) => (lst || []).find(r_ => r_.label === lab);
       const feNote = (t, n) => t ? `same model as the row it checks; interval clustered on person and on the ${t.missions} shared missions; ${n}` : '';
-      ciStrip(host, [
+      const bar = h('div', {}, host), box = sub(host);
+      let checks = true;
+      const draw = () => { box.innerHTML = ''; ciStrip(box, [
         modelRow('Strategic · per doubling of drones needed', M.s_doubling, { main: true, color: C('--s-strat') }),
         modelRow('Strategic · per extra drone type', M.s_type, { color: C('--s-strat') }),
         modelRow('Strategic · per extra task', M.s_task, { color: C('--s-strat') }),
@@ -686,8 +688,11 @@
         modelRow('Check · strategic, missions shared across people', X.fe.s, { color: C('--s-strat'), note: feNote(X.fe.s, 'per doubling of drones needed') }),
         modelRow('Check · tactical, illogical-card missions excluded', find(D.size.robustT, 'Mission had an illogical Conservative card excluded'), { color: C('--s-tac'),
           note: 'per doubling of plan size' }),
-        modelRow('Check · tactical, missions shared across people', X.fe.t, { color: C('--s-tac'), note: feNote(X.fe.t, 'per doubling of drones needed') })].filter(Boolean),
-        { xLabel: 'odds ratio of handing over, each person compared with themselves (95% interval, log scale)' });
+        modelRow('Check · tactical, missions shared across people', X.fe.t, { color: C('--s-tac'), note: feNote(X.fe.t, 'per doubling of drones needed') })]
+        .filter(Boolean).filter(r_ => checks || !/^Check/.test(r_.label)),
+        { xLabel: 'odds ratio of handing over, each person compared with themselves (95% interval, log scale)' }); };
+      btnBar(bar, 'Rows', [['with', 'with the checks'], ['without', 'without the checks']], 'with', k => { checks = k === 'with'; draw(); });
+      draw();
       const ml = X.missionLevel;
       head(host, `Checks (bottom block). "Missions shared across people": everyone played the same fixed missions, so a few odd missions could carry the effect; these rows `
         + `let the interval reflect that (clustered on mission as well as person); the estimate is unchanged and the interval stays clear of 1. With each mission as one point (missions with ≥ 5 decisions), `
@@ -1028,7 +1033,7 @@
       const SP = P4().stratPhases, TP = P4().tacPhases;
       const bar = h('div', {}, host);
       const box = sub(host);
-      let tier = 's', show = 'all';
+      let tier = 's', show = 'all', cols = 'three';
       const draw = () => {
         box.innerHTML = '';
         if (tier === 's') {
@@ -1037,12 +1042,19 @@
                        { key: 'act', label: 'first click → choice', color: C('--s-strat') }];
           const keys = show === 'all' ? all : show === 'noidle' ? [all[0], all[2]] : [all[2]];
           const tot = show === 'all' ? 'tot' : show === 'noidle' ? 'noidle' : 'act';
-          stackCols(box, [{ id: 'one type', label: 'one drone type\n3–6 drones' }, { id: 'three types, 6–9 drones', label: 'three types\n6–9 drones' },
-                          { id: 'three types, 10–18 drones', label: 'three types\n10–18 drones' }],
-            [{ id: 'card', label: 'card' }, { id: 'manual after cards', label: 'by hand' }, { id: 'pre-emptive manual', label: 'hand, early' }],
-            (g, b) => (SP.phases[g] || {})[b] || null, keys,
+          const bands = [{ id: 'one type', label: 'one drone type\n3–6 drones' }, { id: 'three types, 6–9 drones', label: 'three types\n6–9 drones' },
+                         { id: 'three types, 10–18 drones', label: 'three types\n10–18 drones' }];
+          // r5: card against by hand only (built before the cards loaded left out), plus the three bands pooled as decided
+          // and size-standardised (handover.py H3, stratPhases.mix), the same layout as the tactical chart in #parallel
+          const two = cols === 'two' && SP.mix;
+          stackCols(box, two ? bands.concat([{ id: 'raw', label: 'all missions\nraw mix' }, { id: 'std', label: 'all missions\nsize-standardised' }]) : bands,
+            two ? [{ id: 'card', label: 'card' }, { id: 'manual after cards', label: 'by hand' }]
+                : [{ id: 'card', label: 'card' }, { id: 'manual after cards', label: 'by hand' }, { id: 'pre-emptive manual', label: 'hand, early' }],
+            (g, b) => g === 'raw' || g === 'std' ? Object.assign({ n: SP.mix[b].raw.n, k: SP.mix[b].raw.k }, SP.mix[b][g])
+                                                 : (SP.phases[g] || {})[b] || null, keys,
             { total: tot, ymax: 35, yticks: [0, 10, 20, 30], unit: 'decisions', yLabel: 'seconds per strategic decision (mean),\npanel opened → choice',
-              xLabel: '"card" = strategy card taken; "by hand" = built by hand after the cards loaded; "hand, early" = before they loaded' });
+              xLabel: two ? '"card" = strategy card taken; "by hand" = built by hand after the cards loaded (built before they loaded left out)'
+                          : '"card" = strategy card taken; "by hand" = built by hand after the cards loaded; "hand, early" = before they loaded' });
           const M = SP.models, f = v => sgn(100 * v, 0) + '%';
           h('p', { class: 'note', html: '<b>Card minus the same person\'s manual decisions</b>, % change in time (negative = card quicker), under each way of counting:' }, box);
           const rows = [
@@ -1073,6 +1085,7 @@
       };
       btnBar(bar, 'Tier', [['s', 'Strategic'], ['t', 'Tactical']], 's', k => { tier = k; draw(); });
       btnBar(bar, 'Time counted:', [['all', 'everything'], ['noidle', 'without idle time'], ['active', 'from the first click only']], 'all', k => { show = k; draw(); });
+      btnBar(bar, 'Columns (strategic)', [['three', 'card, by hand, built early'], ['two', 'card vs by hand, with all-missions bars']], 'three', k => { cols = k; draw(); });
       draw();
       const po = TP.preOther.all;
       head(host, `<b>First action</b> = the operator's first click on this decision: a card highlighted or a manual count changed (strategic), Suggest pressed or a drone dragged (tactical). `

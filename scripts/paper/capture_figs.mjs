@@ -57,7 +57,7 @@ for (const job of jobs) {
   if (!(await sec.count()) || !(await sec.locator('.chartbox svg').count())) { console.log('no chart', job.finding, job.section); continue; }
   const box = sec.locator('.chartbox').first();
   const out = [];
-  for (const [suffix, clicks, note] of job.views) {
+  for (const [suffix, clicks, note, opts = {}] of job.views) {
     const file = `${job.finding}__${job.section}__${suffix}.png`;
     if (process.env.SKIP_EXISTING && fs.existsSync(path.join(outDir, file))) { out.push({ file, suffix, note }); continue; }
     // Re-open the finding fresh for every view so toggles from the previous view do not carry over.
@@ -82,6 +82,15 @@ for (const job of jobs) {
       ch.querySelectorAll('p').forEach(par => {
         if (last && (last.compareDocumentPosition(par) & Node.DOCUMENT_POSITION_FOLLOWING)) par.style.display = 'none';
       });
+    }, `#sec-${job.section} .chartbox .chart`);
+    // opts.only === 'first': keep only the chart's first graphic and its legend (e.g. drop a forest plot underneath):
+    // at every level from that graphic up to the chart, hide later siblings that hold another graphic or a paragraph
+    if (opts.only === 'first') await p.evaluate(sel => {
+      const ch = document.querySelector(sel), first = ch.querySelector('svg');
+      for (let n = first; n && n !== ch; n = n.parentElement) {
+        for (let s = n.nextElementSibling; s; s = s.nextElementSibling)
+          if (s.tagName === 'svg' || s.tagName === 'P' || s.querySelector('svg')) s.style.display = 'none';
+      }
     }, `#sec-${job.section} .chartbox .chart`);
     await p.evaluate(([sel, rules]) => {
       const ch = document.querySelector(sel), rx = rules.map(([a, b]) => [new RegExp(a, 'g'), b]);

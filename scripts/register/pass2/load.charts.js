@@ -158,6 +158,10 @@
           const raw = { label: pre + 'Raw rate', color: col, faint: mode === 'adj' && !both, hollow: mode === 'adj' && !both, pts: B.map(b => ({ x: b.label, y: b.raw, lo: b.rawLo, hi: b.rawHi, n: b.n, tip: `${b.people} people · missions avg ${num(b.ndrones, 1)} drones · minute ${num(b.minute, 1)} · their own usual rate ${pct(b.person, 0)}` })) };
           const exp = { label: pre + 'Expected from mission, minute, game, person', color: both ? col : css('--ink-3'), dash: true, pts: B.map(b => ({ x: b.label, y: b.exp, n: b.n })) };
           const adj = { label: pre + 'Adjusted', color: col, pts: B.map(b => ({ x: b.label, y: b.adj, lo: b.adjLo, hi: b.adjHi, n: b.n, tip: 'overall rate + (observed − expected) in this bin' })) };
+          // raw as a dotted line without whiskers, under the adjusted line (the paper's view, 2026-10-21)
+          const rawDot = Object.assign({}, raw, { label: pre + 'Raw rate (dotted)', dash: true, hollow: true, faint: false,
+            pts: raw.pts.map(p => Object.assign({}, p, { lo: null, hi: null })) });
+          if (mode === 'rawadj') return [rawDot, adj];
           if (both) return mode === 'raw' ? [raw] : mode === 'exp' ? [raw, exp] : [adj];
           return mode === 'raw' ? [raw] : mode === 'exp' ? [raw, exp] : [raw, adj];
         };
@@ -172,7 +176,7 @@
           B.map(b => [b.label, b.n, b.people, pct(b.raw, 0), `${pct(b.rawLo, 0)}–${pct(b.rawHi, 0)}`, pct(b.exp, 0), pct(b.adj, 0), `${pct(b.adjLo, 0)}–${pct(b.adjHi, 0)}`, num(b.ndrones, 1), pct(b.person, 0), pct(b.stratGame, 0)]));
       };
       host.insertBefore(btnBar(host, 'Assistant', [['strategic', 'Strategic'], ['tactical', 'Tactical'], ['both', 'Both together']], tier, k => { tier = k; draw(); }), box);
-      host.insertBefore(btnBar(host, 'View', [['raw', 'Raw'], ['exp', 'Raw + expected'], ['adj', 'Adjusted']], mode, k => { mode = k; draw(); }), box);
+      host.insertBefore(btnBar(host, 'View', [['raw', 'Raw'], ['exp', 'Raw + expected'], ['adj', 'Adjusted'], ['rawadj', 'Raw (dotted) + adjusted']], mode, k => { mode = k; draw(); }), box);
       draw();
     },
 

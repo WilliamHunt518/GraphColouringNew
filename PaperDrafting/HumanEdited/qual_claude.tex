@@ -1,0 +1,204 @@
+%% The researcher's edit of the qualitative section (HumanEdited/qual.tex) with Claude's updates (2026-10-23).
+%% Sentences Claude added are blue; replies and questions are blue and in [Claude: ...].
+
+\textcolor{red}{About half of this should be folded in to the main results, and a little more will probably be used in the discussion (after talking about the expert as well - just a few quotes to finish off the perspective. }
+\textcolor{blue}{[Claude: For now, edits in place only: no timecodes anywhere and no ``includes the researcher's words''; the two P22 quotes merged; and the queue-ordering section has its participant quotes and the practitioner's red-team agent, as you asked. Folding sections into the results is left for when we do it together.]}
+
+% ======== q-trust-unchecked ========
+
+\subsection{You trust what you cannot check}\label{sec:qual:trust-unchecked}
+
+The most articulate operators described trusting the Tactical Assistant \emph{because} they could not assess its plan, while a strategy card was simple enough to judge at a glance, and so was judged, often harshly. Under time pressure checking shrank to a glance, and the minority who did check earned their trust by comparing the assistant's plan with their own.
+
+% --- q-trust-unchecked#cant-check (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:trust-unchecked:cant-check}
+A strategy card shows a few numbers per drone type beside the mission's requirements, so its oddities are visible; a tactical plan is a web of routes on a map. Participants drew the consequence themselves: they took the tactical plan on trust because they could not see how far it was from optimal, and suspected that was part of why it seemed so good. This is their own account of two of the quantitative results, the trust gap between the tiers (Section~\ref{sec:res:tier-trust}) and the visible and invisible flaws (Section~\ref{sec:res:flaw-odd}), and it suggests the gap is partly one of checkability rather than quality.
+
+\textcolor{red}{Don't give timecodes. Also two quotes from same person are better merged somehow otherwise it looks like we're stretching butter over too much bread.
+I think this is a nice part of the discussion to link back to why they prefer tactical. It's a nice conclusion. Or else as it's breif we may fold it into the main results. For now keep it separate}
+
+\begin{quote}\small
+``The tactical assistant, I never really saw it do anything wrong, but that's basically because I think the problem is so complex [that] seeing a more optimal solution is really hard. So I wonder if it's one of those things where these are based on the fact that I actually can't perceive the difference between its performance and the optimal.''\par\smallskip
+``I felt like I took a bigger pinch of salt for the strategic one because I felt like I could assess the quality of it more immediately whereas with the tactical assistant, I couldn't accurately and rapidly assess how well it was performing. So I just kind of said, OK, I have to take your word for it, essentially.''\par\hfill--- P22 {\color{blue}(after session 1, then after session 2)}
+\textcolor{blue}{[Claude: Merged into one block with one attribution: P22 said it after each session, which reads as a view held rather than butter spread thin.]}
+\end{quote}
+
+\begin{quote}\small
+``I will be honest with you. I don't think I was paying as much attention to the suggestions of the tactical assistant as I could have been. Just purely because the tasks were often very multi-drone. I think I would have committed a lot of extra thought-space to assigning all of the drones individually to those. So I definitely inadvertently trusted the tactical [agent].''\par\hfill--- P19 (after session 1)
+\end{quote}
+
+% --- q-trust-unchecked#earned (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:trust-unchecked:earned}
+Where trust was earned, it was by comparison with what the operator would have done themselves.
+
+\begin{quote}\small
+``I think I developed a stronger opinion on how much to trust each of them. By, I guess, comparing them to what I would have done. And I mean, I understood the task more as I went. So the tactical one seemed to be doing what I was doing. So quite reliably. And obviously the strategic one wasn't. So I guess it was very much comparing them to what I'd do. And then letting the tactical one get on with it.''\par\hfill--- P32 (debrief)
+\end{quote}
+
+\begin{quote}\small
+``I mostly trusted [the agents], although, uh, I did kind of want to test it more at the beginning, like comparing it, like doing a few manual ones myself to see, like, whether it would be better, faster.''\par\hfill--- P29 (debrief)
+\end{quote}
+
+\clearpage
+
+% q-process (Trust in the process, not the answer: what operators thought the assistants were) left out: your verdict this pass was prune.
+
+% ======== q-who-decides ========
+
+\subsection{Who decides, and who answers for it}\label{sec:qual:who-decides}
+
+Almost everyone wanted a human to keep the decision, and the reasons were moral as much as practical: accountability for a life not saved, a human connected to the operation, and the plan held in someone's head. People were candid that the human they wanted in the loop might not be able to check much.
+
+% --- q-who-decides#accountability (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:who-decides:accountability}
+The clearest statement of the moral reason is about accountability: even if an AI saves more lives on average, when it fails to save one there is no one to answer for it. Against it sits the plain value of speed in an emergency.
+
+\begin{quote}\small
+{\footnotesize\textit{Researcher:} If in five years' time this was much more sophisticated, far more complicated, how would you feel about search and rescue scenarios being conducted with AI systems of this type in this kind of setup?}\par\smallskip
+``Yeah, I feel like that's a very interesting question for more of a moral reason, because if you look at it entirely from the perspective of your option-A/option-B, and option A saves more lives, that always seems like a good thing, but taking it [...] in a slightly less simplified way, you've got to make sort of moral judgments about how these resources are being allocated, and if someone's life was like failed to be saved, under a completely human system, you'd have some sort of like, not responsibility, what's the word I'm looking for? [interviewer suggests the word 'accountability']. Accountability, thank you! Of who was on the job that failed to save your life, whereas if it's an AI system, even if it performs on average better than a human, that accountability just isn't there.''\par\hfill--- P31 (debrief)
+\end{quote}
+
+\begin{quote}\small
+``I think definitely with emergency scenarios, it's best to just get something going, even if it's not the most perfect plan. And AI lets you do that quite good, like quite quickly.''\par\hfill--- P29 (debrief)
+\end{quote}
+
+% --- q-who-decides#loop (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:who-decides:loop}
+Others wanted a human in the loop whatever that human could check, and one participant framed it organisationally: measure where people and assistants each add value, and assign the tiers accordingly.
+
+\begin{quote}\small
+``I think if I were being organisationally strategic about that, it seems like it's really helpful. Assuming that you're human constrained (if you've got loads of spare humans, I'd want to see if the AI was actually better) but assuming that you've got less humans than you ideally would have, it feels like a good accelerator. I'd want the analytics on, I guess, like drone utilisation and mission success. I feel like that would be a good place to be making these decisions. And should I be, for example, in this case where I think the strategic one was less good than the tactical, if I were being really strategic, I'd be saying: 'okay, people are going to do the strategic stuff, and we're just going to trust it for the tactical'. So I guess very much doing that optimisation around: 'is it the agents or the humans who are adding the most value, and where do they add the most value', and then have them allocate them [...] I'd want to understand, well, just because I like to understand everything, I'd want to understand empirically actually how it was performing, who should be doing what.''\par\hfill--- P32 (debrief)
+\end{quote}
+
+% --- q-who-decides#ownership (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:who-decides:ownership}
+For some the reason to keep the work was not safety but connection to the task, and pride in their own solution.
+
+\begin{quote}\small
+``I don't want to be reduced to pressing allocate, suggest, deploy, because otherwise I might as well be in the next room. And I think the small missions give me the chance to do that more. And I'm like, 'oh, I can just do that. Don't worry. I'll do that'. Done. And I feel satisfaction.''\par\hfill--- P11 (debrief)
+\end{quote}
+\textcolor{red}{This quote belongs in the "automate bigger, manually do smaller" results section}
+\textcolor{blue}{[Claude: Agreed; it goes in Section~\ref{sec:res:size-decides} when this section is folded in (left here for now).]}
+
+\begin{quote}\small
+``it would be a dreadful task without any of the tools, especially on the tactical side. It's just a lot of laborious dragging, holding shift at the right time.... And I guess I do feel I want to use \textit{my} solution, and I don't want to like, oh, you know, of course the computer thinks it's better. Or like personify the computer and feel some sort of grudge to hold it.''\par\hfill--- P11 (debrief)
+\end{quote}
+/\textcolor{red}{Possibly this one too. Not sure. We may alternatively do it as a section on that topic here. idk}
+
+\clearpage
+
+% ======== q-failure ========
+
+\subsection{Failure without feedback}\label{sec:qual:failure}
+\textcolor{red}{We can defo talk about the failure feedback, but the "people got confused and blamed themselves" thing is too weak - it just means our tutorial may not have quite explained it. Regardless, the other points here are mostly good.}
+\textcolor{blue}{[Claude: Agreed; the self-blame part is already gone from this section (it survives only in v4's options block).]}
+
+% --- q-failure#blind (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:failure:blind}
+Several wanted failure rates built into the allocation, so that the reserve could be sized to the risk rather than padded.
+
+\begin{quote}\small
+``I think in a in a real world scenario where if I imagine I'm a drone swarm operator you will have some numbers presumably about 'so what's the likelihood for drone failure' right? Based on historic data, and that will presumably bias (or inform, not bias) but inform your selection if I'm like okay the lifter drone is much heavier therefore there's more wear and tear on it or whatever it's more likely to fail down that means that my redundancy strategy might change from 'send one additional drone for the lifter' towards 'send 20 percent more more lifters than you need''\par\hfill--- P10 (debrief)
+\end{quote}
+
+\clearpage
+
+% ======== q-hierarchy ========
+
+\subsection{The hierarchy as one plan}\label{sec:qual:hierarchy}
+
+Operators did not experience two independent assistants. They described one plan that starts at the strategic step: allocate too little at the top and the shortage cascades down; allocate generously and there is only one sensible way to assign the drones; build the allocation yourself and the tactical plan is already in your head.
+
+% --- q-hierarchy#cascade (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:hierarchy:cascade}
+Several placed the responsibility for failures with the strategic tier, since only drones sent at the start can absorb them; others weighed the same step from the other side, holding drones back for missions not yet arrived.
+
+\begin{quote}\small
+``Basically, it did everything. If failure rate of drones is unrelated to my assignment, so rate of failure as opposed to how many drones I send out, then all things considered, the tactical assistant is probably the best. The tactical assistant completed all the jobs and we didn't end up in any kind of a situation where we didn't have enough drones if it hadn't been for random drone failures. And the only way to remedy drone failures is to have sent enough drones at the beginning, which I think is the strategic assistant's prerogative.''\par\hfill--- P19 (after session 1)
+\end{quote}
+
+\begin{quote}\small
+``I'm trying to be more defensive in the strategy, so I'm trying to reserve more and more drones in the base, rather than send them out to finish the task quickly, because I cannot predict when the next task will appear. So luckily, there's only one task is holding for a long time, only one there, and another problem is [that] such a choice will make the drones in the case becomes not sufficient for that case. So if I only send out one drone for one specific color, and it fails, then I have to abort that mission, and I only abort one of them, because that happened, and the rest is still able to finish, so I think this, such a deployment is still all right.''\par\hfill--- P28 (after session 2)
+\end{quote}
+
+% --- q-hierarchy#one-plan (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:hierarchy:one-plan}
+The link between the tiers in the logs (Section~\ref{sec:res:size-decides:tactical}) was described from both sides: a generous strategy card makes a tactical suggestion the obvious next step, while a hand-built allocation already lays out a plan the operator does not want disrupted. Whether one plan held across both tiers is the right ideal is a question the practitioner's account takes up, and answers differently (Section~\ref{sec:qual:practitioner:pt-silos}).
+\textcolor{red}{This should be folded into that section as it's directly about that}
+\textcolor{blue}{[Claude: Agreed; it goes with the continuity paragraph in Section~\ref{sec:res:size-decides:tactical} when we fold the qualitative sections in.]}
+
+\begin{quote}\small
+``it's better to use the autonomy on the tactical level on top of the strategic''\par\hfill--- P10 (debrief)
+\end{quote}
+
+\begin{quote}\small
+``[Having manually set a strategic allocation] I prefer to [tactically] set the drones myself. Because I'm not sure how exactly it will be allocated [if I use the agent]. Because I have something in mind when I consider the allocation... When I make the selection for the drones, I kind of lay out a plan in my mind initially. So I feel like it's going to disrupt my thought process if I try to go around that.''\par\hfill--- P21 (think-aloud, session 1)
+\end{quote}
+
+\begin{quote}\small
+``Actually, they might work better if I use the AI agent for the selection and that as well, because. Yeah, because when I assume when it makes a selection, when it tries to make the drone allocation, it follows certain patterns, which could then be adopted by the tactical agent afterwards. And if I try to think of something else, so I'm going to split them like that and change them in a certain way. I'm not sure if the tactical agent will be able to match my thought process.''\par\hfill--- P21 (between the sessions)
+\end{quote}
+
+% --- q-hierarchy#cross-mission ---
+
+\phantomsection\label{sec:qual:hierarchy:cross-mission}
+A strategy card considers one mission. Operators overrode the cards to act on what the cards could not see: keeping drones back for other missions, and weighing which missions could afford to wait.
+\textcolor{red}{The intangibles take is are really good.}
+\begin{quote}\small
+{\footnotesize\textit{Researcher:} Could you just summarize again, just in a sentence or two, how you were approaching each one, what scenarios you felt you were using each one?}\par\smallskip
+``I felt like sometimes I could find like a middle ground that had like maybe a little bit of gambling in there, essentially, that you wouldn't have the necessary coverage. But then also then that meant that you'd keep some more in reserve. So it wasn't just fully because it's cautious, it was also because it was actually to keep some in reserve for other tasks, because, yes, you're covering this task specifically very well. But that doesn't mean that then you actually have enough coverage for the, for the rest of your tasks. So I felt that often I could find, I could strike a middle ground. So I felt comfortable assessing and then overriding the strategic assistant.''\par\hfill--- P22 (debrief)
+\end{quote}
+
+\begin{quote}\small
+``If you wanted to send as few drones as possible, you could send four fast drones, one lifter, one camera. Whereas even the conservative recommendation recommended sending two of the lifters, and the cameras in case of drone failure. When I was in that situation, I had a lot of other pending tasks, so I went more conservative than the conservative recommendation.''\par\hfill--- P31 (after session 2)
+\end{quote}
+
+\clearpage
+
+% q-real-ops (What a real operation would need) left out: your verdict this pass was prune.
+
+% ======== q-new-jobs ========
+
+\subsection{An assistant for what to open next}\label{sec:qual:new-jobs}
+
+Asked what the assistants should do, participants rarely asked for more automation of the same kind. Two asked for something neither assistant does: help deciding which waiting mission to open next.
+
+% --- q-new-jobs#queue-order (pass 5: for the paper) ---
+
+\phantomsection\label{sec:qual:new-jobs:queue-order}
+Neither assistant helps with the first decision of every allocation, which waiting mission to open. With two or more missions waiting (411 decisions), operators opened the oldest well above chance (49\%, against 34\% by chance) and leaned towards the more critical (odds $\times 1.45$ per category above the waiting missions' average, $p = .02$), but not towards the missions they could actually cover: whether the reserve could supply a mission's drones made no difference ($\times 1.04$, $p = .79$), and at 41\% of these decisions the oldest waiting mission could not be covered. An ordering of the kind one participant proposed (missions that can be done first, then by criticality) would have picked a different mission at 59\% of decisions.
+
+{\color{blue}Two participants asked for this directly. One wanted the assistant to pick the next mission, partly because a mission the reserve could not cover still sat at the top of the list:}
+
+\begin{quote}\small
+``Actually, it would be helpful if it just picked the next mission for me. A suggestion of what to do next would be handy [...] if it was like,' you've got enough drones for this one'. Because I know I haven't got enough one to go and do this, so it's kind of annoying that it's there''\par\hfill--- P32 (think-aloud, session 1)
+\end{quote}
+
+{\color{blue}The other proposed a rule: missions that can be done first, then by criticality.}
+
+\begin{quote}\small
+``Then I think maybe I also want another feature like how many drones is in the hub. And how many drones are required. So, I'd prefer to put the task which cannot be done for now to the end of the list. [...] So I just need to check the task with the highest priority. [...] Maybe the evaluation metrics can be the two sides [...] The first one is which task can be completed. And if all the tasks can be completed, then I'd prefer to order them with the critical. [...] And maybe it would be better to consider the task which is being executed.''\par\hfill--- P27 (after session 2)
+\end{quote}
+
+\phantomsection\label{sec:qual:practitioner:pt-red-team}
+{\color{blue}Our practitioner proposed a different kind of meta-agent: not one that orders the work, but one whose only job is to check the data the other agents' answers rest on, so that a bad input is caught before the answers built on it, without relying on the operator to notice (compare Section~\ref{sec:res:flaw-odd}).}
+
+\begin{quote}\small
+``One of the good things about ai is that you can have an agent whose only job is to go and red team [adversarially check] all of your outputs very quickly so if you've got that there is that hole in that data set and it go through and start all your job is to do is to check the data that they've based their answers on and then you can't go well this data is wrong so all these answers are now redundant we now need to look at this change this and then the answers will be right''\par\hfill--- P36 (debrief)
+\end{quote}
+
+\textcolor{blue}{[Claude: The ordering quotes are P32 and P27, the two who asked; the practitioner's red-team agent follows, moved here from the practitioner section as your note there asked. Its ``Bears on'' list stays behind (one of its two links pointed to a section no longer in the paper).]}
+Opened the oldest 49\% (chance 34\%); when one waiting mission was uniquely the most critical, opened it 49\% (chance 33\%)
+
+The oldest waiting mission could not be covered from the reserve at 41\% of these decisions; some waiting mission could not be covered at 57\%. When some could not, the one opened was coverable 32\% of the time (chance 39\%)
+
+
+\clearpage
